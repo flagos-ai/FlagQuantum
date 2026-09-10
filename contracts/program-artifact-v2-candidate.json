@@ -1,6 +1,7 @@
 {
   "schema": "flagquantum.program_artifact_v2_candidate_contract",
-  "status": "proposed_not_approved",
+  "status": "approved_phase32_core_implemented",
+  "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
   "envelope_schema": "flagquantum.program_artifact",
@@ -124,9 +125,9 @@
     "old_reader_accepts_v2": false
   },
   "implementation": {
-    "authorized": false,
-    "core_schema_changed": false,
-    "core_v1_migrator_added": false,
+    "authorized": true,
+    "core_schema_changed": true,
+    "core_v1_migrator_added": true,
     "compiler_adapter_added": false,
     "runtime_adapter_added": false,
     "deployment_adapter_added": false,

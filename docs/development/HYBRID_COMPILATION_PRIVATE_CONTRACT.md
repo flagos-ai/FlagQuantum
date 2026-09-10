@@ -1014,6 +1014,18 @@ strictly valid CircuitIR payload. All other v1 artifacts remain readable but
 fail automatic migration. A pinned v2 circuit candidate records the proposed
 canonical identities.
 
-This revision remains unapproved. It changes no Core reader, writer, hash,
-Compiler adapter, Runtime adapter, Deployment behavior, public export, or
-provider path.
+This revision was approved by the API owner on 2026-09-10 using the exact
+Proposal 022 approval token.
+
+## Phase 32 ProgramArtifact-v2 Core implementation authorization
+
+Phase 32 implements only the approved Core-owned portion of Proposal 022:
+the strict v2 circuit and executable profile model, canonical identities,
+closed limits, explicit version dispatch, duplicate-key-safe JSON reading, and
+the narrow v1 circuit migrator. The v1 class, reader behavior, serialization,
+and content hash remain unchanged.
+
+This phase does not add a Compiler construction adapter, Runtime compatibility
+adapter, Deployment/provider conversion, public export, default-path change,
+or performance claim. Those remain separate follow-on phases and cannot infer
+authority merely from Core accepting the v2 envelope.

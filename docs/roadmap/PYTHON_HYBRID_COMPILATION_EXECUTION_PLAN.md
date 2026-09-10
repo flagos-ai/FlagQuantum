@@ -1130,6 +1130,28 @@ Exit gate:
 - new-write-v2 and v1-read-only policy is explicit;
 - implementation remains unauthorized pending the unchanged approval token.
 
+### Phase 32 — ProgramArtifact v2 Core implementation
+
+After receipt of the exact Proposal 022 approval token, implement the
+Core-owned v2 contract without changing the existing v1 class. Add a strict
+`ProgramArtifactV2` model for the circuit and executable-text profiles, an
+explicit version dispatcher, duplicate-key-safe JSON decoding, canonical
+payload and envelope identity verification, closed size/depth/entry limits,
+and the approved narrow v1 circuit migrator.
+
+Exit gate:
+
+- the pinned v1 fixture retains its exact serialization and content hash;
+- the v2 circuit constructor reproduces the pinned candidate byte-for-byte;
+- symbolic circuit parameter indices are derived from `CircuitIR`;
+- executable profiles require a Core `RequirementSet`, target snapshot,
+  complete compilation identity chain, fully bound parameters, and dense
+  full-register samples;
+- payload and envelope tampering, unknown or missing fields, duplicate JSON
+  keys, excessive structure, and prohibited structured data fail closed;
+- no Compiler, Runtime, Deployment, provider, public-export, default-path, or
+  performance behavior changes in this phase.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1288,5 +1310,7 @@ Stop implementation and return to Integration review if:
 - [x] Phase 28 dependency-preserving logical scheduling implemented and verified
 - [x] Phase 29 verified deterministic target-text emission implemented and verified
 - [x] Phase 30 strict target-text conformance implemented and verified
-- [x] Phase 31 ProgramArtifact v2 contract proposal completed; implementation awaits approval
-- [x] Phase 31.1 added circuit profile and v1-read-only migration policy; implementation awaits approval
+- [x] Phase 31 ProgramArtifact v2 contract proposal completed
+- [x] Phase 31.1 added circuit profile and v1-read-only migration policy
+- [x] Proposal 022 approved with the exact token on 2026-09-10
+- [x] Phase 32 ProgramArtifact v2 Core implementation completed and verified

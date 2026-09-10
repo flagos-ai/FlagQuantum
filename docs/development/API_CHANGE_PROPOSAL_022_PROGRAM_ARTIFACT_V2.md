@@ -2,16 +2,17 @@
 
 ## Status
 
-**Proposed; not approved and not implemented.**
+**Approved on 2026-09-10; Phase 32 Core implementation complete.**
 
 Date: 2026-09-10
 
 Approval token: `approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2`
 
-This proposal follows ARCH-002. Until the API owner explicitly approves it,
-`flagquantum.core._artifacts.ProgramArtifact` remains a v1-only internal
-candidate, Phase 29/30 results remain in-process Compiler records, and Runtime
-and Deployment must not consume the v2 candidate.
+The API owner supplied the exact approval token on 2026-09-10. Phase 32 added
+the strict Core v2 model, explicit v1/v2 dispatcher, circuit-profile
+constructor, executable-profile validator, and bounded v1 circuit migrator.
+Compiler construction, Runtime consumption, Deployment adaptation, and public
+exports remain outside Phase 32 and require their documented follow-on gates.
 
 ## Problem
 
@@ -36,7 +37,7 @@ Encoding mandatory executable facts into v1 metadata would create an informal
 second contract while changing neither the v1 reader nor its guarantees.
 Creating an unrelated `ExecutableArtifact` envelope would violate ARCH-002.
 
-## Decision proposed
+## Decision
 
 Add version `2.0` to the existing `flagquantum.program_artifact` schema lineage.
 The first v2 release has two profile families: canonical Core `CircuitIR` and
@@ -276,12 +277,14 @@ internal adapters have conformance evidence.
 - Supporting arbitrary binaries or URLs initially: exceeds the verified
   Phase 29/30 text profile.
 
-## Implementation gates after approval
+## Implementation gates
 
-1. Core implements the strict v2 value model, circuit profile, bounded v1
+1. **Complete in Phase 32:** Core implements the strict v2 value model, circuit profile, bounded v1
    circuit migration, and version dispatcher while the v1 compatibility fixture
    remains byte/hash stable.
-2. Core makes all new circuit-artifact writes use v2 while preserving v1 reads.
+2. **Complete for the Core construction seam in Phase 32:** new Core circuit
+   artifacts use the v2 constructor while the exact v1 reader remains available
+   as a read-only compatibility path.
 3. Compiler adds a one-way adapter from successful Phase 30 conformance into
    the v2 executable profile.
 4. Round-trip, unknown-field, limits, non-finite, sensitive-content, payload
@@ -301,6 +304,7 @@ internal adapters have conformance evidence.
 - Candidate tests prove payload and artifact identities use separate inputs.
 - Candidate tests prove shots, credentials, task state, and provider locators
   are excluded.
-- No implementation, existing schema, protected Core code, public export,
-  Runtime path, Deployment path, or provider behavior changes before explicit
-  approval.
+- The approval token is recorded and Core implementation evidence is captured
+  in `HYBRID_COMPILATION_PHASE32_EVIDENCE.md`.
+- No public export, Runtime path, Deployment path, or provider behavior changes
+  are included in the Phase 32 implementation.

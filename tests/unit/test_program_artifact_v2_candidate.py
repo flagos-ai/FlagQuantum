@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.core._artifacts import ProgramArtifact
+from flagquantum.core._artifacts import (
+    ProgramArtifact,
+    ProgramArtifactV2,
+    read_program_artifact,
+)
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit
@@ -23,17 +27,18 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_is_unapproved_and_does_not_change_any_implementation() -> None:
+def test_candidate_records_approval_and_bounded_core_implementation() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "proposed_not_approved"
+    assert candidate["status"] == "approved_phase32_core_implemented"
+    assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
     )
     assert candidate["implementation"] == {
-        "authorized": False,
-        "core_schema_changed": False,
-        "core_v1_migrator_added": False,
+        "authorized": True,
+        "core_schema_changed": True,
+        "core_v1_migrator_added": True,
         "compiler_adapter_added": False,
         "runtime_adapter_added": False,
         "deployment_adapter_added": False,
@@ -252,3 +257,7 @@ def test_candidate_requires_explicit_version_dispatch_without_conversion() -> No
                 "metadata": {},
             }
         )
+    v2 = read_program_artifact(
+        json.loads(V2_CIRCUIT_FIXTURE.read_text(encoding="utf-8"))
+    )
+    assert isinstance(v2, ProgramArtifactV2)

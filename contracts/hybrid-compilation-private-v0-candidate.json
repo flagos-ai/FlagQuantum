@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved",
+  "status": "phase32_program_artifact_v2_core_implemented",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -1078,6 +1078,28 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE31_1_EVIDENCE.md"
   },
   "phase31_1_completed": true,
+  "phase32": {
+    "stage": "program_artifact_v2_core_implementation",
+    "approval_token_received": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
+    "approval_date": "2026-09-10",
+    "implementation": "flagquantum.core._artifacts.ProgramArtifactV2",
+    "explicit_version_dispatch": true,
+    "v1_reader_unchanged": true,
+    "v1_content_hash_unchanged": true,
+    "circuit_profile_constructor": true,
+    "executable_profile_validation": true,
+    "bounded_v1_circuit_migration": true,
+    "duplicate_json_keys_rejected": true,
+    "closed_limits_enforced": true,
+    "compiler_adapter_added": false,
+    "runtime_adapter_added": false,
+    "deployment_adapter_added": false,
+    "public_root_export": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE32_EVIDENCE.md"
+  },
+  "phase32_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,
