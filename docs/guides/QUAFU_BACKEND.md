@@ -11,7 +11,7 @@ cp .env.example .env
 set -a
 . ./.env
 set +a
-python examples/quafu_backend.py
+python examples/remote/quafu_bell.py
 ```
 
 `.env` is ignored by Git. Keep `.env.example` as the public template and never
@@ -65,6 +65,13 @@ the same `fq.ExecutionResult` type as local execution; counts are available as
 deployment artifact must be inspected, stored, or submitted later.
 The name is optional, but an explicitly provided name must not be empty; Quafu
 still assigns the immutable task ID.
+
+Compilation is the pre-submission check: QSteed resolves the selected chip's
+current calibration and topology, validates the requested physical-qubit
+mapping, and emits a precompiled circuit. If that step fails, `fq.run` does not
+create a Quafu task. After submission it waits for a terminal state and returns
+the task ID, counts, target information, and deployment evidence through the
+standard result object.
 
 If `target_qubits` is omitted, QSteed selects a connected physical subgraph
 from the current calibration snapshot. If supplied, its order defines the

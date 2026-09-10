@@ -101,6 +101,19 @@ boundaries are listed in the capability catalog.
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.
 
+## Run on remote resources
+
+After completing the local examples, use the provider-specific golden paths:
+
+```bash
+python examples/remote/quafu_bell.py
+python examples/remote/jiuding_workspace_bell.py
+```
+
+The Quafu path compiles and validates a circuit before submitting it to a QPU.
+The Jiuding path reuses a running workspace for low-latency remote compute.
+Both require provider credentials and configured remote resources.
+
 ## Plan before execution
 
 Use the runtime planner when you need to inspect representation choice,
