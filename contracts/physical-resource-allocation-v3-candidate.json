@@ -1,8 +1,8 @@
 {
   "schema": "flagquantum.physical_resource_allocation_candidate_contract",
-  "status": "proposed_owner_approval_required",
+  "status": "approved_compiler_allocation_complete",
   "proposed_on": "2026-09-10",
-  "approved_on": null,
+  "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION",
   "program_artifact_candidate_version": "3.0",
@@ -81,8 +81,8 @@
     "qpu_correctness_fidelity_capacity_latency_or_performance"
   ],
   "implementation": {
-    "authorized": false,
-    "compiler_allocation_added": false,
+    "authorized": true,
+    "compiler_allocation_added": true,
     "physical_plan_v3_added": false,
     "program_artifact_v3_added": false,
     "core_evidence_v3_added": false,

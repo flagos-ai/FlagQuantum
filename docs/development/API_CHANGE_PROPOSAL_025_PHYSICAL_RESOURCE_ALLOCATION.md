@@ -2,12 +2,19 @@
 
 ## Status
 
-**Proposed on 2026-09-10; API-owner approval required before implementation.**
+**Approved on 2026-09-10; first Compiler allocation slice complete.**
 
 Date: 2026-09-10
 
 Approval token:
 `approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION`
+
+The API owner supplied the exact token on 2026-09-10. The first bounded
+implementation adds private sparse placement, nullable physical occupancy,
+deterministic idle-slot routing, inverse-SWAP workspace cleanup, logical-result
+slot metadata, and explicit rejection by the still-version-2 physical-plan path.
+ProgramArtifact 3.0, physical-plan 3.0, compilation-evidence 3.0, target emission,
+Runtime verification, and Deployment handoff remain separate gated slices.
 
 ## Problem
 
@@ -164,8 +171,8 @@ requirements and may only become stricter.
 ## Implementation gates
 
 1. **Complete:** record this proposal and the exact machine-readable candidate.
-2. Receive the exact approval token from the API owner.
-3. Implement private sparse placement and nullable-occupancy routing without
+2. **Complete:** receive the exact approval token from the API owner.
+3. **Complete:** implement private sparse placement and nullable-occupancy routing without
    changing the existing equal-capacity path.
 4. Add physical-plan 3.0 validation, cleanup proof, deterministic identity, and
    bounded state/gradient differential tests.
@@ -195,9 +202,9 @@ requirements and may only become stricter.
 
 ## Approval
 
-Implementation requires the exact token:
+The API owner approved this proposal with the exact token:
 
 `approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION`
 
-Approval authorizes only the gated profile above. It does not authorize public API
+The approval authorizes only the gated profile above. It does not authorize public API
 promotion, provider submission, general ancillas, or fault-tolerant/QEC claims.

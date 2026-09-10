@@ -1199,3 +1199,19 @@ exact candidate is recorded in
 `contracts/physical-resource-allocation-v3-candidate.json`; implementation requires
 the exact approval token specified by
 `docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md`.
+
+The API owner supplied that exact token on 2026-09-10. Phase 43 implements the
+first Compiler-only slice for directed targets. An injective logical placement may
+leave physical slots idle; every routing SWAP records both the logical projection
+and complete nullable physical occupancy before and after the transition. Cleanup
+applies the inverse routing-SWAP sequence, restores the declared result placement,
+and proves that every non-result slot is idle again. The routed Core `CircuitIR`
+has physical width, while terminal sample wires name only the ordered logical
+result slots.
+
+The equal-capacity version-2 route is unchanged. Allocated programs remain blocked
+from physical-plan construction with an explicit version-3 requirement, so they
+cannot accidentally enter ProgramArtifact v2 or compilation-evidence 2.0. The
+slice supports only static unitary instructions and full logical-register samples;
+observables, dynamic operations, channels, provider identifiers, and QEC/FTOC
+ancilla semantics fail closed.

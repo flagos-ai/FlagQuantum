@@ -34,6 +34,13 @@ class TopologyLegalizationResult:
     legalization_identity: str
     initial_logical_to_physical: tuple[int, ...] = ()
     direction_semantics: str = "undirected"
+    logical_wire_count: int | None = None
+    physical_slot_count: int | None = None
+    initial_physical_to_logical: tuple[int | None, ...] = ()
+    pre_restore_physical_to_logical: tuple[int | None, ...] = ()
+    final_physical_to_logical: tuple[int | None, ...] = ()
+    logical_result_physical_slots: tuple[int, ...] = ()
+    allocation_identity: str | None = None
 
     def __post_init__(self) -> None:
         if self.source_program.content_hash != self.source_content_hash:
@@ -97,6 +104,13 @@ def legalize_circuit_topology(
     if coupling_map.n_wires < source.n_wires:
         raise TopologyLegalizationError(
             "coupling map has fewer wires than the CircuitIR"
+        )
+    if coupling_map.n_wires > source.n_wires and not isinstance(
+        coupling_map, DirectedCouplingMap
+    ):
+        raise TopologyLegalizationError(
+            "physical resource allocation requires a DirectedCouplingMap; "
+            "undirected expansion requires explicit layout/lowering"
         )
 
     if isinstance(coupling_map, DirectedCouplingMap):
@@ -165,7 +179,10 @@ def legalize_circuit_topology(
         raise TopologyLegalizationError("router did not emit routing evidence")
     final_layout = tuple(routing.get("final_logical_to_physical", ()))
     identity_layout = tuple(range(source.n_wires))
-    if final_layout != identity_layout or routing.get("mapping_restored") is not True:
+    allocated = coupling_map.n_wires > source.n_wires
+    result_slots = tuple(routing.get("logical_result_physical_slots", ()))
+    expected_final = result_slots if allocated else identity_layout
+    if final_layout != expected_final or routing.get("mapping_restored") is not True:
         raise TopologyLegalizationError(
             "topology routing did not restore the logical output layout"
         )
@@ -173,8 +190,44 @@ def legalize_circuit_topology(
     if not isinstance(inserted_swap_count, int) or inserted_swap_count < 0:
         raise TopologyLegalizationError("router emitted an invalid SWAP count")
     initial = tuple(routing.get("initial_logical_to_physical", ()))
-    if len(initial) != source.n_wires or set(initial) != set(identity_layout):
+    if len(initial) != source.n_wires or len(set(initial)) != source.n_wires:
         raise TopologyLegalizationError("router emitted an invalid initial layout")
+    if allocated:
+        if (
+            any(slot < 0 or slot >= coupling_map.n_wires for slot in initial)
+            or result_slots != initial
+            or routing.get("workspace_cleaned") is not True
+        ):
+            raise TopologyLegalizationError(
+                "router emitted invalid physical allocation evidence"
+            )
+        expected_occupancy: list[int | None] = [None] * coupling_map.n_wires
+        for logical, physical in enumerate(initial):
+            expected_occupancy[physical] = logical
+        initial_occupancy = tuple(routing.get("initial_physical_to_logical", ()))
+        final_occupancy = tuple(routing.get("final_physical_to_logical", ()))
+        pre_restore_occupancy = tuple(
+            routing.get("pre_restore_physical_to_logical", ())
+        )
+        allocation_identity = routing.get("allocation_identity")
+        if (
+            initial_occupancy != tuple(expected_occupancy)
+            or final_occupancy != initial_occupancy
+            or len(pre_restore_occupancy) != coupling_map.n_wires
+            or type(allocation_identity) is not str
+            or len(allocation_identity) != 64
+        ):
+            raise TopologyLegalizationError(
+                "router emitted inconsistent physical occupancy evidence"
+            )
+    else:
+        if set(initial) != set(identity_layout):
+            raise TopologyLegalizationError("router emitted an invalid initial layout")
+        initial_occupancy = ()
+        pre_restore_occupancy = ()
+        final_occupancy = ()
+        result_slots = ()
+        allocation_identity = None
     direction_semantics = str(routing.get("direction_semantics", ""))
     expected_direction = (
         "directed_cx"
@@ -209,6 +262,13 @@ def legalize_circuit_topology(
             if isinstance(deterministic_coupling, DirectedCouplingMap)
             else "undirected"
         ),
+        logical_wire_count=source.n_wires,
+        physical_slot_count=coupling_map.n_wires,
+        initial_physical_to_logical=initial_occupancy,
+        pre_restore_physical_to_logical=pre_restore_occupancy,
+        final_physical_to_logical=final_occupancy,
+        logical_result_physical_slots=result_slots,
+        allocation_identity=allocation_identity,
     )
 
 

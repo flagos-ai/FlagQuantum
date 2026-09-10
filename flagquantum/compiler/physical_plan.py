@@ -509,6 +509,10 @@ def build_physical_circuit_plan(
             )
         source = topology.source_program
         routed = topology.program
+        if routed.n_wires != source.n_wires:
+            raise PhysicalPlanError(
+                "physical resource allocation requires physical-circuit-plan 3.0"
+            )
         topology_identity = topology.topology_identity
         coupling_n_wires = coupling_map.n_wires
         topology_legalization_identity = topology.legalization_identity
