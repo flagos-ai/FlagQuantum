@@ -50,7 +50,7 @@ def _decode_template(
         raise ValueError("hybrid operator requires at least one parameter")
     first = parameters[0]
     if first.device.type != "cpu":
-        raise ValueError("Phase 6 hybrid operator supports CPU tensors only")
+        raise ValueError("hybrid statevector operators support CPU tensors only")
     if first.dtype not in _SUPPORTED_REAL_DTYPES:
         raise TypeError("hybrid parameters must use float32 or float64")
     for index, parameter in enumerate(parameters):
@@ -74,7 +74,7 @@ def _decode_template(
             or observable.coefficient != 1.0
         ):
             raise ValueError(
-                "Phase 6 hybrid operator supports sums of unit single-wire Z terms only"
+                "hybrid statevector operators support sums of unit single-wire Z terms only"
             )
     return template, names, tuple(item.wires[0] for item in template.observables)
 
