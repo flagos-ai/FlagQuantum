@@ -145,6 +145,44 @@ def _score_candidate(
     return score
 
 
+def _candidate_blockers(
+    context: CandidateBuildContext,
+    *,
+    mode: str,
+    gradient: str,
+    deployment: bool,
+    memory: int,
+    semantics: str,
+    claim_allowed: bool | None,
+    blockers: tuple[str, ...],
+) -> tuple[str, ...]:
+    if context.require_gradients and gradient in {
+        "forward_only",
+        "distributed_backward_pending",
+        "forward_sharded_backward_pending",
+        "tensor_node_gradients_only",
+    }:
+        blockers += (f"{mode}_gradient_incomplete_for_training",)
+    if context.require_deployment and not deployment:
+        blockers += (f"{mode}_not_directly_deployment_ready",)
+    blockers = _unique(blockers + _memory_blockers(memory, context.memory_limit_bytes))
+    claim = (
+        semantics == "sharded_across_ranks"
+        if claim_allowed is None
+        else bool(claim_allowed)
+    )
+    if claim and semantics != "sharded_across_ranks":
+        blockers = _unique(blockers + ("scalability_claim_requires_sharded_semantics",))
+    return blockers
+
+
+def _plan_override(
+    generated: dict[str, Any],
+    override: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    return generated if override is None else dict(override)
+
+
 class RuntimeCandidateBuilder:
     """Build one candidate from typed planner context and policy inputs."""
 
@@ -177,28 +215,17 @@ class RuntimeCandidateBuilder:
         jax_mps_training_summary: Mapping[str, Any] | None = None,
     ) -> None:
         context = self.context
-        if context.require_gradients and gradient in {
-            "forward_only",
-            "distributed_backward_pending",
-            "forward_sharded_backward_pending",
-            "tensor_node_gradients_only",
-        }:
-            blockers += (f"{mode}_gradient_incomplete_for_training",)
-        if context.require_deployment and not deployment:
-            blockers += (f"{mode}_not_directly_deployment_ready",)
-        blockers = _unique(
-            blockers + _memory_blockers(memory, context.memory_limit_bytes)
+        blockers = _candidate_blockers(
+            context,
+            mode=mode,
+            gradient=gradient,
+            deployment=deployment,
+            memory=memory,
+            semantics=semantics,
+            claim_allowed=claim_allowed,
+            blockers=blockers,
         )
         warnings = _unique(warnings)
-        claim = (
-            semantics == "sharded_across_ranks"
-            if claim_allowed is None
-            else bool(claim_allowed)
-        )
-        if claim and semantics != "sharded_across_ranks":
-            blockers = _unique(
-                blockers + ("scalability_claim_requires_sharded_semantics",)
-            )
 
         ownership = rank_ownership(
             mode=mode,
@@ -261,14 +288,18 @@ class RuntimeCandidateBuilder:
             require_deployment=context.require_deployment,
             blockers=blockers,
         )
-        if memory_plan_override is not None:
-            candidate_memory_plan = dict(memory_plan_override)
-        if communication_plan_override is not None:
-            candidate_communication_plan = dict(communication_plan_override)
-        if gradient_plan_override is not None:
-            candidate_gradient_plan = dict(gradient_plan_override)
-        if deployment_plan_override is not None:
-            candidate_deployment_plan = dict(deployment_plan_override)
+        candidate_memory_plan = _plan_override(
+            candidate_memory_plan, memory_plan_override
+        )
+        candidate_communication_plan = _plan_override(
+            candidate_communication_plan, communication_plan_override
+        )
+        candidate_gradient_plan = _plan_override(
+            candidate_gradient_plan, gradient_plan_override
+        )
+        candidate_deployment_plan = _plan_override(
+            candidate_deployment_plan, deployment_plan_override
+        )
 
         candidate_metadata = dict(metadata or {})
         if jax_statevector_training_summary is not None:
