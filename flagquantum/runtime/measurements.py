@@ -249,6 +249,26 @@ def _counts_from_samples(
     return outputs
 
 
+def _probabilities_from_parity_expectations(
+    expectations: Sequence[torch.Tensor],
+    *,
+    n_wires: int,
+) -> torch.Tensor:
+    template = expectations[0]
+    probabilities = []
+    for outcome in range(1 << n_wires):
+        value = torch.ones_like(template)
+        for mask, term in enumerate(expectations, start=1):
+            parity = sum(
+                (outcome >> (n_wires - index - 1)) & 1
+                for index in range(n_wires)
+                if mask & (1 << index)
+            )
+            value = value + (-term if parity % 2 else term)
+        probabilities.append(value / (1 << n_wires))
+    return torch.stack(probabilities, dim=-1)
+
+
 def _sample_pauli_product(
     target: Any,
     *,
@@ -265,7 +285,6 @@ def _sample_pauli_product(
         wire: axis for axis in ("x", "y", "z") for wire in metadata.get(axis, ())
     }
     subset_expectations: list[torch.Tensor] = []
-    template: torch.Tensor | None = None
     for mask in range(1, 1 << len(wires)):
         axes = {
             axis: tuple(
@@ -275,21 +294,11 @@ def _sample_pauli_product(
             )
             for axis in ("x", "y", "z")
         }
-        template = expectation(**axes)
-        subset_expectations.append(template)
-    assert template is not None
-    probabilities = []
-    for outcome in range(1 << len(wires)):
-        value = torch.ones_like(template)
-        for mask, term in enumerate(subset_expectations, start=1):
-            parity = sum(
-                (outcome >> (len(wires) - index - 1)) & 1
-                for index in range(len(wires))
-                if mask & (1 << index)
-            )
-            value = value + (-term if parity % 2 else term)
-        probabilities.append(value / (1 << len(wires)))
-    distribution = torch.stack(probabilities, dim=-1)
+        subset_expectations.append(expectation(**axes))
+    distribution = _probabilities_from_parity_expectations(
+        subset_expectations,
+        n_wires=len(wires),
+    )
     distribution = torch.clamp(distribution, min=0)
     distribution = distribution / distribution.sum(dim=-1, keepdim=True)
     indices = torch.multinomial(
@@ -341,25 +350,13 @@ def _marginal_probabilities(
             f"{type(target).__name__} does not support marginal probabilities"
         )
     subset_expectations: list[torch.Tensor] = []
-    template: torch.Tensor | None = None
     for mask in range(1, 1 << len(wires)):
         subset = tuple(wire for index, wire in enumerate(wires) if mask & (1 << index))
-        value = expectation(z=subset)
-        template = value
-        subset_expectations.append(value)
-    assert template is not None
-    probabilities = []
-    for outcome in range(1 << len(wires)):
-        value = torch.ones_like(template)
-        for mask, term in enumerate(subset_expectations, start=1):
-            parity = sum(
-                (outcome >> (len(wires) - index - 1)) & 1
-                for index in range(len(wires))
-                if mask & (1 << index)
-            )
-            value = value + (-term if parity % 2 else term)
-        probabilities.append(value / (1 << len(wires)))
-    return torch.stack(probabilities, dim=-1)
+        subset_expectations.append(expectation(z=subset))
+    return _probabilities_from_parity_expectations(
+        subset_expectations,
+        n_wires=len(wires),
+    )
 
 
 def execute_measurements(
