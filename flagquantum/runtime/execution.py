@@ -823,6 +823,92 @@ def _with_resolved_native_device(
     return resolved
 
 
+def _run_standard_native_mode(
+    mode: str,
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    noise_model: NoiseModel | None,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    if mode != "density_matrix" and noise_model is not None:
+        raise ValueError("Noise models require density_matrix mode.")
+    if mode == "statevector":
+        return _run_statevector_mode(
+            circuit_or_ir,
+            execution_ir,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
+        )
+    if mode == "density_matrix":
+        return _run_density_matrix_mode(
+            execution_ir,
+            noise_model,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
+        )
+    if mode in {"mps", "adaptive_mps", "distributed_mps", "jax_sharded_mps"}:
+        return _run_mps_mode(
+            mode,
+            circuit_or_ir,
+            execution_ir,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
+        )
+    return _run_tensor_network_mode(
+        mode,
+        circuit_or_ir,
+        execution_ir,
+        coupling_map=coupling_map,
+        options=options,
+        plan_options=plan_options,
+        provided_execution_plan=provided_execution_plan,
+    )
+
+
+def _run_noisy_native_mode(
+    mode: str,
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    noise_model: NoiseModel | None,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    if mode == "noisy_statevector":
+        if noise_model is None:
+            raise ValueError("noisy_statevector mode requires a noise_model")
+        return _run_noisy_statevector_mode(
+            circuit_or_ir,
+            execution_ir,
+            noise_model,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
+        )
+    source = execution_ir if coupling_map is not None else circuit_or_ir
+    return _run_noisy_mps_mode(
+        mode,
+        source,
+        execution_ir,
+        noise_model,
+        options=options,
+        plan_options=plan_options,
+        provided_execution_plan=provided_execution_plan,
+    )
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -897,57 +983,20 @@ def _run_native(
             **distributed_options,
         )
 
-    if mode == "statevector":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        result, execution_plan = _run_statevector_mode(
-            circuit_or_ir,
-            execution_ir,
-            coupling_map=coupling_map,
-            options=options,
-            plan_options=plan_options,
-            provided_execution_plan=provided_execution_plan,
-        )
-    elif mode == "density_matrix":
-        result, execution_plan = _run_density_matrix_mode(
-            execution_ir,
-            noise_model,
-            options=options,
-            plan_options=plan_options,
-            provided_execution_plan=provided_execution_plan,
-        )
-    elif mode in {"mps", "adaptive_mps", "distributed_mps", "jax_sharded_mps"}:
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        result, execution_plan = _run_mps_mode(
-            mode,
-            circuit_or_ir,
-            execution_ir,
-            coupling_map=coupling_map,
-            options=options,
-            plan_options=plan_options,
-            provided_execution_plan=provided_execution_plan,
-        )
-    elif mode in {
+    standard_modes = {
+        "statevector",
+        "density_matrix",
+        "mps",
+        "adaptive_mps",
+        "distributed_mps",
+        "jax_sharded_mps",
         "tensor_network",
         "distributed_tensor_network",
         "jax_sharded_tensor_network",
-    }:
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        result, execution_plan = _run_tensor_network_mode(
+    }
+    if mode in standard_modes:
+        result, execution_plan = _run_standard_native_mode(
             mode,
-            circuit_or_ir,
-            execution_ir,
-            coupling_map=coupling_map,
-            options=options,
-            plan_options=plan_options,
-            provided_execution_plan=provided_execution_plan,
-        )
-    elif mode == "noisy_statevector":
-        if noise_model is None:
-            raise ValueError("noisy_statevector mode requires a noise_model")
-        result, execution_plan = _run_noisy_statevector_mode(
             circuit_or_ir,
             execution_ir,
             noise_model,
@@ -956,13 +1005,13 @@ def _run_native(
             plan_options=plan_options,
             provided_execution_plan=provided_execution_plan,
         )
-    elif mode in {"mps_trajectory", "noisy_mps"}:
-        source = execution_ir if coupling_map is not None else circuit_or_ir
-        result, execution_plan = _run_noisy_mps_mode(
+    elif mode in {"noisy_statevector", "mps_trajectory", "noisy_mps"}:
+        result, execution_plan = _run_noisy_native_mode(
             mode,
-            source,
+            circuit_or_ir,
             execution_ir,
             noise_model,
+            coupling_map=coupling_map,
             options=options,
             plan_options=plan_options,
             provided_execution_plan=provided_execution_plan,
