@@ -108,6 +108,35 @@ class _MPSExecutionStats(_MPSSynchronizationStats, total=False):
     unsupported_instruction_count: int
 
 
+def _run_mps_once(
+    circuit_or_ir: Any,
+    *,
+    context: TorchDistributedContext | None,
+    world_size: int,
+    strict_sharded: bool,
+    use_local_shards: bool,
+    options: Mapping[str, Any],
+) -> tuple[MPSState, _MPSExecutionStats]:
+    if context is not None and context.initialized:
+        return _run_mps_site_sharded_sync(
+            circuit_or_ir,
+            context=context,
+            world_size=world_size,
+            strict_sharded=strict_sharded,
+            **dict(options),
+        )
+    if world_size > 1 and use_local_shards:
+        return _run_mps_site_sharded_local(
+            circuit_or_ir,
+            world_size=world_size,
+            strict_sharded=strict_sharded,
+            **dict(options),
+        )
+    return run_mps(circuit_or_ir, **_mps_run_options(options)), _replicated_mps_stats(
+        circuit_or_ir
+    )
+
+
 def run_distributed_mps(
     circuit_or_ir: Any,
     *,
@@ -151,41 +180,6 @@ def run_distributed_mps(
         world_size = context.world_size
         options["device"] = context.device
 
-    def _run_once(
-        run_options: Mapping[str, Any],
-    ) -> tuple[MPSState, _MPSExecutionStats]:
-        if context is not None and context.initialized:
-            return _run_mps_site_sharded_sync(
-                circuit_or_ir,
-                context=context,
-                world_size=world_size,
-                strict_sharded=strict_sharded,
-                **dict(run_options),
-            )
-        if world_size > 1 and backend_policy.torch_backend == "local_tensor":
-            return _run_mps_site_sharded_local(
-                circuit_or_ir,
-                world_size=world_size,
-                strict_sharded=strict_sharded,
-                **dict(run_options),
-            )
-        local_state = run_mps(circuit_or_ir, **_mps_run_options(run_options))
-        return local_state, {
-            "owned_instruction_count": len(tuple(_as_ir(circuit_or_ir))),
-            "sharded_kernel_count": 0,
-            "tensor_sync_count": 0,
-            "boundary_sync_count": 0,
-            "full_sync_count": 0,
-            "sync_bytes": 0,
-            "boundary_transfer_bytes": 0,
-            "boundary_syncs": (),
-            "boundary_protocols": (),
-            "local_simulation": False,
-            "development_sharded_states": (),
-            "full_mps_reconstruction_count": 0,
-            "unsupported_instruction_count": 0,
-        }
-
     autograd_state = None
     needs_autograd_replay = (
         context is not None
@@ -197,7 +191,14 @@ def run_distributed_mps(
         local = autograd_state
         mps_stats = _replicated_mps_stats(circuit_or_ir)
     else:
-        local, mps_stats = _run_once(options)
+        local, mps_stats = _run_mps_once(
+            circuit_or_ir,
+            context=context,
+            world_size=world_size,
+            strict_sharded=strict_sharded,
+            use_local_shards=backend_policy.torch_backend == "local_tensor",
+            options=options,
+        )
     if needs_autograd_replay and autograd_state is None:
         autograd_state = run_mps(circuit_or_ir, **_mps_run_options(options))
     adaptive_initial_plan = None
@@ -219,7 +220,14 @@ def run_distributed_mps(
                 suggested = min(int(max_bond_cap), suggested)
             rerun_options = dict(options)
             rerun_options["max_bond"] = suggested
-            local, mps_stats = _run_once(rerun_options)
+            local, mps_stats = _run_mps_once(
+                circuit_or_ir,
+                context=context,
+                world_size=world_size,
+                strict_sharded=strict_sharded,
+                use_local_shards=backend_policy.torch_backend == "local_tensor",
+                options=rerun_options,
+            )
             adaptive_final_plan = local.adaptive_bond_plan(
                 global_error_budget=budget,
                 growth_factor=growth_factor,
