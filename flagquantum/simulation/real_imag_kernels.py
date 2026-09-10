@@ -159,6 +159,35 @@ def _real_imag_eager(
     return torch.stack((real, imag), dim=-1)
 
 
+def _fused_layout_bmm(
+    equation: str,
+    left: torch.Tensor,
+    right: torch.Tensor,
+    layout: _CanonicalBMMLayout,
+) -> torch.Tensor:
+    from .triton_kernels.complex_bmm import fused_complex_layout_bmm
+
+    (
+        left_permutation,
+        right_permutation,
+        _,
+        output_shape,
+        output_permutation,
+        shapes,
+    ) = layout
+    try:
+        result = fused_complex_layout_bmm(
+            left, right, left_permutation, right_permutation, shapes
+        ).reshape(output_shape)
+    except ValueError as error:
+        if "supports at most 8 axes per group" not in str(error):
+            raise
+        return torch.einsum(equation, left, right)
+    if output_permutation != tuple(range(len(output_permutation))):
+        result = result.permute(output_permutation)
+    return result
+
+
 def complex_einsum_pair(
     equation: str,
     left: torch.Tensor,
@@ -186,7 +215,7 @@ def complex_einsum_pair(
         return torch.einsum(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:
-        _, _, (b, m, n), _, _, shapes = layout
+        _, _, (b, m, n), _, _, _ = layout
         output_elements = b * m * n
         working_set_bytes = (
             left.numel() + right.numel() + output_elements
@@ -197,27 +226,7 @@ def complex_einsum_pair(
             and _canonical_layout_requires_materialization(left, right, layout)
         )
         if working_set_bytes >= _FUSED_WORKING_SET_BYTES or inference_layout_crossover:
-            from .triton_kernels.complex_bmm import fused_complex_layout_bmm
-
-            (
-                left_permutation,
-                right_permutation,
-                _,
-                output_shape,
-                output_permutation,
-                _,
-            ) = layout
-            try:
-                result = fused_complex_layout_bmm(
-                    left, right, left_permutation, right_permutation, shapes
-                ).reshape(output_shape)
-            except ValueError as error:
-                if "supports at most 8 axes per group" not in str(error):
-                    raise
-                return torch.einsum(equation, left, right)
-            if output_permutation != tuple(range(len(output_permutation))):
-                result = result.permute(output_permutation)
-            return result
+            return _fused_layout_bmm(equation, left, right, layout)
         return torch.einsum(equation, left, right)
     if not compile_cuda:
         # Callers can suppress shape-specialized torch.compile kernels without
