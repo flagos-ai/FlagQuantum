@@ -760,6 +760,69 @@ def _run_noisy_mps_mode(
     return result, replace(execution_plan, noisy_execution_plan=noisy_plan)
 
 
+def _normalize_native_mode(mode: str) -> str:
+    return {
+        "distributed": "distributed_statevector",
+        "tn": "tensor_network",
+        "distributed_tn": "distributed_tensor_network",
+        "jax_sharded_tn": "jax_sharded_tensor_network",
+    }.get(mode, mode)
+
+
+def _native_plan_options(
+    options: dict[str, Any],
+    mode: str,
+    *,
+    output_target: str,
+    target_count: int,
+    require_gradients: bool,
+    allow_approximate: bool,
+) -> dict[str, Any]:
+    distributed_mode = mode in {
+        "auto",
+        "distributed_statevector",
+        "distributed_mps",
+        "jax_sharded_mps",
+        "distributed_tensor_network",
+        "jax_sharded_tensor_network",
+    }
+    world_size = int(options.get("world_size", options.get("world_sz", 1)))
+    if distributed_mode:
+        world_size = _distributed_world_size_from_options(
+            options,
+            backend_policy=_peek_policy_from_options(options),
+        )
+    plan_options: dict[str, Any] = {
+        "bsz": int(options.get("bsz", 1)),
+        "world_size": world_size,
+        "target": output_target,
+        "target_count": target_count,
+        "require_gradients": require_gradients,
+        "allow_approximate": allow_approximate,
+        "complex_bytes": torch.empty((), dtype=options["dtype"]).element_size(),
+    }
+    for name in ("max_bond", "cutoff", "memory_limit_bytes", "trajectories"):
+        if name in options:
+            plan_options[name] = options[name]
+    return plan_options
+
+
+def _with_resolved_native_device(
+    options: dict[str, Any],
+    source: Any,
+) -> dict[str, Any]:
+    if options.get("device") is not None and str(options.get("device")) != "auto":
+        return options
+    resolved = dict(options)
+    source_device = getattr(source, "device", None)
+    resolved["device"] = (
+        str(source_device)
+        if source_device is not None and str(source_device) != "auto"
+        else str(resolve_device(options.get("device")))
+    )
+    return resolved
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -769,14 +832,7 @@ def _run_native(
     **options: Any,
 ) -> Any:
     provided_execution_plan = options.pop("_execution_plan", None)
-    if mode == "distributed":
-        mode = "distributed_statevector"
-    if mode == "tn":
-        mode = "tensor_network"
-    if mode == "distributed_tn":
-        mode = "distributed_tensor_network"
-    if mode == "jax_sharded_tn":
-        mode = "jax_sharded_tensor_network"
+    mode = _normalize_native_mode(mode)
     output_target = options.pop("output_target", "full_state")
     target_count = int(options.pop("target_count", 1))
     require_gradients = bool(options.pop("require_gradients", False))
@@ -789,51 +845,15 @@ def _run_native(
     selector_pilot_confidence_level = options.pop("pilot_confidence_level", None)
     selector_pilot_observable_count = int(options.pop("pilot_observable_count", 1))
     ir = ensure_circuit_ir(circuit_or_ir)
-    distributed_mode_requested = mode in {
-        "auto",
-        "distributed_statevector",
-        "distributed_mps",
-        "jax_sharded_mps",
-        "distributed_tensor_network",
-        "jax_sharded_tensor_network",
-    }
-    local_mode_world_size = int(options.get("world_size", options.get("world_sz", 1)))
-    if distributed_mode_requested:
-        backend_policy_for_planning = _peek_policy_from_options(options)
-        effective_world_size = _distributed_world_size_from_options(
-            options,
-            backend_policy=backend_policy_for_planning,
-        )
-    else:
-        effective_world_size = local_mode_world_size
-    plan_options: dict[str, Any] = {
-        "bsz": int(options.get("bsz", 1)),
-        "world_size": (
-            effective_world_size
-            if distributed_mode_requested
-            else local_mode_world_size
-        ),
-        "target": output_target,
-        "target_count": target_count,
-        "require_gradients": require_gradients,
-        "allow_approximate": allow_approximate,
-        "complex_bytes": torch.empty((), dtype=options["dtype"]).element_size(),
-    }
-    if "max_bond" in options:
-        plan_options["max_bond"] = options["max_bond"]
-    if "cutoff" in options:
-        plan_options["cutoff"] = options["cutoff"]
-    if "memory_limit_bytes" in options:
-        plan_options["memory_limit_bytes"] = options["memory_limit_bytes"]
-    if "trajectories" in options:
-        plan_options["trajectories"] = options["trajectories"]
-    if options.get("device") is None or str(options.get("device")) == "auto":
-        options = dict(options)
-        source_device = getattr(circuit_or_ir, "device", None)
-        if source_device is not None and str(source_device) != "auto":
-            options["device"] = str(source_device)
-        else:
-            options["device"] = str(resolve_device(options.get("device")))
+    plan_options = _native_plan_options(
+        options,
+        mode,
+        output_target=output_target,
+        target_count=target_count,
+        require_gradients=require_gradients,
+        allow_approximate=allow_approximate,
+    )
+    options = _with_resolved_native_device(options, circuit_or_ir)
     optimize = bool(options.get("optimize", True))
     coupling_map = options.get("coupling_map")
     execution_ir = (
