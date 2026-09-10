@@ -88,8 +88,10 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         )
 
     monkeypatch.setattr("flagquantum._api.compile", compile_target)
-    monkeypatch.setattr("flagquantum.remote.QuafuProvider", Provider)
-    monkeypatch.setattr("flagquantum.deployment.deploy_circuit", deploy_target)
+    monkeypatch.setattr("flagquantum.remote.qpu.execution.QuafuProvider", Provider)
+    monkeypatch.setattr(
+        "flagquantum.remote.qpu.execution.deploy_circuit", deploy_target
+    )
 
     result = fq.run(
         circuit,

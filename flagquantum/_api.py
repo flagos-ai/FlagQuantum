@@ -181,186 +181,23 @@ def run(
     if separator != ":" or provider_name.lower() != "quafu":
         raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
 
-    from .observables import OutputRequest
-    from .observables import counts as request_counts
-    from .runtime.result import ExecutionResult, MeasurementResult
+    from .remote.qpu.execution import execute_quafu, validate_quafu_output
 
-    requested = request_counts() if outputs is None else outputs
-    requested = (
-        (requested,) if isinstance(requested, OutputRequest) else tuple(requested)
-    )
-    source_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
-        program_or_plan
-    )
-    full_counts = (
-        len(requested) == 1
-        and requested[0].kind == "counts"
-        and requested[0].observable is None
-        and requested[0].wires in {(), tuple(range(source_ir.n_wires))}
-    )
-    expectation_output = (
-        len(requested) == 1
-        and requested[0].kind == "expectation"
-        and requested[0].observable is not None
-    )
-    if not full_counts and not expectation_output:
-        raise ValueError(
-            "remote Quafu execution supports one full-register fq.counts() "
-            "or one fq.expectation(...) output"
-        )
+    output = validate_quafu_output(program_or_plan, outputs)
     compiled = compile(
         program_or_plan,
         compiler=compiler,
         target=target,
         target_qubits=target_qubits,
     )
-    remote = import_module(".remote", __package__)
-    provider = remote.QuafuProvider()
-    if expectation_output:
-        assert requested[0].observable is not None
-        algorithms = import_module(".algorithms", __package__)
-        hamiltonian = algorithms.Hamiltonian(
-            algorithms.HamiltonianTerm(
-                term.coefficient,
-                {wire: axis for wire, axis in term.factors},
-            )
-            for term in requested[0].observable.terms
-        )
-        deployment = import_module(".deployment", __package__)
-        deployment_name = name.strip() if name is not None else "flagquantum_job"
-        measurement_plan = deployment.create_pauli_measurement_plan(
-            compiled,
-            hamiltonian,
-            name=deployment_name,
-            shots=shots,
-        )
-        native_results = tuple(
-            provider.run(package) for package in measurement_plan.packages
-        )
-        grouped_counts = tuple(result.counts for result in native_results)
-        value = measurement_plan.expectation(grouped_counts)
-        standard_error = measurement_plan.standard_error(grouped_counts)
-        execution_target = dict(compiled.metadata.get("execution_target", {}))
-        task_ids = tuple(result.handle.task_id for result in native_results)
-        group_evidence = tuple(
-            {
-                "group_index": index,
-                "task_id": result.handle.task_id,
-                "deployment_artifact_sha256": package.metadata.get(
-                    "deployment_artifact_sha256"
-                ),
-                "routing_evidence_sha256": package.metadata.get(
-                    "routing_evidence_sha256"
-                ),
-                "provider_result": dict(result.metadata),
-            }
-            for index, (package, result) in enumerate(
-                zip(measurement_plan.packages, native_results, strict=True)
-            )
-        )
-        observable_wires = tuple(
-            sorted(
-                {
-                    wire
-                    for term in requested[0].observable.terms
-                    for wire, _axis in term.factors
-                }
-            )
-        )
-        result = ExecutionResult(
-            measurements=(
-                MeasurementResult(
-                    kind="expectation",
-                    wires=observable_wires or (0,),
-                    value=value,
-                    shots=sum(measurement_plan.shots_per_group),
-                    metadata={
-                        "fq_output_index": 0,
-                        "fq_output_kind": "expectation",
-                        "fq_output_name": requested[0].name,
-                        **(
-                            {"name": requested[0].name}
-                            if requested[0].name is not None
-                            else {}
-                        ),
-                        "provider": native_results[0].handle.provider,
-                        "backend": native_results[0].handle.backend_name,
-                        "task_ids": task_ids,
-                    },
-                    statistics={
-                        "standard_error": float(standard_error.item()),
-                        "group_count": len(measurement_plan.groups),
-                        "shots_per_group": measurement_plan.shots_per_group,
-                        "total_shots": sum(measurement_plan.shots_per_group),
-                    },
-                ),
-            ),
-            provenance={
-                "provider": native_results[0].handle.provider,
-                "backend": native_results[0].handle.backend_name,
-                "task_ids": task_ids,
-                "compiler": compiler,
-                "target": target,
-                "target_qubits": tuple(execution_target.get("target_qubits", ())),
-                "name": deployment_name,
-                "measurement_plan": measurement_plan.summary(),
-                "measurement_groups": group_evidence,
-            },
-            runtime={
-                "mode": "remote_qpu",
-                "shots": sum(measurement_plan.shots_per_group),
-                "shots_per_group": measurement_plan.shots_per_group,
-            },
-        )
-        object.__setattr__(result, "_native_output", native_results)
-        return result
-
-    deployment_options: dict[str, Any] = {"shots": shots}
-    if name is not None:
-        deployment_options["name"] = name.strip()
-    native = import_module(".deployment", __package__).deploy_circuit(
-        compiled, provider, **deployment_options
+    return execute_quafu(
+        compiled,
+        output=output,
+        compiler=compiler,
+        target=target,
+        shots=shots,
+        name=name,
     )
-    counts: dict[str | int, int] = {
-        str(key): int(value) for key, value in native.counts.items()
-    }
-    execution_target = dict(compiled.metadata.get("execution_target", {}))
-    result = ExecutionResult(
-        measurements=(
-            MeasurementResult(
-                kind="counts",
-                wires=tuple(range(compiled.n_wires)),
-                value=[counts],
-                shots=native.shots,
-                metadata={
-                    "fq_output_index": 0,
-                    "fq_output_kind": "counts",
-                    "fq_output_name": requested[0].name,
-                    **(
-                        {"name": requested[0].name}
-                        if requested[0].name is not None
-                        else {}
-                    ),
-                    "provider": native.handle.provider,
-                    "backend": native.handle.backend_name,
-                    "task_id": native.handle.task_id,
-                },
-            ),
-        ),
-        provenance={
-            "provider": native.handle.provider,
-            "backend": native.handle.backend_name,
-            "task_id": native.handle.task_id,
-            "compiler": compiler,
-            "target": target,
-            "target_qubits": tuple(execution_target.get("target_qubits", ())),
-            "name": name.strip() if name is not None else "flagquantum_job",
-            "deployment": dict(native.metadata),
-        },
-        runtime={"mode": "remote_qpu", "shots": native.shots},
-    )
-    object.__setattr__(result, "_native_output", native)
-    return result
 
 
 def plan(

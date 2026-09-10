@@ -39,7 +39,9 @@ def test_fq_run_remote_expectation_compiles_once_and_groups_measurements(
         )
 
     monkeypatch.setattr("flagquantum._api.compile", compile_target)
-    monkeypatch.setattr("flagquantum.remote.QuafuProvider", lambda: provider)
+    monkeypatch.setattr(
+        "flagquantum.remote.qpu.execution.QuafuProvider", lambda: provider
+    )
 
     result = fq.run(
         circuit,

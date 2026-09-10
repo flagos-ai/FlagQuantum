@@ -41,6 +41,9 @@ adapts an `AwsDevice` and provides a non-submitting `dry_run()` before task
 creation. Generic HTTP transport components support concrete provider adapters;
 they are not a separate execution product.
 
+Change the high-level Quafu `fq.run` workflow in `execution.py`; change Quafu
+HTTP transport and task lifecycle behavior in `quafu.py`.
+
 Follow the [Quafu guide](../../../docs/guides/QUAFU_BACKEND.md) for the complete
 compile, map, submit and result path. A provider adapter must preserve task and
 deployment identity and must not silently retry an ambiguous submission.
