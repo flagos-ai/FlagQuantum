@@ -432,41 +432,31 @@ def execute_measurements(
                 if probabilities is None
                 else probabilities
             )
-        elif kind in {"sample_ps", "counts_ps"}:
-            target = measurement_target()
-            assert request.shots is not None
-            samples = _sample_pauli_product(
-                target,
-                shots=request.shots,
-                wires=wires,
-                metadata=metadata,
-            )
-            counts = (
-                _counts_from_samples(
-                    samples,
-                    format=str(metadata.get("format", "bin")),
-                )
-                if kind == "counts_ps"
-                else None
-            )
-            value = samples if counts is None else counts
-            sampling_statistics: dict[str, Any] = {}
         else:
             target = measurement_target()
             assert request.shots is not None
-            samples, sampling_statistics = _sample(
-                target,
-                shots=request.shots,
-                wires=wires,
-                metadata=metadata,
-                n_wires=n_wires,
-            )
+            if kind in {"sample_ps", "counts_ps"}:
+                samples = _sample_pauli_product(
+                    target,
+                    shots=request.shots,
+                    wires=wires,
+                    metadata=metadata,
+                )
+                sampling_statistics: dict[str, Any] = {}
+            else:
+                samples, sampling_statistics = _sample(
+                    target,
+                    shots=request.shots,
+                    wires=wires,
+                    metadata=metadata,
+                    n_wires=n_wires,
+                )
             counts = (
                 _counts_from_samples(
                     samples,
                     format=str(metadata.get("format", "bin")),
                 )
-                if kind == "counts"
+                if kind in {"counts", "counts_ps"}
                 else None
             )
             value = samples if counts is None else counts
