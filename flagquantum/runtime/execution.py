@@ -578,6 +578,63 @@ def _run_tensor_network_mode(
     )
 
 
+def _run_statevector_mode(
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    accuracy_requirement = options.pop("accuracy_requirement", None)
+    precision_plan = options.pop("precision_plan", None)
+    numerical_contracts = _validate_flagos_statevector(
+        execution_ir,
+        options,
+        accuracy_requirement=accuracy_requirement,
+        precision_plan=precision_plan,
+    )
+    if (
+        provided_execution_plan is None
+        and coupling_map is None
+        and hasattr(circuit_or_ir, "state")
+        and getattr(circuit_or_ir, "dtype", None) == options["dtype"]
+    ):
+        result = circuit_or_ir.state()
+    else:
+        from ..simulation.statevector.local import run_local_statevector
+
+        result = run_local_statevector(
+            execution_ir,
+            batch_size=int(options.get("bsz", 1)),
+            device=resolve_device(options.get("device")),
+            dtype=options["dtype"],
+        )
+
+    execution_plan = provided_execution_plan or build_plan(
+        execution_ir,
+        state_mode="statevector",
+        **plan_options,
+    )
+    if numerical_contracts is None or provided_execution_plan is not None:
+        return result, execution_plan
+
+    operator_preflight, accuracy, precision, numerical_validation = numerical_contracts
+    routing_plan = dict(execution_plan.routing_plan or {})
+    routing_plan.update(
+        {
+            "operator_preflight": operator_preflight.to_dict(),
+            "accuracy_requirement": accuracy.to_dict(),
+            "accuracy_requirement_hash": accuracy.content_hash(),
+            "precision_plan": precision.to_dict(),
+            "precision_plan_hash": precision.content_hash(),
+            "numerical_validation": numerical_validation.to_dict(),
+        }
+    )
+    return result, replace(execution_plan, routing_plan=routing_plan)
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -698,52 +755,14 @@ def _run_native(
     if mode == "statevector":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        accuracy_requirement_option = options.pop("accuracy_requirement", None)
-        precision_plan_option = options.pop("precision_plan", None)
-        statevector_contracts = _validate_flagos_statevector(
+        result, execution_plan = _run_statevector_mode(
+            circuit_or_ir,
             execution_ir,
-            options,
-            accuracy_requirement=accuracy_requirement_option,
-            precision_plan=precision_plan_option,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
-        if (
-            provided_execution_plan is None
-            and coupling_map is None
-            and hasattr(circuit_or_ir, "state")
-            and getattr(circuit_or_ir, "dtype", None) == options["dtype"]
-        ):
-            result = circuit_or_ir.state()
-        else:
-            from ..simulation.statevector.local import run_local_statevector
-
-            resolved_device = resolve_device(options.get("device"))
-            result = run_local_statevector(
-                execution_ir,
-                batch_size=int(options.get("bsz", 1)),
-                device=resolved_device,
-                dtype=options["dtype"],
-            )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir, state_mode="statevector", **plan_options
-        )
-        if statevector_contracts is not None:
-            (
-                operator_preflight,
-                accuracy_requirement,
-                precision_plan,
-                numerical_validation,
-            ) = statevector_contracts
-            routing_plan = dict(execution_plan.routing_plan or {})
-            routing_plan["operator_preflight"] = operator_preflight.to_dict()
-            routing_plan["accuracy_requirement"] = accuracy_requirement.to_dict()
-            routing_plan["accuracy_requirement_hash"] = (
-                accuracy_requirement.content_hash()
-            )
-            routing_plan["precision_plan"] = precision_plan.to_dict()
-            routing_plan["precision_plan_hash"] = precision_plan.content_hash()
-            routing_plan["numerical_validation"] = numerical_validation.to_dict()
-            if provided_execution_plan is None:
-                execution_plan = replace(execution_plan, routing_plan=routing_plan)
     elif mode == "density_matrix":
         from .noise_registry import execute_noisy_plan
 
