@@ -635,6 +635,43 @@ def _run_statevector_mode(
     return result, replace(execution_plan, routing_plan=routing_plan)
 
 
+def _run_density_matrix_mode(
+    execution_ir: CircuitIR,
+    noise_model: NoiseModel | None,
+    *,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    from .noise_registry import execute_noisy_plan
+
+    lowered = (
+        execution_ir
+        if provided_execution_plan is not None
+        else lower_noise_model(execution_ir, noise_model)
+    )
+    execution_plan = provided_execution_plan or build_plan(
+        lowered,
+        state_mode="density_matrix",
+        **plan_options,
+    )
+    noisy_plan = build_noisy_execution_plan(
+        execution_plan,
+        representation="density_matrix",
+        evolution="exact_channel",
+        memory_limit_bytes=options.get("memory_limit_bytes"),
+        noise_model_identity=getattr(noise_model, "identity", None),
+    )
+    if provided_execution_plan is None:
+        execution_plan = replace(execution_plan, noisy_execution_plan=noisy_plan)
+
+    density_options = dict(options)
+    density_options.pop("coupling_map", None)
+    density_options.pop("optimize", None)
+    result = execute_noisy_plan(lowered, noisy_plan, options=density_options)
+    return result, execution_plan
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -764,37 +801,12 @@ def _run_native(
             provided_execution_plan=provided_execution_plan,
         )
     elif mode == "density_matrix":
-        from .noise_registry import execute_noisy_plan
-
-        lowered = (
-            execution_ir
-            if provided_execution_plan is not None
-            else lower_noise_model(execution_ir, noise_model)
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            lowered,
-            state_mode="density_matrix",
-            **plan_options,
-        )
-        noisy_plan = build_noisy_execution_plan(
-            execution_plan,
-            representation="density_matrix",
-            evolution="exact_channel",
-            memory_limit_bytes=options.get("memory_limit_bytes"),
-            noise_model_identity=getattr(noise_model, "identity", None),
-        )
-        if provided_execution_plan is None:
-            execution_plan = replace(
-                execution_plan,
-                noisy_execution_plan=noisy_plan,
-            )
-        density_options = dict(options)
-        density_options.pop("coupling_map", None)
-        density_options.pop("optimize", None)
-        result = execute_noisy_plan(
-            lowered,
-            noisy_plan,
-            options=density_options,
+        result, execution_plan = _run_density_matrix_mode(
+            execution_ir,
+            noise_model,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
     elif mode in {"mps", "adaptive_mps", "distributed_mps", "jax_sharded_mps"}:
         if noise_model is not None:
