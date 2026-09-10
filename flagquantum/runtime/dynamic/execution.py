@@ -114,6 +114,47 @@ def _apply_instruction(
     )
 
 
+def _apply_feedback_action(
+    action: DynamicFeedbackAction,
+    feedback_plan: DynamicFeedbackPlan,
+    circuit: DynamicCircuit,
+    state: torch.Tensor,
+    frame_x_wires: set[int],
+    noise_model: NoiseModel | None,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int, int]:
+    """Apply one validated feedback action and return its noise accounting."""
+
+    if action.mode == "none":
+        return state, 0, 0
+    if action.mode not in feedback_plan.allowed_action_modes:
+        raise ValueError("feedback action mode is outside the plan")
+    if action.wire is None or action.wire not in feedback_plan.allowed_wires:
+        raise ValueError("feedback wire is outside the plan")
+    if action.wire >= circuit.n_wires:
+        raise ValueError("feedback wire is outside the circuit")
+    if action.mode == "physical_x":
+        instruction = Instruction("x", (action.wire,))
+        state = _apply_instruction(state, instruction, n_wires=circuit.n_wires)
+        next_state: torch.Tensor
+        applications: int
+        events: int
+        next_state, applications, events = _apply_noise_after_instruction(
+            state,
+            instruction,
+            noise_model,
+            n_wires=circuit.n_wires,
+            generator=generator,
+        )
+        return next_state, applications, events
+
+    if action.wire in frame_x_wires:
+        frame_x_wires.remove(action.wire)
+    else:
+        frame_x_wires.add(action.wire)
+    return state, 0, 0
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -225,41 +266,17 @@ def _run_dynamic_trajectory(
                             raise TypeError(
                                 "feedback controller must return DynamicFeedbackAction"
                             )
-                        if action.mode != "none":
-                            if action.mode not in feedback_plan.allowed_action_modes:
-                                raise ValueError(
-                                    "feedback action mode is outside the plan"
-                                )
-                            if (
-                                action.wire is None
-                                or action.wire not in feedback_plan.allowed_wires
-                            ):
-                                raise ValueError("feedback wire is outside the plan")
-                            if action.wire >= circuit.n_wires:
-                                raise ValueError("feedback wire is outside the circuit")
-                            if action.mode == "physical_x":
-                                feedback_instruction = Instruction("x", (action.wire,))
-                                state = _apply_instruction(
-                                    state,
-                                    feedback_instruction,
-                                    n_wires=circuit.n_wires,
-                                )
-                                state, applications, events = (
-                                    _apply_noise_after_instruction(
-                                        state,
-                                        feedback_instruction,
-                                        noise_model,
-                                        n_wires=circuit.n_wires,
-                                        generator=generator,
-                                    )
-                                )
-                                noise_channel_applications += applications
-                                bit_flip_events += events
-                            elif action.mode == "frame_x":
-                                if action.wire in frame_x_wires:
-                                    frame_x_wires.remove(action.wire)
-                                else:
-                                    frame_x_wires.add(action.wire)
+                        state, applications, events = _apply_feedback_action(
+                            action,
+                            feedback_plan,
+                            circuit,
+                            state,
+                            frame_x_wires,
+                            noise_model,
+                            generator,
+                        )
+                        noise_channel_applications += applications
+                        bit_flip_events += events
                         feedback_decisions.append(
                             DynamicFeedbackDecision(
                                 observation=observation,
