@@ -256,14 +256,8 @@ def _release_capacity_evidence_errors(payload: Mapping[str, Any]) -> tuple[str, 
     return tuple(errors)
 
 
-def _release_mps_training_evidence_errors(
-    payload: Mapping[str, Any],
-) -> tuple[str, ...]:
-    if _backend_family(payload) != "mps":
-        return ()
-
+def _mps_execution_evidence_errors(payload: Mapping[str, Any]) -> tuple[str, ...]:
     errors: list[str] = []
-    world_size = int(payload.get("world_size", 0) or 0)
     if (
         _semantics(payload, "mps_forward_distribution_semantics")
         != "sharded_across_ranks"
@@ -274,26 +268,19 @@ def _release_mps_training_evidence_errors(
         != "sharded_across_ranks"
     ):
         errors.append("MPS release gate requires sharded backward evidence")
+
     backward_execution = str(payload.get("backward_execution", "unknown")).lower()
+    incomplete = (
+        "unknown",
+        "pending",
+        "planned",
+        "not_executed",
+        "local_simulated",
+    )
     if not backward_execution or any(
-        token in backward_execution
-        for token in (
-            "unknown",
-            "pending",
-            "planned",
-            "not_executed",
-            "local_simulated",
-        )
+        token in backward_execution for token in incomplete
     ):
         errors.append("MPS release gate requires executed production backward evidence")
-    if not _mps_evidence_reported(payload.get("site_shard_ownership")):
-        errors.append("MPS release gate requires site shard ownership")
-    if not _mps_evidence_reported(payload.get("bond_shard_ownership")):
-        errors.append("MPS release gate requires bond shard ownership")
-    if not _mps_evidence_reported(payload.get("parameter_gradient_ownership")):
-        errors.append("MPS release gate requires parameter-gradient ownership")
-    if not _mps_evidence_reported(payload.get("boundary_gradient_ownership")):
-        errors.append("MPS release gate requires boundary-gradient ownership")
 
     boundary_exchange = payload.get("boundary_adjoint_exchange")
     boundary_status = (
@@ -309,6 +296,39 @@ def _release_mps_training_evidence_errors(
         errors.append(
             "MPS release gate requires executed boundary-adjoint exchange evidence"
         )
+    return tuple(errors)
+
+
+def _mps_ownership_evidence_errors(payload: Mapping[str, Any]) -> tuple[str, ...]:
+    requirements = (
+        ("site_shard_ownership", "MPS release gate requires site shard ownership"),
+        ("bond_shard_ownership", "MPS release gate requires bond shard ownership"),
+        (
+            "parameter_gradient_ownership",
+            "MPS release gate requires parameter-gradient ownership",
+        ),
+        (
+            "boundary_gradient_ownership",
+            "MPS release gate requires boundary-gradient ownership",
+        ),
+    )
+    return tuple(
+        message
+        for key, message in requirements
+        if not _mps_evidence_reported(payload.get(key))
+    )
+
+
+def _release_mps_training_evidence_errors(
+    payload: Mapping[str, Any],
+) -> tuple[str, ...]:
+    if _backend_family(payload) != "mps":
+        return ()
+
+    errors: list[str] = []
+    world_size = int(payload.get("world_size", 0) or 0)
+    errors.extend(_mps_execution_evidence_errors(payload))
+    errors.extend(_mps_ownership_evidence_errors(payload))
 
     memory_plan = payload.get("mps_backward_memory_plan")
     memory_status = (
