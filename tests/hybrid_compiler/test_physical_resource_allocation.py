@@ -48,7 +48,11 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
+from flagquantum.errors import ExecutionError
+from flagquantum.runtime.artifact_preflight import preflight_executable_artifact
 from flagquantum.runtime.compilation_evidence import (
+    validate_executable_result_samples,
     verify_compilation_evidence_handoff,
 )
 from flagquantum.simulation.statevector.local import run_local_statevector
@@ -67,6 +71,8 @@ def _snapshot() -> TargetCapabilitySnapshot:
         "precision.effective_dtype": "complex128",
         "gates.native": ("h", "ry", "cx", "swap"),
         "measurements.results": ("samples",),
+        "artifacts.profiles": ("openqasm-2.0", "openqasm-3.0"),
+        "limits.maximum_shots": 4096,
     }
     return TargetCapabilitySnapshot(
         target_identity=TargetIdentity(
@@ -333,10 +339,47 @@ def test_allocated_plan_emits_program_artifact_v3_with_logical_projection(
     assert evidence.physical_plan.logical_result_physical_slots == (0, 2)
     assert read_compilation_evidence_bundle_json(evidence.to_json()) == evidence
     verify_compilation_evidence_bundle(evidence, result, snapshot=_snapshot())
-    with pytest.raises(TypeError, match="bundle must be"):
+    verify_compilation_evidence_handoff(
+        evidence,
+        source_artifact,
+        artifact,
+        snapshot=_snapshot(),
+    )
+    with pytest.raises(ExecutionError, match="versions are incompatible"):
         verify_compilation_evidence_handoff(
-            evidence, source_artifact, artifact, snapshot=_snapshot()  # type: ignore[arg-type]
+            evidence,
+            source_artifact,
+            source_artifact,
+            snapshot=_snapshot(),
         )
+    assert preflight_executable_artifact(
+        artifact,
+        snapshot=_snapshot(),
+        shots=8,
+        evaluated_at=_NOW,
+    ).executable
+    with pytest.raises(TypeError, match="currently requires ProgramArtifactV2"):
+        prepare_artifact_deployment(
+            artifact,  # type: ignore[arg-type]
+            snapshot=_snapshot(),
+            source=source_artifact,
+            compilation_evidence=evidence,  # type: ignore[arg-type]
+            provider="flagquantum.test",
+            target_id="phase43-target",
+            shots=8,
+            evaluated_at=_NOW,
+        )
+    samples = torch.zeros((1, 8, 2), dtype=torch.int64)
+    assert validate_executable_result_samples(artifact, samples) is samples
+    with pytest.raises(ExecutionError, match="sample width"):
+        validate_executable_result_samples(
+            artifact,
+            torch.zeros((1, 8, 3), dtype=torch.int64),
+        )
+    with pytest.raises(ExecutionError, match="result-width dimension"):
+        validate_executable_result_samples(artifact, torch.tensor(0))
+    with pytest.raises(TypeError, match="torch.Tensor"):
+        validate_executable_result_samples(artifact, [[0, 0]])  # type: ignore[arg-type]
     if profile == "openqasm-2.0":
         assert "qreg q[3];" in result.emission.text
         assert "creg c[2];" in result.emission.text

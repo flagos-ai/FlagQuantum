@@ -4,27 +4,42 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+import torch
+
 from ..core._artifacts import (
     ArtifactKind,
     CircuitArtifactBindingResult,
     ProgramArtifactV2,
+    ProgramArtifactV3,
 )
 from ..core._compilation_evidence import CompilationEvidenceBundle
 from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
+from ..core._compilation_evidence_v3 import CompilationEvidenceBundleV3
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import ExecutionError
 
 
 def verify_compilation_evidence_handoff(
-    bundle: CompilationEvidenceBundle | CompilationEvidenceBundleV2,
+    bundle: (
+        CompilationEvidenceBundle
+        | CompilationEvidenceBundleV2
+        | CompilationEvidenceBundleV3
+    ),
     source: ProgramArtifactV2 | CircuitArtifactBindingResult,
-    artifact: ProgramArtifactV2,
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
     *,
     snapshot: TargetCapabilitySnapshot,
 ) -> None:
     """Verify bundle lineage against actual source, target, and output objects."""
 
-    if not isinstance(bundle, (CompilationEvidenceBundle, CompilationEvidenceBundleV2)):
+    if not isinstance(
+        bundle,
+        (
+            CompilationEvidenceBundle,
+            CompilationEvidenceBundleV2,
+            CompilationEvidenceBundleV3,
+        ),
+    ):
         raise TypeError("bundle must be a compilation evidence bundle")
     if isinstance(source, CircuitArtifactBindingResult):
         circuit_artifact = source.bound_artifact
@@ -46,8 +61,14 @@ def verify_compilation_evidence_handoff(
         raise ExecutionError(
             "compilation evidence requires a fully bound circuit source"
         )
-    if not isinstance(artifact, ProgramArtifactV2):
-        raise TypeError("artifact must be a ProgramArtifactV2")
+    if not isinstance(artifact, (ProgramArtifactV2, ProgramArtifactV3)):
+        raise TypeError("artifact must be a ProgramArtifactV2 or ProgramArtifactV3")
+    if isinstance(bundle, CompilationEvidenceBundleV3) != isinstance(
+        artifact, ProgramArtifactV3
+    ):
+        raise ExecutionError(
+            "compilation evidence and executable artifact versions are incompatible"
+        )
     if artifact.kind is not ArtifactKind.EXECUTABLE:
         raise ExecutionError("compilation evidence output must be executable")
     if not isinstance(snapshot, TargetCapabilitySnapshot):
@@ -102,6 +123,57 @@ def verify_compilation_evidence_handoff(
         raise ExecutionError(
             "compilation evidence physical plan does not match the handoff"
         )
+    if isinstance(bundle, CompilationEvidenceBundleV3):
+        assert isinstance(artifact, ProgramArtifactV3)
+        result_schema = artifact.result_schema
+        if (
+            compilation["physical_plan_identity"] != plan.plan_identity
+            or compilation["allocation_identity"] != plan.allocation_identity
+            or tuple(result_schema["logical_wires"])
+            != tuple(range(plan.logical_wire_count))
+            or tuple(result_schema["physical_result_slots"])
+            != plan.logical_result_physical_slots
+            or result_schema["ordering"] != "logical_wire_order"
+            or result_schema["kind"] != "samples"
+            or result_schema["shots_source"] != "execution_request"
+        ):
+            raise ExecutionError(
+                "allocated executable result projection does not match its evidence"
+            )
 
 
-__all__ = ("verify_compilation_evidence_handoff",)
+def validate_executable_result_samples(
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
+    samples: torch.Tensor,
+) -> torch.Tensor:
+    """Validate adapter samples without inferring or repairing result mappings."""
+
+    if not isinstance(artifact, (ProgramArtifactV2, ProgramArtifactV3)):
+        raise TypeError("artifact must be a ProgramArtifactV2 or ProgramArtifactV3")
+    if artifact.kind is not ArtifactKind.EXECUTABLE:
+        raise ExecutionError("result samples require an executable artifact")
+    if not isinstance(samples, torch.Tensor):
+        raise TypeError("samples must be a torch.Tensor")
+    if samples.ndim == 0:
+        raise ExecutionError("result samples must have a result-width dimension")
+    schema = artifact.result_schema
+    if not isinstance(schema, Mapping) or schema.get("kind") != "samples":
+        raise ExecutionError("executable artifact has no samples result contract")
+    if isinstance(artifact, ProgramArtifactV3):
+        logical_wires = tuple(schema["logical_wires"])
+        if schema["ordering"] != "logical_wire_order":
+            raise ExecutionError("allocated samples are not in logical-wire order")
+        expected_width = len(logical_wires)
+    else:
+        expected_width = len(tuple(schema["wires"]))
+    if samples.shape[-1] != expected_width:
+        raise ExecutionError(
+            "result sample width does not match the executable artifact contract"
+        )
+    return samples
+
+
+__all__ = (
+    "validate_executable_result_samples",
+    "verify_compilation_evidence_handoff",
+)

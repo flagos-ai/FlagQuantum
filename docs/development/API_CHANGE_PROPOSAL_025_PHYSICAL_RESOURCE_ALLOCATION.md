@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; compilation-evidence 3.0 slice complete.**
+**Approved on 2026-09-10; Runtime v3 verification slice complete.**
 
 Date: 2026-09-10
 
@@ -33,6 +33,13 @@ artifact compilation. The evidence independently replays nullable occupancy,
 logical layouts, cleanup, allocation identity, result projection, topology,
 direction legality, instruction lineage, and schedule facts. Runtime and
 Deployment consumption remain unimplemented.
+
+The fifth bounded implementation adds Runtime preflight and immutable handoff
+verification for matching ProgramArtifact v3 and compilation-evidence 3.0 values.
+Runtime cross-checks physical-plan and allocation identities, logical result wires,
+physical result slots, ordering, and shot ownership. Returned sample tensors must
+already have logical width; Runtime rejects physical-width or scalar results and
+does not infer or repair a mapping. Deployment v3 handoff remains unimplemented.
 
 ## Problem
 
@@ -196,8 +203,8 @@ requirements and may only become stricter.
    bounded state/gradient differential tests.
 5. **Complete:** add strict Core ProgramArtifact 3.0 and compilation-evidence 3.0 while retaining
    pinned v1/v2 fixtures and explicit reader dispatch.
-6. Add target emission, conformance, Runtime verification, and Deployment dry-run
-   handoff in separate bounded slices.
+6. **In progress:** target emission, conformance, and Runtime verification are
+   complete; Deployment dry-run handoff remains a separate bounded slice.
 7. Keep all new entry points non-root until naming, lifecycle, and provider-binding
    review.
 

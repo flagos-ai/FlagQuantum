@@ -1267,3 +1267,18 @@ requires exact equality. JSON dispatch is explicit for versions 1.0, 2.0, and
 3.0. Runtime and Deployment still reject version 3.0; provider submission,
 provider-qubit binding, general ancillas, QEC, and fault-tolerant resource claims
 remain outside the implemented boundary.
+
+Phase 47 extends the Runtime read-only boundary to matching ProgramArtifact v3 and
+compilation-evidence 3.0 values. Runtime preflight applies the same target snapshot,
+artifact-profile, shot-limit, and capability checks used for v2. Handoff validation
+requires v3 artifact/evidence version agreement and cross-checks physical-plan,
+allocation, schedule, target, executable, logical-wire, physical-result-slot,
+ordering, and shot-source identities or fields.
+
+The private result validator accepts only a tensor that already has the declared
+logical width in its last dimension and returns that same object. It does not use
+the physical-slot list to gather, reorder, truncate, or otherwise repair provider
+output: ordered OpenQASM emission owns physical-to-classical placement, and the
+adapter must return those classical positions in logical-wire order. Scalar and
+physical-width results fail closed. Deployment v3 handoff and provider execution
+remain outside this phase.

@@ -73,6 +73,8 @@ def prepare_artifact_deployment(
 ) -> ArtifactDeploymentDryRun:
     """Build a side-effect-free handoff after target and capability checks."""
 
+    if not isinstance(artifact, ProgramArtifactV2):
+        raise TypeError("Deployment dry run currently requires ProgramArtifactV2")
     if not isinstance(provider, str) or not provider:
         raise ValueError("provider must be a non-empty string")
     if not isinstance(target_id, str) or not target_id:

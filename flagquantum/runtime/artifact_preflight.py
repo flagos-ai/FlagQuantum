@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ..core._artifacts import ArtifactKind, ProgramArtifactV2
+from ..core._artifacts import ArtifactKind, ProgramArtifactV2, ProgramArtifactV3
 from ..core.target_capabilities import (
     CapabilityMatchResult,
     CapabilityRequirement,
@@ -37,7 +37,7 @@ def _runtime_requirement(
 
 
 def preflight_executable_artifact(
-    artifact: ProgramArtifactV2,
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
     *,
     snapshot: TargetCapabilitySnapshot,
     shots: int,
@@ -45,8 +45,8 @@ def preflight_executable_artifact(
 ) -> CapabilityMatchResult:
     """Validate artifact, target, profile, and shot compatibility without execution."""
 
-    if not isinstance(artifact, ProgramArtifactV2):
-        raise TypeError("artifact must be a ProgramArtifactV2")
+    if not isinstance(artifact, (ProgramArtifactV2, ProgramArtifactV3)):
+        raise TypeError("artifact must be a ProgramArtifactV2 or ProgramArtifactV3")
     if artifact.kind is not ArtifactKind.EXECUTABLE:
         raise ExecutionError("Runtime preflight requires an executable artifact")
     if not isinstance(snapshot, TargetCapabilitySnapshot):
