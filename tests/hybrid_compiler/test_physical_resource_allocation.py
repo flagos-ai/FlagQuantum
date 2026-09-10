@@ -9,6 +9,10 @@ import torch
 from flagquantum.compiler.artifact_compilation import (
     compile_circuit_artifact_for_target,
 )
+from flagquantum.compiler.compilation_evidence import (
+    build_compilation_evidence_bundle,
+    verify_compilation_evidence_bundle,
+)
 from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.physical_plan import (
     PhysicalPlanError,
@@ -28,6 +32,10 @@ from flagquantum.core._artifacts import (
     ProgramArtifactV3,
     read_program_artifact_json,
 )
+from flagquantum.core._compilation_evidence import (
+    read_compilation_evidence_bundle_json,
+)
+from flagquantum.core._compilation_evidence_v3 import CompilationEvidenceBundleV3
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -39,6 +47,9 @@ from flagquantum.core.target_capabilities import (
     SupportStatus,
     TargetCapabilitySnapshot,
     TargetIdentity,
+)
+from flagquantum.runtime.compilation_evidence import (
+    verify_compilation_evidence_handoff,
 )
 from flagquantum.simulation.statevector.local import run_local_statevector
 
@@ -309,6 +320,23 @@ def test_allocated_plan_emits_program_artifact_v3_with_logical_projection(
     }
     assert result.conformance.reconstructed_program.measurements[0].wires == (0, 2)
     assert read_program_artifact_json(artifact.to_json()) == artifact
+    evidence = build_compilation_evidence_bundle(
+        result,
+        snapshot=_snapshot(),
+        producer="phase46-compiler",
+    )
+    assert isinstance(evidence, CompilationEvidenceBundleV3)
+    assert evidence.physical_plan.plan_identity == result.physical_plan.plan_identity
+    assert evidence.physical_plan.allocation_identity == (
+        result.physical_plan.allocation_identity
+    )
+    assert evidence.physical_plan.logical_result_physical_slots == (0, 2)
+    assert read_compilation_evidence_bundle_json(evidence.to_json()) == evidence
+    verify_compilation_evidence_bundle(evidence, result, snapshot=_snapshot())
+    with pytest.raises(TypeError, match="bundle must be"):
+        verify_compilation_evidence_handoff(
+            evidence, source_artifact, artifact, snapshot=_snapshot()  # type: ignore[arg-type]
+        )
     if profile == "openqasm-2.0":
         assert "qreg q[3];" in result.emission.text
         assert "creg c[2];" in result.emission.text

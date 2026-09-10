@@ -1249,3 +1249,21 @@ closed because its current text profile cannot encode the projection. Artifact
 compilation returns ProgramArtifact v3 only when bound to an actual physical plan
 3.0; equal-capacity plans continue returning v2. Compilation-evidence v3 and all
 Runtime/Deployment consumption remain outside this phase.
+
+Phase 46 implements Core compilation-evidence version 3.0 without changing the
+version-1/2 models. Its strict physical-plan value separates logical capacity from
+physical capacity, validates injective layouts and complete nullable occupancy,
+replays both state representations across every SWAP, authenticates the first
+pre-restore state, and requires the declared logical result slots to match the
+final logical layout. The allocation identity is recomputed from the closed
+standard-zero/inverse-SWAP profile, and the physical-plan identity covers every
+new allocation and occupancy field.
+
+Compiler bundle construction selects version 3.0 only from an actual allocated
+`PhysicalCircuitPlan` 3.0 and carries the existing source, target, output,
+direction-legality, native-lineage, and schedule evidence forward unchanged.
+Compiler verification reconstructs the expected bundle from retained objects and
+requires exact equality. JSON dispatch is explicit for versions 1.0, 2.0, and
+3.0. Runtime and Deployment still reject version 3.0; provider submission,
+provider-qubit binding, general ancillas, QEC, and fault-tolerant resource claims
+remain outside the implemented boundary.

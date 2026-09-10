@@ -18,7 +18,7 @@ def _candidate() -> dict[str, object]:
 def test_candidate_records_exact_owner_approval_and_compiler_slice() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "approved_program_artifact_v3_complete"
+    assert candidate["status"] == "approved_compilation_evidence_v3_complete"
     assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION"
@@ -28,7 +28,7 @@ def test_candidate_records_exact_owner_approval_and_compiler_slice() -> None:
         "compiler_allocation_added": True,
         "physical_plan_v3_added": True,
         "program_artifact_v3_added": True,
-        "core_evidence_v3_added": False,
+        "core_evidence_v3_added": True,
         "runtime_verifier_added": False,
         "deployment_adapter_added": False,
     }

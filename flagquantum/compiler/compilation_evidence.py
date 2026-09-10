@@ -15,6 +15,11 @@ from ..core._compilation_evidence_v2 import (
     PhysicalInstructionEvidenceV2,
     PhysicalPlanEvidenceV2,
 )
+from ..core._compilation_evidence_v3 import (
+    CompilationEvidenceBundleV3,
+    MappingTransitionEvidenceV3,
+    PhysicalPlanEvidenceV3,
+)
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import CompilationError
 from .artifact_compilation import ArtifactCompilationResult
@@ -147,6 +152,80 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
     )
 
 
+def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvidenceV3:
+    plan = result.physical_plan
+    if (
+        plan.version != "3.0"
+        or plan.coupling_direction_semantics != "directed_cx"
+        or plan.coupling_n_wires is None
+        or plan.topology_identity is None
+        or plan.topology_legalization_identity is None
+        or plan.direction_legalization_identity is None
+        or plan.allocation_identity is None
+    ):
+        raise CompilationEvidenceError(
+            "compilation evidence version 3.0 requires a complete allocated plan"
+        )
+    return PhysicalPlanEvidenceV3(
+        source_circuit_hash=plan.source_circuit_hash,
+        physical_circuit_hash=plan.program.content_hash,
+        target_snapshot_id=plan.target_snapshot_id,
+        topology_identity=plan.topology_identity,
+        coupling=DirectedCouplingEvidence(plan.coupling_n_wires, plan.coupling_edges),
+        initial_logical_to_physical=plan.initial_logical_to_physical,
+        pre_restore_logical_to_physical=plan.pre_restore_logical_to_physical,
+        final_logical_to_physical=plan.final_logical_to_physical,
+        mapping_transitions=tuple(
+            MappingTransitionEvidenceV3(
+                routed_instruction_index=item.routed_instruction_index,
+                source_instruction_index=item.source_instruction_index,
+                phase=item.phase,
+                physical_wires=item.physical_wires,
+                layout_before=item.layout_before,
+                layout_after=item.layout_after,
+                physical_to_logical_before=item.physical_to_logical_before,
+                physical_to_logical_after=item.physical_to_logical_after,
+            )
+            for item in plan.mapping_transitions
+        ),
+        instructions=tuple(
+            PhysicalInstructionEvidenceV2(
+                instruction_index=item.instruction_index,
+                source_instruction_index=item.source_instruction_index,
+                topology_instruction_index=item.topology_instruction_index,
+                native_replacement_ordinal=item.native_replacement_ordinal,
+                native_instruction_index=item.native_instruction_index,
+                direction_replacement_ordinal=item.direction_replacement_ordinal,
+                direction_rewrite=item.direction_rewrite,
+                origin=item.origin,
+                opcode=item.opcode,
+                logical_wires=item.logical_wires,
+                physical_wires=item.physical_wires,
+                layer=item.layer,
+                predecessors=item.predecessors,
+                dependency_kinds=item.dependency_kinds,
+            )
+            for item in plan.instructions
+        ),
+        topology_legalization_identity=plan.topology_legalization_identity,
+        native_gate_legalization_identity=plan.native_gate_legalization_identity,
+        direction_legalization_identity=plan.direction_legalization_identity,
+        reversed_cx_count=plan.reversed_cx_count,
+        schedule_identity=plan.schedule_identity,
+        schedule_depth=plan.schedule_depth,
+        maximum_parallel_width=plan.maximum_parallel_width,
+        critical_path=plan.critical_path,
+        logical_wire_count=plan.logical_wire_count,
+        physical_slot_count=plan.physical_slot_count,
+        initial_physical_to_logical=plan.initial_physical_to_logical,
+        pre_restore_physical_to_logical=plan.pre_restore_physical_to_logical,
+        final_physical_to_logical=plan.final_physical_to_logical,
+        logical_result_physical_slots=plan.logical_result_physical_slots,
+        allocation_identity=plan.allocation_identity,
+        plan_identity=plan.plan_identity,
+    )
+
+
 def _validate_snapshot(
     result: ArtifactCompilationResult,
     snapshot: TargetCapabilitySnapshot,
@@ -164,7 +243,11 @@ def build_compilation_evidence_bundle(
     *,
     snapshot: TargetCapabilitySnapshot,
     producer: str,
-) -> CompilationEvidenceBundle | CompilationEvidenceBundleV2:
+) -> (
+    CompilationEvidenceBundle
+    | CompilationEvidenceBundleV2
+    | CompilationEvidenceBundleV3
+):
     """Build a bundle from the retained compilation objects and target snapshot."""
 
     if not isinstance(result, ArtifactCompilationResult):
@@ -190,6 +273,14 @@ def build_compilation_evidence_bundle(
         "executable_artifact_identity": executable.artifact_identity,
         "artifact_compilation_identity": result.compilation_identity,
     }
+    if result.physical_plan.version == "3.0":
+        return CompilationEvidenceBundleV3(
+            producer=producer,
+            source=source,
+            target=target,
+            physical_plan=_physical_evidence_v3(result),
+            output=output,
+        )
     if result.physical_plan.coupling_direction_semantics == "directed_cx":
         return CompilationEvidenceBundleV2(
             producer=producer,
@@ -208,14 +299,25 @@ def build_compilation_evidence_bundle(
 
 
 def verify_compilation_evidence_bundle(
-    bundle: CompilationEvidenceBundle | CompilationEvidenceBundleV2,
+    bundle: (
+        CompilationEvidenceBundle
+        | CompilationEvidenceBundleV2
+        | CompilationEvidenceBundleV3
+    ),
     result: ArtifactCompilationResult,
     *,
     snapshot: TargetCapabilitySnapshot,
 ) -> None:
     """Verify a decoded bundle against all actual in-process source objects."""
 
-    if not isinstance(bundle, (CompilationEvidenceBundle, CompilationEvidenceBundleV2)):
+    if not isinstance(
+        bundle,
+        (
+            CompilationEvidenceBundle,
+            CompilationEvidenceBundleV2,
+            CompilationEvidenceBundleV3,
+        ),
+    ):
         raise TypeError("bundle must be a compilation evidence bundle")
     if not isinstance(result, ArtifactCompilationResult):
         raise TypeError("result must be an ArtifactCompilationResult")

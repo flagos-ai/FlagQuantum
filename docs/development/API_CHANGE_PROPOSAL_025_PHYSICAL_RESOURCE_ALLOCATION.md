@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; ProgramArtifact 3.0 slice complete.**
+**Approved on 2026-09-10; compilation-evidence 3.0 slice complete.**
 
 Date: 2026-09-10
 
@@ -25,8 +25,14 @@ The third bounded implementation adds Core ProgramArtifact version 3.0 for
 allocated executable OpenQASM, Compiler construction from the actual version-3
 physical plan, ordered partial-register emission, and strict conformance parsing.
 Its immutable result schema binds dense logical-wire order to unique physical
-result slots. Compilation-evidence 3.0 and Runtime/Deployment handoff remain
-unimplemented.
+result slots.
+
+The fourth bounded implementation adds strict Core compilation-evidence version
+3.0 and Compiler construction and verification from the actual retained plan and
+artifact compilation. The evidence independently replays nullable occupancy,
+logical layouts, cleanup, allocation identity, result projection, topology,
+direction legality, instruction lineage, and schedule facts. Runtime and
+Deployment consumption remain unimplemented.
 
 ## Problem
 
@@ -188,7 +194,7 @@ requirements and may only become stricter.
    changing the existing equal-capacity path.
 4. **Complete:** add physical-plan 3.0 validation, cleanup proof, deterministic identity, and
    bounded state/gradient differential tests.
-5. Add strict Core ProgramArtifact 3.0 and compilation-evidence 3.0 while retaining
+5. **Complete:** add strict Core ProgramArtifact 3.0 and compilation-evidence 3.0 while retaining
    pinned v1/v2 fixtures and explicit reader dispatch.
 6. Add target emission, conformance, Runtime verification, and Deployment dry-run
    handoff in separate bounded slices.
