@@ -45,8 +45,6 @@ def build_mps_reverse_backward(
     bsz = batch_size
     resolved_device = device
     resolved_dtype = dtype
-    _recv_static = receive_static_reverse_tensor
-    _send_static = send_static_reverse_tensor
 
     def backward(result: TorchDistributedMPSGradientResult) -> None:
         def finite(
@@ -151,7 +149,7 @@ def build_mps_reverse_backward(
             peer = record.communication_peer
             sequence = 3_000_000 + record.reverse_sequence * 2
             if peer is not None and rank == peer:
-                _send_static(
+                send_static_reverse_tensor(
                     adjoints[left_wire + 1],
                     destination=record.compute_owner,
                     sequence=sequence,
@@ -163,7 +161,7 @@ def build_mps_reverse_backward(
                     output_adjoints.append(
                         adjoints[left_wire + 1]
                         if peer is None
-                        else _recv_static(
+                        else receive_static_reverse_tensor(
                             next(iter(local_tensors.values())),
                             source=peer,
                             sequence=sequence,
@@ -264,7 +262,7 @@ def build_mps_reverse_backward(
                     if peer is None:
                         adjoints[left_wire + 1] = right_adjoint
                     else:
-                        _send_static(
+                        send_static_reverse_tensor(
                             right_adjoint,
                             destination=peer,
                             sequence=sequence + 1,
@@ -276,7 +274,7 @@ def build_mps_reverse_backward(
                     if derivative is not None:
                         accumulate(parameter_index, derivative, record.operation_id)
             if peer is not None and rank == peer:
-                adjoints[left_wire + 1] = _recv_static(
+                adjoints[left_wire + 1] = receive_static_reverse_tensor(
                     adjoints[left_wire + 1],
                     source=record.compute_owner,
                     sequence=sequence + 1,
