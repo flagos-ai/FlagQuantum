@@ -1,14 +1,16 @@
 {
   "schema": "flagquantum.jiuding_statevector_training_strong_scaling_development_evidence.v1",
   "date": "2026-09-10",
-  "scope": "Fixed-load one-A100 versus two-A100 statevector training strong scaling",
+  "scope": "Same-node fixed-load one-, two-, four-, and eight-A100 statevector training strong scaling",
   "evidence_class": "development",
   "workspace": {
-    "name": "flagquantum-b30886cb-2xa100",
-    "id": "19800a5f-6e59-43ae-b8b6-fa0a3bac9d4d",
+    "name": "flagquantum-scaling-8xa100",
+    "id": "ad183946-78c4-42ee-af81-53a58620dcac",
     "target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "allocated_accelerator_count": 8,
     "node_count": 1,
-    "stopped_after_validation": true
+    "stopped_after_validation": true,
+    "resident_workspace_restored": true
   },
   "image": {
     "name": "flagquantum-runtime:v0.2.0-b30886cb-cu128-a100",
@@ -18,11 +20,11 @@
   },
   "environment": {
     "gpu_model": "NVIDIA A100-SXM4-40GB",
-    "gpu_pair_topology": "NV12",
     "driver_version": "535.161.08",
     "pytorch_version": "2.7.1+cu128",
     "cuda_runtime_version": "12.8",
-    "backend": "nccl"
+    "backend": "nccl",
+    "topology_sha256": "1fdbbed0c20ebbb9ee85e3a71323ba2cdbd7ff1dc84de7a1a44cdce212ebae2f"
   },
   "workload": {
     "name": "full_width_linear_hea",
@@ -41,91 +43,163 @@
     "measured_steps": 5,
     "timing_scope": "barrier_to_global_max_cuda_synchronized_full_training_step"
   },
-  "one_gpu": {
-    "raw_artifact_sha256": "b519232d00d1d78911cdd0e4b014369a0e07d03cad4e505ac98003e7e810ec5a",
-    "world_size": 1,
-    "distribution_semantics": "single_device_fast_path",
-    "training_step_samples_seconds": [
-      5.088755921460688,
-      5.052445326000452,
-      5.046414024196565,
-      5.0380730126053095,
-      5.041864897124469
-    ],
-    "training_step_median_seconds": 5.046414024196565,
-    "training_step_coefficient_of_variation": 0.0036139065778798525,
-    "differentiable_forward_median_seconds": 0.373297356069088,
-    "backward_median_seconds": 4.670471850782633,
-    "peak_memory_bytes": 6644072448,
-    "communication_bytes_per_rank": 0,
-    "correctness_passed": true,
-    "fallback_events": []
-  },
-  "two_gpu": {
-    "raw_artifact_sha256": "cc45fba3496ce1707c653b08b710755c4c912d63f78ff30d5b8b30d7476eee2a",
-    "world_size": 2,
-    "distribution_semantics": "sharded_across_ranks",
-    "training_step_samples_seconds": [
-      2.525395071133971,
-      2.497458535246551,
-      2.495198012329638,
-      2.5096852965652943,
-      2.5015698596835136
-    ],
-    "training_step_median_seconds": 2.5015698596835136,
-    "training_step_coefficient_of_variation": 0.004367594283254534,
-    "differentiable_forward_median_seconds": 0.16945963818579912,
-    "backward_median_seconds": 2.3288593972101808,
-    "peak_memory_bytes_per_rank_max": 6644072448,
-    "logical_communication_bytes_per_rank": 3221225592,
-    "state_ownership": "sharded_across_ranks",
-    "gradient_ownership": "replicated_after_all_reduce",
-    "parameter_bytes_by_rank": [56, 56],
-    "optimizer_parameter_count_by_rank": [14, 14],
-    "correctness": {
-      "passed": true,
-      "reference_world_size": 1,
-      "reference_value_absolute_error_max": 4.76837158203125e-7,
-      "reference_gradient_absolute_error_max": 1.1920928955078125e-7,
-      "reference_parameter_absolute_error_max": 2.9802322387695312e-8,
-      "final_parameter_spread": 0.0
+  "results": [
+    {
+      "world_size": 1,
+      "raw_artifact_sha256": "25864e8030f15f9b086194f8b45f171eead0b30065dcb18f0e231d4d1f9143ab",
+      "distribution_semantics": "single_device_fast_path",
+      "training_step_samples_seconds": [
+        5.082071557990275,
+        5.050829479994718,
+        5.053333353018388,
+        5.056684644019697,
+        5.054216724995058
+      ],
+      "training_step_median_seconds": 5.054216724995058,
+      "coefficient_of_variation": 0.0022682418273957854,
+      "differentiable_forward_median_seconds": 0.3732470779796131,
+      "backward_median_seconds": 4.67844365601195,
+      "peak_memory_bytes_by_rank": [
+        6644072448
+      ],
+      "logical_communication_bytes_per_rank": 0,
+      "correctness_passed": true,
+      "fallback_events": []
     },
-    "fallback_events": []
-  },
-  "strong_scaling": {
-    "speedup": 2.0172988592191516,
-    "efficiency": 1.0086494296095758,
-    "confidence_level": 0.95,
-    "speedup_confidence_interval": [
-      1.9982671550596587,
-      2.0342249894650126
-    ],
-    "efficiency_confidence_interval": [
-      0.9991335775298293,
-      1.0171124947325063
-    ],
-    "interval_method": "independent_bootstrap_median_ratio",
+    {
+      "world_size": 2,
+      "raw_artifact_sha256": "ccb0ffe237fe0392b6c189b3c1e81442fdb5bd22926860e8bc439e748a17950a",
+      "distribution_semantics": "sharded_across_ranks",
+      "training_step_samples_seconds": [
+        2.520419923006557,
+        2.5007781430031173,
+        2.500001537031494,
+        2.495081521978136,
+        2.4903357349685393
+      ],
+      "training_step_median_seconds": 2.500001537031494,
+      "coefficient_of_variation": 0.004102115642969619,
+      "differentiable_forward_median_seconds": 0.16473475599195808,
+      "backward_median_seconds": 2.328759465017356,
+      "peak_memory_bytes_by_rank": [
+        6644072448,
+        6644072448
+      ],
+      "logical_communication_bytes_per_rank": 3221225592,
+      "speedup": 2.021685447040342,
+      "strong_scaling_efficiency": 1.010842723520171,
+      "speedup_confidence_interval_95": [
+        2.0053074009056346,
+        2.032827373388232
+      ],
+      "reference_value_absolute_error_max": 4.76837158203125e-07,
+      "reference_gradient_absolute_error_max": 1.1920928955078125e-07,
+      "reference_parameter_absolute_error_max": 2.9802322387695312e-08,
+      "correctness_passed": true,
+      "fallback_events": []
+    },
+    {
+      "world_size": 4,
+      "raw_artifact_sha256": "d1dae2100515289b72b4432bfe9369c559de3c8c4b4620f225bc66645c1d53bc",
+      "distribution_semantics": "sharded_across_ranks",
+      "training_step_samples_seconds": [
+        1.3131210790015757,
+        1.2805377029580995,
+        1.285862743970938,
+        1.2855935170082375,
+        1.2873275589663535
+      ],
+      "training_step_median_seconds": 1.285862743970938,
+      "coefficient_of_variation": 0.008947344612254157,
+      "differentiable_forward_median_seconds": 0.10304141900269315,
+      "backward_median_seconds": 1.1764913130318746,
+      "peak_memory_bytes_by_rank": [
+        3422846976,
+        3422846976,
+        3422846976,
+        3422846976
+      ],
+      "logical_communication_bytes_per_rank": 4294967416,
+      "speedup": 3.93060359567373,
+      "strong_scaling_efficiency": 0.9826508989184325,
+      "speedup_confidence_interval_95": [
+        3.849010427003429,
+        3.952265964480837
+      ],
+      "reference_value_absolute_error_max": 4.172325134277344e-07,
+      "reference_gradient_absolute_error_max": 8.940696716308594e-08,
+      "reference_parameter_absolute_error_max": 2.9802322387695312e-08,
+      "correctness_passed": true,
+      "fallback_events": []
+    },
+    {
+      "world_size": 8,
+      "raw_artifact_sha256": "7d762e91c8cd3efee32642b1247f61bc034421d9c49bde1d64c8c6862a65cd64",
+      "distribution_semantics": "sharded_across_ranks",
+      "training_step_samples_seconds": [
+        0.7139315059757791,
+        0.6783620469504967,
+        0.6859754559700377,
+        0.6733275800361298,
+        0.7019735599751584
+      ],
+      "training_step_median_seconds": 0.6859754559700377,
+      "coefficient_of_variation": 0.021891064991200485,
+      "differentiable_forward_median_seconds": 0.07287547702435404,
+      "backward_median_seconds": 0.6023335270001553,
+      "peak_memory_bytes_by_rank": [
+        1812234240,
+        1812234240,
+        1812234240,
+        1812234240,
+        1812234240,
+        1812234240,
+        1812234240,
+        1812234240
+      ],
+      "logical_communication_bytes_per_rank": 3489661048,
+      "speedup": 7.367926477555806,
+      "strong_scaling_efficiency": 0.9209908096944758,
+      "speedup_confidence_interval_95": [
+        7.079414037187101,
+        7.506326600677572
+      ],
+      "reference_value_absolute_error_max": 4.76837158203125e-07,
+      "reference_gradient_absolute_error_max": 1.043081283569336e-07,
+      "reference_parameter_absolute_error_max": 1.4901161193847656e-08,
+      "correctness_passed": true,
+      "fallback_events": []
+    }
+  ],
+  "statistics": {
+    "speedup_method": "independent_bootstrap_median_ratio",
     "bootstrap_resamples": 10000,
     "bootstrap_seed": 440044,
-    "interpretation": "The measured efficiency slightly exceeds one because of sampling variation and sharding effects; it is not claimed as a general superlinear capability."
+    "confidence_level": 0.95
   },
-  "discarded_trial": {
-    "optimizer": "adam",
-    "reason": "Cross-world-size parameter trajectory mismatch amplified near-zero gradient sign differences; the trial is not used for the scaling claim.",
-    "reference_parameter_absolute_error_max": 0.06736928224563599
+  "resource_observation": {
+    "resident_workspace": "example-resident-a100",
+    "resident_accelerator_count": 1,
+    "eight_gpu_workspace_scheduled_only_after_resident_workspace_stopped": true,
+    "interpretation": "The resident one-GPU allocation fragmented the available eight-GPU node for an eight-GPU request under the observed queue state."
   },
   "claims": {
-    "fixed_load_one_to_two_gpu_training_strong_scaling_validated": true,
-    "two_gpu_correctness_against_one_gpu_reference_validated": true,
-    "single_node_two_gpu_state_sharding_validated": true,
+    "same_node_one_to_eight_gpu_training_strong_scaling_validated": true,
+    "eight_gpu_strong_scaling_efficiency": 0.9209908096944758,
+    "distributed_results_match_one_gpu_reference": true,
+    "state_and_adjoint_are_sharded_across_ranks": true,
     "multi_node_validated": false,
-    "eight_gpu_validated": false,
     "release_gate_allowed": false
   },
   "limitations": [
-    "This is single-node one-to-two GPU development evidence, not a release or acceptance artifact.",
+    "This is single-node development evidence, not a release or acceptance artifact.",
     "The one-GPU point uses the same distributed training engine at world size one.",
     "Communication time was not separately profiled; logical communication volume is recorded.",
-    "Multi-node and eight-GPU scaling remain unvalidated."
-  ]
+    "Per-run topology capture was unavailable at world sizes four and eight; the same-workspace topology was captured at world sizes one and two.",
+    "Multi-node scaling remains unvalidated."
+  ],
+  "_privacy_redaction": {
+    "kind": "publication_copy",
+    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
+  }
 }
