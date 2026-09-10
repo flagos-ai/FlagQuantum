@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+from flagquantum.runtime.executors.mps.factorization import mps_qr_forward
 from flagquantum.runtime.executors.mps.records import (
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
@@ -12,7 +13,6 @@ from flagquantum.runtime.executors.mps.records import (
     MPSReverseTapeRecord,
 )
 from flagquantum.runtime.executors.mps.reverse import (
-    _qr_forward,
     _static_exact_qr_record,
     _validate_svd_gaps,
 )
@@ -182,9 +182,9 @@ def test_complex_qr_pair_pullback_passes_gradcheck_and_preserves_state():
     ).requires_grad_()
 
     assert torch.autograd.gradcheck(
-        _qr_forward, (left, right), eps=1e-6, atol=2e-5, rtol=2e-4
+        mps_qr_forward, (left, right), eps=1e-6, atol=2e-5, rtol=2e-4
     )
-    output_left, output_right = _qr_forward(left, right)
+    output_left, output_right = mps_qr_forward(left, right)
     before = torch.einsum("blsm,bmtr->blstr", left, right)
     after = torch.einsum("blsm,bmtr->blstr", output_left, output_right)
     torch.testing.assert_close(after, before, atol=1e-10, rtol=1e-10)
@@ -227,11 +227,11 @@ def test_thin_qr_pullback_passes_gradcheck_and_rejects_rank_deficiency():
         1, 2, 2, 1, dtype=torch.complex128, generator=generator
     ).requires_grad_()
     assert torch.autograd.gradcheck(
-        _qr_forward, (left, right), eps=1e-6, atol=3e-5, rtol=3e-4
+        mps_qr_forward, (left, right), eps=1e-6, atol=3e-5, rtol=3e-4
     )
     deficient = torch.zeros_like(left)
     with pytest.raises(MPSReverseContractError, match="rank deficient"):
-        _qr_forward(deficient, right)
+        mps_qr_forward(deficient, right)
 
 
 def test_full_state_and_sequence_contracts_fail_closed():

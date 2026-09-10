@@ -21,7 +21,7 @@ from flagquantum.runtime.executors.mps.distributed_state import (
     ShardedMPSState,
 )
 from flagquantum.runtime.executors.mps.errors import MPSTrainingError
-from flagquantum.runtime.executors.mps.reverse import _qr_forward
+from flagquantum.runtime.executors.mps.factorization import mps_qr_forward
 from flagquantum.runtime.executors.mps.training_engine import (
     _initial_state_contract,
     _parameter_broadcast_buckets,
@@ -452,7 +452,7 @@ def test_mps_qr_forward_reconstructs_tiny_batched_factorization(right_dim):
     left = torch.randn(7, 2, 2, right_dim, dtype=torch.complex64)
     right = torch.randn(7, right_dim, 2, 3, dtype=torch.complex64)
 
-    q, updated_right = _qr_forward(left, right)
+    q, updated_right = mps_qr_forward(left, right)
 
     expected = torch.einsum("blsm,bmtr->blstr", left, right)
     actual = torch.einsum("blsm,bmtr->blstr", q, updated_right)
