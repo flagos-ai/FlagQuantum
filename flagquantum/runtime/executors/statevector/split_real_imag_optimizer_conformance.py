@@ -123,11 +123,14 @@ def _candidate_loss(
     *,
     device: torch.device,
 ) -> float:
+    parameter_bindings: dict[str | Parameter, Any] = {
+        name: value for name, value in bindings.items()
+    }
     return float(
         execute_split_real_imag_device_double_single_expectation(
             ir,
             observable,
-            parameter_bindings=bindings,
+            parameter_bindings=parameter_bindings,
             device=device,
             preflight=False,
         )
