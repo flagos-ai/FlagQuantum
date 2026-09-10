@@ -6,7 +6,6 @@ The adapter manages external tasks; it does not select numerical backends.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -26,6 +25,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from ._jiuding_credentials import load_jiuding_credentials
+from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
 from ._workspace_results import decode_tensor, measurement_result
 
@@ -40,37 +41,6 @@ _SUPPORTED_RESIDENT_MEASUREMENTS = {
     "sample",
     "sample_ps",
 }
-
-
-def _load_credentials() -> tuple[str, str]:
-    """Load one complete Jiuding credential pair without mixing sources."""
-    ak = os.environ.get("JIUDING_AK")
-    sk = os.environ.get("JIUDING_SK")
-    if ak is not None or sk is not None:
-        if ak is None or sk is None:
-            raise RuntimeError(
-                "Set both JIUDING_AK and JIUDING_SK; partial environment "
-                "credentials are not allowed"
-            )
-    else:
-        try:
-            ak = base64.b64decode(
-                b"".join(Path("/etc/accesskey/user-ak").read_bytes().split()),
-                validate=True,
-            ).decode()
-            sk = base64.b64decode(
-                b"".join(Path("/etc/accesskey/user-sk").read_bytes().split()),
-                validate=True,
-            ).decode()
-        except (OSError, ValueError):
-            raise RuntimeError(
-                "Set both JIUDING_AK and JIUDING_SK, or use a Jiuding "
-                "workspace with both injected credential files"
-            ) from None
-    ak, sk = ak.strip(), sk.strip()
-    if not ak or not sk:
-        raise RuntimeError("Jiuding credentials must not be empty")
-    return ak, sk
 
 
 def _measurement_program(program, *, outputs, shots):
@@ -164,7 +134,7 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def _auth(self) -> dict:
         if time.monotonic() >= self._expires:
-            ak, sk = _load_credentials()
+            ak, sk = load_jiuding_credentials()
             path = "/api/v1/users/token/exchange"
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             digest = hashlib.sha256(f"POST\n{path}\n{stamp}".encode()).hexdigest()
@@ -888,12 +858,6 @@ class JiudingClient(_ProgramSubmissionMixin):
             raise ValueError("Image was not uniquely resolved in the Jiuding catalog")
         return next(iter(matches.values()))
 
-    @staticmethod
-    def _save(path: Path, receipt: dict) -> None:
-        temporary = path.with_name(path.name + ".tmp")
-        temporary.write_text(json.dumps(receipt, indent=2) + "\n")
-        temporary.replace(path)
-
     def submit(
         self,
         script: str | Path,
@@ -1089,7 +1053,7 @@ class JiudingClient(_ProgramSubmissionMixin):
                 "Creation outcome uncertain; reconcile receipt before retrying"
             )
         record.update(experimentId=created["experimentId"], submission="created")
-        self._save(receipt, record)
+        save_receipt(receipt, record)
         details = self._request(
             "/api/v1/experiment/select",
             {
@@ -1151,14 +1115,14 @@ class JiudingClient(_ProgramSubmissionMixin):
             "modelStorageInfo": {},
         }
         record["submission"] = "launch_unknown"
-        self._save(receipt, record)
+        save_receipt(receipt, record)
         started = self._request("/api/v1/job", launch, self._headers())
         if not started.get("jobId"):
             raise RuntimeError(
                 "Launch returned no Job ID; reconcile saved experiment before retrying"
             )
         record.update(submission="submitted", jobId=started["jobId"])
-        self._save(receipt, record)
+        save_receipt(receipt, record)
         return record
 
     def status(self, receipt: dict) -> list[dict]:
@@ -1202,10 +1166,9 @@ class JiudingClient(_ProgramSubmissionMixin):
 
                     value = read_managed_result(self, receipt)
                 else:
-                    result = json.loads(Path(receipt["result_path"]).read_text())
-                    if result.get("run_id") != receipt["run_id"]:
-                        raise RuntimeError("Result does not belong to this submission")
-                    value = result["value"]
+                    value = read_job_result(
+                        Path(receipt["result_path"]), receipt["run_id"]
+                    )
                 return decode_job_result(value, receipt)
             if any(
                 j["status"]
