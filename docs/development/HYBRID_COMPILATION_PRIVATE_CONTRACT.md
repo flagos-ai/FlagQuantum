@@ -978,3 +978,22 @@ test evidence executed through the Simulation-owned implementation and do not
 constitute target or hardware certification. This phase introduces no second
 IR, artifact envelope, Runtime adapter, deployment path, provider submission,
 TargetIR, public export, default-path change, or performance claim.
+
+## Phase 31 ProgramArtifact-v2 proposal authorization
+
+Phase 31 may produce API Change Proposal 022, a machine-readable candidate
+contract, and compatibility tests for an executable-text profile in the
+existing `flagquantum.program_artifact` lineage. It freezes one v1 fixture and
+its current content hash without modifying the v1 implementation.
+
+The proposal may specify closed OpenQASM 2, OpenQASM 3, and QCIS 1 profiles;
+UTF-8 payload limits and a declared payload digest; final-circuit, target,
+legalization, schedule, emission, conformance, and envelope identities;
+structured target requirements; fully bound parameters; terminal sample result
+shape; strict canonical JSON; security exclusions; ownership; and explicit
+version dispatch. Shots and provider lifecycle data remain separate.
+
+The proposal is not approval. Until the exact approval token is supplied, no
+v2 reader/writer, Core schema change, Compiler adapter, Runtime adapter,
+Deployment integration, public export, or provider submission is authorized.
+The private Phase 29/30 records remain the only implemented target-text path.

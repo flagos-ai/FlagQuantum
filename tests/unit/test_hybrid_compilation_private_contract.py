@@ -1005,7 +1005,9 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
+    assert contract["status"] == (
+        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+    )
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1055,7 +1057,9 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     contract = _contract()
     phase28 = contract["phase28"]
 
-    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
+    assert contract["status"] == (
+        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+    )
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
         "immutable_instruction_index_schedule_evidence"
@@ -1098,7 +1102,9 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
     contract = _contract()
     phase29 = contract["phase29"]
 
-    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
+    assert contract["status"] == (
+        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+    )
     assert phase29["input"] == (
         "flagquantum.compiler.target_legalization.TargetLegalizationResult"
     )
@@ -1133,7 +1139,9 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
     contract = _contract()
     phase30 = contract["phase30"]
 
-    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
+    assert contract["status"] == (
+        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+    )
     assert phase30["inputs"] == [
         "flagquantum.compiler.target_emission.TargetEmissionResult",
         "flagquantum.compiler.target_legalization.TargetLegalizationResult",
@@ -1167,3 +1175,43 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
         "docs/development/HYBRID_COMPILATION_PHASE30_EVIDENCE.md"
     )
     assert contract["phase30_completed"] is True
+
+
+def test_phase31_proposes_same_lineage_v2_without_implementing_it() -> None:
+    contract = _contract()
+    phase31 = contract["phase31"]
+
+    assert contract["status"] == (
+        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+    )
+    assert phase31["proposal"] == (
+        "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md"
+    )
+    assert phase31["candidate_contract"] == (
+        "contracts/program-artifact-v2-candidate.json"
+    )
+    assert phase31["approval_token"] == (
+        "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
+    )
+    assert phase31["contract_lineage"] == "flagquantum.program_artifact"
+    assert phase31["candidate_version"] == "2.0"
+    assert phase31["initial_profile"] == "fully_bound_static_executable_text"
+    assert phase31["v1_compatibility_fixture"] == (
+        "tests/fixtures/program_artifact_v1_compatibility.json"
+    )
+    assert phase31["v1_reader_or_hash_changed"] is False
+    assert phase31["parallel_artifact_authority_added"] is False
+    assert phase31["shots_in_artifact"] is False
+    assert phase31["provider_lifecycle_in_artifact"] is False
+    assert phase31["implementation_authorized"] is False
+    assert phase31["core_schema_changed"] is False
+    assert phase31["compiler_adapter_added"] is False
+    assert phase31["runtime_adapter_added"] is False
+    assert phase31["deployment_adapter_added"] is False
+    assert phase31["public_root_export"] is False
+    assert phase31["default_path_change"] is False
+    assert phase31["performance_claim"] is False
+    assert phase31["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE31_EVIDENCE.md"
+    )
+    assert contract["phase31_completed"] is True

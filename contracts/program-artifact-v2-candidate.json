@@ -1,0 +1,117 @@
+{
+  "schema": "flagquantum.program_artifact_v2_candidate_contract",
+  "status": "proposed_not_approved",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
+  "envelope_schema": "flagquantum.program_artifact",
+  "version": "2.0",
+  "initial_kind": "executable",
+  "top_level_fields": [
+    "schema",
+    "version",
+    "kind",
+    "producer",
+    "profile",
+    "payload",
+    "payload_sha256",
+    "circuit_content_hash",
+    "requirements",
+    "target",
+    "compilation",
+    "parameter_schema",
+    "result_schema",
+    "artifact_identity"
+  ],
+  "profiles": {
+    "openqasm-2.0": {
+      "media_type": "text/x-openqasm;version=2.0;charset=utf-8",
+      "encoding": "utf-8"
+    },
+    "openqasm-3.0": {
+      "media_type": "text/x-openqasm;version=3.0;charset=utf-8",
+      "encoding": "utf-8"
+    },
+    "qcis-1.0": {
+      "media_type": "text/x-qcis;version=1.0;charset=utf-8",
+      "encoding": "utf-8"
+    }
+  },
+  "identity_fields": {
+    "payload": "payload_sha256",
+    "final_circuit": "circuit_content_hash",
+    "target": "target.snapshot_id",
+    "compilation": [
+      "target_legalization_identity",
+      "schedule_identity",
+      "emission_identity",
+      "conformance_identity"
+    ],
+    "envelope": "artifact_identity"
+  },
+  "artifact_identity_encoding": {
+    "algorithm": "sha256",
+    "input": "all_top_level_fields_except_artifact_identity",
+    "character_encoding": "utf-8",
+    "sort_keys": true,
+    "separators": [",", ":"],
+    "ensure_ascii": true,
+    "allow_nan": false
+  },
+  "requirements": "canonical_core_requirement_set",
+  "parameter_schema": {
+    "binding": "fully_bound",
+    "parameters": []
+  },
+  "result_schema": {
+    "kind": "samples",
+    "wires": "dense_zero_based_full_register",
+    "shots_source": "execution_request"
+  },
+  "limits": {
+    "maximum_payload_utf8_bytes": 16777216,
+    "maximum_envelope_utf8_bytes": 18874368,
+    "maximum_nesting_depth": 8,
+    "maximum_total_entries": 4096,
+    "maximum_non_payload_string_utf8_bytes": 4096
+  },
+  "prohibited_content_scope": "structured_fields_outside_profile_validated_payload",
+  "prohibited_content": [
+    "credentials",
+    "tokens",
+    "secrets",
+    "private_keys",
+    "account_or_tenant_state",
+    "provider_sdk_objects",
+    "live_handles",
+    "job_ids_or_queue_state",
+    "callback_urls",
+    "local_file_paths",
+    "arbitrary_remote_urls",
+    "mutable_calibration_objects"
+  ],
+  "excluded_request_fields": [
+    "shots",
+    "seed",
+    "timeout",
+    "priority",
+    "mitigation_policy",
+    "result_delivery"
+  ],
+  "compatibility": {
+    "v1_reader_unchanged": true,
+    "v1_content_hash_unchanged": true,
+    "explicit_version_dispatch": true,
+    "implicit_upgrade": false,
+    "implicit_downgrade": false,
+    "reinterpret_v1_metadata": false,
+    "old_reader_accepts_v2": false
+  },
+  "implementation": {
+    "authorized": false,
+    "core_schema_changed": false,
+    "compiler_adapter_added": false,
+    "runtime_adapter_added": false,
+    "deployment_adapter_added": false,
+    "public_export_added": false
+  }
+}

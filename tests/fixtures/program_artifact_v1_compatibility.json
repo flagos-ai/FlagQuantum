@@ -1,0 +1,32 @@
+{
+  "schema": "flagquantum.program_artifact_v1_compatibility_fixture",
+  "expected_content_hash": "4c98b6a8665aa09fe66917edefeebf39d02bfeef4805da1b1e71d672922f9480",
+  "artifact": {
+    "schema": "flagquantum.program_artifact",
+    "version": "1.0",
+    "kind": "circuit",
+    "producer": "phase31-v1-compatibility-fixture",
+    "required_capabilities": [],
+    "parent_hashes": [],
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex128",
+      "shape": [2],
+      "instructions": [
+        {
+          "name": "h",
+          "wires": [0],
+          "params": {},
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "metadata": {}
+  }
+}

@@ -1076,6 +1076,33 @@ Exit gate:
   Runtime adapter, submission, TargetIR, public API, or performance claim is
   added.
 
+### Phase 31 — ProgramArtifact v2 contract proposal
+
+Submit API Change Proposal 022 for a version-2 executable-text profile within
+the existing `flagquantum.program_artifact` contract lineage. Preserve the v1
+reader, serialization, coercion behavior, and content hash exactly. Do not hide
+required v2 semantics inside v1 free-form metadata and do not create a parallel
+generic artifact envelope.
+
+The proposal defines exact top-level fields, closed OpenQASM/QCIS profiles,
+UTF-8 payload and declared digest, role-named compilation identities,
+structured Core requirements, fully bound parameters, terminal-samples result
+schema, canonical artifact identity, data-size limits, sensitive-content
+exclusions, ownership, version dispatch, and migration gates. Shots and all
+execution/provider lifecycle information remain outside the artifact.
+
+Exit gate:
+
+- the formal proposal and machine-readable candidate agree;
+- a pinned v1 fixture retains its exact existing reader behavior and hash;
+- payload, circuit, target, compilation, and envelope identities are distinct;
+- limits and prohibited data are explicit and machine checked;
+- v1/v2 implicit upgrade and downgrade are forbidden;
+- implementation remains unauthorized until the API owner supplies the exact
+  approval token;
+- no Core schema, Compiler adapter, Runtime, Deployment, public API, or provider
+  behavior changes in this phase.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1234,3 +1261,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 28 dependency-preserving logical scheduling implemented and verified
 - [x] Phase 29 verified deterministic target-text emission implemented and verified
 - [x] Phase 30 strict target-text conformance implemented and verified
+- [x] Phase 31 ProgramArtifact v2 contract proposal completed; implementation awaits approval
