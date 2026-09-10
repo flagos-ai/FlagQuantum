@@ -42,10 +42,6 @@ def build_mps_reverse_backward(
 ) -> Callable[[TorchDistributedMPSGradientResult], None]:
     """Create the single-use reverse replay closure for a recorded MPS tape."""
 
-    bsz = batch_size
-    resolved_device = device
-    resolved_dtype = dtype
-
     def backward(result: TorchDistributedMPSGradientResult) -> None:
         def finite(
             value: torch.Tensor | None,
@@ -107,9 +103,9 @@ def build_mps_reverse_backward(
                         outputs = apply_mps_one_site_bucket(
                             segment_instructions,
                             segment_inputs,
-                            bsz=bsz,
-                            device=resolved_device,
-                            dtype=resolved_dtype,
+                            bsz=batch_size,
+                            device=device,
+                            dtype=dtype,
                             compile_ry=compile_site_kernels,
                         )
                         try:
@@ -177,9 +173,9 @@ def build_mps_reverse_backward(
                     outputs = apply_mps_one_site_bucket(
                         (payload.instruction,),
                         (inputs[0],),
-                        bsz=bsz,
-                        device=resolved_device,
-                        dtype=resolved_dtype,
+                        bsz=batch_size,
+                        device=device,
+                        dtype=dtype,
                         compile_ry=compile_site_kernels,
                     )
                 elif (
@@ -209,9 +205,9 @@ def build_mps_reverse_backward(
                         (payload.instruction,),
                         (inputs[0],),
                         (inputs[1],),
-                        bsz=bsz,
-                        device=resolved_device,
-                        dtype=resolved_dtype,
+                        bsz=batch_size,
+                        device=device,
+                        dtype=dtype,
                         compiled=compile_site_kernels,
                     )[0]
                     outputs = (pair,)
@@ -221,9 +217,9 @@ def build_mps_reverse_backward(
                         payload.instruction,
                         inputs,
                         state.config,
-                        bsz=bsz,
-                        device=resolved_device,
-                        dtype=resolved_dtype,
+                        bsz=batch_size,
+                        device=device,
+                        dtype=dtype,
                     )
                     outputs = output_tensors
                 else:
@@ -281,11 +277,11 @@ def build_mps_reverse_backward(
                     shape=record.input_shapes[1],
                 )
             result._last_completed_record = record.reverse_sequence
-        for dtype, owner, pieces in gradient_buckets:
+        for bucket_dtype, owner, pieces in gradient_buckets:
             flat = torch.cat(
                 [
                     (
-                        torch.zeros(end - start, dtype=dtype, device=resolved_device)
+                        torch.zeros(end - start, dtype=bucket_dtype, device=device)
                         if local_gradients[index] is None
                         else local_gradients[index].reshape(-1)[start:end]
                     )
