@@ -138,7 +138,7 @@ def _cuda_svd(
 
 
 def _is_cuda_tensor(matrix: torch.Tensor) -> bool:
-    return matrix.is_cuda
+    return bool(matrix.is_cuda)
 
 
 def reset_mps_svd_fallback_stats() -> None:
