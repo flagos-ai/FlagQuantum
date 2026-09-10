@@ -1,8 +1,8 @@
-"""Compile and submit a Bell circuit to Quafu SQC.
+"""Compile and run a Bell circuit on Quafu SQC.
 
-Set ``QUAFU_API_TOKEN`` before running this example.  Quafu tokens must never be
-committed to source control and currently expire after 30 days.
-Install ``flagquantum-compiler-qsteed`` before running this example.
+Set ``QUAFU_API_TOKEN`` and install ``flagquantum-compiler-qsteed`` before
+running this example. The selected chip name must exist in the current Quafu
+account.
 """
 
 from __future__ import annotations
@@ -16,15 +16,17 @@ def main() -> None:
     if not os.getenv("QUAFU_API_TOKEN"):
         raise RuntimeError("Set QUAFU_API_TOKEN before submitting to Quafu SQC")
 
-    circuit = fq.Circuit(2)
-    circuit.h(0).cx(0, 1)
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
     result = fq.run(
         circuit,
         compiler="qsteed",
         target="quafu:ScQ-P10",
         shots=1024,
+        name="flagquantum bell",
     )
-    print(result.handle.task_id, result.counts)
+
+    print("task:", result.provenance["task_id"])
+    print("counts:", result.counts[0])
 
 
 if __name__ == "__main__":
