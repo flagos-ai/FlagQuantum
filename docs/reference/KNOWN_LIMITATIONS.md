@@ -44,6 +44,16 @@ requires all evidence for the target level to pass
 `python tools/check_capability_maturity.py`.
 <!-- END GENERATED KNOWN_LIMITATIONS -->
 
+## JAX-to-PyTorch differentiation
+
+The hybrid JAX kernel supports first-order gradients for circuit parameters and
+optional inputs. Its PyTorch bridge saves JAX-computed first derivatives as
+detached tensors and is marked `once_differentiable`. Double backward is
+unsupported and raises an error; composing the output with a PyTorch loss does
+not make Hessians or other higher-order derivatives available through this
+bridge. This boundary applies with and without JIT. It does not change the
+differentiation support of native PyTorch execution paths.
+
 ## Unpromoted remote compute adapter
 
 The experimental [Jiuding adapter](../guides/JIUDING.md) has a real CPU Bell-state

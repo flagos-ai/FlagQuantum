@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
+from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 import torch
 
 from ...core.ir import Instruction
 
-_MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
+_MPS_SCHEDULE_CACHE_MAXSIZE = 256
+_MPS_SCHEDULE_CACHE_LOCK = Lock()
+_MPS_INSTRUCTION_SCHEDULE_CACHE: OrderedDict[
+    tuple[Any, ...], tuple[tuple[int, ...], ...]
+] = OrderedDict()
 
 
 @dataclass(frozen=True)
@@ -40,9 +46,11 @@ def _mps_instruction_schedule(
             for instruction in instructions
         ),
     )
-    cached = _MPS_INSTRUCTION_SCHEDULE_CACHE.get(key)
-    if cached is not None:
-        return cached
+    with _MPS_SCHEDULE_CACHE_LOCK:
+        cached = _MPS_INSTRUCTION_SCHEDULE_CACHE.get(key)
+        if cached is not None:
+            _MPS_INSTRUCTION_SCHEDULE_CACHE.move_to_end(key)
+            return cached
 
     groups: list[tuple[int, ...]] = []
     index = 0
@@ -81,7 +89,10 @@ def _mps_instruction_schedule(
         groups.append(tuple(group))
         index = group[-1] + 1
     schedule = tuple(groups)
-    _MPS_INSTRUCTION_SCHEDULE_CACHE[key] = schedule
+    with _MPS_SCHEDULE_CACHE_LOCK:
+        _MPS_INSTRUCTION_SCHEDULE_CACHE[key] = schedule
+        if len(_MPS_INSTRUCTION_SCHEDULE_CACHE) > _MPS_SCHEDULE_CACHE_MAXSIZE:
+            _MPS_INSTRUCTION_SCHEDULE_CACHE.popitem(last=False)
     return schedule
 
 

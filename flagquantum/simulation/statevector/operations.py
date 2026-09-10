@@ -445,6 +445,8 @@ def _apply_rx_rz_loop(
     tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
     paired = tensor.permute(permutation).reshape(state.shape[0], -1, 2)
     output = repeated_rx_rz(paired, rx_values, rz_values)
+    if not isinstance(output, torch.Tensor):
+        raise TypeError("RX/RZ loop kernel must return a tensor")
     return (
         output.reshape((state.shape[0],) + (2,) * n_wires)
         .permute(tuple(inverse))

@@ -9,6 +9,7 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ....core.ir import CircuitIR
+from ....core.parameters import Parameter
 from .split_real_imag import (
     _complex128_pauli_expectation,
     _normalized_observables,
@@ -143,7 +144,7 @@ def run_split_real_imag_double_single_conformance(
     for depth in tuple(int(value) for value in depths):
         for seed in tuple(int(value) for value in seeds):
             ir = _training_conformance_ir(depth, seed)
-            bindings = {
+            bindings: dict[str | Parameter, torch.Tensor] = {
                 "alpha": torch.tensor(0.17 + seed * 0.003, dtype=torch.float64),
                 "beta": torch.tensor(-0.29 + depth * 0.0002, dtype=torch.float64),
                 "gamma": torch.tensor(0.11 - seed * 0.002, dtype=torch.float64),

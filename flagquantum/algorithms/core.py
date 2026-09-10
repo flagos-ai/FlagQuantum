@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import partial
 from time import perf_counter
-from typing import Any, Callable, Iterable, Mapping, Sequence
+from typing import Callable, Iterable, Mapping, Sequence
 
 import torch
 
@@ -72,6 +72,10 @@ def _coefficient_tensor(
     dtype: torch.dtype,
     device: torch.device | str,
 ) -> torch.Tensor:
+    if isinstance(coefficient, complex) or (
+        isinstance(coefficient, torch.Tensor) and coefficient.is_complex()
+    ):
+        dtype = torch.promote_types(dtype, torch.complex64)
     return torch.as_tensor(coefficient, dtype=dtype, device=device)
 
 
@@ -106,9 +110,7 @@ class HamiltonianTerm:
 
         if isinstance(target, Circuit):
             base = (
-                torch.ones(
-                    target.bsz, dtype=torch.float32, device=target.state().device
-                )
+                target.state().real.new_ones(target.bsz)
                 if not self.ops
                 else target.expectation_ps(
                     x=[wire for wire, name in self.ops if name == "x"],
@@ -125,9 +127,7 @@ class HamiltonianTerm:
 
         if isinstance(target, MPSState):
             base = (
-                torch.ones(
-                    target.bsz, dtype=torch.float32, device=target.tensors[0].device
-                )
+                target.tensors[0].real.new_ones(target.bsz)
                 if not self.ops
                 else target.expectation_ps(
                     x=[wire for wire, name in self.ops if name == "x"],
@@ -144,10 +144,8 @@ class HamiltonianTerm:
         if tensor.ndim >= 2 and tensor.shape[-1] == tensor.shape[-2]:
             n_wires = infer_n_wires_from_dense_state(tensor)
             base = (
-                torch.ones(
+                tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 3 else 1,
-                    dtype=torch.float32,
-                    device=tensor.device,
                 )
                 if not self.ops
                 else pauli_product_density_expectation(tensor, self.ops, n_wires)
@@ -155,10 +153,8 @@ class HamiltonianTerm:
         else:
             n_wires = infer_n_wires_from_dense_state(tensor)
             base = (
-                torch.ones(
+                tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 2 else 1,
-                    dtype=torch.float32,
-                    device=tensor.device,
                 )
                 if not self.ops
                 else pauli_product_statevector_expectation(tensor, self.ops, n_wires)
@@ -187,13 +183,13 @@ class Hamiltonian:
 
     def expectation(self, target: Circuit | MPSState | torch.Tensor) -> torch.Tensor:
         if isinstance(target, MPSState):
-            z_coefficients: dict[int, Any] = {}
-            zz_coefficients: dict[int, Any] = {}
+            z_coefficients: dict[int, float | complex | torch.Tensor] = {}
+            zz_coefficients: dict[int, float | complex | torch.Tensor] = {}
             chain_compatible = True
             for term in self.terms:
-                ops = tuple(term.ops)
+                ops = term.ops
                 if len(ops) == 1 and ops[0][1] == "z":
-                    wire = int(ops[0][0])
+                    wire = ops[0][0]
                     z_coefficients[wire] = (
                         z_coefficients.get(wire, 0.0) + term.coefficient
                     )
@@ -201,9 +197,9 @@ class Hamiltonian:
                     len(ops) == 2
                     and ops[0][1] == "z"
                     and ops[1][1] == "z"
-                    and int(ops[1][0]) == int(ops[0][0]) + 1
+                    and ops[1][0] == ops[0][0] + 1
                 ):
-                    wire = int(ops[0][0])
+                    wire = ops[0][0]
                     zz_coefficients[wire] = (
                         zz_coefficients.get(wire, 0.0) + term.coefficient
                     )
@@ -556,7 +552,7 @@ def run_vqe(
     for _ in range(int(steps)):
         optimizer.zero_grad()
         loss = vqe_loss(circuit_builder, parameters, hamiltonian)
-        loss.backward()
+        torch.autograd.backward(loss)
         optimizer.step()
         history.append(float(loss.detach()))
 
@@ -688,7 +684,7 @@ def run_adapt_vqe(
         for _ in range(int(optimization_steps)):
             optimizer.zero_grad(set_to_none=True)
             loss = energy(tuple(selected_operators), parameters)
-            loss.backward()
+            torch.autograd.backward(loss)
             optimizer.step()
             history.append(float(loss.detach()))
         optimization_seconds = perf_counter() - optimization_started

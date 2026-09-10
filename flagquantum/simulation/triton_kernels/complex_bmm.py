@@ -3,17 +3,31 @@
 from __future__ import annotations
 
 from math import prod
+from typing import Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
 
 
+class _BMMContext(Protocol):
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
+class _LayoutBMMContext(_BMMContext, Protocol):
+    left_permutation: tuple[int, ...]
+    right_permutation: tuple[int, ...]
+    shapes: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]]
+
+
 @triton.jit
 def _flattened_offset(
-    index,
+    index: tl.tensor,
     packed_layout: tl.constexpr,
-):
+) -> int | tl.tensor:
     offset = 0
     remaining = index
     if len(packed_layout) > 0:
@@ -52,9 +66,9 @@ def _flattened_offset(
 
 @triton.jit
 def _complex_layout_bmm_kernel(
-    left_parts,
-    right_parts,
-    output_parts,
+    left_parts: tl.tensor,
+    right_parts: tl.tensor,
+    output_parts: tl.tensor,
     m_size: tl.constexpr,
     n_size: tl.constexpr,
     k_size: tl.constexpr,
@@ -69,7 +83,7 @@ def _complex_layout_bmm_kernel(
     block_m: tl.constexpr,
     block_n: tl.constexpr,
     block_k: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(2)
     rows = tl.program_id(0) * block_m + tl.arange(0, block_m)
     columns = tl.program_id(1) * block_n + tl.arange(0, block_n)
@@ -106,9 +120,9 @@ def _complex_layout_bmm_kernel(
 
 @triton.jit
 def _complex_bmm_kernel(
-    left_parts,
-    right_parts,
-    output_parts,
+    left_parts: tl.tensor,
+    right_parts: tl.tensor,
+    output_parts: tl.tensor,
     m_size: tl.constexpr,
     n_size: tl.constexpr,
     k_size: tl.constexpr,
@@ -123,7 +137,7 @@ def _complex_bmm_kernel(
     block_m: tl.constexpr,
     block_n: tl.constexpr,
     block_k: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(2)
     rows = tl.program_id(0) * block_m + tl.arange(0, block_m)
     columns = tl.program_id(1) * block_n + tl.arange(0, block_n)
@@ -286,7 +300,16 @@ def _launch_layout(
 
 class _FusedComplexLayoutBMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, left, right, left_permutation, right_permutation, shapes):
+    def forward(
+        ctx: _LayoutBMMContext,
+        left: torch.Tensor,
+        right: torch.Tensor,
+        left_permutation: tuple[int, ...],
+        right_permutation: tuple[int, ...],
+        shapes: tuple[
+            tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]
+        ],
+    ) -> torch.Tensor:
         ctx.save_for_backward(left, right)
         ctx.left_permutation = left_permutation
         ctx.right_permutation = right_permutation
@@ -294,7 +317,9 @@ class _FusedComplexLayoutBMM(torch.autograd.Function):
         return _launch_layout(left, right, left_permutation, right_permutation, *shapes)
 
     @staticmethod
-    def backward(ctx, gradient):
+    def backward(
+        ctx: _LayoutBMMContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, None, None, None]:
         left, right = ctx.saved_tensors
         batch_shape, left_shape, contracted_shape, right_shape = ctx.shapes
         batch_rank = len(batch_shape)
@@ -370,19 +395,25 @@ def fused_complex_layout_bmm(
             left.permute(left_permutation).reshape(batch, rows, reduction),
             right.permute(right_permutation).reshape(batch, reduction, columns),
         )
-    return _FusedComplexLayoutBMM.apply(
-        left, right, left_permutation, right_permutation, shapes
-    )
+    apply: Callable[..., object] = _FusedComplexLayoutBMM.apply
+    result = apply(left, right, left_permutation, right_permutation, shapes)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Complex layout BMM autograd must return a tensor")
+    return result
 
 
 class _FusedComplexBMM(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
+    def forward(
+        ctx: _BMMContext, left: torch.Tensor, right: torch.Tensor
+    ) -> torch.Tensor:
         ctx.save_for_backward(left, right)
         return _launch(left, right)
 
     @staticmethod
-    def backward(ctx, gradient: torch.Tensor):
+    def backward(
+        ctx: _BMMContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         left, right = ctx.saved_tensors
         left_gradient = _launch(
             gradient,
@@ -406,7 +437,11 @@ def fused_complex_bmm(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
         or right.dtype != torch.complex64
     ):
         return torch.bmm(left, right)
-    return _FusedComplexBMM.apply(left, right)
+    apply: Callable[[torch.Tensor, torch.Tensor], object] = _FusedComplexBMM.apply
+    result = apply(left, right)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Complex BMM autograd must return a tensor")
+    return result
 
 
 __all__ = ["fused_complex_bmm", "fused_complex_layout_bmm"]

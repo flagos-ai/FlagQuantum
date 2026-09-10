@@ -3,24 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
-from typing import Any, Mapping
+from typing import Any, Callable, TypeVar
 
 from .options import ExecutionOptions
 
-_DEFAULTS: dict[str, object] = {
-    "mode": "auto",
-    "backend": "auto",
-    "device": "auto",
-    "target": "auto",
-    "batch_size": 1,
-    "precision": "complex64",
-    "shots": None,
-    "seed": None,
-    "memory_limit_bytes": None,
-    "require_gradients": False,
-    "allow_approximate": False,
-    "allow_backend_fallback": False,
-}
+_OptionValue = TypeVar("_OptionValue")
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,28 +54,52 @@ def resolve_execution_options(
     _require_options("policy_options", policy_options)
     _require_options("program_constraints", program_constraints)
     config_options = runtime_config_to_execution_options(runtime_config)
-    values = dict(_DEFAULTS)
-    sources = {name: "framework_defaults" for name in values}
-    for source_name, overlay in (
-        ("runtime_config", config_options),
-        ("program_constraints", program_constraints),
-        ("runtime_policy", policy_options),
+    overlays = (
         ("call", options),
-    ):
-        if overlay is None:
-            continue
-        for field in fields(overlay):
-            name = field.name
-            value = getattr(overlay, name)
-            if value is not None:
-                values[name] = value
-                sources[name] = source_name
-    _validate_program_batch(values, program_constraints)
-    _validate_program_precision(values, program_constraints)
-    return ResolvedExecutionOptions(
-        **values,
-        sources=tuple((name, sources[name]) for name in _DEFAULTS),
+        ("runtime_policy", policy_options),
+        ("program_constraints", program_constraints),
+        ("runtime_config", config_options),
     )
+    sources: list[tuple[str, str]] = []
+
+    def resolve_field(
+        name: str,
+        getter: Callable[[ExecutionOptions], _OptionValue | None],
+        default: _OptionValue,
+    ) -> _OptionValue:
+        for source_name, overlay in overlays:
+            if overlay is not None and (value := getter(overlay)) is not None:
+                sources.append((name, source_name))
+                return value
+        sources.append((name, "framework_defaults"))
+        return default
+
+    resolved = ResolvedExecutionOptions(
+        mode=resolve_field("mode", lambda item: item.mode, "auto"),
+        backend=resolve_field("backend", lambda item: item.backend, "auto"),
+        device=resolve_field("device", lambda item: item.device, "auto"),
+        target=resolve_field("target", lambda item: item.target, "auto"),
+        batch_size=resolve_field("batch_size", lambda item: item.batch_size, 1),
+        precision=resolve_field("precision", lambda item: item.precision, "complex64"),
+        shots=resolve_field("shots", lambda item: item.shots, None),
+        seed=resolve_field("seed", lambda item: item.seed, None),
+        memory_limit_bytes=resolve_field(
+            "memory_limit_bytes", lambda item: item.memory_limit_bytes, None
+        ),
+        require_gradients=resolve_field(
+            "require_gradients", lambda item: item.require_gradients, False
+        ),
+        allow_approximate=resolve_field(
+            "allow_approximate", lambda item: item.allow_approximate, False
+        ),
+        allow_backend_fallback=resolve_field(
+            "allow_backend_fallback", lambda item: item.allow_backend_fallback, False
+        ),
+        sources=tuple(sources),
+    )
+    _validate_program_batch(resolved, program_constraints)
+    _validate_program_precision(resolved, program_constraints)
+    return resolved
 
 
 def runtime_config_to_execution_options(config: Any | None) -> ExecutionOptions:
@@ -128,28 +139,38 @@ def circuit_execution_constraints(circuit: Any) -> ExecutionOptions:
 
 
 def _require_options(name: str, value: object) -> None:
-    if value is not None and not isinstance(value, ExecutionOptions):
+    if value is None:
+        return
+    if not isinstance(value, ExecutionOptions):
         raise TypeError(f"{name} must be an ExecutionOptions or None")
+    if type(value) is ExecutionOptions:
+        return
+    supported = {field.name for field in fields(ExecutionOptions)}
+    for field in fields(value):
+        if field.name not in supported and getattr(value, field.name) is not None:
+            raise TypeError(
+                f"{name} contains unsupported execution field {field.name!r}"
+            )
 
 
 def _validate_program_batch(
-    values: Mapping[str, object], constraints: ExecutionOptions | None
+    values: ResolvedExecutionOptions, constraints: ExecutionOptions | None
 ) -> None:
     if constraints is None or constraints.batch_size is None:
         return
-    if values["batch_size"] != constraints.batch_size:
+    if values.batch_size != constraints.batch_size:
         raise ValueError(
             "batch_size conflicts with the program batch constraint: "
-            f"{values['batch_size']} != {constraints.batch_size}"
+            f"{values.batch_size} != {constraints.batch_size}"
         )
 
 
 def _validate_program_precision(
-    values: Mapping[str, object], constraints: ExecutionOptions | None
+    values: ResolvedExecutionOptions, constraints: ExecutionOptions | None
 ) -> None:
     if constraints is None or constraints.precision != "complex128":
         return
-    if values["precision"] == "complex64":
+    if values.precision == "complex64":
         raise ValueError(
             "precision=complex64 would demote a complex128 program; construct "
             "the program with complex64 precision instead"

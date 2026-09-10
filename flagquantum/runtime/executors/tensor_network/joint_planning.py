@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from itertools import combinations
-from math import ceil, log2, prod
+from math import ceil, isfinite, log2, prod
 from typing import Any
 
 from .distributed_dag import DistributedTNContractionDAG
@@ -31,10 +31,14 @@ class DistributedTNWorkingSetPolicy:
     minimum_allocator_headroom_bytes: int = 256 << 20
 
     def validate(self) -> None:
+        if not isfinite(self.kernel_workspace_output_multiplier):
+            raise ValueError("TN kernel workspace output multiplier must be finite")
         if self.kernel_workspace_output_multiplier < 0:
             raise ValueError(
                 "TN kernel workspace output multiplier must be non-negative"
             )
+        if not isfinite(self.communication_buffer_output_multiplier):
+            raise ValueError("TN communication buffer output multiplier must be finite")
         if self.communication_buffer_output_multiplier < 0:
             raise ValueError(
                 "TN communication buffer output multiplier must be non-negative"
@@ -192,7 +196,7 @@ def plan_joint_distributed_tn_execution(
         saved_ids = []
         saved_bytes = 0
         saved_cost = 0
-        checkpoint_prefixes = [((), 0, 0)]
+        checkpoint_prefixes: list[tuple[tuple[str, ...], int, int]] = [((), 0, 0)]
         for _, value_id, local_bytes, cost in checkpoint_candidates:
             if saved_bytes + local_bytes > effective_checkpoint_budget:
                 continue
@@ -325,47 +329,48 @@ def plan_joint_distributed_tn_execution(
         communication_buffer_bytes,
         allocator_headroom_bytes,
     ) = ranked[0]
-    payload = {
-        "version": TN_JOINT_PLAN_VERSION,
-        "dag_identity": dag.identity,
-        "target_operation_id": target.operation_id,
-        "shard_labels": labels,
-        "mesh_shape": tuple(label_extents[label] for label in labels),
-        "checkpoint_budget_local_bytes": checkpoint_budget_local_bytes,
-        "memory_budget_local_bytes": memory_budget_local_bytes,
-        "checkpoint_value_ids": checkpoint_ids,
-        "saved_checkpoint_local_bytes": saved_bytes,
-        "predicted_forward_peak_local_bytes": local_peak,
-        "predicted_forward_peak_logical_bytes": logical_peak,
-        "predicted_reverse_cotangent_peak_local_bytes": cotangent_peak,
-        "predicted_rematerialization_peak_local_bytes": rematerialization_peak,
-        "predicted_raw_input_local_bytes": raw_input_bytes,
-        "predicted_reverse_peak_local_bytes": reverse_peak,
-        "predicted_tensor_working_set_local_bytes": tensor_working_set_bytes,
-        "predicted_kernel_workspace_local_bytes": kernel_workspace_bytes,
-        "predicted_communication_buffer_local_bytes": communication_buffer_bytes,
-        "predicted_allocator_headroom_local_bytes": allocator_headroom_bytes,
-        "predicted_working_set_local_bytes": working_set_bytes,
-        "working_set_policy": (
+    plan = DistributedTNJointPlan(
+        identity="",
+        version=TN_JOINT_PLAN_VERSION,
+        dag_identity=dag.identity,
+        target_operation_id=target.operation_id,
+        shard_labels=labels,
+        mesh_shape=tuple(label_extents[label] for label in labels),
+        checkpoint_budget_local_bytes=checkpoint_budget_local_bytes,
+        memory_budget_local_bytes=memory_budget_local_bytes,
+        checkpoint_value_ids=checkpoint_ids,
+        saved_checkpoint_local_bytes=saved_bytes,
+        predicted_forward_peak_local_bytes=local_peak,
+        predicted_forward_peak_logical_bytes=logical_peak,
+        predicted_reverse_cotangent_peak_local_bytes=cotangent_peak,
+        predicted_rematerialization_peak_local_bytes=rematerialization_peak,
+        predicted_raw_input_local_bytes=raw_input_bytes,
+        predicted_reverse_peak_local_bytes=reverse_peak,
+        predicted_tensor_working_set_local_bytes=tensor_working_set_bytes,
+        predicted_kernel_workspace_local_bytes=kernel_workspace_bytes,
+        predicted_communication_buffer_local_bytes=communication_buffer_bytes,
+        predicted_allocator_headroom_local_bytes=allocator_headroom_bytes,
+        predicted_working_set_local_bytes=working_set_bytes,
+        working_set_policy=(
             None if working_set_policy is None else asdict(working_set_policy)
         ),
-        "memory_budget_satisfied": (
+        memory_budget_satisfied=(
             memory_budget_local_bytes is None
             or working_set_bytes <= memory_budget_local_bytes
         ),
-        "estimated_collective_network_bytes": collective_bytes,
-        "estimated_rematerialization_cost": rematerialization_cost,
-        "communication_weight": communication_weight,
-        "rematerialization_weight": rematerialization_weight,
-        "objective_score": score,
-        "candidate_count": len(ranked),
-    }
-    return DistributedTNJointPlan(
-        **payload,
-        identity=hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
+        estimated_collective_network_bytes=collective_bytes,
+        estimated_rematerialization_cost=rematerialization_cost,
+        communication_weight=communication_weight,
+        rematerialization_weight=rematerialization_weight,
+        objective_score=score,
+        candidate_count=len(ranked),
     )
+    payload = asdict(plan)
+    del payload["identity"]
+    identity = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return replace(plan, identity=identity)
 
 
 def _predict_reverse_cotangent_peak(

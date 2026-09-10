@@ -1,6 +1,7 @@
 """Tests for hybrid JAX quantum kernels exposed to PyTorch."""
 
 import importlib.util
+from typing import Any
 
 import pytest
 import torch
@@ -178,6 +179,95 @@ def test_jax_quantum_kernel_batched_parameters_match_per_sample_statevector():
     assert losses.shape == (3,)
     assert torch.allclose(losses.detach(), torch.stack(ref_values), atol=1e-6)
     assert torch.allclose(params.grad, torch.stack(ref_grads), atol=1e-5)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("shape", [(3, 2), (1, 6), (2,)])
+def test_jax_quantum_kernel_rejects_mismatched_parameter_shape(
+    jit: bool, shape: tuple[int, ...]
+) -> None:
+    def build(values: Any) -> fq.Circuit:
+        return fq.Circuit(2).rx(0, theta=values[0, 0]).ry(1, theta=values[1, 2])
+
+    kernel = compile_quantum_kernel(build, torch.zeros(2, 3), n_wires=2, jit=jit)
+    with pytest.raises(ValueError, match="parameter shape must end with"):
+        kernel(torch.zeros(shape, requires_grad=True))
+
+
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("sample_shape", [(), (2, 3)])
+def test_jax_quantum_kernel_preserves_multiple_batch_axes(
+    jit: bool, sample_shape: tuple[int, ...]
+) -> None:
+    def build(values: Any) -> fq.Circuit:
+        angle = values[()] if not sample_shape else values[0, 0]
+        return fq.Circuit(1).rx(0, theta=angle)
+
+    kernel = compile_quantum_kernel(
+        build, torch.zeros(sample_shape), n_wires=1, jit=jit
+    )
+    parameters = torch.linspace(0.1, 0.8, 6).reshape(2, 3)
+    if sample_shape:
+        parameters = parameters[..., None, None].expand(2, 3, *sample_shape).clone()
+    parameters.requires_grad_(True)
+    values = kernel(parameters)
+    values.sum().backward()
+
+    angles = parameters if not sample_shape else parameters[..., 0, 0]
+    expected_grad = (
+        -parameters.sin() if not sample_shape else torch.zeros_like(parameters)
+    )
+    if sample_shape:
+        expected_grad[..., 0, 0] = -angles.sin()
+    assert values.shape == (2, 3)
+    torch.testing.assert_close(values, angles.cos())
+    torch.testing.assert_close(parameters.grad, expected_grad)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("sample_shape", [(0,), (2, 0)])
+@pytest.mark.parametrize("batch_shape", [(3,), (2, 3), (0,)])
+def test_jax_quantum_kernel_batches_parameter_free_circuits(
+    jit: bool, sample_shape: tuple[int, ...], batch_shape: tuple[int, ...]
+) -> None:
+    def build(values: Any) -> fq.Circuit:
+        return fq.Circuit(1).x(0)
+
+    kernel = compile_quantum_kernel(
+        build, torch.empty(sample_shape), n_wires=1, jit=jit
+    )
+    parameters = torch.empty(batch_shape + sample_shape, requires_grad=True)
+    values = kernel(parameters)
+    values.sum().backward()
+
+    torch.testing.assert_close(values, -torch.ones(batch_shape))
+    assert parameters.grad is not None
+    assert parameters.grad.shape == parameters.shape
+    assert parameters.grad.numel() == 0
+
+
+@pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("accepts_inputs", [False, True])
+def test_jax_quantum_kernel_rejects_double_backward(
+    jit: bool, accepts_inputs: bool
+) -> None:
+    def build(values: Any, features: Any = None) -> fq.Circuit:
+        angle = values[0] if features is None else values[0] + features[0]
+        return fq.Circuit(1).rx(0, theta=angle)
+
+    parameters = torch.tensor([0.3], requires_grad=True)
+    inputs = torch.tensor([0.2], requires_grad=True) if accepts_inputs else None
+    kernel = compile_quantum_kernel(
+        build, parameters.detach(), n_wires=1, jit=jit, accepts_inputs=accepts_inputs
+    )
+    loss = kernel(parameters, inputs).square()
+    arguments = (parameters,) if inputs is None else (parameters, inputs)
+    gradients = torch.autograd.grad(loss, arguments, create_graph=True)
+    angle = parameters if inputs is None else parameters + inputs
+    for gradient in gradients:
+        torch.testing.assert_close(gradient, -(2 * angle).sin())
+    with pytest.raises(RuntimeError, match="once_differentiable"):
+        sum(gradient.sum() for gradient in gradients).backward()
 
 
 def test_jax_quantum_kernel_hamiltonian_observable_matches_native_gradient():

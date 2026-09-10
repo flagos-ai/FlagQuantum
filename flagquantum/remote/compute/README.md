@@ -1,6 +1,8 @@
 # Remote compute
 
-This directory owns experimental adapters to external CPU/GPU job systems.
+Run classical workloads through external batch systems and reusable workspaces.
+This package owns job lifecycle and workspace connections; Runtime owns circuit
+execution, and directly controlled devices belong in Compute.
 
 Use the categorized public entry point:
 
@@ -8,33 +10,34 @@ Use the categorized public entry point:
 from flagquantum.remote.compute import JiudingClient
 ```
 
-Jiuding currently supports explicit development-workspace creation and
-start/stop control, one CPU or single-GPU task instance, automatic workspace
-context discovery, direct program submission with workspace-managed artifacts,
-status, waiting, shared JSON results, stopping active jobs, and a loopback-only resident statevector
-executor for low-latency work in an already-running workspace. The resident
-path supports exact measurements, sampled outputs, and bounded measurement
-batches in one transport request. It uses the standard library and direct
-HTTPS/SSH calls.
-Compute selection uses `jiuding:<chip-type>` or
-`jiuding:<chip-type>/<model>`. CPU and GPU are implemented; MLU, NPU and XPU
-are recognized reserved names that fail closed until real adapters exist.
-It does not own circuit execution, numerical backend selection, gradients,
-distributed launch, or the QPU shots/counts contracts. No Stable Core exports
-are added. These adapter-specific interfaces are not frozen.
+## Choose the execution path
 
-Start with `JiudingClient` from `flagquantum.remote.compute` and
-`examples/remote/jiuding_submit_program.py`. `submit_program()` accepts a
-Circuit directly and manages its source and result artifacts through the
-selected workspace. The lower-level `submit()` accepts a shared user script
-whose `main()` returns a JSON-serializable value.
+- **Program batch job:** use `JiudingClient.submit_program` and the
+  [program example](../../../examples/remote/jiuding_submit_program.py). It
+  manages source and result artifacts through the selected workspace.
+- **Script batch job:** use `JiudingClient.submit` and the [submission example](../../../examples/remote/jiuding_submit.py).
+  A shared user script defines `main()` and returns a JSON-serializable result.
+- **Repeated circuit execution:** use `fq.run(..., target="jiuding:gpu")` with a
+  configured running workspace. The resident executor reuses its connection and
+  supports bounded measurement requests.
 
-Read `docs/guides/JIUDING.md` for the supported journey and limits. Run
-`python -m pytest tests/team/remote/test_jiuding.py
-tests/team/remote/test_workspace_executor.py -q` for offline behavior tests.
-No test in those files creates real tasks. The Bell example provides a
-small CPU numerical check for live acceptance; `jiuding_bell_gpu.py` checks
-CUDA execution with one visible GPU; `jiuding_workspace_bell.py` exercises the
-resident path. A new provider-wide contract, `flagquantum.remote` root export,
-or distributed claim
-requires a separate reviewed change.
+Follow the [Jiuding guide](../../../docs/guides/JIUDING.md) for credentials,
+shared code, compatible images, resource selection, and supported outputs.
+The adapter interfaces are experimental; reserved chip names do not imply
+implemented hardware support.
+
+## Change and verify
+
+Start in [jiuding.py](jiuding.py) for the client,
+[_worker.py](_worker.py) for batch results, or
+[_workspace_executor.py](_workspace_executor.py) for resident execution.
+Run offline checks from the repository root:
+
+```bash
+python -m pytest tests/team/remote/test_jiuding.py \
+  tests/team/remote/test_workspace_executor.py -q
+```
+
+Verify task-bound results, workspace restart, timeout behavior, cancellation,
+and connection cleanup. Keep QPU counts contracts, distributed launch policy,
+and numerical algorithms out of the adapter.

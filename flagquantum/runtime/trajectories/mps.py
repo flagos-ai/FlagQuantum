@@ -120,7 +120,7 @@ def run_noisy_mps_runtime(
     failures: list[TrajectoryFailure] = []
     completed_ids: list[int] = []
     noise_model_identity = getattr(noise_model, "identity", None)
-    if resume and checkpoint_path is not None:
+    if resume and checkpoint_path is not None and seed is not None:
         checkpoint = load_trajectory_checkpoint(Path(checkpoint_path))
         if checkpoint.requested_count != int(trajectories):
             raise ValueError("checkpoint requested trajectory count does not match")
@@ -168,6 +168,8 @@ def run_noisy_mps_runtime(
     def save_progress() -> None:
         if checkpoint_path is None:
             return
+        if seed is None:
+            raise ValueError("checkpointed trajectory execution requires seed")
         save_trajectory_checkpoint(
             TrajectoryCheckpoint(
                 requested_count=int(trajectories),

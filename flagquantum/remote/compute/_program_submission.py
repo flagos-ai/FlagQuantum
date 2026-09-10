@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from abc import ABC, abstractmethod
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Sequence
@@ -13,8 +14,28 @@ if TYPE_CHECKING:
     from ...observables import OutputRequest
 
 
-class _ProgramSubmissionMixin:
+class _ProgramSubmissionMixin(ABC):
     """Add program jobs without expanding the low-level transport module."""
+
+    @abstractmethod
+    def _resolve_compute_target(self, target: str) -> tuple[str, str]:
+        """Resolve a requested target through the concrete transport."""
+
+    @abstractmethod
+    def submit(
+        self,
+        script: str | Path,
+        *,
+        target: str,
+        image: str,
+        receipt: str | Path,
+        image_region: str = "PUBLIC",
+        python: str = sys.executable,
+        pythonpath: str | Path | None = None,
+        cpus: int = 2,
+        memory_gib: int = 2,
+    ) -> dict[str, Any]:
+        """Submit a shared script using the concrete job transport."""
 
     def submit_program(
         self,

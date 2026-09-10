@@ -98,9 +98,10 @@ def _cuda_svd(
             used_cpu = True
             try:
                 for item in flattened:
+                    # Preserve the training graph across the CPU fallback.
                     cpu_u, cpu_singular, cpu_vh = checked(
                         torch.linalg.svd(
-                            item.detach().to("cpu"),
+                            item.to("cpu"),
                             full_matrices=False,
                         )
                     )
@@ -184,7 +185,8 @@ def _split_pair_matrix(
         batched_u, batched_s, batched_vh = _cuda_svd(matrix, driver=config.svd_driver)
     svds = tuple(zip(batched_u, batched_s, batched_vh))
     ranks = [_select_rank(s, config.max_bond, config.cutoff) for _, s, _ in svds]
-    rank = min(ranks) if config.cutoff > 0 else ranks[0]
+    # A shared batch dimension must retain every sample's required subspace.
+    rank = max(ranks)
     original_rank = max(int(s.shape[0]) for _, s, _ in svds)
     singular_value_gap = (
         min(float(torch.abs(s[rank - 1] - s[rank]).detach().cpu()) for _, s, _ in svds)
@@ -305,7 +307,7 @@ def _split_pair_matrix_bucket(
             _select_rank(s[item, batch], config.max_bond, config.cutoff)
             for batch in range(int(matrices.shape[1]))
         ]
-        rank = min(item_ranks) if config.cutoff > 0 else item_ranks[0]
+        rank = max(item_ranks)
         singular_value_gap = (
             torch.min(torch.abs(s[item, :, rank - 1] - s[item, :, rank]))
             if rank < int(s.shape[-1])

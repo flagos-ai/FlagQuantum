@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Sequence
+from typing import Protocol, Sequence
 
 import torch
 
 from ....core.ir import CircuitIR
-from ....core.parameters import bind_parameter_value, parameter_names_in_value
+from ....core.parameters import (
+    Parameter,
+    bind_parameter_value,
+    parameter_names_in_value,
+)
 from .reverse import execute_torch_distributed_statevector_reverse
 
 _PARAMETER_ORDER_KEY = "hybrid_parameter_order"
@@ -78,7 +82,7 @@ def _decode_template(
 def _bind_template(
     template: CircuitIR, names: Sequence[str], parameters: Sequence[torch.Tensor]
 ) -> CircuitIR:
-    bindings = dict(zip(names, parameters))
+    bindings: dict[str | Parameter, torch.Tensor] = dict(zip(names, parameters))
     return replace(
         template,
         instructions=tuple(
@@ -151,14 +155,29 @@ def _statevector_expectation_fake(
     return parameters[0].new_empty(())
 
 
-def _setup_context(ctx, inputs, output) -> None:
+class _HybridAutogradContext(Protocol):
+    circuit_ir_json: str
+
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
+def _setup_context(
+    ctx: _HybridAutogradContext,
+    inputs: tuple[list[torch.Tensor], str],
+    output: torch.Tensor,
+) -> None:
     del output
     parameters, circuit_ir_json = inputs
     ctx.save_for_backward(*parameters)
     ctx.circuit_ir_json = circuit_ir_json
 
 
-def _backward(context, grad_output: torch.Tensor):
+def _backward(
+    context: _HybridAutogradContext, grad_output: torch.Tensor
+) -> tuple[list[torch.Tensor], None]:
     gradients = _statevector_expectation_backward_op(
         grad_output, list(context.saved_tensors), context.circuit_ir_json
     )
@@ -176,7 +195,10 @@ def hybrid_statevector_expectation(
 ) -> torch.Tensor:
     """Execute one supported region through the private functional custom op."""
 
-    return _statevector_expectation_op(list(parameters), circuit_ir_json)
+    result: object = _statevector_expectation_op(list(parameters), circuit_ir_json)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("hybrid statevector operator must return a tensor")
+    return result
 
 
 __all__ = ("hybrid_statevector_expectation",)

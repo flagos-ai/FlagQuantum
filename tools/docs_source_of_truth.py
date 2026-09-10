@@ -217,42 +217,6 @@ def render_performance_claims(data: dict[str, object], link_prefix: str) -> str:
     return "\n".join(rows)
 
 
-def render_readme_summary(data: dict[str, object]) -> str:
-    capabilities = data["capabilities"]
-    assert isinstance(capabilities, dict)
-    rows = [
-        "Selected core capabilities; maturity applies only within each documented scope.",
-        "",
-        "| Capability | Maturity |",
-        "| --- | --- |",
-    ]
-    for name in (
-        "ir",
-        "local_statevector",
-        "sharded_statevector_training",
-        "sharded_mps_training",
-        "tensor_network_training",
-        "cloud_deployment",
-    ):
-        capability = capabilities[name]
-        assert isinstance(capability, dict)
-        rows.append(
-            f"| [{capability['title']}]({capability['documentation']}) "
-            f"| `{capability['level']}` |"
-        )
-    rows.extend(
-        [
-            "",
-            "See the [full capability catalog](docs/generated/CAPABILITIES.md) for support",
-            "boundaries, hardware evidence, and experimental paths including FlagOS,",
-            "interoperability, noise, and precision research. Levels are generated from the",
-            "[capability matrix](capability-maturity.toml); they do not certify every device",
-            "or workload, and development evidence does not establish production support.",
-        ]
-    )
-    return "\n".join(rows)
-
-
 def render_known_limitations(data: dict[str, object]) -> str:
     capabilities = data["capabilities"]
     assert isinstance(capabilities, dict)
@@ -447,13 +411,12 @@ def generated() -> dict[Path, str]:
             "invalid capability maturity matrix:\n- " + "\n- ".join(errors)
         )
     readme = replace_generated_region(
-        ROOT / "README.md", "CAPABILITY_SUMMARY", render_readme_summary(maturity)
+        ROOT / "README.md",
+        "CAPABILITY_SUMMARY",
+        "Support varies by execution path. See the [capability catalog](docs/generated/CAPABILITIES.md) "
+        "for maturity and limitations.",
     )
-    readme_claims = (
-        "Every value below is read from a hash-bound raw artifact. Missing or changed\n"
-        "evidence makes the source-of-truth check fail closed.\n\n"
-        + render_performance_claims(maturity, "")
-    )
+    readme_claims = "[Benchmarks and validated results](docs/generated/CAPABILITIES.md#validated-public-performance-claims)"
     readme = replace_generated_region(
         ROOT / "README.md", "PERFORMANCE_CLAIMS", readme_claims, source=readme
     )

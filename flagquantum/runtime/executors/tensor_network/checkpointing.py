@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, TypedDict
 
 import torch
 
@@ -21,6 +21,15 @@ from .reverse_dag import (
 )
 
 TN_CHECKPOINT_PLAN_VERSION = "flagquantum.distributed_tn_checkpoint_plan.v1"
+
+
+class _CheckpointPayload(TypedDict):
+    version: str
+    forward_dag_identity: str
+    budget_bytes: int
+    checkpoint_value_ids: tuple[str, ...]
+    saved_intermediate_bytes: int
+    estimated_rematerialization_cost: int
 
 
 @dataclass(frozen=True)
@@ -59,7 +68,7 @@ class DistributedTNCheckpointPlan:
         if self.identity != _checkpoint_identity(self._payload()):
             raise ValueError("checkpoint plan identity does not match its contents")
 
-    def _payload(self) -> dict[str, Any]:
+    def _payload(self) -> _CheckpointPayload:
         return {
             "version": self.version,
             "forward_dag_identity": self.forward_dag_identity,
@@ -104,22 +113,22 @@ def plan_tn_checkpoints(
             value.value_id,
         )
     )
-    selected = []
+    selected: set[str] = set()
     saved_bytes = 0
     for value in candidates:
         if saved_bytes + value.nbytes <= budget_bytes:
-            selected.append(value.value_id)
+            selected.add(value.value_id)
             saved_bytes += value.nbytes
     selected_ids = tuple(
-        value.value_id for value in forward.values if value.value_id in set(selected)
+        value.value_id for value in forward.values if value.value_id in selected
     )
     estimated_rematerialization_cost = sum(
         operation.estimated_cost
         for operation in forward.operations
         if operation.output_value_id != forward.output_value_id
-        and operation.output_value_id not in selected_ids
+        and operation.output_value_id not in selected
     )
-    payload = {
+    payload: _CheckpointPayload = {
         "version": TN_CHECKPOINT_PLAN_VERSION,
         "forward_dag_identity": forward.identity,
         "budget_bytes": budget_bytes,
@@ -244,15 +253,14 @@ def execute_checkpointed_tn_reverse_dag(
         transient: dict[str, torch.Tensor] = {}
         for operation in operations:
             operand_ids = operation.input_value_ids
-            operands = tuple(
-                tape.get(value_id, transient.get(value_id)) for value_id in operand_ids
-            )
-            if any(operand is None for operand in operands):
+            left = tape.get(operand_ids[0], transient.get(operand_ids[0]))
+            right = tape.get(operand_ids[1], transient.get(operand_ids[1]))
+            if left is None or right is None:
                 raise RuntimeError("TN rematerialization schedule is incomplete")
             transient[operation.output_value_id] = einsum_pair_by_labels(
-                operands[0],
+                left,
                 values[operand_ids[0]].labels,
-                operands[1],
+                right,
                 values[operand_ids[1]].labels,
                 operation.output_labels,
             )
@@ -263,10 +271,11 @@ def execute_checkpointed_tn_reverse_dag(
                 remaining_uses[input_id] -= 1
                 if remaining_uses[input_id] == 0:
                     transient.pop(input_id, None)
-        return (
-            tape.get(left_id, transient.get(left_id)),
-            tape.get(right_id, transient.get(right_id)),
-        )
+        left = tape.get(left_id, transient.get(left_id))
+        right = tape.get(right_id, transient.get(right_id))
+        if left is None or right is None:
+            raise RuntimeError("TN rematerialization did not produce both operands")
+        return left, right
 
     for record in reverse.records:
         output_cot = cotangents.pop(record.output_value_id, None)
@@ -274,8 +283,6 @@ def execute_checkpointed_tn_reverse_dag(
             continue
         left_id, right_id = record.input_value_ids
         left, right = materialize_pair(left_id, right_id)
-        if left is None or right is None:
-            raise RuntimeError("TN rematerialization did not produce both operands")
         left_cot, right_cot = einsum_pair_pullback(
             output_cot,
             record.output_labels,

@@ -216,11 +216,14 @@ def _resolve_backend_policy(options: dict[str, Any]) -> DistributedBackendPolicy
     distributed_profile = options.pop("distributed_profile", None)
     jax_backend = options.pop("jax_backend", None)
     torch_backend = options.pop("torch_backend", None)
-    policy = (
-        backend_policy
-        if backend_policy is not None
-        else resolve_distributed_backend_policy(profile=distributed_profile)
-    )
+    if backend_policy is not None:
+        if not isinstance(backend_policy, DistributedBackendPolicy):
+            raise TypeError(
+                "distributed_backend_policy must be a DistributedBackendPolicy"
+            )
+        policy = backend_policy
+    else:
+        policy = resolve_distributed_backend_policy(profile=distributed_profile)
     if jax_backend is None and torch_backend is None:
         return policy
     source = dict(policy.source)

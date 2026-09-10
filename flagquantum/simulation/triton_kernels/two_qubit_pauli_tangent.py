@@ -2,17 +2,29 @@
 
 from __future__ import annotations
 
+from typing import Callable, Protocol
+
 import torch
 import triton
 import triton.language as tl
 
 
+class _TensorJacobian(Protocol):
+    def __call__(
+        self,
+        func: Callable[[torch.Tensor], torch.Tensor],
+        inputs: torch.Tensor,
+        *,
+        vectorize: bool,
+    ) -> object: ...
+
+
 @triton.jit
 def _rxx_ryy_rzz_tangent_kernel(
-    state_parts,
-    angles,
-    tangent_parts,
-    group_count,
+    state_parts: tl.tensor,
+    angles: tl.tensor,
+    tangent_parts: tl.tensor,
+    group_count: tl.tensor,
     depth: tl.constexpr,
     state_batch_stride: tl.constexpr,
     angle_batch_stride: tl.constexpr,
@@ -20,7 +32,7 @@ def _rxx_ryy_rzz_tangent_kernel(
     tangent_parameter_stride: tl.constexpr,
     tangent_batch_stride: tl.constexpr,
     block_groups: tl.constexpr,
-):
+) -> None:
     parameter = tl.program_id(2)
     batch = tl.program_id(1)
     groups = tl.program_id(0) * block_groups + tl.arange(0, block_groups)
@@ -136,12 +148,17 @@ def repeated_rxx_ryy_rzz_tangents(
         raise ValueError("angles must have shape [batch, depth, 3]")
     depth = int(angles.shape[1])
     if not state.is_cuda or state.dtype != torch.complex64:
-        real = torch.autograd.functional.jacobian(
-            lambda value: _reference(state, value).real, angles, vectorize=True
-        )
-        imag = torch.autograd.functional.jacobian(
-            lambda value: _reference(state, value).imag, angles, vectorize=True
-        )
+        differentiate: _TensorJacobian = torch.autograd.functional.jacobian
+        components: list[torch.Tensor] = []
+        for component in (
+            lambda value: _reference(state, value).real,
+            lambda value: _reference(state, value).imag,
+        ):
+            result = differentiate(component, angles, vectorize=True)
+            if not isinstance(result, torch.Tensor):
+                raise TypeError("Pauli rotation Jacobian must return a tensor")
+            components.append(result)
+        real, imag = components
         jacobian = torch.complex(real, imag)
         indices = torch.arange(int(state.shape[0]), device=state.device)
         return (

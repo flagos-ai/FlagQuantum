@@ -16,6 +16,7 @@ from typing import Any, Literal, Sequence
 from ....simulation.tensor_network.models import (
     PairContractionStep,
     TensorNetworkContractionPlan,
+    TensorNetworkExpectationPlan,
 )
 
 TN_DAG_VERSION = "flagquantum.distributed_tn_dag.v1"
@@ -275,7 +276,7 @@ def _find_active(
 
 
 def plan_distributed_tn_contraction_dag(
-    plan: TensorNetworkContractionPlan,
+    plan: TensorNetworkContractionPlan | TensorNetworkExpectationPlan,
     *,
     world_size: int,
     objective: str = "memory",

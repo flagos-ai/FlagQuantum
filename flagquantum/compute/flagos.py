@@ -67,7 +67,7 @@ class FlagOSPlatformRuntime:
 
     def _device_module(self) -> Any:
         self.activate()
-        return torch.flagos
+        return getattr(torch, "flagos")
 
     def is_available(self) -> bool:
         module = self._device_module()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, fields
+from dataclasses import FrozenInstanceError, dataclass, fields
 
 import pytest
 
@@ -144,3 +144,21 @@ def test_runtime_policy_has_one_execution_source_and_round_trips() -> None:
     assert policy.backend == "pytorch"
     assert policy.allow_backend_fallback is False
     assert RuntimePolicy.from_dict(policy.to_dict()) == policy
+
+
+@pytest.mark.parametrize("source", ("options", "policy_options", "program_constraints"))
+@pytest.mark.parametrize("extra", (None, 0, 2))
+def test_resolver_does_not_ignore_explicit_subclass_fields(
+    source: str, extra: int | None
+) -> None:
+    @dataclass(frozen=True)
+    class ExtendedOptions(ExecutionOptions):
+        extra: int | None = None
+
+    supplied = ExtendedOptions(mode="mps", extra=extra)
+    if extra is None:
+        resolved = resolve_execution_options(**{source: supplied})
+        assert resolved.mode == "mps"
+    else:
+        with pytest.raises(TypeError, match="extra"):
+            resolve_execution_options(**{source: supplied})

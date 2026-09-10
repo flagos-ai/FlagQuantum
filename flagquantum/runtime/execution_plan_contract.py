@@ -192,9 +192,7 @@ def attach_execution_contract(
 
 
 def plan_to_dict(plan: ExecutionPlan) -> dict[str, object]:
-    payload = _payload(plan)
-    validate_plan_payload(payload)
-    return json.loads(canonical_json(payload))
+    return validate_plan_payload(_payload(plan))
 
 
 def plan_to_json(plan: ExecutionPlan, *, indent: int | None = None) -> str:
@@ -373,7 +371,12 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise ExecutionPlanContractError(
             "identity_mismatch", "ExecutionPlan identity does not match its payload"
         )
-    return json.loads(canonical_json(values))
+    normalized: object = json.loads(canonical_json(values))
+    if not isinstance(normalized, dict):
+        raise ExecutionPlanContractError(
+            "unsupported_schema", "serialized ExecutionPlan must be a JSON object"
+        )
+    return normalized
 
 
 def validate_plan_environment(plan: ExecutionPlan) -> None:

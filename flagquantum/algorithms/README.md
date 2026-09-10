@@ -18,6 +18,13 @@ external-framework objects or a second execution path.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
 - `__init__.py`: the intentionally small public algorithms surface.
 
+Staged optimization owns contiguous copies of input parameter groups. This
+lets Rotosolve update coordinates in place and LBFGS flatten gradients even
+when callers supply transposed tensors. Input values, shapes, precision, and
+device placement are preserved; caller-owned tensors are never optimized in
+place. The parameter-layout tests in `tests/test_hybrid_optimization.py` cover
+both methods with contiguous and transposed inputs.
+
 `core.py` accepts existing Circuit, MPS, statevector, and density-matrix inputs,
 but dense Pauli-product mathematics lives in `simulation/pauli.py`. Keep new
 numerical kernels in Simulation and preserve Algorithms as their workflow

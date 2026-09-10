@@ -26,9 +26,11 @@ from .path_search import (
     _label_counts,
     _label_dims,
     _linearize_contraction_tree,
+    _Node,
     _product,
     _profile_cache_key,
     _quality_multistart_cache_key,
+    _SearchNode,
     _tree_from_steps,
 )
 from .stages import execute_pair_steps as _execute_pair_steps
@@ -161,7 +163,7 @@ def _pair_steps_from_dynamic_path(
 ) -> tuple[PairContractionStep, ...]:
     """Convert a dynamic pair-position path into stable FlagQuantum steps."""
 
-    active = list(nodes)
+    active: list[_Node] = list(nodes)
     final_outputs = set(int(label) for label in output_labels)
     steps: list[PairContractionStep] = []
     for step_index, pair in enumerate(path):
@@ -202,7 +204,7 @@ def _pair_steps_from_dynamic_path(
         for index in sorted((left_index, right_index), reverse=True):
             active.pop(index)
         active.append(
-            TensorNetworkNode(
+            _SearchNode(
                 tensor=_dry_run_tensor(output_shape, left.tensor),
                 labels=pair_outputs,
                 name=f"({left.name},{right.name})",
@@ -217,7 +219,7 @@ def _dynamic_path_from_pair_steps(
     nodes: Sequence[TensorNetworkNode],
     steps: Sequence[PairContractionStep],
 ) -> tuple[tuple[int, int], ...]:
-    active = list(nodes)
+    active: list[_Node] = list(nodes)
     path: list[tuple[int, int]] = []
     for step in steps:
         left_index = next(
@@ -246,7 +248,7 @@ def _dynamic_path_from_pair_steps(
         for index in sorted((left_index, right_index), reverse=True):
             active.pop(index)
         active.append(
-            TensorNetworkNode(
+            _SearchNode(
                 tensor=_dry_run_tensor(step.output_shape, nodes[0].tensor),
                 labels=step.output_labels,
                 name=f"({step.left},{step.right})",

@@ -210,7 +210,7 @@ def counts(
 def _optional_wires(wires: Iterable[int] | int | None) -> tuple[int, ...]:
     if wires is None:
         return ()
-    return (_wire(wires),) if type(wires) is int else _wires(wires)
+    return (_wire(wires),) if isinstance(wires, int) else _wires(wires)
 
 
 def _sampled_pauli_term(observable: Observable) -> _PauliTerm:

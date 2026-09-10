@@ -29,6 +29,7 @@ from .errors import ValidationError
 if TYPE_CHECKING:
     from .noise import NoiseModel
     from .observables import OutputRequest
+    from .runtime.builder_compilation import BuilderBindings
     from .runtime.execution_plan import ExecutionPlan
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
@@ -51,6 +52,27 @@ class _CircuitConstructionOptions(TypedDict):
     config: RuntimeConfig
 
 
+class _StatevectorExecutionStatistics(TypedDict, total=False):
+    """Counters populated as local statevector execution progresses."""
+
+    triton_single_qubit_loop_enabled: bool
+    triton_single_qubit_loop_regions: int
+    triton_single_qubit_loop_gates: int
+    triton_ry_rz_pair_candidates: int
+    triton_ry_rz_pair_executed: int
+    triton_single_qubit_matrix_regions: int
+    diagonal_elementwise_gates: int
+    permutation_gates: int
+    triton_cx_sequence_regions: int
+    fixed_single_qubit_specialized_gates: int
+    fused_gate_regions: int
+    fused_gate_count: int
+    dependency_reordered_single_qubit_regions: int
+    statevector_apply_count: int
+    batched_rx_ry_rz_regions: int
+    batched_rotation_sequence_regions: int
+
+
 class Circuit:
     """FlagQuantum native differentiable circuit.
 
@@ -62,6 +84,8 @@ class Circuit:
         >>> circuit.n_qubits
         2
     """
+
+    _parameter_bindings: BuilderBindings
 
     def __init__(
         self,
@@ -109,6 +133,7 @@ class Circuit:
         self.dtype = dtype or getattr(torch, self.runtime_config.complex_dtype)
         self._instructions: list[Instruction] = []
         self._state_cache: torch.Tensor | None = None
+        self._last_statevector_runtime: _StatevectorExecutionStatistics = {}
         self._initial_state_workspace: torch.Tensor | None = None
         self._ir_cache: CircuitIR | None = None
         self._backend_programs: dict[tuple[Any, ...], Any] = {}

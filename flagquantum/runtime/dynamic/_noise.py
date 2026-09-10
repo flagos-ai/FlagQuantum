@@ -78,6 +78,10 @@ def apply_readout_error(
         return bits, 0
     for rule in noise_model.readout_rules:
         if wire in rule.wires:
+            if isinstance(rule.error, CorrelatedReadoutError):
+                raise ValueError(
+                    "correlated readout is outside the dynamic noise profile"
+                )
             return sample_dynamic_readout(bits, rule.error, generator=generator)
     return bits, 0
 

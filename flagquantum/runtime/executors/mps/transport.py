@@ -251,7 +251,7 @@ def _recv_tensor_p2p(
     sequence_mismatch = sequence is not None and actual_sequence != int(sequence)
     shape_tuple = tuple(int(value) for value in values[1:])
     flat = torch.empty(
-        int(__import__("math").prod(shape_tuple)),
+        int(math.prod(shape_tuple)),
         dtype=reference.dtype,
         device=reference.device,
     )
@@ -349,7 +349,7 @@ def _recv_tensor_static_p2p(
                 f"dimension: {actual_shape}"
             )
         flat = torch.empty(
-            int(__import__("math").prod(actual_shape)),
+            int(math.prod(actual_shape)),
             dtype=reference.dtype,
             device=reference.device,
         )
@@ -371,9 +371,7 @@ def _recv_tensor_static_p2p(
         _MPS_STATIC_DESCRIPTOR_CACHE[key] = signature
         return flat.reshape(shape)
     _MPS_P2P_STATS["descriptor_cache_hits"] += 1
-    flat = torch.empty(
-        __import__("math").prod(shape), dtype=reference.dtype, device=reference.device
-    )
+    flat = torch.empty(math.prod(shape), dtype=reference.dtype, device=reference.device)
     _MPS_P2P_STATS["static_payload_message_count"] += 1
     _run_batched_p2p(
         [dist.P2POp(dist.irecv, flat, src)],
@@ -460,7 +458,7 @@ def _recv_tensor_batch_p2p(
         mismatch = mismatch or tuple(shapes) != tuple(
             tuple(value.shape) for value in refs
         )
-    elements = sum(int(__import__("math").prod(shape)) for shape in shapes)
+    elements = sum(int(math.prod(shape)) for shape in shapes)
     pooled = _pooled_p2p_buffer(device=device, dtype=dtype, elements=elements)
     _run_batched_p2p(
         [dist.P2POp(dist.irecv, pooled, src)],
@@ -470,7 +468,7 @@ def _recv_tensor_batch_p2p(
     outputs = []
     offset = 0
     for shape in shapes:
-        size = int(__import__("math").prod(shape))
+        size = int(math.prod(shape))
         outputs.append(pooled[offset : offset + size].reshape(shape).clone())
         offset += size
     if mismatch:
@@ -491,6 +489,10 @@ def _send_tensor_async_p2p(tensor: torch.Tensor, *, dst: int) -> None:
         dist.isend(tensor.reshape(-1), dst=dst),
     ]
     for request in requests:
+        if request is None:
+            raise RuntimeError(
+                f"MPS asynchronous send returned no request for peer {dst}"
+            )
         request.wait()
 
 
@@ -498,14 +500,24 @@ def _recv_tensor_async_p2p(*, src: int, reference: torch.Tensor) -> torch.Tensor
     """Receive an asynchronous tensor using a reference dtype and device."""
 
     shape = torch.empty((reference.ndim,), dtype=torch.int64, device=reference.device)
-    dist.irecv(shape, src=src).wait()
+    shape_request = dist.irecv(shape, src=src)
+    if shape_request is None:
+        raise RuntimeError(
+            f"MPS asynchronous shape receive returned no request for peer {src}"
+        )
+    shape_request.wait()
     shape_tuple = tuple(int(value) for value in shape.detach().cpu().tolist())
     flat = torch.empty(
         int(torch.prod(shape).detach().cpu().item()),
         dtype=reference.dtype,
         device=reference.device,
     )
-    dist.irecv(flat, src=src).wait()
+    payload_request = dist.irecv(flat, src=src)
+    if payload_request is None:
+        raise RuntimeError(
+            f"MPS asynchronous payload receive returned no request for peer {src}"
+        )
+    payload_request.wait()
     return flat.reshape(shape_tuple)
 
 

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.observables import OutputRequest
 
 pytestmark = pytest.mark.unit
 
@@ -117,3 +120,15 @@ def test_output_requests_are_serialized_in_an_explicit_plan() -> None:
 
     assert restored.program_fingerprint == plan.program_fingerprint
     torch.testing.assert_close(result.expectation(), torch.tensor([1.0]))
+
+
+@pytest.mark.parametrize("factory", (fq.probabilities, fq.samples, fq.counts))
+@pytest.mark.parametrize("wire", (True, False, -1))
+def test_output_requests_reject_invalid_scalar_and_sequence_wires_consistently(
+    factory: Callable[..., OutputRequest], wire: int
+) -> None:
+    for wires in (wire, (wire,)):
+        with pytest.raises(
+            ValueError, match="observable wire must be a non-negative integer"
+        ):
+            factory(wires)

@@ -332,8 +332,21 @@ def plan_distributed_tn_redistribution(
     """Partition a logical tensor into source/destination shard intersections."""
 
     _validate_compatible_layouts(source, destination)
-    source_axis = int(source.shard_axis)
-    destination_axis = int(destination.shard_axis)
+    source_axis = source.shard_axis
+    destination_axis = destination.shard_axis
+    source_label = source.shard_label
+    destination_label = destination.shard_label
+    if (
+        source_axis is None
+        or destination_axis is None
+        or source_label is None
+        or destination_label is None
+    ):
+        raise ValueError("TN redistribution requires shard axes and labels")
+    source_axis = int(source_axis)
+    destination_axis = int(destination_axis)
+    source_label = int(source_label)
+    destination_label = int(destination_label)
     element_size = source.nbytes // _product(source.shape)
     blocks = []
     for source_shard in source.shards:
@@ -370,8 +383,8 @@ def plan_distributed_tn_redistribution(
         "version": TN_REDISTRIBUTION_VERSION,
         "value_id": source.value_id,
         "shape": source.shape,
-        "source_shard_label": int(source.shard_label),
-        "destination_shard_label": int(destination.shard_label),
+        "source_shard_label": source_label,
+        "destination_shard_label": destination_label,
         "blocks": tuple(asdict(block) for block in blocks),
         "total_bytes": total_bytes,
         "planning_only": True,
@@ -386,8 +399,8 @@ def plan_distributed_tn_redistribution(
         identity=identity,
         value_id=source.value_id,
         shape=source.shape,
-        source_shard_label=int(source.shard_label),
-        destination_shard_label=int(destination.shard_label),
+        source_shard_label=source_label,
+        destination_shard_label=destination_label,
         blocks=tuple(blocks),
         total_bytes=total_bytes,
     )

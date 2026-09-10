@@ -761,14 +761,14 @@ def _vectorized_pair_exchange_gate(
 
     current = post(0)
     pipelined = pipeline and workspace is not None and len(chunks) > 1
-    if pipelined:
+    if pipelined and workspace is not None:
         workspace.pipelined_gate_count += 1
     for chunk_index in range(len(chunks)):
         start, end, local, remote, requests, exchange_storage_bytes = current
         for request in requests:
             _wait_for_exchange(request, local.device)
         following = None
-        if pipelined and chunk_index + 1 < len(chunks):
+        if pipelined and workspace is not None and chunk_index + 1 < len(chunks):
             following = post(chunk_index + 1)
             workspace.pipeline_prefetch_count += 1
         updated, numeric_scratch_bytes = _combine_rank_pair_gate_eager(
@@ -1049,7 +1049,7 @@ def _vectorized_subgroup_exchange_gate(
 
     current = post(0)
     pipelined = pipeline and workspace is not None and len(chunks) > 1
-    if pipelined:
+    if pipelined and workspace is not None:
         workspace.pipelined_gate_count += 1
         workspace.subgroup_pipelined_gate_count += 1
     for chunk_index in range(len(chunks)):
@@ -1057,7 +1057,7 @@ def _vectorized_subgroup_exchange_gate(
         for request in requests:
             _wait_for_exchange(request, local.device)
         following = None
-        if pipelined and chunk_index + 1 < len(chunks):
+        if pipelined and workspace is not None and chunk_index + 1 < len(chunks):
             following = post(chunk_index + 1)
             workspace.pipeline_prefetch_count += 1
         sources = {shard_state.rank: local, **received}

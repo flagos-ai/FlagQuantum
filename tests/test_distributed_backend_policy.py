@@ -510,3 +510,46 @@ def test_local_distributed_development_preflight_accepts_custom_program():
     assert report.passed is True
     assert report.modes == ("distributed_statevector",)
     assert report.parity_reports["distributed_statevector"].passed is True
+
+
+@pytest.mark.parametrize(
+    "resolver_name", ("_resolve_policy_from_options", "_peek_policy_from_options")
+)
+@pytest.mark.parametrize("invalid_policy", ("production", {"profile": "production"}))
+def test_execution_rejects_invalid_backend_policy_objects(
+    resolver_name: str, invalid_policy: object
+) -> None:
+    from flagquantum.runtime import execution
+
+    resolver = getattr(execution, resolver_name)
+    with pytest.raises(
+        TypeError, match="distributed_backend_policy must be a DistributedBackendPolicy"
+    ):
+        resolver({"distributed_backend_policy": invalid_policy})
+
+
+def test_shared_policy_resolver_preserves_override_provenance() -> None:
+    from flagquantum.runtime.distributed.backend_policy import _resolve_backend_policy
+
+    original = resolve_distributed_backend_policy(profile="development")
+    source_before = dict(original.source)
+    options: dict[str, Any] = {
+        "distributed_backend_policy": original,
+        "jax_backend": "pmap",
+        "torch_backend": "torch_distributed",
+        "unrelated": 17,
+    }
+
+    resolved = _resolve_backend_policy(options)
+
+    assert resolved.jax_backend == "pmap"
+    assert resolved.torch_backend == "torch_distributed"
+    assert resolved.source == {
+        **source_before,
+        "runtime_jax_backend": "pmap",
+        "runtime_torch_backend": "torch_distributed",
+    }
+    assert original.source == source_before
+    assert original.jax_backend == "pmap_local_cpu"
+    assert original.torch_backend == "local_tensor"
+    assert options == {"unrelated": 17}

@@ -132,7 +132,9 @@ def run(
             raise TypeError(
                 "local shots requires fq.samples(...) or fq.counts(...) output"
             )
-        return import_module(".runtime.execution", __package__).run(
+        from .runtime.execution import run as run_local
+
+        return run_local(
             program_or_plan,
             options=options,
             measurements=measurements,
@@ -140,7 +142,7 @@ def run(
         )
 
     provider_name, separator, _ = (target or "").partition(":")
-    if separator == ":" and provider_name.lower() == "jiuding":
+    if target is not None and separator == ":" and provider_name.lower() == "jiuding":
         if compiler is not None:
             raise TypeError("Jiuding workspace execution does not accept compiler")
         if target_qubits is not None:
@@ -155,8 +157,9 @@ def run(
             raise TypeError(
                 "Jiuding workspace execution requires a Circuit or CircuitIR, not an ExecutionPlan"
             )
-        jiuding = import_module(".remote.compute.jiuding", __package__)
-        return jiuding.run(
+        from .remote.compute.jiuding import run as run_jiuding
+
+        return run_jiuding(
             program_or_plan,
             target=target,
             outputs=outputs,
@@ -178,12 +181,13 @@ def run(
     if separator != ":" or provider_name.lower() != "quafu":
         raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
 
-    output_types = import_module(".observables", __package__)
-    requested = output_types.counts() if outputs is None else outputs
+    from .observables import OutputRequest
+    from .observables import counts as request_counts
+    from .runtime.result import ExecutionResult, MeasurementResult
+
+    requested = request_counts() if outputs is None else outputs
     requested = (
-        (requested,)
-        if isinstance(requested, output_types.OutputRequest)
-        else tuple(requested)
+        (requested,) if isinstance(requested, OutputRequest) else tuple(requested)
     )
     source_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
         program_or_plan
@@ -263,10 +267,9 @@ def run(
                 }
             )
         )
-        contracts = import_module(".runtime.contracts", __package__)
-        result = contracts.ExecutionResult(
+        result = ExecutionResult(
             measurements=(
-                contracts.MeasurementResult(
+                MeasurementResult(
                     kind="expectation",
                     wires=observable_wires or (0,),
                     value=value,
@@ -318,12 +321,13 @@ def run(
     native = import_module(".deployment", __package__).deploy_circuit(
         compiled, provider, **deployment_options
     )
-    contracts = import_module(".runtime.contracts", __package__)
-    counts = {str(key): int(value) for key, value in native.counts.items()}
+    counts: dict[str | int, int] = {
+        str(key): int(value) for key, value in native.counts.items()
+    }
     execution_target = dict(compiled.metadata.get("execution_target", {}))
-    result = contracts.ExecutionResult(
+    result = ExecutionResult(
         measurements=(
-            contracts.MeasurementResult(
+            MeasurementResult(
                 kind="counts",
                 wires=tuple(range(compiled.n_wires)),
                 value=[counts],
@@ -386,7 +390,9 @@ def plan(
             measurements,
             n_wires=ir.n_wires,
         )
-    return import_module(".runtime.planner", __package__).plan(
+    from .runtime.planner import plan as plan_execution
+
+    return plan_execution(
         program,
         options=options,
         measurements=measurements,

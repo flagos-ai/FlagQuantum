@@ -1,7 +1,7 @@
 # Services
 
 Services contains small, reusable application workflows that add behavior beyond
-one stable FlagQuantum API call. Today it owns capability aggregation, execution
+one stable FlagQuantum API call, such as capability aggregation, execution
 preflight, and deployment preflight.
 
 Simple operations do not belong here. Call `flagquantum.compiler.optimize`,

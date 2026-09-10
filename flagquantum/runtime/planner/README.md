@@ -7,8 +7,8 @@ backend selection, calibration inputs, and the final Runtime selection result.
 It does not transform programs, execute numerical kernels, manage provider
 lifecycle, or own the stable serialized `ExecutionPlan`. The package entry
 compiles through the existing Compiler boundary and assembles the existing plan
-product from resolved Runtime policy while its type and serialization remain
-under `compilation`.
+product from resolved Runtime policy. Plan types and serialization live in
+`runtime/execution_plan.py` and `runtime/execution_plan_contract.py`.
 
 ## Ten-minute change path
 

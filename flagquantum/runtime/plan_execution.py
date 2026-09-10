@@ -178,6 +178,24 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
 
     validate_plan_environment(execution_plan)
     decision = plan_decision(execution_plan)
+    world_size = decision["world_size"]
+    batch_size = decision["batch_size"]
+    if (
+        not isinstance(world_size, int)
+        or isinstance(world_size, bool)
+        or world_size < 1
+    ):
+        raise ExecutionPlanContractError(
+            "identity_mismatch", "decision world_size must be a positive integer"
+        )
+    if (
+        not isinstance(batch_size, int)
+        or isinstance(batch_size, bool)
+        or batch_size < 1
+    ):
+        raise ExecutionPlanContractError(
+            "identity_mismatch", "decision batch_size must be a positive integer"
+        )
     if decision["device"] == "cpu" and decision["backend"] == "pytorch":
         _require_local_cpu_capabilities(
             str(decision["backend"]),
@@ -189,7 +207,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_wires=source_ir.n_wires)
     mode = str(decision["mode"])
-    if int(decision["world_size"]) > 1:
+    if world_size > 1:
         mode = {
             "statevector": "distributed_statevector",
             "mps": "distributed_mps",
@@ -217,8 +235,8 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
             mode=mode,
             return_plan=True,
             _execution_plan=execution_plan,
-            bsz=int(decision["batch_size"]),
-            world_size=int(decision["world_size"]),
+            bsz=batch_size,
+            world_size=world_size,
             device=str(decision["device"]),
             dtype=getattr(torch, precision),
             config=selected_config,

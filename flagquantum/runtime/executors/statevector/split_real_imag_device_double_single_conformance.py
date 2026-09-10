@@ -90,7 +90,7 @@ class SplitRealImagDeviceDoubleSingleConformanceReport:
 
 def _bindings(
     *, depth: int, seed: int, device: torch.device
-) -> dict[str, torch.Tensor]:
+) -> dict[str | Parameter, torch.Tensor]:
     return {
         "alpha": torch.tensor(0.17 + seed * 0.003, dtype=torch.float32, device=device),
         "beta": torch.tensor(

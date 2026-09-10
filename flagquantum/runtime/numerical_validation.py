@@ -151,7 +151,7 @@ def _run_workload(
     state = circuit.state()
     weights = torch.linspace(-1.0, 1.0, state.numel(), dtype=real_dtype, device=device)
     loss = torch.sum(torch.abs(state.reshape(-1)).square() * weights)
-    loss.backward()
+    torch.autograd.backward(loss)
     if theta.grad is None:
         raise RuntimeError("certification workload did not produce gradients")
     return state, theta.grad

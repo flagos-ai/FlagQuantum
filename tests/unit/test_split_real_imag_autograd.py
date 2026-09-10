@@ -7,6 +7,7 @@ import torch
 
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
+from flagquantum.runtime.executors.statevector import split_real_imag_autograd
 from flagquantum.runtime.executors.statevector.split_real_imag_autograd import (
     split_real_imag_device_double_single_autograd_expectation,
     split_real_imag_p5_autograd_bridge_summary,
@@ -34,6 +35,19 @@ def test_p5_autograd_bridge_delivers_expected_float32_gradient() -> None:
     assert theta.grad.dtype == torch.float32
     assert abs(loss.item() - math.cos(0.23)) < 1e-6
     assert abs(theta.grad.item() + math.sin(0.23)) < 1e-6
+
+
+def test_p5_autograd_bridge_rejects_non_tensor_framework_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        split_real_imag_autograd._P5ParameterShiftExpectation,
+        "apply",
+        lambda *args: None,
+    )
+    theta = torch.tensor(0.23, dtype=torch.float32, requires_grad=True)
+    with pytest.raises(TypeError, match="must return a tensor"):
+        _loss(theta)
 
 
 def test_p5_autograd_bridge_preserves_named_parameter_order() -> None:

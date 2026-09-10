@@ -86,7 +86,12 @@ def _circuit():
     return fq.Circuit(3).ry(0, theta).rxx(0, 1, theta), theta
 
 
-def _write_test_checkpoint(root, parameter):
+def _write_test_checkpoint(
+    root: Path,
+    parameter: torch.Tensor,
+    *,
+    optimizer: torch.optim.Optimizer | None = None,
+) -> Path:
     return _save_checkpoint(
         root,
         rank=0,
@@ -94,20 +99,25 @@ def _write_test_checkpoint(root, parameter):
         step=3,
         owned_indices=(0,),
         parameters=(parameter,),
-        optimizer=None,
+        optimizer=optimizer,
         contract={"test": "mps-checkpoint-integrity"},
         bond_layout={0: (1, 1, 2, 1)},
     )
 
 
-def _load_test_checkpoint(root, parameter):
+def _load_test_checkpoint(
+    root: Path,
+    parameter: torch.Tensor,
+    *,
+    optimizer: torch.optim.Optimizer | None = None,
+) -> int:
     return _load_checkpoint(
         root,
         rank=0,
         world_size=1,
         owned_indices=(0,),
         parameters=(parameter,),
-        optimizer=None,
+        optimizer=optimizer,
         contract={"test": "mps-checkpoint-integrity"},
         bond_layout={0: (1, 1, 2, 1)},
         checkpoint_path=root / "rank-0-step-3.pt",
@@ -451,3 +461,84 @@ def test_mps_qr_forward_reconstructs_tiny_batched_factorization(right_dim):
     identity = torch.eye(right_dim, dtype=gram.dtype).expand_as(gram)
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-5)
     torch.testing.assert_close(gram, identity, rtol=2e-5, atol=2e-5)
+
+
+@pytest.mark.parametrize("completed_steps", (True, False, -1, 1.5, None))
+def test_checkpoint_rejects_invalid_step_before_restoring_state(
+    tmp_path: Path, completed_steps: object
+) -> None:
+    parameter = torch.tensor(0.31, requires_grad=True)
+    path = _write_test_checkpoint(tmp_path, parameter)
+    payload = torch.load(path, weights_only=True)
+    payload["completed_steps"] = completed_steps
+    payload["parameters"][0] = torch.tensor(7.0)
+    torch.save(payload, path)
+    path.with_suffix(".pt.sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest() + "\n", encoding="ascii"
+    )
+    before_parameter = parameter.detach().clone()
+    before_rng = torch.get_rng_state().clone()
+
+    with pytest.raises(MPSTrainingError, match="completed step is invalid"):
+        _load_test_checkpoint(tmp_path, parameter)
+
+    torch.testing.assert_close(parameter.detach(), before_parameter)
+    assert torch.equal(torch.get_rng_state(), before_rng)
+
+
+@pytest.mark.parametrize(
+    ("indices", "message"),
+    (
+        ((0, "0"), "parameter indices are duplicated"),
+        ((0, "00"), "parameter indices are duplicated"),
+        ((float("inf"),), "parameter indices are invalid"),
+        ((float("-inf"),), "parameter indices are invalid"),
+    ),
+)
+def test_checkpoint_rejects_invalid_parameter_indices_before_restoration(
+    tmp_path: Path, indices: tuple[object, ...], message: str
+) -> None:
+    parameter = torch.tensor(0.31, requires_grad=True)
+    path = _write_test_checkpoint(tmp_path, parameter)
+    payload = torch.load(path, weights_only=True)
+    payload["parameters"] = {index: torch.tensor(7.0) for index in indices}
+    torch.save(payload, path)
+    path.with_suffix(".pt.sha256").write_text(
+        hashlib.sha256(path.read_bytes()).hexdigest() + "\n", encoding="ascii"
+    )
+    before_parameter = parameter.detach().clone()
+    before_rng = torch.get_rng_state().clone()
+
+    with pytest.raises(MPSTrainingError, match=message):
+        _load_test_checkpoint(tmp_path, parameter)
+
+    torch.testing.assert_close(parameter.detach(), before_parameter)
+    assert torch.equal(torch.get_rng_state(), before_rng)
+
+
+@pytest.mark.parametrize("optimizer_name", ("adam", "sgd"))
+def test_checkpoint_restores_optimizer_for_identical_next_update(
+    tmp_path: Path, optimizer_name: str
+) -> None:
+    parameter = torch.tensor(0.31, requires_grad=True)
+    optimizer = (
+        torch.optim.Adam((parameter,), lr=0.1)
+        if optimizer_name == "adam"
+        else torch.optim.SGD((parameter,), lr=0.1, momentum=0.9)
+    )
+    parameter.grad = 2 * parameter.detach()
+    optimizer.step()
+    saved_parameter = parameter.detach().clone()
+    _write_test_checkpoint(tmp_path, parameter, optimizer=optimizer)
+
+    parameter.grad = 2 * parameter.detach()
+    optimizer.step()
+    expected_next_parameter = parameter.detach().clone()
+    optimizer.param_groups[0]["lr"] = 0.7
+
+    assert _load_test_checkpoint(tmp_path, parameter, optimizer=optimizer) == 3
+    torch.testing.assert_close(parameter.detach(), saved_parameter)
+    assert optimizer.param_groups[0]["lr"] == 0.1
+    parameter.grad = 2 * parameter.detach()
+    optimizer.step()
+    torch.testing.assert_close(parameter.detach(), expected_next_parameter)

@@ -9,19 +9,19 @@ import triton.language as tl
 
 @triton.jit(do_not_specialize=["bit_position"])
 def _complex64_local_1q_vjp_adjoint_kernel(
-    before_parts,
-    adjoint_parts,
-    matrix_parts,
-    derivative_parts,
-    next_adjoint_parts,
-    partial_gradients,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    bit_position,
+    before_parts: tl.tensor,
+    adjoint_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    derivative_parts: tl.tensor,
+    next_adjoint_parts: tl.tensor,
+    partial_gradients: tl.tensor,
+    pair_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    bit_position: tl.tensor,
     REVERSE_KET: tl.constexpr,  # noqa: N803
     BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
+) -> None:
     program = tl.program_id(0)
     linear = program * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
     total_pairs = pair_count * batch_count
@@ -254,18 +254,18 @@ def fused_complex64_local_1q_reversible_vjp(
 
 @triton.jit(do_not_specialize=["rank_basis"])
 def _complex64_sharded_1q_vjp_adjoint_kernel(
-    local_before_parts,
-    remote_before_parts,
-    local_adjoint_parts,
-    remote_adjoint_parts,
-    matrix_parts,
-    derivative_parts,
-    next_adjoint_parts,
-    partial_gradients,
-    element_count,
-    rank_basis,
+    local_before_parts: tl.tensor,
+    remote_before_parts: tl.tensor,
+    local_adjoint_parts: tl.tensor,
+    remote_adjoint_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    derivative_parts: tl.tensor,
+    next_adjoint_parts: tl.tensor,
+    partial_gradients: tl.tensor,
+    element_count: tl.tensor,
+    rank_basis: tl.tensor,
     BLOCK: tl.constexpr,  # noqa: N803
-):
+) -> None:
     program = tl.program_id(0)
     offset = program * BLOCK + tl.arange(0, BLOCK)
     mask = offset < element_count

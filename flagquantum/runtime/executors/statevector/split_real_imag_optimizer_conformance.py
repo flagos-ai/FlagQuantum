@@ -73,7 +73,10 @@ class SplitRealImagOptimizerConformanceReport:
 def _vqe_workload() -> tuple[Any, Any, dict[str, float], float]:
     alpha = Parameter("alpha")
     beta = Parameter("beta")
-    circuit = Circuit(2).ry(0, theta=alpha).ry(1, theta=beta).cx(0, 1)
+    circuit = Circuit(2)
+    circuit.gate("ry", 0, theta=alpha)
+    circuit.gate("ry", 1, theta=beta)
+    circuit.gate("cx", (0, 1))
     observable = (
         pauli_term(0.7, "Z", (0,)),
         pauli_term(-0.4, "Z", (1,)),
@@ -87,10 +90,11 @@ def _qaoa_workload() -> tuple[Any, Any, dict[str, float], float]:
     beta = Parameter("beta")
     circuit = Circuit(3)
     for wire in range(3):
-        circuit.h(wire)
-    circuit.rzz(0, 1, theta=gamma).rzz(1, 2, theta=gamma)
+        circuit.gate("h", wire)
+    circuit.gate("rzz", (0, 1), theta=gamma)
+    circuit.gate("rzz", (1, 2), theta=gamma)
     for wire in range(3):
-        circuit.rx(wire, theta=beta)
+        circuit.gate("rx", wire, theta=beta)
     observable = (
         pauli_term(1.0, "ZZ", (0, 1)),
         pauli_term(0.75, "ZZ", (1, 2)),
@@ -175,7 +179,7 @@ def _trajectory(
     device: torch.device,
 ) -> tuple[SplitRealImagOptimizerTrajectoryCase, ...]:
     order = tuple(sorted(initial))
-    initial_float32 = {
+    initial_float32: dict[str | Parameter, torch.Tensor] = {
         name: torch.tensor(initial[name], dtype=torch.float32, device=device)
         for name in order
     }
@@ -199,7 +203,7 @@ def _trajectory(
         )
         state = candidate.state
 
-        float32_bindings = {
+        float32_bindings: dict[str | Parameter, torch.Tensor] = {
             name: float32_parameters[index] for index, name in enumerate(order)
         }
         float32_gradient = (

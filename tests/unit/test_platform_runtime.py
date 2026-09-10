@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import sys
+from contextlib import nullcontext
 from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -16,9 +18,46 @@ from flagquantum.compute import (
 )
 from flagquantum.compute import flagos as flagos_module
 from flagquantum.compute.flagos import FlagOSPlatformRuntime
+from flagquantum.compute.pytorch import CUDAPlatformRuntime
 from flagquantum.runtime import backend_registry
 
 pytestmark = pytest.mark.unit
+
+
+def test_cuda_factories_preserve_device_context_and_priority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stream = Mock()
+    event = Mock()
+    create_stream = Mock(return_value=stream)
+    create_event = Mock(return_value=event)
+    context = Mock(return_value=nullcontext())
+    monkeypatch.setattr(torch.cuda, "Stream", create_stream)
+    monkeypatch.setattr(torch.cuda, "Event", create_event)
+    monkeypatch.setattr(torch.cuda, "device", context)
+    platform = CUDAPlatformRuntime()
+    device = torch.device("cuda:1")
+
+    assert platform.stream(device, priority=-1) is stream
+    assert platform.event(device) is event
+
+    create_stream.assert_called_once_with(device=device, priority=-1)
+    create_event.assert_called_once_with()
+    context.assert_called_once_with(device)
+
+
+@pytest.mark.parametrize("operation", ["stream", "event"])
+def test_cuda_factories_reject_cpu_before_construction(
+    monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    factory = Mock(side_effect=AssertionError("CUDA constructor must not run"))
+    monkeypatch.setattr(torch.cuda, "Stream", factory)
+    monkeypatch.setattr(torch.cuda, "Event", factory)
+    platform = CUDAPlatformRuntime()
+
+    with pytest.raises(ValueError, match="CUDA platform cannot create"):
+        getattr(platform, operation)(torch.device("cpu"))
+    factory.assert_not_called()
 
 
 @pytest.mark.parametrize("state", [None, b"state", [1, 2]])

@@ -202,7 +202,7 @@ class FactorizationWorkspacePool:
             if not entry.in_use:
                 raise RuntimeError("factorization workspace lease was already released")
             if entry.tensor.device.type == "cuda":
-                entry.ready = torch.cuda.Event()
+                entry.ready = get_platform_runtime("cuda").event(entry.tensor.device)
                 entry.ready.record(torch.cuda.current_stream(entry.tensor.device))
             entry.in_use = False
 

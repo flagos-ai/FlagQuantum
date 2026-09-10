@@ -15,7 +15,7 @@ from ...core.ir import CircuitIR, Instruction
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
-from ..matrices import GATE_MAT_DICT
+from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
     _DIAGONAL_STATEVECTOR_GATES,
@@ -502,8 +502,8 @@ def _expectation_pauli_string(
 
     current_state = state(circuit)
     transformed = current_state
-    for name, wires in (("x", x), ("y", y), ("z", z)):
-        matrix = GATE_MAT_DICT[name].to(
+    for operator, wires in ((X_MATRIX, x), (Y_MATRIX, y), (Z_MATRIX, z)):
+        matrix = operator.to(
             device=current_state.device,
             dtype=current_state.dtype,
         )
@@ -553,6 +553,7 @@ def _expectation_from_operators(
         n_wires,
         bsz=input_state.shape[0],
         device=input_state.device,
+        dtype=input_state.dtype if input_state.is_complex() else None,
         inputs=input_state,
     )
     for matrix, wires in ops:

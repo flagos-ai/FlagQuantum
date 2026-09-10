@@ -237,16 +237,13 @@ def test_client_result_decodes_program_receipt(tmp_path: Path, monkeypatch) -> N
 
 def test_client_result_fetches_managed_artifact(monkeypatch) -> None:
     client = _client()
-    managed_result = {
-        "run_id": "run-1",
-        "value": {
-            "schema": SCHEMA,
-            "version": VERSION,
-            "ok": True,
-            "request_id": "batch-program",
-            "state": _encode_tensor(torch.tensor([1.0, 0.0], dtype=torch.complex64)),
-            "evidence": {"device": "cpu", "target": "jiuding:cpu"},
-        },
+    managed_value = {
+        "schema": SCHEMA,
+        "version": VERSION,
+        "ok": True,
+        "request_id": "batch-program",
+        "state": _encode_tensor(torch.tensor([1.0, 0.0], dtype=torch.complex64)),
+        "evidence": {"device": "cpu", "target": "jiuding:cpu"},
     }
     receipt = {
         "run_id": "run-1",
@@ -255,7 +252,7 @@ def test_client_result_fetches_managed_artifact(monkeypatch) -> None:
         "resources": {"target": "jiuding:cpu"},
     }
     monkeypatch.setattr(client, "status", Mock(return_value=[{"status": "Succeed"}]))
-    read = Mock(return_value=managed_result["value"])
+    read = Mock(return_value=managed_value)
     monkeypatch.setattr(
         "flagquantum.remote.compute._managed_program.read_managed_result", read
     )

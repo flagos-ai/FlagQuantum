@@ -800,7 +800,7 @@ def _run_flaggems_op_smoke(op: str, *, device: str, dtype: Any) -> None:
         raise ValueError(f"No FlagGems smoke validator is implemented for op {op!r}.")
 
     if getattr(objective, "requires_grad", False):
-        objective.backward()
+        torch.autograd.backward(objective)
     if torch_device.type == "cuda":
         cuda_platform = get_platform_runtime("cuda")
         if cuda_platform.is_available():

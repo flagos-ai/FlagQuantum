@@ -1,28 +1,33 @@
 # Remote
 
-`flagquantum.remote` contains adapters for compute reached through an external
-task control plane. A remote target may be a QPU, GPU cluster, classical HPC
-service, or cloud platform. The defining property is the submit/status/result
-lifecycle—not whether the service is called a quantum cloud.
+Adapt resources reached through an external task control plane: QPUs, GPU/HPC
+services, and cloud platforms. The boundary is the submit/status/result
+lifecycle; directly controlled devices belong in Compute.
 
-Each adapter discovers target capabilities, validates a submission, invokes
-the external API or SDK, and converts returned data into FlagQuantum-owned
-results. Directly controlled devices belong in `flagquantum.compute`.
+Adapters own credentials, discovery, submission, polling, cancellation, and
+result decoding. They translate external data into FlagQuantum-owned contracts.
+Compilation, simulation, Runtime policy, and deployment-package semantics stay
+with their owning domains.
 
-It does not own deployment-package semantics, Runtime scheduling, compiler
-lowering, or simulation numerics. Existing quantum task contracts and adapters
-live under `qpu/`; their shots-and-counts result model must not become the
-contract for future remote compute services. Add `compute/` only when a real
-remote GPU or HPC adapter establishes that lifecycle. The in-memory
-control-plane test double lives in `flagquantum.testing`; it is not a local
-compute implementation. Run `python -m pytest
-tests/test_amazon_braket_provider.py tests/test_cloud_providers.py
-tests/test_quafu_calibration.py -q`.
+## Choose an adapter
 
-Import QPU providers from `flagquantum.remote.qpu` and `JiudingClient` from
-`flagquantum.remote.compute`. The categories remain separate at the public
-boundary; neither is flattened into another generic remote backend API.
+- [QPU adapters](qpu/): import providers from `flagquantum.remote.qpu` for
+  quantum submissions, counts, and provider evidence.
+- [Remote compute](compute/README.md): import `JiudingClient` from
+  `flagquantum.remote.compute` for batch jobs and reusable Jiuding workspaces.
+- [Quafu guide](../../docs/guides/QUAFU_BACKEND.md): compiler, token, and hardware setup.
+- [Jiuding guide](../../docs/guides/JIUDING.md): jobs, workspace execution, and recovery.
 
-The first classical compute adapter lives under [`compute/`](compute/README.md).
-Its experimental Jiuding path submits CPU or GPU work from an existing
-workspace and reads a shared result; it does not extend the QPU result model.
+Keep classical compute results distinct from the QPU shots/counts contract.
+A provider response must match its submitted program, target, and task; an
+ambiguous submission must not be silently retried.
+
+Run offline adapter checks from the repository root:
+
+```bash
+python -m pytest tests/test_amazon_braket_provider.py tests/test_cloud_providers.py \
+  tests/test_quafu_calibration.py tests/team/remote -q
+```
+
+Live acceptance is explicit and target-specific; test doubles do not certify
+provider hardware.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from itertools import product
 from math import prod
 from typing import Any, Sequence
@@ -216,22 +216,25 @@ def plan_partial_mesh_tn_layout(
     )
     divisor = prod(shape[labels.index(label)] for label in partitioned)
     replication = prod(shape[labels.index(label)] for label in replicated)
-    payload = {
-        "version": TN_PARTIAL_MESH_VERSION,
-        "value_id": value.value_id,
-        "labels": value.labels,
-        "logical_shape": value.shape,
-        "mesh_labels": labels,
-        "mesh_shape": shape,
-        "partitioned_mesh_labels": partitioned,
-        "replicated_mesh_labels": replicated,
-        "local_shape": local_shape,
-        "logical_nbytes": value.nbytes,
-        "local_nbytes": value.nbytes // divisor,
-        "replication_factor": replication,
-    }
-    return DistributedTNPartialMeshLayout(
-        **payload,
+    layout = DistributedTNPartialMeshLayout(
+        identity="",
+        version=TN_PARTIAL_MESH_VERSION,
+        value_id=value.value_id,
+        labels=value.labels,
+        logical_shape=value.shape,
+        mesh_labels=labels,
+        mesh_shape=shape,
+        partitioned_mesh_labels=partitioned,
+        replicated_mesh_labels=replicated,
+        local_shape=local_shape,
+        logical_nbytes=value.nbytes,
+        local_nbytes=value.nbytes // divisor,
+        replication_factor=replication,
+    )
+    payload = asdict(layout)
+    del payload["identity"]
+    return replace(
+        layout,
         identity=hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest(),

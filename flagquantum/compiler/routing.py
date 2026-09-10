@@ -61,21 +61,23 @@ class CouplingMap:
         *,
         path_cache_capacity: int = 4096,
     ) -> None:
-        n_wires = int(n_wires)
+        if type(n_wires) is not int:
+            raise ValueError("Coupling wire count must be an integer.")
         if n_wires <= 0:
             raise ValueError("Coupling map requires a positive wire count.")
-        path_cache_capacity = int(path_cache_capacity)
+        if type(path_cache_capacity) is not int:
+            raise ValueError("Path cache capacity must be an integer.")
         if path_cache_capacity == 1 or path_cache_capacity < 0:
             raise ValueError("Path cache capacity must be zero or at least two.")
         normalized = []
         seen = set()
         for left, right in edges:
-            left = int(left)
-            right = int(right)
-            if left == right:
-                continue
+            if type(left) is not int or type(right) is not int:
+                raise ValueError("Coupling edge endpoints must be integers.")
             if left < 0 or right < 0 or left >= n_wires or right >= n_wires:
                 raise ValueError("Coupling edge contains a wire outside the device.")
+            if left == right:
+                continue
             edge = (min(left, right), max(left, right))
             if edge not in seen:
                 normalized.append(edge)
@@ -105,6 +107,8 @@ class CouplingMap:
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
+        if type(n_wires) is not int:
+            raise ValueError("Coupling wire count must be an integer.")
         return cls(
             n_wires,
             ((wire, wire + 1) for wire in range(n_wires - 1)),
@@ -118,6 +122,8 @@ class CouplingMap:
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
+        if type(n_wires) is not int:
+            raise ValueError("Coupling wire count must be an integer.")
         edges = [(wire, wire + 1) for wire in range(n_wires - 1)]
         if n_wires > 2:
             edges.append((n_wires - 1, 0))
@@ -135,8 +141,8 @@ class CouplingMap:
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
-        rows = int(rows)
-        cols = int(cols)
+        if type(rows) is not int or type(cols) is not int:
+            raise ValueError("Coupling grid dimensions must be integers.")
         if rows <= 0 or cols <= 0:
             raise ValueError("Coupling grid dimensions must be positive.")
         edges = []
@@ -154,7 +160,8 @@ class CouplingMap:
         )
 
     def _validate_wire(self, wire: int) -> int:
-        wire = int(wire)
+        if type(wire) is not int:
+            raise ValueError("Coupling wire index must be an integer.")
         if wire < 0 or wire >= self.n_wires:
             raise ValueError(
                 f"Coupling wire {wire} is outside [0, {self.n_wires - 1}]."

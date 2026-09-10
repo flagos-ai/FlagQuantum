@@ -58,15 +58,19 @@ def _source_archive() -> tuple[str, bytes]:
 
 
 def _run_ssh(
-    client: Any, arguments: list[str], **options: Any
-) -> subprocess.CompletedProcess:
+    client: Any,
+    arguments: list[str],
+    *,
+    input: bytes | None = None,
+    timeout: float = 30,
+) -> subprocess.CompletedProcess[bytes]:
     result = subprocess.run(
         [*client._ssh_base(), shlex.join(arguments)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=options.pop("timeout", 30),
+        timeout=timeout,
         check=False,
-        **options,
+        input=input,
     )
     if result.returncode:
         message = result.stderr.decode("utf-8", "replace").strip()[:1000]

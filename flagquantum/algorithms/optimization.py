@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
-from typing import Callable, Mapping, Sequence
+from typing import Callable, Mapping, Protocol, Sequence
 
 import torch
 
@@ -19,6 +19,29 @@ from ..compute import get_platform_runtime
 ParameterGroups = Mapping[str, torch.Tensor]
 Objective = Callable[[ParameterGroups], torch.Tensor]
 StateFunction = Callable[[ParameterGroups], torch.Tensor]
+
+
+class _TensorJacobian(Protocol):
+    """Single-tensor boundary for PyTorch's untyped Jacobian API."""
+
+    def __call__(
+        self,
+        func: Callable[[torch.Tensor], torch.Tensor],
+        inputs: torch.Tensor,
+        *,
+        create_graph: bool,
+        vectorize: bool,
+    ) -> object: ...
+
+
+def _tensor_jacobian(
+    function: Callable[[torch.Tensor], torch.Tensor], inputs: torch.Tensor
+) -> torch.Tensor:
+    jacobian: _TensorJacobian = torch.autograd.functional.jacobian
+    result = jacobian(function, inputs, create_graph=False, vectorize=True)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Single-tensor Jacobian must return a tensor")
+    return result
 
 
 def _synchronize(parameter: torch.Tensor) -> None:
@@ -139,19 +162,15 @@ def _quantum_metric(
 
     flat = parameter.reshape(-1)
     started = time.perf_counter()
-    real_jac = torch.autograd.functional.jacobian(
+    real_jac = _tensor_jacobian(
         lambda value: state_from_flat(value).real,
         flat,
-        create_graph=False,
-        vectorize=True,
     ).reshape(-1, flat.numel())
     _synchronize(parameter)
     real_finished = time.perf_counter()
-    imag_jac = torch.autograd.functional.jacobian(
+    imag_jac = _tensor_jacobian(
         lambda value: state_from_flat(value).imag,
         flat,
-        create_graph=False,
-        vectorize=True,
     ).reshape(-1, flat.numel())
     _synchronize(parameter)
     imag_finished = time.perf_counter()
@@ -219,8 +238,11 @@ def optimize_hybrid(
 
     if not callable(objective) or not parameter_groups or not stages:
         raise ValueError("objective, parameter_groups, and stages are required")
+    # Coordinate updates and LBFGS flatten parameters without copying storage.
     groups = {
-        name: value.detach().clone().requires_grad_(True)
+        name: value.detach()
+        .clone(memory_format=torch.contiguous_format)
+        .requires_grad_(True)
         for name, value in parameter_groups.items()
     }
     records: list[OptimizationRecord] = []
@@ -254,12 +276,13 @@ def optimize_hybrid(
                     nonlocal evaluations, step_evaluations
                     optimizer.zero_grad(set_to_none=True)
                     loss = _checked_scalar(objective(groups))
-                    loss.backward()
+                    torch.autograd.backward(loss)
                     evaluations += 1
                     step_evaluations += 1
                     return loss
 
-                optimizer.step(closure)
+                step: Callable[[Callable[[], torch.Tensor]], object] = optimizer.step
+                step(closure)
                 loss = _checked_scalar(objective(groups))
                 evaluations += 1
                 step_evaluations += 1
@@ -269,7 +292,7 @@ def optimize_hybrid(
                 loss = _checked_scalar(objective(groups))
                 evaluations += 1
                 step_evaluations += 1
-                loss.backward()
+                torch.autograd.backward(loss)
                 gradient_norm = float(torch.linalg.vector_norm(parameter.grad).detach())
                 optimizer.step()
                 loss = _checked_scalar(objective(groups))

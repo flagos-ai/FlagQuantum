@@ -1,196 +1,38 @@
 # Simulation
 
-This directory owns FlagQuantum's numerical simulation algorithms: dense
-statevector, MPS, tensor-network, noise evolution, and their differentiable
-kernels.
+Numerical algorithms for quantum state evolution, observables, noise, and
+differentiation. The design goal is a shared numerical foundation whose
+precision and approximation behavior remain explicit across execution paths.
 
-`gate_matrix.py` converts backend-neutral IR instructions into PyTorch gate
-matrices shared by the simulation engines; it does not perform compilation or
-Runtime dispatch.
-`matrices.py` owns the corresponding fixed and parameterized PyTorch matrix
-definitions.
+Simulation consumes Core semantics. It does not choose devices, schedule ranks,
+submit jobs, authorize fallbacks, or construct public execution evidence.
+Runtime owns those decisions and calls the appropriate numerical primitives.
 
-It does not own user policy, device selection, distributed lifecycle, provider
-identity, fallback decisions, durable jobs, or public result assembly. Those
-belong to Runtime and Compute/Remote. Simulation consumes Core IR and operator
-semantics and may use PyTorch or isolated accelerator kernels.
+## Choose the numerical owner
 
-## Local statevector path
+| Work | Entry point |
+| --- | --- |
+| Dense gates, sampling, and adjoints | [statevector/](statevector/README.md) |
+| MPS updates, factorization, and truncation | [mps/](mps/README.md) |
+| Contraction, slicing, and pullbacks | [tensor_network/](tensor_network/README.md) |
+| Exact noisy evolution | [density_matrix.py](density_matrix.py) |
+| Reusable arithmetic and precision | [numerics/](numerics/README.md) |
+| Optional JAX kernels | [jax/](jax/README.md) |
 
-`statevector/local.py` owns local initial-state construction, the execution loop,
-dense Z/Pauli observables, computational-basis sampling, and the numerical body
-behind the public dense `expectation(...)` helper;
-`statevector/operations.py` owns its private layouts, gate application, gate-matrix
-composition, fusion, and tensor operations, including basis-bit extraction,
-global gate-basis offset expansion, compressed-to-local index expansion, and
-the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
-block combination kernels. Neither file is a new public API.
-`triton_kernels/statevector_gates.py` owns flat CUDA statevector kernels,
-including buffered and transpose-fused one-qubit gates, CNOT segments, and
-control-one packing/scattering used around cross-shard CX transport. Runtime
-decides when to use them and owns the transport itself.
-`triton_kernels/statevector_adjoint.py` owns local and sharded one-qubit
-adjoint/VJP CUDA kernels; Runtime retains replay, checkpointing, collectives,
-and backward-pass evidence.
-`Circuit.state()` remains the
-stable user facade and Runtime enters through `run_local_statevector()`.
-
-`statevector/adjoint.py` owns local adjoint numerical primitives that do not
-depend on shard ownership or communication: supported rotation derivatives,
-the real-valued complex inner product, and chunk-local Z expectation/adjoint
-math. Runtime retains shard indexing, chunk policy, rematerialization,
-collectives, communication, and backward evidence.
-
-`density_matrix.py` owns local exact density evolution, Kraus application, and
-density-matrix measurements. Compiler owns noise lowering; Runtime owns
-execution-plan dispatch through `runtime/noise_registry.py`.
-
-`statevector/noisy.py` owns batched gate application, Pauli fast-path matrix
-construction, Kraus sampling, amplitude-damping evolution, normalization, and
-Z-expectation numerics for the statevector trajectory backend, including the
-instruction loop for one already-lowered trajectory batch. Runtime retains
-trajectory IDs and random-stream construction, readout-error handling,
-convergence, retry, checkpointing, collectives, and result assembly.
-
-`statevector/dynamic_noise.py` owns the bounded numerical kernels used by local
-dynamic trajectories: independent one-wire bit-flip sampling and independent
-true-to-observed readout sampling. Runtime decides placement, owns random-stream
-lifecycle and classical feedback, and fails closed for channels outside this
-profile.
-
-`statevector/double_single_host_gates.py` owns P3's explicit CPU reference encoding;
-`statevector/double_single_device_gates.py` separately owns P4's device-resident FP32
-gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
-`statevector/double_single.py` owns the shared gate application and state
-initialization, local execution, normalization, and Pauli-term reduction used
-by the P3 and P4 executors.
-`numerics/double_single.py` owns the reusable Double-Single FP32 representation
-and arithmetic primitives consumed by those statevector implementations.
-
-P4 result summaries identify Double-Single as emulated high
-precision, include the exact precision plan and storage dtype, and explicitly
-deny native/logical complex128 certification and automatic Runtime selection.
-The executor rejects accuracy requirements stricter than its measured envelope.
-Runtime retains precision authorization, platform selection, execution evidence,
-and conformance reporting.
-
-`statevector/split_real_imag.py` owns P0/P1/P2's FP32 real/imag gate matrices,
-gate application, FP32 and Double-Single Pauli-term reductions, and the local
-zero-state execution loop. Runtime retains parameter binding, preflight,
-platform selection, observable parsing, result construction, and conformance
-reporting.
-
-`mps/local.py` owns the single-device, noiseless MPS instruction loop.
-`mps/noisy.py` owns the numerical loop for one already-lowered noisy trajectory
-and accepts an initialized MPS plus an explicit random generator.
-`mps/entrypoints.py` adapts Circuit inputs to local numerical execution.
-Multi-trajectory ownership, random streams, convergence, retry,
-checkpoint/restart, rank result merging, and `MPSMonteCarloResult` belong to
-`runtime/trajectories/`. The primary `run_native` path lowers noise once before
-entering the lowered MPS entry point. Simulation has no Runtime dependency.
-
-`tensor_network/models.py` owns tensor nodes, contraction plans, compiled
-schedules, slicing plans, and local expectation plans. `tensor_network/local.py` owns
-local tensor-network plan construction and the numerical
-state entry point. `tensor_network/observables.py` owns Pauli/Hamiltonian plan assembly,
-MPO compression, and batched observable contraction. `tensor_network/entrypoints.py`
-preserves the public wrappers and amplitude entry points; distributed
-scheduling, rank lifecycle, and communication remain outside these paths.
-`tensor_network/stages.py` owns pair-contraction and pair-pullback execution, high-rank
-fallback, and compensated numerical accumulation used by sliced execution.
-`jax/primitives.py` owns JAX dtype selection, instruction matrices, local
-statevector execution, gate application, and observable kernels. Runtime retains
-JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
-`jax/mps/kernels.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
-swap routing math, MPS-to-statevector contraction, and observable transfer
-environments, including Z and Pauli-string expectations. It also owns
-open-boundary and padded MPS initialization, open-boundary projection, and
-padded-layer application.
-It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
-Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
-The padded environment scan and generic Hamiltonian evaluation are also
-Simulation-owned.
-`jax/tensor_network.py` owns dependency-light local JAX node construction,
-observable and contracted-output loss evaluation, and contraction; Runtime
-retains backend selection and execution policy.
-
-`mps/rank_local.py` owns rank-local MPS instruction dispatch, gate application,
-and tensor sizing.
-`mps/site_kernels.py` owns eager/compiled site kernels and their bounded
-compile cache. `mps/compiled_layers.py` owns equal-shape instruction packing,
-batched contraction, and factorization. `mps/factorization.py` owns QR/SVD
-numerical routines; `mps/canonicalization.py` owns canonical-site factorization,
-transfer absorption, residuals, and center norms; and
-`mps/reverse.py` owns reverse pair factorization, truncated-subspace projection,
-rank-local adjoint projection, and VJP evaluation.
-`mps/observables.py` owns local Pauli-environment, Z/ZZ-channel, and
-Heisenberg-MPO scans.
-Distributed ownership, transport ordering, memory budgets, microbatch
-selection, checkpointing, and evidence remain in Runtime.
-Forward preparation and reverse replay both use the same compiled-layer
-numerics; Runtime does not rebuild instruction buckets into kernel calls.
-
-`graph.py` is a frozen compatibility utility exported through the protected
-root API. No Compiler implementation currently imports it. Do not copy it into
-Compiler or introduce a second graph authority; relocation requires an approved
-public API migration and a concrete Compiler consumer.
-
-For the current migration slice, `Circuit` still owns the initial-state and
-lifecycle cache containers. Do not duplicate them here or add a second request
-or result model.
-
-## Ten-minute change path
-
-For a local statevector behavior change:
-
-1. start in `statevector/local.py` for execution order or dispatch;
-2. change `statevector/operations.py` only for numerical tensor behavior;
-3. run the statevector characterization and CPU vertical-slice tests.
-
-For a local density-matrix change, start in `density_matrix.py` and run:
+For a typical local change, run the matching suite from the repository root:
 
 ```bash
-python -m pytest tests/test_noise.py -k density_matrix -q
-```
-
-For batched noisy-statevector numerics, start in `statevector/noisy.py` and run:
-
-```bash
-python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.py -q
-```
-
-For the local noiseless MPS loop, start in `mps/local.py`; for one lowered noisy
-trajectory, start in `mps/noisy.py`. Run:
-
-```bash
+python -m pytest tests/test_native_circuit.py -q
 python -m pytest tests/test_mps.py -q
-```
-
-For tensor-network data and plans, start in `tensor_network/models.py`; for
-local plan construction or execution, start in `tensor_network/local.py`; for
-observable behavior, start in `tensor_network/observables.py`.
-Run:
-
-```bash
 python -m pytest tests/test_tensor_network.py -q
+python -m pytest tests/test_noise.py -q
 ```
 
-For rank-local distributed-MPS math, start in `mps/rank_local.py`; for compiled
-layer numerics, start in `mps/compiled_layers.py`; for compiled site kernels,
-start in `mps/site_kernels.py`; for QR/SVD behavior, start in
-`mps/factorization.py`; for canonicalization math, start in
-`mps/canonicalization.py`; for local VJP behavior, start in `mps/reverse.py`.
-For observable contraction math, start in `mps/observables.py`. Run:
+Choose the suite for the affected representation, then broaden by the
+[testing policy](../../docs/development/TESTING.md). Verify values and gradients
+against independent references; truncation and emulated precision need their
+own error envelope. Local numerical changes must not introduce a dependency on
+Runtime orchestration.
 
-```bash
-python -m pytest tests/unit/test_mps_site_kernels.py \
-  tests/unit/test_mps_compiled_layer_numerics.py \
-  tests/unit/test_issue105_dynamic_bond_compile_cache.py \
-  tests/unit/test_mps_reverse_numerics.py \
-  tests/unit/test_mps_observable_numerics.py \
-  tests/unit/test_issue052_mps_training.py -q
-```
-
-Keep ordinary numerical changes inside this directory. A change that also
-requires Compiler or Runtime policy should be split at the existing contract
-boundary before implementation.
+[Detailed source map](IMPLEMENTATION.md) locates shared gate primitives,
+rank-local kernels, specialized precision paths, and numerical migration rules.

@@ -76,8 +76,8 @@ def _descriptor(raw: Any) -> _NativeGateDescriptor:
     if isinstance(raw, str):
         opcode = canonical_opcode(raw)
         schema = get_operator_schema(opcode)
-        parameters = frozenset(schema.parameters if schema is not None else ())
-        return _NativeGateDescriptor(opcode, parameters)
+        schema_parameters = frozenset(schema.parameters if schema is not None else ())
+        return _NativeGateDescriptor(opcode, schema_parameters)
     if not isinstance(raw, Mapping):
         raise NativeGateLegalizationError(
             "gates.native entries must be opcode strings or descriptor objects"

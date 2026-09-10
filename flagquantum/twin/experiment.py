@@ -32,7 +32,11 @@ def _payload_identity(payload: Mapping[str, Any]) -> str:
 
 
 def _json_mapping(payload: Mapping[str, Any]) -> dict[str, Any]:
-    return json.loads(json.dumps(dict(payload), sort_keys=True, allow_nan=False))
+    encoded = json.dumps(dict(payload), sort_keys=True, allow_nan=False)
+    normalized: object = json.loads(encoded)
+    if not isinstance(normalized, dict):
+        raise TypeError("normalized experiment metadata must be a JSON object")
+    return normalized
 
 
 @dataclass(frozen=True)

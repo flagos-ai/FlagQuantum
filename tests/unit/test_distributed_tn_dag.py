@@ -49,6 +49,7 @@ from flagquantum.runtime.executors.tensor_network.joint_planning import (
     plan_joint_distributed_tn_execution,
 )
 from flagquantum.runtime.executors.tensor_network.memory_evidence import (
+    DistributedTNRankMemoryMeasurement,
     build_distributed_tn_memory_evidence,
     require_distributed_tn_memory_evidence,
 )
@@ -647,6 +648,20 @@ def test_multi_axis_redistribution_partitions_mesh_intersections():
     assert first.summary()["self_transfer_bytes"] == 8 * 8
 
 
+@pytest.mark.parametrize(
+    "field",
+    ("kernel_workspace_output_multiplier", "communication_buffer_output_multiplier"),
+)
+@pytest.mark.parametrize("value", (float("nan"), float("inf"), -float("inf")))
+def test_joint_working_set_policy_rejects_nonfinite_multipliers(
+    field: str, value: float
+) -> None:
+    policy = replace(DistributedTNWorkingSetPolicy(), **{field: value})
+
+    with pytest.raises(ValueError, match="multiplier must be finite"):
+        policy.validate()
+
+
 def test_joint_planner_binds_mesh_checkpoints_communication_and_remat():
     circuit = fq.Circuit(8)
     for qubit in range(8):
@@ -833,6 +848,11 @@ def test_joint_memory_evidence_is_deterministic_and_fails_closed():
     repeated = build_distributed_tn_memory_evidence(plan, measurements)
 
     assert first.identity == repeated.identity
+    assert first.rank_measurements == tuple(
+        DistributedTNRankMemoryMeasurement(**item) for item in measurements
+    )
+    assert tuple(item.rank for item in first.rank_measurements) == (0, 1)
+    assert first.summary()["rank_measurements"] == measurements
     assert first.passed is True
     assert first.prediction_calibrated is True
     assert first.memory_budget_satisfied is True
@@ -1786,3 +1806,28 @@ def test_tn_communication_device_resolves_nccl_through_platform_provider(
 
     assert device == torch.device("cuda")
     assert requested == ["cuda"]
+
+
+@pytest.mark.parametrize("ratio", (float("nan"), float("inf"), float("-inf")))
+def test_memory_evidence_rejects_nonfinite_tolerance(ratio: float) -> None:
+    circuit = fq.Circuit(2).gate("h", (0,)).gate("cx", (0, 1))
+    expectation = build_tensor_network_expectation(circuit, z=(0, 1))
+    dag = plan_distributed_tn_contraction_dag(expectation, world_size=2)
+    plan = plan_joint_distributed_tn_execution(
+        dag, checkpoint_budget_local_bytes=0, memory_budget_local_bytes=1 << 20
+    )
+    measurements = tuple(
+        DistributedTNRankMemoryMeasurement(
+            rank=rank,
+            cuda_peak_allocated_bytes=plan.predicted_working_set_local_bytes,
+            cuda_peak_reserved_bytes=plan.predicted_working_set_local_bytes,
+            peak_cached_forward_bytes=0,
+            rematerialization_peak_transient_bytes=0,
+        )
+        for rank in range(2)
+    )
+
+    with pytest.raises(ValueError, match="underprediction ratio must be finite"):
+        build_distributed_tn_memory_evidence(
+            plan, measurements, max_underprediction_ratio=ratio
+        )

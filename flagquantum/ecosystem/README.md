@@ -1,6 +1,6 @@
 # Ecosystem interoperability
 
-`flagquantum.ecosystem` is the current Ecosystem boundary. It translates objects
+`flagquantum.ecosystem` is the interoperability boundary. It translates objects
 from optional external frameworks into FlagQuantum-owned `CircuitIR` and
 translates owned programs back only when explicitly requested. Conversion
 reports make every unsupported or lossy semantic difference visible.

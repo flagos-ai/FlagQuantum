@@ -24,6 +24,9 @@ from ..runtime.distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
 )
+from ..runtime.distributed.backend_policy import (
+    _resolve_backend_policy as _resolve_policy_from_options,
+)
 from .execution_plan import ExecutionPlan
 from .executors.jax import (
     run_jax_sharded_mps,
@@ -43,37 +46,15 @@ if TYPE_CHECKING:
     from .result import ExecutionResult
 
 
-def _resolve_policy_from_options(
-    device_options: dict[str, Any],
-) -> DistributedBackendPolicy:
-    backend_policy = device_options.pop("distributed_backend_policy", None)
-    distributed_profile = device_options.pop("distributed_profile", None)
-    jax_backend = device_options.pop("jax_backend", None)
-    torch_backend = device_options.pop("torch_backend", None)
-    if backend_policy is not None:
-        policy = backend_policy
-    else:
-        policy = resolve_distributed_backend_policy(profile=distributed_profile)
-    if jax_backend is None and torch_backend is None:
-        return policy
-    source = dict(policy.source)
-    if jax_backend is not None:
-        source["runtime_jax_backend"] = str(jax_backend)
-    if torch_backend is not None:
-        source["runtime_torch_backend"] = str(torch_backend)
-    return replace(
-        policy,
-        jax_backend=str(jax_backend or policy.jax_backend),
-        torch_backend=str(torch_backend or policy.torch_backend),
-        source=source,
-    )
-
-
 def _peek_policy_from_options(options: dict[str, Any]) -> DistributedBackendPolicy:
     backend_policy = options.get("distributed_backend_policy")
     jax_backend = options.get("jax_backend")
     torch_backend = options.get("torch_backend")
     if backend_policy is not None:
+        if not isinstance(backend_policy, DistributedBackendPolicy):
+            raise TypeError(
+                "distributed_backend_policy must be a DistributedBackendPolicy"
+            )
         policy = backend_policy
     else:
         policy = resolve_distributed_backend_policy(

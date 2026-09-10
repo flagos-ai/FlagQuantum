@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from typing import Any
+from typing import Any, Callable, Protocol
 
 import torch
 import torch.distributed as dist
@@ -64,6 +64,20 @@ from .reverse_support import (
     _reverse_exchange_workspace_enabled,
     _triton_vjp_adjoint_decision,
 )
+
+
+class _MatrixJVP(Protocol):
+    """PyTorch JVP boundary for a matrix controlled by one scalar tensor."""
+
+    def __call__(
+        self,
+        func: Callable[[torch.Tensor], torch.Tensor],
+        inputs: tuple[torch.Tensor],
+        v: tuple[torch.Tensor],
+        *,
+        create_graph: bool,
+        strict: bool,
+    ) -> object: ...
 
 
 def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
@@ -372,7 +386,7 @@ def _fused_sharded_1q_vjp_adjoint(
     pipelined = (
         workspace is not None and len(chunks) > 1 and _fused_vjp_pipeline_enabled()
     )
-    if pipelined:
+    if workspace is not None and pipelined:
         workspace.pipelined_gate_count += 1
     for chunk_index in range(len(chunks)):
         (
@@ -387,7 +401,7 @@ def _fused_sharded_1q_vjp_adjoint(
         for request in requests:
             _wait_for_exchange(request, adjoint.device)
         following = None
-        if pipelined and chunk_index + 1 < len(chunks):
+        if workspace is not None and pipelined and chunk_index + 1 < len(chunks):
             following = post(chunk_index + 1)
             workspace.pipeline_prefetch_count += 1
         updated, partial_gradient = fused_complex64_sharded_1q_vjp_adjoint(
@@ -657,7 +671,7 @@ def _explicit_sharded_adjoint(
                 and reversible_state.amplitudes.device.type == "cuda"
             )
         )
-        if reversible_vjp_decision.accelerated:
+        if reversible_state is not None and reversible_vjp_decision.accelerated:
             precision = get_runtime_config().with_overrides(
                 complex_dtype=str(dtype).removeprefix("torch.")
             )
@@ -744,6 +758,7 @@ def _explicit_sharded_adjoint(
                 continue
         if (
             inplace_local
+            and reversible_state is not None
             and triton_available()
             and _triton_local_cx_segment_enabled(bound)
             and execution_instruction.name == "cx"
@@ -890,13 +905,21 @@ def _explicit_sharded_adjoint(
                     evidence.analytic_rotation_derivative_count += 1
                 if derivative_matrix is None:
                     # Generic gates retain the tiny-matrix JVP fallback.
-                    _, derivative_matrix = torch.autograd.functional.jvp(
+                    matrix_jvp: _MatrixJVP = torch.autograd.functional.jvp
+                    jvp_result = matrix_jvp(
                         matrix_for_parameter,
                         (parameter.detach().requires_grad_(True),),
                         (torch.ones_like(parameter),),
                         create_graph=False,
                         strict=False,
                     )
+                    if (
+                        not isinstance(jvp_result, tuple)
+                        or len(jvp_result) != 2
+                        or not isinstance(jvp_result[1], torch.Tensor)
+                    ):
+                        raise TypeError("Matrix JVP must return a tensor derivative")
+                    derivative_matrix = jvp_result[1]
                 vjp_decision = _triton_vjp_adjoint_decision(
                     supported=bool(
                         len(active) == 1

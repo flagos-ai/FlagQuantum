@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping, TypeAlias
+from typing import TYPE_CHECKING, Any, Mapping, TypeAlias, overload
 
 import torch
 
@@ -87,6 +87,12 @@ class ExecutionResult:
         return self.to_detached(copy=False)
 
     def to_detached(self, *, copy: bool = False) -> "ExecutionResult":
+        @overload
+        def detach(value: torch.Tensor) -> torch.Tensor: ...
+
+        @overload
+        def detach(value: None) -> None: ...
+
         def detach(value: torch.Tensor | None) -> torch.Tensor | None:
             if value is None:
                 return None

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from itertools import combinations
 from math import log2, prod
 from typing import Any, Mapping, Sequence
@@ -239,22 +239,25 @@ def plan_multi_axis_tn_peak_sharding(
         raise ValueError("multi-axis TN target has no lifecycle-valid label set")
     local_peak, _, selected, logical_peak, peak_ids = min(ranked)
     mesh_shape = tuple(label_extents[label] for label in selected)
-    payload = {
-        "version": TN_MULTI_AXIS_VERSION,
-        "dag_identity": dag.identity,
-        "target_operation_id": target.operation_id,
-        "shard_labels": tuple(selected),
-        "mesh_shape": mesh_shape,
-        "predicted_peak_local_bytes": int(local_peak),
-        "predicted_peak_logical_bytes": int(logical_peak),
-        "peak_reduction_bytes": int(logical_peak - local_peak),
-        "candidate_count": len(ranked),
-        "peak_value_ids": tuple(peak_ids),
-    }
+    plan = DistributedTNMultiAxisPeakPlan(
+        identity="",
+        version=TN_MULTI_AXIS_VERSION,
+        dag_identity=dag.identity,
+        target_operation_id=target.operation_id,
+        shard_labels=tuple(selected),
+        mesh_shape=mesh_shape,
+        predicted_peak_local_bytes=int(local_peak),
+        predicted_peak_logical_bytes=int(logical_peak),
+        peak_reduction_bytes=int(logical_peak - local_peak),
+        candidate_count=len(ranked),
+        peak_value_ids=tuple(peak_ids),
+    )
+    payload = asdict(plan)
+    del payload["identity"]
     identity = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
-    return DistributedTNMultiAxisPeakPlan(identity=identity, **payload)
+    return replace(plan, identity=identity)
 
 
 def _simulate_multi_axis_live_bytes(
@@ -355,26 +358,25 @@ def plan_multi_axis_tn_layout(
                 nbytes=prod(local_shape) * element_size,
             )
         )
-    payload = {
-        "version": TN_MULTI_AXIS_VERSION,
-        "value_id": layout.value_id,
-        "labels": layout.labels,
-        "shape": layout.shape,
-        "dtype": layout.dtype,
-        "nbytes": layout.nbytes,
-        "shard_labels": labels,
-        "shard_axes": axes,
-        "mesh_shape": mesh_shape,
-        "shards": tuple(asdict(shard) for shard in shards),
-    }
+    multi_axis_layout = DistributedTNMultiAxisLayout(
+        identity="",
+        version=TN_MULTI_AXIS_VERSION,
+        value_id=layout.value_id,
+        labels=layout.labels,
+        shape=layout.shape,
+        dtype=layout.dtype,
+        nbytes=layout.nbytes,
+        shard_labels=labels,
+        shard_axes=axes,
+        mesh_shape=mesh_shape,
+        shards=tuple(shards),
+    )
+    payload = asdict(multi_axis_layout)
+    del payload["identity"]
     identity = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
-    return DistributedTNMultiAxisLayout(
-        identity=identity,
-        shards=tuple(shards),
-        **{key: value for key, value in payload.items() if key != "shards"},
-    )
+    return replace(multi_axis_layout, identity=identity)
 
 
 def partition_tn_tensor_for_multi_axis_shard(

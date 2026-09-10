@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from dataclasses import replace
 
 import pytest
 import torch
@@ -37,6 +38,35 @@ def test_module_is_normal_trainable_pytorch_module() -> None:
     assert not module.training
     module.train()
     assert module.training
+
+
+def test_debug_gradient_hooks_are_reused_and_removed_with_policy() -> None:
+    from flagquantum.runtime.training_state import NonFiniteTrainingError
+
+    module = fq.Module(build_circuit, 2)
+    enabled = replace(module.policy, correctness_debug=True)
+    module.set_runtime_policy(enabled)
+    handles = module._correctness_debug_hook_handle
+    assert handles is not None
+    module.set_runtime_policy(enabled)
+    assert module._correctness_debug_hook_handle is handles
+
+    with pytest.raises(NonFiniteTrainingError, match="gradient"):
+        torch.autograd.backward(module.parameters_tensor.sum() * float("nan"))
+
+    module.set_runtime_policy(replace(enabled, correctness_debug=False))
+    assert module._correctness_debug_hook_handle is None
+    torch.autograd.backward(module.parameters_tensor.sum() * float("nan"))
+    assert torch.isnan(module.parameters_tensor.grad).all()
+
+
+def test_debug_gradient_registration_rejects_invalid_handle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = fq.Module(build_circuit, 2)
+    monkeypatch.setattr(torch.Tensor, "register_hook", lambda *args: None)
+    with pytest.raises(TypeError, match="must return a removable handle"):
+        module.set_runtime_policy(replace(module.policy, correctness_debug=True))
 
 
 def test_quantum_module_supports_named_parameter_groups() -> None:

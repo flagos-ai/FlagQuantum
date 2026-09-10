@@ -2,23 +2,52 @@
 
 from __future__ import annotations
 
+from typing import Callable, Protocol
+
 import torch
 import triton
 import triton.language as tl
 
 
+class _LoopContext(Protocol):
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
+class _TensorJacobian(Protocol):
+    def __call__(
+        self,
+        func: Callable[[torch.Tensor], torch.Tensor],
+        inputs: torch.Tensor,
+        *,
+        vectorize: bool,
+    ) -> object: ...
+
+
+def _tensor_jacobian(
+    function: Callable[[torch.Tensor], torch.Tensor], inputs: torch.Tensor
+) -> torch.Tensor:
+    jacobian: _TensorJacobian = torch.autograd.functional.jacobian
+    result = jacobian(function, inputs, vectorize=True)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("RX/RZ Jacobian must return a tensor")
+    return result
+
+
 @triton.jit
 def _rx_rz_loop_kernel(
-    state_parts,
-    rx_angles,
-    rz_angles,
-    output_parts,
-    pair_count,
-    depth,
+    state_parts: tl.tensor,
+    rx_angles: tl.tensor,
+    rz_angles: tl.tensor,
+    output_parts: tl.tensor,
+    pair_count: tl.tensor,
+    depth: tl.tensor,
     state_batch_stride: tl.constexpr,
     angle_batch_stride: tl.constexpr,
     block_pairs: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(1)
     pairs = tl.program_id(0) * block_pairs + tl.arange(0, block_pairs)
     mask = pairs < pair_count
@@ -49,18 +78,18 @@ def _rx_rz_loop_kernel(
 
 @triton.jit
 def _rx_rz_loop_tangent_kernel(
-    state_parts,
-    rx_angles,
-    rz_angles,
-    tangent_parts,
-    pair_count,
+    state_parts: tl.tensor,
+    rx_angles: tl.tensor,
+    rz_angles: tl.tensor,
+    tangent_parts: tl.tensor,
+    pair_count: tl.tensor,
     depth: tl.constexpr,
     state_batch_stride: tl.constexpr,
     angle_batch_stride: tl.constexpr,
     tangent_parameter_stride: tl.constexpr,
     tangent_batch_stride: tl.constexpr,
     block_pairs: tl.constexpr,
-):
+) -> None:
     """Propagate one exact parameter tangent per program-grid plane."""
 
     parameter = tl.program_id(2)
@@ -141,19 +170,19 @@ def _rx_rz_loop_tangent_kernel(
 
 @triton.jit
 def _rx_rz_loop_backward_kernel(
-    output_parts,
-    gradient_parts,
-    rx_angles,
-    rz_angles,
-    state_gradient_parts,
-    rx_gradients,
-    rz_gradients,
-    pair_count,
-    depth,
+    output_parts: tl.tensor,
+    gradient_parts: tl.tensor,
+    rx_angles: tl.tensor,
+    rz_angles: tl.tensor,
+    state_gradient_parts: tl.tensor,
+    rx_gradients: tl.tensor,
+    rz_gradients: tl.tensor,
+    pair_count: tl.tensor,
+    depth: tl.tensor,
     state_batch_stride: tl.constexpr,
     angle_batch_stride: tl.constexpr,
     block_pairs: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(1)
     pairs = tl.program_id(0) * block_pairs + tl.arange(0, block_pairs)
     mask = pairs < pair_count
@@ -236,13 +265,20 @@ def _launch(
 
 class _RepeatedRXRZ(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, state, rx_angles, rz_angles):
+    def forward(
+        ctx: _LoopContext,
+        state: torch.Tensor,
+        rx_angles: torch.Tensor,
+        rz_angles: torch.Tensor,
+    ) -> torch.Tensor:
         output = _launch(state, rx_angles, rz_angles)
         ctx.save_for_backward(output, rx_angles, rz_angles)
         return output
 
     @staticmethod
-    def backward(ctx, gradient):
+    def backward(
+        ctx: _LoopContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         output, rx_angles, rz_angles = ctx.saved_tensors
         gradient = gradient.resolve_conj().resolve_neg().contiguous()
         state_gradient_parts = torch.empty(
@@ -301,7 +337,13 @@ def repeated_rx_rz(
     state = state.contiguous()
     rx_angles = rx_angles.contiguous()
     rz_angles = rz_angles.contiguous()
-    return _RepeatedRXRZ.apply(state, rx_angles, rz_angles)
+    apply: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], object] = (
+        _RepeatedRXRZ.apply
+    )
+    result = apply(state, rx_angles, rz_angles)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("RX/RZ loop autograd must return a tensor")
+    return result
 
 
 def repeated_rx_rz_tangents(
@@ -329,22 +371,20 @@ def repeated_rx_rz_tangents(
                 rz = rz_angles.detach().clone().requires_grad_(family == "rz")
                 selected = rx if family == "rx" else rz
 
-                def selected_output(value):
+                def selected_output(value: torch.Tensor) -> torch.Tensor:
                     return repeated_rx_rz(
                         state,
                         value if family == "rx" else rx,
                         value if family == "rz" else rz,
                     )
 
-                real_jacobian = torch.autograd.functional.jacobian(
+                real_jacobian = _tensor_jacobian(
                     lambda value: selected_output(value).real,
                     selected,
-                    vectorize=True,
                 )
-                imag_jacobian = torch.autograd.functional.jacobian(
+                imag_jacobian = _tensor_jacobian(
                     lambda value: selected_output(value).imag,
                     selected,
-                    vectorize=True,
                 )
                 jacobian = torch.complex(real_jacobian, imag_jacobian)
                 indices = torch.arange(int(state.shape[0]), device=state.device)

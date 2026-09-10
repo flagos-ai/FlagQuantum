@@ -619,8 +619,10 @@ def _load_checkpoint(
         raise MPSTrainingError("checkpoint parameter payload must be a mapping")
     try:
         saved_indices = {int(index) for index in saved_parameters}
-    except (TypeError, ValueError) as error:
+    except (TypeError, ValueError, OverflowError) as error:
         raise MPSTrainingError("checkpoint parameter indices are invalid") from error
+    if len(saved_indices) != len(saved_parameters):
+        raise MPSTrainingError("checkpoint parameter indices are duplicated")
     if saved_indices != set(owned_indices):
         raise MPSTrainingError("checkpoint parameter shard membership mismatch")
     validated_parameters: list[tuple[int, torch.Tensor]] = []
@@ -655,7 +657,7 @@ def _load_checkpoint(
     ):
         raise MPSTrainingError("checkpoint CUDA RNG state is invalid")
     completed_steps = payload.get("completed_steps")
-    if not isinstance(completed_steps, int) or completed_steps < 0:
+    if type(completed_steps) is not int or completed_steps < 0:
         raise MPSTrainingError("checkpoint completed step is invalid")
     if (
         expected_completed_steps is not None
@@ -664,8 +666,8 @@ def _load_checkpoint(
         raise MPSTrainingError("checkpoint payload and manifest generation mismatch")
 
     try:
-        if optimizer is not None:
-            optimizer.load_state_dict(optimizer_state)
+        if optimizer is not None and isinstance(optimizer_state, Mapping):
+            optimizer.load_state_dict(dict(optimizer_state))
         for index, value in validated_parameters:
             parameters[index].data.copy_(value.to(parameters[index].device))
         torch.set_rng_state(torch_rng_state.cpu())

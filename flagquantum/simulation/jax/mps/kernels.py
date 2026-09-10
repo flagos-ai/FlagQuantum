@@ -189,13 +189,13 @@ def jax_mps_apply_adjacent_chain_scan(
             return 1
         return min(
             int(max_bond),
-            2 ** min(int(layer_index), int(bond) + 1, n_wires - 1 - int(bond)),
+            1 << min(int(layer_index), int(bond) + 1, n_wires - 1 - int(bond)),
         )
 
     def rank_after(bond: int) -> int:
         return min(
             int(max_bond),
-            2 ** min(int(layer_index) + 1, int(bond) + 1, n_wires - 1 - int(bond)),
+            1 << min(int(layer_index) + 1, int(bond) + 1, n_wires - 1 - int(bond)),
         )
 
     def spec(wire: int) -> tuple[int, int, int, int]:

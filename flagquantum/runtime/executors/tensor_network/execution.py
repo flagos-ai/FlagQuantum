@@ -11,12 +11,12 @@ from __future__ import annotations
 from dataclasses import asdict
 from math import ceil
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import torch
 import torch.distributed as dist
 
-from ....compute import resolve_platform_device
+from ....compute import get_platform_runtime
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
@@ -90,13 +90,13 @@ def _execution_slice_tasks(
 
 class _DistributedAllReduceSum(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: Any, tensor: torch.Tensor) -> torch.Tensor:
+    def forward(ctx: object, tensor: torch.Tensor) -> torch.Tensor:
         out = tensor.clone()
         dist.all_reduce(out, op=dist.ReduceOp.SUM)
         return out
 
     @staticmethod
-    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[torch.Tensor]:
+    def backward(ctx: object, grad_output: torch.Tensor) -> tuple[torch.Tensor]:
         return (grad_output,)
 
 
@@ -105,7 +105,11 @@ def _all_reduce_sum_autograd(tensor: torch.Tensor) -> torch.Tensor:
         out = tensor.clone()
         dist.all_reduce(out, op=dist.ReduceOp.SUM)
         return out
-    return _DistributedAllReduceSum.apply(tensor)
+    apply: Callable[[torch.Tensor], object] = _DistributedAllReduceSum.apply
+    result = apply(tensor)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("TN slice reduction must return a tensor")
+    return result
 
 
 def _zero_for_output(
@@ -163,10 +167,20 @@ def _sparse_working_set_preflight(
             "TN working-set policy and memory calibration are mutually exclusive"
         )
     reference = nodes[0].tensor
-    accelerator_name = (
-        resolve_platform_device(reference.device).name if reference.is_cuda else "cpu"
-    )
     if memory_calibration is not None:
+        accelerator_name = "cpu"
+        if reference.is_cuda:
+            device = next(
+                (
+                    item
+                    for item in get_platform_runtime("cuda").discover()
+                    if item.index == reference.device.index and item.available
+                ),
+                None,
+            )
+            if device is None:
+                raise ValueError("TN memory calibration device is unavailable")
+            accelerator_name = device.name
         if not memory_calibration.applies_to(
             accelerator_name=accelerator_name,
             complex_bytes=reference.element_size(),
@@ -222,7 +236,7 @@ def _sparse_working_set_preflight(
         ),
         "fail_closed": True,
     }
-    if not budget_satisfied:
+    if not budget_satisfied and max_working_set_bytes is not None:
         raise ValueError(
             "tensor-network working-set preflight rejected execution: "
             f"predicted={predicted} bytes exceeds "
@@ -286,7 +300,9 @@ def _distributed_sparse_contraction(
         sliced_labels=sliced_labels,
     )
     if context is not None and context.initialized:
-        payload = [None]
+        payload: list[
+            tuple[TensorNetworkSlicingPlan, tuple[PairContractionStep, ...]] | None
+        ] = [None]
         if context.rank == 0:
             cached = (
                 None

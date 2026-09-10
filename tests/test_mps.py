@@ -1,5 +1,9 @@
 """Tests for native FlagQuantum MPS execution."""
 
+from collections import OrderedDict
+from unittest.mock import PropertyMock, patch
+
+import pytest
 import torch
 
 import flagquantum as fq
@@ -7,6 +11,7 @@ import flagquantum.noise as fqn
 import flagquantum.runtime as fqr
 import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.mps.models as mps_models
+from flagquantum.core.ir import Instruction
 from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
 from flagquantum.runtime.executors.mps.compiled_training import (
     MPSTrainingStep,
@@ -79,6 +84,29 @@ def test_mps_instruction_schedule_is_reused_for_dynamic_parameters():
     assert cache_size == 1
     assert len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE) == cache_size
     assert theta.grad is not None and phi.grad is not None
+
+
+def test_mps_schedule_cache_evicts_least_recently_used_program(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(mps_models, "_MPS_INSTRUCTION_SCHEDULE_CACHE", OrderedDict())
+
+    def schedule(wire: int) -> tuple[tuple[int, ...], ...]:
+        instructions = (Instruction("x", (wire,)),)
+        return mps_models._mps_instruction_schedule(instructions, True)
+
+    first = schedule(0)
+    second = schedule(1)
+    for wire in range(2, 256):
+        assert schedule(wire) == ((0,),)
+    assert schedule(0) is first
+    schedule(256)
+
+    assert len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE) == 256
+    assert schedule(0) is first
+    assert schedule(1) == second
+    assert schedule(1) is not second
+    assert len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE) == 256
 
 
 def test_mps_program_is_shape_and_truncation_specialized():
@@ -464,6 +492,23 @@ def test_mps_adaptive_bond_plan_uses_truncation_hotspots():
     assert not mps.truncation_error_within_budget(0.0)
 
 
+@pytest.mark.parametrize("growth_factor", (float("nan"), float("inf"), -float("inf")))
+@pytest.mark.parametrize("truncated", (False, True))
+def test_adaptive_bond_plan_rejects_nonfinite_growth(
+    growth_factor: float, truncated: bool
+) -> None:
+    circuit = fq.Circuit(2)
+    if truncated:
+        circuit.gate("h", 0)
+        circuit.gate("cx", (0, 1))
+    mps = fqmps.run_mps(circuit, max_bond=1)
+
+    with pytest.raises(ValueError, match="growth_factor must be finite"):
+        mps.adaptive_bond_plan(growth_factor=growth_factor)
+    with pytest.raises(ValueError, match="growth_factor must be finite"):
+        mps.local_refinement_plan(growth_factor=growth_factor)
+
+
 def test_adaptive_bond_growth_is_independent_of_default_tensor_dtype() -> None:
     circuit = fq.Circuit(2, dtype=torch.complex128)
     circuit.gate("h", 0).gate("cx", (0, 1))
@@ -726,3 +771,138 @@ def test_run_native_noisy_mps_mode():
     assert plan.noisy_execution_plan.trajectory.count == 3
     assert result.n_trajectories == 3
     assert torch.allclose(result.expectation_z_mean, torch.ones(1, 1), atol=1e-6)
+
+
+@pytest.mark.parametrize("budget", (-1.0, float("nan"), float("inf"), float("-inf")))
+def test_mps_planners_reject_invalid_global_error_budget(budget: float) -> None:
+    mps = fqmps.run_mps(fq.Circuit(2))
+    with pytest.raises(
+        ValueError, match="global_error_budget must be finite and non-negative"
+    ):
+        mps.adaptive_bond_plan(global_error_budget=budget)
+    with pytest.raises(
+        ValueError, match="global_error_budget must be finite and non-negative"
+    ):
+        mps.local_refinement_plan(global_error_budget=budget)
+
+
+def test_adaptive_planning_reads_bond_dimensions_once_for_multiple_hotspots() -> None:
+    circuit = fq.Circuit(4)
+    circuit.gate("h", 0).gate("cx", (0, 1))
+    circuit.gate("h", 2).gate("cx", (2, 3))
+    state = fqmps.run_mps(circuit, max_bond=1)
+    expected = state.adaptive_bond_plan(global_error_budget=0.0)
+    assert len(expected.hot_bonds) > 1
+    dimensions = state.bond_dims
+
+    with patch.object(
+        type(state), "bond_dims", new_callable=PropertyMock, return_value=dimensions
+    ) as read_dimensions:
+        actual = state.adaptive_bond_plan(global_error_budget=0.0)
+
+    assert actual == expected
+    read_dimensions.assert_called_once_with()
+
+
+@pytest.mark.parametrize("max_bond", (1, 4))
+def test_mps_summary_computes_adaptive_plan_once(max_bond: int) -> None:
+    circuit = fq.Circuit(2).gate("h", 0).gate("cx", (0, 1))
+    state = fqmps.run_mps(circuit, max_bond=max_bond)
+    expected = state.summary()
+
+    with patch.object(
+        state, "adaptive_bond_plan", wraps=state.adaptive_bond_plan
+    ) as build_adaptive:
+        actual = state.summary()
+
+    assert actual == expected
+    build_adaptive.assert_called_once_with(global_error_budget=None, growth_factor=2.0)
+
+
+@pytest.mark.parametrize("value", [1.5, True, float("nan"), float("inf")])
+@pytest.mark.parametrize("truncated", [False, True])
+@pytest.mark.parametrize("control", ["min_increment", "window_radius"])
+def test_mps_planners_reject_noninteger_counts(
+    value: float | bool, truncated: bool, control: str
+) -> None:
+    circuit = fq.Circuit(2)
+    if truncated:
+        circuit.h(0).cx(0, 1)
+    state = fqmps.run_mps(circuit, max_bond=1)
+    with pytest.raises(ValueError, match=f"{control} must be an integer"):
+        if control == "min_increment":
+            state.adaptive_bond_plan(min_increment=value)
+        else:
+            state.local_refinement_plan(window_radius=value)
+
+
+@pytest.mark.parametrize("center", [None, 1])
+@pytest.mark.unit
+def test_mps_bond_profile_does_not_repeat_canonical_diagnostics(
+    center: int | None,
+) -> None:
+    state = fqmps.run_mps(fq.Circuit(3).h(0).cx(0, 1).ry(2, theta=0.3))
+    if center is not None:
+        state.move_orthogonality_center(center)
+    else:
+        state.orthogonality_center = None
+    expected = state.bond_profile()
+    with (
+        patch.object(
+            state, "left_canonical_residual", wraps=state.left_canonical_residual
+        ) as left,
+        patch.object(
+            state, "right_canonical_residual", wraps=state.right_canonical_residual
+        ) as right,
+        patch.object(
+            state, "mixed_canonical_residual", wraps=state.mixed_canonical_residual
+        ) as mixed,
+    ):
+        actual = state.bond_profile()
+    assert actual == expected
+    left.assert_called_once_with()
+    right.assert_called_once_with()
+    assert mixed.call_count == (0 if center is None else 1)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "method",
+    [
+        "left_canonical_residual",
+        "right_canonical_residual",
+        "mixed_canonical_residual",
+        "bond_profile",
+    ],
+)
+def test_mps_canonical_diagnostics_do_not_save_backward_tensors(method: str) -> None:
+    theta = torch.tensor(0.3, requires_grad=True)
+    state = fqmps.run_mps(fq.Circuit(3).ry(0, theta=theta).cx(0, 1).cx(1, 2))
+    state.orthogonality_center = 1
+    diagnostic = getattr(state, method)
+    expected = diagnostic()
+    saved: list[torch.Tensor] = []
+
+    def pack(tensor: torch.Tensor) -> torch.Tensor:
+        saved.append(tensor)
+        return tensor
+
+    with torch.autograd.graph.saved_tensors_hooks(pack, lambda tensor: tensor):
+        actual = diagnostic()
+    assert actual == expected
+    assert not saved
+    state.expectation_z(0).sum().backward()
+    assert theta.grad is not None
+    torch.testing.assert_close(theta.grad, -theta.detach().sin())
+
+
+@pytest.mark.unit
+def test_mps_planning_requires_a_concrete_numerical_state() -> None:
+    from flagquantum.simulation.mps.planning import MPSPlanningMixin
+
+    with pytest.raises(TypeError, match="abstract"):
+        MPSPlanningMixin()
+    state = fqmps.run_mps(fq.Circuit(2).h(0).cx(0, 1))
+    profile = state.bond_profile()
+    assert profile.n_wires == 2
+    assert profile.state_norm_min == pytest.approx(1.0)

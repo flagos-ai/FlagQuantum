@@ -13,6 +13,41 @@ from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybr
 from flagquantum.core.runtime_config import runtime_config
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("method", ["rotosolve", "lbfgs"])
+@pytest.mark.parametrize("transposed", [False, True])
+def test_optimizer_handles_parameter_layout_without_mutating_input(
+    method: str, transposed: bool
+) -> None:
+    initial = torch.linspace(0.1, 0.6, 6, dtype=torch.float64).reshape(2, 3)
+    if transposed:
+        initial = initial.T
+        assert not initial.is_contiguous()
+    original = initial.clone()
+    result = optimize_hybrid(
+        lambda groups: (
+            groups["quantum"].cos().sum()
+            if method == "rotosolve"
+            else (groups["quantum"] - 2).square().sum()
+        ),
+        {"quantum": initial},
+        stages=(OptimizationStage("quantum", method, steps=1, lr=1.0),),
+    )
+    assert result.parameters["quantum"].shape == initial.shape
+    assert result.parameters["quantum"].dtype == initial.dtype
+    torch.testing.assert_close(initial, original)
+    if method == "rotosolve":
+        torch.testing.assert_close(
+            result.parameters["quantum"].cos(), -torch.ones_like(initial)
+        )
+        assert result.history[-1] == pytest.approx(-6.0)
+    else:
+        torch.testing.assert_close(
+            result.parameters["quantum"], torch.full_like(initial, 2.0)
+        )
+        assert result.history[-1] == pytest.approx(0.0, abs=1e-12)
+
+
 @pytest.mark.parametrize("field", ["lr", "damping"])
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
 def test_optimization_stage_rejects_nonfinite_configuration(

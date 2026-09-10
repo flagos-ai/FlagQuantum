@@ -210,9 +210,9 @@ def schedule_circuit_dependencies(
     for record in records:
         mutable_layers[record.layer].append(record.instruction_index)
     layers = tuple(tuple(layer) for layer in mutable_layers)
-    for layer_index, layer in enumerate(layers):
+    for layer_index, instruction_indices in enumerate(layers):
         occupied: set[int] = set()
-        for instruction_index in layer:
+        for instruction_index in instruction_indices:
             wires = set(ir.instructions[instruction_index].wires)
             if not occupied.isdisjoint(wires):
                 raise ScheduleLegalizationError(

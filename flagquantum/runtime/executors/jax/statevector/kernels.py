@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Protocol, Sequence
+
+if TYPE_CHECKING:
+    from jax.sharding import PartitionSpec
 
 from .....simulation.jax.statevector.kernels import (
     jax_accumulate_all_to_all_statevector_delta,
@@ -28,6 +31,12 @@ from ..runtime_environment import (
     _require_jax,
 )
 from .records import JAXStatevectorShardState
+
+
+class _PartitionSpecFactory(Protocol):
+    """Constructor boundary for the named axes used by this executor."""
+
+    def __call__(self, *partitions: str) -> PartitionSpec: ...
 
 
 def _jax_sharded_statevector_loss_from_shards(
@@ -312,12 +321,12 @@ def _jax_shard_map_statevector_parameter_loss(
 ) -> Any:
     jax, jnp = _require_jax()
     import numpy as np
-    from jax.sharding import Mesh
-    from jax.sharding import PartitionSpec as P
+    from jax.sharding import Mesh, PartitionSpec
 
     from .....simulation.jax.primitives import _set_active_jax_compute_dtype
     from ..kernel import _JAXParameterProxy
 
+    partition_spec: _PartitionSpecFactory = PartitionSpec
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
     local_size = int(plan.shards[0].local_amplitudes)
     if any(int(shard.local_amplitudes) != local_size for shard in plan.shards):
@@ -343,6 +352,8 @@ def _jax_shard_map_statevector_parameter_loss(
     global_indices_by_rank = _jax_global_indices_by_rank_for_plan(plan)
 
     def _rank_loss(global_indices: Any, params: Any) -> Any:
+        # shard_map retains a singleton rank axis on each local index block.
+        global_indices = global_indices.reshape(local_size)
         previous = _set_active_jax_compute_dtype(compute_dtype)
         try:
             local_circuit = circuit_builder(_JAXParameterProxy(params))
@@ -374,8 +385,8 @@ def _jax_shard_map_statevector_parameter_loss(
     mapped_loss = jax.shard_map(
         _rank_loss,
         mesh=mesh,
-        in_specs=(P("fq_rank"), P()),
-        out_specs=P(),
+        in_specs=(partition_spec("fq_rank"), partition_spec()),
+        out_specs=partition_spec(),
         axis_names={"fq_rank"},
         check_vma=False,
     )

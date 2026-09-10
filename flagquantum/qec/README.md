@@ -1,60 +1,47 @@
 # Quantum error correction
 
-This domain owns quantum-error-correction concepts and workflows: code
-definitions, syndrome and detection-event records, decoder contracts,
-correction decisions, and logical-result analysis.
+Build experiments that connect syndrome extraction, decoding, correction, and
+logical-result analysis. The long-term direction is a complete QEC workflow
+for fault-tolerant quantum computing research, including logical operations
+and hardware feedback.
 
-It does not define generic circuit, compiler, runtime, simulation, noise, or
-provider semantics. Dynamic control remains in Compiler and Runtime; QEC
-workflows compose those capabilities. Numerical kernels remain in Simulation,
-and hardware feedback contracts remain in Remote or a future realtime Runtime
-domain.
+QEC owns codes, decoder semantics, detection events, and Pauli frames. It
+composes Compiler control flow, Runtime feedback, Simulation kernels, Noise
+models, and Remote hardware interfaces.
 
-The first experimental profile contains a three-data-qubit repetition code, a
-bounded deterministic X-error schedule, a two-bit-syndrome lookup decoder, and
-a fixed-round memory experiment using the private bounded hybrid compiler.
-`compiled_lookup` performs immediate reference feedback inside the lowered
-circuit; the separate `offline_pauli_frame` mode leaves the data uncorrected
-until a decoder-produced frame is applied after execution. Two local Runtime
-modes call a replaceable `StreamingDecoder` after every syndrome round and
-either apply a physical X (`runtime_decoder`) or update an X Pauli frame
-(`runtime_pauli_frame`). The frame adjusts later syndrome interpretation and
-final readout without changing the quantum state. Shot traces retain true and
-observed bits, actions, and frame evolution. This is not a hard-real-time or
-provider feedback contract. The namespace is not exported from the stable
-`flagquantum` root API.
+## Start with a memory experiment
 
-`RepetitionTemporalDecoder` adds a bounded measurement-error-aware policy. It
-requires the same non-zero syndrome in two consecutive rounds before acting.
-An isolated readout excursion therefore clears with a paired detection event
-and produces no correction. The extra evidence round means errors first seen
-in the final round remain visible but unconfirmed. The corresponding modes are
-`runtime_temporal_decoder` and `runtime_temporal_pauli_frame`.
+This experimental local example uses the three-data-qubit repetition-code
+profile and injects one X error before syndrome extraction:
 
-`RepetitionNoiseProfile` maps code-specific circuit locations onto the existing
-backend-neutral `NoiseModel`: a data bit-flip channel is sampled after matching
-parity-check CNOTs, syndrome readout confusion applies to ancilla measurements,
-and optional final readout confusion applies to data wires. Because the middle
-data wire participates in two check CNOTs per round while each edge wire
-participates in one, its configured channel has two opportunities per round.
-Finite-shot sweeps report observations and event counts; they are not threshold
-or logical-suppression evidence.
+```python
+from flagquantum.qec import ErrorEvent, ErrorSchedule, run_repetition_memory_experiment
 
-## Ten-minute change path
+result = run_repetition_memory_experiment(
+    error_schedule=ErrorSchedule((ErrorEvent(round_index=0, wire=1),)),
+    rounds=3,
+    shots=16,
+    seed=0,
+)
+print(result.logical_error_rate)
+```
 
-1. Add or modify a QEC-owned code, decoder, or result rule.
-2. Keep generic dynamic-program changes in Compiler or Runtime.
-3. Add a scenario test under `tests/qec`.
-4. Run:
+## Change and verify
 
-   ```bash
-   python -m pytest tests/qec -q
-   python tools/check_architecture.py
-   ```
+Use [repetition.py](repetition.py) for experiment composition,
+[decoders.py](decoders.py) for decoding, [noise.py](noise.py) for code-specific
+noise profiles, and [types.py](types.py) for records. Run from the repository root:
 
-Runtime decoder feedback is trajectory-only; explicit batched feedback fails
-closed. The stochastic profile is limited to independent bit flips and
-independent readout confusion. No general Kraus/correlated/timing-noise,
-maximum-likelihood or general measurement-error-tolerant decoder,
-logical-error-suppression, threshold, fault-tolerance, realtime-hardware, or
-performance claim follows from the workflow.
+```bash
+python -m pytest tests/qec -q
+python tools/check_architecture.py
+```
+
+Check syndrome histories, correction actions, and final logical outcomes for
+known injected errors. Decoder changes must also cover readout faults and
+errors near the final round. Logical suppression or threshold claims require
+separate statistical and scaling evidence.
+
+[Feedback modes and model boundaries](IMPLEMENTATION.md) explain the supported
+profiles. This reference experiment does not establish general FTQC or
+hard-real-time hardware feedback.

@@ -4,10 +4,17 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from time import perf_counter
+from typing import Callable, Protocol
 
 import torch
 
 from .contracts import MemorySnapshot, PlatformDevice, PlatformIdentity
+
+
+class _CUDAStreamFactory(Protocol):
+    """Typed constructor boundary for PyTorch's CUDA stream class."""
+
+    def __call__(self, *, device: torch.device, priority: int) -> torch.cuda.Stream: ...
 
 
 class _CPUEvent:
@@ -164,13 +171,15 @@ class CUDAPlatformRuntime:
     def stream(self, device: torch.device, priority: int = 0) -> torch.cuda.Stream:
         if device.type != "cuda":
             raise ValueError(f"CUDA platform cannot create a stream for {device}")
-        return torch.cuda.Stream(device=device, priority=priority)
+        create_stream: _CUDAStreamFactory = torch.cuda.Stream
+        return create_stream(device=device, priority=priority)
 
     def event(self, device: torch.device) -> torch.cuda.Event:
         if device.type != "cuda":
             raise ValueError(f"CUDA platform cannot create an event for {device}")
         with torch.cuda.device(device):
-            return torch.cuda.Event()
+            create_event: Callable[[], torch.cuda.Event] = torch.cuda.Event
+            return create_event()
 
     def rng_state(self, device: torch.device) -> torch.Tensor:
         if device.type != "cuda":

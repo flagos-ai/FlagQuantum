@@ -6,7 +6,8 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from ...compiler import compile as compile_program
-from ...compiler import lower_noise_model, schedule_layers
+from ...compiler import lower_noise_model as lower_noise_model
+from ...compiler import schedule_layers as schedule_layers
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
 from ..execution_plan import (

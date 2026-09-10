@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from math import prod
+from typing import Any, Literal, Mapping, Sequence, SupportsInt, overload
 
 import torch
 
@@ -53,10 +55,31 @@ class _DryRunTensor:
         return _product(self.shape)
 
     def element_size(self) -> int:
-        return int(torch.empty((), dtype=self.dtype).element_size())
+        return self.dtype.itemsize
 
 
-def _dry_run_tensor(shape: Sequence[int], reference: Any) -> _DryRunTensor:
+_SearchTensor = torch.Tensor | _DryRunTensor
+
+
+@dataclass(frozen=True)
+class _SearchNode:
+    """Private search intermediate; never passed to numerical kernels directly."""
+
+    tensor: _SearchTensor
+    labels: tuple[int, ...]
+    name: str = ""
+
+
+_Node = TensorNetworkNode | _SearchNode
+
+
+def _real_tensor(value: _SearchTensor) -> torch.Tensor:
+    if not isinstance(value, torch.Tensor):
+        raise TypeError("shape-only tensor metadata cannot be executed")
+    return value
+
+
+def _dry_run_tensor(shape: Sequence[int], reference: _SearchTensor) -> _DryRunTensor:
     return _DryRunTensor(
         shape=tuple(int(dim) for dim in shape),
         dtype=reference.dtype,
@@ -67,16 +90,18 @@ def _as_ir(program: Any) -> CircuitIR:
     return ensure_circuit_ir(program)
 
 
-def _product(values: Any) -> int:
-    out = 1
-    for value in values:
-        out *= int(value)
-    return int(out)
+def _product(values: Iterable[SupportsInt]) -> int:
+    return prod(int(value) for value in values)
 
 
-def _label_dims(nodes: Sequence[TensorNetworkNode]) -> dict[int, int]:
+def _label_dims(nodes: Sequence[_Node]) -> dict[int, int]:
     dims: dict[int, int] = {}
     for node in nodes:
+        if len(node.labels) != len(node.tensor.shape):
+            raise ValueError(
+                f"Tensor-network node {node.name!r} has {len(node.labels)} labels "
+                f"for {len(node.tensor.shape)} dimensions."
+            )
         for label, dim in zip(node.labels, node.tensor.shape):
             dim = int(dim)
             if label in dims and dims[label] != dim:
@@ -87,7 +112,7 @@ def _label_dims(nodes: Sequence[TensorNetworkNode]) -> dict[int, int]:
     return dims
 
 
-def _label_counts(nodes: Sequence[TensorNetworkNode]) -> dict[int, int]:
+def _label_counts(nodes: Sequence[_Node]) -> dict[int, int]:
     counts: dict[int, int] = {}
     for node in nodes:
         for label in node.labels:
@@ -96,8 +121,8 @@ def _label_counts(nodes: Sequence[TensorNetworkNode]) -> dict[int, int]:
 
 
 def _pair_output_labels(
-    left: TensorNetworkNode,
-    right: TensorNetworkNode,
+    left: _Node,
+    right: _Node,
     *,
     label_counts: Mapping[int, int],
     final_outputs: set[int],
@@ -121,8 +146,8 @@ def _pair_output_labels(
 
 
 def _estimate_pair(
-    left: TensorNetworkNode,
-    right: TensorNetworkNode,
+    left: _Node,
+    right: _Node,
     *,
     dims: Mapping[int, int],
     label_counts: Mapping[int, int],
@@ -142,7 +167,7 @@ def _estimate_pair(
 
 
 def _choose_greedy_pair(
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     *,
     dims: Mapping[int, int],
     label_counts: Mapping[int, int],
@@ -153,10 +178,15 @@ def _choose_greedy_pair(
 ) -> tuple[int, int, int, int, tuple[int, ...]]:
     candidates: list[
         tuple[
-            tuple[Any, ...],
+            tuple[int, int, int, int, int, int, tuple[int, ...]],
             tuple[int, int, int, int, tuple[int, ...]],
         ]
     ] = []
+    candidate_pairs: Iterable[tuple[int, int]] = (
+        (left_idx, right_idx)
+        for left_idx in range(len(nodes))
+        for right_idx in range(left_idx + 1, len(nodes))
+    )
     if objective in {"quality", "treewidth"}:
         label_nodes: dict[int, list[int]] = {}
         for node_index, node in enumerate(nodes):
@@ -176,18 +206,6 @@ def _choose_greedy_pair(
                 (min(left_idx, right_idx), max(left_idx, right_idx))
                 for left_idx, right_idx in connected_pairs
             )
-        else:
-            candidate_pairs = [
-                (left_idx, right_idx)
-                for left_idx in range(len(nodes))
-                for right_idx in range(left_idx + 1, len(nodes))
-            ]
-    else:
-        candidate_pairs = [
-            (left_idx, right_idx)
-            for left_idx in range(len(nodes))
-            for right_idx in range(left_idx + 1, len(nodes))
-        ]
     for left_idx, right_idx in candidate_pairs:
         cost, intermediate, output_labels, contracted = _estimate_pair(
             nodes[left_idx],
@@ -229,9 +247,9 @@ def _choose_greedy_pair(
         )
     if not candidates:
         raise ValueError("Tensor network requires at least two nodes to contract.")
-    candidates.sort(key=lambda item: item[0])
     if random_state is None or random_pool_size <= 1:
-        return candidates[0][1]
+        return min(candidates, key=lambda item: item[0])[1]
+    candidates.sort(key=lambda item: item[0])
     pool_size = min(int(random_pool_size), len(candidates))
     rank = min(
         pool_size - 1,
@@ -240,8 +258,15 @@ def _choose_greedy_pair(
     return candidates[rank][1]
 
 
+def _validate_beam_width(beam_width: int) -> None:
+    if type(beam_width) is not int:
+        raise ValueError("beam_width must be an integer.")
+    if beam_width < 1:
+        raise ValueError("beam_width must be >= 1.")
+
+
 def _profile_cache_key(
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     output_labels: Sequence[int],
     *,
     strategy: str,
@@ -250,6 +275,8 @@ def _profile_cache_key(
     sliced_labels: Sequence[int] | None,
     beam_width: int,
 ) -> tuple[Any, ...]:
+    if strategy in {"beam", "beam_sliced"}:
+        _validate_beam_width(beam_width)
     node_key = tuple(
         (
             node.labels,
@@ -269,6 +296,30 @@ def _profile_cache_key(
     )
 
 
+@overload
+def _contract_nodes_greedy(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: Literal[False] = False,
+    objective: str = "balanced",
+    random_state: random.Random | None = None,
+    random_pool_size: int = 1,
+) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]: ...
+
+
+@overload
+def _contract_nodes_greedy(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: bool,
+    objective: str = "balanced",
+    random_state: random.Random | None = None,
+    random_pool_size: int = 1,
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]: ...
+
+
 def _contract_nodes_greedy(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],
@@ -277,7 +328,7 @@ def _contract_nodes_greedy(
     objective: str = "balanced",
     random_state: random.Random | None = None,
     random_pool_size: int = 1,
-) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]:
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]:
     if objective not in {"balanced", "memory", "quality", "treewidth"}:
         raise ValueError(
             "objective must be 'balanced', 'memory', 'quality', or 'treewidth'."
@@ -295,7 +346,7 @@ def _contract_nodes_greedy(
         None if random_state is not None else _CONTRACTION_PATH_CACHE.get(path_key)
     )
     planned_path: list[tuple[int, int, tuple[int, ...]]] = []
-    active = list(nodes)
+    active: list[_Node] = list(nodes)
     final_outputs = set(output_labels)
     steps: list[PairContractionStep] = []
     if not active:
@@ -308,15 +359,15 @@ def _contract_nodes_greedy(
     ):
         stages = _CONTRACTION_STAGE_CACHE.get(path_key)
         if stages is None:
-            stages = _compile_contraction_stages(active, cached_path)
+            stages = _compile_contraction_stages(nodes, cached_path)
             _CONTRACTION_STAGE_CACHE[path_key] = stages
-        final = _execute_contraction_stages(active, stages)
-        final_tensor = final.tensor
-        if final.labels != tuple(output_labels):
-            final_tensor = _einsum_reorder_by_labels(
-                final_tensor, final.labels, output_labels
+        staged_node = _execute_contraction_stages(nodes, stages)
+        staged_tensor = staged_node.tensor
+        if staged_node.labels != tuple(output_labels):
+            staged_tensor = _einsum_reorder_by_labels(
+                staged_tensor, staged_node.labels, output_labels
             )
-        return final_tensor, ()
+        return staged_tensor, ()
     step_index = 0
     while len(active) > 1:
         dims = _label_dims(active)
@@ -359,25 +410,26 @@ def _contract_nodes_greedy(
                 intermediate_size=intermediate,
             )
         )
+        tensor: _SearchTensor
         if dry_run:
             tensor = _dry_run_tensor(output_shape, left.tensor)
         else:
             if cached_path is None and left.tensor.is_cuda:
                 tensor = complex_einsum_pair(
                     _pair_equation(left.labels, right.labels, pair_outputs),
-                    left.tensor,
-                    right.tensor,
+                    _real_tensor(left.tensor),
+                    _real_tensor(right.tensor),
                     compile_cuda=False,
                 )
             else:
                 tensor = _einsum_pair_by_labels(
-                    left.tensor,
+                    _real_tensor(left.tensor),
                     left.labels,
-                    right.tensor,
+                    _real_tensor(right.tensor),
                     right.labels,
                     pair_outputs,
                 )
-        new_node = TensorNetworkNode(
+        new_node = _SearchNode(
             tensor=tensor,
             labels=pair_outputs,
             name=f"({left.name},{right.name})",
@@ -389,6 +441,7 @@ def _contract_nodes_greedy(
     if cached_path is None and random_state is None:
         _CONTRACTION_PATH_CACHE[path_key] = tuple(planned_path)
     final = active[0]
+    final_tensor: _SearchTensor
     if final.labels != tuple(output_labels):
         if dry_run:
             dims = _label_dims(active)
@@ -398,7 +451,7 @@ def _contract_nodes_greedy(
             )
         else:
             final_tensor = _einsum_reorder_by_labels(
-                final.tensor, final.labels, output_labels
+                _real_tensor(final.tensor), final.labels, output_labels
             )
     else:
         final_tensor = final.tensor
@@ -413,8 +466,12 @@ def _contract_nodes_quality_multistart(
     seed: int = 0,
     random_pool_size: int = 4,
 ) -> tuple[PairContractionStep, ...]:
+    if type(repeats) is not int:
+        raise ValueError("quality multistart repeats must be an integer")
     if repeats < 1:
         raise ValueError("quality multistart repeats must be positive")
+    if type(random_pool_size) is not int:
+        raise ValueError("quality multistart pool size must be an integer")
     if random_pool_size < 1:
         raise ValueError("quality multistart pool size must be positive")
     cache_key = _quality_multistart_cache_key(
@@ -446,14 +503,14 @@ def _contract_nodes_quality_multistart(
             baseline,
         )
     )
-    for repeat in range(int(repeats)):
+    for repeat in range(repeats):
         _, steps = _contract_nodes_greedy(
             nodes,
             output_labels,
             dry_run=True,
             objective="quality",
             random_state=random.Random(int(seed) + repeat),
-            random_pool_size=int(random_pool_size),
+            random_pool_size=random_pool_size,
         )
         candidates.append(
             (
@@ -471,7 +528,7 @@ def _contract_nodes_quality_multistart(
 
 
 def _quality_multistart_cache_key(
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     output_labels: Sequence[int],
     *,
     repeats: int = 4,
@@ -505,7 +562,7 @@ class _TemporaryContractionTree:
 @dataclass
 class _TemporaryTreeValue:
     tree: _TemporaryContractionTree
-    node: TensorNetworkNode
+    node: _Node
 
 
 def _find_tree_value(
@@ -524,7 +581,7 @@ def _find_tree_value(
 
 
 def _tree_from_steps(
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     steps: Sequence[PairContractionStep],
 ) -> _TemporaryContractionTree:
     active = [
@@ -561,7 +618,7 @@ def _tree_from_steps(
         active.append(
             _TemporaryTreeValue(
                 tree=tree,
-                node=TensorNetworkNode(
+                node=_SearchNode(
                     tensor=_dry_run_tensor(
                         step.output_shape,
                         left.node.tensor,
@@ -578,7 +635,7 @@ def _tree_from_steps(
 
 def _linearize_contraction_tree(
     root: _TemporaryContractionTree,
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     output_labels: Sequence[int],
 ) -> tuple[PairContractionStep, ...]:
     active = [
@@ -611,7 +668,7 @@ def _linearize_contraction_tree(
         )
         result = _TemporaryTreeValue(
             tree=tree,
-            node=TensorNetworkNode(
+            node=_SearchNode(
                 tensor=_dry_run_tensor(
                     tuple(dims[label] for label in labels),
                     left.node.tensor,
@@ -675,7 +732,7 @@ def _replace_tree_subtree(
 
 def _subtree_boundary_labels(
     leaves: frozenset[int],
-    nodes: Sequence[TensorNetworkNode],
+    nodes: Sequence[_Node],
     output_labels: Sequence[int],
 ) -> tuple[int, ...]:
     total_counts = _label_counts(nodes)
@@ -762,24 +819,43 @@ def _contract_nodes_quality_reconfigured(
     return current_steps
 
 
+@overload
+def _contract_nodes_beam(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: Literal[False] = False,
+    beam_width: int = 8,
+) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]: ...
+
+
+@overload
+def _contract_nodes_beam(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: bool,
+    beam_width: int = 8,
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]: ...
+
+
 def _contract_nodes_beam(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],
     *,
     dry_run: bool = False,
     beam_width: int = 8,
-) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]:
-    if beam_width < 1:
-        raise ValueError("beam_width must be >= 1.")
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]:
+    _validate_beam_width(beam_width)
     if not nodes:
         raise ValueError("Cannot contract an empty tensor network.")
     final_outputs = set(output_labels)
-    beams: list[
-        tuple[int, int, int, list[TensorNetworkNode], list[PairContractionStep]]
-    ] = [(0, 0, 0, list(nodes), [])]
+    beams: list[tuple[int, int, int, list[_Node], list[PairContractionStep]]] = [
+        (0, 0, 0, list(nodes), [])
+    ]
     while len(beams[0][3]) > 1:
         candidates: list[
-            tuple[int, int, int, list[TensorNetworkNode], list[PairContractionStep]]
+            tuple[int, int, int, list[_Node], list[PairContractionStep]]
         ] = []
         for total_cost, peak, _, active, steps in beams:
             dims = _label_dims(active)
@@ -807,17 +883,18 @@ def _contract_nodes_beam(
                         estimated_cost=cost,
                         intermediate_size=intermediate,
                     )
+                    tensor: _SearchTensor
                     if dry_run:
                         tensor = _dry_run_tensor(output_shape, left.tensor)
                     else:
                         tensor = _einsum_pair_by_labels(
-                            left.tensor,
+                            _real_tensor(left.tensor),
                             left.labels,
-                            right.tensor,
+                            _real_tensor(right.tensor),
                             right.labels,
                             pair_outputs,
                         )
-                    new_node = TensorNetworkNode(
+                    new_node = _SearchNode(
                         tensor=tensor,
                         labels=pair_outputs,
                         name=f"({left.name},{right.name})",
@@ -832,24 +909,43 @@ def _contract_nodes_beam(
                         (new_cost, new_peak, len(steps) + 1, new_active, steps + [step])
                     )
         candidates.sort(key=lambda item: (item[1], item[0], item[2]))
-        beams = candidates[: int(beam_width)]
+        beams = candidates[:beam_width]
     best = min(beams, key=lambda item: (item[1], item[0], item[2]))
     final = best[3][0]
+    final_tensor: _SearchTensor
     if final.labels != tuple(output_labels):
         dims = _label_dims(best[3])
         if dry_run:
-            final_tensor = torch.empty(
-                tuple(dims[label] for label in output_labels),
-                dtype=final.tensor.dtype,
-                device=final.tensor.device,
+            final_tensor = _dry_run_tensor(
+                tuple(dims[label] for label in output_labels), final.tensor
             )
         else:
             final_tensor = _einsum_reorder_by_labels(
-                final.tensor, final.labels, output_labels
+                _real_tensor(final.tensor), final.labels, output_labels
             )
     else:
         final_tensor = final.tensor
     return final_tensor, tuple(best[4])
+
+
+@overload
+def _contract_nodes_optimal(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: Literal[False] = False,
+    max_nodes: int = 7,
+) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]: ...
+
+
+@overload
+def _contract_nodes_optimal(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    dry_run: bool,
+    max_nodes: int = 7,
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]: ...
 
 
 def _contract_nodes_optimal(
@@ -858,7 +954,7 @@ def _contract_nodes_optimal(
     *,
     dry_run: bool = False,
     max_nodes: int = 7,
-) -> tuple[torch.Tensor, tuple[PairContractionStep, ...]]:
+) -> tuple[_SearchTensor, tuple[PairContractionStep, ...]]:
     if len(nodes) > int(max_nodes):
         return _contract_nodes_beam(
             nodes, output_labels, dry_run=dry_run, beam_width=16
@@ -870,22 +966,17 @@ def _contract_nodes_optimal(
     final_outputs = set(output_labels)
 
     def search(
-        active: tuple[TensorNetworkNode, ...],
+        active: tuple[_Node, ...],
         steps: tuple[PairContractionStep, ...],
         cost_so_far: int,
         peak_so_far: int,
-    ) -> tuple[
-        int, int, tuple[PairContractionStep, ...], tuple[TensorNetworkNode, ...]
-    ]:
+    ) -> tuple[int, int, tuple[PairContractionStep, ...], tuple[_Node, ...]]:
         if len(active) == 1:
             return peak_so_far, cost_so_far, steps, active
         dims = _label_dims(active)
         counts = _label_counts(active)
         best: (
-            tuple[
-                int, int, tuple[PairContractionStep, ...], tuple[TensorNetworkNode, ...]
-            ]
-            | None
+            tuple[int, int, tuple[PairContractionStep, ...], tuple[_Node, ...]] | None
         ) = None
         for left_idx in range(len(active)):
             for right_idx in range(left_idx + 1, len(active)):
@@ -910,17 +1001,18 @@ def _contract_nodes_optimal(
                     estimated_cost=cost,
                     intermediate_size=intermediate,
                 )
+                tensor: _SearchTensor
                 if dry_run:
                     tensor = _dry_run_tensor(output_shape, left.tensor)
                 else:
                     tensor = _einsum_pair_by_labels(
-                        left.tensor,
+                        _real_tensor(left.tensor),
                         left.labels,
-                        right.tensor,
+                        _real_tensor(right.tensor),
                         right.labels,
                         pair_outputs,
                     )
-                new_node = TensorNetworkNode(
+                new_node = _SearchNode(
                     tensor=tensor,
                     labels=pair_outputs,
                     name=f"({left.name},{right.name})",
@@ -947,6 +1039,7 @@ def _contract_nodes_optimal(
 
     _, _, steps, final_nodes = search(tuple(nodes), (), 0, 0)
     final = final_nodes[0]
+    final_tensor: _SearchTensor
     if final.labels != tuple(output_labels):
         dims = _label_dims(final_nodes)
         if dry_run:
@@ -956,7 +1049,7 @@ def _contract_nodes_optimal(
             )
         else:
             final_tensor = _einsum_reorder_by_labels(
-                final.tensor, final.labels, output_labels
+                _real_tensor(final.tensor), final.labels, output_labels
             )
     else:
         final_tensor = final.tensor

@@ -127,7 +127,7 @@ def train(
         loss = objective(execution.require_value())
         if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
             raise ValidationError("fq.train() objective must return a scalar tensor")
-        loss.backward()
+        torch.autograd.backward(loss)
         optimizer.step()
         detached_loss = loss.detach()
         if defer_loss_history:

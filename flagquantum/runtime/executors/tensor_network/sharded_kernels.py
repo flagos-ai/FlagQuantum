@@ -65,7 +65,7 @@ def select_sharded_pair_mode(
     output = values[operation.output_value_id]
     inputs = tuple(values[value_id] for value_id in operation.input_value_ids)
     if output.semantics == "sharded":
-        if output.shard_label not in output.labels:
+        if output.shard_label is None or output.shard_label not in output.labels:
             raise ValueError("sharded TN output label is not retained")
         return "retained_output_shard", int(output.shard_label)
     sharded_inputs = tuple(value for value in inputs if value.semantics == "sharded")
@@ -74,7 +74,10 @@ def select_sharded_pair_mode(
     labels = {value.shard_label for value in sharded_inputs}
     if len(labels) != 1:
         raise ValueError("distributed TN input shard labels are incompatible")
-    label = int(next(iter(labels)))
+    shard_label = next(iter(labels))
+    if shard_label is None:
+        raise ValueError("distributed TN input shard label is missing")
+    label = int(shard_label)
     if label in output.labels:
         raise ValueError(
             "retained sharded input requires a correspondingly sharded output"

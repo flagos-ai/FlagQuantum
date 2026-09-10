@@ -43,7 +43,12 @@ class InMemoryRemoteTarget(QuantumProvider):
             payload=build_submission_receipt(package, {"name": package.name}),
         )
         circuit = Circuit.from_ir(package.ir)
-        counts = circuit.counts(package.shots)[0]
+        counts = {
+            str(bitstring): count
+            for bitstring, count in circuit.counts(package.shots, format="bin")[
+                0
+            ].items()
+        }
         result = DeploymentResult(
             handle=handle,
             counts=counts,

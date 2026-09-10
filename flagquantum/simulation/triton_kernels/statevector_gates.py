@@ -2,22 +2,37 @@
 
 from __future__ import annotations
 
+from typing import Callable, Protocol
+
 import torch
 import triton
 import triton.language as tl
 
 
+class _GateContext(Protocol):
+    n_wires: int
+
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
+class _MatrixGateContext(_GateContext, Protocol):
+    wire: int
+
+
 @triton.jit(do_not_specialize=["bit_position"])
 def _complex64_local_1q_kernel(
-    state_parts,
-    matrix_parts,
-    output_parts,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    bit_position,
+    state_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    output_parts: tl.tensor,
+    pair_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    bit_position: tl.tensor,
     BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
     total_pairs = pair_count * batch_count
     mask = linear < total_pairs
@@ -110,16 +125,16 @@ def apply_complex64_local_1q(
 
 @triton.jit(do_not_specialize=["bit_position", "exchanged_bit_value"])
 def _complex64_transpose_1q_kernel(
-    state_parts,
-    received_parts,
-    matrix_parts,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    bit_position,
-    exchanged_bit_value,
+    state_parts: tl.tensor,
+    received_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    pair_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    bit_position: tl.tensor,
+    exchanged_bit_value: tl.tensor,
     BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
     total = pair_count * batch_count
     mask = linear < total
@@ -213,15 +228,15 @@ def apply_complex64_transpose_1q_inplace(
 
 @triton.jit(do_not_specialize=["bit_position", "compressed_start"])
 def _complex64_control_one_pack_kernel(
-    state_parts,
-    packed_parts,
-    chunk_count,
-    batch_count,
-    state_batch_stride,
-    bit_position,
-    compressed_start,
+    state_parts: tl.tensor,
+    packed_parts: tl.tensor,
+    chunk_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    bit_position: tl.tensor,
+    compressed_start: tl.tensor,
     BLOCK: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     total = chunk_count * batch_count
     mask = linear < total
@@ -243,15 +258,15 @@ def _complex64_control_one_pack_kernel(
 
 @triton.jit(do_not_specialize=["bit_position", "compressed_start"])
 def _complex64_control_one_unpack_kernel(
-    packed_parts,
-    output_parts,
-    chunk_count,
-    batch_count,
-    output_batch_stride,
-    bit_position,
-    compressed_start,
+    packed_parts: tl.tensor,
+    output_parts: tl.tensor,
+    chunk_count: tl.tensor,
+    batch_count: tl.tensor,
+    output_batch_stride: tl.tensor,
+    bit_position: tl.tensor,
+    compressed_start: tl.tensor,
     BLOCK: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     total = chunk_count * batch_count
     mask = linear < total
@@ -352,14 +367,14 @@ def unpack_complex64_control_one(
 
 @triton.jit(do_not_specialize=["control_bit_position", "target_bit_position"])
 def _complex64_local_cx_kernel(
-    state_parts,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    control_bit_position,
-    target_bit_position,
+    state_parts: tl.tensor,
+    pair_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    control_bit_position: tl.tensor,
+    target_bit_position: tl.tensor,
     BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
     total_pairs = pair_count * batch_count
     valid = linear < total_pairs
@@ -422,15 +437,15 @@ def apply_complex64_local_cx_inplace(
 
 @triton.jit
 def _complex64_local_cx_segment_kernel(
-    state_parts,
-    output_parts,
-    control_positions,
-    target_positions,
-    local_count,
-    total_count,
+    state_parts: tl.tensor,
+    output_parts: tl.tensor,
+    control_positions: tl.tensor,
+    target_positions: tl.tensor,
+    local_count: tl.tensor,
+    total_count: tl.tensor,
     SEGMENT_LENGTH: tl.constexpr,  # noqa: N803
     BLOCK: tl.constexpr,  # noqa: N803
-):
+) -> None:
     linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     valid = linear < total_count
     batch = linear // local_count
@@ -496,16 +511,16 @@ def apply_complex64_local_cx_segment(
 
 @triton.jit
 def _single_qubit_matrix_kernel(
-    state_parts,
-    matrix_parts,
-    output_parts,
-    pair_count,
+    state_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    output_parts: tl.tensor,
+    pair_count: tl.tensor,
     pairs_per_batch: tl.constexpr,
     amplitudes_per_batch: tl.constexpr,
     target_mask: tl.constexpr,
     matrix_batch_stride: tl.constexpr,
     block_size: tl.constexpr,
-):
+) -> None:
     pairs = tl.program_id(0) * block_size + tl.arange(0, block_size)
     valid = pairs < pair_count
     batch = pairs // pairs_per_batch
@@ -539,17 +554,17 @@ def _single_qubit_matrix_kernel(
 
 @triton.jit
 def _single_qubit_matrix_backward_kernel(
-    state_parts,
-    gradient_parts,
-    adjoint_parts,
-    state_gradient_parts,
-    partial_parts,
+    state_parts: tl.tensor,
+    gradient_parts: tl.tensor,
+    adjoint_parts: tl.tensor,
+    state_gradient_parts: tl.tensor,
+    partial_parts: tl.tensor,
     pairs_per_batch: tl.constexpr,
     amplitudes_per_batch: tl.constexpr,
     target_mask: tl.constexpr,
     matrix_batch_stride: tl.constexpr,
     block_size: tl.constexpr,
-):
+) -> None:
     block = tl.program_id(0)
     batch = tl.program_id(1)
     local_pair = block * block_size + tl.arange(0, block_size)
@@ -596,15 +611,15 @@ def _single_qubit_matrix_backward_kernel(
 
 @triton.jit
 def _cx_sequence_kernel(
-    state_parts,
-    output_parts,
-    control_masks,
-    target_masks,
-    element_count,
+    state_parts: tl.tensor,
+    output_parts: tl.tensor,
+    control_masks: tl.tensor,
+    target_masks: tl.tensor,
+    element_count: tl.tensor,
     amplitudes_per_batch: tl.constexpr,
     sequence_length: tl.constexpr,
     block_size: tl.constexpr,
-):
+) -> None:
     offsets = tl.program_id(0) * block_size + tl.arange(0, block_size)
     valid = offsets < element_count
     batch = offsets // amplitudes_per_batch
@@ -627,17 +642,17 @@ def _cx_sequence_kernel(
 
 @triton.jit
 def _ry_rz_pair_kernel(
-    state_parts,
-    ry_angles,
-    rz_angles,
-    output_parts,
-    pair_count,
+    state_parts: tl.tensor,
+    ry_angles: tl.tensor,
+    rz_angles: tl.tensor,
+    output_parts: tl.tensor,
+    pair_count: tl.tensor,
     pairs_per_batch: tl.constexpr,
     amplitudes_per_batch: tl.constexpr,
     target_mask: tl.constexpr,
     angle_batch_stride: tl.constexpr,
     block_size: tl.constexpr,
-):
+) -> None:
     pairs = tl.program_id(0) * block_size + tl.arange(0, block_size)
     valid = pairs < pair_count
     batch = pairs // pairs_per_batch
@@ -810,14 +825,22 @@ def _launch_single_qubit_matrix_backward(
 
 class _SingleQubitMatrix(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, state, matrix, wire, n_wires):
+    def forward(
+        ctx: _MatrixGateContext,
+        state: torch.Tensor,
+        matrix: torch.Tensor,
+        wire: int,
+        n_wires: int,
+    ) -> torch.Tensor:
         ctx.save_for_backward(state, matrix)
         ctx.wire = int(wire)
         ctx.n_wires = int(n_wires)
         return _launch_single_qubit_matrix(state, matrix, ctx.wire, ctx.n_wires)
 
     @staticmethod
-    def backward(ctx, gradient):
+    def backward(
+        ctx: _MatrixGateContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, None, None]:
         state, matrix = ctx.saved_tensors
         gradient = gradient.resolve_conj().resolve_neg()
         state_gradient, matrix_gradient = _launch_single_qubit_matrix_backward(
@@ -839,26 +862,34 @@ def single_qubit_matrix(
         raise ValueError("single_qubit_matrix requires a CUDA complex64 state")
     if matrix.shape not in {(2, 2), (state.shape[0], 2, 2)}:
         raise ValueError("matrix must have shape [2, 2] or [batch, 2, 2]")
-    return _SingleQubitMatrix.apply(state, matrix, wire, n_wires)
+    apply: Callable[[torch.Tensor, torch.Tensor, int, int], object] = (
+        _SingleQubitMatrix.apply
+    )
+    result = apply(state, matrix, wire, n_wires)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Single-qubit matrix autograd must return a tensor")
+    return result
 
 
 class _CXSequence(torch.autograd.Function):
     @staticmethod
     def forward(
-        ctx,
-        state,
-        control_masks,
-        target_masks,
-        reverse_control_masks,
-        reverse_target_masks,
-        n_wires,
-    ):
+        ctx: _GateContext,
+        state: torch.Tensor,
+        control_masks: torch.Tensor,
+        target_masks: torch.Tensor,
+        reverse_control_masks: torch.Tensor,
+        reverse_target_masks: torch.Tensor,
+        n_wires: int,
+    ) -> torch.Tensor:
         ctx.save_for_backward(reverse_control_masks, reverse_target_masks)
         ctx.n_wires = int(n_wires)
         return _launch_cx_sequence(state, control_masks, target_masks, ctx.n_wires)
 
     @staticmethod
-    def backward(ctx, gradient):
+    def backward(
+        ctx: _GateContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, None, None, None, None, None]:
         gradient = gradient.resolve_conj().resolve_neg()
         reverse_control_masks, reverse_target_masks = ctx.saved_tensors
         return (
@@ -891,7 +922,8 @@ def cx_sequence(
         raise ValueError("cx_sequence requires a CUDA complex64 state")
     if control_masks.shape != target_masks.shape or control_masks.numel() < 2:
         raise ValueError("cx_sequence requires at least two matched gates")
-    return _CXSequence.apply(
+    apply: Callable[..., object] = _CXSequence.apply
+    result = apply(
         state,
         control_masks,
         target_masks,
@@ -899,6 +931,9 @@ def cx_sequence(
         reverse_target_masks,
         n_wires,
     )
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("CX sequence autograd must return a tensor")
+    return result
 
 
 __all__ = [

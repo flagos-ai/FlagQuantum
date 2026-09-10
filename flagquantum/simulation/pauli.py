@@ -32,6 +32,8 @@ def pauli_product_operator(
     """Materialize one dense Pauli-product operator."""
 
     by_wire = {int(wire): str(name).lower() for wire, name in operators}
+    if any(wire < 0 or wire >= n_wires for wire in by_wire):
+        raise ValueError("Pauli operator wire index out of range")
     result = torch.ones(1, 1, dtype=dtype, device=device)
     for wire in range(int(n_wires)):
         matrix = GATE_MAT_DICT[by_wire.get(wire, "i")]
@@ -80,7 +82,7 @@ def pauli_product_density_expectation(
         dtype=batch.dtype,
         device=batch.device,
     )
-    values = torch.diagonal(torch.matmul(batch, operator), dim1=-2, dim2=-1).sum(dim=-1)
+    values = torch.einsum("bij,ji->b", batch, operator)
     return torch.real(values)
 
 

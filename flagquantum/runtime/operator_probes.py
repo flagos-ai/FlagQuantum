@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from threading import Lock
 from typing import Any
 
@@ -274,12 +275,17 @@ def _max_error(actual: Any, expected: Any) -> float:
         return float("inf")
     errors = []
     for left, right in zip(actual_tensors, expected_tensors):
+        if left.shape != right.shape:
+            return float("inf")
         left_cpu = left.detach().cpu()
         right_cpu = right.detach().cpu()
         if left_cpu.dtype == torch.bool or right_cpu.dtype == torch.bool:
             errors.append(0.0 if torch.equal(left_cpu, right_cpu) else float("inf"))
         else:
-            errors.append(float(torch.max(torch.abs(left_cpu - right_cpu)).item()))
+            error = float(torch.max(torch.abs(left_cpu - right_cpu)).item())
+            if not math.isfinite(error):
+                return float("inf")
+            errors.append(error)
     return max(errors)
 
 
@@ -317,8 +323,8 @@ def _probe_requirement(
             raise RuntimeError(f"forward max error {error} exceeds {tolerance}")
         forward = True
         if requirement.backward:
-            _loss(actual).backward()
-            _loss(expected).backward()
+            torch.autograd.backward(_loss(actual))
+            torch.autograd.backward(_loss(expected))
             if any(leaf.grad is None for leaf in actual_leaves):
                 raise RuntimeError("backward did not produce every required gradient")
             if any(
@@ -329,14 +335,7 @@ def _probe_requirement(
             for actual_leaf, expected_leaf in zip(actual_leaves, expected_leaves):
                 assert actual_leaf.grad is not None
                 assert expected_leaf.grad is not None
-                gradient_error = float(
-                    torch.max(
-                        torch.abs(
-                            actual_leaf.grad.detach().cpu()
-                            - expected_leaf.grad.detach().cpu()
-                        )
-                    ).item()
-                )
+                gradient_error = _max_error(actual_leaf.grad, expected_leaf.grad)
                 if gradient_error > tolerance:
                     raise RuntimeError(
                         f"gradient max error {gradient_error} exceeds {tolerance}"

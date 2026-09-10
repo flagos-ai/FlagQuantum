@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Callable, Protocol, Sequence
 
 import torch
 import torch.distributed as dist
@@ -18,6 +18,7 @@ from .forward_executor import execute_torch_distributed_statevector
 from .layout import (
     schedule_statevector_dependency_dag,
 )
+from .models import StatevectorShardState
 from .planning import plan_distributed_statevector
 from .reverse_support import (
     BackwardExecutionEvidence,
@@ -98,7 +99,7 @@ class TorchDistributedStatevectorGradientResult:
     backward_evidence: BackwardExecutionEvidence
 
     def backward(self) -> None:
-        self.value.backward()
+        torch.autograd.backward(self.value)
 
     def summary(self) -> dict[str, Any]:
         ready = self.backward_evidence.status == "completed"
@@ -247,12 +248,29 @@ class TorchDistributedStatevectorGradientResult:
         }
 
 
+class _ShardedAutogradContext(Protocol):
+    ir: CircuitIR
+    slots: tuple[tuple[int, str, int], ...]
+    policy: StatevectorCheckpointPolicy
+    observable_wires: tuple[int, ...]
+    device: torch.device
+    process_group: Any | None
+    evidence: BackwardExecutionEvidence
+    forward_shard_state: StatevectorShardState | None
+    forward_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...]
+
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
 class _ShardedStatevectorExpectation(torch.autograd.Function):
     """Rematerializing custom-autograd boundary; no global state is saved."""
 
     @staticmethod
     def forward(
-        ctx: Any,
+        ctx: _ShardedAutogradContext,
         ir: CircuitIR,
         slots: tuple[tuple[int, str, int], ...],
         policy: StatevectorCheckpointPolicy,
@@ -311,7 +329,9 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         return value
 
     @staticmethod
-    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[Any, ...]:
+    def backward(
+        ctx: _ShardedAutogradContext, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor | None, ...]:
         from .reverse_adjoint import _explicit_sharded_adjoint
 
         evidence = ctx.evidence
@@ -492,7 +512,8 @@ def execute_torch_distributed_statevector_reverse(
     evidence = BackwardExecutionEvidence(
         reduction_counts=[0] * len(parameters), ownership=ownership
     )
-    value = _ShardedStatevectorExpectation.apply(
+    apply: Callable[..., object] = _ShardedStatevectorExpectation.apply
+    value = apply(
         execution_ir,
         slots,
         policy,
@@ -502,6 +523,8 @@ def execute_torch_distributed_statevector_reverse(
         evidence,
         *parameters,
     )
+    if not isinstance(value, torch.Tensor):
+        raise TypeError("statevector reverse autograd must return a tensor")
     return TorchDistributedStatevectorGradientResult(
         value=value,
         parameters=parameters,

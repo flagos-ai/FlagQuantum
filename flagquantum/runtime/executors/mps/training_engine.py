@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import time
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass
@@ -493,7 +494,7 @@ def train_distributed_mps(
             "circuit_factory training does not yet support checkpoint/resume"
         )
     rank, world_size = dist.get_rank(), dist.get_world_size()
-    local_world_size = int(__import__("os").environ.get("LOCAL_WORLD_SIZE", world_size))
+    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", world_size))
     if site_ownership is not None:
         resolved_site_ownership = validate_mps_ownership(
             site_ownership, ir.n_wires, world_size

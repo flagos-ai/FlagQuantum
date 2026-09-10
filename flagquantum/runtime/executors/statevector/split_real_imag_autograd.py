@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Protocol, Sequence
 
 import torch
 
@@ -94,10 +94,19 @@ def _canonical_parameters(
     return order, tuple(normalized[name] for name in order)
 
 
+class _P5AutogradContext(Protocol):
+    config: _P5BridgeConfig
+
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
 class _P5ParameterShiftExpectation(torch.autograd.Function):
     @staticmethod
     def forward(
-        ctx: Any,
+        ctx: _P5AutogradContext,
         config: _P5BridgeConfig,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
@@ -120,7 +129,9 @@ class _P5ParameterShiftExpectation(torch.autograd.Function):
         return result.value.to_float32().reshape(())
 
     @staticmethod
-    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[Any, ...]:
+    def backward(
+        ctx: _P5AutogradContext, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor | None, ...]:
         if torch.is_grad_enabled():
             raise RuntimeError("P5 CPU bridge does not support higher-order autograd")
         config: _P5BridgeConfig = ctx.config
@@ -180,7 +191,12 @@ def split_real_imag_device_double_single_autograd_expectation(
         preflight=preflight,
         renormalize_every=renormalize_every,
     )
-    return _P5ParameterShiftExpectation.apply(config, *parameters)
+    # PyTorch's variadic apply boundary is untyped; validate its result here.
+    apply: Callable[..., object] = _P5ParameterShiftExpectation.apply
+    result = apply(config, *parameters)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("P5 autograd bridge must return a tensor")
+    return result
 
 
 __all__ = (

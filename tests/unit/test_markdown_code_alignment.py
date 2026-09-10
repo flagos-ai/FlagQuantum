@@ -91,9 +91,7 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     ).read_text(encoding="utf-8")
 
     assert "training = fq.train(" in readme
-    assert (
-        "trained_program = build_program(next(model.parameters()).detach())" in readme
-    )
+    assert "trained_circuit = circuit(next(model.parameters()).detach())" in readme
     assert "two-feature classifier" not in examples
     assert "result = fq.run(program)" in result_contract
     assert "import flagquantum as fq" in hybrid

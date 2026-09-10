@@ -8,16 +8,16 @@ import triton.language as tl
 
 
 @triton.jit
-def _insert_zero_bit(values, position: tl.constexpr):
+def _insert_zero_bit(values: tl.tensor, position: tl.constexpr) -> tl.tensor:
     lower_mask: tl.constexpr = (1 << position) - 1
     return (values & lower_mask) | ((values & ~lower_mask) << 1)
 
 
 @triton.jit
 def _two_qubit_forward_tangent_kernel(
-    augmented_in,
-    augmented_out,
-    angle_ptr,
+    augmented_in: tl.tensor,
+    augmented_out: tl.tensor,
+    angle_ptr: tl.tensor,
     dimension: tl.constexpr,
     lanes: tl.constexpr,
     parameter_lane: tl.constexpr,
@@ -25,7 +25,7 @@ def _two_qubit_forward_tangent_kernel(
     bit_right: tl.constexpr,
     family: tl.constexpr,
     block_groups: tl.constexpr,
-):
+) -> None:
     lane = tl.program_id(1)
     groups = tl.program_id(0) * block_groups + tl.arange(0, block_groups)
     group_count: tl.constexpr = dimension // 4
@@ -99,15 +99,15 @@ def _two_qubit_forward_tangent_kernel(
 
 @triton.jit
 def _rz_forward_tangent_kernel(
-    augmented_in,
-    augmented_out,
-    angle_ptr,
+    augmented_in: tl.tensor,
+    augmented_out: tl.tensor,
+    angle_ptr: tl.tensor,
     dimension: tl.constexpr,
     lanes: tl.constexpr,
     parameter_lane: tl.constexpr,
     bit: tl.constexpr,
     block_pairs: tl.constexpr,
-):
+) -> None:
     lane = tl.program_id(1)
     pairs = tl.program_id(0) * block_pairs + tl.arange(0, block_pairs)
     mask = pairs < dimension // 2

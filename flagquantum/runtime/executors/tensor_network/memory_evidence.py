@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
-from math import prod
+from dataclasses import asdict, dataclass, replace
+from math import isfinite, prod
 from typing import Any, Mapping, Sequence
 
 from .joint_planning import DistributedTNJointPlan
@@ -63,6 +63,8 @@ def build_distributed_tn_memory_evidence(
 ) -> DistributedTNMemoryEvidence:
     """Compare measured rank peaks with a versioned joint memory plan."""
 
+    if not isfinite(max_underprediction_ratio):
+        raise ValueError("TN memory underprediction ratio must be finite")
     if max_underprediction_ratio < 1.0:
         raise ValueError("TN memory underprediction ratio must be at least one")
     measurements = tuple(
@@ -128,26 +130,29 @@ def build_distributed_tn_memory_evidence(
         blockers.append("measured_allocator_reservation_exceeds_prediction_tolerance")
     if not budget_satisfied:
         blockers.append("measured_allocator_reservation_exceeds_memory_budget")
-    payload = {
-        "version": TN_MEMORY_EVIDENCE_VERSION,
-        "joint_plan_identity": plan.identity,
-        "world_size": world_size,
-        "rank_measurements": tuple(asdict(item) for item in ordered),
-        "predicted_working_set_local_bytes": predicted,
-        "max_cuda_peak_allocated_bytes": max_allocated,
-        "max_cuda_peak_reserved_bytes": max_reserved,
-        "max_peak_cached_forward_bytes": max_forward_cache,
-        "max_rematerialization_peak_transient_bytes": max_rematerialization,
-        "allocated_to_predicted_ratio": allocated_ratio,
-        "reserved_to_predicted_ratio": reserved_ratio,
-        "max_underprediction_ratio": max_underprediction_ratio,
-        "prediction_calibrated": prediction_calibrated,
-        "memory_budget_satisfied": budget_satisfied,
-        "passed": not blockers,
-        "blockers": tuple(blockers),
-    }
-    return DistributedTNMemoryEvidence(
-        **payload,
+    evidence = DistributedTNMemoryEvidence(
+        identity="",
+        version=TN_MEMORY_EVIDENCE_VERSION,
+        joint_plan_identity=plan.identity,
+        world_size=world_size,
+        rank_measurements=ordered,
+        predicted_working_set_local_bytes=predicted,
+        max_cuda_peak_allocated_bytes=max_allocated,
+        max_cuda_peak_reserved_bytes=max_reserved,
+        max_peak_cached_forward_bytes=max_forward_cache,
+        max_rematerialization_peak_transient_bytes=max_rematerialization,
+        allocated_to_predicted_ratio=allocated_ratio,
+        reserved_to_predicted_ratio=reserved_ratio,
+        max_underprediction_ratio=max_underprediction_ratio,
+        prediction_calibrated=prediction_calibrated,
+        memory_budget_satisfied=budget_satisfied,
+        passed=not blockers,
+        blockers=tuple(blockers),
+    )
+    payload = asdict(evidence)
+    del payload["identity"]
+    return replace(
+        evidence,
         identity=hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest(),

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Any
+from math import prod
+from typing import Any, Protocol
 
 import torch
+from torch.autograd.function import once_differentiable
 
 from ....simulation.jax.mps.kernels import (
     is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
@@ -39,6 +41,15 @@ from ....simulation.jax.tensor_network.kernels import (
 )
 
 TorchCircuitBuilder = Callable[..., Any]
+
+
+class _JAXAutogradContext(Protocol):
+    accepts_inputs: bool
+
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
 
 
 def _torch_to_jax(parameters: torch.Tensor) -> Any:
@@ -77,7 +88,8 @@ class JAXQuantumKernel:
         if self.compute_dtype == "complex128":
             import jax
 
-            jax.config.update("jax_enable_x64", True)
+            update_config: Callable[[str, bool], None] = jax.config.update
+            update_config("jax_enable_x64", True)
         self._value_and_grad = self._build_value_and_grad()
 
     def __call__(
@@ -95,10 +107,10 @@ class JAXQuantumKernel:
         class _TorchJAXQuantumFunction(torch.autograd.Function):
             @staticmethod
             def forward(
-                ctx: Any, params: torch.Tensor, input_values: torch.Tensor
+                ctx: _JAXAutogradContext,
+                params: torch.Tensor,
+                input_values: torch.Tensor,
             ) -> torch.Tensor:
-                import jax
-
                 jax_params = _torch_to_jax(params)
                 if kernel.accepts_inputs:
                     jax_inputs = _torch_to_jax(input_values)
@@ -109,15 +121,15 @@ class JAXQuantumKernel:
                 else:
                     value, param_grad = kernel._value_and_grad(jax_params)
                     torch_input_grad = torch.zeros_like(input_values)
-                del jax
                 torch_grad = _jax_to_torch(param_grad, like=params)
                 ctx.save_for_backward(torch_grad, torch_input_grad)
                 ctx.accepts_inputs = kernel.accepts_inputs
                 return _jax_to_torch(value, like=params)
 
             @staticmethod
+            @once_differentiable
             def backward(
-                ctx: Any, grad_output: torch.Tensor
+                ctx: _JAXAutogradContext, grad_output: torch.Tensor
             ) -> tuple[torch.Tensor, torch.Tensor | None]:
                 grad, input_grad = ctx.saved_tensors
                 scale_shape = tuple(grad_output.shape) + (1,) * max(
@@ -133,7 +145,13 @@ class JAXQuantumKernel:
                 return parameter_vjp, input_vjp
 
         input_tensor = inputs if inputs is not None else parameters.new_empty(0)
-        return _TorchJAXQuantumFunction.apply(parameters, input_tensor)
+        apply: Callable[[torch.Tensor, torch.Tensor], object] = (
+            _TorchJAXQuantumFunction.apply
+        )
+        result = apply(parameters, input_tensor)
+        if not isinstance(result, torch.Tensor):
+            raise TypeError("JAX autograd bridge must return a tensor")
+        return result
 
     def value_and_grad(
         self, parameters: torch.Tensor
@@ -194,12 +212,16 @@ class JAXQuantumKernel:
             parameter_shape = tuple(int(dim) for dim in self.parameter_shape)
 
             def value_and_grad_with_optional_batch(parameters: Any) -> Any:
-                if tuple(parameters.shape) == parameter_shape:
+                shape = tuple(parameters.shape)
+                batch_ndim = len(shape) - len(parameter_shape)
+                if batch_ndim < 0 or shape[batch_ndim:] != parameter_shape:
+                    raise ValueError(
+                        f"parameter shape must end with {parameter_shape}; got {shape}"
+                    )
+                if batch_ndim == 0:
                     return base_value_and_grad(parameters)
-                batch_shape = parameters.shape[
-                    : len(parameters.shape) - len(parameter_shape)
-                ]
-                flat = parameters.reshape((-1,) + parameter_shape)
+                batch_shape = shape[:batch_ndim]
+                flat = parameters.reshape((prod(batch_shape),) + parameter_shape)
                 values, grads = jax.vmap(base_value_and_grad)(flat)
                 return values.reshape(batch_shape), grads.reshape(parameters.shape)
 

@@ -2,24 +2,33 @@
 
 from __future__ import annotations
 
+from typing import Callable, Protocol
+
 import torch
 import triton
 import triton.language as tl
 
 
+class _TwoSiteContext(Protocol):
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
 @triton.jit
 def _two_site_forward_kernel(
-    left_parts,
-    gate_parts,
-    right_parts,
-    output_parts,
+    left_parts: tl.tensor,
+    gate_parts: tl.tensor,
+    right_parts: tl.tensor,
+    output_parts: tl.tensor,
     left_dim: tl.constexpr,
     bond_dim: tl.constexpr,
     right_dim: tl.constexpr,
     batched_gate: tl.constexpr,
     block_rows: tl.constexpr,
     block_columns: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(2)
     rows = tl.program_id(0) * block_rows + tl.arange(0, block_rows)
     columns = tl.program_id(1) * block_columns + tl.arange(0, block_columns)
@@ -87,11 +96,11 @@ def _two_site_forward_kernel(
 
 @triton.jit
 def _two_site_range_kernel(
-    left_parts,
-    gate_parts,
-    right_parts,
-    projection_parts,
-    output_parts,
+    left_parts: tl.tensor,
+    gate_parts: tl.tensor,
+    right_parts: tl.tensor,
+    projection_parts: tl.tensor,
+    output_parts: tl.tensor,
     left_dim: tl.constexpr,
     bond_dim: tl.constexpr,
     right_dim: tl.constexpr,
@@ -99,7 +108,7 @@ def _two_site_range_kernel(
     batched_gate: tl.constexpr,
     block_rows: tl.constexpr,
     block_rank: tl.constexpr,
-):
+) -> None:
     batch = tl.program_id(2)
     rows = tl.program_id(0) * block_rows + tl.arange(0, block_rows)
     ranks = tl.program_id(1) * block_rank + tl.arange(0, block_rank)
@@ -211,13 +220,18 @@ def _launch(
 class _FusedMPSTwoSite(torch.autograd.Function):
     @staticmethod
     def forward(
-        ctx, left: torch.Tensor, gate: torch.Tensor, right: torch.Tensor
+        ctx: _TwoSiteContext,
+        left: torch.Tensor,
+        gate: torch.Tensor,
+        right: torch.Tensor,
     ) -> torch.Tensor:
         ctx.save_for_backward(left, gate, right)
         return _launch(left, gate, right)
 
     @staticmethod
-    def backward(ctx, gradient: torch.Tensor):
+    def backward(
+        ctx: _TwoSiteContext, gradient: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         left, gate, right = ctx.saved_tensors
         batch, left_dim, _, _ = left.shape
         right_dim = right.shape[3]
@@ -259,7 +273,13 @@ def fused_mps_two_site(
         return torch.einsum(equation, gate, theta).reshape(
             left.shape[0], left.shape[1] * 2, 2 * right.shape[3]
         )
-    return _FusedMPSTwoSite.apply(left, gate, right)
+    apply: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], object] = (
+        _FusedMPSTwoSite.apply
+    )
+    result = apply(left, gate, right)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("MPS two-site autograd must return a tensor")
+    return result
 
 
 def fused_mps_range_projection(

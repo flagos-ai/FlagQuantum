@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
+from ....core.parameters import Parameter
 from .split_real_imag import (
     _complex128_pauli_expectation,
     _normalized_observables,
@@ -64,7 +65,7 @@ class SplitRealImagAutogradConformanceReport:
             raise RuntimeError(f"split real/imag P5 CPU conformance failed: {failed}")
 
 
-def _bindings(*, depth: int, seed: int) -> dict[str, torch.Tensor]:
+def _bindings(*, depth: int, seed: int) -> dict[str | Parameter, torch.Tensor]:
     return {
         "alpha": torch.tensor(
             0.17 + seed * 0.003, dtype=torch.float32, requires_grad=True
@@ -127,7 +128,7 @@ def run_split_real_imag_autograd_conformance(
                 device=resolved,
                 preflight=not cases,
             )
-            order = tuple(sorted(bindings))
+            order = tuple(sorted(_parameter_occurrences(ir)))
             gradients = torch.autograd.grad(
                 loss, tuple(bindings[name] for name in order)
             )

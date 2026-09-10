@@ -6,6 +6,7 @@ import torch
 import flagquantum as fq
 import flagquantum.noise as fqn
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic._noise import apply_readout_error
 
 pytestmark = pytest.mark.integration
 
@@ -123,3 +124,19 @@ def test_dynamic_noise_rejects_unsupported_channel_and_correlated_readout() -> N
         fq.experimental.dynamic.run_dynamic(circuit, shots=1, noise_model=correlated)
     with pytest.raises(ValueError, match="must use independent readout rules"):
         fq.experimental.dynamic.run_dynamic(circuit, shots=1, noise_model=misplaced)
+
+
+def test_readout_boundary_rejects_correlated_error_without_consuming_rng() -> None:
+    bits = torch.tensor([0, 1, 0, 1])
+    before_bits = bits.clone()
+    generator = torch.Generator().manual_seed(42)
+    before_rng = generator.get_state().clone()
+    model = fqn.NoiseModel().add_correlated_readout(
+        (0,), fqn.CorrelatedReadoutError(((1.0, 0.0), (0.0, 1.0)))
+    )
+
+    with pytest.raises(ValueError, match="correlated readout is outside"):
+        apply_readout_error(bits, 0, model, generator=generator)
+
+    assert torch.equal(bits, before_bits)
+    assert torch.equal(generator.get_state(), before_rng)

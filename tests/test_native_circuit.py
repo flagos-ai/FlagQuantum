@@ -449,6 +449,36 @@ def test_native_copy_and_pauli_string_expectation():
     assert torch.allclose(copied.expectation_ps(z=[0]), torch.tensor([-1.0]))
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batched", (False, True))
+def test_dense_expectation_preserves_complex_precision_and_gradients(
+    dtype: torch.dtype, batched: bool
+) -> None:
+    from flagquantum.circuit import expectation
+
+    generator = torch.Generator().manual_seed(73)
+    shape = (3, 2) if batched else (2,)
+    ket = torch.randn(shape, dtype=dtype, generator=generator, requires_grad=True)
+    operator = torch.tensor(
+        [[0.123456789123, 0.234567891234j], [-0.234567891234j, -0.345678912345]],
+        dtype=dtype,
+        requires_grad=True,
+    )
+    actual = expectation((operator, (0,)), ket=ket)
+    expected = (ket.conj() * (ket @ operator.T)).sum(dim=-1).reshape(-1)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (ket, operator))
+    expected_gradients = torch.autograd.grad(expected.real.sum(), (ket, operator))
+    tolerance = 1e-12 if dtype == torch.complex128 else 1e-6
+
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(
+            actual_gradient, expected_gradient, atol=tolerance, rtol=tolerance
+        )
+
+
 def test_native_qasm_export():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1).rx(1, theta=0.25)

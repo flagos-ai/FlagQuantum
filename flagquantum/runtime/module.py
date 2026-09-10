@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping
 
 import torch
+from torch.utils.hooks import RemovableHandle
 
 from ..circuit import Circuit
 from ..core.ir import CircuitIR, ensure_circuit_ir
@@ -174,7 +175,7 @@ class Module(torch.nn.Module):
         self._builder_cache_hits = 0
         self._jax_kernel: Any | None = None
         self._jax_kernel_signature: tuple[Any, ...] | None = None
-        self._correctness_debug_hook_handle: Any | None = None
+        self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
         if precision is None:
             from .training_state import PrecisionPolicy
 
@@ -217,13 +218,26 @@ class Module(torch.nn.Module):
         handle = self._correctness_debug_hook_handle
         if self.policy.correctness_debug and handle is None:
             self._correctness_debug_hook_handle = tuple(
-                parameter.register_hook(self._finite_gradient_hook)
+                self._register_finite_gradient_hook(parameter)
                 for parameter in self._parameter_tensors()
             )
         elif not self.policy.correctness_debug and handle is not None:
             for item in handle:
                 item.remove()
             self._correctness_debug_hook_handle = None
+
+    def _register_finite_gradient_hook(
+        self, parameter: torch.Tensor
+    ) -> RemovableHandle:
+        register: Callable[[Callable[[torch.Tensor], torch.Tensor]], object] = (
+            parameter.register_hook
+        )
+        handle = register(self._finite_gradient_hook)
+        if not isinstance(handle, RemovableHandle):
+            raise TypeError(
+                "PyTorch gradient hook registration must return a removable handle"
+            )
+        return handle
 
     def set_runtime_policy(self, policy: RuntimePolicy) -> None:
         """Replace runtime policy and synchronize policy-dependent resources."""
@@ -251,7 +265,10 @@ class Module(torch.nn.Module):
                     "complex128" if probe.dtype == torch.float64 else "complex64"
                 )
                 self._require_policy_precision(self.policy, complex_dtype)
-        super()._apply(fn, recurse=recurse)
+        apply_tensors: Callable[
+            [Callable[[torch.Tensor], torch.Tensor], bool], object
+        ] = super()._apply
+        apply_tensors(fn, recurse)
         if hasattr(self, "precision"):
             dtype = self._parameter_tensors()[0].dtype
             if dtype not in {torch.float32, torch.float64}:

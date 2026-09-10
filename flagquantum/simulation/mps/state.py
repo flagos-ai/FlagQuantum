@@ -128,7 +128,7 @@ class MPSState(MPSPlanningMixin):
             for u, s, vh in svds:
                 rank = _select_rank(s, cfg.max_bond, cfg.cutoff)
                 ranks.append(rank)
-            rank = min(ranks) if cfg.cutoff > 0 else ranks[0]
+            rank = max(ranks)
             step_error = 0.0
             for u, s, vh in svds:
                 step_error = max(step_error, _discarded_weight(s, rank))
@@ -330,6 +330,7 @@ class MPSState(MPSPlanningMixin):
             self.tensors[wire - 1] = torch.einsum("blpa,ac->blpc", previous, transfer)
         self.orthogonality_center = int(target_site)
 
+    @torch.no_grad()
     def left_canonical_residual(self) -> float:
         residual = 0.0
         for tensor in self.tensors[:-1]:
@@ -343,6 +344,7 @@ class MPSState(MPSPlanningMixin):
                 )
         return residual
 
+    @torch.no_grad()
     def right_canonical_residual(self) -> float:
         residual = 0.0
         for tensor in self.tensors[1:]:
@@ -356,6 +358,7 @@ class MPSState(MPSPlanningMixin):
                 )
         return residual
 
+    @torch.no_grad()
     def mixed_canonical_residual(self, center: int | None = None) -> float:
         if center is None:
             center = self.orthogonality_center
@@ -461,6 +464,11 @@ class MPSState(MPSPlanningMixin):
         zz_coefficients: dict[int, Any],
     ) -> torch.Tensor:
         """Evaluate weighted ``Z_i`` and adjacent ``Z_i Z_{i+1}`` in one sweep."""
+
+        if any(wire < 0 or wire >= self.n_wires for wire in z_coefficients):
+            raise ValueError("Z coefficient references a wire outside the MPS")
+        if any(wire < 0 or wire >= self.n_wires - 1 for wire in zz_coefficients):
+            raise ValueError("ZZ coefficient references a bond outside the MPS")
 
         env = torch.ones(self.bsz, 1, 1, dtype=self.dtype, device=self.device)
         pending_z = torch.zeros_like(env)
@@ -659,6 +667,8 @@ class MPSState(MPSPlanningMixin):
         return z, zz
 
     def _expectation_product_ops(self, ops: dict[int, torch.Tensor]) -> torch.Tensor:
+        if any(wire < 0 or wire >= self.n_wires for wire in ops):
+            raise ValueError("observable wire index out of range")
         env = torch.ones(
             self.bsz,
             1,

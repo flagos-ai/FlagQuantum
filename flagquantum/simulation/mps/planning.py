@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import os
+from abc import ABC, abstractmethod
 from typing import Any
 
 import torch
@@ -11,32 +12,93 @@ import torch
 from .models import (
     MPSAdaptiveBondPlan,
     MPSBondProfile,
+    MPSConfig,
     MPSLocalRefinementPlan,
+    MPSTruncationRecord,
 )
 
 
-class MPSPlanningMixin:
+class MPSPlanningMixin(ABC):
+    """State diagnostics and planning over a concrete MPS numerical implementation."""
+
+    config: MPSConfig
+    truncation_errors: list[float]
+    truncation_records: list[MPSTruncationRecord]
+    orthogonality_center: int | None
+    local_swap_count: int
+    triton_two_site_regions: int
+    eager_two_site_regions: int
+    svd_gradient_method: str
+    fixed_rank_qr_regions: int
+    spatial_two_site_bucket_count: int
+    spatial_two_site_bucketed_gate_count: int
+
+    @property
+    @abstractmethod
+    def n_wires(self) -> int: ...
+
+    @property
+    @abstractmethod
+    def bsz(self) -> int: ...
+
+    @property
+    @abstractmethod
+    def device(self) -> torch.device: ...
+
+    @property
+    @abstractmethod
+    def dtype(self) -> torch.dtype: ...
+
+    @property
+    @abstractmethod
+    def bond_dims(self) -> tuple[int, ...]: ...
+
+    @property
+    @abstractmethod
+    def max_bond(self) -> int: ...
+
+    @property
+    @abstractmethod
+    def parameter_count(self) -> int: ...
+
+    @abstractmethod
+    def state_norm(self) -> torch.Tensor: ...
+
+    @abstractmethod
+    def left_canonical_residual(self) -> float: ...
+
+    @abstractmethod
+    def right_canonical_residual(self) -> float: ...
+
+    @abstractmethod
+    def mixed_canonical_residual(self, center: int | None = None) -> float: ...
+
+    @torch.no_grad()
     def bond_profile(self) -> MPSBondProfile:
         total_error = float(sum(self.truncation_errors))
         norms = self.state_norm().detach().cpu()
         truncation_by_bond = self.truncation_error_by_bond()
+        bond_dims = self.bond_dims
+        left_residual = self.left_canonical_residual()
+        right_residual = self.right_canonical_residual()
+        mixed_residual = (
+            max(left_residual, right_residual)
+            if self.orthogonality_center is None
+            else self.mixed_canonical_residual()
+        )
         return MPSBondProfile(
             n_wires=self.n_wires,
             batch_size=self.bsz,
-            bond_dims=self.bond_dims,
+            bond_dims=bond_dims,
             max_bond=self.max_bond,
-            mean_bond=(
-                float(sum(self.bond_dims) / len(self.bond_dims))
-                if self.bond_dims
-                else 1.0
-            ),
+            mean_bond=(float(sum(bond_dims) / len(bond_dims)) if bond_dims else 1.0),
             parameter_count=self.parameter_count,
             state_norm_min=float(torch.min(norms).item()),
             state_norm_max=float(torch.max(norms).item()),
             orthogonality_center=self.orthogonality_center,
-            left_canonical_residual=self.left_canonical_residual(),
-            right_canonical_residual=self.right_canonical_residual(),
-            mixed_canonical_residual=self.mixed_canonical_residual(),
+            left_canonical_residual=left_residual,
+            right_canonical_residual=right_residual,
+            mixed_canonical_residual=mixed_residual,
             truncation_steps=len(self.truncation_errors),
             truncation_error=total_error,
             max_truncation_error=max(self.truncation_errors, default=0.0),
@@ -63,8 +125,12 @@ class MPSPlanningMixin:
         growth_factor: float = 2.0,
         min_increment: int = 1,
     ) -> MPSAdaptiveBondPlan:
+        if not math.isfinite(growth_factor):
+            raise ValueError("growth_factor must be finite.")
         if growth_factor < 1:
             raise ValueError("growth_factor must be >= 1.")
+        if type(min_increment) is not int:
+            raise ValueError("min_increment must be an integer.")
         if min_increment < 0:
             raise ValueError("min_increment must be >= 0.")
         observed_error = float(sum(self.truncation_errors))
@@ -74,6 +140,8 @@ class MPSPlanningMixin:
             budget_satisfied = observed_error == 0.0
         else:
             budget = float(global_error_budget)
+            if not math.isfinite(budget) or budget < 0:
+                raise ValueError("global_error_budget must be finite and non-negative.")
             budget_satisfied = observed_error <= budget
             threshold = budget / max(1, len(by_bond)) if budget > 0 else 0.0
 
@@ -82,12 +150,11 @@ class MPSPlanningMixin:
         )
         suggestions: list[tuple[int, int]] = []
         current_limit = self.config.max_bond or self.max_bond
+        bond_dims = self.bond_dims if hot_bonds else ()
         for bond in hot_bonds:
-            current_rank = (
-                self.bond_dims[bond] if bond < len(self.bond_dims) else self.max_bond
-            )
+            current_rank = bond_dims[bond] if bond < len(bond_dims) else self.max_bond
             grown = max(
-                current_rank + int(min_increment),
+                current_rank + min_increment,
                 math.ceil(current_rank * growth_factor),
             )
             suggestions.append((bond, max(grown, current_limit)))
@@ -111,6 +178,8 @@ class MPSPlanningMixin:
         growth_factor: float = 2.0,
         window_radius: int = 1,
     ) -> MPSLocalRefinementPlan:
+        if type(window_radius) is not int:
+            raise ValueError("window_radius must be an integer.")
         if window_radius < 0:
             raise ValueError("window_radius must be >= 0.")
         adaptive = self.adaptive_bond_plan(
@@ -119,8 +188,8 @@ class MPSPlanningMixin:
         )
         windows = []
         for bond in adaptive.hot_bonds:
-            left = max(0, int(bond) - int(window_radius))
-            right = min(self.n_wires - 1, int(bond) + 1 + int(window_radius))
+            left = max(0, bond - window_radius)
+            right = min(self.n_wires - 1, bond + 1 + window_radius)
             windows.append((left, right))
         merged: list[tuple[int, int]] = []
         for left, right in sorted(windows):
@@ -137,14 +206,13 @@ class MPSPlanningMixin:
 
     def summary(self) -> dict[str, Any]:
         profile = self.bond_profile()
-        adaptive = self.adaptive_bond_plan()
         refinement = self.local_refinement_plan()
         return {
             "state_mode": "mps",
-            "n_wires": self.n_wires,
-            "batch_size": self.bsz,
-            "bond_dims": self.bond_dims,
-            "max_bond": self.max_bond,
+            "n_wires": profile.n_wires,
+            "batch_size": profile.batch_size,
+            "bond_dims": profile.bond_dims,
+            "max_bond": profile.max_bond,
             "mean_bond": profile.mean_bond,
             "parameter_count": profile.parameter_count,
             "state_norm_min": profile.state_norm_min,
@@ -154,13 +222,13 @@ class MPSPlanningMixin:
             "right_canonical_residual": profile.right_canonical_residual,
             "mixed_canonical_residual": profile.mixed_canonical_residual,
             "local_swap_count": self.local_swap_count,
-            "truncation_steps": len(self.truncation_errors),
+            "truncation_steps": profile.truncation_steps,
             "truncation_error": profile.truncation_error,
-            "max_truncation_error": max(self.truncation_errors, default=0.0),
+            "max_truncation_error": profile.max_truncation_error,
             "truncation_by_bond": profile.truncation_by_bond,
             "svd_gradient_method": self.svd_gradient_method,
-            "adaptive_suggested_max_bond": adaptive.suggested_max_bond,
-            "adaptive_hot_bonds": adaptive.hot_bonds,
+            "adaptive_suggested_max_bond": refinement.suggested_max_bond,
+            "adaptive_hot_bonds": refinement.hot_bonds,
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),

@@ -125,14 +125,15 @@ def verify_compilation_evidence_handoff(
         )
     if isinstance(bundle, CompilationEvidenceBundleV3):
         assert isinstance(artifact, ProgramArtifactV3)
+        allocated_plan = bundle.physical_plan
         result_schema = artifact.result_schema
         if (
-            compilation["physical_plan_identity"] != plan.plan_identity
-            or compilation["allocation_identity"] != plan.allocation_identity
+            compilation["physical_plan_identity"] != allocated_plan.plan_identity
+            or compilation["allocation_identity"] != allocated_plan.allocation_identity
             or tuple(result_schema["logical_wires"])
-            != tuple(range(plan.logical_wire_count))
+            != tuple(range(allocated_plan.logical_wire_count))
             or tuple(result_schema["physical_result_slots"])
-            != plan.logical_result_physical_slots
+            != allocated_plan.logical_result_physical_slots
             or result_schema["ordering"] != "logical_wire_order"
             or result_schema["kind"] != "samples"
             or result_schema["shots_source"] != "execution_request"

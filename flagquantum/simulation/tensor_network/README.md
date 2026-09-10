@@ -24,3 +24,24 @@ evidence.
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local
   change.
+
+## Shape-only search and real execution
+
+`TensorNetworkNode` contains a real PyTorch tensor. Search intermediates use
+the private `_SearchNode` in `path_search.py`, which can hold either a tensor
+or `_DryRunTensor` metadata. This keeps planning shapes larger than PyTorch's
+storage-size limit out of the public tensor contract. Tree reconstruction and
+external-path conversion use the same private representation.
+
+Greedy, beam, and optimal search return tensors for real execution; dry runs
+may return shape-only metadata. Their overloads express that distinction.
+Numerical branches unwrap real tensors explicitly; shape-only output
+reordering must never allocate a tensor. Do not replace the metadata object
+with a meta-device tensor: meta tensors still impose PyTorch size limits.
+
+For changes to this boundary, run `tests/unit/test_tensor_path_search.py`,
+`tests/unit/test_tensor_stages.py`, and `tests/test_tensor_network.py`. Preserve
+contraction steps, cache identities, output values, and gradients. The search
+regressions include output reordering and 96-axis products without allocating
+the represented state. These are planning checks, not simulation-capacity
+evidence.

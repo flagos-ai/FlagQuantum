@@ -28,6 +28,42 @@ from flagquantum.runtime.executors.statevector.reverse_adjoint import (
 pytestmark = pytest.mark.unit
 
 
+def test_generic_matrix_jvp_matches_rotation_gradient(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.runtime.executors.statevector import reverse_adjoint
+
+    monkeypatch.setattr(
+        reverse_adjoint, "_analytic_rotation_derivative", lambda *args: None
+    )
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta)
+    result = execute_torch_distributed_statevector_reverse(circuit)
+    result.backward()
+
+    torch.testing.assert_close(theta.grad, -torch.sin(theta.detach()))
+
+
+@pytest.mark.parametrize("jvp_result", [None, (torch.tensor(0.0), None)])
+def test_generic_matrix_jvp_rejects_invalid_derivative(
+    monkeypatch: pytest.MonkeyPatch, jvp_result: object
+) -> None:
+    from flagquantum.runtime.executors.statevector import reverse_adjoint
+
+    monkeypatch.setattr(
+        reverse_adjoint, "_analytic_rotation_derivative", lambda *args: None
+    )
+    monkeypatch.setattr(
+        torch.autograd.functional, "jvp", lambda *args, **kwargs: jvp_result
+    )
+    theta = torch.tensor(0.23, requires_grad=True)
+    result = execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta))
+
+    with pytest.raises(TypeError, match="Matrix JVP must return a tensor derivative"):
+        result.backward()
+    assert not result.summary()["parameter_gradient_ready"]
+
+
 def test_address_sharded_reverse_always_uses_compact_global_indices():
     small_shard = SimpleNamespace(local_amplitudes=1 << 23)
     address_sharded = SimpleNamespace(
@@ -303,6 +339,37 @@ def test_checkpoint_policy_is_versioned_and_fail_closed():
     assert StatevectorCheckpointPolicy(strategy="interval", interval=8).interval == 8
     with pytest.raises(ValueError, match="interval > 0"):
         StatevectorCheckpointPolicy(strategy="interval", interval=0)
+
+
+@pytest.mark.parametrize("strategy", ("full_rematerialization", "interval"))
+def test_rematerialization_skips_reversible_cx_optimization(
+    monkeypatch: pytest.MonkeyPatch, strategy: str
+) -> None:
+    from flagquantum.runtime.executors.statevector import reverse_adjoint
+
+    monkeypatch.setattr(reverse_adjoint, "triton_available", lambda: True)
+    monkeypatch.setattr(
+        reverse_adjoint, "_triton_local_cx_segment_enabled", lambda ir: True
+    )
+    monkeypatch.setenv("FQ_STATEVECTOR_PERSISTENT_INPLACE_LOCAL", "1")
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(3, dtype=torch.complex128)
+    circuit.gate("ry", 0, theta=theta)
+    circuit.gate("cx", (0, 1))
+    circuit.gate("cx", (1, 2))
+    expected = circuit.expectation_z(2)
+    (expected_gradient,) = torch.autograd.grad(expected, theta)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=2,
+        checkpoint_policy=StatevectorCheckpointPolicy(strategy=strategy, interval=1),
+    )
+    result.backward()
+
+    torch.testing.assert_close(result.value, expected.squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    assert result.summary()["checkpoint_policy"]["strategy"] == strategy
 
 
 def test_auto_checkpoint_reuses_forward_state_when_working_set_fits():
