@@ -25,9 +25,6 @@ from .reverse_transport import (
 )
 from .state import RankOwnedMPSState
 
-_recv = receive_reverse_tensor
-_send = send_reverse_tensor
-
 
 @dataclass(frozen=True)
 class SiteShardedZZScanResult:

@@ -65,7 +65,6 @@ from .reverse_transport import (
     receive_static_reverse_tensor,
     send_reverse_tensor,
     send_static_reverse_tensor,
-    static_shape_generation,
 )
 from .reverse_z_observables import (
     mps_fused_z_zz_mse_and_adjoints,
@@ -81,22 +80,13 @@ from .state import (
 )
 
 _rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
-_broadcast_record = broadcast_reverse_record
-_all_reduce_layer_records = all_reduce_reverse_layer_records
-_begin_layer_halo_prefetch = begin_reverse_layer_halo_prefetch
-_finish_layer_halo_prefetch = finish_reverse_layer_halo_prefetch
 _fused_z_zz_mse_and_adjoints = mps_fused_z_zz_mse_and_adjoints
 _heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
 _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
-_recv = receive_reverse_tensor
-_recv_static = receive_static_reverse_tensor
 _record = build_mps_reverse_tape_record
-_send = send_reverse_tensor
-_send_static = send_static_reverse_tensor
-_shape_generation = static_shape_generation
 _site_sharded_z_zz_scan = mps_site_sharded_z_zz_scan
 _transfer = transfer_mps_operator_environment
 _validate_svd_gaps = validate_mps_svd_gaps
@@ -411,7 +401,7 @@ def _collect_reverse_layer_metadata(
         for index, values in prepared.items()
         if index in indices
     }
-    return _all_reduce_layer_records(local_metadata, entries, template), int(
+    return all_reduce_reverse_layer_records(local_metadata, entries, template), int(
         bool(entries)
     )
 
@@ -688,7 +678,7 @@ def execute_torch_distributed_mps_reverse(
                 )
             )
             layer_prefetch, layer_prefetched_indices = (
-                _begin_layer_halo_prefetch(layer, state, global_shapes)
+                begin_reverse_layer_halo_prefetch(layer, state, global_shapes)
                 if prefetch_layer_halos
                 else (None, frozenset())
             )
@@ -703,7 +693,9 @@ def execute_torch_distributed_mps_reverse(
             )
             precomputed_rxx.update(prepared)
             precomputed_factorizations.update(saved)
-            layer_halo_wait_seconds += _finish_layer_halo_prefetch(layer_prefetch)
+            layer_halo_wait_seconds += finish_reverse_layer_halo_prefetch(
+                layer_prefetch
+            )
             if layer_prefetch is not None:
                 prepared, saved = _prepare_prefetched_reverse_two_site_layer(
                     layer,
@@ -784,14 +776,14 @@ def execute_torch_distributed_mps_reverse(
                 halo = prefetched_rxx_halos.pop(instruction_index)
         elif left_owner != right_owner:
             if rank == right_owner:
-                _send_static(
+                send_static_reverse_tensor(
                     state.local_tensors[left_wire + 1],
                     destination=left_owner,
                     sequence=sequence,
                     shape=global_shapes[left_wire + 1],
                 )
             elif rank == left_owner:
-                halo = _recv_static(
+                halo = receive_static_reverse_tensor(
                     next(iter(local_tensors.values())),
                     source=right_owner,
                     sequence=sequence,
@@ -897,9 +889,11 @@ def execute_torch_distributed_mps_reverse(
             }
         if left_owner != right_owner:
             if rank == left_owner:
-                _send(after_right, destination=right_owner, sequence=sequence + 1)
+                send_reverse_tensor(
+                    after_right, destination=right_owner, sequence=sequence + 1
+                )
             elif rank == right_owner:
-                state.local_tensors[left_wire + 1] = _recv(
+                state.local_tensors[left_wire + 1] = receive_reverse_tensor(
                     state.local_tensors[left_wire + 1],
                     source=left_owner,
                     sequence=sequence + 1,
@@ -915,7 +909,7 @@ def execute_torch_distributed_mps_reverse(
                 metadata = precomputed_layer_metadata.pop(instruction_index)
             else:
                 dynamic_metadata_broadcasts += 1
-                metadata = _broadcast_record(
+                metadata = broadcast_reverse_record(
                     metadata, left_owner, next(iter(local_tensors.values()))
                 )
         else:
@@ -973,14 +967,14 @@ def execute_torch_distributed_mps_reverse(
         sequence = 1_000_000 + len(records) * 2
         if left_owner != right_owner:
             if rank == right_owner:
-                _send_static(
+                send_static_reverse_tensor(
                     state.local_tensors[left_wire + 1],
                     destination=left_owner,
                     sequence=sequence,
                     shape=global_shapes[left_wire + 1],
                 )
             elif rank == left_owner:
-                halo = _recv_static(
+                halo = receive_static_reverse_tensor(
                     next(iter(local_tensors.values())),
                     source=right_owner,
                     sequence=sequence,
@@ -1013,14 +1007,16 @@ def execute_torch_distributed_mps_reverse(
             }
         if left_owner != right_owner:
             if rank == left_owner:
-                _send(after_right, destination=right_owner, sequence=sequence + 1)
+                send_reverse_tensor(
+                    after_right, destination=right_owner, sequence=sequence + 1
+                )
             elif rank == right_owner:
-                state.local_tensors[left_wire + 1] = _recv(
+                state.local_tensors[left_wire + 1] = receive_reverse_tensor(
                     state.local_tensors[left_wire + 1],
                     source=left_owner,
                     sequence=sequence + 1,
                 )
-        metadata = _broadcast_record(
+        metadata = broadcast_reverse_record(
             metadata, left_owner, next(iter(local_tensors.values()))
         )
         metadata["split_info"]["method"] = "qr"

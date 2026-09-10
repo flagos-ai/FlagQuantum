@@ -10,9 +10,11 @@ from flagquantum.circuit import Circuit
 from flagquantum.runtime.executors.mps.reverse import (
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
-    _recv,
-    _send,
     execute_torch_distributed_mps_reverse,
+)
+from flagquantum.runtime.executors.mps.reverse_transport import (
+    receive_reverse_tensor,
+    send_reverse_tensor,
 )
 
 
@@ -51,10 +53,10 @@ def main() -> None:
         elif args.mode == "sequence":
             reference = torch.zeros(1, 1, 2, 1, dtype=torch.complex64)
             if rank == 0:
-                _send(reference, destination=1, sequence=41)
+                send_reverse_tensor(reference, destination=1, sequence=41)
             else:
                 try:
-                    _recv(reference, source=0, sequence=42)
+                    receive_reverse_tensor(reference, source=0, sequence=42)
                 except MPSReverseContractError as error:
                     assert "peer 0" in str(error)
                     assert "expected 42" in str(error)
