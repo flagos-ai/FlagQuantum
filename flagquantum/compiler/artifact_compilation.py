@@ -13,6 +13,7 @@ from ..core._artifacts import (
     ArtifactKind,
     CircuitArtifactBindingResult,
     ProgramArtifactV2,
+    ProgramArtifactV3,
 )
 from ..core.ir import CircuitIR
 from ..core.target_capabilities import TargetCapabilitySnapshot
@@ -67,7 +68,7 @@ class ArtifactCompilationResult:
     physical_plan: PhysicalCircuitPlan
     emission: TargetEmissionResult
     conformance: TargetConformanceResult
-    executable_artifact: ProgramArtifactV2
+    executable_artifact: ProgramArtifactV2 | ProgramArtifactV3
     compilation_identity: str = ""
 
     def __post_init__(self) -> None:
@@ -117,8 +118,10 @@ class ArtifactCompilationResult:
             raise TypeError("emission must be a TargetEmissionResult")
         if not isinstance(self.conformance, TargetConformanceResult):
             raise TypeError("conformance must be a TargetConformanceResult")
-        if not isinstance(self.executable_artifact, ProgramArtifactV2):
-            raise TypeError("executable_artifact must be a ProgramArtifactV2")
+        if not isinstance(
+            self.executable_artifact, (ProgramArtifactV2, ProgramArtifactV3)
+        ):
+            raise TypeError("executable_artifact must be a ProgramArtifactV2 or V3")
         if self.executable_artifact.kind is not ArtifactKind.EXECUTABLE:
             raise ValueError("artifact compilation output must be executable")
         topology = self.legalization.topology_legalization
@@ -160,6 +163,24 @@ class ArtifactCompilationResult:
             != self.conformance.conformance_identity
         ):
             raise ValueError("artifact compilation evidence chain is inconsistent")
+        if self.physical_plan.version == "3.0":
+            if not isinstance(self.executable_artifact, ProgramArtifactV3):
+                raise ValueError("physical plan 3.0 requires ProgramArtifactV3")
+            if (
+                compilation["physical_plan_identity"]
+                != self.physical_plan.plan_identity
+                or compilation["allocation_identity"]
+                != self.physical_plan.allocation_identity
+                or tuple(
+                    self.executable_artifact.result_schema["physical_result_slots"]
+                )
+                != self.physical_plan.logical_result_physical_slots
+            ):
+                raise ValueError(
+                    "artifact compilation physical allocation is inconsistent"
+                )
+        elif not isinstance(self.executable_artifact, ProgramArtifactV2):
+            raise ValueError("physical plan 1.0/2.0 requires ProgramArtifactV2")
         expected = _compilation_identity(
             source_artifact_identity=self.source_artifact_identity,
             circuit_artifact_identity=self.circuit_artifact_identity,
@@ -255,6 +276,7 @@ def compile_circuit_artifact_for_target(
             emission,
             conformance,
             producer=producer,
+            physical_plan=physical_plan,
         )
     except CompilationError as error:
         raise ArtifactCompilationError(

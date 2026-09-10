@@ -18,6 +18,7 @@ from typing import Any, Mapping
 
 ARTIFACT_ENVELOPE_VERSION = "1.0"
 PROGRAM_ARTIFACT_V2_VERSION = "2.0"
+PROGRAM_ARTIFACT_V3_VERSION = "3.0"
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
 _V2_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024
@@ -623,6 +624,199 @@ class ProgramArtifactV2:
 
 
 @dataclass(frozen=True)
+class ProgramArtifactV3:
+    """Approved allocated-executable envelope with logical result projection."""
+
+    kind: ArtifactKind
+    producer: str
+    profile: Mapping[str, Any]
+    payload: str
+    circuit_content_hash: str
+    requirements: Any
+    target: Mapping[str, Any]
+    compilation: Mapping[str, Any]
+    parameter_schema: Mapping[str, Any]
+    result_schema: Mapping[str, Any]
+    payload_sha256: str = ""
+    artifact_identity: str = ""
+    version: str = PROGRAM_ARTIFACT_V3_VERSION
+
+    def __post_init__(self) -> None:
+        from .target_capabilities import RequirementSet
+
+        if self.version != PROGRAM_ARTIFACT_V3_VERSION:
+            raise ValueError(f"unsupported artifact envelope version {self.version!r}")
+        if self.kind is not ArtifactKind.EXECUTABLE:
+            raise ValueError("ProgramArtifactV3 requires kind 'executable'")
+        if type(self.producer) is not str or not self.producer.strip():
+            raise ValueError("v3 artifact producer must be a non-empty string")
+        if len(self.producer.encode("utf-8")) > _V2_MAX_STRING_BYTES:
+            raise ValueError("v3 artifact producer exceeds maximum string bytes")
+
+        profile = _profile(self.profile)
+        if profile["name"] not in {"openqasm-2.0", "openqasm-3.0"}:
+            raise ValueError(
+                "ProgramArtifactV3 supports only ordered-result OpenQASM profiles"
+            )
+        if type(self.payload) is not str or not self.payload:
+            raise TypeError("v3 executable artifact payload must be non-empty text")
+        payload_bytes = self.payload.encode("utf-8")
+        if len(payload_bytes) > _V2_MAX_PAYLOAD_BYTES:
+            raise ValueError("artifact payload exceeds maximum UTF-8 bytes")
+        payload_digest = hashlib.sha256(payload_bytes).hexdigest()
+        if self.payload_sha256 and self.payload_sha256 != payload_digest:
+            raise ValueError("payload_sha256 does not match artifact payload")
+
+        circuit_hash = _require_sha256(
+            self.circuit_content_hash,
+            owner="circuit_content_hash",
+        )
+        if not isinstance(self.requirements, RequirementSet):
+            raise TypeError("v3 executable artifacts require a Core RequirementSet")
+        target_values = _strict_fields(
+            self.target,
+            expected={"snapshot_id"},
+            owner="v3 artifact target",
+        )
+        _require_sha256(target_values["snapshot_id"], owner="target.snapshot_id")
+        target = _strict_v2_value(target_values, owner="v3 artifact target")
+
+        compilation_values = _strict_fields(
+            self.compilation,
+            expected={
+                "target_legalization_identity",
+                "physical_plan_identity",
+                "allocation_identity",
+                "schedule_identity",
+                "emission_identity",
+                "conformance_identity",
+            },
+            owner="v3 compilation identity",
+        )
+        for name, value in compilation_values.items():
+            _require_sha256(value, owner=f"compilation.{name}")
+        compilation = _strict_v2_value(
+            compilation_values,
+            owner="v3 compilation identity",
+        )
+
+        parameter_schema = _strict_v2_value(
+            self.parameter_schema,
+            owner="v3 parameter schema",
+        )
+        parameter_values = _strict_fields(
+            _thaw_v2(parameter_schema),
+            expected={"binding", "parameters"},
+            owner="v3 parameter schema",
+        )
+        if parameter_values != {"binding": "fully_bound", "parameters": []}:
+            raise ValueError("v3 executable artifacts must be fully bound")
+
+        result_schema = _strict_v2_value(
+            self.result_schema,
+            owner="v3 result schema",
+        )
+        result_values = _strict_fields(
+            _thaw_v2(result_schema),
+            expected={
+                "kind",
+                "logical_wires",
+                "physical_result_slots",
+                "ordering",
+                "shots_source",
+            },
+            owner="v3 result schema",
+        )
+        logical_wires = result_values["logical_wires"]
+        physical_slots = result_values["physical_result_slots"]
+        if (
+            result_values["kind"] != "samples"
+            or result_values["ordering"] != "logical_wire_order"
+            or result_values["shots_source"] != "execution_request"
+            or not isinstance(logical_wires, list)
+            or not logical_wires
+            or logical_wires != list(range(len(logical_wires)))
+            or not isinstance(physical_slots, list)
+            or len(physical_slots) != len(logical_wires)
+            or any(type(slot) is not int or slot < 0 for slot in physical_slots)
+            or len(set(physical_slots)) != len(physical_slots)
+        ):
+            raise ValueError(
+                "v3 result schema requires an injective physical projection in "
+                "dense logical-wire order"
+            )
+        object.__setattr__(self, "profile", profile)
+        object.__setattr__(self, "payload_sha256", payload_digest)
+        object.__setattr__(self, "circuit_content_hash", circuit_hash)
+        object.__setattr__(self, "target", target)
+        object.__setattr__(self, "compilation", compilation)
+        object.__setattr__(self, "parameter_schema", parameter_schema)
+        object.__setattr__(self, "result_schema", result_schema)
+
+        body = self._identity_payload()
+        structured = {key: value for key, value in body.items() if key != "payload"}
+        _strict_v2_value(structured, owner="v3 artifact", counter=[1])
+        _reject_sensitive_v2(structured, owner="v3 artifact")
+        expected_identity = hashlib.sha256(_canonical_json_bytes(body)).hexdigest()
+        if self.artifact_identity and self.artifact_identity != expected_identity:
+            raise ValueError("artifact_identity does not match canonical envelope")
+        object.__setattr__(self, "artifact_identity", expected_identity)
+        if len(_canonical_json_bytes(self.to_dict())) > _V2_MAX_ENVELOPE_BYTES:
+            raise ValueError("artifact envelope exceeds maximum UTF-8 bytes")
+
+    def _identity_payload(self) -> dict[str, Any]:
+        return {
+            "schema": "flagquantum.program_artifact",
+            "version": self.version,
+            "kind": self.kind.value,
+            "producer": self.producer,
+            "profile": _thaw_v2(self.profile),
+            "payload": self.payload,
+            "payload_sha256": self.payload_sha256,
+            "circuit_content_hash": self.circuit_content_hash,
+            "requirements": self.requirements.to_dict(),
+            "target": _thaw_v2(self.target),
+            "compilation": _thaw_v2(self.compilation),
+            "parameter_schema": _thaw_v2(self.parameter_schema),
+            "result_schema": _thaw_v2(self.result_schema),
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return {**self._identity_payload(), "artifact_identity": self.artifact_identity}
+
+    def to_json(self) -> str:
+        return _canonical_json_bytes(self.to_dict()).decode("utf-8")
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "ProgramArtifactV3":
+        from .target_capabilities import RequirementSet
+
+        values = _strict_fields(
+            payload,
+            expected=_V2_FIELDS,
+            owner="v3 program artifact",
+        )
+        if values["schema"] != "flagquantum.program_artifact":
+            raise ValueError("invalid program artifact schema")
+        requirements = RequirementSet.from_dict(values["requirements"])
+        return cls(
+            version=values["version"],
+            kind=ArtifactKind(values["kind"]),
+            producer=values["producer"],
+            profile=values["profile"],
+            payload=values["payload"],
+            payload_sha256=values["payload_sha256"],
+            circuit_content_hash=values["circuit_content_hash"],
+            requirements=requirements,
+            target=values["target"],
+            compilation=values["compilation"],
+            parameter_schema=values["parameter_schema"],
+            result_schema=values["result_schema"],
+            artifact_identity=values["artifact_identity"],
+        )
+
+
+@dataclass(frozen=True)
 class CircuitArtifactBindingResult:
     """In-process lineage evidence for one explicit circuit-artifact binding."""
 
@@ -788,17 +982,21 @@ def bind_circuit_artifact(
 
 def read_program_artifact(
     payload: Mapping[str, Any],
-) -> ProgramArtifact | ProgramArtifactV2:
+) -> ProgramArtifact | ProgramArtifactV2 | ProgramArtifactV3:
     """Dispatch a serialized artifact without changing the v1 reader."""
 
     if not isinstance(payload, Mapping):
         raise TypeError("program artifact payload must be a mapping")
     if payload.get("version") == PROGRAM_ARTIFACT_V2_VERSION:
         return ProgramArtifactV2.from_dict(payload)
+    if payload.get("version") == PROGRAM_ARTIFACT_V3_VERSION:
+        return ProgramArtifactV3.from_dict(payload)
     return ProgramArtifact.from_dict(payload)
 
 
-def read_program_artifact_json(payload: str) -> ProgramArtifact | ProgramArtifactV2:
+def read_program_artifact_json(
+    payload: str,
+) -> ProgramArtifact | ProgramArtifactV2 | ProgramArtifactV3:
     """Decode an artifact while rejecting duplicate JSON object keys."""
 
     def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -846,10 +1044,12 @@ def migrate_v1_circuit_artifact(artifact: ProgramArtifact) -> ProgramArtifactV2:
 __all__ = (
     "ARTIFACT_ENVELOPE_VERSION",
     "PROGRAM_ARTIFACT_V2_VERSION",
+    "PROGRAM_ARTIFACT_V3_VERSION",
     "ArtifactKind",
     "CircuitArtifactBindingResult",
     "ProgramArtifact",
     "ProgramArtifactV2",
+    "ProgramArtifactV3",
     "bind_circuit_artifact",
     "migrate_v1_circuit_artifact",
     "read_program_artifact",

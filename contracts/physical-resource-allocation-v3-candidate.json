@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.physical_resource_allocation_candidate_contract",
-  "status": "approved_physical_plan_v3_complete",
+  "status": "approved_program_artifact_v3_complete",
   "proposed_on": "2026-09-10",
   "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md",
@@ -84,7 +84,7 @@
     "authorized": true,
     "compiler_allocation_added": true,
     "physical_plan_v3_added": true,
-    "program_artifact_v3_added": false,
+    "program_artifact_v3_added": true,
     "core_evidence_v3_added": false,
     "runtime_verifier_added": false,
     "deployment_adapter_added": false

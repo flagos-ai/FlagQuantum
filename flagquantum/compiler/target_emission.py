@@ -47,11 +47,31 @@ class TargetEmissionResult:
 
 
 def _emit_openqasm2(program: object) -> str:
-    return emit_openqasm(program, version=2.0)
+    return emit_openqasm(
+        program,
+        version=2.0,
+        result_wires=_allocated_result_wires(program),
+    )
 
 
 def _emit_openqasm3(program: object) -> str:
-    return emit_openqasm(program, version=3.0)
+    return emit_openqasm(
+        program,
+        version=3.0,
+        result_wires=_allocated_result_wires(program),
+    )
+
+
+def _allocated_result_wires(program: object) -> tuple[int, ...] | None:
+    routing = getattr(program, "metadata", {}).get("routing")
+    if not isinstance(routing, dict) or routing.get("schema") != (
+        "flagquantum_directed_routing_plan_v2"
+    ):
+        return None
+    wires = routing.get("logical_result_physical_slots")
+    if not isinstance(wires, tuple) or not wires:
+        raise TargetEmissionError("allocated routing lacks logical result slots")
+    return wires
 
 
 _PROFILES = {
@@ -107,7 +127,9 @@ def _validate_semantic_profile(result: TargetLegalizationResult) -> None:
         )
     measurement = ir.measurements[0]
     output_kind = str(measurement.metadata.get("fq_output_kind", measurement.kind))
-    if output_kind != "samples" or measurement.wires != tuple(range(ir.n_wires)):
+    result_wires = _allocated_result_wires(ir)
+    expected_wires = tuple(range(ir.n_wires)) if result_wires is None else result_wires
+    if output_kind != "samples" or measurement.wires != expected_wires:
         raise TargetEmissionError(
             "static text emission requires terminal full-register samples"
         )
@@ -153,6 +175,12 @@ def emit_legalized_target(
         raise TargetEmissionError(
             f"emission profile {selected.name!r} requires legalized backend "
             f"{selected.backend!r}, got {result.backend!r}"
+        )
+    if _allocated_result_wires(result.program) is not None and selected.name == (
+        "qcis-1.0"
+    ):
+        raise TargetEmissionError(
+            "qcis-1.0 cannot preserve allocated logical result projection"
         )
     if result.schedule.program is not result.program:
         raise TargetEmissionError("schedule is not bound to the legalized CircuitIR")

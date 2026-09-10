@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; physical-plan 3.0 slice complete.**
+**Approved on 2026-09-10; ProgramArtifact 3.0 slice complete.**
 
 Date: 2026-09-10
 
@@ -20,6 +20,13 @@ The second bounded implementation adds private physical-circuit-plan version 3.0
 It replays both logical layouts and nullable physical occupancy from the routed
 instructions, binds allocation and result-slot facts into the plan identity, and
 retains the exact version-1/2 identity payloads for equal-capacity programs.
+
+The third bounded implementation adds Core ProgramArtifact version 3.0 for
+allocated executable OpenQASM, Compiler construction from the actual version-3
+physical plan, ordered partial-register emission, and strict conformance parsing.
+Its immutable result schema binds dense logical-wire order to unique physical
+result slots. Compilation-evidence 3.0 and Runtime/Deployment handoff remain
+unimplemented.
 
 ## Problem
 

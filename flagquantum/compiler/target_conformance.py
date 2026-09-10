@@ -78,14 +78,39 @@ def _reconstructed_program(
     template: CircuitIR,
     instructions: tuple[Instruction, ...],
 ) -> CircuitIR:
+    result_wires = _allocated_result_wires(template)
+    if result_wires is None:
+        measurement = MeasurementNode(
+            "samples", tuple(range(template.n_wires)), shots=None
+        )
+    else:
+        measurement = MeasurementNode(
+            "samples",
+            result_wires,
+            shots=None,
+            metadata={
+                "fq_logical_wires": tuple(range(len(result_wires))),
+                "fq_result_order": "logical_wire_order",
+            },
+        )
     return replace(
         template,
         instructions=instructions,
         observables=(),
-        measurements=(
-            MeasurementNode("samples", tuple(range(template.n_wires)), shots=None),
-        ),
+        measurements=(measurement,),
     )
+
+
+def _allocated_result_wires(template: CircuitIR) -> tuple[int, ...] | None:
+    routing = template.metadata.get("routing")
+    if not isinstance(routing, dict) or routing.get("schema") != (
+        "flagquantum_directed_routing_plan_v2"
+    ):
+        return None
+    wires = routing.get("logical_result_physical_slots")
+    if not isinstance(wires, tuple) or not wires:
+        raise TargetConformanceError("allocated template lacks logical result slots")
+    return wires
 
 
 def _finite_numbers(text: str | None, *, owner: str) -> tuple[float, ...]:
@@ -121,6 +146,7 @@ def _parse_qasm_instruction(line: str, *, n_wires: int, index: int) -> Instructi
                 f"OpenQASM body line {index} has an unsupported inverse modifier"
             )
         return Instruction("sxdg", wires)
+    parameter_names: tuple[str, ...]
     if raw_name == "U":
         opcode, parameter_names = "u3", ("theta", "phi", "lbd")
     elif raw_name in _FIXED_QASM_GATES:
@@ -160,7 +186,11 @@ def _parse_openqasm(
         raise TargetConformanceError(f"{profile} header is not canonical")
     qreg = qreg_pattern.fullmatch(lines[2])
     creg = creg_pattern.fullmatch(lines[3])
-    if qreg is None or creg is None or qreg.group(1) != creg.group(1):
+    result_wires = _allocated_result_wires(template)
+    expected_result_width = (
+        template.n_wires if result_wires is None else len(result_wires)
+    )
+    if qreg is None or creg is None or int(creg.group(1)) != expected_result_width:
         raise TargetConformanceError(f"{profile} register declarations are invalid")
     n_wires = int(qreg.group(1))
     if n_wires != template.n_wires:
@@ -169,18 +199,31 @@ def _parse_openqasm(
         )
 
     if profile == "openqasm-2.0":
-        terminal = [f"measure q[{wire}] -> c[{wire}];" for wire in range(n_wires)]
+        measured = tuple(range(n_wires)) if result_wires is None else result_wires
+        terminal = [
+            f"measure q[{wire}] -> c[{result}];" for result, wire in enumerate(measured)
+        ]
         if len(lines) < 4 + len(terminal) or lines[-len(terminal) :] != terminal:
             raise TargetConformanceError(
                 "openqasm-2.0 terminal measurement is not canonical"
             )
         body = lines[4 : -len(terminal)]
-    else:
+    elif result_wires is None:
         if lines[-1] != "c = measure q;":
             raise TargetConformanceError(
                 "openqasm-3.0 terminal measurement is not canonical"
             )
         body = lines[4:-1]
+    else:
+        terminal = [
+            f"c[{result}] = measure q[{wire}];"
+            for result, wire in enumerate(result_wires)
+        ]
+        if len(lines) < 4 + len(terminal) or lines[-len(terminal) :] != terminal:
+            raise TargetConformanceError(
+                "openqasm-3.0 projected terminal measurement is not canonical"
+            )
+        body = lines[4 : -len(terminal)]
     instructions = tuple(
         _parse_qasm_instruction(line, n_wires=n_wires, index=index)
         for index, line in enumerate(body)
@@ -246,7 +289,11 @@ def _conformance_identity(
     payload = {
         "emission_identity": emission.emission_identity,
         "profile": emission.profile,
-        "parser": "flagquantum.compiler.target_conformance.v1",
+        "parser": (
+            "flagquantum.compiler.target_conformance.v2"
+            if _allocated_result_wires(reconstructed) is not None
+            else "flagquantum.compiler.target_conformance.v1"
+        ),
         "reconstructed_circuit_hash": reconstructed.content_hash,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))

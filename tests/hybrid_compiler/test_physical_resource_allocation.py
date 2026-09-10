@@ -6,6 +6,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import torch
 
+from flagquantum.compiler.artifact_compilation import (
+    compile_circuit_artifact_for_target,
+)
 from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.physical_plan import (
     PhysicalPlanError,
@@ -19,6 +22,11 @@ from flagquantum.compiler.target_legalization import (
 from flagquantum.compiler.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
+)
+from flagquantum.core._artifacts import (
+    ProgramArtifactV2,
+    ProgramArtifactV3,
+    read_program_artifact_json,
 )
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.target_capabilities import (
@@ -257,4 +265,59 @@ def test_allocation_validation_and_unimplemented_contracts_fail_closed() -> None
             evaluated_at=_NOW,
             coupling_map=graph,
             initial_layout=(0, 2),
+        )
+
+
+@pytest.mark.parametrize("profile", ("openqasm-2.0", "openqasm-3.0"))
+def test_allocated_plan_emits_program_artifact_v3_with_logical_projection(
+    profile: str,
+) -> None:
+    source = _source()
+    source_artifact = ProgramArtifactV2.from_circuit_ir(
+        source,
+        producer="phase45-source",
+    )
+    graph = DirectedCouplingMap(3, ((0, 1), (1, 2)))
+
+    result = compile_circuit_artifact_for_target(
+        source_artifact,
+        backend="qasm",
+        profile=profile,
+        snapshot=_snapshot(),
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+        coupling_map=graph,
+        initial_layout=(0, 2),
+        max_routing_added_operations=32,
+        max_direction_added_operations=64,
+    )
+
+    artifact = result.executable_artifact
+    assert isinstance(artifact, ProgramArtifactV3)
+    assert artifact.compilation["physical_plan_identity"] == (
+        result.physical_plan.plan_identity
+    )
+    assert artifact.compilation["allocation_identity"] == (
+        result.physical_plan.allocation_identity
+    )
+    assert artifact.result_schema == {
+        "kind": "samples",
+        "logical_wires": (0, 1),
+        "physical_result_slots": (0, 2),
+        "ordering": "logical_wire_order",
+        "shots_source": "execution_request",
+    }
+    assert result.conformance.reconstructed_program.measurements[0].wires == (0, 2)
+    assert read_program_artifact_json(artifact.to_json()) == artifact
+    if profile == "openqasm-2.0":
+        assert "qreg q[3];" in result.emission.text
+        assert "creg c[2];" in result.emission.text
+        assert result.emission.text.endswith(
+            "measure q[0] -> c[0];\nmeasure q[2] -> c[1];"
+        )
+    else:
+        assert "qubit[3] q;" in result.emission.text
+        assert "bit[2] c;" in result.emission.text
+        assert result.emission.text.endswith(
+            "c[0] = measure q[0];\nc[1] = measure q[2];"
         )

@@ -1231,3 +1231,21 @@ version-1 and version-2 identity payloads respectively; they reject version-3
 allocation fields. ProgramArtifact 3.0 and compilation-evidence 3.0 remain
 unimplemented, so no allocated executable can yet pass the target-emission and
 artifact handoff boundary.
+
+Phase 45 implements that executable boundary as Core `ProgramArtifact` version
+3.0. The closed artifact remains fully bound and content addressed, requires a
+target snapshot, and additionally binds the actual physical-plan and allocation
+identities. Its result schema records dense logical wires, unique physical result
+slots, logical-wire ordering, and execution-request shot ownership. Version
+dispatch is explicit; ProgramArtifact v1/v2 constructors, bytes, readers, and
+profiles are unchanged.
+
+Compiler target emission now recognizes only the authenticated allocated-routing
+profile. OpenQASM declares the full physical quantum register but a logical-width
+classical register, then measures each declared physical result slot into its
+logical result position. The strict conformance parser reproduces that projection
+and rejects register-width, ordering, or terminal-measurement changes. QCIS fails
+closed because its current text profile cannot encode the projection. Artifact
+compilation returns ProgramArtifact v3 only when bound to an actual physical plan
+3.0; equal-capacity plans continue returning v2. Compilation-evidence v3 and all
+Runtime/Deployment consumption remain outside this phase.

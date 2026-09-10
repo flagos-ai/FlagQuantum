@@ -155,30 +155,57 @@ def _validated_ir(program: Any) -> CircuitIR:
     return ir
 
 
-def emit_openqasm(program: Any, *, version: float = 3.0) -> str:
+def emit_openqasm(
+    program: Any,
+    *,
+    version: float = 3.0,
+    result_wires: tuple[int, ...] | None = None,
+) -> str:
     """Return deterministic OpenQASM text for a canonical FlagQuantum program."""
 
     if version not in {2.0, 3.0}:
         raise ValueError("OpenQASM version must be 2.0 or 3.0.")
     ir = _validated_ir(program)
+    projected = result_wires is not None
+    measured_wires = (
+        tuple(range(ir.n_wires)) if result_wires is None else tuple(result_wires)
+    )
+    if (
+        not measured_wires
+        or len(set(measured_wires)) != len(measured_wires)
+        or any(
+            type(wire) is not int or wire < 0 or wire >= ir.n_wires
+            for wire in measured_wires
+        )
+    ):
+        raise ValueError("OpenQASM result wires must be unique in-range integers.")
+    result_width = len(measured_wires)
     if version == 2.0:
         lines = [
             "OPENQASM 2.0;",
             'include "qelib1.inc";',
             f"qreg q[{ir.n_wires}];",
-            f"creg c[{ir.n_wires}];",
+            f"creg c[{result_width}];",
         ]
     else:
         lines = [
             "OPENQASM 3.0;",
             'include "stdgates.inc";',
             f"qubit[{ir.n_wires}] q;",
-            f"bit[{ir.n_wires}] c;",
+            f"bit[{result_width}] c;",
         ]
     for instruction in ir.instructions:
         lines.extend(_instruction_lines(instruction, version=version))
     if version == 2.0:
-        lines.extend(f"measure q[{wire}] -> c[{wire}];" for wire in range(ir.n_wires))
+        lines.extend(
+            f"measure q[{wire}] -> c[{result}];"
+            for result, wire in enumerate(measured_wires)
+        )
+    elif projected:
+        lines.extend(
+            f"c[{result}] = measure q[{wire}];"
+            for result, wire in enumerate(measured_wires)
+        )
     else:
         lines.append("c = measure q;")
     return "\n".join(lines)
