@@ -3,7 +3,7 @@
 > Historical note: this report records the team names and code boundaries at
 > Phase 0. Current code has reduced `Agent Services` to a few composed workflows
 > in `flagquantum.services` and removed the unreleased `AgentApplicationService`
-> serialization facade. Current rules are in `flagquantum/ARCHITECTURE.md`.
+> serialization facade. Current rules are in [`ARCHITECTURE.md`](../../ARCHITECTURE.md).
 
 > Status: all eight first-round team deliveries reviewed, merged, and jointly verified.
 >

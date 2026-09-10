@@ -42,6 +42,18 @@ DEFAULT_MAX_FILE_BYTES = 2_000_000
 DEFAULT_MAX_TOTAL_BYTES = 110_000_000
 CANONICAL_RESULT_DIRECTORIES = {"comparison", "local", "scalability", "smoke"}
 ARTIFACT_CONTAINER_DIRECTORIES = {"development"}
+PACKAGE_ROOT_FILES = {
+    "__init__.py",
+    "_api.py",
+    "circuit.py",
+    "dynamic.py",
+    "errors.py",
+    "gradients.py",
+    "models.py",
+    "operators.py",
+    "training.py",
+    "version.py",
+}
 
 
 def tracked_files(root: Path) -> tuple[Path, ...]:
@@ -128,6 +140,13 @@ def layout_violations(root: Path) -> tuple[str, ...]:
         root / "benchmarks" / "research",
     )
     tracked = tuple(path.relative_to(root) for path in tracked_files(root))
+    package_root_files = {
+        path.name
+        for path in tracked
+        if path.parent == Path("flagquantum") and (root / path).is_file()
+    }
+    for name in sorted(package_root_files - PACKAGE_ROOT_FILES):
+        errors.append(f"unexpected file at package root: flagquantum/{name}")
     for path in forbidden_roots:
         relative = path.relative_to(root)
         if any(item == relative or relative in item.parents for item in tracked):

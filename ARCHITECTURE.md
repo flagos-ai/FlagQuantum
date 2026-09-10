@@ -37,18 +37,27 @@ runtime records describe what actually ran.
 
 ```text
 flagquantum/
-├── api.py                  # curated public API
-├── core/                   # circuit IR, gates, devices, and compilation
-├── runtime/
-│   ├── backends/           # statevector, MPS, tensor-network, and JAX paths
-│   ├── distributed/        # ownership, topology, protocols, and execution
-│   ├── audit/              # typed evidence, validation, and release gates
-│   ├── observability/      # execution and performance records
-│   └── *.py                # planning, training, configuration, and results
-├── simulation/             # internal local algorithms and numerical primitives
-├── deployment/             # target compilation, packages, and providers
-├── extensions/             # explicitly experimental extension surface
-└── testing/                # reusable correctness and contract helpers
+├── __init__.py             # lazy stable `fq` facade
+├── _api.py                 # root compile, plan, and run composition
+├── circuit.py              # Circuit construction
+├── core/                   # backend-neutral IR and shared semantics
+├── compiler/               # validation, optimization, lowering, and code generation
+├── runtime/                # planning, execution lifecycle, results, and coordination
+├── simulation/             # numerical methods and kernels
+├── noise/                  # backend-neutral noise models and channels
+├── observables/            # user-facing measurement construction
+├── qec/                    # error-correction workflows and domain models
+├── twin/                   # hardware digital-twin models
+├── compute/                # resources controlled by the current process
+├── remote/                 # external task systems and result retrieval
+├── ecosystem/              # framework and format adapters
+├── deployment/             # sealed target-neutral execution packages
+├── services/               # reusable multi-step application workflows
+├── algorithms/             # user-facing algorithm composition
+├── benchmarking/           # reproducible measurement and evidence generation
+├── drawer/                 # circuit visualization
+├── testing/                # reusable correctness and conformance helpers
+└── experimental/           # explicitly unstable APIs
 
 benchmarks/
 ├── runners/                # reproducible workload and JSON contracts
@@ -72,20 +81,23 @@ Placement and retention rules live in
 Dependencies point inward:
 
 ```text
-API → application services → runtime/compiler → core IR
-                            ↘ adapters and providers
+User facade → Compiler / Runtime / application workflows → Core
+                         │
+                         ├── Simulation numerical methods
+                         ├── Compute adapters for local resources
+                         └── Remote adapters for external task systems
 ```
 
-The core IR does not import runtime backends. Backends consume the IR through
-registered lowering contracts. Optional JAX, provider, and hardware integrations
-must remain outside the mandatory local PyTorch path.
+Core does not import orchestration, numerical engines, or vendor integrations.
+Compiler transforms programs but does not execute them. Runtime organizes
+execution but does not implement numerical kernels. Simulation may consume Core
+semantics but does not select resources. Compute and Remote isolate hardware and
+external-system details from the other domains. Optional integrations must remain
+outside the mandatory local PyTorch path.
 
-`simulation` is an internal primitive layer, not a second public runtime.
-Runtime backends may reuse its local algorithms and narrow tensor/kernel
-primitives, while simulation code cannot depend on runtime orchestration or
-deployment except through the legacy façades explicitly registered in
-`architecture.toml`. Backend choice and distributed semantics remain owned by
-`flagquantum.runtime`.
+`simulation` is a numerical-method domain, not a second public runtime. Runtime
+may call its engines through explicit entry points, while backend choice,
+distributed ownership, recovery, and evidence assembly remain Runtime concerns.
 
 See the executable
 [dependency policy](docs/architecture/ARCHITECTURE_DEPENDENCIES.md) for enforced
@@ -118,6 +130,28 @@ and [scalability principles](docs/concepts/DISTRIBUTED_SCALABILITY_PRINCIPLES.md
 - `fq.experimental` carries no compatibility guarantee.
 - Compatibility modules support migration; they do not define new stable API.
 - Benchmark and research utilities must not become runtime dependencies.
+
+### Package-root ownership
+
+The Python files directly under `flagquantum/` are a closed public-facade set;
+new implementations belong in their owning domain rather than at package root.
+
+| File | Responsibility |
+| --- | --- |
+| `__init__.py` | Lazily exposes the reviewed `fq` surface. |
+| `_api.py` | Composes the root `compile`, `plan`, and `run` journeys. |
+| `circuit.py` | Owns circuit construction and circuit-facing convenience methods. |
+| `dynamic.py` | Preserves the reviewed dynamic-circuit namespace. |
+| `errors.py` | Owns stable cross-domain error categories. |
+| `gradients.py` | Owns backend-neutral user gradient utilities. |
+| `models.py` | Owns maintained user-facing hybrid model examples. |
+| `operators.py` | Preserves the reviewed operator discovery namespace. |
+| `training.py` | Preserves the reviewed training lifecycle namespace. |
+| `version.py` | Owns package version discovery. |
+
+The three small namespace files are intentional compatibility boundaries, not
+places for new implementation logic. Removing or renaming them requires the
+public API process; their size alone is not evidence of redundancy.
 
 Changes to a stable boundary require tests, migration notes, and an explicit
 manifest update. Current support levels and known boundaries are published in

@@ -14,7 +14,6 @@ TEST_DEBT = ROOT / "contracts" / "legacy-root-api-test-debt.json"
 PUBLIC_FILES = (
     ROOT / "README.md",
     ROOT / "ARCHITECTURE.md",
-    ROOT / "flagquantum" / "ARCHITECTURE.md",
 )
 PUBLIC_TREES = (
     ROOT / "benchmarks",
