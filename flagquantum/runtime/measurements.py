@@ -107,6 +107,13 @@ def _postselection(metadata: dict[str, Any], n_wires: int) -> dict[int, int]:
     return conditions
 
 
+def _pauli_axes(metadata: dict[str, Any]) -> dict[str, tuple[int, ...]]:
+    return {
+        axis: tuple(int(wire) for wire in metadata.get(axis, ()))
+        for axis in ("x", "y", "z")
+    }
+
+
 def validate_measurements(
     requests: Sequence[MeasurementNode],
     *,
@@ -151,10 +158,7 @@ def validate_measurements(
                 )
                 raise ValueError(detail)
         if kind in {"expectation_ps", "sample_ps", "counts_ps"}:
-            axes = {
-                axis: tuple(int(wire) for wire in metadata.get(axis, ()))
-                for axis in ("x", "y", "z")
-            }
+            axes = _pauli_axes(metadata)
             if any(axes.values()):
                 axis_wires = axes["x"] + axes["y"] + axes["z"]
                 _validate_wires(axis_wires, n_wires)
@@ -409,10 +413,7 @@ def execute_measurements(
                 raise CapabilityError(
                     f"{type(target).__name__} does not support Pauli expectations"
                 )
-            axes = {
-                axis: tuple(int(wire) for wire in metadata.get(axis, ()))
-                for axis in ("x", "y", "z")
-            }
+            axes = _pauli_axes(metadata)
             if not any(axes.values()):
                 axes["z"] = wires
             value = method(**axes)
