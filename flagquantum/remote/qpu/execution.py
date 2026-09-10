@@ -65,6 +65,8 @@ def validate_quafu_output(
         else tuple(requested_output)
     )
     source_ir = ensure_circuit_ir(program)
+    if any(not isinstance(item, OutputRequest) for item in requested):
+        raise TypeError("outputs must contain OutputRequest values")
     full_counts = (
         len(requested) == 1
         and requested[0].kind == "counts"

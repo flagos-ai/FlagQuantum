@@ -14,6 +14,29 @@ class _QuafuTestTarget(InMemoryRemoteTarget):
     provider = "quafu"
 
 
+@pytest.mark.parametrize("outputs", [[object()], ["counts"], [fq.counts(), object()]])
+def test_quafu_rejects_non_request_output_items_before_compilation(
+    monkeypatch: pytest.MonkeyPatch, outputs: object
+) -> None:
+    import flagquantum._api as api
+    import flagquantum.remote.qpu.execution as execution
+
+    compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
+    provider = Mock(side_effect=AssertionError("unexpected provider creation"))
+    monkeypatch.setattr(api, "compile", compile_program)
+    monkeypatch.setattr(execution, "QuafuProvider", provider)
+    with pytest.raises(TypeError, match="OutputRequest"):
+        fq.run(
+            fq.Circuit(1),
+            outputs=outputs,
+            compiler="qsteed",
+            target="quafu:ScQ-P10",
+            shots=16,
+        )
+    compile_program.assert_not_called()
+    provider.assert_not_called()
+
+
 def test_quafu_rejects_out_of_range_observable_before_compilation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
