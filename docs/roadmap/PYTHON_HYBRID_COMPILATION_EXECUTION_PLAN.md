@@ -1251,7 +1251,7 @@ Contract gate:
 - [x] API owner supplied the exact Proposal 023 approval token;
 - [x] Core implements canonical serialization and strict reading;
 - [x] Compiler constructs the bundle from actual Phase 36 evidence;
-- [ ] Runtime and Deployment add read-only verification adapters;
+- [x] Runtime and Deployment add read-only verification adapters;
 - [x] Core/Compiler cross-process round-trip, tamper, limit, and hash-seed tests
   pass.
 
@@ -1423,4 +1423,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 36 Physical mapping and dependency-schedule plan completed
 - [x] Phase 37 Compilation-evidence bundle contract proposed
 - [x] Phase 37 Core and Compiler evidence-bundle implementation completed
-- [ ] Phase 37 Runtime and Deployment evidence adapters pending
+- [x] Phase 37 Runtime and Deployment evidence adapters completed

@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from ..core._artifacts import ProgramArtifactV2
+from ..core._artifacts import CircuitArtifactBindingResult, ProgramArtifactV2
+from ..core._compilation_evidence import CompilationEvidenceBundle
 from ..core.target_capabilities import CapabilityMatchResult, TargetCapabilitySnapshot
 from ..errors import ExecutionError
 from ..runtime.artifact_preflight import preflight_executable_artifact
+from ..runtime.compilation_evidence import verify_compilation_evidence_handoff
 
 
 @dataclass(frozen=True)
@@ -20,6 +22,10 @@ class ArtifactDeploymentDryRun:
     target_id: str
     shots: int
     capability_match: CapabilityMatchResult = field(repr=False)
+    compilation_evidence: CompilationEvidenceBundle | None = field(
+        default=None,
+        repr=False,
+    )
 
     @property
     def profile(self) -> str:
@@ -43,11 +49,18 @@ class ArtifactDeploymentDryRun:
             raise ExecutionError("executable artifact target binding is missing")
         return str(target["snapshot_id"])
 
+    @property
+    def compilation_evidence_identity(self) -> str | None:
+        evidence = self.compilation_evidence
+        return None if evidence is None else evidence.bundle_identity
+
 
 def prepare_artifact_deployment(
     artifact: ProgramArtifactV2,
     *,
     snapshot: TargetCapabilitySnapshot,
+    source: ProgramArtifactV2 | CircuitArtifactBindingResult | None = None,
+    compilation_evidence: CompilationEvidenceBundle | None = None,
     provider: str,
     target_id: str,
     shots: int,
@@ -75,12 +88,23 @@ def prepare_artifact_deployment(
         shots=shots,
         evaluated_at=evaluated_at,
     )
+    if (source is None) != (compilation_evidence is None):
+        raise ValueError("source and compilation_evidence must be supplied together")
+    if compilation_evidence is not None:
+        assert source is not None
+        verify_compilation_evidence_handoff(
+            compilation_evidence,
+            source,
+            artifact,
+            snapshot=snapshot,
+        )
     return ArtifactDeploymentDryRun(
         artifact=artifact,
         provider=provider,
         target_id=target_id,
         shots=shots,
         capability_match=match,
+        compilation_evidence=compilation_evidence,
     )
 
 

@@ -1109,12 +1109,12 @@ compilation now requires the plan and includes its identity in the enclosing
 compilation identity, while the approved ProgramArtifact v2 envelope remains
 unchanged.
 
-## Phase 37 Compilation evidence bundle proposal
+## Phase 37 Compilation evidence bundle handoff
 
-Phase 37 proposes a separate Core-owned, versioned compilation-evidence bundle
+Phase 37 defines a separate Core-owned, versioned compilation-evidence bundle
 instead of modifying ProgramArtifact v2 or embedding compiler provenance in
 free-form metadata. The bundle would serialize Phase 36 mapping, native-gate,
-and dependency evidence and bind it to the actual source artifact, target
+and dependency evidence and binds it to the actual source artifact, target
 snapshot, executable artifact, and artifact-compilation identity.
 
 The exact candidate schema is recorded in
@@ -1128,5 +1128,8 @@ The API owner supplied the exact Proposal 023 token on 2026-09-10. Core now
 implements the strict value model, canonical JSON, limits, nested validation,
 and deterministic bundle identity. Compiler constructs and verifies the bundle
 from the actual retained compilation objects and target snapshot. Runtime and
-Deployment adapters remain separate follow-on work; no public export or default
-path changes are included.
+Deployment verify the decoded bundle against the actual fully bound source or
+binding result, executable artifact, and target snapshot. Deployment dry-run
+may carry the verified bundle beside the executable artifact, but it performs
+no provider call and stores no credentials or task state. No public export or
+default-path changes are included.

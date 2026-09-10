@@ -11,8 +11,10 @@ mapping, native-gate, and dependency evidence across process boundaries without
 changing ProgramArtifact v1/v2 or introducing another circuit IR.
 
 Compiler construction and verification consume actual retained compilation
-objects and the exact target snapshot. Runtime and Deployment adapters remain
-outside this implementation slice.
+objects and the exact target snapshot. Runtime verifies the decoded bundle
+against the actual fully bound source or binding result, target snapshot, and
+executable artifact. Deployment dry-run carries only a verified bundle and
+does not submit work or acquire provider state.
 
 ## Decisions pinned
 
@@ -20,7 +22,7 @@ outside this implementation slice.
 | --- | --- |
 | Serialization owner | Core; implemented |
 | Construction owner | Compiler; implemented |
-| Runtime and Deployment role | Read-only verification and transport adapters |
+| Runtime and Deployment role | Implemented read-only verification and dry-run carrying |
 | ProgramArtifact v1/v2 | Unchanged |
 | Circuit authority | Core `CircuitIR` |
 | Evidence payload | Mapping, native lowering, dependency schedule, and role-named identities |
@@ -32,7 +34,7 @@ outside this implementation slice.
 
 The combined hybrid compiler, Core artifacts, compilation evidence,
 artifact-to-artifact compiler, Runtime/Deployment adapters, local execution,
-and private-contract suites passed **298 tests**. ProgramArtifact compatibility
+and private-contract suites passed **300 tests**. ProgramArtifact compatibility
 remained unchanged.
 
 ## Approval record

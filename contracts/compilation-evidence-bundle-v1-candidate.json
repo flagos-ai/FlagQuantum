@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.compilation_evidence_bundle_candidate_contract",
-  "status": "approved_core_compiler_implementation_complete",
+  "status": "approved_evidence_handoff_complete",
   "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE",
@@ -152,8 +152,8 @@
     "authorized": true,
     "core_value_model_added": true,
     "compiler_builder_added": true,
-    "runtime_verifier_added": false,
-    "deployment_adapter_added": false,
+    "runtime_verifier_added": true,
+    "deployment_adapter_added": true,
     "provider_submission_added": false
   }
 }

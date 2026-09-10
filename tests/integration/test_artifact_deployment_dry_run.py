@@ -4,10 +4,17 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from flagquantum.compiler.artifact_compilation import (
+    compile_circuit_artifact_for_target,
+)
+from flagquantum.compiler.compilation_evidence import (
+    build_compilation_evidence_bundle,
+)
 from flagquantum.compiler.target_artifact import build_target_artifact
 from flagquantum.compiler.target_conformance import verify_target_emission
 from flagquantum.compiler.target_emission import emit_legalized_target
 from flagquantum.compiler.target_legalization import legalize_circuit_for_target
+from flagquantum.core._artifacts import ProgramArtifactV2
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -103,6 +110,32 @@ def _artifact(snapshot: TargetCapabilitySnapshot):
     )
 
 
+def _evidenced_artifact(snapshot: TargetCapabilitySnapshot):
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            2,
+            (Instruction("h", (0,)), Instruction("cx", (0, 1))),
+            dtype="complex128",
+            measurements=(MeasurementNode("samples", (0, 1)),),
+        ),
+        producer="phase38-source",
+    )
+    result = compile_circuit_artifact_for_target(
+        source,
+        backend="qasm",
+        profile="openqasm-3.0",
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+    )
+    evidence = build_compilation_evidence_bundle(
+        result,
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+    )
+    return source, result.executable_artifact, evidence
+
+
 def test_dry_run_prepares_exact_verified_program_without_submission() -> None:
     snapshot = _snapshot()
     artifact = _artifact(snapshot)
@@ -189,3 +222,56 @@ def test_execution_options_do_not_change_program_artifact_identity() -> None:
     assert first.shots != second.shots
     assert not hasattr(first, "credentials")
     assert not hasattr(first, "task_id")
+
+
+def test_dry_run_carries_verified_compilation_evidence_without_submission() -> None:
+    snapshot = _snapshot()
+    source, artifact, evidence = _evidenced_artifact(snapshot)
+
+    prepared = prepare_artifact_deployment(
+        artifact,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=evidence,
+        provider="quafu",
+        target_id="ScQ-P10",
+        shots=1024,
+        evaluated_at=_NOW,
+    )
+
+    assert prepared.compilation_evidence is evidence
+    assert prepared.compilation_evidence_identity == evidence.bundle_identity
+    assert prepared.artifact is artifact
+    assert not hasattr(prepared, "credentials")
+    assert not hasattr(prepared, "task_id")
+
+
+def test_dry_run_requires_complete_matching_evidence_handoff() -> None:
+    snapshot = _snapshot()
+    source, artifact, evidence = _evidenced_artifact(snapshot)
+
+    with pytest.raises(ValueError, match="supplied together"):
+        prepare_artifact_deployment(
+            artifact,
+            snapshot=snapshot,
+            compilation_evidence=evidence,
+            provider="quafu",
+            target_id="ScQ-P10",
+            shots=1024,
+            evaluated_at=_NOW,
+        )
+    other_source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(2, (Instruction("h", (1,)),), dtype="complex128"),
+        producer="phase38-other-source",
+    )
+    with pytest.raises(ExecutionError, match="source lineage"):
+        prepare_artifact_deployment(
+            artifact,
+            snapshot=snapshot,
+            source=other_source,
+            compilation_evidence=evidence,
+            provider="quafu",
+            target_id="ScQ-P10",
+            shots=1024,
+            evaluated_at=_NOW,
+        )

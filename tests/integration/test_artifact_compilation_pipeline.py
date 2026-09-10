@@ -39,6 +39,9 @@ from flagquantum.core.target_capabilities import (
 )
 from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
 from flagquantum.runtime.artifact_preflight import preflight_executable_artifact
+from flagquantum.runtime.compilation_evidence import (
+    verify_compilation_evidence_handoff,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -193,6 +196,18 @@ def test_binding_lineage_is_preserved_through_target_compilation() -> None:
     assert result.executable_artifact.circuit_content_hash == (
         result.legalization.program.content_hash
     )
+    evidence = build_compilation_evidence_bundle(
+        result,
+        snapshot=_snapshot(),
+        producer="flagquantum.compiler",
+    )
+    verify_compilation_evidence_handoff(
+        evidence,
+        binding,
+        result.executable_artifact,
+        snapshot=_snapshot(),
+    )
+    assert evidence.source["binding_identity"] == binding.binding_identity
 
 
 def test_artifact_compilation_rejects_symbolic_and_embedded_shots() -> None:
@@ -230,6 +245,12 @@ def test_compilation_evidence_survives_canonical_cross_process_handoff() -> None
     verify_compilation_evidence_bundle(
         restored,
         result,
+        snapshot=_snapshot(),
+    )
+    verify_compilation_evidence_handoff(
+        restored,
+        result.input_artifact,
+        result.executable_artifact,
         snapshot=_snapshot(),
     )
     assert restored == bundle

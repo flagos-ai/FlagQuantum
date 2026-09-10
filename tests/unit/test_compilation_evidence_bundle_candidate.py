@@ -18,7 +18,7 @@ def _candidate() -> dict[str, object]:
 def test_candidate_records_approved_core_compiler_scope() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "approved_core_compiler_implementation_complete"
+    assert candidate["status"] == "approved_evidence_handoff_complete"
     assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE"
@@ -27,8 +27,8 @@ def test_candidate_records_approved_core_compiler_scope() -> None:
         "authorized": True,
         "core_value_model_added": True,
         "compiler_builder_added": True,
-        "runtime_verifier_added": False,
-        "deployment_adapter_added": False,
+        "runtime_verifier_added": True,
+        "deployment_adapter_added": True,
         "provider_submission_added": False,
     }
 

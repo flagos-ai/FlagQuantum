@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; Core and Compiler implementation complete.**
+**Approved on 2026-09-10; evidence handoff implementation complete.**
 
 Date: 2026-09-10
 
@@ -14,7 +14,8 @@ value model, canonical JSON, version dispatch, limits, nested validation, and
 bundle identity. Compiler constructs and verifies bundles only from the actual
 `ArtifactCompilationResult`, retained `PhysicalCircuitPlan`, target snapshot,
 source artifact or binding result, and executable artifact. Runtime and
-Deployment adapters remain separate follow-on work.
+Deployment provide read-only verification and side-effect-free carrying. No
+provider submission behavior is included.
 
 ## Problem
 
@@ -205,7 +206,7 @@ the consuming workflow, not retroactively inferred by the artifact reader.
    target snapshot, final executable artifact, and physical plan.
 6. **Complete for Core and Compiler:** add deterministic round-trip, unknown-field, limit, non-finite, duplicate,
    sensitive-content, nested-tamper, and hash-seed tests.
-7. **Pending:** add Runtime and Deployment read-only adapters in separate bounded phases.
+7. **Complete:** add Runtime and Deployment read-only adapters in separate bounded phases.
 8. **Complete:** keep the type internal until a later public naming and lifecycle review.
 
 ## Acceptance
