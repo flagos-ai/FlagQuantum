@@ -1303,3 +1303,18 @@ Automated checks inspect the actual stable `__all__` manifests rather than relyi
 only on documentation. No runtime behavior or public surface is added in this
 phase; every expansion beyond the private technical profile requires a separate
 proposal and approval.
+
+## Phase 50 public artifact lifecycle proposal
+
+Phase 50 records Proposal 026 and its exact machine-readable candidate without
+implementing or exporting an API. The proposed first lifecycle is a read-only
+preview at `flagquantum.experimental.artifacts`, expressed through role-named
+frozen views and strict load/dump functions. Concrete v1/v2/v3 implementation
+classes remain private so serialized schema revisions do not become the public
+type hierarchy.
+
+The proposed preview excludes constructors, binding, Compiler workflows, Runtime
+verification, Deployment preparation, target-capability APIs, provider binding or
+submission, and QEC/FTOC semantics. It requires the exact approval token in
+`docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md` before any
+module or symbol is added.
