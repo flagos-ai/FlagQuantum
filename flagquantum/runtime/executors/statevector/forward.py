@@ -72,7 +72,7 @@ def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
 
 
 def _triton_local_cx_enabled() -> bool:
-    return _triton_local_cx_decision().accelerated
+    return bool(_triton_local_cx_decision().accelerated)
 
 
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
@@ -89,7 +89,9 @@ def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
             "on",
             "yes",
         }
-    return select_triton_kernel("local_cx_segment", requested=requested).accelerated
+    return bool(
+        select_triton_kernel("local_cx_segment", requested=requested).accelerated
+    )
 
 
 def _triton_transpose_1q_enabled() -> bool:
@@ -101,7 +103,7 @@ def _triton_transpose_1q_enabled() -> bool:
         "off",
         "no",
     }
-    return select_triton_kernel("transpose_1q", requested=requested).accelerated
+    return bool(select_triton_kernel("transpose_1q", requested=requested).accelerated)
 
 
 def _local_block_fusion_enabled() -> bool:
@@ -525,7 +527,7 @@ def _independent_tensor_bytes(tensor: torch.Tensor, owner: torch.Tensor) -> int:
 
     if tensor.untyped_storage().data_ptr() == owner.untyped_storage().data_ptr():
         return 0
-    return tensor.numel() * tensor.element_size()
+    return int(tensor.numel() * tensor.element_size())
 
 
 def _wait_for_exchange(request: Any, device: torch.device) -> None:
