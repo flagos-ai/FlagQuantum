@@ -849,3 +849,32 @@ legalization. Native gate-set normalization, decomposition, topology routing,
 scheduling, artifact-profile negotiation, and target emission remain later,
 separately verified stages. No `TargetIR`, public export, stable API change,
 automatic default-path integration, or performance claim is authorized.
+
+## Phase 26 evidenced native-gate legalization authorization
+
+Phase 26 may normalize the target snapshot's verified `gates.native` fact into
+Compiler-owned opcode and parameter-name descriptors. Opcode strings inherit
+the canonical parameter names in the existing Core operator schema; descriptor
+objects must explicitly list supported parameter names. Multiple descriptors
+for one opcode remain separate variants and must not be unioned into capability
+that no target variant actually declares.
+
+An already native instruction remains the same object. The initial verified
+decomposition set is deliberately closed: X to H-Z-H, RX to H-RZ-H, and RY to
+Sdg-H-RZ-H-S. Replacements reuse the exact parameter objects and copy dynamic
+condition metadata to every generated instruction. The transformed artifact is
+still the existing Core-owned `CircuitIR`. At most 256 additional instructions
+may be introduced by default.
+
+Native-gate evidence validity is checked before transformation. Every generated
+instruction must match one complete native descriptor variant. Unsupported
+source gates, missing basis gates, incomplete parameter descriptors, custom
+matrices, stale evidence, and expansion overflow fail closed. Phase 25 then
+derives operation-count and other target requirements from the legalized
+circuit, so decomposition cannot bypass target limits.
+
+This phase does not claim parameter ranges or periodicity, arbitrary synthesis,
+approximation, calibrated fidelity, coupling-map legality, routing, scheduling,
+timing, pulse generation, target-format emission, or provider execution. It
+adds no TargetIR, public export, stable API change, default-path change, or
+performance claim.

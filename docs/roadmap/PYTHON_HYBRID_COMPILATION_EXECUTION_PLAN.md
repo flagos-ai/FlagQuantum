@@ -939,6 +939,32 @@ Exit gate:
 - native gate descriptors, decomposition, topology, scheduling, target
   emission, TargetIR, public APIs, and performance claims remain excluded.
 
+### Phase 26 — evidenced native-gate legalization
+
+Normalize the verified `gates.native` fact from the selected target snapshot
+into canonical opcode and parameter-name variants. Preserve separate variants
+instead of combining partial parameter declarations. Keep already native
+instructions unchanged and implement a closed exact decomposition set for X,
+RX, and RY into evidenced H/Z/RZ/S/Sdg basis operations.
+
+Preserve parameter objects, autograd edges, instruction conditions, observables,
+measurements, and circuit metadata. Bound expansion to at most 256 added
+instructions by default. Run this transformation before Phase 25 derives the
+final operation-count requirement and validates backend lowering.
+
+Exit gate:
+
+- native descriptors require valid, current target evidence;
+- opcode aliases and schema parameter names are normalized deterministically;
+- separate descriptor variants cannot create synthetic parameter support;
+- X, RX, and RY decomposition agrees with source statevector execution;
+- generated gates all match complete native descriptor variants;
+- parameter objects and dynamic condition metadata remain attached;
+- expansion overflow and incomplete gate bases fail closed;
+- the Phase 25 operation limit observes post-decomposition size;
+- no arbitrary synthesis, approximation, topology, schedule, target format,
+  TargetIR, public API, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1092,3 +1118,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 23 bounded constant-loop unrolling implemented and verified
 - [x] Phase 24 pass audit and differential verification implemented and verified
 - [x] Phase 25 capability-driven target legality implemented and verified
+- [x] Phase 26 evidenced native-gate legalization implemented and verified

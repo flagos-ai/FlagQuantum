@@ -48,6 +48,12 @@ def _snapshot(**changes: object) -> TargetCapabilitySnapshot:
         "precision.effective_dtype": "complex128",
         "measurements.results": ("expectation", "samples"),
         "limits.maximum_shots": 4096,
+        "gates.native": (
+            {"name": "h", "parameters": ()},
+            {"name": "cx", "parameters": ()},
+            {"name": "rx", "parameters": ("theta",)},
+            {"name": "amplitude_damping", "parameters": ()},
+        ),
     }
     values.update(changes)
     facts = tuple(
@@ -200,3 +206,27 @@ def test_unknown_circuit_precision_fails_closed() -> None:
     circuit = CircuitIR(1, (Instruction("h", (0,)),), dtype="complex256")
     with pytest.raises(TargetLegalizationError, match="complex256"):
         circuit_target_requirements(circuit)
+
+
+def test_decomposition_operation_count_is_checked_against_target_limit() -> None:
+    circuit = CircuitIR(
+        1,
+        (Instruction("rx", (0,), params={"theta": 0.2}),),
+        dtype="complex128",
+    )
+    native_basis = (
+        {"name": "h", "parameters": ()},
+        {"name": "rz", "parameters": ("theta",)},
+    )
+    with pytest.raises(TargetLegalizationError, match="maximum_program_operations"):
+        legalize_circuit_for_target(
+            circuit,
+            backend="pytorch",
+            snapshot=_snapshot(
+                **{
+                    "gates.native": native_basis,
+                    "limits.maximum_program_operations": 2,
+                }
+            ),
+            evaluated_at=_NOW,
+        )

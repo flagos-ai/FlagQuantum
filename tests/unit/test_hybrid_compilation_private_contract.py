@@ -930,7 +930,6 @@ def test_phase25_adds_capability_driven_target_legality_without_target_ir() -> N
     contract = _contract()
     phase25 = contract["phase25"]
 
-    assert contract["status"] == ("phase25_capability_driven_target_legality_verified")
     assert phase25["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase25["output_ir"] == "same_flagquantum.core.ir.CircuitIR"
     assert phase25["derived_mandatory_requirements"] == [
@@ -964,3 +963,40 @@ def test_phase25_adds_capability_driven_target_legality_without_target_ir() -> N
         "docs/development/HYBRID_COMPILATION_PHASE25_EVIDENCE.md"
     )
     assert contract["phase25_completed"] is True
+
+
+def test_phase26_adds_evidenced_bounded_native_gate_decomposition() -> None:
+    contract = _contract()
+    phase26 = contract["phase26"]
+
+    assert contract["status"] == ("phase26_evidenced_native_gate_legalization_verified")
+    assert phase26["input_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase26["output_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase26["native_gate_source"] == (
+        "verified_target_capability_snapshot_gates_native"
+    )
+    assert phase26["separate_variants_preserved"] is True
+    assert phase26["exact_decompositions"] == {
+        "x": ["h", "z", "h"],
+        "rx": ["h", "rz", "h"],
+        "ry": ["sdg", "h", "rz", "h", "s"],
+    }
+    assert phase26["maximum_added_operations"] == 256
+    assert phase26["parameter_object_identity_preserved"] is True
+    assert phase26["dynamic_condition_metadata_preserved"] is True
+    assert phase26["post_decomposition_target_requirements"] is True
+    assert phase26["arbitrary_synthesis"] is False
+    assert phase26["approximation"] is False
+    assert phase26["parameter_domain_matching"] is False
+    assert phase26["topology_routing"] is False
+    assert phase26["scheduling"] is False
+    assert phase26["target_emission"] is False
+    assert phase26["target_ir_added"] is False
+    assert phase26["public_root_export"] is False
+    assert phase26["stable_api_change"] is False
+    assert phase26["default_path_change"] is False
+    assert phase26["performance_claim"] is False
+    assert phase26["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE26_EVIDENCE.md"
+    )
+    assert contract["phase26_completed"] is True

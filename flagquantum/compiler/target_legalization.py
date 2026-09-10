@@ -21,6 +21,11 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
+from .native_gate_legalization import (
+    NativeGateLegalizationError,
+    NativeGateLegalizationResult,
+    legalize_native_gates,
+)
 from .operator_lowering import (
     DEFAULT_LOWERING_REGISTRY,
     LoweringCapability,
@@ -41,6 +46,7 @@ class TargetLegalizationResult:
     backend: str
     requirements: RequirementSet
     target_snapshot_id: str
+    native_gate_legalization: NativeGateLegalizationResult
     lowering_capabilities: tuple[LoweringCapability, ...]
     capability_match: CapabilityMatchResult
     legalization_identity: str
@@ -130,12 +136,16 @@ def _legalization_identity(
     requirements: RequirementSet,
     snapshot: TargetCapabilitySnapshot,
     lowerings: tuple[LoweringCapability, ...],
+    native_gate_legalization: NativeGateLegalizationResult,
 ) -> str:
     payload = {
         "backend": backend,
         "circuit_content_hash": ir.content_hash,
         "requirement_set_id": requirements.requirement_set_id,
         "target_snapshot_id": snapshot.snapshot_id,
+        "native_gate_legalization_identity": (
+            native_gate_legalization.legalization_identity
+        ),
         "lowerings": [
             {
                 "opcode": item.opcode,
@@ -156,15 +166,27 @@ def legalize_circuit_for_target(
     snapshot: TargetCapabilitySnapshot,
     evaluated_at: datetime | None = None,
     registry: OperatorLoweringRegistry = DEFAULT_LOWERING_REGISTRY,
+    max_added_operations: int = 256,
 ) -> TargetLegalizationResult:
     """Require an exact backend lowering and a matching target snapshot.
 
-    The accepted circuit remains the Core-owned ``CircuitIR``. This function
-    emits legality evidence only; it does not select a target, execute a
-    program, authorize fallback, or create a target-specific IR.
+    The accepted circuit remains a Core-owned ``CircuitIR`` and may contain
+    verified native-gate decompositions. This function does not select a
+    target, execute a program, authorize fallback, or create a target-specific
+    IR.
     """
 
-    ir = ensure_circuit_ir(program)
+    source_ir = ensure_circuit_ir(program)
+    try:
+        native_gate_legalization = legalize_native_gates(
+            source_ir,
+            snapshot=snapshot,
+            evaluated_at=evaluated_at,
+            max_added_operations=max_added_operations,
+        )
+    except NativeGateLegalizationError as error:
+        raise TargetLegalizationError(str(error)) from error
+    ir = native_gate_legalization.program
     normalized_backend = str(backend).strip().lower()
     opcodes = tuple(sorted({item.name for item in ir.instructions}))
     try:
@@ -192,10 +214,16 @@ def legalize_circuit_for_target(
         backend=normalized_backend,
         requirements=requirements,
         target_snapshot_id=snapshot.snapshot_id,
+        native_gate_legalization=native_gate_legalization,
         lowering_capabilities=lowerings,
         capability_match=match,
         legalization_identity=_legalization_identity(
-            ir, normalized_backend, requirements, snapshot, lowerings
+            ir,
+            normalized_backend,
+            requirements,
+            snapshot,
+            lowerings,
+            native_gate_legalization,
         ),
     )
 

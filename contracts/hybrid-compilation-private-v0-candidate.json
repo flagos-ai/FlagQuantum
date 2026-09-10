@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase25_capability_driven_target_legality_verified",
+  "status": "phase26_evidenced_native_gate_legalization_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -843,6 +843,36 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE25_EVIDENCE.md"
   },
   "phase25_completed": true,
+  "phase26": {
+    "stage": "evidenced_native_gate_legalization",
+    "input_ir": "flagquantum.core.ir.CircuitIR",
+    "output_ir": "flagquantum.core.ir.CircuitIR",
+    "native_gate_source": "verified_target_capability_snapshot_gates_native",
+    "descriptor_semantics": "canonical_opcode_and_complete_parameter_name_variant",
+    "separate_variants_preserved": true,
+    "exact_decompositions": {
+      "x": ["h", "z", "h"],
+      "rx": ["h", "rz", "h"],
+      "ry": ["sdg", "h", "rz", "h", "s"]
+    },
+    "maximum_added_operations": 256,
+    "parameter_object_identity_preserved": true,
+    "dynamic_condition_metadata_preserved": true,
+    "post_decomposition_target_requirements": true,
+    "arbitrary_synthesis": false,
+    "approximation": false,
+    "parameter_domain_matching": false,
+    "topology_routing": false,
+    "scheduling": false,
+    "target_emission": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE26_EVIDENCE.md"
+  },
+  "phase26_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,
