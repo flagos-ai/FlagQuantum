@@ -14,7 +14,7 @@ from ....simulation.mps.compiled_layers import (
     contract_mps_two_site_bucket,
 )
 from ....simulation.mps.rank_local import apply_rank_local_mps_instruction
-from ....simulation.mps.reverse import mps_vjp as _mps_vjp
+from ....simulation.mps.reverse import mps_vjp
 from .errors import MPSReverseContractError
 from .factorization import mps_qr_forward
 from .records import MPSReverseTapeRecord, TorchDistributedMPSGradientResult
@@ -115,13 +115,13 @@ def build_mps_reverse_backward(
                             compile_ry=compile_site_kernels,
                         )
                         try:
-                            derivatives = _mps_vjp(
+                            derivatives = mps_vjp(
                                 outputs,
                                 segment_inputs,
                                 active,
                                 tuple(adjoints[record.wires[0]] for record in segment),
                             )
-                        except Exception as error:
+                        except (RuntimeError, ValueError) as error:
                             operation_ids = ",".join(
                                 record.operation_id for record in segment
                             )
@@ -231,13 +231,13 @@ def build_mps_reverse_backward(
                 else:
                     outputs = mps_qr_forward(inputs[0], inputs[1])
                 try:
-                    derivatives = _mps_vjp(
+                    derivatives = mps_vjp(
                         outputs,
                         inputs,
                         active,
                         output_adjoints,
                     )
-                except Exception as error:
+                except (RuntimeError, ValueError) as error:
                     raise MPSReverseContractError(
                         f"local MPS VJP failed at {record.operation_id}: {error}"
                     ) from error
