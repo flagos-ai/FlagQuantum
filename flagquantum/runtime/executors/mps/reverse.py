@@ -153,6 +153,36 @@ def _static_exact_qr_record(
     }
 
 
+def _validate_reverse_request(
+    *,
+    gradient_policy: str,
+    degeneracy_tolerance: float,
+    initial_bond_dimension: int,
+    canonicalization_policy: str,
+    observable: Mapping[int, str] | None,
+    observable_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
+    hamiltonian_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
+) -> None:
+    if gradient_policy not in {"exact", "approximate"}:
+        raise ValueError("gradient_policy must be exact or approximate")
+    if degeneracy_tolerance < 0:
+        raise ValueError("degeneracy_tolerance must be non-negative")
+    if initial_bond_dimension < 1:
+        raise ValueError("initial_bond_dimension must be positive")
+    if canonicalization_policy not in {"none", "dirty", "full"}:
+        raise ValueError("canonicalization_policy must be none, dirty or full")
+    if (
+        sum(
+            item is not None
+            for item in (observable, observable_terms, hamiltonian_terms)
+        )
+        > 1
+    ):
+        raise ValueError(
+            "observable, observable_terms and hamiltonian_terms are mutually exclusive"
+        )
+
+
 def execute_torch_distributed_mps_reverse(
     circuit_or_ir: Any,
     *,
@@ -190,28 +220,19 @@ def execute_torch_distributed_mps_reverse(
 
     if not dist.is_initialized():
         raise RuntimeError("distributed MPS reverse requires torch.distributed")
-    if gradient_policy not in {"exact", "approximate"}:
-        raise ValueError("gradient_policy must be exact or approximate")
-    if degeneracy_tolerance < 0:
-        raise ValueError("degeneracy_tolerance must be non-negative")
-    if initial_bond_dimension < 1:
-        raise ValueError("initial_bond_dimension must be positive")
-    if canonicalization_policy not in {"none", "dirty", "full"}:
-        raise ValueError("canonicalization_policy must be none, dirty or full")
+    _validate_reverse_request(
+        gradient_policy=gradient_policy,
+        degeneracy_tolerance=degeneracy_tolerance,
+        initial_bond_dimension=initial_bond_dimension,
+        canonicalization_policy=canonicalization_policy,
+        observable=observable,
+        observable_terms=observable_terms,
+        hamiltonian_terms=hamiltonian_terms,
+    )
     policy = checkpoint_policy or MPSReverseCheckpointPolicy()
     save_exact_factorizations = (
         policy.save_two_site_factorizations or gradient_policy == "exact"
     )
-    if (
-        sum(
-            item is not None
-            for item in (observable, observable_terms, hamiltonian_terms)
-        )
-        > 1
-    ):
-        raise ValueError(
-            "observable, observable_terms and hamiltonian_terms are mutually exclusive"
-        )
     ir = ensure_circuit_ir(circuit_or_ir)
     if compile_site_kernels and any(
         instruction.name in {"rxx", "ryy", "rzz"}
