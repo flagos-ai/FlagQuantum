@@ -188,6 +188,65 @@ def _fused_layout_bmm(
     return result
 
 
+def _compiled_real_imag_einsum(
+    equation: str, left: torch.Tensor, right: torch.Tensor
+) -> torch.Tensor:
+    left_parts = torch.view_as_real(left.resolve_conj().resolve_neg())
+    right_parts = torch.view_as_real(right.resolve_conj().resolve_neg())
+    args = (
+        left_parts[..., 0],
+        left_parts[..., 1],
+        right_parts[..., 0],
+        right_parts[..., 1],
+    )
+    key = (
+        equation,
+        tuple(left.shape),
+        tuple(right.shape),
+        left.dtype,
+        str(left.device),
+    )
+    kernel = _COMPILED_PAIR_CACHE.get(key)
+    if kernel is None and hasattr(torch, "compile") and key not in _COMPILE_FAILURES:
+
+        def eager(
+            left_real: torch.Tensor,
+            left_imag: torch.Tensor,
+            right_real: torch.Tensor,
+            right_imag: torch.Tensor,
+        ) -> torch.Tensor:
+            return _real_imag_eager(
+                equation, left_real, left_imag, right_real, right_imag
+            )
+
+        kernel = torch.compile(
+            eager,
+            fullgraph=True,
+            dynamic=False,
+            mode="max-autotune-no-cudagraphs",
+        )
+        _COMPILED_PAIR_CACHE[key] = kernel
+    if kernel is None:
+        pair = _real_imag_eager(equation, *args)
+    else:
+        try:
+            from torch._dynamo import config
+
+            limit = max(int(config.recompile_limit), 4 * len(_COMPILED_PAIR_CACHE), 64)
+            with config.patch(
+                recompile_limit=limit,
+                accumulated_recompile_limit=max(
+                    int(config.accumulated_recompile_limit), limit
+                ),
+            ):
+                pair = kernel(*args)
+        except Exception:  # noqa: BLE001 - optional compiler must be recoverable.
+            _COMPILED_PAIR_CACHE.pop(key, None)
+            _COMPILE_FAILURES.add(key)
+            pair = _real_imag_eager(equation, *args)
+    return torch.view_as_complex(pair.contiguous())
+
+
 def complex_einsum_pair(
     equation: str,
     left: torch.Tensor,
@@ -232,66 +291,7 @@ def complex_einsum_pair(
         # Callers can suppress shape-specialized torch.compile kernels without
         # disabling the bounded-specialization fused canonical BMM path above.
         return torch.einsum(equation, left, right)
-    left_parts = torch.view_as_real(left.resolve_conj().resolve_neg())
-    right_parts = torch.view_as_real(right.resolve_conj().resolve_neg())
-    args = (
-        left_parts[..., 0],
-        left_parts[..., 1],
-        right_parts[..., 0],
-        right_parts[..., 1],
-    )
-    key = (
-        equation,
-        tuple(left.shape),
-        tuple(right.shape),
-        left.dtype,
-        str(left.device),
-    )
-    kernel = _COMPILED_PAIR_CACHE.get(key)
-    if (
-        kernel is None
-        and compile_cuda
-        and left.is_cuda
-        and hasattr(torch, "compile")
-        and key not in _COMPILE_FAILURES
-    ):
-
-        def eager(
-            left_real: torch.Tensor,
-            left_imag: torch.Tensor,
-            right_real: torch.Tensor,
-            right_imag: torch.Tensor,
-        ) -> torch.Tensor:
-            return _real_imag_eager(
-                equation, left_real, left_imag, right_real, right_imag
-            )
-
-        kernel = torch.compile(
-            eager,
-            fullgraph=True,
-            dynamic=False,
-            mode="max-autotune-no-cudagraphs",
-        )
-        _COMPILED_PAIR_CACHE[key] = kernel
-    if kernel is None:
-        pair = _real_imag_eager(equation, *args)
-    else:
-        try:
-            from torch._dynamo import config
-
-            limit = max(int(config.recompile_limit), 4 * len(_COMPILED_PAIR_CACHE), 64)
-            with config.patch(
-                recompile_limit=limit,
-                accumulated_recompile_limit=max(
-                    int(config.accumulated_recompile_limit), limit
-                ),
-            ):
-                pair = kernel(*args)
-        except Exception:  # noqa: BLE001 - optional compiler must be recoverable.
-            _COMPILED_PAIR_CACHE.pop(key, None)
-            _COMPILE_FAILURES.add(key)
-            pair = _real_imag_eager(equation, *args)
-    return torch.view_as_complex(pair.contiguous())
+    return _compiled_real_imag_einsum(equation, left, right)
 
 
 def kernel_cache_summary() -> dict[str, int]:
