@@ -299,26 +299,14 @@ def _operator_profile_identity(
 ) -> tuple[str, str, tuple[str, ...], str]:
     identity = get_platform_runtime(device.type).identity()
     if preflight:
-        from ...operator_probes import (
-            preflight_split_real_imag_statevector_p0,
-            preflight_split_real_imag_statevector_p1,
-            preflight_split_real_imag_statevector_p2,
-            preflight_split_real_imag_statevector_p3,
-            preflight_split_real_imag_statevector_p4,
-        )
+        from ...operator_probes import _preflight_split_real_imag_profile
 
-        preflight_fn = {
-            "split_real_imag_statevector_p0": preflight_split_real_imag_statevector_p0,
-            "split_real_imag_statevector_p1": preflight_split_real_imag_statevector_p1,
-            "split_real_imag_statevector_p2_precision": preflight_split_real_imag_statevector_p2,
-            "split_real_imag_statevector_p3_double_single": preflight_split_real_imag_statevector_p3,
-            "split_real_imag_statevector_p4_device_double_single": preflight_split_real_imag_statevector_p4,
-        }.get(profile_name)
-        if preflight_fn is None:
-            raise ValueError(
-                f"unknown split real/imag operator profile {profile_name!r}"
-            )
-        report = preflight_fn(device=device, provider=identity.provider)
+        report = _preflight_split_real_imag_profile(
+            profile_name,
+            device=device,
+            provider=identity.provider,
+            refresh=False,
+        )
         report.require_supported()
         return (
             report.profile,

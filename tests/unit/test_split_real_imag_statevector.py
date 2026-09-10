@@ -10,7 +10,7 @@ from flagquantum.runtime.executors.statevector.split_real_imag import (
     execute_split_real_imag_statevector,
 )
 from flagquantum.runtime.operator_probes import (
-    preflight_split_real_imag_statevector_p0,
+    _preflight_split_real_imag_profile,
 )
 from flagquantum.simulation.statevector.split_real_imag import (
     double_single_pauli_term_expectation,
@@ -165,8 +165,8 @@ def test_split_profile_is_float32_only_and_cpu_probe_passes() -> None:
     }
     assert all(not item.backward for item in profile.requirements)
 
-    report = preflight_split_real_imag_statevector_p0(
-        device="cpu", provider="pytorch_cpu_test", refresh=True
+    report = _preflight_split_real_imag_profile(
+        profile.name, device="cpu", provider="pytorch_cpu_test", refresh=True
     )
     assert report.supported
     assert report.required_dtypes == ("float32",)
