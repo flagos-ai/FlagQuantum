@@ -533,6 +533,29 @@ def _resolve_training_site_ownership(
     return ownership, "topology_aware"
 
 
+def _resolve_training_device(
+    device: torch.device | str | None,
+) -> tuple[torch.device, Any]:
+    backend = str(dist.get_backend()).strip().lower()
+    if device is None and backend == "nccl":
+        device = torch.device("cuda", torch.cuda.current_device())
+    resolved = resolve_distributed_mps_device(backend, device)
+    return resolved, get_platform_runtime(resolved.type)
+
+
+def _create_owned_optimizer(
+    parameters: Sequence[torch.Tensor],
+    *,
+    optimizer: str,
+    lr: float,
+) -> torch.optim.Optimizer | None:
+    if not parameters:
+        return None
+    if optimizer == "sgd":
+        return torch.optim.SGD(parameters, lr=lr)
+    return torch.optim.Adam(parameters, lr=lr)
+
+
 def train_distributed_mps(
     circuit_or_ir: Any | Callable[[], Any],
     *,
@@ -643,11 +666,7 @@ def train_distributed_mps(
             ownership_maximum_load_ratio=ownership_maximum_load_ratio,
         )
     )
-    backend = str(dist.get_backend()).strip().lower()
-    if device is None and backend == "nccl":
-        device = torch.device("cuda", torch.cuda.current_device())
-    resolved_device = resolve_distributed_mps_device(backend, device)
-    platform = get_platform_runtime(resolved_device.type)
+    resolved_device, platform = _resolve_training_device(device)
     resolved_compile_site_kernels, site_kernel_selection_reason = (
         _resolve_compile_site_kernels(
             compile_site_kernels,
@@ -669,13 +688,7 @@ def train_distributed_mps(
         world_size=world_size,
         rank=rank,
     )
-    optimizer_obj: torch.optim.Optimizer | None = None
-    if owned:
-        optimizer_obj = (
-            torch.optim.SGD(owned, lr=lr)
-            if optimizer == "sgd"
-            else torch.optim.Adam(owned, lr=lr)
-        )
+    optimizer_obj = _create_owned_optimizer(owned, optimizer=optimizer, lr=lr)
     initial_state_fingerprint, local_bond_layout = _initial_state_contract(
         ir, initial_mps_tensors, initial_bond_dimension, resolved_site_ownership
     )
