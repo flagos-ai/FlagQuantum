@@ -435,6 +435,60 @@ def _execute_shot_measurement(
     }
 
 
+def _execute_analytic_measurement(
+    output: Any,
+    measurement_target: Callable[[], Any],
+    kind: str,
+    wires: tuple[int, ...],
+    metadata: dict[str, Any],
+    n_wires: int,
+    noise_model: Any | None,
+) -> torch.Tensor:
+    if kind == "expectation_identity":
+        target = measurement_target()
+        method = getattr(target, "expectation_ps", None)
+        if not callable(method):
+            raise CapabilityError(
+                f"{type(target).__name__} does not support expectations"
+            )
+        return torch.ones_like(method(z=(0,)))
+    if kind == "expectation_z":
+        target = measurement_target()
+        method = getattr(target, "expectation_z", None)
+        if not callable(method):
+            raise CapabilityError(
+                f"{type(target).__name__} does not support Z expectations"
+            )
+        return method(wires)
+    if kind == "expectation_ps":
+        target = measurement_target()
+        method = getattr(target, "expectation_ps", None)
+        if not callable(method):
+            raise CapabilityError(
+                f"{type(target).__name__} does not support Pauli expectations"
+            )
+        axes = _pauli_axes(metadata)
+        if not any(axes.values()):
+            axes["z"] = wires
+        return method(**axes)
+
+    probabilities = (
+        _density_matrix_probabilities(
+            output,
+            wires,
+            n_wires=n_wires,
+            noise_model=noise_model,
+        )
+        if isinstance(output, torch.Tensor)
+        else None
+    )
+    return (
+        _marginal_probabilities(measurement_target(), wires)
+        if probabilities is None
+        else probabilities
+    )
+
+
 def execute_measurements(
     output: Any,
     requests: Sequence[MeasurementNode],
@@ -466,48 +520,20 @@ def execute_measurements(
 
         value: torch.Tensor | list[dict[str | int, int]]
         statistics: dict[str, Any] = {}
-        if kind == "expectation_identity":
-            target = measurement_target()
-            method = getattr(target, "expectation_ps", None)
-            if not callable(method):
-                raise CapabilityError(
-                    f"{type(target).__name__} does not support expectations"
-                )
-            value = torch.ones_like(method(z=(0,)))
-        elif kind == "expectation_z":
-            target = measurement_target()
-            method = getattr(target, "expectation_z", None)
-            if not callable(method):
-                raise CapabilityError(
-                    f"{type(target).__name__} does not support Z expectations"
-                )
-            value = method(wires)
-        elif kind == "expectation_ps":
-            target = measurement_target()
-            method = getattr(target, "expectation_ps", None)
-            if not callable(method):
-                raise CapabilityError(
-                    f"{type(target).__name__} does not support Pauli expectations"
-                )
-            axes = _pauli_axes(metadata)
-            if not any(axes.values()):
-                axes["z"] = wires
-            value = method(**axes)
-        elif kind == "probabilities":
-            probabilities = (
-                _density_matrix_probabilities(
-                    output,
-                    wires,
-                    n_wires=n_wires,
-                    noise_model=noise_model,
-                )
-                if isinstance(output, torch.Tensor)
-                else None
-            )
-            value = (
-                _marginal_probabilities(measurement_target(), wires)
-                if probabilities is None
-                else probabilities
+        if kind in {
+            "expectation_identity",
+            "expectation_z",
+            "expectation_ps",
+            "probabilities",
+        }:
+            value = _execute_analytic_measurement(
+                output,
+                measurement_target,
+                kind,
+                wires,
+                metadata,
+                n_wires,
+                noise_model,
             )
         else:
             target = measurement_target()
