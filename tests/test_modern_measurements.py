@@ -70,6 +70,23 @@ def test_ir_measurements_execute_without_a_parallel_user_api() -> None:
     assert result.measurements[1].value.tolist() == [[[0], [0], [0]]]
 
 
+def test_pauli_sampling_uses_the_validated_integer_axis_wires() -> None:
+    result = run_internal(
+        fq.Circuit(1).h(0),
+        options=fq.ExecutionOptions(mode="statevector"),
+        measurements=(
+            MeasurementNode(
+                "sample_ps",
+                (0,),
+                shots=4,
+                metadata={"x": ("0",), "seed": 1},
+            ),
+        ),
+    )
+
+    assert result.measurements[0].value.tolist() == [[[0], [0], [0], [0]]]
+
+
 @pytest.mark.parametrize("mode", ("statevector", "mps", "tensor_network"))
 def test_joint_marginal_probabilities_do_not_require_full_state(mode: str) -> None:
     circuit = fq.Circuit(3).x(0).h(1)
