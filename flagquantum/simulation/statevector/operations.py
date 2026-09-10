@@ -84,37 +84,29 @@ def _instruction_matrix(
     return matrix
 
 
+def _environment_flag(name: str, *, default: bool) -> bool:
+    value = os.getenv(name, "1" if default else "0").strip().lower()
+    if default:
+        return value not in {"0", "false", "off", "no"}
+    return value in {"1", "true", "on", "yes"}
+
+
 def _triton_single_qubit_loop_enabled() -> bool:
-    return os.getenv("FQ_TRITON_SINGLE_QUBIT_LOOP", "1").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
+    return _environment_flag("FQ_TRITON_SINGLE_QUBIT_LOOP", default=True)
 
 
 def _triton_ry_rz_pair_enabled() -> bool:
-    return os.getenv("FQ_TRITON_RY_RZ_PAIR", "1").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
+    return _environment_flag("FQ_TRITON_RY_RZ_PAIR", default=True)
 
 
 def _triton_single_qubit_matrix_enabled() -> bool:
-    return os.getenv("FQ_TRITON_SINGLE_QUBIT_MATRIX", "1").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
+    return _environment_flag("FQ_TRITON_SINGLE_QUBIT_MATRIX", default=True)
 
 
 def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
-    return os.getenv(
-        "FQ_TRITON_PARAMETERIZED_SINGLE_QUBIT_MATRIX", "0"
-    ).strip().lower() in {"1", "true", "on", "yes"}
+    return _environment_flag(
+        "FQ_TRITON_PARAMETERIZED_SINGLE_QUBIT_MATRIX", default=False
+    )
 
 
 def _compile_statevector_program(
