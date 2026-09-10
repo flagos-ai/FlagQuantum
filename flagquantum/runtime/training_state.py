@@ -322,14 +322,37 @@ def save_training_checkpoint(
     return target
 
 
-def load_training_checkpoint(
-    path: str | Path,
+def _load_training_checkpoint_payload(path: str | Path) -> Mapping[str, Any]:
+    payload = torch.load(Path(path), map_location="cpu", weights_only=True)
+    if not isinstance(payload, Mapping):
+        raise TrainingStateError("training checkpoint must contain a mapping")
+    return payload
+
+
+def _validate_training_checkpoint(
+    payload: Mapping[str, Any],
     *,
     module: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None,
-    precision: PrecisionPolicy | None = None,
-) -> TrainingCheckpointRestore:
-    payload = torch.load(Path(path), map_location="cpu", weights_only=True)
+    precision: PrecisionPolicy | None,
+) -> tuple[torch.nn.Module, PrecisionPolicy]:
+    required = {
+        "version",
+        "step",
+        "module_state",
+        "optimizer_state",
+        "runtime_plan",
+        "ir_version",
+        "ir_hash",
+        "workload_signature",
+        "seed_state",
+        "precision",
+        "topology",
+    }
+    missing = required.difference(payload)
+    if missing:
+        names = ", ".join(sorted(missing))
+        raise TrainingStateError(f"training checkpoint is missing fields: {names}")
     if payload.get("version") != TRAINING_STATE_VERSION:
         raise TrainingStateError(
             f"unsupported training state {payload.get('version')!r}"
@@ -357,6 +380,17 @@ def load_training_checkpoint(
         raise TrainingStateError(
             "checkpoint optimizer type does not match the restore request"
         )
+    return owner, saved_precision
+
+
+def _restore_training_checkpoint(
+    payload: Mapping[str, Any],
+    *,
+    module: torch.nn.Module,
+    owner: torch.nn.Module,
+    optimizer: torch.optim.Optimizer | None,
+    precision: PrecisionPolicy,
+) -> SeedContract:
     original_module_state = copy.deepcopy(module.state_dict())
     original_optimizer_state = (
         copy.deepcopy(optimizer.state_dict()) if optimizer is not None else None
@@ -365,8 +399,8 @@ def load_training_checkpoint(
     rollback_seed = SeedContract(0, 0, 0, (0, 0))
     original_rng = _rng_state(rollback_seed)
     try:
-        saved_precision.apply(module)
-        setattr(owner, "precision", saved_precision)
+        precision.apply(module)
+        setattr(owner, "precision", precision)
         module.load_state_dict(payload["module_state"])
         if optimizer is not None and payload["optimizer_state"] is not None:
             optimizer.load_state_dict(payload["optimizer_state"])
@@ -380,6 +414,30 @@ def load_training_checkpoint(
             optimizer.load_state_dict(original_optimizer_state)
         _restore_rng(original_rng)
         raise
+    return seed
+
+
+def load_training_checkpoint(
+    path: str | Path,
+    *,
+    module: torch.nn.Module,
+    optimizer: torch.optim.Optimizer | None,
+    precision: PrecisionPolicy | None = None,
+) -> TrainingCheckpointRestore:
+    payload = _load_training_checkpoint_payload(path)
+    owner, saved_precision = _validate_training_checkpoint(
+        payload,
+        module=module,
+        optimizer=optimizer,
+        precision=precision,
+    )
+    seed = _restore_training_checkpoint(
+        payload,
+        module=module,
+        owner=owner,
+        optimizer=optimizer,
+        precision=saved_precision,
+    )
     return {
         "schema": TRAINING_RESTORE_SCHEMA,
         "version": TRAINING_RESTORE_VERSION,
