@@ -19,6 +19,15 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 pytestmark = pytest.mark.unit
 
 
+def _run_submit_example(monkeypatch, *arguments: str) -> None:
+    monkeypatch.setattr(sys, "argv", ["jiuding_submit_program.py", *arguments])
+    example = (
+        Path(__file__).resolve().parents[3]
+        / "examples/remote/jiuding_submit_program.py"
+    )
+    runpy.run_path(str(example), run_name="__main__")
+
+
 def test_fq_run_executes_bell_measurements_through_jiuding(monkeypatch) -> None:
     monkeypatch.setenv("JIUDING_WORKSPACE", "golden-path")
     monkeypatch.setattr(jiuding, "_DEFAULT_CLIENTS", {})
@@ -142,23 +151,59 @@ def test_command_line_example_restores_without_submitting(monkeypatch, capsys) -
             return SimpleNamespace(counts=[{"00": 512, "11": 512}])
 
     monkeypatch.setattr(jiuding, "JiudingClient", Client)
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "jiuding_submit_program.py",
-            "--workspace",
-            "golden-path",
-            "--restore-job",
-            job_id,
-        ],
+    _run_submit_example(
+        monkeypatch,
+        "--workspace",
+        "golden-path",
+        "--restore-job",
+        job_id,
     )
-    example = (
-        Path(__file__).resolve().parents[3]
-        / "examples/remote/jiuding_submit_program.py"
-    )
-
-    runpy.run_path(str(example), run_name="__main__")
 
     assert calls == [job_id]
     assert json.loads(capsys.readouterr().out.splitlines()[0]) == {"job_id": job_id}
+
+
+def test_command_line_example_detaches_after_submission(monkeypatch, capsys) -> None:
+    calls = []
+
+    class Client:
+        def __init__(self, *, workspace):
+            assert workspace == "golden-path"
+
+        def submit_program(self, program, **options):
+            calls.append(options)
+            return {"jobId": "job-1"}
+
+        def restore_receipt(self, job_id):
+            raise AssertionError("detach mode must create a new Job")
+
+        def result(self, receipt, *, timeout):
+            raise AssertionError("detach mode must not wait for a result")
+
+    monkeypatch.setattr(jiuding, "JiudingClient", Client)
+    _run_submit_example(
+        monkeypatch,
+        "--workspace",
+        "golden-path",
+        "--image",
+        "flagquantum-runtime:v1",
+        "--target",
+        "jiuding:cpu",
+        "--detach",
+    )
+
+    assert calls[0]["target"] == "jiuding:cpu"
+    assert calls[0]["image"] == "flagquantum-runtime:v1"
+    assert json.loads(capsys.readouterr().out) == {"job_id": "job-1"}
+
+
+def test_command_line_example_rejects_detached_restore(monkeypatch, capsys) -> None:
+    with pytest.raises(SystemExit):
+        _run_submit_example(
+            monkeypatch,
+            "--restore-job",
+            "1b64c2b7-3a7c-4feb-8687-9b18a892a0b8",
+            "--detach",
+        )
+
+    assert "--detach is only valid with --image" in capsys.readouterr().err
