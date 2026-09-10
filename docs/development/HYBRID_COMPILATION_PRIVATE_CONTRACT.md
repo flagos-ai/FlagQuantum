@@ -1029,3 +1029,22 @@ This phase does not add a Compiler construction adapter, Runtime compatibility
 adapter, Deployment/provider conversion, public export, default-path change,
 or performance claim. Those remain separate follow-on phases and cannot infer
 authority merely from Core accepting the v2 envelope.
+
+## Phase 33 Artifact-v2 vertical slice and local circuit execution
+
+The approved v2 contract is connected through four bounded internal seams:
+Compiler builds executable artifacts only from successful target conformance;
+Runtime checks executable artifacts against the exact target snapshot and
+request shots; Deployment prepares a side-effect-free provider handoff; and
+Runtime executes fully bound `circuit-ir-1.0` artifacts through its existing
+local planner and result contract.
+
+Local artifact execution reconstructs only the canonical Core CircuitIR
+payload. It records the artifact, payload, and circuit identities in result
+provenance. Execution-request fields do not alter artifact identity. Symbolic
+circuit artifacts fail until a separate binding contract exists. OpenQASM and
+QCIS executable artifacts remain target-bound and must not be reinterpreted as
+local simulator input.
+
+This phase adds no provider submission, credential access, public export,
+default-path change, new numerical kernel, or performance claim.

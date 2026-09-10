@@ -13,6 +13,10 @@ the strict Core v2 model, explicit v1/v2 dispatcher, circuit-profile
 constructor, executable-profile validator, and bounded v1 circuit migrator.
 Compiler construction, Runtime consumption, Deployment adaptation, and public
 exports remain outside Phase 32 and require their documented follow-on gates.
+The subsequent internal vertical slice now includes verified Compiler
+construction, Runtime target preflight, Deployment dry-run preparation, and
+local execution of fully bound `circuit-ir-1.0` artifacts. No public export or
+provider submission has been added.
 
 ## Problem
 
@@ -260,6 +264,10 @@ internal adapters have conformance evidence.
   artifact.
 - Simulation does not consume target-text artifacts in the normal execution
   path; its use in Phase 30 remains bounded test evidence.
+- Runtime may execute a fully bound `circuit-ir-1.0` artifact through the
+  canonical local planning path. It records artifact identity in the result.
+  It must reject executable-text profiles rather than reinterpret target code
+  as simulator input.
 
 ## Rejected alternatives
 
@@ -295,6 +303,9 @@ internal adapters have conformance evidence.
    verified artifact to a resolved target and execution request without any
    provider call or legacy-package conversion. See
    `ARTIFACT_DEPLOYMENT_DRY_RUN.md`.
+7. **Complete:** Runtime executes fully bound circuit-profile artifacts through
+   the canonical local planner and result contract. Symbolic artifacts and
+   target-text executable profiles fail closed on this path.
 
 ## Acceptance
 

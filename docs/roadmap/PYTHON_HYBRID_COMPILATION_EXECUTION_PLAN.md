@@ -1152,6 +1152,26 @@ Exit gate:
 - no Compiler, Runtime, Deployment, provider, public-export, default-path, or
   performance behavior changes in this phase.
 
+### Phase 33 — Artifact-v2 vertical slice and local circuit execution
+
+Connect the approved artifact contract through bounded internal adapters.
+Compiler constructs target-text artifacts only from verified conformance;
+Runtime performs target-capability preflight; Deployment prepares a dry-run
+handoff without submission; and Runtime executes fully bound circuit-profile
+artifacts through the existing local planner.
+
+Exit gate:
+
+- serialized `circuit-ir-1.0` artifacts execute through canonical Runtime and
+  return the normal `ExecutionResult`;
+- result provenance binds artifact, payload, and circuit identities;
+- shots and seeds remain execution-request fields and do not change artifact
+  identity;
+- symbolic circuit artifacts fail pending an explicit binding contract;
+- target-text artifacts fail local simulation and remain target-bound;
+- no provider call, credentials, public export, default-path change, numerical
+  kernel, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1314,3 +1334,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 31.1 added circuit profile and v1-read-only migration policy
 - [x] Proposal 022 approved with the exact token on 2026-09-10
 - [x] Phase 32 ProgramArtifact v2 Core implementation completed and verified
+- [x] Phase 33 Artifact-v2 vertical slice and local circuit execution completed

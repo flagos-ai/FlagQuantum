@@ -27,10 +27,12 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_records_approval_and_bounded_core_implementation() -> None:
+def test_candidate_records_approved_bounded_vertical_slice() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "approved_phase32_core_implemented"
+    assert candidate["status"] == (
+        "approved_artifact_vertical_slice_local_execution_complete"
+    )
     assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
@@ -39,9 +41,11 @@ def test_candidate_records_approval_and_bounded_core_implementation() -> None:
         "authorized": True,
         "core_schema_changed": True,
         "core_v1_migrator_added": True,
-        "compiler_adapter_added": False,
-        "runtime_adapter_added": False,
-        "deployment_adapter_added": False,
+        "compiler_adapter_added": True,
+        "runtime_adapter_added": True,
+        "deployment_adapter_added": True,
+        "local_circuit_execution_added": True,
+        "local_target_text_execution_added": False,
         "public_export_added": False,
     }
 
