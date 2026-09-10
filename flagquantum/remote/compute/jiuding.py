@@ -94,6 +94,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         self._token = ""
         self._expires = 0.0
         self._workspace: dict | None = None
+        self._workspace_ssh_login: str | None = None
         self._ssh_command: tuple[str, ...] | None = None
         self._executor_channels: dict[int, subprocess.Popen] = {}
         self._executor_health: dict[int, dict] = {}
@@ -219,6 +220,8 @@ class JiudingClient(_ProgramSubmissionMixin):
             self._workspace["clusterName"] = w.get("quotaDetail", {}).get(
                 "clusterName", ""
             )
+            login = w.get("SSHLogin")
+            self._workspace_ssh_login = login if isinstance(login, str) else None
         return json.loads(json.dumps(self._workspace))
 
     def _headers(self) -> dict:
@@ -284,8 +287,10 @@ class JiudingClient(_ProgramSubmissionMixin):
 
         if self._ssh_command is not None:
             return list(self._ssh_command)
-        record = self._workspace_record(self.workspace()["id"])
-        login = record.get("SSHLogin")
+        workspace = self.workspace()
+        login = self._workspace_ssh_login
+        if login is None:
+            login = self._workspace_record(workspace["id"]).get("SSHLogin")
         if not isinstance(login, str):
             raise RuntimeError("Jiuding workspace exposes no SSH login")
         tokens = shlex.split(login)
@@ -406,6 +411,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         self.close()
         self._ssh_command = None
         self._workspace = None
+        self._workspace_ssh_login = None
 
     def close(self) -> None:
         """Close persistent SSH channels owned by this client."""
