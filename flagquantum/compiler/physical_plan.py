@@ -27,6 +27,8 @@ class MappingTransition:
     physical_wires: tuple[int, int]
     layout_before: tuple[int, ...]
     layout_after: tuple[int, ...]
+    physical_to_logical_before: tuple[int | None, ...] = ()
+    physical_to_logical_after: tuple[int | None, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -61,7 +63,29 @@ def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _allocation_identity(
+    *,
+    logical_wire_count: int,
+    physical_slot_count: int,
+    initial_logical_to_physical: tuple[int, ...],
+    initial_physical_to_logical: tuple[int | None, ...],
+    logical_result_physical_slots: tuple[int, ...],
+) -> str:
+    payload = {
+        "logical_wire_count": logical_wire_count,
+        "physical_slot_count": physical_slot_count,
+        "initial_logical_to_physical": initial_logical_to_physical,
+        "initial_physical_to_logical": initial_physical_to_logical,
+        "logical_result_physical_slots": logical_result_physical_slots,
+        "workspace_initial_state": "standard_zero",
+        "workspace_cleanup": "inverse_routing_swaps",
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
+    allocated = plan.physical_slot_count > plan.logical_wire_count
     instructions: list[dict[str, object]] = [
         {
             "instruction_index": item.instruction_index,
@@ -81,11 +105,24 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
         }
         for item in plan.instructions
     ]
+    mapping_transitions: list[dict[str, object]] = []
+    for item in plan.mapping_transitions:
+        transition: dict[str, object] = {
+            "routed_instruction_index": item.routed_instruction_index,
+            "source_instruction_index": item.source_instruction_index,
+            "phase": item.phase,
+            "physical_wires": item.physical_wires,
+            "layout_before": item.layout_before,
+            "layout_after": item.layout_after,
+        }
+        if allocated:
+            transition["physical_to_logical_before"] = item.physical_to_logical_before
+            transition["physical_to_logical_after"] = item.physical_to_logical_after
+        mapping_transitions.append(transition)
+
     payload: dict[str, object] = {
         "schema": "flagquantum.physical_circuit_plan",
-        "version": (
-            "2.0" if plan.coupling_direction_semantics == "directed_cx" else "1.0"
-        ),
+        "version": plan.version,
         "source_circuit_hash": plan.source_circuit_hash,
         "physical_circuit_hash": plan.program.content_hash,
         "target_snapshot_id": plan.target_snapshot_id,
@@ -96,17 +133,7 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
         "initial_logical_to_physical": plan.initial_logical_to_physical,
         "pre_restore_logical_to_physical": plan.pre_restore_logical_to_physical,
         "final_logical_to_physical": plan.final_logical_to_physical,
-        "mapping_transitions": [
-            {
-                "routed_instruction_index": item.routed_instruction_index,
-                "source_instruction_index": item.source_instruction_index,
-                "phase": item.phase,
-                "physical_wires": item.physical_wires,
-                "layout_before": item.layout_before,
-                "layout_after": item.layout_after,
-            }
-            for item in plan.mapping_transitions
-        ],
+        "mapping_transitions": mapping_transitions,
         "instructions": instructions,
         "topology_legalization_identity": plan.topology_legalization_identity,
         "native_gate_legalization_identity": (plan.native_gate_legalization_identity),
@@ -117,6 +144,20 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
         "maximum_parallel_width": plan.maximum_parallel_width,
         "critical_path": plan.critical_path,
     }
+    if allocated:
+        payload.update(
+            {
+                "logical_wire_count": plan.logical_wire_count,
+                "physical_slot_count": plan.physical_slot_count,
+                "initial_physical_to_logical": plan.initial_physical_to_logical,
+                "pre_restore_physical_to_logical": (
+                    plan.pre_restore_physical_to_logical
+                ),
+                "final_physical_to_logical": plan.final_physical_to_logical,
+                "logical_result_physical_slots": (plan.logical_result_physical_slots),
+                "allocation_identity": plan.allocation_identity,
+            }
+        )
     if plan.coupling_direction_semantics != "directed_cx":
         payload.pop("coupling_direction_semantics")
         payload.pop("direction_legalization_identity")
@@ -153,7 +194,24 @@ class PhysicalCircuitPlan:
     schedule_depth: int
     maximum_parallel_width: int
     critical_path: tuple[int, ...]
+    logical_wire_count: int = 0
+    physical_slot_count: int = 0
+    initial_physical_to_logical: tuple[int | None, ...] = ()
+    pre_restore_physical_to_logical: tuple[int | None, ...] = ()
+    final_physical_to_logical: tuple[int | None, ...] = ()
+    logical_result_physical_slots: tuple[int, ...] = ()
+    allocation_identity: str | None = None
     plan_identity: str = ""
+
+    @property
+    def version(self) -> str:
+        """Return the closed private physical-plan schema version."""
+
+        if self.physical_slot_count > self.logical_wire_count:
+            return "3.0"
+        if self.coupling_direction_semantics == "directed_cx":
+            return "2.0"
+        return "1.0"
 
     def __post_init__(self) -> None:
         if not isinstance(self.legalization, TargetLegalizationResult):
@@ -178,9 +236,25 @@ class PhysicalCircuitPlan:
             else topology.source_program
         )
         identity_layout = tuple(range(source.n_wires))
-        if len(self.initial_logical_to_physical) != source.n_wires or set(
-            self.initial_logical_to_physical
-        ) != set(identity_layout):
+        if self.logical_wire_count != source.n_wires:
+            raise PhysicalPlanError("physical plan logical-wire count is inconsistent")
+        if self.physical_slot_count != self.program.n_wires:
+            raise PhysicalPlanError("physical plan physical-slot count is inconsistent")
+        if self.physical_slot_count < self.logical_wire_count:
+            raise PhysicalPlanError("physical plan has insufficient physical slots")
+        allocated = self.physical_slot_count > self.logical_wire_count
+        if (
+            len(self.initial_logical_to_physical) != source.n_wires
+            or len(set(self.initial_logical_to_physical)) != source.n_wires
+            or any(
+                physical < 0 or physical >= self.physical_slot_count
+                for physical in self.initial_logical_to_physical
+            )
+        ):
+            raise PhysicalPlanError("physical plan initial layout is invalid")
+        if not allocated and set(self.initial_logical_to_physical) != set(
+            identity_layout
+        ):
             raise PhysicalPlanError("physical plan initial layout is invalid")
         if (
             self.coupling_direction_semantics != "directed_cx"
@@ -209,6 +283,7 @@ class PhysicalCircuitPlan:
                 or self.mapping_transitions
                 or self.pre_restore_logical_to_physical != identity_layout
                 or self.final_logical_to_physical != identity_layout
+                or allocated
             ):
                 raise PhysicalPlanError(
                     "physical plan without topology has mapping evidence"
@@ -216,6 +291,10 @@ class PhysicalCircuitPlan:
         else:
             if self.coupling_n_wires is None:
                 raise PhysicalPlanError("physical plan lacks coupling-map size")
+            if allocated and self.coupling_n_wires != self.physical_slot_count:
+                raise PhysicalPlanError(
+                    "physical plan coupling size does not match physical slots"
+                )
             try:
                 recorded_coupling: CouplingMap | DirectedCouplingMap
                 if self.coupling_direction_semantics == "directed_cx":
@@ -241,12 +320,87 @@ class PhysicalCircuitPlan:
             if self.final_logical_to_physical != topology.final_logical_to_physical:
                 raise PhysicalPlanError("physical plan final layout is inconsistent")
             layout = list(self.initial_logical_to_physical)
+            occupancy = list(self.initial_physical_to_logical)
+            if allocated:
+                if not isinstance(recorded_coupling, DirectedCouplingMap):
+                    raise PhysicalPlanError(
+                        "physical allocation requires directed topology"
+                    )
+                expected_occupancy: list[int | None] = [None] * self.physical_slot_count
+                for logical, physical in enumerate(self.initial_logical_to_physical):
+                    expected_occupancy[physical] = logical
+                if (
+                    self.initial_physical_to_logical != tuple(expected_occupancy)
+                    or self.final_physical_to_logical
+                    != self.initial_physical_to_logical
+                    or len(self.pre_restore_physical_to_logical)
+                    != self.physical_slot_count
+                    or self.logical_result_physical_slots
+                    != self.final_logical_to_physical
+                    or self.logical_result_physical_slots
+                    != topology.logical_result_physical_slots
+                    or self.logical_wire_count != topology.logical_wire_count
+                    or self.physical_slot_count != topology.physical_slot_count
+                    or self.allocation_identity != topology.allocation_identity
+                    or self.initial_physical_to_logical
+                    != topology.initial_physical_to_logical
+                    or self.pre_restore_physical_to_logical
+                    != topology.pre_restore_physical_to_logical
+                    or self.final_physical_to_logical
+                    != topology.final_physical_to_logical
+                    or self.allocation_identity
+                    != _allocation_identity(
+                        logical_wire_count=self.logical_wire_count,
+                        physical_slot_count=self.physical_slot_count,
+                        initial_logical_to_physical=(self.initial_logical_to_physical),
+                        initial_physical_to_logical=(self.initial_physical_to_logical),
+                        logical_result_physical_slots=(
+                            self.logical_result_physical_slots
+                        ),
+                    )
+                ):
+                    raise PhysicalPlanError(
+                        "physical plan allocation evidence is inconsistent"
+                    )
+                if any(
+                    measurement.wires != self.logical_result_physical_slots
+                    or str(measurement.metadata.get("fq_output_kind", measurement.kind))
+                    != "samples"
+                    or measurement.metadata.get("fq_result_order")
+                    != "logical_wire_order"
+                    for measurement in self.program.measurements
+                ):
+                    raise PhysicalPlanError(
+                        "physical plan logical result projection is inconsistent"
+                    )
             for transition in self.mapping_transitions:
                 if transition.layout_before != tuple(layout):
                     raise PhysicalPlanError(
                         "physical plan mapping transitions are not continuous"
                     )
-                _apply_physical_swap(layout, transition.physical_wires)
+                if allocated:
+                    if transition.physical_to_logical_before != tuple(occupancy):
+                        raise PhysicalPlanError(
+                            "physical plan occupancy transitions are not continuous"
+                        )
+                    _apply_allocated_physical_swap(
+                        layout,
+                        occupancy,
+                        transition.physical_wires,
+                    )
+                    if transition.physical_to_logical_after != tuple(occupancy):
+                        raise PhysicalPlanError(
+                            "physical plan occupancy transition result is inconsistent"
+                        )
+                else:
+                    if (
+                        transition.physical_to_logical_before
+                        or transition.physical_to_logical_after
+                    ):
+                        raise PhysicalPlanError(
+                            "version-1/2 mapping transition has occupancy evidence"
+                        )
+                    _apply_physical_swap(layout, transition.physical_wires)
                 if transition.layout_after != tuple(layout):
                     raise PhysicalPlanError(
                         "physical plan mapping transition result is inconsistent"
@@ -255,8 +409,20 @@ class PhysicalCircuitPlan:
                 raise PhysicalPlanError(
                     "physical plan mapping transitions do not reach final layout"
                 )
-            if self.final_logical_to_physical != identity_layout:
+            if allocated and tuple(occupancy) != self.final_physical_to_logical:
+                raise PhysicalPlanError(
+                    "physical plan occupancy transitions do not reach final occupancy"
+                )
+            if not allocated and self.final_logical_to_physical != identity_layout:
                 raise PhysicalPlanError("physical plan final layout must be identity")
+        if not allocated and (
+            self.initial_physical_to_logical
+            or self.pre_restore_physical_to_logical
+            or self.final_physical_to_logical
+            or self.logical_result_physical_slots
+            or self.allocation_identity is not None
+        ):
+            raise PhysicalPlanError("version-1/2 physical plan has allocation evidence")
         if self.schedule_depth != self.legalization.schedule.depth:
             raise PhysicalPlanError("physical plan schedule depth is inconsistent")
         if (
@@ -376,19 +542,42 @@ def _apply_physical_swap(layout: list[int], wires: tuple[int, int]) -> None:
     layout[left_logical], layout[right_logical] = right, left
 
 
+def _apply_allocated_physical_swap(
+    layout: list[int],
+    occupancy: list[int | None],
+    wires: tuple[int, int],
+) -> None:
+    left, right = wires
+    if left == right or min(left, right) < 0 or max(left, right) >= len(occupancy):
+        raise PhysicalPlanError("routing SWAP references an invalid physical slot")
+    left_logical = occupancy[left]
+    right_logical = occupancy[right]
+    occupancy[left], occupancy[right] = right_logical, left_logical
+    if left_logical is not None:
+        layout[left_logical] = right
+    if right_logical is not None:
+        layout[right_logical] = left
+
+
 def _mapping_evidence(
     source: CircuitIR,
     routed: CircuitIR,
     *,
     initial_layout: tuple[int, ...],
     final_layout: tuple[int, ...],
+    initial_occupancy: tuple[int | None, ...] = (),
+    final_occupancy: tuple[int | None, ...] = (),
 ) -> tuple[
     tuple[MappingTransition, ...],
     tuple[int, ...],
+    tuple[int | None, ...],
 ]:
     layout = list(initial_layout)
+    allocated = bool(initial_occupancy)
+    occupancy = list(initial_occupancy)
     transitions = []
     pre_restore_layout = tuple(layout)
+    pre_restore_occupancy = tuple(occupancy)
     saw_restore = False
     for index, instruction in enumerate(routed.instructions):
         raw_source_index = instruction.metadata.get("source_instruction_index")
@@ -406,9 +595,39 @@ def _mapping_evidence(
                 )
             if phase == "final_restore" and not saw_restore:
                 pre_restore_layout = tuple(layout)
+                pre_restore_occupancy = tuple(occupancy)
                 saw_restore = True
             before = tuple(layout)
-            _apply_physical_swap(layout, instruction.wires)
+            occupancy_before: tuple[int | None, ...] = ()
+            occupancy_after: tuple[int | None, ...] = ()
+            if allocated:
+                occupancy_before = tuple(occupancy)
+                if (
+                    instruction.metadata.get("physical_to_logical_before")
+                    != occupancy_before
+                    or instruction.metadata.get("logical_to_physical_before") != before
+                ):
+                    raise PhysicalPlanError(
+                        f"routed instruction {index} has inconsistent allocation input"
+                    )
+                _apply_allocated_physical_swap(
+                    layout,
+                    occupancy,
+                    instruction.wires,
+                )
+                occupancy_after = tuple(occupancy)
+                if instruction.metadata.get(
+                    "physical_to_logical_after"
+                ) != occupancy_after or instruction.metadata.get(
+                    "logical_to_physical_after"
+                ) != tuple(
+                    layout
+                ):
+                    raise PhysicalPlanError(
+                        f"routed instruction {index} has inconsistent allocation output"
+                    )
+            else:
+                _apply_physical_swap(layout, instruction.wires)
             transitions.append(
                 MappingTransition(
                     routed_instruction_index=index,
@@ -417,6 +636,8 @@ def _mapping_evidence(
                     physical_wires=instruction.wires,
                     layout_before=before,
                     layout_after=tuple(layout),
+                    physical_to_logical_before=occupancy_before,
+                    physical_to_logical_after=occupancy_after,
                 )
             )
             continue
@@ -430,9 +651,14 @@ def _mapping_evidence(
             )
     if tuple(layout) != final_layout:
         raise PhysicalPlanError("routing transition replay does not reach final layout")
+    if allocated and tuple(occupancy) != final_occupancy:
+        raise PhysicalPlanError(
+            "routing transition replay does not reach final occupancy"
+        )
     if not saw_restore:
         pre_restore_layout = tuple(layout)
-    return tuple(transitions), pre_restore_layout
+        pre_restore_occupancy = tuple(occupancy)
+    return tuple(transitions), pre_restore_layout, pre_restore_occupancy
 
 
 def _critical_path(legalization: TargetLegalizationResult) -> tuple[int, ...]:
@@ -497,6 +723,11 @@ def build_physical_circuit_plan(
         initial_layout = final_layout = tuple(range(source.n_wires))
         transitions: tuple[MappingTransition, ...] = ()
         pre_restore_layout = final_layout
+        initial_occupancy: tuple[int | None, ...] = ()
+        pre_restore_occupancy: tuple[int | None, ...] = ()
+        final_occupancy: tuple[int | None, ...] = ()
+        result_slots: tuple[int, ...] = ()
+        allocation_identity = None
         source_circuit_hash = native.source_content_hash
     else:
         if not isinstance(coupling_map, (CouplingMap, DirectedCouplingMap)):
@@ -509,10 +740,6 @@ def build_physical_circuit_plan(
             )
         source = topology.source_program
         routed = topology.program
-        if routed.n_wires != source.n_wires:
-            raise PhysicalPlanError(
-                "physical resource allocation requires physical-circuit-plan 3.0"
-            )
         topology_identity = topology.topology_identity
         coupling_n_wires = coupling_map.n_wires
         topology_legalization_identity = topology.legalization_identity
@@ -524,16 +751,24 @@ def build_physical_circuit_plan(
         )
         initial_layout = topology.initial_logical_to_physical
         final_layout = topology.final_logical_to_physical
+        initial_occupancy = topology.initial_physical_to_logical
+        final_occupancy = topology.final_physical_to_logical
+        result_slots = topology.logical_result_physical_slots
+        allocation_identity = topology.allocation_identity
         source_circuit_hash = topology.source_content_hash
         if native.source_program is not routed:
             raise PhysicalPlanError(
                 "native legalization does not retain the topology result"
             )
-        transitions, replay_pre_restore = _mapping_evidence(
-            source,
-            routed,
-            initial_layout=initial_layout,
-            final_layout=final_layout,
+        transitions, replay_pre_restore, replay_pre_restore_occupancy = (
+            _mapping_evidence(
+                source,
+                routed,
+                initial_layout=initial_layout,
+                final_layout=final_layout,
+                initial_occupancy=initial_occupancy,
+                final_occupancy=final_occupancy,
+            )
         )
         routing_metadata = routed.metadata.get("routing")
         if not isinstance(routing_metadata, dict):
@@ -541,6 +776,13 @@ def build_physical_circuit_plan(
         pre_restore_layout = tuple(routing_metadata["pre_restore_logical_to_physical"])
         if replay_pre_restore != pre_restore_layout:
             raise PhysicalPlanError("routing pre-restore layout is inconsistent")
+        pre_restore_occupancy = tuple(
+            routing_metadata.get("pre_restore_physical_to_logical", ())
+        )
+        if replay_pre_restore_occupancy != pre_restore_occupancy:
+            raise PhysicalPlanError(
+                "routing pre-restore physical occupancy is inconsistent"
+            )
 
     decompositions = {item.instruction_index: item for item in native.decompositions}
     native_lineage: dict[int, tuple[int, int]] = {}
@@ -658,6 +900,13 @@ def build_physical_circuit_plan(
         schedule_depth=schedule.depth,
         maximum_parallel_width=schedule.maximum_parallel_width,
         critical_path=_critical_path(legalization),
+        logical_wire_count=source.n_wires,
+        physical_slot_count=legalization.program.n_wires,
+        initial_physical_to_logical=initial_occupancy,
+        pre_restore_physical_to_logical=pre_restore_occupancy,
+        final_physical_to_logical=final_occupancy,
+        logical_result_physical_slots=result_slots,
+        allocation_identity=allocation_identity,
     )
 
 

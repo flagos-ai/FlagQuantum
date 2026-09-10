@@ -194,8 +194,42 @@ def test_allocation_validation_and_unimplemented_contracts_fail_closed() -> None
     source = _source()
     graph, result = _legalize(source)
 
-    with pytest.raises(PhysicalPlanError, match="physical-circuit-plan 3.0"):
-        build_physical_circuit_plan(result, coupling_map=graph)
+    plan = build_physical_circuit_plan(result, coupling_map=graph)
+    assert plan.version == "3.0"
+    assert plan.logical_wire_count == 2
+    assert plan.physical_slot_count == 3
+    assert plan.initial_logical_to_physical == (0, 2)
+    assert plan.pre_restore_logical_to_physical == (1, 2)
+    assert plan.final_logical_to_physical == (0, 2)
+    assert plan.initial_physical_to_logical == (0, None, 1)
+    assert plan.pre_restore_physical_to_logical == (None, 0, 1)
+    assert plan.final_physical_to_logical == (0, None, 1)
+    assert plan.logical_result_physical_slots == (0, 2)
+    assert plan.allocation_identity is not None
+    assert tuple(
+        transition.physical_to_logical_before for transition in plan.mapping_transitions
+    ) == ((0, None, 1), (None, 0, 1))
+    assert tuple(
+        transition.physical_to_logical_after for transition in plan.mapping_transitions
+    ) == ((None, 0, 1), (0, None, 1))
+    assert (
+        build_physical_circuit_plan(result, coupling_map=graph).plan_identity
+        == plan.plan_identity
+    )
+    with pytest.raises(PhysicalPlanError, match="occupancy"):
+        replace(
+            plan,
+            mapping_transitions=(
+                replace(
+                    plan.mapping_transitions[0],
+                    physical_to_logical_after=(0, None, 1),
+                ),
+            )
+            + plan.mapping_transitions[1:],
+            plan_identity="",
+        )
+    with pytest.raises(PhysicalPlanError, match="allocation evidence"):
+        replace(plan, final_physical_to_logical=(None, 0, 1), plan_identity="")
     with pytest.raises(TargetLegalizationError, match="inject every logical wire"):
         legalize_circuit_for_target(
             source,
@@ -205,10 +239,10 @@ def test_allocation_validation_and_unimplemented_contracts_fail_closed() -> None
             coupling_map=graph,
             initial_layout=(0, 0),
         )
-    with pytest.raises(TopologyLegalizationError, match="DirectedCouplingMap"):
+    with pytest.raises(TopologyLegalizationError, match="explicit layout/lowering"):
         legalize_circuit_topology(
             source,
-            coupling_map=CouplingMap(3, ((0, 1), (1, 2))),
+            coupling_map=CouplingMap(3, ((0, 2), (2, 1))),
             snapshot=_snapshot(),
         )
     with pytest.raises(TargetLegalizationError, match="observable remapping"):

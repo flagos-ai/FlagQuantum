@@ -1215,3 +1215,19 @@ cannot accidentally enter ProgramArtifact v2 or compilation-evidence 2.0. The
 slice supports only static unitary instructions and full logical-register samples;
 observables, dynamic operations, channels, provider identifiers, and QEC/FTOC
 ancilla semantics fail closed.
+
+Phase 44 promotes those retained Compiler facts into private
+`PhysicalCircuitPlan` version 3.0. Each mapping transition now carries and replays
+both the logical-to-physical projection and the complete nullable
+physical-to-logical occupancy. The plan validates logical and physical counts,
+coupling size, injection uniqueness, transition continuity, pre-restore state,
+final result placement, null workspace restoration, instruction lineage,
+direction legality, scheduling, and the allocation identity retained by topology
+legalization.
+
+The version-3 plan identity covers all allocation fields and per-transition
+occupancy. Equal-capacity undirected and directed plans still produce the exact
+version-1 and version-2 identity payloads respectively; they reject version-3
+allocation fields. ProgramArtifact 3.0 and compilation-evidence 3.0 remain
+unimplemented, so no allocated executable can yet pass the target-emission and
+artifact handoff boundary.

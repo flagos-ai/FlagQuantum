@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; first Compiler allocation slice complete.**
+**Approved on 2026-09-10; physical-plan 3.0 slice complete.**
 
 Date: 2026-09-10
 
@@ -15,6 +15,11 @@ deterministic idle-slot routing, inverse-SWAP workspace cleanup, logical-result
 slot metadata, and explicit rejection by the still-version-2 physical-plan path.
 ProgramArtifact 3.0, physical-plan 3.0, compilation-evidence 3.0, target emission,
 Runtime verification, and Deployment handoff remain separate gated slices.
+
+The second bounded implementation adds private physical-circuit-plan version 3.0.
+It replays both logical layouts and nullable physical occupancy from the routed
+instructions, binds allocation and result-slot facts into the plan identity, and
+retains the exact version-1/2 identity payloads for equal-capacity programs.
 
 ## Problem
 
@@ -174,7 +179,7 @@ requirements and may only become stricter.
 2. **Complete:** receive the exact approval token from the API owner.
 3. **Complete:** implement private sparse placement and nullable-occupancy routing without
    changing the existing equal-capacity path.
-4. Add physical-plan 3.0 validation, cleanup proof, deterministic identity, and
+4. **Complete:** add physical-plan 3.0 validation, cleanup proof, deterministic identity, and
    bounded state/gradient differential tests.
 5. Add strict Core ProgramArtifact 3.0 and compilation-evidence 3.0 while retaining
    pinned v1/v2 fixtures and explicit reader dispatch.

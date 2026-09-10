@@ -105,14 +105,6 @@ def legalize_circuit_topology(
         raise TopologyLegalizationError(
             "coupling map has fewer wires than the CircuitIR"
         )
-    if coupling_map.n_wires > source.n_wires and not isinstance(
-        coupling_map, DirectedCouplingMap
-    ):
-        raise TopologyLegalizationError(
-            "physical resource allocation requires a DirectedCouplingMap; "
-            "undirected expansion requires explicit layout/lowering"
-        )
-
     if isinstance(coupling_map, DirectedCouplingMap):
         if strategy not in {"auto", "persistent_layout"}:
             raise TopologyLegalizationError(
@@ -179,7 +171,10 @@ def legalize_circuit_topology(
         raise TopologyLegalizationError("router did not emit routing evidence")
     final_layout = tuple(routing.get("final_logical_to_physical", ()))
     identity_layout = tuple(range(source.n_wires))
-    allocated = coupling_map.n_wires > source.n_wires
+    allocated = (
+        isinstance(deterministic_coupling, DirectedCouplingMap)
+        and routed.n_wires > source.n_wires
+    )
     result_slots = tuple(routing.get("logical_result_physical_slots", ()))
     expected_final = result_slots if allocated else identity_layout
     if final_layout != expected_final or routing.get("mapping_restored") is not True:
