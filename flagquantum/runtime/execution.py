@@ -370,6 +370,139 @@ def run_native(
         )
 
 
+def _simulation_kernel_options(options: dict[str, Any]) -> dict[str, Any]:
+    simulation_options = dict(options)
+    for name in (
+        "memory_limit_bytes",
+        "world_size",
+        "world_sz",
+        "coupling_map",
+        "optimize",
+    ):
+        simulation_options.pop(name, None)
+    return simulation_options
+
+
+def _resolve_simulation_plan(
+    execution_ir: CircuitIR,
+    *,
+    state_mode: str,
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+    world_size: int | None = None,
+) -> ExecutionPlan:
+    if provided_execution_plan is not None:
+        return provided_execution_plan
+    options = dict(plan_options)
+    if world_size is not None:
+        options["world_size"] = world_size
+    return build_plan(execution_ir, state_mode=state_mode, **options)
+
+
+def _run_mps_mode(
+    mode: str,
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    source = execution_ir if coupling_map is not None else circuit_or_ir
+    mps_options = _simulation_kernel_options(options)
+    world_size: int | None = None
+
+    if mode == "mps":
+        from ..simulation.mps.entrypoints import run_mps
+
+        result = run_mps(source, **mps_options)
+    elif mode == "adaptive_mps":
+        from ..simulation.mps.entrypoints import run_mps_adaptive
+
+        result = run_mps_adaptive(source, **mps_options)
+    else:
+        world_size = _distributed_world_size_from_options(
+            options,
+            backend_policy=_peek_policy_from_options(options),
+        )
+        if mode == "distributed_mps":
+            from .executors.mps import run_distributed_mps
+
+            result = run_distributed_mps(
+                source,
+                world_size=world_size,
+                **mps_options,
+            )
+        elif mode == "jax_sharded_mps":
+            result = run_jax_sharded_mps(
+                source,
+                world_size=world_size,
+                **mps_options,
+            )
+        else:
+            raise ValueError(f"unsupported MPS execution mode: {mode}")
+
+    return result, _resolve_simulation_plan(
+        execution_ir,
+        state_mode="mps",
+        plan_options=plan_options,
+        provided_execution_plan=provided_execution_plan,
+        world_size=world_size,
+    )
+
+
+def _run_tensor_network_mode(
+    mode: str,
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    source = execution_ir if coupling_map is not None else circuit_or_ir
+    tensor_network_options = _simulation_kernel_options(options)
+    world_size: int | None = None
+
+    if mode == "tensor_network":
+        from ..simulation.tensor_network.entrypoints import run_tensor_network
+
+        result = run_tensor_network(source, **tensor_network_options)
+    else:
+        world_size = _distributed_world_size_from_options(
+            options,
+            backend_policy=_peek_policy_from_options(options),
+        )
+        if mode == "distributed_tensor_network":
+            from .executors.tensor_network.execution import (
+                run_distributed_tensor_network,
+            )
+
+            result = run_distributed_tensor_network(
+                source,
+                world_size=world_size,
+                **tensor_network_options,
+            )
+        elif mode == "jax_sharded_tensor_network":
+            result = run_jax_sharded_tensor_network(
+                source,
+                world_size=world_size,
+                **tensor_network_options,
+            )
+        else:
+            raise ValueError(f"unsupported tensor-network execution mode: {mode}")
+
+    return result, _resolve_simulation_plan(
+        execution_ir,
+        state_mode="tensor_network",
+        plan_options=plan_options,
+        provided_execution_plan=provided_execution_plan,
+        world_size=world_size,
+    )
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -569,179 +702,33 @@ def _run_native(
             noisy_plan,
             options=density_options,
         )
-    elif mode == "mps":
+    elif mode in {"mps", "adaptive_mps", "distributed_mps", "jax_sharded_mps"}:
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.mps.entrypoints import run_mps
-
-        mps_options = dict(options)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
-        result = run_mps(
-            execution_ir if coupling_map is not None else circuit_or_ir, **mps_options
-        )
-        execution_plan = provided_execution_plan or build_plan(
+        result, execution_plan = _run_mps_mode(
+            mode,
+            circuit_or_ir,
             execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            **plan_options,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
-    elif mode == "adaptive_mps":
+    elif mode in {
+        "tensor_network",
+        "distributed_tensor_network",
+        "jax_sharded_tensor_network",
+    }:
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.mps.entrypoints import run_mps_adaptive
-
-        mps_options = dict(options)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
-        result = run_mps_adaptive(
-            execution_ir if coupling_map is not None else circuit_or_ir, **mps_options
-        )
-        execution_plan = provided_execution_plan or build_plan(
+        result, execution_plan = _run_tensor_network_mode(
+            mode,
+            circuit_or_ir,
             execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            **plan_options,
-        )
-    elif mode == "distributed_mps":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        from .executors.mps import run_distributed_mps
-
-        mps_options = dict(options)
-        world_size = _distributed_world_size_from_options(
-            mps_options,
-            backend_policy=_peek_policy_from_options(mps_options),
-        )
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
-        result = run_distributed_mps(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            world_size=world_size,
-            **mps_options,
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            world_size=world_size,
-            **{
-                key: value for key, value in plan_options.items() if key != "world_size"
-            },
-        )
-    elif mode == "jax_sharded_mps":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-
-        mps_options = dict(options)
-        world_size = _distributed_world_size_from_options(
-            mps_options,
-            backend_policy=_peek_policy_from_options(mps_options),
-        )
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
-        result = run_jax_sharded_mps(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            world_size=world_size,
-            **mps_options,
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            world_size=world_size,
-            **{
-                key: value for key, value in plan_options.items() if key != "world_size"
-            },
-        )
-    elif mode == "tensor_network":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.tensor_network.entrypoints import run_tensor_network
-
-        tn_options = dict(options)
-        tn_options.pop("memory_limit_bytes", None)
-        tn_options.pop("world_size", None)
-        tn_options.pop("world_sz", None)
-        tn_options.pop("coupling_map", None)
-        tn_options.pop("optimize", None)
-        result = run_tensor_network(
-            execution_ir if coupling_map is not None else circuit_or_ir, **tn_options
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="tensor_network",
-            **plan_options,
-        )
-    elif mode == "distributed_tensor_network":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-        from .executors.tensor_network.execution import run_distributed_tensor_network
-
-        tn_options = dict(options)
-        world_size = _distributed_world_size_from_options(
-            tn_options,
-            backend_policy=_peek_policy_from_options(tn_options),
-        )
-        tn_options.pop("world_size", None)
-        tn_options.pop("world_sz", None)
-        tn_options.pop("memory_limit_bytes", None)
-        tn_options.pop("coupling_map", None)
-        tn_options.pop("optimize", None)
-        result = run_distributed_tensor_network(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            world_size=world_size,
-            **tn_options,
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="tensor_network",
-            world_size=world_size,
-            **{
-                key: value for key, value in plan_options.items() if key != "world_size"
-            },
-        )
-    elif mode == "jax_sharded_tensor_network":
-        if noise_model is not None:
-            raise ValueError("Noise models require density_matrix mode.")
-
-        tn_options = dict(options)
-        world_size = _distributed_world_size_from_options(
-            tn_options,
-            backend_policy=_peek_policy_from_options(tn_options),
-        )
-        tn_options.pop("world_size", None)
-        tn_options.pop("world_sz", None)
-        tn_options.pop("memory_limit_bytes", None)
-        tn_options.pop("coupling_map", None)
-        tn_options.pop("optimize", None)
-        result = run_jax_sharded_tensor_network(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            world_size=world_size,
-            **tn_options,
-        )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="tensor_network",
-            world_size=world_size,
-            **{
-                key: value for key, value in plan_options.items() if key != "world_size"
-            },
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
     elif mode == "noisy_statevector":
         if noise_model is None:
