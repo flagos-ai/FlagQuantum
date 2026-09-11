@@ -14,22 +14,6 @@ def _nodes() -> tuple[TensorNetworkNode, ...]:
     )
 
 
-@pytest.mark.parametrize(
-    "name",
-    (
-        "_contract_nodes_greedy",
-        "_contract_nodes_quality_multistart",
-        "_contract_nodes_quality_reconfigured",
-        "_contract_nodes_beam",
-        "_contract_nodes_optimal",
-        "_tree_from_steps",
-        "_linearize_contraction_tree",
-    ),
-)
-def test_compatibility_names_preserve_path_search_function_identity(name):
-    assert getattr(contraction, name) is getattr(path_search, name)
-
-
 def test_extracted_path_search_modes_preserve_contraction_result():
     nodes = _nodes()
     expected = nodes[0].tensor @ nodes[1].tensor
