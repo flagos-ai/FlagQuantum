@@ -21,6 +21,9 @@ if str(ROOT) not in sys.path:
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.runtime as fqr  # noqa: E402
+from flagquantum.simulation.tensor_network.entrypoints import (  # noqa: E402
+    build_tensor_network,
+)
 
 
 def _world_size() -> int:
@@ -39,6 +42,13 @@ def main() -> None:
     world_size = _world_size()
     rank = _rank()
 
+    network = build_tensor_network(_circuit())
+    internal_label = next(
+        label
+        for node in network.nodes
+        for label in node.labels
+        if label not in network.output_labels
+    )
     dtn = fqr.run_native(
         _circuit(),
         mode="distributed_tensor_network",
@@ -46,8 +56,12 @@ def main() -> None:
         distributed_executor="torch",
         backend="gloo",
         device="cpu",
-        max_intermediate_size=8,
+        # The complete four-qubit output itself requires 16 elements.
+        max_intermediate_size=16,
+        sliced_labels=(internal_label,),
     )
+    if any(count == 0 for count in dtn.summary()["tasks_by_rank"].values()):
+        raise AssertionError("distributed tensor-network rank has no assigned slices")
     local_tn = fqr.run_native(_circuit(), mode="tensor_network")
     if not torch.allclose(dtn.to_statevector(), local_tn.to_statevector(), atol=1e-6):
         raise AssertionError(
