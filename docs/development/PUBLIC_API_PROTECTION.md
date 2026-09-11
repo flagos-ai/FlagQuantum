@@ -130,46 +130,24 @@ Required agent behavior:
 
 ### 2. Machine-readable contract
 
-The final API contract should live under `contracts/`, for example:
+The checked-in baseline is `contracts/public-api-v0.2-baseline.json`.
+`tools/public_api_snapshot.py` compares the package with the protected baseline
+and reviewed candidate contracts. CI invokes it from `.github/workflows/ci.yml`.
+Run the current checks from the repository root:
 
-```text
-contracts/public-api-v1.toml
+```bash
+python tools/public_api_snapshot.py
+python -m pytest tests/unit/test_public_api_candidate.py -q
 ```
 
-It must describe the frozen surface, signatures, types, fields, enum values,
-schema versions, and selected behavioral invariants. A checker such as:
+The baseline and candidate JSON files are authoritative for exact signatures,
+fields, and supported deltas. Do not copy a signature from a policy illustration
+or regenerate a snapshot to approve an implementation change.
 
-```text
-tools/check_public_api_contract.py
-```
-
-must compare the installed package against that contract using Python
-introspection and explicit schema readers.
-
-Illustrative contract entries:
-
-```toml
-[functions.run]
-signature = "(program_or_plan, *, options=None, measurements=None, noise_model=None) -> ExecutionResult"
-
-[functions.plan]
-signature = "(program, *, options=None, measurements=None, noise_model=None) -> ExecutionPlan"
-
-[classes.ExecutionOptions]
-frozen = true
-fields = ["mode", "backend", "device", "batch_size", "precision"]
-
-[classes.ExecutionResult]
-fields = [
-  "value",
-  "state",
-  "samples",
-  "measurements",
-  "plan",
-  "metrics",
-  "provenance",
-]
-```
+The final frozen contract must cover surface, signatures, types, fields, enum
+values, schema versions, and selected behavioral invariants. Its checker must
+use Python introspection and explicit schema readers. The existing baseline
+checks do not alone establish every target protection described in this policy.
 
 Contract checking must fail with a focused diagnostic, for example:
 
@@ -286,8 +264,8 @@ minimum CODEOWNERS coverage is expected to include:
 /flagquantum/runtime/policy.py         @FlagQuantum/api-maintainers
 /flagquantum/runtime/execution.py      @FlagQuantum/api-maintainers
 /flagquantum/runtime/module.py         @FlagQuantum/api-maintainers
-/tools/check_public_api_contract.py    @FlagQuantum/api-maintainers
-/.github/workflows/api-contract.yml    @FlagQuantum/api-maintainers
+/tools/public_api_snapshot.py    @FlagQuantum/api-maintainers
+/.github/workflows/ci.yml    @FlagQuantum/api-maintainers
 /.github/CODEOWNERS                    @FlagQuantum/api-maintainers
 /AGENTS.md                             @FlagQuantum/api-maintainers
 ```

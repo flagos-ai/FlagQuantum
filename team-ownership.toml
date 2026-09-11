@@ -26,12 +26,12 @@ shared_paths = [
 ]
 
 [teams.integration]
-branch = "codex/flagquantum-vnext-architecture"
+branch = "refactor/flagquantum-vnext-architecture"
 worktree = "FlagQuantum-vNext"
 owns = ["**"]
 
 [teams.core]
-branch = "codex/vnext-team-core"
+branch = "refactor/vnext-team-core"
 worktree = "FlagQuantum-vNext-core"
 owns = [
     "flagquantum/core/**",
@@ -42,7 +42,7 @@ owns = [
 ]
 
 [teams.compiler]
-branch = "codex/vnext-team-compiler"
+branch = "refactor/vnext-team-compiler"
 worktree = "FlagQuantum-vNext-compiler"
 owns = [
     "flagquantum/compiler/**",
@@ -52,14 +52,14 @@ owns = [
 ]
 
 [teams.runtime]
-branch = "codex/vnext-team-runtime"
+branch = "refactor/vnext-team-runtime"
 worktree = "FlagQuantum-vNext-runtime"
 owns = [
     "flagquantum/runtime/**",
 ]
 
 [teams.simulation]
-branch = "codex/vnext-team-simulation"
+branch = "refactor/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
@@ -67,7 +67,7 @@ owns = [
 ]
 
 [teams.compute]
-branch = "codex/vnext-team-platform-providers"
+branch = "refactor/vnext-team-platform-providers"
 worktree = "FlagQuantum-vNext-platform"
 owns = [
     "flagquantum/compute/**",
@@ -75,7 +75,7 @@ owns = [
 ]
 
 [teams.remote]
-branch = "codex/vnext-team-execution-providers"
+branch = "refactor/vnext-team-execution-providers"
 worktree = "FlagQuantum-vNext-execution"
 owns = [
     "flagquantum/remote/**",
@@ -84,7 +84,7 @@ owns = [
 ]
 
 [teams.ecosystem]
-branch = "codex/vnext-team-ecosystem"
+branch = "refactor/vnext-team-ecosystem"
 worktree = "FlagQuantum-vNext-ecosystem"
 owns = [
     "flagquantum/ecosystem/**",
@@ -92,14 +92,14 @@ owns = [
 ]
 
 [teams.services]
-branch = "codex/vnext-team-agent-services"
+branch = "refactor/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
     "flagquantum/services/**",
 ]
 
 [teams.docs]
-branch = "codex/vnext-team-docs"
+branch = "docs/vnext-team-docs"
 worktree = "FlagQuantum-vNext-docs"
 owns = [
     "docs/roadmap/VNEXT_EXPERIENCE.md",

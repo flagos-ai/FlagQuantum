@@ -1,5 +1,8 @@
 # vNext Phase 2 Target Capabilities Integration Decision
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 Status: Integration decision; authorizes subsequent minimal internal implementation,
 not a Stable API release.
 
@@ -140,7 +143,7 @@ implementation authorization records no longer serve as code contracts.
 
 ## Phase 2 Integration Closure Status (2026-09-04)
 
-The minimum internal workflow above completed at integration commit `0f63c3b4`:
+The minimum internal workflow above completed at integration commit `f25c4bc4faa6cce8618f84bbb75542f4b51adf6c`:
 Core contracts/matcher, Compiler adapter, CPU Platform producer, Runtime policy
 seam, and synthetic Execution second-producer replacement conformance were merged
 and passed targeted integration verification. Verification reported `121 passed`

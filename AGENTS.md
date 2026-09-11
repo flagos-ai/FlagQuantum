@@ -265,7 +265,7 @@ branches synchronize that baseline and implement independently; the integration
 branch then runs replacement and cross-implementation tests. Follow
 `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
 
-`codex/flagquantum-vnext-architecture` is the only authoritative integration
+`refactor/flagquantum-vnext-architecture` is the only authoritative integration
 branch. Team branches must deliver committed, clean work with a handoff record,
 must obtain other teams' changes only by merging the integration branch, and
 must never merge each other directly. The integration worktree merges one team

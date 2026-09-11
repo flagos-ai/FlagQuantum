@@ -50,7 +50,7 @@ circuit.h(0).cx(0, 1)
 result = fq.run(
     circuit,
     compiler="qsteed",
-    target="quafu:ScQ-P10",
+    target="quafu:Baihua",
     # Optional: lock logical q[0], q[1] to these physical qubits.
     # target_qubits=(17, 18),
     shots=1024,

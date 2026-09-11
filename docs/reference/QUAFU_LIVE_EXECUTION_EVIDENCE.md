@@ -1,5 +1,8 @@
 # Quafu explicit-mapping live execution evidence
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 On 2026-09-09, FlagQuantum completed one live Bell-circuit execution on the
 Quafu `Dongling` QPU through the public `fq.run` path and the independently
 installed QSteed compiler plugin.
@@ -15,7 +18,7 @@ The complete compact record is
 [`quafu_explicit_mapping_dongling_20260909.json`](../../artifacts/development/quafu_explicit_mapping_dongling_20260909.json).
 It connects:
 
-1. FlagQuantum source revision `5cfcd765` and QSteed plugin revision `a514227`;
+1. FlagQuantum source revision `734cdeae7d380af1b15cf5c86911820f4c20c99b` and QSteed plugin revision `a514227`;
 2. calibration timestamp and requested logical-to-physical mapping;
 3. source and compiled IR identities;
 4. submitted logical QASM and immutable deployment hashes;

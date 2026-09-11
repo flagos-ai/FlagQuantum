@@ -1,5 +1,8 @@
 # Simulation Engine Inventory and First Replacement Slice
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 Status: Simulation delivery candidate; inventory and verification evidence, not
 a public contract.
 
@@ -26,7 +29,7 @@ conditions; `simulation_extraction` is complete.
 
 First inventory: 2026-09-03. Latest review: 2026-09-05.
 
-Shared baseline: `d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
+Shared baseline: `03af4eee32ef43d4d8f01c4462a5f3496753ad56`
 
 Original team branch: `codex/vnext-team-simulation`.
 Integration branch: `codex/flagquantum-vnext-architecture`.

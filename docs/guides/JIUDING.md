@@ -1,5 +1,8 @@
 # Jiuding execution (experimental)
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 Inside a Jiuding development workspace, the client reads the injected
 `/etc/accesskey/user-ak` and `user-sk` automatically. Outside Jiuding, set both
 `JIUDING_AK` and `JIUDING_SK`; these environment values override injected files
@@ -71,7 +74,7 @@ client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
     "example-resident-a100",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-e30b1b0c-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-fcbaf8e6e96bcd24213b8eaa640139d8b0349759-cu128-a100",
     image_region="PRIVATE",
     accelerator_count=1,
     cpus=4,
@@ -144,7 +147,7 @@ fallback from an unavailable accelerator.
 receipt = client.submit(
     "/shared/my_project/experiment_gpu.py",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-7b588ea5-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-36ee8a65ae509a0df0d25318015a6433194c7b53-cu128-a100",
     image_region="PRIVATE",
     pythonpath="/shared/my_project",
     receipt="/shared/my_project/gpu-001.json",
@@ -399,7 +402,7 @@ GPU Bell task as an independent Job on 2026-09-09. Job
 the run-bound result was retrieved from persistent storage and had maximum
 state error 0. See [private-image GPU evidence](../development/evidence/jiuding_bell_private_gpu_20260909.json).
 
-The private `flagquantum-runtime:v0.2.0-ef3affbd-cu128-a100` image also passed
+The private `flagquantum-runtime:v0.2.0-7925cc364c0cd7215c32eb6e3140e3f85092e570-cu128-a100` image also passed
 a pure-image resident-executor check. A fresh one-A100 workspace started the
 executor without any post-creation source upload, completed three Bell-state
 runs with no CPU fallback, and reused one SSH channel. The two warm calls took
@@ -448,5 +451,5 @@ The production workspace and root entry point were validated on 2026-09-09;
 see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.json).
 
 GPU-side probability and Pauli-expectation reduction was validated with the
-`v0.2.0-7b588ea5-cu128-a100` image. See
+`v0.2.0-36ee8a65ae509a0df0d25318015a6433194c7b53-cu128-a100` image. See
 [the remote-measurement evidence](../development/evidence/jiuding_remote_measurements_20260909.json).

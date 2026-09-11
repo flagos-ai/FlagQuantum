@@ -13,20 +13,12 @@ second roster.
 
 ## Workspace Model
 
-```text
-codex/flagquantum-vnext-architecture   FlagQuantum-vNext             Integration
-codex/vnext-team-core                 FlagQuantum-vNext-core        Core
-codex/vnext-team-compiler             FlagQuantum-vNext-compiler    Compiler
-codex/vnext-team-runtime              FlagQuantum-vNext-runtime     Runtime
-codex/vnext-team-simulation           FlagQuantum-vNext-simulation  Simulation
-codex/vnext-team-platform-providers   FlagQuantum-vNext-platform    Compute
-codex/vnext-team-execution-providers  FlagQuantum-vNext-execution   Remote
-codex/vnext-team-ecosystem            FlagQuantum-vNext-ecosystem   Ecosystem
-codex/vnext-team-agent-services       FlagQuantum-vNext-agent       Application Services
-codex/vnext-team-docs                 FlagQuantum-vNext-docs        Docs / User Experience
-```
+Read branch names and suggested worktree names from `team-ownership.toml`.
+The integration branch is `refactor/flagquantum-vnext-architecture`.
+Worktree names are local layout conventions, not required absolute paths;
+resolve the actual checkout with `git worktree list` before operating on it.
 
-Each Codex session opens only one directory. Do not switch a team workspace to
+Each development session opens only one directory. Do not switch a team workspace to
 another team's branch or copy uncommitted files from another workspace.
 
 Docs / User Experience may define target user journeys alongside implementation,
@@ -59,7 +51,7 @@ Completed-branch check:
 ```bash
 python tools/check_team_scope.py \
   --team compiler \
-  --base codex/flagquantum-vnext-architecture
+  --base refactor/flagquantum-vnext-architecture
 ```
 
 Use `FLAGQUANTUM_GIT` to specify a Git executable when system Git is unavailable.
@@ -119,7 +111,7 @@ in one large change.
 
 ### Sole Authoritative Version
 
-`codex/flagquantum-vnext-architecture` is the only integration branch. Team
+`refactor/flagquantum-vnext-architecture` is the only integration branch. Team
 branches are temporary development lines, not product versions for release,
 acceptance, or performance claims. A unified version must record:
 
@@ -137,7 +129,7 @@ Teams must commit their changes and leave a clean worktree. If Integration gaine
 commits during the round, merge it into the team branch from that team's worktree:
 
 ```bash
-git merge codex/flagquantum-vnext-architecture
+git merge refactor/flagquantum-vnext-architecture
 ```
 
 Resolve synchronization conflicts only in the team's own worktree, then rerun
@@ -149,7 +141,7 @@ Before delivery:
 ```bash
 python tools/check_team_scope.py \
   --team TEAM \
-  --base codex/flagquantum-vnext-architecture
+  --base refactor/flagquantum-vnext-architecture
 
 python tools/check_architecture.py
 ```
@@ -167,11 +159,11 @@ git branch --show-current
 git status --short
 ```
 
-The branch must be `codex/flagquantum-vnext-architecture` and the worktree clean.
+The branch must be `refactor/flagquantum-vnext-architecture` and the worktree clean.
 Recheck team scope in the corresponding team worktree, then merge one team at a time:
 
 ```bash
-git merge --no-ff codex/vnext-team-compiler
+git merge --no-ff refactor/vnext-team-compiler
 ```
 
 Follow dependency order:

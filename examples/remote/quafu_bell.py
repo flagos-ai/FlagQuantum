@@ -20,7 +20,7 @@ def main() -> None:
     result = fq.run(
         circuit,
         compiler="qsteed",
-        target="quafu:ScQ-P10",
+        target="quafu:Baihua",
         shots=1024,
         name="flagquantum bell",
     )

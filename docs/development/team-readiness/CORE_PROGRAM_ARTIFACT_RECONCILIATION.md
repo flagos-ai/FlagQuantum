@@ -1,5 +1,8 @@
 # ProgramArtifact Phase 1 Contract Reconciliation
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 > Historical note: this document characterizes the Phase 1 implementation.
 > `AgentApplicationService` was removed before release. The current
 > `flagquantum.services` does not consume serialized `ProgramArtifact` objects;
@@ -9,7 +12,7 @@
 Status: formal Core reconciliation submitted for Integration decisions; this is
 not API, schema, or ADR approval.
 
-Baseline: `99d5a92091bff35fdc573f4b401e3ebaaf5ffcbf`
+Baseline: `3292078950b515333d422e383d1e5ca8039daa0a`
 
 Team branch: `codex/vnext-phase1-core-contracts`
 

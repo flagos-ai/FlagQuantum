@@ -1,13 +1,16 @@
 # FlagQuantum vNext Phase 1 Integration Report
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 > Status: Core contract reconciliation, architecture ADR consolidation, and
 > Compiler performance fixes reviewed, merged, and jointly verified.
 >
 > Integration branch: `codex/flagquantum-vnext-architecture`
 >
-> Phase 0 baseline: `99d5a92091bff35fdc573f4b401e3ebaaf5ffcbf`
+> Phase 0 baseline: `3292078950b515333d422e383d1e5ca8039daa0a`
 >
-> Phase 1 integration commit: `11c473cccbf9ef65b4a4743dd0921d582066c361`
+> Phase 1 integration commit: `6bcb2453ba35aec792649768385caac00bdd885b`
 >
 > Integration completed: 2026-09-03 (Asia/Shanghai)
 
@@ -30,10 +33,10 @@ losslessly replace Compiler sealed artifacts or Deployment packages.
 
 | Order | Slice | Team commit | Integration merge | Result |
 | ---: | --- | --- | --- | --- |
-| 1 | Core Artifact reconciliation | `c33292fb2b27bfb6dc94cbf58c53f05dd1966043` | `288cbd0b` | Passed |
-| 2 | Phase 1 contract ADRs | `bc129bc668fa78ec4069483b90002d42e16ad291` | `23bb1c32` | Passed after revision |
-| 3 | Compiler successor authorization | `80d3234c66bbf14f953ffc5ebb87e3807af71740` | `a7a9e8e6` | Passed |
-| 4 | Compiler performance implementation | `cba6bad207d49fdc43acc6640e7cd67c0919c314` | `11c473cc` | Passed |
+| 1 | Core Artifact reconciliation | `bebb4f9afa4f110229bde8074469b37851143df1` | `350697f9f3898632303ab1dd966414067ead4c6e` | Passed |
+| 2 | Phase 1 contract ADRs | `4c694f64a1661de9e99a6640af265e7553dd1ed1` | `4dc9644123dd8d9a88a1a027d521ff2085111632` | Passed after revision |
+| 3 | Compiler successor authorization | `3f386b58aebf0c206435ed574c15f313c120c926` | `cd31b27507e73ffb46170af66fa3429cb63193c6` | Passed |
+| 4 | Compiler performance implementation | `96c10e27bf1b36acb69f89b5584639229380996d` | `6bcb2453ba35aec792649768385caac00bdd885b` | Passed |
 
 The initial Compiler implementation was constrained by historical SHA-256 workflow
 records. Current executable verification uses implementation, scenario tests, and
@@ -127,15 +130,15 @@ team-scope and architecture gates, individual integration merges, and joint rete
 This section records integration of the minimum internal TargetCapabilities
 Phase 2 slice. Runtime matching, fallback, decision records, and synthetic
 producers are not public, default, or production capabilities. Closure review
-baseline: `0f63c3b4`.
+baseline: `f25c4bc4faa6cce8618f84bbb75542f4b51adf6c`.
 
 | Order | Phase 2 slice | Team commit | Integration commit | Current conclusion |
 | ---: | --- | --- | --- | --- |
-| 1 | Core TargetCapabilities v1 values, canonical identity, pure matcher | `69816f42`, corrected through `34580bcd` | `d7fad5e4`, `2083dd2e`, `35f1adb0` | Merged; internal, no policy/fallback |
-| 2 | Compiler `_compiler.TargetCapabilities` adapter with loss accounting | `8c3e367e` | `1a501d8a` | Merged; uncovered fields still require the old comparator; Core matcher alone cannot admit |
-| 3 | CPU Platform snapshot adapter | `38e8bf61` | `c30316b9` | Merged; independent CPU snapshots only, no discovery/selection/fallback authority |
-| 4 | Runtime matching seam | `935adb25` (series begins at `4c8732e9`) | `b6403927` | Merged/verified; internal policy seam outside the default path |
-| 5 | Synthetic Execution second-producer replacement conformance | `110ce4a1` (series begins at `6f87da7d`) | `0f63c3b4` | Merged/verified; producer replacement with unchanged Runtime consumer, not real remote/QPU |
+| 1 | Core TargetCapabilities v1 values, canonical identity, pure matcher | `3ab3fed366aa81dc21be1d95bc2d9707a1ab22a0`, corrected through `f5a6f051b3825a756f090204b741bed914e5d800` | `0da2bf60824bcaf89cc2b04e26de20c38236bcc3`, `ab1407436b7bc8e9f1e02117fd0478ef8a035fdd`, `015c858635e8fd7cd7efa11c9e82caeab9e6fa28` | Merged; internal, no policy/fallback |
+| 2 | Compiler `_compiler.TargetCapabilities` adapter with loss accounting | `b37eddd4eea0912fc6bf896455562e4996aeae65` | `90476096ffb45fdae76eac3c4be7307ed22b9b6e` | Merged; uncovered fields still require the old comparator; Core matcher alone cannot admit |
+| 3 | CPU Platform snapshot adapter | `d353e0e927e03e86fc123f2d162da83d6fcaccca` | `0ad5412f71976424640c0e258bf2c9bf8f8ce2ea` | Merged; independent CPU snapshots only, no discovery/selection/fallback authority |
+| 4 | Runtime matching seam | `25d277a3d3f11f278e14e6d731315235245575ab` (series begins at `388670007364bb62542b0b21d94d37f09b7ed666`) | `b44ae2d9be293b9fbe094c0b6bad926097f2e48a` | Merged/verified; internal policy seam outside the default path |
+| 5 | Synthetic Execution second-producer replacement conformance | `bb2eb5c1b54cc0e6ce4e64922d606e99b1e74594` (series begins at `ed4bb6441fe0ee6f93d1b0a9fb38659607bab8ea`) | `f25c4bc4faa6cce8618f84bbb75542f4b51adf6c` | Merged/verified; producer replacement with unchanged Runtime consumer, not real remote/QPU |
 
 ARCH-003/004/005/007 remain **Proposed**. Phase 2 machine authorization permits only
 internal TargetCapabilities v1, narrow adapters, and the Runtime matching seam.
@@ -295,9 +298,9 @@ no actual execution observations.
 
 Independent integration verification:
 
-- After Runtime merge `b6403927`: `121 passed`; architecture, team scope, Ruff,
+- After Runtime merge `b44ae2d9be293b9fbe094c0b6bad926097f2e48a`: `121 passed`; architecture, team scope, Ruff,
   and diff checks passed.
-- After synthetic producer fix/merge `0f63c3b4`: `118 passed`; architecture,
+- After synthetic producer fix/merge `f25c4bc4faa6cce8618f84bbb75542f4b51adf6c`: `118 passed`; architecture,
   team scope, Ruff, and diff checks passed.
 
 Real providers/hardware, public APIs, defaults, execution results/evidence, claim

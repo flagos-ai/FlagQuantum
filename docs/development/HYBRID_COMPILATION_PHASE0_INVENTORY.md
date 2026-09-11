@@ -1,5 +1,8 @@
 # Hybrid compilation Phase 0 inventory
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 Updated: 2026-09-09
 Status: **complete; Phase 1 semantic migration implemented and verified on the
 authoritative integration baseline**
@@ -42,7 +45,7 @@ contains a private compiler research implementation. Repository history records
 its removal in commit:
 
 ```text
-fb3da2ee compiler: remove disconnected private compiler tree
+523930235635882ac82d8b3d400b787051360647 compiler: remove disconnected private compiler tree
 ```
 
 The removal affected 197 files and approximately 28.8K lines. The stated reason

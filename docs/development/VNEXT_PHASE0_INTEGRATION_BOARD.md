@@ -1,5 +1,8 @@
 # FlagQuantum vNext Phase 0 Integration Report
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 > Historical note: this report records the team names and code boundaries at
 > Phase 0. Current code has reduced `Agent Services` to a few composed workflows
 > in `flagquantum.services` and removed the unreleased `AgentApplicationService`
@@ -9,7 +12,7 @@
 >
 > Integration branch: `codex/flagquantum-vnext-architecture`
 >
-> Shared governance baseline: `d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
+> Shared governance baseline: `03af4eee32ef43d4d8f01c4462a5f3496753ad56`
 >
 > Integration completed: 2026-09-03 (Asia/Shanghai)
 
@@ -34,14 +37,14 @@ was in Agent Services: validate required capabilities before planning a
 
 | Order | Team | Final team commit | Integration merge commit | Result |
 | ---: | --- | --- | --- | --- |
-| 1 | Core | `6cf86e15459b06ec5261ec24d63c53ccd3425756` | `83d45119` | Passed |
-| 2 | Compiler | `c8d7ac3a1f5c5a00ab7fccec5940ccf22ac4d3b7` | `d6f43652` | Passed |
-| 3 | Runtime | `adba20d6f22193ad0a00b1132518ea91205998da` | `991d309a` | Passed |
-| 4 | Simulation | `5ab9c74e34743c7dd768cc179ad584f92bbb2a57` | `2d4b8948` | Passed |
-| 5 | Platform Provider | `42aa894574133c59010d022bf4536573b1bc2e77` | `810f0b5a` | Passed |
-| 6 | Execution Provider | `c3e9129a1244e820985ff36f7ccb6b824b7d9405` | `33d3b6a5` | Passed |
-| 7 | Ecosystem | `0fca0f02705a7f8f9fdfb5b9719009f6d9f42354` | `c2f66391` | Passed |
-| 8 | Agent Services | `669adfa7ddcb9c2c7e2aca8a3c5e7f703b1807f8` | `75693ca1` | Passed |
+| 1 | Core | `220a1753f9f5c22755eb6bcd894fc47ace8ca40c` | `8ff252fce4551eb993305ce6c76ffb22b38cfc96` | Passed |
+| 2 | Compiler | `7baf799d065fc4a9612383f99483d8f4cb39ea70` | `e5e2095a01ed6bfce750df9beedbcc62a6b70830` | Passed |
+| 3 | Runtime | `e63847dd81d7f792e1c1a8fbe31fecdf101a28a9` | `83b71ea1309408cb2a8d35a6e1b47dd5197a457b` | Passed |
+| 4 | Simulation | `73095ffe9503daaa782aeba4280c81c76a9e102d` | `ec73664e8fddfc31dc0e4ab635d381781b549980` | Passed |
+| 5 | Platform Provider | `99243093c2c48040805152085e5c8ddf4c057321` | `c8be2e34828b5f494e064506b804806194355c28` | Passed |
+| 6 | Execution Provider | `9beae45c66f048d9eecd15ef8696d3a5a5878488` | `42ce86a704cac92a32b515eb994935f3f7f7e680` | Passed |
+| 7 | Ecosystem | `1f8fdba80fbefeb95ec5700324b92885f4fd832c` | `005b41fc62fe09134476da749f8d11d76166fee7` | Passed |
+| 8 | Agent Services | `37dd76bc9512d808c2b36f78890cff35819f31eb` | `a883a1cc3201f1c236fabffa0a7cfd7f729ac016` | Passed |
 
 All team worktrees were clean at delivery verification. The eight branches shared
 one governance baseline and changed nonconflicting paths. Integration reran all

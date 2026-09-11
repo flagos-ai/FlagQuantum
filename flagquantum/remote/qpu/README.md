@@ -25,7 +25,7 @@ circuit = fq.Circuit(2).h(0).cx(0, 1)
 result = fq.run(
     circuit,
     compiler="qsteed",
-    target="quafu:ScQ-P10",
+    target="quafu:Baihua",
     shots=1024,
 )
 print(result.provenance["task_id"], result.counts[0])

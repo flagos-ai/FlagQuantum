@@ -88,7 +88,7 @@ For remote execution, name the compiler and provider target explicitly:
 result = fq.run(
     circuit,
     compiler="qsteed",
-    target="quafu:ScQ-P10",
+    target="quafu:Baihua",
     # Optional ordered logical-to-physical mapping:
     # target_qubits=(17, 18),
     shots=1024,
@@ -120,7 +120,7 @@ energy = fq.run(
     circuit,
     outputs=fq.expectation(0.5 * (fq.X(0) @ fq.X(1)) + fq.Z(0)),
     compiler="qsteed",
-    target="quafu:ScQ-P10",
+    target="quafu:Baihua",
     shots=4096,
 ).expectation()
 ```

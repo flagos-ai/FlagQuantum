@@ -1,13 +1,16 @@
 # Jiuding CPU adapter handoff — 2026-09-09
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 ## Identity and delivery state
 
 - Team: remote.
 - Worktree: `FlagQuantum-vNext-execution`.
 - Branch: `codex/vnext-team-execution-providers`.
-- Original live-run baseline: `9cd38efcd136abc9a705151be3378f9487d1064e`.
-- Updated integration baseline: `7f77dbad` (includes the observable API changes).
-- Implementation commit: `fb4daead`.
+- Original live-run baseline: `9c1b7e9f0ad3983d634aab6ecfbce0ccd9f009fe`.
+- Updated integration baseline: `a1d5e6a15c09ed96232884f42b647e31c1fe3fb1` (includes the observable API changes).
+- Implementation commit: `f78b0bad3674853556e7d57c1f0ea0f85c031d6e`.
 - Integration authorized by the user after the other API edits were committed.
 - The initial hook PATH issue is resolved by using the existing
   `FlagQAI/backend/.venv/bin` tool environment and the bundled Git fallback.
@@ -56,7 +59,7 @@ shared snapshot at `/share/project/liuwei/fq-jiuding-vnext.c0yW36`.
 
 Latest integration verification supersedes the older environment failures below:
 
-- On baseline `7f77dbad` plus this adapter, Python 3.12.14 / PyTorch 2.13.0:
+- On baseline `a1d5e6a15c09ed96232884f42b647e31c1fe3fb1` plus this adapter, Python 3.12.14 / PyTorch 2.13.0:
   **1227 passed, 14 skipped**, 1270 deselected, 24.72 s for the default smoke/unit
   suite; **30 passed** for the focused local/remote regression set.
 - Bell example also ran locally on the updated API and returned the same

@@ -1,8 +1,11 @@
 # FlagQuantum IR Phase 0 Exit Audit
 
+> Commit references below have been mapped to the publication history.
+> Recorded outcomes and approval status are unchanged.
+
 Audit date: 2026-09-01
 Audit branch: `codex/open-source-api-convergence`
-Baseline commit: `84698f19`
+Baseline commit: `762a9e34b512a8af8e1f14e325ffdfa8b7cde4a3`
 Conclusion: **Phase 0 exit gate not passed; Phase 1 implementation remains unauthorized.**
 
 Related material:
