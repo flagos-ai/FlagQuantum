@@ -381,6 +381,33 @@ def _apply_fused_gate_step(
     )
 
 
+def _apply_cx_sequence(
+    circuit: Circuit,
+    step: _StatevectorCXSequenceStep,
+    state: torch.Tensor,
+) -> torch.Tensor:
+    """Apply a compiled CX sequence through the available local kernel."""
+
+    if state.is_cuda and state.dtype == torch.complex64:
+        from ..triton_kernels import cx_sequence
+
+        control_masks, target_masks, reverse_control_masks, reverse_target_masks = (
+            _cx_sequence_masks(circuit, step, state.device)
+        )
+        return cx_sequence(
+            state,
+            control_masks=control_masks,
+            target_masks=target_masks,
+            reverse_control_masks=reverse_control_masks,
+            reverse_target_masks=reverse_target_masks,
+            n_wires=circuit.n_wires,
+        )
+
+    for control, target in zip(step.controls, step.targets, strict=True):
+        state = _apply_cx_permutation(state, (control, target), circuit.n_wires)
+    return state
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -423,30 +450,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         )
         for step in program:
             if isinstance(step, _StatevectorCXSequenceStep):
-                if output.is_cuda and output.dtype == torch.complex64:
-                    from ..triton_kernels import cx_sequence
-
-                    (
-                        control_masks,
-                        target_masks,
-                        reverse_control_masks,
-                        reverse_target_masks,
-                    ) = _cx_sequence_masks(circuit, step, output.device)
-                    output = cx_sequence(
-                        output,
-                        control_masks=control_masks,
-                        target_masks=target_masks,
-                        reverse_control_masks=reverse_control_masks,
-                        reverse_target_masks=reverse_target_masks,
-                        n_wires=circuit.n_wires,
-                    )
-                else:
-                    for control, target in zip(
-                        step.controls, step.targets, strict=True
-                    ):
-                        output = _apply_cx_permutation(
-                            output, (control, target), circuit.n_wires
-                        )
+                output = _apply_cx_sequence(circuit, step, output)
                 continue
             if isinstance(step, _StatevectorRXRZLoopStep):
                 output = _apply_rx_rz_loop(
