@@ -727,6 +727,93 @@ def _critical_path(legalization: TargetLegalizationResult) -> tuple[int, ...]:
     return tuple(reversed(reversed_path))
 
 
+def _physical_instruction_records(
+    legalization: TargetLegalizationResult,
+    source: CircuitIR,
+    routed: CircuitIR,
+) -> tuple[PhysicalInstructionRecord, ...]:
+    native = legalization.native_gate_legalization
+    decompositions = {item.instruction_index: item for item in native.decompositions}
+    native_lineage: dict[int, tuple[int, int]] = {}
+    native_index = 0
+    for topology_index in range(len(routed.instructions)):
+        decomposition = decompositions.get(topology_index)
+        replacement_count = (
+            1 if decomposition is None else len(decomposition.replacement_opcodes)
+        )
+        for ordinal in range(replacement_count):
+            native_lineage[native_index] = (topology_index, ordinal)
+            native_index += 1
+    if native_index != len(native.program.instructions):
+        raise PhysicalPlanError("native decomposition records do not cover the program")
+
+    schedule_by_index = {
+        item.instruction_index: item for item in legalization.schedule.instructions
+    }
+    records: list[PhysicalInstructionRecord] = []
+    for physical_index, instruction in enumerate(legalization.program.instructions):
+        raw_native_index = instruction.metadata.get(
+            "native_instruction_index", physical_index
+        )
+        if type(raw_native_index) is not int or raw_native_index not in native_lineage:
+            raise PhysicalPlanError("physical instruction native index is invalid")
+        topology_index, native_ordinal = native_lineage[raw_native_index]
+        topology_instruction = routed.instructions[topology_index]
+        decomposition = decompositions.get(topology_index)
+        raw_source_index = topology_instruction.metadata.get(
+            "source_instruction_index", topology_index
+        )
+        if type(raw_source_index) is not int:
+            raise PhysicalPlanError("physical instruction source index is invalid")
+        if not 0 <= raw_source_index < len(source.instructions):
+            raise PhysicalPlanError("physical instruction source index is out of range")
+        raw_direction_ordinal = instruction.metadata.get(
+            "direction_replacement_ordinal", 0
+        )
+        raw_direction_rewrite = instruction.metadata.get("direction_rewrite", "none")
+        if type(raw_direction_ordinal) is not int:
+            raise PhysicalPlanError("physical instruction direction ordinal is invalid")
+        routing_swap = topology_instruction.metadata.get("routing_phase") is not None
+        if raw_direction_rewrite == "reverse_cx_h_conjugation":
+            origin = (
+                "routing_swap_direction_rewrite"
+                if routing_swap
+                else "direction_rewrite"
+            )
+        elif routing_swap:
+            origin = (
+                "routing_swap"
+                if decomposition is None
+                else "routing_swap_decomposition"
+            )
+        elif decomposition is not None:
+            origin = "native_decomposition"
+        elif legalization.topology_legalization is not None:
+            origin = "topology_mapped"
+        else:
+            origin = "source"
+        scheduled = schedule_by_index[physical_index]
+        records.append(
+            PhysicalInstructionRecord(
+                instruction_index=physical_index,
+                source_instruction_index=raw_source_index,
+                topology_instruction_index=topology_index,
+                native_replacement_ordinal=native_ordinal,
+                native_instruction_index=raw_native_index,
+                direction_replacement_ordinal=raw_direction_ordinal,
+                direction_rewrite=str(raw_direction_rewrite),
+                origin=origin,
+                opcode=instruction.name,
+                logical_wires=source.instructions[raw_source_index].wires,
+                physical_wires=instruction.wires,
+                layer=scheduled.layer,
+                predecessors=scheduled.predecessors,
+                dependency_kinds=scheduled.dependency_kinds,
+            )
+        )
+    return tuple(records)
+
+
 def build_physical_circuit_plan(
     legalization: TargetLegalizationResult,
     *,
@@ -828,81 +915,7 @@ def build_physical_circuit_plan(
                 "routing pre-restore physical occupancy is inconsistent"
             )
 
-    decompositions = {item.instruction_index: item for item in native.decompositions}
-    native_lineage: dict[int, tuple[int, int]] = {}
-    native_index = 0
-    for topology_index in range(len(routed.instructions)):
-        decomposition = decompositions.get(topology_index)
-        replacement_count = (
-            1 if decomposition is None else len(decomposition.replacement_opcodes)
-        )
-        for ordinal in range(replacement_count):
-            native_lineage[native_index] = (topology_index, ordinal)
-            native_index += 1
-    if native_index != len(native.program.instructions):
-        raise PhysicalPlanError("native decomposition records do not cover the program")
-    schedule_by_index = {item.instruction_index: item for item in schedule.instructions}
-    instruction_records = []
-    for physical_index, instruction in enumerate(legalization.program.instructions):
-        raw_native_index = instruction.metadata.get(
-            "native_instruction_index", physical_index
-        )
-        if type(raw_native_index) is not int or raw_native_index not in native_lineage:
-            raise PhysicalPlanError("physical instruction native index is invalid")
-        topology_index, native_ordinal = native_lineage[raw_native_index]
-        topology_instruction = routed.instructions[topology_index]
-        decomposition = decompositions.get(topology_index)
-        raw_source_index = topology_instruction.metadata.get(
-            "source_instruction_index", topology_index
-        )
-        if type(raw_source_index) is not int:
-            raise PhysicalPlanError("physical instruction source index is invalid")
-        if not 0 <= raw_source_index < len(source.instructions):
-            raise PhysicalPlanError("physical instruction source index is out of range")
-        logical_wires = source.instructions[raw_source_index].wires
-        scheduled = schedule_by_index[physical_index]
-        raw_direction_ordinal = instruction.metadata.get(
-            "direction_replacement_ordinal", 0
-        )
-        raw_direction_rewrite = instruction.metadata.get("direction_rewrite", "none")
-        if type(raw_direction_ordinal) is not int:
-            raise PhysicalPlanError("physical instruction direction ordinal is invalid")
-        if raw_direction_rewrite == "reverse_cx_h_conjugation":
-            origin = (
-                "routing_swap_direction_rewrite"
-                if topology_instruction.metadata.get("routing_phase") is not None
-                else "direction_rewrite"
-            )
-        elif topology_instruction.metadata.get("routing_phase") is not None:
-            origin = (
-                "routing_swap"
-                if decomposition is None
-                else "routing_swap_decomposition"
-            )
-        elif decomposition is not None:
-            origin = "native_decomposition"
-        elif topology is not None:
-            origin = "topology_mapped"
-        else:
-            origin = "source"
-        instruction_records.append(
-            PhysicalInstructionRecord(
-                instruction_index=physical_index,
-                source_instruction_index=raw_source_index,
-                topology_instruction_index=topology_index,
-                native_replacement_ordinal=native_ordinal,
-                native_instruction_index=raw_native_index,
-                direction_replacement_ordinal=raw_direction_ordinal,
-                direction_rewrite=str(raw_direction_rewrite),
-                origin=origin,
-                opcode=instruction.name,
-                logical_wires=logical_wires,
-                physical_wires=instruction.wires,
-                layer=scheduled.layer,
-                predecessors=scheduled.predecessors,
-                dependency_kinds=scheduled.dependency_kinds,
-            )
-        )
+    instruction_records = _physical_instruction_records(legalization, source, routed)
 
     if topology is not None:
         assert coupling_map is not None
@@ -927,7 +940,7 @@ def build_physical_circuit_plan(
         pre_restore_logical_to_physical=pre_restore_layout,
         final_logical_to_physical=final_layout,
         mapping_transitions=transitions,
-        instructions=tuple(instruction_records),
+        instructions=instruction_records,
         topology_legalization_identity=topology_legalization_identity,
         native_gate_legalization_identity=native.legalization_identity,
         direction_legalization_identity=(
