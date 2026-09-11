@@ -45,6 +45,30 @@ class DirectionLegalizationResult:
             )
 
 
+def _validate_direction_legal_program(
+    program: CircuitIR,
+    native_opcodes: frozenset[str],
+    coupling_map: DirectedCouplingMap,
+) -> None:
+    for index, instruction in enumerate(program.instructions):
+        if instruction.name not in native_opcodes:
+            raise DirectionLegalizationError(
+                f"direction-legal instruction {index} is not target-native"
+            )
+        if len(instruction.wires) != 2:
+            continue
+        if instruction.name == "cx" and not coupling_map.has_edge(*instruction.wires):
+            raise DirectionLegalizationError(
+                f"direction-legal CX instruction {index} violates ordered topology"
+            )
+        if instruction.name == "swap" and not coupling_map.has_weak_edge(
+            *instruction.wires
+        ):
+            raise DirectionLegalizationError(
+                f"direction-legal SWAP instruction {index} violates topology"
+            )
+
+
 def legalize_directed_cx(
     program: object,
     *,
@@ -154,24 +178,7 @@ def legalize_directed_cx(
             "directed-CX legalization exceeds max_added_operations"
         )
     result = replace(source, instructions=tuple(output))
-    for index, instruction in enumerate(result.instructions):
-        if instruction.name not in native:
-            raise DirectionLegalizationError(
-                f"direction-legal instruction {index} is not target-native"
-            )
-        if len(instruction.wires) == 2:
-            if instruction.name == "cx" and not coupling_map.has_edge(
-                *instruction.wires
-            ):
-                raise DirectionLegalizationError(
-                    f"direction-legal CX instruction {index} violates ordered topology"
-                )
-            if instruction.name == "swap" and not coupling_map.has_weak_edge(
-                *instruction.wires
-            ):
-                raise DirectionLegalizationError(
-                    f"direction-legal SWAP instruction {index} violates topology"
-                )
+    _validate_direction_legal_program(result, native, coupling_map)
     payload = {
         "source_content_hash": source.content_hash,
         "result_content_hash": result.content_hash,
