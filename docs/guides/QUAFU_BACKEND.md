@@ -3,7 +3,40 @@
 FlagQuantum talks directly to the HTTP contract implemented by
 `quafusqc.Task`; installing `quafusqc` is not required.
 
-## Install the compiler plugin
+## Direct submission (service compilation)
+
+The development version supports Quafu submission without a local compiler:
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Baihua",
+    shots=1024,
+)
+print(result.counts)
+```
+
+Configure `QUAFU_API_TOKEN` as described below. This path sends logical OpenQASM
+with `options.compiler="quarkcircuit"` and does not require local QSteed or
+QuarkCircuit installation. The service handles compilation and physical routing. Direct-path counts are
+returned in logical-wire order (wire 0 on the left), including before expectation
+aggregation; raw provider metadata retains the original response.
+`outputs=fq.expectation(...)` remains supported through grouped basis measurements.
+Optional `target_qubits` selects an ordered physical mapping; its size and
+uniqueness are checked locally, while chip availability/topology are checked by
+the service. Shots must be a positive multiple of 1024.
+
+The published 0.2.0 release predates this direct-submission feature. Use a source
+checkout containing this change until the next release is published.
+
+For local compilation before submission, explicitly pass `compiler="qsteed"`
+and install the plugin below. The service compiler option is distinct from the
+root API's local compiler selection. A submitted circuit digest is not evidence
+of the final circuit executed on hardware; inspect returned `transpiled` data.
+
+## Optional local compiler plugin
 
 The Quafu examples use the independently maintained
 [FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)

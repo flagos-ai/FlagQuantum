@@ -30,13 +30,43 @@ _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
 
 
+def _service_options(n_wires: int, raw_qubits: Sequence[int]) -> dict[str, Any]:
+    """Validate the optional physical mapping before any remote side effect."""
+    if not isinstance(raw_qubits, Sequence) or isinstance(raw_qubits, (str, bytes)):
+        raise ValueError("target_qubits must be a sequence of physical qubits")
+    qubits = list(raw_qubits)
+    if qubits and (
+        len(qubits) != n_wires
+        or any(type(qubit) is not int or qubit < 0 for qubit in qubits)
+        or len(set(qubits)) != len(qubits)
+    ):
+        raise ValueError(
+            "target_qubits must map every logical wire to a unique nonnegative integer"
+        )
+    return {"compiler": "quarkcircuit", "target_qubits": qubits}
+
+
 def _submission_options(
     qasm: str,
     *,
     n_wires: int,
     options: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Validate the Quafu contract for an already compiled logical circuit."""
+    """Validate the selected service-compilation or precompiled submission contract."""
+
+    if options.get("compiler") == "quarkcircuit":
+        resolved = _service_options(n_wires, options.get("target_qubits", ()))
+        declaration = _QREG_DECLARATION.search(qasm)
+        if declaration is None or int(declaration.group(1)) != n_wires:
+            raise ValueError("Quafu QASM must declare logical qreg q[N]")
+        if any(
+            int(index) >= n_wires
+            for index in _QUBIT_REFERENCE.findall(
+                _QREG_DECLARATION.sub("", qasm, count=1)
+            )
+        ):
+            raise ValueError("Quafu QASM references an out-of-range logical wire")
+        return {**options, **resolved}
 
     if "compiler" not in options or options["compiler"] is not None:
         raise ValueError("precompiled Quafu submissions require compiler=None")

@@ -77,7 +77,7 @@ For a complete classical–quantum model, follow the
 
 The experimental adapters can evaluate the same observable on a Jiuding GPU
 workspace or Quafu quantum hardware. Configure the [Jiuding workspace and credentials](docs/guides/JIUDING.md)
-or the [Quafu token and QSteed plugin](docs/guides/QUAFU_BACKEND.md) before
+or the [Quafu token](docs/guides/QUAFU_BACKEND.md) before
 running the corresponding call.
 
 ```python
@@ -86,12 +86,15 @@ jiuding_result = fq.run(
     trained_circuit, target="jiuding:gpu", outputs=measurement,
 )
 
-# Quantum hardware: compile, submit, and estimate from measured shots
+# Quantum hardware: service compilation and estimation from measured shots
 quafu_result = fq.run(
-    trained_circuit, target="quafu:Baihua", compiler="qsteed",
+    trained_circuit, target="quafu:Baihua",
     outputs=measurement, shots=1024,
 )
 ```
+
+Direct Quafu submission requires the development version containing this feature.
+With the published 0.2.0 release, use the documented local QSteed compilation path.
 
 Jiuding computes a simulated expectation; Quafu estimates it from hardware
 measurements. The training example runs on your local machine; these calls

@@ -27,8 +27,7 @@ def test_quafu_bell_example_uses_complete_public_path(monkeypatch, capsys) -> No
 
     assert captured["program"].n_qubits == 2
     assert captured["options"] == {
-        "compiler": "qsteed",
-        "target": "quafu:ScQ-P10",
+        "target": "quafu:Baihua",
         "shots": 1024,
         "name": "flagquantum bell",
     }
