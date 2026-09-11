@@ -15,10 +15,10 @@
       "ExecutionOptions",
       "ExecutionPlan",
       "ExecutionResult",
+      "I",
       "IRSerializationError",
       "IRValidationError",
       "IR_VERSION",
-      "I",
       "Instruction",
       "MeasurementResult",
       "Module",
@@ -38,8 +38,10 @@
       "experimental",
       "plan",
       "probabilities",
+      "restore_job",
       "run",
       "samples",
+      "submit",
       "train"
     ],
     "planned_additions": []

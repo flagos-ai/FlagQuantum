@@ -30,8 +30,10 @@
     "experimental",
     "plan",
     "probabilities",
+    "restore_job",
     "run",
     "samples",
+    "submit",
     "train"
   ],
   "verification": {
@@ -65,7 +67,9 @@
     "probabilities": "tests/api_contract/test_observable_outputs.py::test_probability_sample_and_count_outputs",
     "run": "tests/unit/test_module_runtime_contracts.py::test_fq_run_is_the_uniform_execution_entry_point",
     "samples": "tests/api_contract/test_observable_outputs.py::test_probability_sample_and_count_outputs",
-    "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop"
+    "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop",
+    "submit": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore",
+    "restore_job": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore"
   },
   "experimental_stability": "none"
 }

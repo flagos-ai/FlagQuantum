@@ -194,6 +194,9 @@ def validate() -> tuple[str, ...]:
     observable_outputs_contract = json.loads(
         OBSERVABLE_OUTPUTS_CONTRACT.read_text(encoding="utf-8")
     )
+    jobs_contract = json.loads(
+        (ROOT / "contracts/remote-jobs-v1-candidate.json").read_text()
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -236,6 +239,8 @@ def validate() -> tuple[str, ...]:
         )
     authorized_changes.update(observable_outputs_contract.get("root_additions", ()))
     authorized_changes.update(observable_outputs_contract.get("root_removals", ()))
+    if jobs_contract.get("implementation_authorized") is True:
+        authorized_changes.update(jobs_contract["root_additions"])
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -300,6 +305,20 @@ def validate() -> tuple[str, ...]:
         errors.extend(
             _validate_authorized_extension_protocol(extension_protocol_contract)
         )
+    if jobs_contract.get("implementation_authorized") is True:
+        from flagquantum.remote import jobs
+
+        for name, expected_signature in jobs_contract["public_signatures"].items():
+            obj = jobs
+            for component in name.split("."):
+                obj = getattr(obj, component)
+            if str(inspect.signature(obj)) != expected_signature:
+                errors.append(f"authorized remote job API signature changed: {name}")
+        import flagquantum as fq
+
+        for name in jobs_contract["root_additions"]:
+            if name not in names or name not in fq.__all__:
+                errors.append(f"authorized remote job root API missing: {name}")
     return tuple(errors)
 
 
