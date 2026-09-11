@@ -7,26 +7,11 @@ from typing import Any, Sequence
 import torch
 
 from ..statevector.operations import _bits_from_indices
+from .models import CompiledTNObservableProgram, TensorNetworkContractionPlan
 
-_CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
-_CONTRACTION_PATH_CACHE: dict[
-    tuple[Any, ...], tuple[tuple[int, int, tuple[int, ...]], ...]
-] = {}
-_CONTRACTION_STAGE_CACHE: dict[tuple[Any, ...], CompiledTNStagePlan] = {}
 _DENSE_Z_OBSERVABLE_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
 ] = {}
-_Z_OBSERVABLE_NODE_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], tuple[torch.Tensor, ...]
-] = {}
-
-
-from .models import (  # noqa: E402
-    CompiledTNObservableProgram,
-    CompiledTNStagePlan,
-    TensorNetworkContractionPlan,
-    TensorNetworkContractionProfile,
-)
 
 
 class TensorNetworkState:
