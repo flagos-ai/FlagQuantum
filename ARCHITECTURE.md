@@ -21,9 +21,10 @@ but it must not change the meaning of the program or the result contract.
 
 ## Core layers
 
-| Layer | Responsibility | Stable boundary |
+| Layer | Responsibility | Entry point |
 | --- | --- | --- |
 | User API | Circuit construction, PyTorch modules, planning, execution, training, and deployment | `import flagquantum as fq` |
+| Compilation | Transform circuits and legalize target output without executing it | `fq.compile`, `flagquantum.compiler` |
 | FlagQuantum IR | Versioned operators, measurements, metadata, serialization, and validation | `fq.CircuitIR` |
 | Planning | Select a representation and execution policy; explain blockers and fallbacks | `fq.plan`, `Circuit.runtime_plan` |
 | Runtime | Execute locally or across ranks and return typed evidence | `fq.run`, `fq.ExecutionResult` |
@@ -61,7 +62,7 @@ flagquantum/
 
 benchmarks/
 ├── runners/                # reproducible workload and JSON contracts
-├── research/               # exploratory analysis and plotting
+├── manifests/              # workload and evidence specifications
 └── results/                # evidence separated by claim level
 
 contracts/                  # capability and interoperability contracts
@@ -70,6 +71,11 @@ docs/                       # current product, architecture, and development tru
 tools/                      # repository automation; never a runtime dependency
 artifacts/                  # current capability records plus bounded development output
 ```
+
+This map describes the checked-in implementation. Long-term design documents
+express goals; implemented support and release evidence remain separate. The
+[compiler implementation map](docs/development/IR_IMPLEMENTATION_STATUS.md)
+identifies the current circuit and private structured-program paths.
 
 Detailed subsystem documents live in the
 [architecture documentation](docs/architecture/README.md).
@@ -110,7 +116,9 @@ package boundaries.
 native functions are advanced interfaces and may expose backend-specific
 objects.
 
-`fq.train` owns the optimizer lifecycle. Distributed training is considered
+`fq.train` owns the ordinary PyTorch optimization loop. Owner-sharded
+statevector and MPS training have separate experimental distributed entry points;
+they are not implied by calling `fq.train`. Distributed training is considered
 complete only when forward execution, gradients, optimizer updates, and
 checkpoint ownership preserve the declared distribution semantics.
 

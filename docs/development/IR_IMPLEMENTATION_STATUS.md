@@ -1,75 +1,57 @@
-# FlagQuantum IR implementation status
+# FlagQuantum compiler and IR implementation map
 
-Updated: 2026-09-06
+Verified against the publication checkout on 2026-09-11.
 
-## Current position
+The current compiler operates on Core-owned `CircuitIR`. The old private
+`flagquantum._compiler` package and its phase-based implementation inventory
+are not the current source layout. Historical multi-level IR designs remain
+useful rationale, but their phase completion labels do not describe this tree.
 
-| Phase | Status | Accepted result | Still excluded |
-| --- | --- | --- | --- |
-| Phase 0 | Complete | Current API/IR/compiler/runtime/deployment semantics and performance baseline characterized | Implementation changes |
-| Phase 1 | Complete | Private immutable QuantumIR, verifier, importer, analyses, pass manager, round-trip and semantic differential bridge | Public IR/pass API and default-path use |
-| Phase 2 | Complete | Private static canonicalization, target decomposition, directed routing, deterministic emitters, compilation identity/cache and offline end-to-end pipeline | Public/default migration, provider submission and legacy retirement |
-| Phase 3 | Private implementation complete | Target capabilities, TargetIR, executable artifacts, runtime adapter, provider-neutral conformance and opt-in shadow comparison | Public/default integration, real provider submission and legacy retirement |
-| Phase 4 | Not started | ProgramIR and unified dynamic-circuit direction exists in architecture | Implementation |
-| Phase 5 | Not started | Timing/QIR/advanced lowering candidates exist in architecture | Implementation and production claims |
+## Circuit compilation and execution
 
-## Phase 1 verification basis
+| Responsibility | Current implementation |
+| --- | --- |
+| Public circuit interchange | `flagquantum/core/ir.py` |
+| Root compile dispatch | `flagquantum/_api.py` |
+| Optimization and circuit compilation | `flagquantum/compiler/pipeline.py` |
+| Native-gate and topology legalization | `compiler/native_gate_legalization.py`, `compiler/topology_legalization.py` |
+| Target requirements and scheduling | `compiler/target_legalization.py`, `compiler/schedule_legalization.py` |
+| Target emission and independent conformance | `compiler/target_emission.py`, `compiler/target_conformance.py` |
+| Plan construction and execution | `runtime/planner/`, `runtime/execution.py`, `runtime/plan_execution.py` |
 
-Phase 1 implementation is verified against the current code, semantic differential
-tests, scenario tests, and active performance budgets. Historical batch approvals,
-reviews, remediation records, and exit records have been retired and are no longer
-code contracts or test dependencies.
+Paths without the package prefix are relative to `flagquantum/`.
+`fq.compile` exists and dispatches to the native circuit compiler or a requested
+compiler extension. Native target emission produces audited text; it does not
+imply a new public executable-artifact API or hardware certification.
+`fq.run(program)` composes planning and execution. `fq.run(plan)` executes the
+accepted plan without compiling or planning it again.
 
-## Phase 2 accepted capability
+## Private structured programs
 
-The accepted profile is `private_static_compiler_v1` under `flagquantum._compiler`:
+`flagquantum/compiler/_hybrid/` implements capture, typed SSA values, verification,
+normalization, specialization, and static/dynamic lowering for bounded
+quantum-classical profiles. It is absent from the root public exports and does
+not replace public `CircuitIR`. Read its
+[implementation details](../../flagquantum/compiler/_hybrid/IMPLEMENTATION.md)
+for supported constructs, parameter flow, and lowering restrictions.
 
-```text
-CircuitIR import/seal
-  -> static canonicalization
-  -> RX/RY/RZ/CX decomposition
-  -> directed placement/routing
-  -> post-routing canonicalization
-  -> deterministic compilation identity/cache
-  -> restricted OpenQASM 2 / OpenQASM 3 / QCIS emission
-```
+The existence of this private path must not be summarized as either “ProgramIR
+not started” or completion of every proposed multi-level IR phase. Timing,
+advanced lowering, and provider behavior require their own implementation and
+evidence; a design document alone establishes none of them.
 
-It has structural, state, expectation, gradient, order, parser, text-hash,
-fail-closed and performance evidence. It is not a public or default compiler.
+## Verification and further reading
 
-Primary verification surfaces:
+- `tests/integration/test_cpu_vertical_slice.py`: public local plan/run behavior.
+- `tests/hybrid_compiler/`: structured-program semantics, lowering, gradients,
+  target legalization, emission, and conformance scenarios.
+- [Compiler ownership](../../flagquantum/compiler/IMPLEMENTATION.md).
+- [Runtime ownership](../../flagquantum/runtime/IMPLEMENTATION.md).
+- [Capability catalog](../generated/CAPABILITIES.md) and
+  [known limitations](../reference/KNOWN_LIMITATIONS.md).
+- [Historical multi-level IR design](../architecture/MULTI_LEVEL_IR_ARCHITECTURE.md)
+  and [Phase 0–1 plan](../architecture/MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md).
 
-- `docs/development/IR_PHASE_2_BATCH_F_COMPLETION_REVIEW.md`
-- `tests/fixtures/internal_ir/phase2_batch_f_offline_corpus.json`
-- `tests/fixtures/internal_ir/phase2_batch_f_performance_baseline.json`
-- `tests/fixtures/internal_ir/phase2_batch_f_performance_budget.json`
-- `tests/internal_ir/test_phase2_offline_deployment.py`
-- `tests/internal_ir/test_phase2_batch_f_performance_budget.py`
-
-## Phase 3 verification surfaces
-
-- `tests/internal_ir/test_phase3_target_capabilities.py`
-- `tests/internal_ir/test_phase3_target_legalization.py`
-- `tests/internal_ir/test_phase3_executable_artifact.py`
-- `tests/internal_ir/test_phase3_runtime_adapter.py`
-- `tests/internal_ir/test_phase3_provider_conformance.py`
-- `tests/internal_ir/test_phase3_shadow_harness.py`
-- `tests/fixtures/internal_ir/phase3_deployment_compatibility.json`
-
-## Deployment bridge verification surfaces
-
-The private deployment bridge remains implemented and tested as six behavior
-steps: compatibility inspection, offline compile dry-run, canary readiness,
-offline failure rehearsal, sandbox observation, and scripted sandbox connector.
-Its source of truth is the implementation plus the scenario tests in
-`tests/internal_ir/test_deployment_bridge_stage1.py` through
-`test_deployment_bridge_stage6.py`. Performance baselines and active private
-regression budgets live under `tests/fixtures/internal_ir/`. Historical entry,
-review, authorization, and completion packets are not runtime contracts and
-have been retired. A real provider activation step has not been implemented.
-
-## Next controlled step
-
-Connect the private compiler, executable artifact, runtime adapter, and local CPU
-execution path as one minimal vertical slice. Keep public/default integration, real
-provider submission, credentials, and legacy retirement outside that slice.
+Update this map when implementation ownership or execution paths change. Keep
+historical approvals in their original context rather than treating them as
+current code contracts.

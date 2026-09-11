@@ -1,35 +1,36 @@
 # Architecture Dependency Direction
 
-The enforced dependency direction is:
+The implementation separates program transformation, execution orchestration,
+and numerical computation:
 
 ```mermaid
 flowchart TD
-    API[Stable API] --> IR[IR and parameters]
-    API --> Planner[Planner]
-    API --> Exec[Executor protocols]
-    API --> Deploy[Deployment]
-    Planner --> Compiler[Compiler]
-    Planner --> IR
-    Compiler --> IR
-    Torch[PyTorch runtimes] --> Exec
-    Torch --> IR
-    JAX[Optional JAX kernels] --> Exec
-    JAX --> IR
-    Measure[Measurements] --> IR
-    Deploy --> IR
-    Qiskit[Optional Qiskit control plane] --> Interop[Interop adapters]
-    Interop --> IR
-    Collector[Backend collectors] --> Evidence[Evidence schemas]
-    Audit[Audit and release policy] --> Evidence
+    API[Public facade] --> Compiler
+    API --> Runtime
+    API --> Workflows[Domain workflows]
+    Compiler --> Core
+    Runtime --> Core
+    Runtime --> Simulation
+    Runtime --> Compute
+    Runtime --> Remote
+    Simulation --> Core
+    Ecosystem[External object adapters] --> Core
+    Collectors --> Records[Execution records]
+    Audit[Audit and release policy] --> Records
 ```
+
+This is an ownership overview, not an exhaustive import graph. The exact forbidden
+imports and bounded exceptions are in `architecture.toml` and checked by
+`tools/check_architecture.py`.
 
 Reverse edges into IR/core are forbidden. Executors emit backend-neutral
 records and cannot import audit/release classification. Importing the stable
 root API is lazy and does not load runtime, provider, drawing, distributed, or
 optional-kernel modules.
 
-`architecture.toml` owns module-size budgets and compatibility exceptions.
-Every exception names an owner and removal version. Run
+`architecture.toml` owns module-size budgets, import allowlists, and bounded
+accelerator-call exceptions. Compatibility exceptions, when introduced, must
+name an owner and removal version. Run
 `python tools/check_architecture.py` locally and in CI.
 
 ## Enforced Package Surfaces
@@ -42,19 +43,21 @@ Every exception names an owner and removal version. Run
 | Compiler | `flagquantum.compiler` |
 | Runtime execution planning | `flagquantum.runtime.planner` |
 | Runtime API and contracts | `flagquantum.runtime` |
-| Executor protocols | `flagquantum.runtime.contracts` |
+| Distributed executor protocols | `flagquantum.runtime.distributed.protocols` |
 | Backend boundaries | `flagquantum.runtime.executors` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
-| Optional kernels | backend adapters behind `flagquantum.runtime.executors` |
+| Numerical kernels | `flagquantum.simulation`, including optional `simulation.jax` |
+| Directly controlled resources | `flagquantum.compute` |
 | Measurement contracts | `flagquantum.core.ir`, `flagquantum.runtime.measurements` |
-| Deployment/providers | `flagquantum.deployment` |
+| Deployment packages | `flagquantum.deployment` |
+| External compute and QPU providers | `flagquantum.remote.compute`, `flagquantum.remote.qpu` |
 | External framework adapter contract | `flagquantum.ecosystem` |
 | External framework conversion | `flagquantum.ecosystem.<framework>` |
 | Evidence and audit policy | `flagquantum.runtime.audit` |
 
 `flagquantum.runtime` is the sole runtime implementation namespace. New
 application, plugin, and backend code must use its explicit contracts,
-backend, distributed, and audit subpackages.
+executors, distributed, and audit subpackages.
 
 The circuit implementation lives at `flagquantum.circuit`; `flagquantum.core`
 contains backend-neutral IR, operator schemas, parameters, configuration, and

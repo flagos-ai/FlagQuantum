@@ -10,9 +10,10 @@ and gate width, not global state size, and requesting a reconstructed full state
 fails explicitly.
 
 Gloo execution is development semantic evidence. NCCL execution uses the same
-numerical contract but is accelerator semantic evidence. Both remain
-forward-only and non-release until sharded backward and optimizer ownership are
-implemented.
+numerical contract but is accelerator semantic evidence. Forward, reverse mode,
+and owner-sharded optimizer lifecycles are implemented. Their presence does not
+by itself establish production scalability: each claim still requires the
+applicable workload, transport, memory, and release-gate evidence.
 
 ## PyTorch-Native Sharded Statevector Reverse Mode
 
@@ -22,25 +23,6 @@ checkpoints, calculates parameter VJPs at each executed gate, reduces shared
 parameter contributions across participating ranks, and propagates state
 adjoints explicitly with the same bounded communication kernel using `U†`.
 Neither checkpoints nor adjoints materialize the global state.
-
-The distributed MPS reverse policy additionally supports an opt-in
-`save_two_site_factorizations=True` mode. It retains each owner-local QR/SVD
-split graph and pair matrix until that bond's reverse visit. Backward then
-pulls the output adjoints through the saved factorization and rematerializes
-only the cheaper two-site gate contraction. These tensors count against
-`max_saved_bytes`; insufficient budget fails before execution rather than
-silently reverting to a different checkpoint policy. Saved factorization
-graphs are released immediately after use, so multi-step training does not
-accumulate graph generations.
-
-For truncated two-site splits, the singular-value boundary gap used by the
-fail-closed degeneracy check is taken directly from the singular values of the
-primary QR/SVD split. The runtime does not reconstruct the pair and launch a
-second `svdvals` operation solely for diagnostics.
-
-Tolerance is `3e-5` for current complex64 multi-rank correctness suites and
-`1e-5` for complex128 gradcheck. Gloo and NCCL share the numerical contract;
-optimizer ownership remains blocked for subsequent work.
 
 ## Sharded Statevector Training Service
 
@@ -62,6 +44,31 @@ transport internals later, but must preserve this entrypoint, parameter identity
 checkpoint contract, and evidence semantics rather than stacking a second
 optimizer lifecycle around it.
 
+## Sharded MPS Training
+
+`flagquantum.experimental.distributed.train_distributed_mps(...)` composes
+rank-owned forward and reverse execution with optimizer and checkpoint ownership.
+The implementation lives in `runtime/executors/mps`; numerical kernels live in
+`simulation/mps`. Training and resume scenarios are covered in
+`tests/distributed/test_mps_training_runtime.py`.
+
+The distributed MPS reverse policy additionally supports an opt-in
+`save_two_site_factorizations=True` mode. It retains each owner-local QR/SVD
+split graph and pair matrix until that bond's reverse visit. Backward then
+pulls the output adjoints through the saved factorization and rematerializes
+only the cheaper two-site gate contraction. These tensors count against
+`max_saved_bytes`; insufficient budget fails before execution rather than
+silently reverting to a different checkpoint policy. Saved factorization
+graphs are released immediately after use, so multi-step training does not
+accumulate graph generations.
+
+For truncated two-site splits, the singular-value boundary gap used by the
+fail-closed degeneracy check is taken directly from the singular values of the
+primary QR/SVD split. The runtime does not reconstruct the pair and launch a
+second `svdvals` operation solely for diagnostics.
+
+## Executor Boundaries and Evidence
+
 Backend-neutral execution requests and records are defined in
 `flagquantum.runtime.distributed.protocols`. PyTorch is the mandatory baseline executor; JAX is
 an optional adapter split into independently importable statevector, MPS,
@@ -74,13 +81,12 @@ Execution and classification are separate:
 2. backend-specific collectors attach raw execution measurements;
 3. audit/release policy classifies the record after execution.
 
-JAX implementation modules have a 500-line maintainability ceiling. Statevector,
-MPS, tensor-network, transport, planning, and common definitions live in
-semantic modules such as `statevector/kernels`, `mps/pullbacks`, and
-`tensor_network/contraction`; the bounded `jax_distributed.py` module is
-only a compatibility re-export and monkeypatch bridge. Its compatibility
-surface has a removal date of 2027-01-01. No removal occurs without a separately
-reviewed API migration.
+JAX orchestration lives in `flagquantum.runtime.executors.jax`; numerical
+statevector, MPS, and tensor-network operations live in
+`flagquantum.simulation.jax`. Shared distributed protocols remain independent
+of those optional numerical implementations. Module budgets and dependency
+restrictions are enforced by `architecture.toml` and
+`tools/check_architecture.py`.
 
 Importing the PyTorch-native executor and backend-neutral protocols must not
 import or initialize JAX/XLA. JAX facade modules resolve extracted definitions

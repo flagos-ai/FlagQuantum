@@ -1,6 +1,10 @@
 # Multi-Level IR and Quantum Compilation Infrastructure
 
-Status: architecture draft for implementation after Stable Core API convergence.
+Status: historical design baseline and long-term architecture direction.
+For current source paths and implemented compiler behavior, read the
+[implementation map](../development/IR_IMPLEMENTATION_STATUS.md). Statements
+such as `fq.compile` being absent describe the recorded baseline, not the
+current public API. Proposed interfaces below are not implementation contracts.
 
 Scope: compilation, Runtime, interoperability, and QPU deployment.
 
