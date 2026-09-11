@@ -96,9 +96,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/flagquantum/flagquantum"
-Repository = "https://github.com/flagquantum/flagquantum"
-Issues = "https://github.com/flagquantum/flagquantum/issues"
+Homepage = "https://github.com/flagos-ai/FlagQuantum"
+Repository = "https://github.com/flagos-ai/FlagQuantum"
+Issues = "https://github.com/flagos-ai/FlagQuantum/issues"
 
 [project.scripts]
 flagquantum-benchmark = "flagquantum.benchmarking.__main__:main"
