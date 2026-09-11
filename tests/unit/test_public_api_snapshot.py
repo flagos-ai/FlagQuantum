@@ -48,6 +48,11 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     ):
         authorized_additions.update(extensions["root_additions"])
     authorized_additions.update(observable_outputs["root_additions"])
+    jobs_contract = json.loads(
+        (ROOT / "contracts/remote-jobs-v1-candidate.json").read_text()
+    )
+    if jobs_contract["implementation_authorized"] is True:
+        authorized_additions.update(jobs_contract["root_additions"])
 
     assert (
         set(manifest["stable_exports"])

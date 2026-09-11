@@ -1,0 +1,18 @@
+{
+  "scope": "One two-qubit X(0) circuit, Quafu Baihua hardware, service compilation; no Jiuding live test or performance certification",
+  "date": "2026-09-11",
+  "branch": "feat/remote-job-lifecycle",
+  "task_id": "2609112037201263021",
+  "submitted_shots": 1024,
+  "counts": {
+    "10": 938,
+    "00": 71,
+    "11": 15
+  },
+  "submit_elapsed_seconds": 0.08,
+  "compiler": "quarkcircuit",
+  "restored_in_separate_python_process": true,
+  "initial_status": "unknown (provider task not found immediately after acknowledgement)",
+  "subsequent_raw_status": "Transpiled",
+  "outcome": "completed"
+}

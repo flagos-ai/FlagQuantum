@@ -191,3 +191,5 @@ conversion is deliberately unsupported and fails closed rather than applying
 an incorrect one-qubit approximation. Current Baihua payloads may report zero
 readout fidelities; in that case supply independently measured assignment
 matrices, with task IDs and calibration time retained alongside the result.
+
+For nonblocking Notebook submission and restart recovery, see [remote jobs](REMOTE_JOBS.md).

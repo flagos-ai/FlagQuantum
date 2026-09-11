@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-11",
+  "provider": "jiuding",
+  "mode": "native_http_job",
+  "job_id": "8996b8db-9bd6-44f6-bf79-e88d5cd802fd",
+  "circuit": "2 qubits, X(0)",
+  "shots": 1024,
+  "counts": [
+    {
+      "10": 1024
+    }
+  ],
+  "runtime": {
+    "execution_path": "jiuding_batch_program",
+    "device": "cuda:0",
+    "elapsed_seconds": 0.495859419927001,
+    "result_transfer": "device_to_host",
+    "counts_aggregation": "host"
+  },
+  "provenance": {
+    "requested_target": "jiuding:gpu",
+    "selected_target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "cpu_fallback_used": false,
+    "statevector_transferred": false
+  },
+  "separate_process_restore": true,
+  "ssh_and_workspace_calls_forbidden": true,
+  "restoration_resubmission_forbidden": true,
+  "scope": "Single-GPU small-circuit correctness; not a performance or scalability validation."
+}

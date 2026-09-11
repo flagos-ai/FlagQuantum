@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "implementation_authorized": true,
+  "approval": {
+    "owner": "Repository API owner via conversation",
+    "date": "2026-09-11",
+    "proposal": "docs/api-changes/FQ-REMOTE-JOBS.md"
+  },
+  "root_additions": [
+    "submit",
+    "restore_job"
+  ],
+  "public_signatures": {
+    "submit": "(program: 'Circuit | CircuitIR', *, target: 'str', outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, shots: 'int | None' = None, compiler: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, name: 'str | None' = None, image: 'str | None' = None, workspace: 'str | None' = None, project: 'str | None' = None, queue: 'str | None' = None) -> 'RemoteJob'",
+    "restore_job": "(path: 'str | Path') -> 'RemoteJob'",
+    "RemoteJob.status": "(self) -> 'JobStatus'",
+    "RemoteJob.result": "(self) -> 'ExecutionResult'",
+    "RemoteJob.wait": "(self, timeout: 'float' = 300.0, poll_interval: 'float' = 3.0) -> 'ExecutionResult'",
+    "RemoteJob.cancel": "(self) -> 'None'",
+    "RemoteJob.save": "(self, path: 'str | Path') -> 'None'"
+  },
+  "statuses": [
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "unknown"
+  ],
+  "receipt_schema": "flagquantum.remote-job.v1"
+}

@@ -15,10 +15,10 @@
       "ExecutionOptions",
       "ExecutionPlan",
       "ExecutionResult",
+      "I",
       "IRSerializationError",
       "IRValidationError",
       "IR_VERSION",
-      "I",
       "Instruction",
       "MeasurementResult",
       "Module",
@@ -38,8 +38,10 @@
       "experimental",
       "plan",
       "probabilities",
+      "restore_job",
       "run",
       "samples",
+      "submit",
       "train"
     ],
     "planned_additions": []
@@ -213,7 +215,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 32,
+    "root_export_budget": 33,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,

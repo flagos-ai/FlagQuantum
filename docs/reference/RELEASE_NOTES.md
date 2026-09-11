@@ -17,11 +17,17 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.submit()` and `fq.restore_job()` for detached Quafu counts and
+  Jiuding managed program jobs. Jobs support one-shot status/result queries,
+  explicit waits, cancellation requests, and credential-free JSON receipts.
+  Existing synchronous `fq.run()` behavior is unchanged. See
+  [remote jobs](../guides/REMOTE_JOBS.md).
+
 - Added direct Quafu execution through `fq.run(..., target="quafu:Baihua", shots=1024)`
   without a local compiler dependency. The service uses QuarkCircuit compilation;
   explicit `compiler="qsteed"` preserves local precompilation. Counts and grouped
   Pauli expectations share the existing result contract. This path has mocked
-  transport coverage; live service compilation is not yet validated.
+  transport coverage and a limited [Baihua hardware check](../development/evidence/remote_jobs_quafu_20260911.json).
 
 - Renamed the VQE and ADAPT-VQE `optimizer_cls` keyword to
   `optimizer_factory` and published the `flagquantum.algorithms.OptimizerFactory`

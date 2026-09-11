@@ -32,6 +32,8 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.experimental` | Stable | executable contract |
 | `fq.plan` | Stable | executable contract |
 | `fq.probabilities` | Stable | executable contract |
+| `fq.restore_job` | Stable | executable contract |
 | `fq.run` | Stable | executable contract |
 | `fq.samples` | Stable | executable contract |
+| `fq.submit` | Stable | executable contract |
 | `fq.train` | Stable | executable contract |

@@ -15,6 +15,7 @@ from ...deployment import (
 from ...observables import OutputRequest
 from ...observables import counts as request_counts
 from ...runtime.result import ExecutionResult, MeasurementResult
+from .contracts import DeploymentResult
 from .quafu import QuafuProvider, _service_options
 
 if TYPE_CHECKING:
@@ -255,26 +256,49 @@ def _execute_counts(
         native = deploy_circuit(
             compiled, provider, shots=shots, name=name.strip(), **package_options
         )
+    return counts_result(
+        native,
+        n_wires=compiled.n_wires,
+        output_name=output.name,
+        compiler=compiler,
+        target=target,
+        target_qubits=tuple(
+            (
+                compiled.metadata.get("execution_target", {})
+                if compiler is not None
+                else package_options["metadata"]["provider_options"]
+            ).get("target_qubits", ())
+        ),
+        name=name,
+    )
+
+
+def counts_result(
+    native: DeploymentResult,
+    *,
+    n_wires: int,
+    output_name: str | None,
+    compiler: str | None,
+    target: str,
+    target_qubits: Sequence[int],
+    name: str | None,
+) -> ExecutionResult:
+    """Normalize one provider result for synchronous and detached jobs."""
     counts: dict[str | int, int] = {
         str(key): int(value) for key, value in native.counts.items()
     }
-    execution_target = (
-        compiled.metadata.get("execution_target", {})
-        if compiler is not None
-        else package_options["metadata"]["provider_options"]
-    )
     result = ExecutionResult(
         measurements=(
             MeasurementResult(
                 kind="counts",
-                wires=tuple(range(compiled.n_wires)),
+                wires=tuple(range(n_wires)),
                 value=[counts],
                 shots=native.shots,
                 metadata={
                     "fq_output_index": 0,
                     "fq_output_kind": "counts",
-                    "fq_output_name": output.name,
-                    **({"name": output.name} if output.name is not None else {}),
+                    "fq_output_name": output_name,
+                    **({"name": output_name} if output_name is not None else {}),
                     "provider": native.handle.provider,
                     "backend": native.handle.backend_name,
                     "task_id": native.handle.task_id,
@@ -287,7 +311,7 @@ def _execute_counts(
             "task_id": native.handle.task_id,
             "compiler": compiler,
             "target": target,
-            "target_qubits": tuple(execution_target.get("target_qubits", ())),
+            "target_qubits": tuple(target_qubits),
             **(
                 {
                     "compilation_location": "service",
