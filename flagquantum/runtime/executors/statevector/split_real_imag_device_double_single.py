@@ -17,7 +17,7 @@ from ....core.numerics import (
     PrecisionPlanContract,
     RefinementStrategy,
 )
-from ....core.parameters import Parameter
+from ....core.parameters import _ParameterKey
 from ....simulation.numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
@@ -401,7 +401,7 @@ def execute_split_real_imag_device_double_single_expectation(
     circuit_or_ir: Any,
     observable: Any | None = None,
     *,
-    parameter_bindings: Mapping[str | Parameter, Any] | None = None,
+    parameter_bindings: Mapping[_ParameterKey, Any] | None = None,
     device: str | torch.device = "cpu",
     precision_plan: PrecisionPlanContract | Mapping[str, Any] | None = None,
     accuracy_requirement: AccuracyRequirementContract | Mapping[str, Any] | None = None,
@@ -436,7 +436,7 @@ def parameter_shift_split_real_imag_device_double_single_gradient(
     circuit_or_ir: Any,
     observable: Any | None = None,
     *,
-    parameter_bindings: Mapping[str | Parameter, Any],
+    parameter_bindings: Mapping[_ParameterKey, Any],
     device: str | torch.device = "cpu",
     precision_plan: PrecisionPlanContract | Mapping[str, Any] | None = None,
     accuracy_requirement: AccuracyRequirementContract | Mapping[str, Any] | None = None,

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, TypeVar, cast
 
 import torch
+
+_ParameterKey = TypeVar("_ParameterKey", bound="str | Parameter")
 
 
 @dataclass(frozen=True)
@@ -19,11 +21,12 @@ class Parameter:
             raise ValueError("Parameter name cannot be empty.")
         object.__setattr__(self, "name", str(self.name))
 
-    def bind(self, values: Mapping[str | "Parameter", Any]) -> Any:
+    def bind(self, values: Mapping[_ParameterKey, Any]) -> Any:
+        # Membership establishes that this key can be looked up in the mapping.
         if self in values:
-            return values[self]
+            return values[cast(_ParameterKey, self)]
         if self.name in values:
-            return values[self.name]
+            return values[cast(_ParameterKey, self.name)]
         raise KeyError(f"Missing value for parameter {self.name!r}.")
 
     def __add__(self, other: Any) -> "ParameterExpression":
@@ -55,7 +58,16 @@ class ParameterExpression:
     op: str
     args: tuple[Any, ...]
 
-    def bind(self, values: Mapping[str | Parameter, Any]) -> Any:
+    def bind(self, values: Mapping[_ParameterKey, Any]) -> Any:
+        """Resolve a valid expression, rejecting malformed operands with ValueError."""
+        if self.op not in ("add", "sub", "mul", "neg"):
+            raise ValueError(f"Unsupported parameter expression op {self.op!r}.")
+        expected_operands = 1 if self.op == "neg" else 2
+        if len(self.args) != expected_operands:
+            raise ValueError(
+                f"Parameter expression {self.op!r} requires {expected_operands} "
+                f"operands; got {len(self.args)}."
+            )
         bound = tuple(bind_parameter_value(arg, values) for arg in self.args)
         if self.op == "add":
             return bound[0] + bound[1]
@@ -63,9 +75,7 @@ class ParameterExpression:
             return bound[0] - bound[1]
         if self.op == "mul":
             return bound[0] * bound[1]
-        if self.op == "neg":
-            return -bound[0]
-        raise ValueError(f"Unsupported parameter expression op {self.op!r}.")
+        return -bound[0]
 
     def __add__(self, other: Any) -> "ParameterExpression":
         return ParameterExpression("add", (self, other))
@@ -101,7 +111,7 @@ def is_parameterized_value(value: Any) -> bool:
     return False
 
 
-def bind_parameter_value(value: Any, values: Mapping[str | Parameter, Any]) -> Any:
+def bind_parameter_value(value: Any, values: Mapping[_ParameterKey, Any]) -> Any:
     """Bind parameters recursively inside a scalar/list/mapping value."""
 
     if isinstance(value, Parameter):

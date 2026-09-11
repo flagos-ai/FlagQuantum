@@ -14,6 +14,7 @@ from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import (
     Parameter,
     ParameterExpression,
+    _ParameterKey,
     bind_parameter_value,
     parameter_names_in_value,
     value_to_tensor,
@@ -407,7 +408,7 @@ def execute_split_real_imag_statevector(
 
 
 def _canonical_parameter_bindings(
-    parameter_bindings: Mapping[str | Parameter, Any],
+    parameter_bindings: Mapping[_ParameterKey, Any],
 ) -> dict[str, Any]:
     normalized: dict[str, Any] = {}
     for raw_name, value in parameter_bindings.items():
