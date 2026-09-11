@@ -331,8 +331,6 @@ class PhysicalCircuitPlan:
                 )
             if self.final_logical_to_physical != topology.final_logical_to_physical:
                 raise PhysicalPlanError("physical plan final layout is inconsistent")
-            layout = list(self.initial_logical_to_physical)
-            occupancy = list(self.initial_physical_to_logical)
             if allocated:
                 if not isinstance(recorded_coupling, DirectedCouplingMap):
                     raise PhysicalPlanError(
@@ -385,48 +383,10 @@ class PhysicalCircuitPlan:
                     raise PhysicalPlanError(
                         "physical plan logical result projection is inconsistent"
                     )
-            for transition in self.mapping_transitions:
-                if transition.layout_before != tuple(layout):
-                    raise PhysicalPlanError(
-                        "physical plan mapping transitions are not continuous"
-                    )
-                if allocated:
-                    if transition.physical_to_logical_before != tuple(occupancy):
-                        raise PhysicalPlanError(
-                            "physical plan occupancy transitions are not continuous"
-                        )
-                    _apply_allocated_physical_swap(
-                        layout,
-                        occupancy,
-                        transition.physical_wires,
-                    )
-                    if transition.physical_to_logical_after != tuple(occupancy):
-                        raise PhysicalPlanError(
-                            "physical plan occupancy transition result is inconsistent"
-                        )
-                else:
-                    if (
-                        transition.physical_to_logical_before
-                        or transition.physical_to_logical_after
-                    ):
-                        raise PhysicalPlanError(
-                            "version-1/2 mapping transition has occupancy evidence"
-                        )
-                    _apply_physical_swap(layout, transition.physical_wires)
-                if transition.layout_after != tuple(layout):
-                    raise PhysicalPlanError(
-                        "physical plan mapping transition result is inconsistent"
-                    )
-            if tuple(layout) != self.final_logical_to_physical:
-                raise PhysicalPlanError(
-                    "physical plan mapping transitions do not reach final layout"
-                )
-            if allocated and tuple(occupancy) != self.final_physical_to_logical:
-                raise PhysicalPlanError(
-                    "physical plan occupancy transitions do not reach final occupancy"
-                )
-            if not allocated and self.final_logical_to_physical != identity_layout:
-                raise PhysicalPlanError("physical plan final layout must be identity")
+            self._validate_mapping_transitions(
+                allocated=allocated,
+                identity_layout=identity_layout,
+            )
         if not allocated and (
             self.initial_physical_to_logical
             or self.pre_restore_physical_to_logical
@@ -470,6 +430,57 @@ class PhysicalCircuitPlan:
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_mapping_transitions(
+        self,
+        *,
+        allocated: bool,
+        identity_layout: tuple[int, ...],
+    ) -> None:
+        layout = list(self.initial_logical_to_physical)
+        occupancy = list(self.initial_physical_to_logical)
+        for transition in self.mapping_transitions:
+            if transition.layout_before != tuple(layout):
+                raise PhysicalPlanError(
+                    "physical plan mapping transitions are not continuous"
+                )
+            if allocated:
+                if transition.physical_to_logical_before != tuple(occupancy):
+                    raise PhysicalPlanError(
+                        "physical plan occupancy transitions are not continuous"
+                    )
+                _apply_allocated_physical_swap(
+                    layout,
+                    occupancy,
+                    transition.physical_wires,
+                )
+                if transition.physical_to_logical_after != tuple(occupancy):
+                    raise PhysicalPlanError(
+                        "physical plan occupancy transition result is inconsistent"
+                    )
+            else:
+                if (
+                    transition.physical_to_logical_before
+                    or transition.physical_to_logical_after
+                ):
+                    raise PhysicalPlanError(
+                        "version-1/2 mapping transition has occupancy evidence"
+                    )
+                _apply_physical_swap(layout, transition.physical_wires)
+            if transition.layout_after != tuple(layout):
+                raise PhysicalPlanError(
+                    "physical plan mapping transition result is inconsistent"
+                )
+        if tuple(layout) != self.final_logical_to_physical:
+            raise PhysicalPlanError(
+                "physical plan mapping transitions do not reach final layout"
+            )
+        if allocated and tuple(occupancy) != self.final_physical_to_logical:
+            raise PhysicalPlanError(
+                "physical plan occupancy transitions do not reach final occupancy"
+            )
+        if not allocated and self.final_logical_to_physical != identity_layout:
+            raise PhysicalPlanError("physical plan final layout must be identity")
 
     def _validate_instruction_records(
         self,
