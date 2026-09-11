@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import ctypes
 import json
 import socket
 import struct
@@ -83,7 +84,7 @@ def write_message(stream: Any, value: dict[str, Any]) -> None:
 def _encode_tensor(value: Any) -> dict[str, Any]:
     import torch
 
-    flat = value.detach().contiguous().reshape(-1).cpu()
+    flat = value.detach().resolve_conj().resolve_neg().contiguous().reshape(-1).cpu()
     if flat.dtype not in (
         torch.float32,
         torch.float64,
@@ -100,7 +101,11 @@ def _encode_tensor(value: Any) -> dict[str, Any]:
     return {
         "dtype": str(flat.dtype).removeprefix("torch."),
         "shape": list(value.shape),
-        "data": base64.b64encode(storage.numpy().tobytes()).decode("ascii"),
+        "data": base64.b64encode(
+            ctypes.string_at(
+                storage.data_ptr(), storage.numel() * storage.element_size()
+            )
+        ).decode("ascii"),
     }
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import json
 import math
@@ -74,7 +75,7 @@ def _initial_state_contract(
         if cached is not None:
             return cached
         digest = hashlib.sha256()
-        value = tensor.detach().contiguous()
+        value = tensor.detach().resolve_conj().resolve_neg().contiguous()
         # PyTorch 2.13 rejects a direct complex-to-byte view for some otherwise
         # contiguous MPS layouts because the complex element stride is not a
         # byte stride.  Expose real/imag channels first so checkpoint identity
@@ -84,8 +85,8 @@ def _initial_state_contract(
         raw = value.contiguous().view(torch.uint8).reshape(-1)
         chunk_bytes = 8 * 1024 * 1024
         for start in range(0, raw.numel(), chunk_bytes):
-            chunk = raw[start : start + chunk_bytes].cpu().numpy()
-            digest.update(chunk.tobytes())
+            chunk = raw[start : start + chunk_bytes].cpu()
+            digest.update(ctypes.string_at(chunk.data_ptr(), chunk.numel()))
         result = digest.hexdigest()
         digest_cache[cache_key] = result
         return result

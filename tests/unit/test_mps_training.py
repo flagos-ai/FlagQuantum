@@ -1,5 +1,6 @@
 """Fail-closed public contracts for sharded MPS training."""
 
+import ctypes
 import hashlib
 from pathlib import Path
 
@@ -42,14 +43,14 @@ def test_initial_state_contract_hashes_reused_tensor_once(monkeypatch):
     initial = {wire: tensor for wire in range(10)}
     ownership = (tuple(range(10)),)
     calls = 0
-    original_numpy = torch.Tensor.numpy
+    original_bytes = ctypes.string_at
 
-    def counted_numpy(value):
+    def counted_bytes(pointer, size):
         nonlocal calls
         calls += 1
-        return original_numpy(value)
+        return original_bytes(pointer, size)
 
-    monkeypatch.setattr(torch.Tensor, "numpy", counted_numpy)
+    monkeypatch.setattr(ctypes, "string_at", counted_bytes)
     monkeypatch.setattr(torch.distributed, "get_rank", lambda: 0)
     monkeypatch.setattr(
         "flagquantum.runtime.executors.mps.training_engine.all_gather_json",

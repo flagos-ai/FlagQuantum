@@ -2,6 +2,7 @@
 
 import base64
 import io
+import struct
 from dataclasses import replace
 
 import pytest
@@ -286,12 +287,7 @@ def test_run_statevector_returns_normal_execution_result(monkeypatch):
         "acceleratorModel": "",
     }
     monkeypatch.setattr(client, "start_executor", lambda **_: {"ok": True})
-    data = (
-        torch.tensor([1, 0], dtype=torch.complex64)
-        .view(torch.float32)
-        .numpy()
-        .tobytes()
-    )
+    data = struct.pack("=4f", 1, 0, 0, 0)
     monkeypatch.setattr(
         client,
         "_executor_request",
@@ -344,7 +340,7 @@ def test_default_workspace_client_is_reused(monkeypatch):
 def test_client_reconstructs_remote_measurement_results(monkeypatch):
     client = JiudingClient(workspace="test")
     value = torch.tensor([[0.25, 0.75]], dtype=torch.float32)
-    encoded = base64.b64encode(value.numpy().tobytes()).decode()
+    encoded = base64.b64encode(struct.pack("=2f", 0.25, 0.75)).decode()
     monkeypatch.setattr(
         client,
         "_execute",
@@ -390,7 +386,7 @@ def test_client_reconstructs_remote_measurement_results(monkeypatch):
 def test_client_reconstructs_remote_samples_and_counts(monkeypatch):
     client = JiudingClient(workspace="test")
     samples = torch.tensor([[[0, 0], [1, 1]]], dtype=torch.int64)
-    encoded = base64.b64encode(samples.numpy().tobytes()).decode()
+    encoded = base64.b64encode(struct.pack("=4q", 0, 0, 1, 1)).decode()
     monkeypatch.setattr(
         client,
         "_execute",
@@ -483,7 +479,7 @@ def test_client_runs_measurement_batch_with_one_transport_request(monkeypatch):
                                 "dtype": "float32",
                                 "shape": [1],
                                 "data": base64.b64encode(
-                                    value.numpy().tobytes()
+                                    struct.pack("=f", value.item())
                                 ).decode(),
                             },
                             "shots": None,
@@ -573,3 +569,18 @@ def test_workspace_restart_discards_cached_transport(monkeypatch):
     assert client._executor_health == {}
     process.terminate.assert_called_once_with()
     process.wait.assert_called_once_with(timeout=1)
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_tensor_encoding_preserves_offset_noncontiguous_conjugated_values(
+    dtype: torch.dtype,
+) -> None:
+    storage = torch.tensor([9 + 8j, 1 + 2j, 3 + 4j, 5 + 6j], dtype=dtype)
+    for value in (storage[1:3], storage[1::2], storage[1:3].conj()):
+        payload = executor._encode_tensor(value)
+        decoded = decode_tensor(payload)
+        torch.testing.assert_close(decoded, value, rtol=0, atol=0)
+        components = [part for z in value.tolist() for part in (z.real, z.imag)]
+        format_code = "f" if dtype == torch.complex64 else "d"
+        expected = struct.pack(f"={len(components)}{format_code}", *components)
+        assert base64.b64decode(payload["data"]) == expected
