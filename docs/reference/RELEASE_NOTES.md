@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added direct Quafu execution through `fq.run(..., target="quafu:Baihua", shots=1024)`
+  without a local compiler dependency. The service uses QuarkCircuit compilation;
+  explicit `compiler="qsteed"` preserves local precompilation. Counts and grouped
+  Pauli expectations share the existing result contract. This path has mocked
+  transport coverage; live service compilation is not yet validated.
+
 - Renamed the VQE and ADAPT-VQE `optimizer_cls` keyword to
   `optimizer_factory` and published the `flagquantum.algorithms.OptimizerFactory`
   protocol. The old keyword is intentionally unsupported; Adam remains the

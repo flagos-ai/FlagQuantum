@@ -1,7 +1,6 @@
-"""Compile and run a Bell circuit on Quafu SQC.
+"""Submit a Bell circuit for service compilation and execution on Quafu SQC.
 
-Set ``QUAFU_API_TOKEN`` and install ``flagquantum-compiler-qsteed`` before
-running this example. The selected chip name must exist in the current Quafu
+Set ``QUAFU_API_TOKEN`` before running this example. The selected chip name must exist in the current Quafu
 account.
 """
 
@@ -19,7 +18,6 @@ def main() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     result = fq.run(
         circuit,
-        compiler="qsteed",
         target="quafu:Baihua",
         shots=1024,
         name="flagquantum bell",

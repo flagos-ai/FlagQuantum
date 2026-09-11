@@ -1,17 +1,21 @@
-"""Compose one compiled Quafu execution into a FlagQuantum result."""
+"""Compose local-compiled or service-compiled Quafu execution into a result."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ...algorithms import Hamiltonian, HamiltonianTerm
 from ...core.ir import ensure_circuit_ir
-from ...deployment import create_pauli_measurement_plan, deploy_circuit
+from ...deployment import (
+    CloudBackendProfile,
+    create_pauli_measurement_plan,
+    deploy_circuit,
+)
 from ...observables import OutputRequest
 from ...observables import counts as request_counts
 from ...runtime.result import ExecutionResult, MeasurementResult
-from .quafu import QuafuProvider
+from .quafu import QuafuProvider, _service_options
 
 if TYPE_CHECKING:
     from ...circuit import Circuit
@@ -23,13 +27,35 @@ def execute_quafu(
     compiled: CircuitIR,
     *,
     output: OutputRequest,
-    compiler: str,
+    compiler: str | None,
     target: str,
     shots: int,
     name: str | None,
+    target_qubits: Sequence[int] | None = None,
 ) -> ExecutionResult:
     """Submit one compiled circuit and normalize its Quafu result."""
 
+    package_options: dict[str, Any] = {}
+    if compiler is None:
+        backend = target.partition(":")[2].strip()
+        if not backend:
+            raise ValueError("Quafu target must name a backend")
+        if compiled.metadata.get("execution_target"):
+            raise ValueError("service compilation requires an unbound logical circuit")
+        options = _service_options(
+            compiled.n_wires, () if target_qubits is None else target_qubits
+        )
+        package_options = {
+            "backend": CloudBackendProfile(
+                provider="quafu", name=backend, n_wires=compiled.n_wires
+            ),
+            "optimize": False,
+            "metadata": {
+                "provider_options": options,
+                "compilation_location": "service",
+                "service_compiler": "quarkcircuit",
+            },
+        }
     provider = QuafuProvider()
     if output.kind == "expectation":
         return _execute_expectation(
@@ -40,6 +66,7 @@ def execute_quafu(
             target=target,
             shots=shots,
             name=name,
+            package_options=package_options,
         )
     return _execute_counts(
         compiled,
@@ -49,6 +76,7 @@ def execute_quafu(
         target=target,
         shots=shots,
         name=name,
+        package_options=package_options,
     )
 
 
@@ -100,10 +128,11 @@ def _execute_expectation(
     *,
     provider: QuafuProvider,
     output: OutputRequest,
-    compiler: str,
+    compiler: str | None,
     target: str,
     shots: int,
     name: str | None,
+    package_options: dict[str, Any],
 ) -> ExecutionResult:
     assert output.observable is not None
     hamiltonian = Hamiltonian(
@@ -119,6 +148,7 @@ def _execute_expectation(
         hamiltonian,
         name=deployment_name,
         shots=shots,
+        **package_options,
     )
     native_results = tuple(
         provider.run(package) for package in measurement_plan.packages
@@ -126,7 +156,11 @@ def _execute_expectation(
     grouped_counts = tuple(result.counts for result in native_results)
     value = measurement_plan.expectation(grouped_counts)
     standard_error = measurement_plan.standard_error(grouped_counts)
-    execution_target = dict(compiled.metadata.get("execution_target", {}))
+    execution_target = (
+        compiled.metadata.get("execution_target", {})
+        if compiler is not None
+        else package_options["metadata"]["provider_options"]
+    )
     task_ids = tuple(result.handle.task_id for result in native_results)
     group_evidence = tuple(
         {
@@ -178,6 +212,11 @@ def _execute_expectation(
             "compiler": compiler,
             "target": target,
             "target_qubits": tuple(execution_target.get("target_qubits", ())),
+            **(
+                {"compilation_location": "service", "service_compiler": "quarkcircuit"}
+                if compiler is None
+                else {}
+            ),
             "name": deployment_name,
             "measurement_plan": measurement_plan.summary(),
             "measurement_groups": group_evidence,
@@ -197,19 +236,26 @@ def _execute_counts(
     *,
     provider: QuafuProvider,
     output: OutputRequest,
-    compiler: str,
+    compiler: str | None,
     target: str,
     shots: int,
     name: str | None,
+    package_options: dict[str, Any],
 ) -> ExecutionResult:
     if name is None:
-        native = deploy_circuit(compiled, provider, shots=shots)
+        native = deploy_circuit(compiled, provider, shots=shots, **package_options)
     else:
-        native = deploy_circuit(compiled, provider, shots=shots, name=name.strip())
+        native = deploy_circuit(
+            compiled, provider, shots=shots, name=name.strip(), **package_options
+        )
     counts: dict[str | int, int] = {
         str(key): int(value) for key, value in native.counts.items()
     }
-    execution_target = dict(compiled.metadata.get("execution_target", {}))
+    execution_target = (
+        compiled.metadata.get("execution_target", {})
+        if compiler is not None
+        else package_options["metadata"]["provider_options"]
+    )
     result = ExecutionResult(
         measurements=(
             MeasurementResult(
@@ -235,6 +281,11 @@ def _execute_counts(
             "compiler": compiler,
             "target": target,
             "target_qubits": tuple(execution_target.get("target_qubits", ())),
+            **(
+                {"compilation_location": "service", "service_compiler": "quarkcircuit"}
+                if compiler is None
+                else {}
+            ),
             "name": name.strip() if name is not None else "flagquantum_job",
             "deployment": dict(native.metadata),
         },

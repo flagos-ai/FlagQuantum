@@ -157,7 +157,7 @@ def run(
             name=name,
         )
 
-    if compiler is None or target is None:
+    if target is None:
         raise TypeError("remote execution requires both compiler and target")
     if options is not None or noise_model is not None:
         raise TypeError(
@@ -175,6 +175,18 @@ def run(
     from .remote.qpu.execution import execute_quafu, validate_quafu_output
 
     output = validate_quafu_output(program_or_plan, outputs)
+    if compiler is None:
+        if shots % 1024:
+            raise ValueError("Quafu shots must be a positive multiple of 1024")
+        return execute_quafu(
+            import_module(".core.ir", __package__).ensure_circuit_ir(program_or_plan),
+            output=output,
+            compiler=None,
+            target=target,
+            shots=shots,
+            name=name,
+            target_qubits=target_qubits,
+        )
     compiled = compile(
         program_or_plan,
         compiler=compiler,
