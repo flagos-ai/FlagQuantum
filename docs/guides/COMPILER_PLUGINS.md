@@ -5,6 +5,10 @@ main repository owns the `CircuitIR` boundary and plugin lifecycle; the plugin
 owns its compiler dependency and translation code. Installing a plugin does not
 import or activate it during `import flagquantum`.
 
+For QSteed installation and an offline compilation check, follow the
+[Quafu setup guide](QUAFU_BACKEND.md#install-the-compiler-plugin). The plugin
+is maintained in [FlagQuantum-Compiler-QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed).
+
 ## Package registration
 
 A package such as `flagquantum-compiler-qsteed` registers one zero-argument

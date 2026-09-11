@@ -3,6 +3,43 @@
 FlagQuantum talks directly to the HTTP contract implemented by
 `quafusqc.Task`; installing `quafusqc` is not required.
 
+## Install the compiler plugin
+
+The Quafu examples use the independently maintained
+[FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)
+plugin. Installing FlagQuantum alone, or its `quafu` extra, does not install
+this compiler plugin. The `quafu` extra supplies the optional calibration reader.
+
+Use Python 3.12 for the verified setup below. From a FlagQuantum 0.2 checkout:
+
+```bash
+python -m pip install -e .
+python -m pip install "qsteed @ git+https://github.com/BAQIS-Quantum/qsteed.git@46584efde731aea9eec27b5466919b76fe5f3184"
+python -m pip install flagquantum-compiler-qsteed==0.1.0
+```
+
+The plugin requires FlagQuantum `>=0.2,<0.3` and QSteed
+`0.2.3+quafu.sqc`. Install the pinned upstream build before the plugin;
+PyPI QSteed `0.2.2` is not a supported substitute. The plugin itself is
+[published on PyPI](https://pypi.org/project/flagquantum-compiler-qsteed/0.1.0/).
+
+FlagQuantum discovers the installed `compiler.qsteed` entry point automatically.
+Verify installation without provider credentials or a hardware submission:
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+compiled = fq.compile(circuit, compiler="qsteed")
+print(compiled.instructions)
+```
+
+This checks offline compilation only. Selecting `target="quafu:Baihua"` also
+requires access to the selected chip's calibration; executing `fq.run` with
+that target submits a real task.
+
+## Configure and run
+
 Create a local `.env` file without putting the token in source code:
 
 ```bash
