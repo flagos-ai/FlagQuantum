@@ -36,12 +36,6 @@ from .path_search import (
 from .stages import execute_pair_steps as _execute_pair_steps
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
-_DENSE_Z_OBSERVABLE_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
-] = {}
-_Z_OBSERVABLE_NODE_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], tuple[torch.Tensor, ...]
-] = {}
 
 
 def _slice_nodes(
