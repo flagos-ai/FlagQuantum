@@ -1,7 +1,7 @@
 # QPU digital twin
 
-`twin` owns calibration-conditioned, hardware-validated digital models of
-quantum processing units. It freezes a mapped device calibration, predicts a
+`twin` owns calibration-conditioned device models and comparisons with hardware
+observations. Hardware validation is specific to an experiment and its evidence. It freezes a mapped device calibration, predicts a
 measurement distribution through FlagQuantum's noise and simulation paths, and
 compares that prediction with later hardware counts.
 

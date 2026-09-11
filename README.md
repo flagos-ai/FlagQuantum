@@ -21,6 +21,11 @@ distributed training, device modeling, and fault-tolerant quantum computing rese
 - **Connect simulation to hardware.** Keep the circuit and requested observable
   explicit as you move between supported execution targets.
 
+This is a pre-release framework. Local training and selected distributed paths
+have correctness evidence; support is specific to each backend and workload.
+See the [validation scope](docs/reference/PUBLICATION_VALIDATION.md) for what has
+been tested and what remains a research goal.
+
 ## Train your first quantum model
 
 Requires Python **3.10–3.12**. From the repository root:
@@ -60,8 +65,8 @@ For a complete classical–quantum model, follow the
 
 ## Same circuit. Different execution targets.
 
-Evaluate the same observable on a Jiuding GPU workspace or Quafu quantum
-hardware. Configure the [Jiuding workspace and credentials](docs/guides/JIUDING.md)
+The experimental adapters can evaluate the same observable on a Jiuding GPU
+workspace or Quafu quantum hardware. Configure the [Jiuding workspace and credentials](docs/guides/JIUDING.md)
 or the [Quafu token and QSteed plugin](docs/guides/QUAFU_BACKEND.md) before
 running the corresponding call.
 
@@ -79,7 +84,9 @@ quafu_result = fq.run(
 ```
 
 Jiuding computes a simulated expectation; Quafu estimates it from hardware
-measurements. Training above runs locally.
+measurements. The training example runs on your local machine; these calls
+evaluate the trained circuit remotely. Live provider access is required and is
+not certified by the local or A800 checks.
 
 ## Go further
 

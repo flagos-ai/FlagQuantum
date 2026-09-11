@@ -5,6 +5,9 @@ and maintainers can find the right level of detail quickly.
 
 ## Start here
 
+- [Publication validation scope](reference/PUBLICATION_VALIDATION.md) — tested
+  workflows, evidence boundaries, and research goals
+
 - [API reference](reference/API.md) — public Python interfaces and examples
 - [Runtime architecture](architecture/RUNTIME_ARCHITECTURE.md) — execution
   model, planning, and distributed semantics
