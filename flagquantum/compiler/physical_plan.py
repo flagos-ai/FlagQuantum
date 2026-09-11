@@ -275,17 +275,7 @@ class PhysicalCircuitPlan:
             raise PhysicalPlanError(
                 "undirected physical plan initial layout must be identity"
             )
-        direction = self.legalization.direction_legalization
-        if self.direction_legalization_identity != (
-            None if direction is None else direction.legalization_identity
-        ):
-            raise PhysicalPlanError(
-                "physical plan direction legalization identity is inconsistent"
-            )
-        if self.reversed_cx_count != (
-            0 if direction is None else direction.reversed_cx_count
-        ):
-            raise PhysicalPlanError("physical plan reversed-CX count is inconsistent")
+        self._validate_stage_identities()
         recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
         if topology is None:
             if (
@@ -349,28 +339,6 @@ class PhysicalCircuitPlan:
             or self.allocation_identity is not None
         ):
             raise PhysicalPlanError("version-1/2 physical plan has allocation evidence")
-        if self.schedule_depth != self.legalization.schedule.depth:
-            raise PhysicalPlanError("physical plan schedule depth is inconsistent")
-        if (
-            self.maximum_parallel_width
-            != self.legalization.schedule.maximum_parallel_width
-        ):
-            raise PhysicalPlanError("physical plan schedule width is inconsistent")
-        if self.schedule_identity != self.legalization.schedule.schedule_identity:
-            raise PhysicalPlanError("physical plan schedule identity is inconsistent")
-        if self.native_gate_legalization_identity != (
-            self.legalization.native_gate_legalization.legalization_identity
-        ):
-            raise PhysicalPlanError(
-                "physical plan native-gate identity is inconsistent"
-            )
-        expected_topology_identity = (
-            None if topology is None else topology.legalization_identity
-        )
-        if self.topology_legalization_identity != expected_topology_identity:
-            raise PhysicalPlanError(
-                "physical plan topology legalization identity is inconsistent"
-            )
         self._validate_instruction_records(source, recorded_coupling)
         if self.critical_path != _critical_path(self.legalization):
             raise PhysicalPlanError("physical plan critical path is inconsistent")
@@ -384,6 +352,40 @@ class PhysicalCircuitPlan:
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_stage_identities(self) -> None:
+        direction = self.legalization.direction_legalization
+        if self.direction_legalization_identity != (
+            None if direction is None else direction.legalization_identity
+        ):
+            raise PhysicalPlanError(
+                "physical plan direction legalization identity is inconsistent"
+            )
+        if self.reversed_cx_count != (
+            0 if direction is None else direction.reversed_cx_count
+        ):
+            raise PhysicalPlanError("physical plan reversed-CX count is inconsistent")
+        schedule = self.legalization.schedule
+        if self.schedule_depth != schedule.depth:
+            raise PhysicalPlanError("physical plan schedule depth is inconsistent")
+        if self.maximum_parallel_width != schedule.maximum_parallel_width:
+            raise PhysicalPlanError("physical plan schedule width is inconsistent")
+        if self.schedule_identity != schedule.schedule_identity:
+            raise PhysicalPlanError("physical plan schedule identity is inconsistent")
+        if self.native_gate_legalization_identity != (
+            self.legalization.native_gate_legalization.legalization_identity
+        ):
+            raise PhysicalPlanError(
+                "physical plan native-gate identity is inconsistent"
+            )
+        topology = self.legalization.topology_legalization
+        expected_topology_identity = (
+            None if topology is None else topology.legalization_identity
+        )
+        if self.topology_legalization_identity != expected_topology_identity:
+            raise PhysicalPlanError(
+                "physical plan topology legalization identity is inconsistent"
+            )
 
     def _validate_allocation_evidence(self) -> None:
         topology = self.legalization.topology_legalization
