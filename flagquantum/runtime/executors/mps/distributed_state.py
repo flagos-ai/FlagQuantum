@@ -581,7 +581,7 @@ def _broadcast_mps_site_tensor(
     if context.rank == src:
         if tensor is None:
             raise RuntimeError(f"Rank {src} does not hold its owned MPS wire {wire}.")
-        tensor = tensor.detach().to(device=transport_device).contiguous()
+        tensor = tensor.detach().resolve_conj().to(device=transport_device).contiguous()
         if tensor.dtype == torch.complex64:
             dtype_code = 0
         elif tensor.dtype == torch.complex128:
@@ -609,7 +609,9 @@ def _broadcast_mps_site_tensor(
         tensor = torch.empty(shape, dtype=dtype, device=transport_device)
     elif tuple(tensor.shape) != shape:
         raise RuntimeError(f"MPS wire {wire} metadata does not match its local tensor.")
-    dist.broadcast(tensor, src=src)
+    # Gloo in the minimum supported PyTorch version cannot broadcast complex
+    # scalars. The real view shares storage and preserves the payload bytes.
+    dist.broadcast(torch.view_as_real(tensor), src=src)
     return tensor
 
 
