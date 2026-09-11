@@ -18,7 +18,7 @@ from flagquantum.runtime.executors.statevector.split_real_imag_device_double_sin
     run_split_real_imag_device_double_single_conformance,
 )
 from flagquantum.runtime.operator_probes import (
-    preflight_split_real_imag_statevector_p4,
+    _preflight_split_real_imag_profile,
 )
 from flagquantum.simulation.numerics.double_single import (
     DoubleSingleTensor,
@@ -151,8 +151,8 @@ def test_p4_profile_and_small_conformance_pass_on_cpu() -> None:
     }
     assert "aten::_assert_async" in {item.operator for item in profile.requirements}
     assert all(not item.backward for item in profile.requirements)
-    report = preflight_split_real_imag_statevector_p4(
-        device="cpu", provider="pytorch_cpu_test", refresh=True
+    report = _preflight_split_real_imag_profile(
+        profile.name, device="cpu", provider="pytorch_cpu_test", refresh=True
     )
     assert report.supported
     conformance = run_split_real_imag_device_double_single_conformance(
@@ -174,7 +174,8 @@ def test_p4_preflight_rejects_missing_device_async_assertion(
         raise NotImplementedError("device async assertion is unavailable")
 
     monkeypatch.setattr(torch, "_assert_async", unsupported_assertion)
-    report = preflight_split_real_imag_statevector_p4(
+    report = _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p4_device_double_single",
         device="cpu",
         provider="pytorch_cpu_without_async_assert_test",
         refresh=True,

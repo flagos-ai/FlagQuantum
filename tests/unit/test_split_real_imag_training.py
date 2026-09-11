@@ -15,7 +15,7 @@ from flagquantum.runtime.executors.statevector.split_real_imag import (
     run_split_real_imag_training_conformance,
 )
 from flagquantum.runtime.operator_probes import (
-    preflight_split_real_imag_statevector_p1,
+    _preflight_split_real_imag_profile,
 )
 
 pytestmark = pytest.mark.unit
@@ -169,8 +169,8 @@ def test_p1_profile_is_fp32_and_certifies_backward_probes() -> None:
         "float32"
     }
     assert any(item.backward for item in profile.requirements)
-    report = preflight_split_real_imag_statevector_p1(
-        device="cpu", provider="pytorch_cpu_test", refresh=True
+    report = _preflight_split_real_imag_profile(
+        profile.name, device="cpu", provider="pytorch_cpu_test", refresh=True
     )
     assert report.supported
     assert len(report.evidence_ids) == len(profile.requirements)

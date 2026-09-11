@@ -16,7 +16,7 @@ from flagquantum.runtime.executors.statevector.split_real_imag_double_single imp
 from flagquantum.runtime.executors.statevector.split_real_imag_double_single_conformance import (
     run_split_real_imag_double_single_conformance,
 )
-from flagquantum.runtime.operator_probes import preflight_split_real_imag_statevector_p3
+from flagquantum.runtime.operator_probes import _preflight_split_real_imag_profile
 from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 
 pytestmark = pytest.mark.unit
@@ -103,8 +103,8 @@ def test_p3_profile_is_forward_only_fp32_and_probes_on_cpu() -> None:
         "float32"
     }
     assert all(not item.backward for item in profile.requirements)
-    report = preflight_split_real_imag_statevector_p3(
-        device="cpu", provider="pytorch_cpu_test", refresh=True
+    report = _preflight_split_real_imag_profile(
+        profile.name, device="cpu", provider="pytorch_cpu_test", refresh=True
     )
     assert report.supported
     assert len(report.evidence_ids) == len(profile.requirements)
