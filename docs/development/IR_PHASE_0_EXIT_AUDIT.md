@@ -61,7 +61,7 @@ python -m pytest -q \
   tests/internal_ir/test_phase0_corpus.py \
   tests/unit/test_markdown_code_alignment.py \
   tests/unit/test_public_api_snapshot.py \
-  tests/unit/test_issue040_ir_public_api.py
+  tests/unit/test_ir_public_api.py
 ```
 
 The original audit reported `40 passed in 2.88s`. After closing the technical

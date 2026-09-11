@@ -1,4 +1,4 @@
-"""Torchrun multi-step, recovery and fault acceptance for ISSUE-043."""
+"""Torchrun multi-step, recovery and fault acceptance for sharded statevector training."""
 
 from __future__ import annotations
 

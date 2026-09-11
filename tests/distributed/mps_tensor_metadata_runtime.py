@@ -71,7 +71,7 @@ def main():
     records = [None] * dist.get_world_size()
     gather_objects(records, payload)
     if dist.get_rank() == 0:
-        Path(os.environ["FQ_ISSUE103_OUTPUT"]).write_text(json.dumps(records, indent=2))
+        Path(os.environ["FQ_MPS_TENSOR_METADATA_OUTPUT"]).write_text(json.dumps(records, indent=2))
     dist.destroy_process_group()
 
 

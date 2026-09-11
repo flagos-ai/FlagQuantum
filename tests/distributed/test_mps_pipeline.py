@@ -10,7 +10,7 @@ import pytest
 
 
 @pytest.mark.distributed_cpu
-def test_issue100_pipeline_order_bounds_and_cleanup(tmp_path: Path) -> None:
+def test_pipeline_order_bounds_and_cleanup(tmp_path: Path) -> None:
     output = tmp_path / "pipeline.json"
     command = [
         sys.executable,

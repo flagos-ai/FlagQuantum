@@ -1292,7 +1292,7 @@ def test_legacy_smoke_payloads_are_not_release_claims():
             require_distributed_scalability(payload)
 
 
-def test_benchmark_results_root_scan_is_hygienic_after_issue010():
+def test_benchmark_results_root_scan_is_hygienic():
     paths = _json_files(Path("benchmarks/results"))
     summary = audit_paths(paths, require_scalability=False)
 
@@ -1321,7 +1321,7 @@ def test_auxiliary_report_is_valid_but_never_claimable(tmp_path: Path):
     assert summary["records"][0]["status"] == "auxiliary"
 
 
-def test_non_scalability_result_payloads_fail_strict_release_gate_after_issue010():
+def test_non_scalability_result_payloads_fail_strict_release_gate():
     non_release_dirs = (
         Path("benchmarks/results/local"),
         Path("benchmarks/results/comparison"),
@@ -1390,7 +1390,7 @@ def test_non_scalability_result_payloads_fail_strict_release_gate_after_issue010
         ),
     ),
 )
-def test_benchmark_results_readmes_document_issue010_evidence_boundaries(
+def test_benchmark_results_readmes_document_evidence_boundaries(
     readme_path, required_phrases
 ):
     text = readme_path.read_text(encoding="utf-8")
@@ -1639,7 +1639,7 @@ def test_distributed_evidence_contract_fails_closed_for_missing_evidence_across_
     assert expected_error in contract.errors
 
 
-def test_repository_scalability_payload_preserves_issue007_capacity_evidence():
+def test_repository_scalability_payload_preserves_capacity_evidence():
     path = Path(
         "benchmarks/fixtures/capacity_models/statevector_capacity_model_8rank.json"
     )

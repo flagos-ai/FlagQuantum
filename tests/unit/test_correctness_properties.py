@@ -1,4 +1,4 @@
-"""ISSUE-081 generated correctness, mutation, fuzz and watchdog contracts."""
+"""Generated correctness, mutation, fuzz and watchdog contracts."""
 
 import importlib.util
 import json

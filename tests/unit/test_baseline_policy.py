@@ -10,7 +10,7 @@ UNIT_PATH = Path("tests/unit/test_unit_baseline.py")
 BASELINE_PATHS = (SMOKE_PATH, UNIT_PATH)
 
 
-def test_issue012_baseline_files_are_marked_for_default_selection():
+def test_baseline_files_are_marked_for_default_selection():
     smoke_text = SMOKE_PATH.read_text(encoding="utf-8")
     unit_text = UNIT_PATH.read_text(encoding="utf-8")
 
@@ -18,7 +18,7 @@ def test_issue012_baseline_files_are_marked_for_default_selection():
     assert "pytestmark = pytest.mark.unit" in unit_text
 
 
-def test_issue012_smoke_baseline_covers_public_api_expectation_and_autograd():
+def test_smoke_baseline_covers_public_api_expectation_and_autograd():
     text = SMOKE_PATH.read_text(encoding="utf-8")
 
     assert "import flagquantum as fq" in text
@@ -28,7 +28,7 @@ def test_issue012_smoke_baseline_covers_public_api_expectation_and_autograd():
     assert "requires_grad=True" in text
 
 
-def test_issue012_unit_baseline_covers_pure_logic_planner_audit_and_runtime_metadata():
+def test_unit_baseline_covers_pure_logic_planner_audit_and_runtime_metadata():
     text = UNIT_PATH.read_text(encoding="utf-8")
 
     assert "to_ir" in text
@@ -39,7 +39,7 @@ def test_issue012_unit_baseline_covers_pure_logic_planner_audit_and_runtime_meta
     assert "single_device_fast_path" in text
 
 
-def test_issue012_baseline_avoids_distributed_gpu_benchmark_and_subprocess_dependencies():
+def test_baseline_avoids_distributed_gpu_benchmark_and_subprocess_dependencies():
     forbidden_tokens = (
         "subprocess",
         "multiprocessing",
@@ -57,7 +57,7 @@ def test_issue012_baseline_avoids_distributed_gpu_benchmark_and_subprocess_depen
             assert token not in text, f"{path} should not depend on {token}"
 
 
-def test_issue012_docs_and_agents_keep_smoke_unit_as_minimum_entry_point():
+def test_docs_and_agents_keep_smoke_unit_as_minimum_entry_point():
     testing = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
     agents = Path("AGENTS.md").read_text(encoding="utf-8")
     assert 'python -m pytest -m "smoke or unit" -q' in testing

@@ -26,9 +26,9 @@ From the repository root:
 
 ```bash
 python -m pytest tests/integration/test_cpu_vertical_slice.py \
-  tests/unit/test_issue041_statevector_forward.py \
-  tests/unit/test_issue042_statevector_reverse.py \
-  tests/unit/test_issue043_statevector_training.py -q
+  tests/unit/test_statevector_forward.py \
+  tests/unit/test_statevector_reverse.py \
+  tests/unit/test_statevector_training.py -q
 ```
 
 Cross-rank changes also need the relevant `torchrun` and hardware tier. Check

@@ -1,4 +1,4 @@
-"""Torchrun gradient differential for ISSUE-042 sharded reverse mode."""
+"""Torchrun gradient differential for sharded statevector reverse mode."""
 
 from __future__ import annotations
 

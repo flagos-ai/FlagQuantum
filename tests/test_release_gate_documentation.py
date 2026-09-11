@@ -13,7 +13,7 @@ TIERED_MARKERS = {
 }
 
 
-def test_issue011_registers_tiered_pytest_markers():
+def test_registers_tiered_pytest_markers():
     text = Path("pytest.ini").read_text(encoding="utf-8")
 
     assert "--strict-markers" in text
@@ -21,7 +21,7 @@ def test_issue011_registers_tiered_pytest_markers():
         assert f"    {marker}:" in text
 
 
-def test_issue011_testing_policy_documents_marker_boundaries():
+def test_testing_policy_documents_marker_boundaries():
     text = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
     normalized = " ".join(text.split())
 
@@ -38,7 +38,7 @@ def test_issue011_testing_policy_documents_marker_boundaries():
     assert "benchmark generation remains an explicit command" in normalized
 
 
-def test_issue011_agents_guidance_uses_tiered_strategy_without_false_scalability_claims():
+def test_agents_guidance_uses_tiered_strategy_without_false_scalability_claims():
     text = Path("AGENTS.md").read_text(encoding="utf-8")
     normalized = " ".join(text.split())
 

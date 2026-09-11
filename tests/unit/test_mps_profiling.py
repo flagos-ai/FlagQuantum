@@ -35,7 +35,7 @@ def _rank(rank, forward, reverse, optimizer, total):
     }
 
 
-def test_issue097_report_reconciles_phases_and_classifies_messages():
+def test_report_reconciles_phases_and_classifies_messages():
     manifest = {"family": "latency", "sites": 8, "steps": 21}
     report = build_mps_critical_path_report(
         (_rank(0, 1.0, 2.0, 0.5, 3.6), _rank(1, 1.1, 2.0, 0.5, 3.8)),
@@ -73,7 +73,7 @@ def test_issue097_report_reconciles_phases_and_classifies_messages():
     }
 
 
-def test_issue097_report_rejects_missing_rank_and_bad_inputs():
+def test_report_rejects_missing_rank_and_bad_inputs():
     with pytest.raises(ValueError, match="contiguous"):
         build_mps_critical_path_report(
             (_rank(1, 1, 1, 1, 3),),
@@ -90,7 +90,7 @@ def test_issue097_report_rejects_missing_rank_and_bad_inputs():
         )
 
 
-def test_issue097_factorization_trace_labels_qr_and_svd():
+def test_factorization_trace_labels_qr_and_svd():
     matrix = torch.randn(1, 4, 4, dtype=torch.complex64)
     with profile(activities=[ProfilerActivity.CPU]) as profiler:
         _split_pair_matrix(
@@ -190,7 +190,7 @@ def _aggregate_fixture(tmp_path):
     return manifest_path, report_path, report
 
 
-def test_issue097_aggregate_validates_trace_and_frozen_contract(tmp_path):
+def test_aggregate_validates_trace_and_frozen_contract(tmp_path):
     manifest_path, report_path, _ = _aggregate_fixture(tmp_path)
     result = aggregate([report_path], manifest_path=manifest_path)
     assert result["baseline_gate_passed"]
@@ -201,7 +201,7 @@ def test_issue097_aggregate_validates_trace_and_frozen_contract(tmp_path):
     )
 
 
-def test_issue097_aggregate_fails_closed_for_mismatched_or_missing_evidence(tmp_path):
+def test_aggregate_fails_closed_for_mismatched_or_missing_evidence(tmp_path):
     manifest_path, report_path, report = _aggregate_fixture(tmp_path)
     report["workload_manifest"]["max_bond"] = 999
     report["environment_manifest"].pop("rank_placement")

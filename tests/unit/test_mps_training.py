@@ -1,4 +1,4 @@
-"""Fail-closed public contracts for ISSUE-052."""
+"""Fail-closed public contracts for sharded MPS training."""
 
 import hashlib
 from pathlib import Path

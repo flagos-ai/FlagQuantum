@@ -36,7 +36,7 @@ def _require_mps_accelerators():
         )
     if int(jax.process_count()) != 1:
         pytest.skip(
-            "ISSUE-026 MPS accelerator evidence is single-node only; "
+            "MPS accelerator evidence is single-node only; "
             "multi-node evidence is separate"
         )
     return devices

@@ -26,7 +26,7 @@ RUNTIME = ROOT / "tests/distributed/mps_stability_fault_runtime.py"
         "premature_lease_break",
     ),
 )
-def test_issue093_checkpoint_contract_faults_fail_closed(mode, tmp_path):
+def test_checkpoint_contract_faults_fail_closed(mode, tmp_path):
     env = dict(os.environ, FQ_TEST_CHECKPOINT=str(tmp_path / mode))
     completed = subprocess.run(
         [
@@ -76,7 +76,7 @@ def test_explicit_stale_writer_lease_recovery_is_bounded(tmp_path):
 @pytest.mark.parametrize(
     "mode", ("interrupted", "rank_exception", "cuda_oom", "collective_timeout")
 )
-def test_issue093_participant_failure_terminates_launcher(mode, tmp_path):
+def test_participant_failure_terminates_launcher(mode, tmp_path):
     env = dict(os.environ, FQ_TEST_CHECKPOINT=str(tmp_path / mode))
     completed = subprocess.run(
         [

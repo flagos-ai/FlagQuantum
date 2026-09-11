@@ -67,7 +67,7 @@ def payload():
     }
 
 
-def test_issue091_certification_accepts_complete_matrix():
+def test_certification_accepts_complete_matrix():
     require_mps_numerical_certification(payload())
 
 
@@ -80,21 +80,21 @@ def test_issue091_certification_accepts_complete_matrix():
         ("boundary_directional_derivative_passed", False),
     ],
 )
-def test_issue091_certification_rejects_injected_faults(field, value):
+def test_certification_rejects_injected_faults(field, value):
     invalid = copy.deepcopy(payload())
     invalid["cases"][2][field] = value
     with pytest.raises(MPSCertificationError):
         require_mps_numerical_certification(invalid)
 
 
-def test_issue091_certification_rejects_dtype_fault():
+def test_certification_rejects_dtype_fault():
     invalid = payload()
     invalid["dtypes"] = ["complex64", "float32"]
     with pytest.raises(MPSCertificationError, match="dtype"):
         require_mps_numerical_certification(invalid)
 
 
-def test_issue091_rejects_numeric_directional_cartesian_and_approximate_faults():
+def test_rejects_numeric_directional_cartesian_and_approximate_faults():
     directional = payload()
     directional["cases"][0]["boundary_directional_derivative_error"] = 1.0
     with pytest.raises(MPSCertificationError, match="directional"):

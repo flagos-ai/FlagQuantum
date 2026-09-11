@@ -19,6 +19,6 @@ and `examples/extensions/reference_extensions.py` or
 implementations. Run:
 
 ```bash
-python -m pytest tests/unit/test_issue080_extension_sdk.py \
+python -m pytest tests/unit/test_extension_sdk.py \
   tests/api_contract/test_extension_protocol_semantics.py -q
 ```

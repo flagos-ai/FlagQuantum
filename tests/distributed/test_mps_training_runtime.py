@@ -1,4 +1,4 @@
-"""CI-seeded Gloo lifecycle coverage for ISSUE-052."""
+"""CI-seeded Gloo lifecycle coverage for sharded MPS training."""
 
 import os
 import subprocess

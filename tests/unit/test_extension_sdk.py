@@ -1,4 +1,4 @@
-"""ISSUE-080 extension SDK contracts."""
+"""Extension SDK contracts."""
 
 import importlib.util
 import json

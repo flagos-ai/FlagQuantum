@@ -1,4 +1,4 @@
-"""Torchrun numerical differential for the ISSUE-041 forward executor."""
+"""Torchrun numerical differential for the sharded statevector forward executor."""
 
 from __future__ import annotations
 

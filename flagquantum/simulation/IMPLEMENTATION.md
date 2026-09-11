@@ -185,10 +185,10 @@ For observable contraction math, start in `mps/observables.py`. Run:
 ```bash
 python -m pytest tests/unit/test_mps_site_kernels.py \
   tests/unit/test_mps_compiled_layer_numerics.py \
-  tests/unit/test_issue105_dynamic_bond_compile_cache.py \
+  tests/unit/test_dynamic_bond_compile_cache.py \
   tests/unit/test_mps_reverse_numerics.py \
   tests/unit/test_mps_observable_numerics.py \
-  tests/unit/test_issue052_mps_training.py -q
+  tests/unit/test_mps_training.py -q
 ```
 
 Keep ordinary numerical changes inside this directory. A change that also

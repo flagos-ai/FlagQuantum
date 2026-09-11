@@ -153,11 +153,11 @@ For forward or reverse execution changes, also run:
 
 ```bash
 python -m pytest \
-  tests/unit/test_issue041_statevector_forward.py \
-  tests/unit/test_issue042_statevector_reverse.py -q
+  tests/unit/test_statevector_forward.py \
+  tests/unit/test_statevector_reverse.py -q
 ```
 
 Use `tests/test_distributed_statevector.py` for planning and rank-index changes,
-and `tests/unit/test_issue043_statevector_training.py` for training changes.
+and `tests/unit/test_statevector_training.py` for training changes.
 CUDA and `torchrun` tests are required when the affected path and test
 environment support them; they do not replace the local CPU checks.

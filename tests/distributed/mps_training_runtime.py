@@ -1,4 +1,4 @@
-"""Two-rank Gloo semantic workload for ISSUE-052."""
+"""Two-rank Gloo semantic workload for sharded MPS training."""
 
 import argparse
 import json

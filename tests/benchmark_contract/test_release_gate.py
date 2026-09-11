@@ -98,7 +98,7 @@ def test_empty_release_directory_fails_closed():
     assert "missing_release_world_sizes" in blockers
 
 
-def test_sealed_envelope_field_layout_can_pass_issue044_gate():
+def test_sealed_envelope_field_layout_can_pass_gate():
     passed, blockers = evaluate_issue044_release(_passing_artifacts(), load_manifest())
 
     assert passed is True

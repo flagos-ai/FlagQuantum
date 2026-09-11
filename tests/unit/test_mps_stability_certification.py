@@ -91,12 +91,12 @@ def payload():
     }
 
 
-def test_issue093_v2_accepts_complete_evidence():
+def test_v2_accepts_complete_evidence():
     require_mps_stability(payload())
 
 
 @pytest.mark.parametrize("fault", ("timeline", "generation", "timeout", "source"))
-def test_issue093_v2_rejects_invalid_evidence(fault):
+def test_v2_rejects_invalid_evidence(fault):
     invalid = payload()
     if fault == "timeline":
         invalid["soaks"][0]["rank_records"][0]["memory_timeline"][-1]["allocated"] = 101

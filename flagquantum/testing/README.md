@@ -37,7 +37,7 @@ assert result.executed and result.passed
 Then run the scenario test that demonstrates the same workflow:
 
 ```bash
-python -m pytest tests/unit/test_issue081_correctness_properties.py -q
+python -m pytest tests/unit/test_correctness_properties.py -q
 ```
 
 For MPS evidence validation, start with the matching

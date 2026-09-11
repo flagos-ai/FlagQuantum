@@ -65,11 +65,11 @@ def payload():
     }
 
 
-def test_issue092_capacity_contract_accepts_complete_evidence():
+def test_capacity_contract_accepts_complete_evidence():
     require_general_mps_capacity(payload())
 
 
-def test_issue092_capacity_sources_are_finalized_and_verified(tmp_path):
+def test_capacity_sources_are_finalized_and_verified(tmp_path):
     value = payload()
     for index, source in enumerate(value["source_artifacts"]):
         path = tmp_path / f"source-{index}.bin"
@@ -87,7 +87,7 @@ def test_issue092_capacity_sources_are_finalized_and_verified(tmp_path):
         require_capacity_source_integrity(finalized, base_dir=tmp_path)
 
 
-def test_issue092_capacity_contract_accepts_exact_untruncated_capacity():
+def test_capacity_contract_accepts_exact_untruncated_capacity():
     value = payload()
     value["gradient_policy"] = "exact"
     value["bond_dimension_changed"] = False
@@ -98,7 +98,7 @@ def test_issue092_capacity_contract_accepts_exact_untruncated_capacity():
     require_general_mps_capacity(value)
 
 
-def test_issue092_capacity_contract_accepts_complete_sixteen_rank_evidence():
+def test_capacity_contract_accepts_complete_sixteen_rank_evidence():
     value = payload()
     value["world_size"] = 16
     value["boundary_evidence"] = [
@@ -140,14 +140,14 @@ def test_issue092_capacity_contract_accepts_complete_sixteen_rank_evidence():
         ("discarded_weight", 0.2),
     ],
 )
-def test_issue092_capacity_contract_rejects_fault(field, value):
+def test_capacity_contract_rejects_fault(field, value):
     invalid = copy.deepcopy(payload())
     invalid[field] = value
     with pytest.raises(MPSCapacityCertificationError):
         require_general_mps_capacity(invalid)
 
 
-def test_issue092_capacity_contract_rejects_idle_rank_and_missing_boundary():
+def test_capacity_contract_rejects_idle_rank_and_missing_boundary():
     invalid = payload()
     invalid["rank_records"][7]["useful_work"] = False
     invalid["boundary_evidence"].pop()
@@ -163,7 +163,7 @@ def test_issue092_capacity_contract_rejects_idle_rank_and_missing_boundary():
         ("cleanup_verified", False, "cleanup evidence.*'rank': 3"),
     ],
 )
-def test_issue092_capacity_contract_diagnoses_rank_evidence(field, value, message):
+def test_capacity_contract_diagnoses_rank_evidence(field, value, message):
     invalid = payload()
     invalid["rank_records"][3][field] = value
     with pytest.raises(MPSCapacityCertificationError, match=message):

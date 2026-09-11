@@ -11,7 +11,7 @@ def _read(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_issue018_testing_manual_has_human_entrypoints():
+def test_testing_manual_has_human_entrypoints():
     text = _read("docs/development/TESTING.md")
     for heading in (
         "## Quick Start",
@@ -24,7 +24,7 @@ def test_issue018_testing_manual_has_human_entrypoints():
         assert heading in text
 
 
-def test_issue018_testing_manual_distinguishes_required_workflows():
+def test_testing_manual_distinguishes_required_workflows():
     text = _read("docs/development/TESTING.md")
     for phrase in (
         "Daily Development",
@@ -37,7 +37,7 @@ def test_issue018_testing_manual_distinguishes_required_workflows():
         assert phrase in text
 
 
-def test_issue018_testing_manual_lists_current_commands():
+def test_testing_manual_lists_current_commands():
     text = _read("docs/development/TESTING.md")
     for command in (
         "python tools/ci_tier.py pr-default",
@@ -57,7 +57,7 @@ def test_issue018_testing_manual_lists_current_commands():
         assert command in text
 
 
-def test_issue018_testing_manual_documents_every_marker_with_proof_boundary():
+def test_testing_manual_documents_every_marker_with_proof_boundary():
     text = _read("docs/development/TESTING.md")
     for marker in (
         "smoke",
@@ -79,7 +79,7 @@ def test_issue018_testing_manual_documents_every_marker_with_proof_boundary():
     assert "Release readiness or scalability on its own" in text
 
 
-def test_issue018_testing_manual_matches_ci_tier_commands_and_boundaries():
+def test_testing_manual_matches_ci_tier_commands_and_boundaries():
     text = _read("docs/development/TESTING.md")
     normalized = " ".join(text.split())
 
@@ -106,7 +106,7 @@ def test_issue018_testing_manual_matches_ci_tier_commands_and_boundaries():
         )
 
 
-def test_issue018_testing_manual_preserves_scalability_boundary():
+def test_testing_manual_preserves_scalability_boundary():
     text = " ".join(_read("docs/development/TESTING.md").split())
     assert "CPU distributed tests prove semantics and fail-closed behavior only" in text
     assert "They do not prove real multi-card capacity expansion" in text

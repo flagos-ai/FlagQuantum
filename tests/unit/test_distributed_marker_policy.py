@@ -9,7 +9,7 @@ def _read(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_issue013_registers_distributed_marker_split():
+def test_registers_distributed_marker_split():
     text = _read("pytest.ini")
 
     assert "    distributed:" in text
@@ -19,7 +19,7 @@ def test_issue013_registers_distributed_marker_split():
     assert "    gpu:" in text
 
 
-def test_issue013_cpu_distributed_layer_contains_statevector_fail_closed_coverage():
+def test_cpu_distributed_layer_contains_statevector_fail_closed_coverage():
     cpu_files = [
         "tests/test_distributed_backend_policy.py",
         "tests/test_distributed_scalability_audit.py",
@@ -38,7 +38,7 @@ def test_issue013_cpu_distributed_layer_contains_statevector_fail_closed_coverag
     assert "replicated" in audit_text
 
 
-def test_issue013_accelerator_tests_are_not_selected_by_cpu_marker():
+def test_accelerator_tests_are_not_selected_by_cpu_marker():
     accelerator_files = [
         "tests/test_flagos_distributed_conformance.py",
         "tests/test_flagos_statevector_scale.py",
@@ -53,7 +53,7 @@ def test_issue013_accelerator_tests_are_not_selected_by_cpu_marker():
         assert "FLAGQUANTUM_TEST_FLAGOS" in text, path
 
 
-def test_issue013_torchrun_cpu_candidates_keep_local_skip_guards():
+def test_torchrun_cpu_candidates_keep_local_skip_guards():
     torchrun_cpu_files = [
         "tests/distributed/test_hybrid_jax_runtime.py",
         "tests/distributed/test_runtime_modes.py",
@@ -71,7 +71,7 @@ def test_issue013_torchrun_cpu_candidates_keep_local_skip_guards():
         ), path
 
 
-def test_issue013_docs_and_agents_reject_cpu_distributed_release_evidence():
+def test_docs_and_agents_reject_cpu_distributed_release_evidence():
     docs = _read("docs/development/TESTING.md")
     agents = _read("AGENTS.md")
     normalized_agents = " ".join(agents.split())
