@@ -10,6 +10,10 @@ on 2026-09-11 (affirmative reply to the concrete proposal). This additive change
 These names describe operations independently of any provider implementation.
 Existing `run` behavior, signatures, and historical API baseline stay unchanged.
 Status: authorized implementation candidate, not a released feature.
+The two approved root additions bring the retained core from 31 to 33 exports;
+the candidate root budget is therefore 33 (previously 32). Historical exports
+and signatures remain frozen; authorization is read from this proposal's
+contract by both the snapshot validator and the candidate unit tests.
 
 ## Scope and compatibility
 
