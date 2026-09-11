@@ -63,6 +63,18 @@ def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _coupling_allows_instruction(
+    coupling: CouplingMap | DirectedCouplingMap,
+    opcode: str,
+    wires: tuple[int, ...],
+) -> bool:
+    if len(wires) != 2:
+        return True
+    if isinstance(coupling, DirectedCouplingMap) and opcode == "swap":
+        return coupling.has_weak_edge(*wires)
+    return coupling.has_edge(*wires)
+
+
 def _allocation_identity(
     *,
     logical_wire_count: int,
@@ -274,6 +286,7 @@ class PhysicalCircuitPlan:
             0 if direction is None else direction.reversed_cx_count
         ):
             raise PhysicalPlanError("physical plan reversed-CX count is inconsistent")
+        recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
         if topology is None:
             if (
                 self.topology_identity is not None
@@ -296,7 +309,6 @@ class PhysicalCircuitPlan:
                     "physical plan coupling size does not match physical slots"
                 )
             try:
-                recorded_coupling: CouplingMap | DirectedCouplingMap
                 if self.coupling_direction_semantics == "directed_cx":
                     recorded_coupling = DirectedCouplingMap(
                         self.coupling_n_wires,
@@ -445,78 +457,7 @@ class PhysicalCircuitPlan:
             raise PhysicalPlanError(
                 "physical plan topology legalization identity is inconsistent"
             )
-        if len(self.instructions) != len(self.program.instructions):
-            raise PhysicalPlanError("physical plan instruction count is inconsistent")
-        for index, item in enumerate(self.instructions):
-            scheduled = self.legalization.schedule.instructions[index]
-            instruction = self.program.instructions[index]
-            if (
-                item.instruction_index != index
-                or item.opcode != instruction.name
-                or item.physical_wires != instruction.wires
-                or item.layer != scheduled.layer
-                or item.predecessors != scheduled.predecessors
-                or item.dependency_kinds != scheduled.dependency_kinds
-            ):
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} is inconsistent"
-                )
-            if not 0 <= item.source_instruction_index < len(source.instructions):
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has invalid source index"
-                )
-            if (
-                item.logical_wires
-                != source.instructions[item.source_instruction_index].wires
-            ):
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has invalid logical wires"
-                )
-            if topology is not None and len(instruction.wires) == 2:
-                assert self.coupling_n_wires is not None
-                edge_legal = recorded_coupling.has_edge(*instruction.wires)
-                if (
-                    isinstance(recorded_coupling, DirectedCouplingMap)
-                    and instruction.name == "swap"
-                ):
-                    edge_legal = recorded_coupling.has_weak_edge(*instruction.wires)
-                if not edge_legal:
-                    raise PhysicalPlanError(
-                        f"physical instruction record {index} violates topology"
-                    )
-            if item.native_instruction_index < 0:
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has invalid native index"
-                )
-            if item.direction_replacement_ordinal < 0:
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has invalid direction ordinal"
-                )
-            if item.direction_rewrite not in {
-                "none",
-                "reverse_cx_h_conjugation",
-            }:
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has invalid direction rewrite"
-                )
-            expected_native_index = instruction.metadata.get(
-                "native_instruction_index", index
-            )
-            expected_direction_ordinal = instruction.metadata.get(
-                "direction_replacement_ordinal", 0
-            )
-            expected_direction_rewrite = instruction.metadata.get(
-                "direction_rewrite", "none"
-            )
-            if (
-                item.native_instruction_index != expected_native_index
-                or item.direction_replacement_ordinal != expected_direction_ordinal
-                or item.direction_rewrite != expected_direction_rewrite
-            ):
-                raise PhysicalPlanError(
-                    f"physical instruction record {index} has inconsistent "
-                    "direction lineage"
-                )
+        self._validate_instruction_records(source, recorded_coupling)
         if self.critical_path != _critical_path(self.legalization):
             raise PhysicalPlanError("physical plan critical path is inconsistent")
         expected_identity = hashlib.sha256(
@@ -529,6 +470,83 @@ class PhysicalCircuitPlan:
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_instruction_records(
+        self,
+        source: CircuitIR,
+        coupling: CouplingMap | DirectedCouplingMap | None,
+    ) -> None:
+        if len(self.instructions) != len(self.program.instructions):
+            raise PhysicalPlanError("physical plan instruction count is inconsistent")
+        for index, item in enumerate(self.instructions):
+            self._validate_instruction_record(index, item, source, coupling)
+
+    def _validate_instruction_record(
+        self,
+        index: int,
+        item: PhysicalInstructionRecord,
+        source: CircuitIR,
+        coupling: CouplingMap | DirectedCouplingMap | None,
+    ) -> None:
+        scheduled = self.legalization.schedule.instructions[index]
+        instruction = self.program.instructions[index]
+        if (
+            item.instruction_index != index
+            or item.opcode != instruction.name
+            or item.physical_wires != instruction.wires
+            or item.layer != scheduled.layer
+            or item.predecessors != scheduled.predecessors
+            or item.dependency_kinds != scheduled.dependency_kinds
+        ):
+            raise PhysicalPlanError(
+                f"physical instruction record {index} is inconsistent"
+            )
+        if not 0 <= item.source_instruction_index < len(source.instructions):
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has invalid source index"
+            )
+        if (
+            item.logical_wires
+            != source.instructions[item.source_instruction_index].wires
+        ):
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has invalid logical wires"
+            )
+        if coupling is not None and not _coupling_allows_instruction(
+            coupling, instruction.name, instruction.wires
+        ):
+            raise PhysicalPlanError(
+                f"physical instruction record {index} violates topology"
+            )
+        if item.native_instruction_index < 0:
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has invalid native index"
+            )
+        if item.direction_replacement_ordinal < 0:
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has invalid direction ordinal"
+            )
+        if item.direction_rewrite not in {"none", "reverse_cx_h_conjugation"}:
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has invalid direction rewrite"
+            )
+        expected_native_index = instruction.metadata.get(
+            "native_instruction_index", index
+        )
+        expected_direction_ordinal = instruction.metadata.get(
+            "direction_replacement_ordinal", 0
+        )
+        expected_direction_rewrite = instruction.metadata.get(
+            "direction_rewrite", "none"
+        )
+        if (
+            item.native_instruction_index != expected_native_index
+            or item.direction_replacement_ordinal != expected_direction_ordinal
+            or item.direction_rewrite != expected_direction_rewrite
+        ):
+            raise PhysicalPlanError(
+                f"physical instruction record {index} has inconsistent direction lineage"
+            )
 
 
 def _apply_physical_swap(layout: list[int], wires: tuple[int, int]) -> None:
@@ -863,15 +881,9 @@ def build_physical_circuit_plan(
     if topology is not None:
         assert coupling_map is not None
         for index, instruction in enumerate(legalization.program.instructions):
-            if len(instruction.wires) != 2:
-                continue
-            edge_legal = coupling_map.has_edge(*instruction.wires)
-            if (
-                isinstance(coupling_map, DirectedCouplingMap)
-                and instruction.name == "swap"
+            if not _coupling_allows_instruction(
+                coupling_map, instruction.name, instruction.wires
             ):
-                edge_legal = coupling_map.has_weak_edge(*instruction.wires)
-            if not edge_legal:
                 raise PhysicalPlanError(
                     f"physical instruction {index} violates the coupling topology"
                 )
