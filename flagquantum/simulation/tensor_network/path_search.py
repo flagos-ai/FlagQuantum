@@ -86,6 +86,25 @@ def _dry_run_tensor(shape: Sequence[int], reference: _SearchTensor) -> _DryRunTe
     )
 
 
+def _reorder_final_tensor(
+    node: _Node,
+    output_labels: Sequence[int],
+    *,
+    dry_run: bool,
+) -> _SearchTensor:
+    if node.labels == tuple(output_labels):
+        return node.tensor
+    if dry_run:
+        dims = _label_dims((node,))
+        return _dry_run_tensor(
+            tuple(dims[label] for label in output_labels),
+            node.tensor,
+        )
+    return _einsum_reorder_by_labels(
+        _real_tensor(node.tensor), node.labels, output_labels
+    )
+
+
 def _as_ir(program: Any) -> CircuitIR:
     return ensure_circuit_ir(program)
 
@@ -441,21 +460,7 @@ def _contract_nodes_greedy(
     if cached_path is None and random_state is None:
         _CONTRACTION_PATH_CACHE[path_key] = tuple(planned_path)
     final = active[0]
-    final_tensor: _SearchTensor
-    if final.labels != tuple(output_labels):
-        if dry_run:
-            dims = _label_dims(active)
-            final_tensor = _dry_run_tensor(
-                tuple(dims[label] for label in output_labels),
-                final.tensor,
-            )
-        else:
-            final_tensor = _einsum_reorder_by_labels(
-                _real_tensor(final.tensor), final.labels, output_labels
-            )
-    else:
-        final_tensor = final.tensor
-    return final_tensor, tuple(steps)
+    return _reorder_final_tensor(final, output_labels, dry_run=dry_run), tuple(steps)
 
 
 def _contract_nodes_quality_multistart(
@@ -912,20 +917,7 @@ def _contract_nodes_beam(
         beams = candidates[:beam_width]
     best = min(beams, key=lambda item: (item[1], item[0], item[2]))
     final = best[3][0]
-    final_tensor: _SearchTensor
-    if final.labels != tuple(output_labels):
-        dims = _label_dims(best[3])
-        if dry_run:
-            final_tensor = _dry_run_tensor(
-                tuple(dims[label] for label in output_labels), final.tensor
-            )
-        else:
-            final_tensor = _einsum_reorder_by_labels(
-                _real_tensor(final.tensor), final.labels, output_labels
-            )
-    else:
-        final_tensor = final.tensor
-    return final_tensor, tuple(best[4])
+    return _reorder_final_tensor(final, output_labels, dry_run=dry_run), tuple(best[4])
 
 
 @overload
@@ -1039,18 +1031,4 @@ def _contract_nodes_optimal(
 
     _, _, steps, final_nodes = search(tuple(nodes), (), 0, 0)
     final = final_nodes[0]
-    final_tensor: _SearchTensor
-    if final.labels != tuple(output_labels):
-        dims = _label_dims(final_nodes)
-        if dry_run:
-            final_tensor = _dry_run_tensor(
-                tuple(dims[label] for label in output_labels),
-                final.tensor,
-            )
-        else:
-            final_tensor = _einsum_reorder_by_labels(
-                _real_tensor(final.tensor), final.labels, output_labels
-            )
-    else:
-        final_tensor = final.tensor
-    return final_tensor, steps
+    return _reorder_final_tensor(final, output_labels, dry_run=dry_run), steps
