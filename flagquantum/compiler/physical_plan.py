@@ -336,53 +336,7 @@ class PhysicalCircuitPlan:
                     raise PhysicalPlanError(
                         "physical allocation requires directed topology"
                     )
-                expected_occupancy: list[int | None] = [None] * self.physical_slot_count
-                for logical, physical in enumerate(self.initial_logical_to_physical):
-                    expected_occupancy[physical] = logical
-                if (
-                    self.initial_physical_to_logical != tuple(expected_occupancy)
-                    or self.final_physical_to_logical
-                    != self.initial_physical_to_logical
-                    or len(self.pre_restore_physical_to_logical)
-                    != self.physical_slot_count
-                    or self.logical_result_physical_slots
-                    != self.final_logical_to_physical
-                    or self.logical_result_physical_slots
-                    != topology.logical_result_physical_slots
-                    or self.logical_wire_count != topology.logical_wire_count
-                    or self.physical_slot_count != topology.physical_slot_count
-                    or self.allocation_identity != topology.allocation_identity
-                    or self.initial_physical_to_logical
-                    != topology.initial_physical_to_logical
-                    or self.pre_restore_physical_to_logical
-                    != topology.pre_restore_physical_to_logical
-                    or self.final_physical_to_logical
-                    != topology.final_physical_to_logical
-                    or self.allocation_identity
-                    != _allocation_identity(
-                        logical_wire_count=self.logical_wire_count,
-                        physical_slot_count=self.physical_slot_count,
-                        initial_logical_to_physical=(self.initial_logical_to_physical),
-                        initial_physical_to_logical=(self.initial_physical_to_logical),
-                        logical_result_physical_slots=(
-                            self.logical_result_physical_slots
-                        ),
-                    )
-                ):
-                    raise PhysicalPlanError(
-                        "physical plan allocation evidence is inconsistent"
-                    )
-                if any(
-                    measurement.wires != self.logical_result_physical_slots
-                    or str(measurement.metadata.get("fq_output_kind", measurement.kind))
-                    != "samples"
-                    or measurement.metadata.get("fq_result_order")
-                    != "logical_wire_order"
-                    for measurement in self.program.measurements
-                ):
-                    raise PhysicalPlanError(
-                        "physical plan logical result projection is inconsistent"
-                    )
+                self._validate_allocation_evidence()
             self._validate_mapping_transitions(
                 allocated=allocated,
                 identity_layout=identity_layout,
@@ -430,6 +384,48 @@ class PhysicalCircuitPlan:
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_allocation_evidence(self) -> None:
+        topology = self.legalization.topology_legalization
+        if topology is None:
+            raise PhysicalPlanError("physical allocation requires topology evidence")
+        expected_occupancy: list[int | None] = [None] * self.physical_slot_count
+        for logical, physical in enumerate(self.initial_logical_to_physical):
+            expected_occupancy[physical] = logical
+        if (
+            self.initial_physical_to_logical != tuple(expected_occupancy)
+            or self.final_physical_to_logical != self.initial_physical_to_logical
+            or len(self.pre_restore_physical_to_logical) != self.physical_slot_count
+            or self.logical_result_physical_slots != self.final_logical_to_physical
+            or self.logical_result_physical_slots
+            != topology.logical_result_physical_slots
+            or self.logical_wire_count != topology.logical_wire_count
+            or self.physical_slot_count != topology.physical_slot_count
+            or self.allocation_identity != topology.allocation_identity
+            or self.initial_physical_to_logical != topology.initial_physical_to_logical
+            or self.pre_restore_physical_to_logical
+            != topology.pre_restore_physical_to_logical
+            or self.final_physical_to_logical != topology.final_physical_to_logical
+            or self.allocation_identity
+            != _allocation_identity(
+                logical_wire_count=self.logical_wire_count,
+                physical_slot_count=self.physical_slot_count,
+                initial_logical_to_physical=self.initial_logical_to_physical,
+                initial_physical_to_logical=self.initial_physical_to_logical,
+                logical_result_physical_slots=self.logical_result_physical_slots,
+            )
+        ):
+            raise PhysicalPlanError("physical plan allocation evidence is inconsistent")
+        if any(
+            measurement.wires != self.logical_result_physical_slots
+            or str(measurement.metadata.get("fq_output_kind", measurement.kind))
+            != "samples"
+            or measurement.metadata.get("fq_result_order") != "logical_wire_order"
+            for measurement in self.program.measurements
+        ):
+            raise PhysicalPlanError(
+                "physical plan logical result projection is inconsistent"
+            )
 
     def _validate_mapping_transitions(
         self,
