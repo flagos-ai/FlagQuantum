@@ -15,8 +15,6 @@ _SVD_FALLBACK_STATS = {
     "gesvd_driver_fallbacks": 0,
     "isolated_gesvd_retries": 0,
     "isolated_gesvd_matrices": 0,
-    "cpu_lapack_fallbacks": 0,
-    "cpu_lapack_matrices": 0,
     "nonfinite_svd_outputs": 0,
 }
 
@@ -50,33 +48,15 @@ def _cuda_svd(
     is_cuda = _is_cuda_tensor(matrix)
     requested = driver if is_cuda else None
 
-    def checked(
-        result: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if all(bool(torch.isfinite(value).all()) for value in result):
-            return result
-        _SVD_FALLBACK_STATS["nonfinite_svd_outputs"] += 1
-        # PyTorch exposes this class at runtime but omits its typed export.
-        error_type: object = getattr(torch.linalg, "LinAlgError")
-        if not isinstance(error_type, type) or not issubclass(error_type, RuntimeError):
-            raise TypeError("torch.linalg.LinAlgError must be a RuntimeError subclass")
-        raise error_type("MPS SVD returned non-finite factors")
-
     try:
-        return checked(torch.linalg.svd(matrix, full_matrices=False, driver=requested))
+        return _checked_svd(matrix, driver=requested)
     except RuntimeError as requested_error:
         _SVD_FALLBACK_STATS["requested_driver_failures"] += 1
         if not is_cuda:
             raise
         if requested not in (None, "gesvd"):
             try:
-                result = checked(
-                    torch.linalg.svd(
-                        matrix,
-                        full_matrices=False,
-                        driver="gesvd",
-                    )
-                )
+                result = _checked_svd(matrix, driver="gesvd")
                 _SVD_FALLBACK_STATS["gesvd_driver_fallbacks"] += 1
                 return result
             except RuntimeError:
@@ -85,49 +65,17 @@ def _cuda_svd(
             raise requested_error
         flattened = matrix.reshape(-1, matrix.shape[-2], matrix.shape[-1])
         outputs = []
-        used_cpu = False
         try:
             for item in flattened:
-                outputs.append(
-                    checked(
-                        torch.linalg.svd(
-                            item,
-                            full_matrices=False,
-                            driver="gesvd",
-                        )
-                    )
-                )
-        except RuntimeError:
-            outputs = []
-            used_cpu = True
-            try:
-                for item in flattened:
-                    # Preserve the training graph across the CPU fallback.
-                    cpu_u, cpu_singular, cpu_vh = checked(
-                        torch.linalg.svd(
-                            item.to("cpu"),
-                            full_matrices=False,
-                        )
-                    )
-                    outputs.append(
-                        (
-                            cpu_u.to(matrix.device),
-                            cpu_singular.to(matrix.device),
-                            cpu_vh.to(matrix.device),
-                        )
-                    )
-            except RuntimeError as cpu_error:
-                raise RuntimeError(
-                    "MPS strict SVD failed for batched CUDA gesvd, isolated "
-                    "CUDA gesvd, and CPU LAPACK fallback; "
-                    f"batch_shape={tuple(matrix.shape[:-2])}, "
-                    f"matrix_shape={tuple(matrix.shape[-2:])}"
-                ) from cpu_error
-            _SVD_FALLBACK_STATS["cpu_lapack_fallbacks"] += 1
-            _SVD_FALLBACK_STATS["cpu_lapack_matrices"] += len(outputs)
-        if not used_cpu:
-            _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
-            _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
+                outputs.append(_checked_svd(item, driver="gesvd"))
+        except RuntimeError as isolated_error:
+            raise RuntimeError(
+                "MPS strict SVD failed for batched and isolated CUDA gesvd; "
+                f"batch_shape={tuple(matrix.shape[:-2])}, "
+                f"matrix_shape={tuple(matrix.shape[-2:])}"
+            ) from isolated_error
+        _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
+        _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
         u, singular, vh = zip(*outputs)
         batch_shape = matrix.shape[:-2]
         return (
@@ -135,6 +83,23 @@ def _cuda_svd(
             torch.stack(singular).reshape(*batch_shape, *singular[0].shape),
             torch.stack(vh).reshape(*batch_shape, *vh[0].shape),
         )
+
+
+def _checked_svd(
+    matrix: torch.Tensor,
+    *,
+    driver: str | None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    u, singular, vh = torch.linalg.svd(matrix, full_matrices=False, driver=driver)
+    result = (u, singular, vh)
+    if all(bool(torch.isfinite(value).all()) for value in result):
+        return result
+    _SVD_FALLBACK_STATS["nonfinite_svd_outputs"] += 1
+    # PyTorch exposes this class at runtime but omits its typed export.
+    error_type: object = getattr(torch.linalg, "LinAlgError")
+    if not isinstance(error_type, type) or not issubclass(error_type, RuntimeError):
+        raise TypeError("torch.linalg.LinAlgError must be a RuntimeError subclass")
+    raise error_type("MPS SVD returned non-finite factors")
 
 
 def _is_cuda_tensor(matrix: torch.Tensor) -> bool:
