@@ -17,30 +17,25 @@ from .path_search import _as_ir
 from .state import TensorNetworkState
 
 
-def _initial_wire_tensors(
+def _initial_state_tensors(
     circuit_or_ir: Any,
     *,
     bsz: int,
     n_wires: int,
     device: torch.device | str,
     dtype: torch.dtype,
-) -> tuple[torch.Tensor, ...]:
-    """Represent the default |0...0> state without a dense allocation."""
+) -> tuple[tuple[torch.Tensor, ...], bool]:
+    """Keep explicit inputs joint and represent the default zero state sparsely."""
 
     if getattr(circuit_or_ir, "_inputs", None) is not None:
         state = circuit_or_ir.initial_state().to(device=device, dtype=dtype)
         if state.ndim == 1:
             state = state.reshape(1, -1)
         reshaped = state.reshape((state.shape[0],) + (2,) * n_wires)
-        tensors = []
-        for wire in range(n_wires):
-            selector = [slice(None)] + [0] * n_wires
-            selector[wire + 1] = slice(None)
-            tensors.append(reshaped[tuple(selector)])
-        return tuple(tensors)
+        return (reshaped,), True
     zero = torch.zeros(int(bsz), 2, dtype=dtype, device=device)
     zero[:, 0] = 1
-    return tuple(zero for _ in range(n_wires))
+    return tuple(zero for _ in range(n_wires)), False
 
 
 def build_local_tensor_network(
@@ -54,15 +49,15 @@ def build_local_tensor_network(
 
     ir = _as_ir(circuit_or_ir)
     dtype = dtype or torch.complex64
-    initial_wires = _initial_wire_tensors(
+    initial_tensors, joint_initial_state = _initial_state_tensors(
         circuit_or_ir, bsz=bsz, n_wires=ir.n_wires, device=device, dtype=dtype
     )
-    bsz = int(initial_wires[0].shape[0]) if initial_wires else int(bsz)
+    bsz = int(initial_tensors[0].shape[0]) if initial_tensors else int(bsz)
     batch_label = 0
-    next_label = 1
-    current_labels = []
+    current_labels = list(range(1, ir.n_wires + 1))
+    next_label = ir.n_wires + 1
     nodes: list[TensorNetworkNode] = []
-    dynamic_tensors: list[torch.Tensor] = []
+    dynamic_tensors = list(initial_tensors)
     binding_source = getattr(circuit_or_ir, "_parameter_bindings", None)
     parameter_bindings = None if binding_source is None else binding_source.values()
     program_cache = getattr(circuit_or_ir, "_backend_programs", None)
@@ -80,17 +75,23 @@ def build_local_tensor_network(
         compiled_structure if torch.device(device).type == "cuda" else None
     )
 
-    for wire in range(ir.n_wires):
-        label = next_label
-        next_label += 1
-        current_labels.append(label)
-        tensor = initial_wires[wire]
-        dynamic_tensors.append(tensor)
-        if active_structure is None:
+    if active_structure is None:
+        if joint_initial_state:
             nodes.append(
                 TensorNetworkNode(
-                    tensor=tensor, labels=(batch_label, label), name=f"init_{wire}"
+                    tensor=initial_tensors[0],
+                    labels=(batch_label, *current_labels),
+                    name="initial_state",
                 )
+            )
+        else:
+            nodes.extend(
+                TensorNetworkNode(
+                    tensor=tensor,
+                    labels=(batch_label, current_labels[wire]),
+                    name=f"init_{wire}",
+                )
+                for wire, tensor in enumerate(initial_tensors)
             )
 
     for index, instruction in enumerate(ir.instructions):
