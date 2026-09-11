@@ -70,6 +70,21 @@ def test_tensor_network_bell_state_matches_statevector():
     assert torch.allclose(tn.expectation_z(), circuit.expectation_z(), atol=1e-6)
 
 
+def test_tensor_network_preserves_entangled_custom_initial_state():
+    amplitude = 2**-0.5
+    initial = torch.tensor(
+        [amplitude, 0.0, 0.0, amplitude],
+        dtype=torch.complex128,
+    )
+    circuit = fq.Circuit(2, dtype=torch.complex128, inputs=initial)
+
+    plan = build_tensor_network(circuit, dtype=torch.complex128)
+
+    assert len(plan.nodes) == 1
+    assert plan.nodes[0].labels == (0, 1, 2)
+    torch.testing.assert_close(plan.contract(), initial.reshape(1, -1))
+
+
 def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch):
     tensor_observables._PAULI_MPO_CORE_CACHE.clear()
     calls = 0
