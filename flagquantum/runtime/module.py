@@ -553,7 +553,7 @@ class Module(torch.nn.Module):
         }
 
     @property
-    def parameter_groups(self) -> Mapping[str, torch.Tensor]:
+    def parameter_groups(self) -> Mapping[str, torch.Tensor] | torch.nn.ParameterDict:
         """Return named trainable groups, or an empty mapping for flat modules."""
 
         return self.named_parameter_groups or {}

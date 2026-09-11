@@ -13,6 +13,7 @@ from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
     from .execution_plan import ExecutionPlan
+    from .executors.mps.production import MPSProductionPlan
 
 EXECUTION_RESULT_SUMMARY_SCHEMA = "flagquantum.execution_result.summary"
 EXECUTION_RESULT_SUMMARY_VERSION = "1.0"
@@ -45,7 +46,7 @@ class ExecutionResult:
     state: torch.Tensor | None = None
     samples: torch.Tensor | None = None
     measurements: tuple[MeasurementResult, ...] = ()
-    plan: ExecutionPlan | RuntimePlanContract | None = None
+    plan: ExecutionPlan | RuntimePlanContract | MPSProductionPlan | None = None
     accuracy: AccuracyContract = AccuracyContract()
     metrics: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, refactor/flagquantum-vnext-architecture]
   pull_request:
     branches: [main]
 
@@ -38,13 +38,13 @@ jobs:
           flagquantum/runtime/executors/statevector/gradient_reduction.py
       - name: Strict typed trainable module
         run: >-
-          mypy --strict --no-site-packages --ignore-missing-imports
-          --follow-imports skip
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
           flagquantum/runtime/module.py flagquantum/runtime/training.py
       - name: Strict typed execution mainline
         run: >-
-          mypy --strict --no-site-packages --ignore-missing-imports
-          --follow-imports skip
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
           flagquantum/runtime/execution_plan.py
           flagquantum/runtime/execution_plan_contract.py
           flagquantum/runtime/execution.py
@@ -53,8 +53,8 @@ jobs:
           flagquantum/deployment
       - name: Strict typed interoperability contract
         run: >-
-          mypy --strict --no-site-packages --ignore-missing-imports
-          --follow-imports skip
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
           flagquantum/ecosystem/contracts.py flagquantum/ecosystem/conformance.py
           flagquantum/ecosystem/registry.py
           flagquantum/ecosystem/pennylane/adapter.py

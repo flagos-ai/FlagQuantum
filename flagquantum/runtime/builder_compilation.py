@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextvars import ContextVar
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 import torch
 
-from ..core.ir import CircuitIR
+from ..core.ir import CircuitIR, Instruction
 from ..core.parameters import ParameterExpression
 
 
@@ -113,14 +113,17 @@ def detached_ir_snapshot(ir: CircuitIR) -> CircuitIR:
 
 
 @dataclass(frozen=True)
-class CompiledInstruction:
-    name: str
-    wires: tuple[int, ...]
-    params: Mapping[str, Any]
-    matrix: Any | None
-    metadata: Mapping[str, Any]
+class CompiledInstruction(Instruction):
+    """Validated template instruction whose parameter slots remain live."""
+
+    params: Mapping[str, Any] = field()
+    matrix: Any | None = field()
+    metadata: Mapping[str, Any] = field()
     parameter_slots: tuple[int, ...]
     parameter_constants: tuple[Any, ...]
+
+    def __post_init__(self) -> None:
+        """Keep validated template IR slots lazy until the builder binds them."""
 
 
 __all__ = (

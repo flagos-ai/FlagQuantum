@@ -42,7 +42,7 @@
     "summary_version": "1.0",
     "measurement_value_types": ["torch.Tensor", "list[dict[str | int, int]]"],
     "field_annotations": {
-      "ExecutionResult.plan": "ExecutionPlan | RuntimePlanContract | None",
+      "ExecutionResult.plan": "ExecutionPlan | RuntimePlanContract | MPSProductionPlan | None",
       "MeasurementResult.value": "MeasurementValue"
     },
     "accessors": [
