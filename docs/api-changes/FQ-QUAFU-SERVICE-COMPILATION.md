@@ -25,6 +25,11 @@ same output requests, and represent the same execute-on-target journey.
 
 ## Evidence and validation
 
+The direct path converts Quafu's classical-MSB-left count strings to
+FlagQuantum's measurement-wires-left-to-right ordering before expectation
+aggregation. The existing explicit-precompilation path is unchanged. An
+asymmetric fixture covers this boundary; Bell-only counts cannot detect it.
+
 Service-compiled results record `compiler=None`, `compilation_location="service"`
 and `service_compiler="quarkcircuit"`. Submission digests identify submitted
 artifacts, not the circuit ultimately executed by the service. Returned

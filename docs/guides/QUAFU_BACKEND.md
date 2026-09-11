@@ -20,7 +20,9 @@ print(result.counts)
 
 Configure `QUAFU_API_TOKEN` as described below. This path sends logical OpenQASM
 with `options.compiler="quarkcircuit"` and does not require local QSteed or
-QuarkCircuit installation. The service handles compilation and physical routing.
+QuarkCircuit installation. The service handles compilation and physical routing. Direct-path counts are
+returned in logical-wire order (wire 0 on the left), including before expectation
+aggregation; raw provider metadata retains the original response.
 `outputs=fq.expectation(...)` remains supported through grouped basis measurements.
 Optional `target_qubits` selects an ordered physical mapping; its size and
 uniqueness are checked locally, while chip availability/topology are checked by

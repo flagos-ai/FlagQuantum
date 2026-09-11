@@ -56,7 +56,10 @@ def execute_quafu(
                 "service_compiler": "quarkcircuit",
             },
         }
-    provider = QuafuProvider()
+    # Quafu reports c[N-1]...c[0]; the direct path exposes logical wires 0...N-1.
+    provider = (
+        QuafuProvider(reverse_result_bits=True) if compiler is None else QuafuProvider()
+    )
     if output.kind == "expectation":
         return _execute_expectation(
             compiled,
@@ -213,7 +216,11 @@ def _execute_expectation(
             "target": target,
             "target_qubits": tuple(execution_target.get("target_qubits", ())),
             **(
-                {"compilation_location": "service", "service_compiler": "quarkcircuit"}
+                {
+                    "compilation_location": "service",
+                    "service_compiler": "quarkcircuit",
+                    "counts_bit_order": "measurement_wires_left_to_right",
+                }
                 if compiler is None
                 else {}
             ),
@@ -282,7 +289,11 @@ def _execute_counts(
             "target": target,
             "target_qubits": tuple(execution_target.get("target_qubits", ())),
             **(
-                {"compilation_location": "service", "service_compiler": "quarkcircuit"}
+                {
+                    "compilation_location": "service",
+                    "service_compiler": "quarkcircuit",
+                    "counts_bit_order": "measurement_wires_left_to_right",
+                }
                 if compiler is None
                 else {}
             ),

@@ -25,7 +25,7 @@ class Transport:
         if "/task/result/" in url:
             return {
                 "status": "Finished",
-                "count": {"10": 1024},
+                "count": {"01": 1024},
                 "transpiled": "service circuit",
             }
         raise AssertionError(f"Unexpected discovery/calibration request: {url}")
@@ -34,9 +34,11 @@ class Transport:
 @pytest.fixture
 def transport(monkeypatch):
     transport = Transport()
-    provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.QuafuProvider", lambda: provider
+        "flagquantum.remote.qpu.execution.QuafuProvider",
+        lambda **options: QuafuProvider(
+            base_url="https://quafu.test", transport=transport, **options
+        ),
     )
     monkeypatch.setattr(
         "flagquantum._api.compile",
@@ -60,6 +62,7 @@ def test_direct_counts_with_service_compilation(transport):
     assert payload["options"] == {"compiler": "quarkcircuit", "target_qubits": []}
     assert "qreg q[2];" in payload["circuit"]
     assert result.counts == [{"10": 1024}]
+    assert result.provenance["counts_bit_order"] == "measurement_wires_left_to_right"
     assert result.provenance["compiler"] is None
     assert result.provenance["compilation_location"] == "service"
     assert result.provenance["service_compiler"] == "quarkcircuit"
