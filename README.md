@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo_flagquantum.png" alt="FlagQuantum" width="320">
+  <img src="assets/logo_flagquantum.png" alt="FlagQuantum" width="520">
 
 <p><strong>Quantum computing, built for learning.</strong></p>
 <p>A PyTorch-first framework for differentiable quantum computing and quantum AI.</p>
