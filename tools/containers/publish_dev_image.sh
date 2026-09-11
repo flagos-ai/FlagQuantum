@@ -60,7 +60,7 @@ fi
 case "$variant" in
   cpu)
     docker buildx build \
-      --platform linux/amd64,linux/arm64 \
+      --platform linux/amd64 \
       --file docker/dev/Dockerfile \
       --target "$target" \
       --build-arg BASE_IMAGE=python:3.12-slim-bookworm \

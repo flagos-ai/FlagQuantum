@@ -20,7 +20,8 @@ def test_ghcr_workflow_publishes_cpu_and_cuda_variants() -> None:
     )
 
     assert "packages: write" in workflow
-    assert "linux/amd64,linux/arm64" in workflow
+    assert "platforms: linux/amd64" in workflow
+    assert "linux/arm64" not in workflow
     assert "variant: cpu-no-jax" in workflow
     assert "variant: cuda-amd64-no-jax" in workflow
     assert "target: no-jax" in workflow

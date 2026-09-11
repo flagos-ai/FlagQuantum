@@ -29,7 +29,7 @@ jobs:
         include:
           - variant: cpu
             target: full
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
             extras: dev,jax,viz,examples,interop-all
             torch-index: https://download.pytorch.org/whl/cpu
             jax-spec: jax>=0.10,<0.11
@@ -41,7 +41,7 @@ jobs:
             jax-spec: jax[cuda12]>=0.10,<0.11
           - variant: cpu-no-jax
             target: no-jax
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
             extras: dev,viz,examples,quafu
             torch-index: https://download.pytorch.org/whl/cpu
           - variant: cuda-amd64-no-jax

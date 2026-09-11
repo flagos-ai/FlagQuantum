@@ -7,10 +7,16 @@ installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
 
 | Tag | Platform | Numerical stack |
 | --- | --- | --- |
-| `cpu` | Linux amd64 / arm64 | CPU PyTorch and JAX |
+| `cpu` | Linux amd64 | CPU PyTorch and JAX |
 | `cuda-amd64` | Linux amd64 | PyTorch CUDA 12.8, JAX CUDA 12 and Triton |
-| `cpu-no-jax` | Linux amd64 / arm64 | CPU PyTorch and QSteed in one environment |
+| `cpu-no-jax` | Linux amd64 | CPU PyTorch and QSteed in one environment |
 | `cuda-amd64-no-jax` | Linux amd64 | PyTorch CUDA 12.8, Triton and QSteed in one environment |
+
+All four images target Linux AMD64. The pinned Quafu/QSteed dependencies do
+not provide the required Linux ARM64 distributions, so these images do not
+claim native ARM64 support. On Apple Silicon, CPU images require AMD64
+emulation (`--platform linux/amd64`); GPU images require an NVIDIA Linux host.
+Compose selects AMD64 explicitly for every variant.
 
 The CUDA image includes CPU execution as well. Images install PyTorch 2.10.0;
 other dependency constraints come from `pyproject.toml`. QSteed is installed from

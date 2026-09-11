@@ -1,4 +1,5 @@
 x-flagquantum-dev: &flagquantum-dev
+  platform: linux/amd64
   image: ${FLAGQUANTUM_DEV_IMAGE:-flagquantum-dev:local}
   build: &dev-build
     context: .
