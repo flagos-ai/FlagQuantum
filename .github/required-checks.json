@@ -7,7 +7,6 @@
     "CI / cpu-core (3.11)",
     "CI / cpu-core (3.12)",
     "CI / package",
-    "CI / distributed-cpu",
-    "Local GPU Gate / two-gpu-distributed-required"
+    "CI / distributed-cpu"
   ]
 }

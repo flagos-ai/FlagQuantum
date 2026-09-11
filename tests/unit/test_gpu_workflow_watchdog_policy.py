@@ -20,12 +20,13 @@ def test_required_check_and_watchdog_policy_are_valid():
         )
 
 
-def test_required_gpu_workflows_fail_closed_and_bound_long_commands():
+def test_manual_gpu_workflows_fail_closed_and_bound_long_commands():
     root = Path(__file__).resolve().parents[2]
     local = (root / ".github/workflows/local-gpu.yml").read_text()
     scheduled = (root / ".github/workflows/scheduled-hardware.yml").read_text()
-    trigger = local.split("pull_request:", 1)[1].split("jobs:", 1)[0]
-    assert "paths:" not in trigger
+    trigger = local.split("jobs:", 1)[0]
+    assert "workflow_dispatch:" in trigger
+    assert "pull_request" not in trigger
     assert local.count("run_with_watchdog.py") >= 10
     assert scheduled.count("run_with_watchdog.py") >= 8
     scale_lane = scheduled.split("local-scale-scheduled:", 1)[1]

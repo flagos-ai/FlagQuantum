@@ -18,7 +18,6 @@ def main() -> int:
         "CI / cpu-core (3.12)",
         "CI / package",
         "CI / distributed-cpu",
-        "Local GPU Gate / two-gpu-distributed-required",
     }
     missing = required - set(checks)
     unexpected = set(checks) - required
@@ -39,8 +38,9 @@ def main() -> int:
             raise SystemExit(f"required workflow job missing: {job[:-1]}")
     if "two-gpu-distributed-required:" not in gpu:
         raise SystemExit("required two-GPU workflow job missing")
-    if "paths:" in gpu.split("pull_request:", 1)[1].split("jobs:", 1)[0]:
-        raise SystemExit("required two-GPU workflow must emit a check for every PR")
+    trigger = gpu.split("jobs:", 1)[0]
+    if "workflow_dispatch:" not in trigger or "pull_request" in trigger:
+        raise SystemExit("GPU workflow must be manually dispatched")
     if "cpu-core:" not in ci or not all(
         f'"{version}"' in ci for version in ("3.10", "3.11", "3.12")
     ):

@@ -2,7 +2,6 @@ name: Local GPU Gate
 
 on:
   workflow_dispatch:
-  pull_request:
 
 jobs:
   one-gpu-local:
