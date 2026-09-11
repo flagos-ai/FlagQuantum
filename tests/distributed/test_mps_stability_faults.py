@@ -44,8 +44,9 @@ def test_checkpoint_contract_faults_fail_closed(mode, tmp_path):
         capture_output=True,
         text=True,
         timeout=60,
-        check=True,
+        check=False,
     )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
     assert completed.stdout.count(f"expected_failure:{mode}") == 2
 
 
@@ -68,8 +69,9 @@ def test_explicit_stale_writer_lease_recovery_is_bounded(tmp_path):
         capture_output=True,
         text=True,
         timeout=60,
-        check=True,
+        check=False,
     )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
     assert completed.stdout.count(f"expected_success:{mode}") == 2
 
 

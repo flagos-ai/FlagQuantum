@@ -49,7 +49,12 @@ def main():
         ),
     )
     args = parser.parse_args()
-    dist.init_process_group("gloo", timeout=datetime.timedelta(seconds=3))
+    # Only the timeout fault needs a deliberately short collective deadline.
+    # Checkpoint/lease tests must tolerate normal shared-runner scheduling delays.
+    collective_timeout = 3 if args.mode == "collective_timeout" else 30
+    dist.init_process_group(
+        "gloo", timeout=datetime.timedelta(seconds=collective_timeout)
+    )
     rank = dist.get_rank()
     root = Path(os.environ.get("FQ_TEST_CHECKPOINT", tempfile.mkdtemp()))
     theta = torch.tensor(0.2, requires_grad=True)
