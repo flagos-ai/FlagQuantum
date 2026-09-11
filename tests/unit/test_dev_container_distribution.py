@@ -21,6 +21,9 @@ def test_ghcr_workflow_publishes_cpu_and_cuda_variants() -> None:
 
     assert "packages: write" in workflow
     assert "linux/amd64,linux/arm64" in workflow
+    assert "variant: cpu-no-jax" in workflow
+    assert "variant: cuda-amd64-no-jax" in workflow
+    assert "target: no-jax" in workflow
     assert "variant: cpu" in workflow
     assert "variant: cuda-amd64" in workflow
     assert "https://download.pytorch.org/whl/cu128" in workflow
@@ -38,5 +41,5 @@ def test_remote_publisher_keeps_cuda_and_cpu_namespaces_separate() -> None:
 
     assert 'current_tag="$image:cuda-amd64"' in publisher
     assert 'version_tag="$image:cuda-$version"' in publisher
-    assert '--tag "$image:cpu"' in publisher
-    assert '--tag "$image:cpu-$version"' in publisher
+    assert '--tag "$image:cpu${suffix}"' in publisher
+    assert '--tag "$image:cpu${suffix}-$version"' in publisher

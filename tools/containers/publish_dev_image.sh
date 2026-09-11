@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <cpu|cuda> [version]" >&2
+  echo "usage: $0 <cpu|cuda|cpu-no-jax|cuda-no-jax> [version]" >&2
   echo "environment: GHCR_OWNER, GHCR_IMAGE, FLAGQUANTUM_BASE_IMAGE" >&2
 }
 
@@ -14,7 +14,7 @@ fi
 variant="$1"
 
 case "$variant" in
-  cpu | cuda) ;;
+  cpu | cuda | cpu-no-jax | cuda-no-jax) ;;
   *)
     usage
     exit 2
@@ -47,19 +47,29 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 source_url="https://github.com/flagos-ai/FlagQuantum"
+target=full
+extras=dev,jax,viz,examples,interop-all
+suffix=""
+if [[ "$variant" == *-no-jax ]]; then
+  target=no-jax
+  extras=dev,viz,examples,quafu
+  suffix=-no-jax
+  variant="${variant%-no-jax}"
+fi
 
 case "$variant" in
   cpu)
     docker buildx build \
       --platform linux/amd64,linux/arm64 \
       --file docker/dev/Dockerfile \
+      --target "$target" \
       --build-arg BASE_IMAGE=python:3.12-slim-bookworm \
-      --build-arg EXTRAS=dev,jax,viz,examples,interop-all \
+      --build-arg EXTRAS="$extras" \
       --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu \
       --build-arg SOURCE_URL="$source_url" \
       --build-arg SOURCE_REVISION="$version" \
-      --tag "$image:cpu" \
-      --tag "$image:cpu-$version" \
+      --tag "$image:cpu${suffix}" \
+      --tag "$image:cpu${suffix}-$version" \
       --provenance=mode=max \
       --sbom=true \
       --push \
@@ -69,12 +79,17 @@ case "$variant" in
     base_image="${FLAGQUANTUM_BASE_IMAGE:-python:3.12-slim-bookworm}"
     version_tag="$image:cuda-$version"
     current_tag="$image:cuda-amd64"
+    if [[ -n "$suffix" ]]; then
+      version_tag="$image:cuda${suffix}-$version"
+      current_tag="$image:cuda-amd64${suffix}"
+    fi
 
     docker build \
       --platform linux/amd64 \
       --file docker/dev/Dockerfile \
+      --target "$target" \
       --build-arg BASE_IMAGE="$base_image" \
-      --build-arg EXTRAS=dev,jax,viz,examples,interop-all,cuda \
+      --build-arg EXTRAS="$extras,cuda" \
       --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu128 \
       --build-arg 'JAX_SPEC=jax[cuda12]>=0.10,<0.11' \
       --build-arg SOURCE_URL="$source_url" \

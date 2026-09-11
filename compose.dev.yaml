@@ -3,6 +3,7 @@ x-flagquantum-dev: &flagquantum-dev
   build: &dev-build
     context: .
     dockerfile: docker/dev/Dockerfile
+    target: full
     args: &dev-build-args
       BASE_IMAGE: ${FLAGQUANTUM_BASE_IMAGE:-python:3.12-slim-bookworm}
       EXTRAS: ${FLAGQUANTUM_DEV_EXTRAS:-dev,jax,viz,examples,interop-all}
@@ -37,6 +38,36 @@ services:
     platform: linux/amd64
     profiles: [gpu]
     gpus: all
+    environment:
+      PYTHONPATH: /workspace
+      PYTHONUNBUFFERED: "1"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+
+  dev-no-jax:
+    <<: *flagquantum-dev
+    image: ${FLAGQUANTUM_NO_JAX_DEV_IMAGE:-flagquantum-dev:cpu-no-jax-local}
+    profiles: [cpu-no-jax]
+    build:
+      <<: *dev-build
+      target: no-jax
+      args:
+        <<: *dev-build-args
+        EXTRAS: dev,viz,examples,quafu
+
+  dev-gpu-no-jax:
+    <<: *flagquantum-dev
+    image: ${FLAGQUANTUM_GPU_NO_JAX_DEV_IMAGE:-flagquantum-dev:cuda-no-jax-local}
+    profiles: [gpu-no-jax]
+    platform: linux/amd64
+    gpus: all
+    build:
+      <<: *dev-build
+      target: no-jax
+      args:
+        <<: *dev-build-args
+        EXTRAS: dev,viz,examples,quafu,cuda
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cu128
     environment:
       PYTHONPATH: /workspace
       PYTHONUNBUFFERED: "1"

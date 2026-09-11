@@ -28,15 +28,27 @@ jobs:
       matrix:
         include:
           - variant: cpu
+            target: full
             platforms: linux/amd64,linux/arm64
             extras: dev,jax,viz,examples,interop-all
             torch-index: https://download.pytorch.org/whl/cpu
             jax-spec: jax>=0.10,<0.11
           - variant: cuda-amd64
+            target: full
             platforms: linux/amd64
             extras: dev,jax,viz,examples,interop-all,cuda
             torch-index: https://download.pytorch.org/whl/cu128
             jax-spec: jax[cuda12]>=0.10,<0.11
+          - variant: cpu-no-jax
+            target: no-jax
+            platforms: linux/amd64,linux/arm64
+            extras: dev,viz,examples,quafu
+            torch-index: https://download.pytorch.org/whl/cpu
+          - variant: cuda-amd64-no-jax
+            target: no-jax
+            platforms: linux/amd64
+            extras: dev,viz,examples,quafu,cuda
+            torch-index: https://download.pytorch.org/whl/cu128
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -83,6 +95,7 @@ jobs:
         with:
           context: .
           file: docker/dev/Dockerfile
+          target: ${{ matrix.target }}
           platforms: ${{ matrix.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

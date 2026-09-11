@@ -15,11 +15,9 @@ def main() -> None:
         "--gpu", action="store_true", help="Require real CUDA execution"
     )
     parser.add_argument(
-        "--qsteed", action="store_true", help="Test the isolated compiler environment"
+        "--qsteed", action="store_true", help="Test QSteed instead of JAX"
     )
     args = parser.parse_args()
-    if args.qsteed and args.gpu:
-        parser.error("The isolated compiler environment uses CPU PyTorch")
     device = "cuda" if args.gpu else "cpu"
     if args.gpu and not torch.cuda.is_available():
         raise RuntimeError("PyTorch cannot access a CUDA device")

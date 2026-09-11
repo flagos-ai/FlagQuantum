@@ -1,6 +1,6 @@
 # Development containers
 
-The main Python environment installs FlagQuantum from the repository checkout,
+The JAX-enabled variants' main Python environment installs FlagQuantum from the repository checkout,
 JAX, plotting and example dependencies, and the Braket, PennyLane, Quafu and
 Qiskit interoperability dependencies. A second environment in the same image
 installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
@@ -9,14 +9,39 @@ installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
 | --- | --- | --- |
 | `cpu` | Linux amd64 / arm64 | CPU PyTorch and JAX |
 | `cuda-amd64` | Linux amd64 | PyTorch CUDA 12.8, JAX CUDA 12 and Triton |
+| `cpu-no-jax` | Linux amd64 / arm64 | CPU PyTorch and QSteed in one environment |
+| `cuda-amd64-no-jax` | Linux amd64 | PyTorch CUDA 12.8, Triton and QSteed in one environment |
 
 The CUDA image includes CPU execution as well. Images install PyTorch 2.10.0;
 other dependency constraints come from `pyproject.toml`. QSteed is installed from
 the tested upstream commit in `requirements-qsteed.txt`, followed by the released
-adapter in `/opt/qsteed`. The compiler remains independently replaceable through FlagQuantum's
+adapter (in `/opt/qsteed` for JAX-enabled variants). The compiler remains independently replaceable through FlagQuantum's
 extension interface. No provider credentials are included.
 
-## Use QSteed
+## Without JAX
+
+Choose `cpu-no-jax` or `cuda-amd64-no-jax` to train and compile from the same
+script using ordinary `python` and `fq.compile(..., compiler="qsteed")`.
+These variants include development tools, plotting, example dependencies and
+Quafu. They omit JAX/JAXlib and the broader `interop-all` extra: its PennyLane
+version also requires NumPy 2, conflicting with QSteed's NumPy 1 requirement.
+No separate compiler environment is needed.
+
+```bash
+docker compose -f compose.dev.yaml --profile gpu-no-jax build dev-gpu-no-jax
+docker compose -f compose.dev.yaml --profile gpu-no-jax run --rm dev-gpu-no-jax \
+  python your_training_and_compilation_script.py
+```
+
+For CPU, use profile `cpu-no-jax` and service `dev-no-jax`. To verify GPU
+execution and QSteed compilation together after publishing:
+
+```bash
+docker run --rm --gpus all ghcr.io/flagos-ai/flagquantum-dev:cuda-amd64-no-jax \
+  python /opt/FlagQuantum/docker/dev/smoke.py --gpu --qsteed
+```
+
+## Use QSteed with JAX-enabled variants
 
 QSteed and pyquafu currently require NumPy < 2, while JAX 0.10 requires NumPy >= 2.
 They cannot share one Python environment. The image isolates the compiler and
@@ -65,7 +90,8 @@ current checkout at `/workspace`.
 
 ## Verify the installed stack
 
-Every image build runs `pip check` in both environments. The main environment
+Every image build runs `pip check` in each installed environment. No-JAX builds
+also assert that neither `jax` nor `jaxlib` is installed and exercise QSteed. The main environment
 tests PyTorch autograd, JAX JIT and FlagQuantum execution; the isolated compiler
 tests PyTorch autograd, FlagQuantum execution and QSteed topology compilation.
 On an NVIDIA host, also run:
@@ -86,5 +112,6 @@ claims. Rebuild when dependencies change. For distributed runs, use the same
 image digest on every node and synchronize any mounted source checkout.
 
 Maintainers can also publish from an authenticated build host with
-`tools/containers/publish_dev_image.sh cpu` or `tools/containers/publish_dev_image.sh cuda`.
+`tools/containers/publish_dev_image.sh cpu` or `tools/containers/publish_dev_image.sh cuda`. Append `-no-jax` to the variant
+argument to publish its single-environment counterpart.
 Keep registry tokens outside source files and Docker build arguments.
