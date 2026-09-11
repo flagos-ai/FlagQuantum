@@ -249,7 +249,31 @@ class PhysicalCircuitPlan:
         )
         identity_layout, allocated = self._validate_wire_layout(source)
         self._validate_stage_identities()
-        recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
+        recorded_coupling = self._validate_topology_evidence(
+            identity_layout=identity_layout,
+            allocated=allocated,
+        )
+        self._validate_instruction_records(source, recorded_coupling)
+        if self.critical_path != _critical_path(self.legalization):
+            raise PhysicalPlanError("physical plan critical path is inconsistent")
+        expected_identity = hashlib.sha256(
+            json.dumps(
+                _plan_identity_payload(self),
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        if self.plan_identity and self.plan_identity != expected_identity:
+            raise PhysicalPlanError("plan_identity does not match physical plan")
+        object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_topology_evidence(
+        self,
+        *,
+        identity_layout: tuple[int, ...],
+        allocated: bool,
+    ) -> CouplingMap | DirectedCouplingMap | None:
+        topology = self.legalization.topology_legalization
         if topology is None:
             if (
                 self.topology_identity is not None
@@ -264,6 +288,7 @@ class PhysicalCircuitPlan:
                 raise PhysicalPlanError(
                     "physical plan without topology has mapping evidence"
                 )
+            recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
         else:
             if self.coupling_n_wires is None:
                 raise PhysicalPlanError("physical plan lacks coupling-map size")
@@ -312,19 +337,7 @@ class PhysicalCircuitPlan:
             or self.allocation_identity is not None
         ):
             raise PhysicalPlanError("version-1/2 physical plan has allocation evidence")
-        self._validate_instruction_records(source, recorded_coupling)
-        if self.critical_path != _critical_path(self.legalization):
-            raise PhysicalPlanError("physical plan critical path is inconsistent")
-        expected_identity = hashlib.sha256(
-            json.dumps(
-                _plan_identity_payload(self),
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-        ).hexdigest()
-        if self.plan_identity and self.plan_identity != expected_identity:
-            raise PhysicalPlanError("plan_identity does not match physical plan")
-        object.__setattr__(self, "plan_identity", expected_identity)
+        return recorded_coupling
 
     def _validate_wire_layout(self, source: CircuitIR) -> tuple[tuple[int, ...], bool]:
         identity_layout = tuple(range(source.n_wires))
