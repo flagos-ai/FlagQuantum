@@ -1,0 +1,101 @@
+{
+  "benchmark": "tn_layout_contraction",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": "NVIDIA A100-SXM4-40GB",
+  "direct_cold_seconds": 2.8905091639608145,
+  "direct_forward": {
+    "median_step_seconds": 0.0014970884347955385,
+    "peak_increment_bytes": 524288,
+    "peak_memory_bytes": 287571968,
+    "samples_seconds": [
+      0.0015090310946106911,
+      0.0014970884347955385,
+      0.001497127115726471,
+      0.00149671770632267,
+      0.0014961052065094313
+    ]
+  },
+  "direct_layout": {
+    "median_step_seconds": 0.005502906007071336,
+    "peak_increment_bytes": 134742016,
+    "peak_memory_bytes": 413270016,
+    "samples_seconds": [
+      0.005714937299489975,
+      0.005706703041990598,
+      0.005502906007071336,
+      0.004519785940647125,
+      0.004518862317005793
+    ]
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "iterations": 15,
+  "logical_shape": [
+    16,
+    64,
+    8192,
+    64
+  ],
+  "materialized_layout": {
+    "median_step_seconds": 0.0035206664353609083,
+    "peak_increment_bytes": 268959744,
+    "peak_memory_bytes": 547487744,
+    "samples_seconds": [
+      0.009146771269539992,
+      0.003521310289700826,
+      0.0035206664353609083,
+      0.003520139368871848,
+      0.0035200071210662524
+    ]
+  },
+  "max_abs_error": 0.001471944386139512,
+  "native": {
+    "median_step_seconds": 0.002310069774587949,
+    "peak_increment_bytes": 268959744,
+    "peak_memory_bytes": 556007424,
+    "samples_seconds": [
+      0.0179647625113527,
+      0.0023026470094919204,
+      0.002302350476384163,
+      0.002310069774587949,
+      0.002315261649588744
+    ]
+  },
+  "native_forward": {
+    "median_step_seconds": 0.0018023371075590452,
+    "peak_increment_bytes": 134742016,
+    "peak_memory_bytes": 421789696,
+    "samples_seconds": [
+      0.0019124713415900865,
+      0.0018019785483678183,
+      0.0018023371075590452,
+      0.0018025141209363938,
+      0.0018015757203102111
+    ]
+  },
+  "native_over_direct": 0.41979088351126964,
+  "native_over_direct_forward": 1.2038948840087695,
+  "non_release_evidence": true,
+  "peak_memory_ratio": 0.7548479770169978,
+  "physical_left_shape": [
+    64,
+    16,
+    128,
+    64
+  ],
+  "physical_right_shape": [
+    128,
+    16,
+    64,
+    64
+  ],
+  "release_gate_allowed": false,
+  "repeats": 5,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "speedup": 0.6397831311014193,
+  "torch_version": "2.13.0+cu130",
+  "warmup": 5
+}

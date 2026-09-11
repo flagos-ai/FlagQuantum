@@ -1,0 +1,159 @@
+{
+  "schema": "flagquantum.compilation_evidence_bundle_candidate_contract",
+  "status": "approved_evidence_handoff_complete",
+  "approved_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE",
+  "envelope_schema": "flagquantum.compilation_evidence_bundle",
+  "version": "1.0",
+  "top_level_fields": [
+    "schema",
+    "version",
+    "producer",
+    "source",
+    "target",
+    "physical_plan",
+    "output",
+    "bundle_identity"
+  ],
+  "source_fields": [
+    "source_artifact_identity",
+    "circuit_artifact_identity",
+    "binding_identity",
+    "source_circuit_hash",
+    "final_circuit_hash"
+  ],
+  "target_fields": [
+    "snapshot_id",
+    "target_legalization_identity"
+  ],
+  "physical_plan_fields": [
+    "plan_identity",
+    "source_circuit_hash",
+    "physical_circuit_hash",
+    "topology_identity",
+    "coupling",
+    "initial_logical_to_physical",
+    "pre_restore_logical_to_physical",
+    "final_logical_to_physical",
+    "mapping_transitions",
+    "instructions",
+    "topology_legalization_identity",
+    "native_gate_legalization_identity",
+    "schedule_identity",
+    "schedule_depth",
+    "maximum_parallel_width",
+    "critical_path"
+  ],
+  "coupling_fields": [
+    "n_wires",
+    "edges",
+    "direction_semantics"
+  ],
+  "mapping_transition_fields": [
+    "routed_instruction_index",
+    "source_instruction_index",
+    "phase",
+    "physical_wires",
+    "layout_before",
+    "layout_after"
+  ],
+  "instruction_fields": [
+    "instruction_index",
+    "source_instruction_index",
+    "topology_instruction_index",
+    "native_replacement_ordinal",
+    "origin",
+    "opcode",
+    "logical_wires",
+    "physical_wires",
+    "layer",
+    "predecessors",
+    "dependency_kinds"
+  ],
+  "output_fields": [
+    "profile",
+    "payload_sha256",
+    "emission_identity",
+    "conformance_identity",
+    "executable_artifact_identity",
+    "artifact_compilation_identity"
+  ],
+  "identity_encoding": {
+    "algorithm": "sha256",
+    "input": "all_top_level_fields_except_bundle_identity",
+    "character_encoding": "utf-8",
+    "sort_keys": true,
+    "separators": [",", ":"],
+    "ensure_ascii": true,
+    "allow_nan": false
+  },
+  "closed_records": true,
+  "duplicate_json_keys_rejected": true,
+  "semantic_profile": {
+    "source": "fully_bound_circuit_artifact_or_verified_binding",
+    "topology": "optional_undirected_coupling",
+    "initial_layout": "identity",
+    "final_layout": "identity",
+    "schedule": "unit_time_dependency_layers",
+    "authoritative_circuit": "flagquantum.core.ir.CircuitIR",
+    "second_target_ir": false
+  },
+  "limits": {
+    "maximum_bundle_utf8_bytes": 16777216,
+    "maximum_instruction_records": 4096,
+    "maximum_mapping_transitions": 4096,
+    "maximum_predecessors_per_instruction": 4096,
+    "maximum_nesting_depth": 8,
+    "maximum_non_identity_string_utf8_bytes": 256
+  },
+  "required_external_verification_objects": [
+    "source_circuit_artifact_or_binding_result",
+    "target_capability_snapshot",
+    "executable_program_artifact",
+    "physical_circuit_plan"
+  ],
+  "prohibited_content": [
+    "credentials",
+    "tokens",
+    "secrets",
+    "private_keys",
+    "provider_sdk_objects",
+    "live_handles",
+    "job_ids_or_queue_state",
+    "callback_urls",
+    "local_file_paths",
+    "arbitrary_remote_urls",
+    "binary_blobs",
+    "executable_code",
+    "execution_request_fields",
+    "mutable_calibration_objects"
+  ],
+  "excluded_claims": [
+    "directed_edge_synthesis",
+    "physical_ancilla_allocation",
+    "gate_duration",
+    "pulse_scheduling",
+    "crosstalk",
+    "calibration_aware_optimization",
+    "fault_tolerant_resource_expansion",
+    "numerical_correctness",
+    "hardware_performance"
+  ],
+  "compatibility": {
+    "program_artifact_v1_changed": false,
+    "program_artifact_v2_changed": false,
+    "existing_executable_artifact_requires_bundle": false,
+    "implicit_artifact_metadata_encoding": false,
+    "public_root_export": false,
+    "default_path_change": false
+  },
+  "implementation": {
+    "authorized": true,
+    "core_value_model_added": true,
+    "compiler_builder_added": true,
+    "runtime_verifier_added": true,
+    "deployment_adapter_added": true,
+    "provider_submission_added": false
+  }
+}

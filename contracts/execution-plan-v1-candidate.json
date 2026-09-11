@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "status": "frozen",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md",
+  "target": "first-public-alpha",
+  "root_addition": "ExecutionPlan",
+  "implementation_authorized": true,
+  "root_manifest_authorized": true,
+  "proposed_signatures": {
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+  },
+  "contract": {
+    "kind": "immutable_factory_value",
+    "public_constructor": false,
+    "schema": "flagquantum.execution_plan",
+    "serialization_version": "1.0",
+    "identity_algorithm": "sha256_canonical_json",
+    "properties": [
+      {"name": "identity", "type": "str"},
+      {"name": "schema_version", "type": "str"},
+      {"name": "program_fingerprint", "type": "str"},
+      {"name": "options_fingerprint", "type": "str"},
+      {"name": "environment_fingerprint", "type": "str"},
+      {"name": "compiler_fingerprint", "type": "str"},
+      {"name": "mode", "type": "str"},
+      {"name": "backend", "type": "str"},
+      {"name": "device", "type": "str"},
+      {"name": "target", "type": "str"},
+      {"name": "batch_size", "type": "int"},
+      {"name": "precision", "type": "str"},
+      {"name": "world_size", "type": "int"},
+      {"name": "state_bytes", "type": "int"},
+      {"name": "is_distributed", "type": "bool"}
+    ],
+    "methods": [
+      "summary",
+      "to_dict",
+      "to_json",
+      "from_dict",
+      "from_json"
+    ]
+  },
+  "serialization": {
+    "required_top_level_fields": [
+      "schema",
+      "version",
+      "identity",
+      "program",
+      "requested_options",
+      "resolved_options",
+      "fingerprints",
+      "environment_requirements",
+      "decision",
+      "extensions"
+    ],
+    "fingerprint_fields": [
+      "program",
+      "options",
+      "environment",
+      "compiler"
+    ],
+    "extension_identity_fields": [
+      "namespace",
+      "kind",
+      "version",
+      "identity"
+    ],
+    "format": "canonical_json",
+    "pickle_allowed": false,
+    "unknown_top_level_fields_fail": true,
+    "identity_recomputed_on_read": true
+  },
+  "identity_inputs": [
+    "execution_plan_schema_and_version",
+    "program_fingerprint",
+    "resolved_execution_semantics",
+    "compiler_fingerprint",
+    "required_environment_constraints",
+    "selected_execution_decision",
+    "versioned_extension_identities"
+  ],
+  "identity_exclusions": [
+    "created_at",
+    "runtime_duration",
+    "hostname",
+    "pid",
+    "rank_id",
+    "instantaneous_available_memory",
+    "performance_counters",
+    "mapping_insertion_order",
+    "python_repr",
+    "object_address",
+    "log_path",
+    "cache_path",
+    "credentials",
+    "provider_transport_metadata"
+  ],
+  "plan_input_rules": {
+    "options_must_be_none": true,
+    "measurements_must_be_none": true,
+    "noise_model_must_be_none": true,
+    "replanning_forbidden": true,
+    "silent_fallback_forbidden": true,
+    "result_plan_is_input_plan_in_process": true
+  },
+  "stale_reason_codes": [
+    "unsupported_schema",
+    "identity_mismatch",
+    "program_fingerprint_mismatch",
+    "options_fingerprint_mismatch",
+    "compiler_incompatible",
+    "environment_incompatible",
+    "backend_unavailable",
+    "world_size_mismatch",
+    "extension_incompatible"
+  ],
+  "boundaries": {
+    "local_executable": true,
+    "cross_process_restore": true,
+    "deployment_package": false,
+    "provider_credentials_allowed": false,
+    "live_runtime_objects_allowed": false,
+    "stable_binary_artifacts": false
+  },
+  "rules": {
+    "candidate_is_frozen_contract": true,
+    "implementation_requires_api_owner_approval": true,
+    "root_manifest_requires_separate_approval": true,
+    "measurement_noise_result_semantics_deferred": false,
+    "measurement_noise_result_contract": "contracts/execution-result-v1-candidate.json"
+  }
+}

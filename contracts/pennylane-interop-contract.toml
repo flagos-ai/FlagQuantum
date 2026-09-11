@@ -1,0 +1,133 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_pennylane_interop_contract_v1"
+ir_version = "1.0"
+maturity = "experimental"
+dependency_extra = "pennylane"
+pennylane_versions = ["0.44.1", "0.45.1"]
+python_minimum = "3.11"
+core_import_allowed = false
+runtime_execution_allowed = false
+autograd_bridge_allowed = false
+
+[semantics]
+artifact = "pennylane.tape.QuantumScript"
+wire_mapping = "contiguous_integer_identity_or_explicit_script_order_flattening"
+statevector_order = "wire_zero_most_significant"
+dtype = "complex128"
+parameters = "bound_real_scalars_only"
+shots = "execution_policy_not_in_ir"
+measurements = "execution_plan_not_in_ir"
+loss_policy = "fail_closed_unless_allow_lossy_true"
+
+[unsupported]
+flagquantum_opcodes = ["sdg", "tdg", "sxdg", "u1", "u2", "u3", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+issue_codes = ["complex_gate_parameter", "execution_requests_not_represented", "finite_shots_not_represented", "idle_wire_extent_not_represented", "measurements_not_represented", "parameter_arity_mismatch", "symbolic_parameter_not_supported", "trainable_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value", "wire_labels_flattened"]
+
+[verification]
+policy = "tests/unit/test_pennylane_interop_contract.py"
+integration = "tests/test_pennylane_interop.py"
+conformance = "tests/test_pennylane_interop_conformance.py"
+core_isolation = "tests/unit/test_pennylane_interop_boundary.py"
+
+[parameter_contract]
+Identity = []
+PauliX = []
+PauliY = []
+PauliZ = []
+Hadamard = []
+S = []
+T = []
+SX = []
+RX = ["theta"]
+RY = ["theta"]
+RZ = ["theta"]
+PhaseShift = ["theta"]
+CNOT = []
+CY = []
+CZ = []
+SWAP = []
+CRX = ["theta"]
+CRY = ["theta"]
+CRZ = ["theta"]
+ControlledPhaseShift = ["theta"]
+IsingXX = ["theta"]
+IsingYY = ["theta"]
+IsingZZ = ["theta"]
+Toffoli = []
+CSWAP = []
+
+[[operations]]
+pennylane = "Identity"
+flagquantum = "i"
+[[operations]]
+pennylane = "PauliX"
+flagquantum = "x"
+[[operations]]
+pennylane = "PauliY"
+flagquantum = "y"
+[[operations]]
+pennylane = "PauliZ"
+flagquantum = "z"
+[[operations]]
+pennylane = "Hadamard"
+flagquantum = "h"
+[[operations]]
+pennylane = "S"
+flagquantum = "s"
+[[operations]]
+pennylane = "T"
+flagquantum = "t"
+[[operations]]
+pennylane = "SX"
+flagquantum = "sx"
+[[operations]]
+pennylane = "RX"
+flagquantum = "rx"
+[[operations]]
+pennylane = "RY"
+flagquantum = "ry"
+[[operations]]
+pennylane = "RZ"
+flagquantum = "rz"
+[[operations]]
+pennylane = "PhaseShift"
+flagquantum = "phase"
+[[operations]]
+pennylane = "CNOT"
+flagquantum = "cx"
+[[operations]]
+pennylane = "CY"
+flagquantum = "cy"
+[[operations]]
+pennylane = "CZ"
+flagquantum = "cz"
+[[operations]]
+pennylane = "SWAP"
+flagquantum = "swap"
+[[operations]]
+pennylane = "CRX"
+flagquantum = "crx"
+[[operations]]
+pennylane = "CRY"
+flagquantum = "cry"
+[[operations]]
+pennylane = "CRZ"
+flagquantum = "crz"
+[[operations]]
+pennylane = "ControlledPhaseShift"
+flagquantum = "cphase"
+[[operations]]
+pennylane = "IsingXX"
+flagquantum = "rxx"
+[[operations]]
+pennylane = "IsingYY"
+flagquantum = "ryy"
+[[operations]]
+pennylane = "IsingZZ"
+flagquantum = "rzz"
+[[operations]]
+pennylane = "Toffoli"
+flagquantum = "ccx"
+[[operations]]
+pennylane = "CSWAP"
+flagquantum = "cswap"

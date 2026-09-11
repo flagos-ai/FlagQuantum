@@ -1,0 +1,142 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.0024705786005489723,
+    "mean_seconds": 3.550692121963948,
+    "median_seconds": 3.5555041739717126,
+    "sample_count": 3,
+    "samples_seconds": [
+      3.5555041739717126,
+      3.538383468054235,
+      3.5581887238658965
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 146028888080,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 7.591082795688209e-08
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.0015679662249935657,
+    "mean_seconds": 1.1229623559241493,
+    "median_seconds": 1.1237839199602604,
+    "sample_count": 3,
+    "samples_seconds": [
+      1.1237839199602604,
+      1.1205158368684351,
+      1.1245873109437525
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.009105977917194433,
+    "mean_seconds": 4.703066998316596,
+    "median_seconds": 4.685983750037849,
+    "peak_memory_bytes_max": 34896616448,
+    "sample_count": 3,
+    "samples_seconds": [
+      4.7619298356585205,
+      4.6612874092534184,
+      4.685983750037849
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.3351458442633619,
+    "mean_seconds": 1.263916799488167,
+    "median_seconds": 0.9708860837854445,
+    "peak_memory_bytes_max": 19327356416,
+    "sample_count": 3,
+    "samples_seconds": [
+      1.8629260188899934,
+      0.957938295789063,
+      0.9708860837854445
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 4,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.2834262333822957,
+    "mean_seconds": 0.02947032591328025,
+    "median_seconds": 0.003460706677287817,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.08295343304052949,
+      0.0019968380220234394,
+      0.003460706677287817
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 3,
+      "rank": 3
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 1,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 1073741824,
+    "n_wires": 32,
+    "observable": "Z(30)",
+    "optimizer": "adam"
+  },
+  "world_size": 4
+}

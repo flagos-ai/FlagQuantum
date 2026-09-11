@@ -1,17 +1,3 @@
-# Copyright 2026 FlagOS Contributors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 # ruff: noqa: E501  # Ignore line length warnings
 import argparse
 import math
@@ -23,14 +9,42 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F  # noqa: N812
-from datasets import load_dataset
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
 
 import flagquantum as fq
 
+IMDB_DATASET_ID = "stanfordnlp/imdb"
+IMDB_DATASET_REVISION = "e628166"
+BERT_TOKENIZER_ID = "google-bert/bert-base-uncased"
+BERT_TOKENIZER_REVISION = "b644e1d1cc3f080c2e6d4db69cfdfac83719c814"
+
 # ==================== Core Modules ====================
+
+
+class QuantumFeatureLayer(nn.Module):
+    """Batched, differentiable FlagQuantum feature map.
+
+    This is intentionally a ``single_device_fast_path`` example.  Distributed
+    data parallelism may replicate the surrounding PyTorch model, but the
+    quantum circuit executed by each rank remains local.
+    """
+
+    def __init__(self, n_qubits: int = 8, n_layers: int = 3):
+        super().__init__()
+        self.n_qubits = n_qubits
+        self.angles = nn.Parameter(torch.zeros(n_layers, n_qubits))
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        circuit = fq.Circuit(n_qubits=self.n_qubits, bsz=inputs.shape[0])
+        for qubit in range(self.n_qubits):
+            circuit.ry(qubit=qubit, theta=inputs[:, qubit])
+        for layer_angles in self.angles:
+            for qubit in range(self.n_qubits):
+                circuit.cx(control=qubit, target=(qubit + 1) % self.n_qubits)
+            for qubit in range(self.n_qubits):
+                circuit.ry(qubit=qubit, theta=layer_angles[qubit])
+        return circuit.expectation_z(tuple(range(self.n_qubits)))
 
 
 class MultiHeadAttentionBase(nn.Module):
@@ -146,37 +160,6 @@ class MultiHeadAttentionClassical(MultiHeadAttentionBase):
 class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
     """Quantum multi-head attention"""
 
-    class QLayer(nn.Module):
-        def __init__(self, n_wires: int = 8, n_layers: int = 3):
-            super().__init__()
-            self.n_wires = n_wires
-            self.n_layers = n_layers
-
-            func_list = [
-                {"func": "ry", "wires": [i], "input_idx": [i]} for i in range(n_wires)
-            ]
-            self.encoder = fq.GeneralEncoder(func_list)
-
-            base_mod = [self.encoder]
-            for _ in range(n_layers):
-                base_mod = (
-                    base_mod
-                    + [fq.CX(wires=[i, (i + 1) % n_wires]) for i in range(n_wires)]
-                    + [
-                        fq.RY(wires=[i], has_params=True, trainable=True)
-                        for i in range(n_wires)
-                    ]
-                )
-
-            self.unitary_mod = fq.InvertibleUnitary(base_mod)
-
-        def forward(
-            self, x: torch.Tensor, q_device: fq.DistributedQuantumDevice
-        ) -> torch.Tensor:
-            q_device.reset_states()
-            self.unitary_mod(q_device, x)
-            return fq.measure_allZ(q_device, shots=0, training=True)
-
     def __init__(
         self,
         embed_dim: int,
@@ -192,32 +175,13 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
         self.n_qlayers = n_qlayers
         self.world_size = world_size
 
-        self.q_device = None
-        self.last_bsz = None
-
-        self.q_layer = self.QLayer(n_wires=n_qubits, n_layers=n_qlayers)
+        self.q_layer = QuantumFeatureLayer(
+            n_qubits=n_qubits,
+            n_layers=n_qlayers,
+        )
         self.proj_in = nn.Linear(embed_dim, n_qubits)
         self.proj_out = nn.Linear(n_qubits, embed_dim)
         self.norm = nn.LayerNorm(embed_dim)
-
-    def _get_device(self, bsz: int) -> fq.DistributedQuantumDevice:
-        """Get or create a quantum device"""
-        if self.q_device is None or self.last_bsz != bsz:
-            if self.q_device is not None:
-                del self.q_device
-                torch.cuda.empty_cache()
-
-            self.q_device = fq.DistributedQuantumDevice(
-                n_wires=self.n_qubits,
-                bsz=bsz,
-                device="cuda",
-                world_sz=self.world_size,
-                invertible=True,
-            )
-            self.last_bsz = bsz
-        else:
-            self.q_device.reset_states()
-        return self.q_device
 
     def forward(
         self, x: torch.Tensor, mask: Optional[torch.Tensor] = None
@@ -228,12 +192,10 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
         x_flat = x.reshape(-1, embed_dim)
         x_qubit = self.proj_in(x_flat)
 
-        current_dev = self._get_device(batch_size * seq_len)
-
         # Parallel computation of Q, K, V
-        k_flat = self.q_layer(x_qubit, current_dev)
-        q_flat = self.q_layer(x_qubit, current_dev)
-        v_flat = self.q_layer(x_qubit, current_dev)
+        k_flat = self.q_layer(x_qubit)
+        q_flat = self.q_layer(x_qubit)
+        v_flat = self.q_layer(x_qubit)
 
         k = k_flat.to(device).view(batch_size, seq_len, self.n_qubits)
         q = q_flat.to(device).view(batch_size, seq_len, self.n_qubits)
@@ -248,7 +210,7 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
 
         x_attn_flat = x_attn.reshape(-1, embed_dim)
         x_attn_qubit = self.proj_in(x_attn_flat)
-        output_flat = self.q_layer(x_attn_qubit, current_dev).to(device)
+        output_flat = self.q_layer(x_attn_qubit).to(device)
 
         return self.proj_out(output_flat).view(batch_size, seq_len, embed_dim)
 
@@ -278,37 +240,6 @@ class FeedForwardClassical(FeedForwardBase):
 class FeedForwardQuantum(FeedForwardBase):
     """Quantum feed-forward network"""
 
-    class QL(nn.Module):
-        def __init__(self, n_wires: int = 8, n_layers: int = 3):
-            super().__init__()
-            self.n_wires = n_wires
-            self.n_layers = n_layers
-
-            func_list = [
-                {"func": "ry", "wires": [i], "input_idx": [i]} for i in range(n_wires)
-            ]
-            self.encoder = fq.GeneralEncoder(func_list)
-
-            base_mod = [self.encoder]
-            for _ in range(n_layers):
-                base_mod = (
-                    base_mod
-                    + [fq.CX(wires=[i, (i + 1) % n_wires]) for i in range(n_wires)]
-                    + [
-                        fq.RY(wires=[i], has_params=True, trainable=True)
-                        for i in range(n_wires)
-                    ]
-                )
-
-            self.unitary_mod = fq.InvertibleUnitary(base_mod)
-
-        def forward(
-            self, x: torch.Tensor, q_device: fq.DistributedQuantumDevice
-        ) -> torch.Tensor:
-            q_device.reset_states()
-            self.unitary_mod(q_device, x)
-            return fq.measure_allZ(q_device, shots=0, training=True)
-
     def __init__(
         self,
         embed_dim: int,
@@ -324,32 +255,13 @@ class FeedForwardQuantum(FeedForwardBase):
         self.n_qlayers = n_qlayers
         self.world_size = world_size
 
-        self.q_device = None
-        self.last_bsz = None
-
-        self.q_l = self.QL(n_wires=n_qubits, n_layers=n_qlayers)
+        self.q_l = QuantumFeatureLayer(
+            n_qubits=n_qubits,
+            n_layers=n_qlayers,
+        )
         self.linear_1 = nn.Linear(embed_dim, n_qubits)
         self.linear_2 = nn.Linear(n_qubits, embed_dim)
         self.norm = nn.LayerNorm(embed_dim)
-
-    def _get_device(self, bsz: int) -> fq.DistributedQuantumDevice:
-        """Get or create a quantum device"""
-        if self.q_device is None or self.last_bsz != bsz:
-            if self.q_device is not None:
-                del self.q_device
-                torch.cuda.empty_cache()
-
-            self.q_device = fq.DistributedQuantumDevice(
-                n_wires=self.n_qubits,
-                bsz=bsz,
-                device="cuda",
-                world_sz=self.world_size,
-                invertible=True,
-            )
-            self.last_bsz = bsz
-        else:
-            self.q_device.reset_states()
-        return self.q_device
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size, seq_len, _ = x.size()
@@ -358,8 +270,7 @@ class FeedForwardQuantum(FeedForwardBase):
         x = self.linear_1(x)
         x_flat = x.reshape(-1, self.n_qubits)
 
-        q_device = self._get_device(batch_size * seq_len)
-        x_flat_out = self.q_l(x_flat, q_device)
+        x_flat_out = self.q_l(x_flat)
 
         if x_flat_out.device != x.device:
             x_flat_out = x_flat_out.to(x.device)
@@ -582,8 +493,12 @@ def get_dataset_loaders(
     tokenizer, max_seq_len: int, batch_size: int
 ) -> Tuple[DataLoader, DataLoader]:
     """Get train and test data loaders for IMDB dataset"""
-    local_path = "./models/imdb_dataset"
-    raw_datasets = load_dataset(local_path)
+    from datasets import load_dataset
+
+    raw_datasets = load_dataset(
+        IMDB_DATASET_ID,
+        revision=IMDB_DATASET_REVISION,
+    )
 
     def tokenize_fn(examples):
         return tokenizer(
@@ -760,6 +675,8 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     """Main function"""
+    from transformers import AutoTokenizer
+
     args = parse_args()
 
     # Initialize distributed environment
@@ -774,8 +691,10 @@ def main():
 
     # Prepare data
     print("Loading tokenizer and datasets...")
-    local_model_path = "./models/bert-base-uncased"
-    tokenizer = AutoTokenizer.from_pretrained(local_model_path)
+    tokenizer = AutoTokenizer.from_pretrained(
+        BERT_TOKENIZER_ID,
+        revision=BERT_TOKENIZER_REVISION,
+    )
     train_iter, test_iter = get_dataset_loaders(
         tokenizer, args.max_seq_len, args.batch_size
     )

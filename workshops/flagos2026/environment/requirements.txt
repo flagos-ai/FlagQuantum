@@ -1,0 +1,6 @@
+# Teaching tools only; install FlagQuantum separately from the selected checkout.
+jupyterlab>=4,<5
+ipykernel>=6,<7
+matplotlib>=3.8,<4
+nbformat>=5,<6
+nbclient>=0.10,<0.11

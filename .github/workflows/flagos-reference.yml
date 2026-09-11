@@ -1,0 +1,55 @@
+name: FlagOS CUDA Reference
+
+on:
+  workflow_dispatch:
+
+jobs:
+  statevector-local-p0:
+    runs-on: [self-hosted, linux, gpu, flagos-cuda-reference]
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      CUDA_VISIBLE_DEVICES: "0"
+      TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require provisioner-owned environment identity
+        run: >-
+          python -c "import os;
+          required = ('FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE',
+          'FLAGQUANTUM_TORCH_FL_COMMIT', 'FLAGQUANTUM_TORCH_FL_BUILD',
+          'FLAGQUANTUM_ACCELERATOR_MODEL');
+          missing = [name for name in required if not os.environ.get(name)];
+          assert not missing, f'FlagOS reference provisioner identity missing: {missing}'"
+      - name: Validate checked-in development evidence
+        run: >-
+          python tools/validate_flagos_reference_evidence.py
+          artifacts/flagos_cuda_reference_a800_20260824.json
+      - name: Run focused CPU contract tests
+        run: >-
+          python -m pytest
+          tests/unit/test_flagos_reference_evidence.py
+          tests/unit/test_platform_runtime.py
+          tests/unit/test_statevector_numerical_validation.py
+          tests/unit/test_statevector_operator_profile.py -q
+      - name: Execute locked FlagOS CUDA reference
+        run: |
+          mkdir -p hardware-run
+          python tools/run_with_watchdog.py \
+            --phase flagos-cuda-reference \
+            --stall-seconds 240 \
+            --timeout-seconds 1200 \
+            --diagnostics hardware-run/watchdog \
+            -- python tools/validate_flagos_cuda_reference.py \
+              --strict-environment \
+              --output hardware-run/flagos-cuda-reference.json
+      - name: Enforce development-only evidence gate
+        run: >-
+          python tools/validate_flagos_reference_evidence.py
+          hardware-run/flagos-cuda-reference.json
+      - name: Upload raw reference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flagos-cuda-reference-${{ github.sha }}
+          path: hardware-run/

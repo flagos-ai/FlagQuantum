@@ -1,0 +1,54 @@
+{
+  "schema": "flagquantum_flagos_environment_lock_v2",
+  "purpose": "cuda_reference_harness",
+  "production_install_supported": false,
+  "container_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+  "python": "3.12.13",
+  "torch": {
+    "package": "2.11.0+cu130",
+    "distribution": "cuda_enabled",
+    "cuda_runtime": "13.0",
+    "minor_line": "2.11"
+  },
+  "torch_fl": {
+    "repository": "https://github.com/flagos-ai/PyTorch-Plugin-FL.git",
+    "commit": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "package": "0.1.0",
+    "install_mode": "source_wheel_target",
+    "build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "build_isolation": false,
+      "dependencies": false
+    }
+  },
+  "runtime_contract": {
+    "import_order": [
+      "torch_fl",
+      "torch",
+      "flagquantum"
+    ],
+    "logical_device": "flagos:0",
+    "visible_device_count": 1,
+    "operator_profile": "statevector_local_p0",
+    "dtypes": [
+      "complex64",
+      "complex128"
+    ],
+    "depths": [
+      8,
+      32,
+      128
+    ]
+  },
+  "claim_boundary": {
+    "artifact_class": "development_reference",
+    "hardware_certification": false,
+    "scalability_claim_allowed": false,
+    "domestic_accelerator_certification": false,
+    "route_fallback_certification": false
+  }
+}

@@ -1,0 +1,1 @@
+"""Benchmark contract test package."""

@@ -1,0 +1,275 @@
+{
+  "evidence": {
+    "claim_blockers": [
+      "hidden_cpu_fallback_not_audited",
+      "multi_gpu_not_measured",
+      "multi_node_not_measured",
+      "production_performance_not_measured"
+    ],
+    "environment": {
+      "cuda_runtime": "13.0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+      "python": "3.12.13",
+      "source_revision": "8cd803266684cfa42fe2bc11ed42b7d5c035beb8",
+      "torch": "2.13.0+cu130",
+      "total_memory_bytes": 85093777408
+    },
+    "observations": {
+      "memory_available_bytes": 84526628864,
+      "numerical_validation": {
+        "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "cuda",
+        "dtype": "complex128",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 0.0,
+          "expectation_rel_error": 0.0,
+          "gradient_cosine_similarity": 1.0,
+          "gradient_rel_error": 4.803526903332504e-16,
+          "norm_drift": 1.1102230246251565e-16,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 2.220446049250313e-16,
+          "state_max_abs_error": 0.0,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+        "provider": "pytorch_cuda",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "operator_preflight": {
+        "blockers": [],
+        "device_type": "cuda",
+        "evidence_ids": [
+          "029accb9ab87f67d3decef1359a4e10b6aa2946f0599854a1622f82b417d0c39",
+          "0a8fdd4b0fdfcda79d3f7d8b162900043b79993628033d1da2d52bbf360d4b75",
+          "0d9adc9e37b0c1b3dca1ca4530cdb935e841bc58b6d04b1ccb259fd0bf64e7d3",
+          "339abc905bf9c4fe3e955114837e02bfd30ab8d760f697b0f5e9374fde04b477",
+          "43781fce5729c91d91de0c80af6909a362bb2c00ef8c5d929d0582e81e3ec301",
+          "47081fb170c4c01b120b190b475c45a8e3350ba417e52967dabed01b3a7aba97",
+          "474c4d48f869f259074b915297cd8d92823f3f548b1ce7f431b31f776bf854cf",
+          "584cac9d04780121d3a2c8a64f4e9c5513c4ec613ed1047f8cce4390b4b51203",
+          "594b09fe5a3f810c869404de986e9a22f9520f12745be860c08a7108213190d7",
+          "7b61c892b416d6c6ee391b5836df9d121ae4828285d8e9ed80a005585b9a91b4",
+          "81277701393ad42cad317ae4381064c544749808e4813bc5d1e5c4d22f562490",
+          "88d8b0f0bf510a68a1d2074a3d1c776d0c47e9a87f108dc7fee5655400c96283",
+          "8b80992ee9d5881021a0d08476dbc3a8a9a8381f2ab53f7ca5e5093359324405",
+          "95891a10ebc1d216aeba76e784b144baab8de78d7386cd240b496f4d966ce989",
+          "a25716fea3b50eaec8150218f1ea9a1f4013e9ed78205396930dc8f16a97652d",
+          "b2c21b861b7c2c9845e1c08484a228587fb4c01d68c8e07dab733181af9c72e8",
+          "bf1d8f951a5c1330f05f2db156088897104e3b61f072e00cb27264384ab22fb5",
+          "bfdc5943a9807059e4bd7ff49af166cd74d4b04b64ec9420e7546f568face98d",
+          "c5cddbb0c3b5369a0073d9451f71f7d5e077b671c93e887f26f08c176b8bb586",
+          "d59c43a684ad69a54d137b738f0c27e6fdc28a18016d7270845419260bb1e816",
+          "df426050717c8e536f1cf434c460636f38b5ce27b4c74b21b66b26b9ef885e2a"
+        ],
+        "profile": "statevector_local_p0",
+        "profile_hash": "96235c9057c046d5ba8992969e23883c014b2f69232eac1bd565643be31cdfae",
+        "required_dtypes": [
+          "complex128"
+        ],
+        "supported": true
+      },
+      "precision_plan": {
+        "allow_dtype_demotion": false,
+        "checkpoint_dtype": "complex128",
+        "communication_dtype": "complex128",
+        "complex_representation": "native_complex",
+        "contract_version": "1.0",
+        "decomposition_dtype": "complex128",
+        "gate_generation_dtype": "complex128",
+        "gradient_dtype": "float64",
+        "kernel_compute_dtype": "complex128",
+        "kind": "precision_plan",
+        "optimizer_master_dtype": "float64",
+        "parameter_dtype": "float64",
+        "reduction_dtype": "complex128",
+        "refinement": "none",
+        "state_storage_dtype": "complex128"
+      },
+      "state_device": "cuda:0",
+      "state_dtype": "complex128"
+    },
+    "provider": {
+      "device_type": "cuda",
+      "metadata": {},
+      "provider": "pytorch_cuda",
+      "provider_version": "13.0",
+      "torch_version": "2.13.0+cu130",
+      "vendor": "nvidia"
+    },
+    "schema": "flagquantum.cuda_statevector_probe.v1",
+    "scope": {
+      "device": "cuda:0",
+      "dtype": "complex128",
+      "node_count": 1,
+      "workload": "statevector_local_p0",
+      "world_size": 1
+    },
+    "status": "passed"
+  },
+  "evidence_sha256": "96c15bbc9b1e6d29be531200c0ecdacc3a54802febe332df0579bfd6104848c9",
+  "schema": "flagquantum.cuda_target_capability_artifact.v1",
+  "snapshot": {
+    "blockers": [],
+    "captured_at": "2026-09-06T15:51:50.515725Z",
+    "evidence_refs": [
+      {
+        "evidence_id": "cuda-statevector-96c15bbc9b1e6d29",
+        "level": "observable",
+        "scope": {
+          "device_ids": [
+            "cuda:0:1ffa16a6-3917-0c8d-2460-b360464eae49"
+          ],
+          "dtype": "complex128",
+          "kernel": "statevector",
+          "node_count": 1,
+          "workload_id": "statevector_local_p0",
+          "world_size": 1
+        },
+        "sha256": "96c15bbc9b1e6d29be531200c0ecdacc3a54802febe332df0579bfd6104848c9"
+      }
+    ],
+    "extensions": {},
+    "facts": [
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "device.count",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": 1
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "device.kind",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "cuda"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "memory.available_bytes",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": 84526628864
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.accumulator_dtype",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "float64"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.effective_dtype",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "complex128"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.native_dtype",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "float64"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.parameter_dtype",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "float64"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.software_mechanism",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "none"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "observed",
+        "name": "precision.storage_dtype",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "float64"
+      },
+      {
+        "blockers": [],
+        "fact_exposure": "declared",
+        "name": "target.class",
+        "source": {
+          "kind": "cuda_statevector_probe",
+          "ref": "cuda-statevector-96c15bbc9b1e6d29"
+        },
+        "support_status": "verified",
+        "value": "local_runtime"
+      }
+    ],
+    "schema_version": "1.0",
+    "scope": {
+      "device_ids": [
+        "cuda:0:1ffa16a6-3917-0c8d-2460-b360464eae49"
+      ],
+      "dtype": "complex128",
+      "kernel": "statevector",
+      "node_count": 1,
+      "workload_id": "statevector_local_p0",
+      "world_size": 1
+    },
+    "snapshot_id": "c1bcb8a7247c0f2e67b7476cd790865dcb25c62aadefad50383af8e6a6e2f35c",
+    "target_identity": {
+      "environment_id": "79fe9aac250bfea6f60ab7bfaa272fb7909e93c031b270cea5053d9e55a23175",
+      "provider": "pytorch_cuda",
+      "provider_version": "torch-2.13.0+cu130-cuda-13.0",
+      "target_class": "local_runtime",
+      "target_id": "cuda-gpu-1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "target_revision": "sm_80"
+    },
+    "valid_until": "2026-09-06T16:21:50.515725Z"
+  }
+}

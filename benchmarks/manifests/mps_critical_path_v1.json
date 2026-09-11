@@ -1,0 +1,29 @@
+{
+  "schema": "flagquantum.issue097.mps_critical_path_manifest.v1",
+  "dtype": "complex64",
+  "optimizer": "adam",
+  "warmup_steps": 5,
+  "retained_warm_steps": 20,
+  "world_sizes": [1, 2, 4, 8],
+  "cases": {
+    "small_latency": {"sites_per_rank": 2, "initial_bond": 1, "max_bond": 4},
+    "crossover": {"sites_per_rank": 8, "initial_bond": 4, "max_bond": 16},
+    "large_bond": {"sites_per_rank": 8, "initial_bond": 32, "max_bond": 64}
+  },
+  "required_phase_labels": [
+    "forward",
+    "left_environment_scan",
+    "right_environment_scan",
+    "objective_adjoint",
+    "reverse_vjp",
+    "optimizer",
+    "two_site_split",
+    "qr"
+  ],
+  "required_communication_labels": [
+    "p2p_send",
+    "p2p_recv",
+    "gradient_collective"
+  ],
+  "promotion_allowed": false
+}

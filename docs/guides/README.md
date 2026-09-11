@@ -1,0 +1,13 @@
+# Guides
+
+Operational guidance, performance engineering practices, and reproducible case
+studies.
+
+- [Local simulation, measurement, and training](LOCAL_WORKFLOWS.md)
+- [Service and protocol integration](SERVICE_INTEGRATION.md)
+- [Multi-node A100 runbook](MULTINODE_A100_RUNBOOK.md)
+- [Performance and memory engineering](PERFORMANCE_ENGINEERING.md)
+- [PyTorch operator requirements for FlagGems](PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)
+- [JAX JIT performance case](JAX_JIT_PERFORMANCE_CASE.md)
+- [JAX JIT VQE case](JAX_JIT_VQE_CASE.md)
+- [Constrained MPS TEBD](TEBD.md)

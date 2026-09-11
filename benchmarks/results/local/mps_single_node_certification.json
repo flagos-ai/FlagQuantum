@@ -1,0 +1,67 @@
+{
+  "schema": "flagquantum.mps_single_node_certification.v1",
+  "benchmark": "mps_single_node_certification",
+  "date": "2026-07-27",
+  "scope": "development_evidence",
+  "distribution_semantics": "requires_runtime_summary",
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "claim_evidence_type": "development_evidence",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "runtime_summary_not_sealed",
+    "single_node_development_scope"
+  ],
+  "hardware": {
+    "accelerator": "NVIDIA A800-SXM4-80GB",
+    "accelerator_count": 8,
+    "interconnect": "NV8",
+    "driver": "580.126.20"
+  },
+  "checks": {
+    "two_gpu_accelerator_backward": "passed",
+    "two_gpu_rank_owned_forward": "passed",
+    "four_gpu_rank_owned_forward": "passed",
+    "eight_gpu_rank_owned_forward": "passed",
+    "two_gpu_boundary_transport": "passed",
+    "eight_gpu_boundary_transport": "passed",
+    "eight_gpu_sgd_100_step_soak": "passed",
+    "checkpoint_restart_equivalence": "passed",
+    "all_ranks_useful_work": "passed",
+    "maximum_memory_growth_bytes": 0,
+    "maximum_restart_parameter_error": 0.0,
+    "maximum_restart_loss_error": 0.0,
+    "shape_mismatch_bounded_cleanup": "passed",
+    "post_run_allocated_gpu_memory_mib": 0
+  },
+  "boundary_transport": {
+    "2": {
+      "message_count_reduction": 0.5,
+      "logical_byte_growth": 0.0,
+      "p2p_wait_reduction": 0.3582750612855041,
+      "overlap_work_seconds": 0.07349982904270291
+    },
+    "8": {
+      "message_count_reduction": 0.5,
+      "logical_byte_growth": 0.0,
+      "p2p_wait_reduction": 0.126354344893011,
+      "overlap_work_seconds": 0.06917103147134185
+    }
+  },
+  "stability": {
+    "world_size": 8,
+    "optimizer": "sgd",
+    "steps": 100,
+    "max_bond": 16,
+    "gradient_tolerance": 0.1,
+    "full_mps_materialization": false
+  },
+  "claim_policy": {
+    "production_supported": false,
+    "release_certified": false,
+    "multi_node_claim_allowed": false,
+    "scalability_claim_allowed": false
+  }
+}

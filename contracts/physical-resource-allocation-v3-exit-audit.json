@@ -1,0 +1,48 @@
+{
+  "schema": "flagquantum.physical_resource_allocation_exit_audit",
+  "version": "1.0",
+  "status": "private_technical_exit_complete",
+  "audited_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION",
+  "implementation_commits": {
+    "compiler_allocation": "38555d26",
+    "physical_plan_v3": "18d9dcfc",
+    "program_artifact_v3": "2d5d82e7",
+    "compilation_evidence_v3": "baa2a419",
+    "runtime_verification_v3": "690643db",
+    "deployment_dry_run_v3": "a24328ff"
+  },
+  "implemented_chain": [
+    "compiler_sparse_allocation",
+    "physical_plan_v3",
+    "program_artifact_v3",
+    "compilation_evidence_v3",
+    "runtime_read_only_verification",
+    "deployment_side_effect_free_dry_run"
+  ],
+  "acceptance": {
+    "idle_slot_routing_and_restore": true,
+    "nullable_occupancy_replay": true,
+    "final_workspace_is_null": true,
+    "state_and_gradient_differential": true,
+    "logical_result_projection": true,
+    "native_and_direction_legality": true,
+    "identity_and_lineage_replay": true,
+    "hash_seed_determinism": true,
+    "prior_version_compatibility": true
+  },
+  "stable_exports_added": [],
+  "default_path_changed": false,
+  "production_ready": false,
+  "provider_submission_enabled": false,
+  "provider_identifier_binding_enabled": false,
+  "qec_or_ftoc_claim": false,
+  "next_requires_separate_approval": [
+    "public_api_naming_and_lifecycle",
+    "provider_qubit_identifier_binding",
+    "provider_submission_and_receipts",
+    "general_ancilla_lifecycle",
+    "qec_or_fault_tolerant_resource_semantics"
+  ]
+}

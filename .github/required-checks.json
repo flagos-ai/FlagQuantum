@@ -1,0 +1,12 @@
+{
+  "schema": "flagquantum_required_checks_v1",
+  "externally_configured": true,
+  "checks": [
+    "CI / quality",
+    "CI / cpu-core (3.10)",
+    "CI / cpu-core (3.11)",
+    "CI / cpu-core (3.12)",
+    "CI / package",
+    "CI / distributed-cpu"
+  ]
+}

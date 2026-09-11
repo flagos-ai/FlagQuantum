@@ -1,0 +1,300 @@
+{
+  "benchmark": "scalability_results_audit",
+  "claimable_count": 0,
+  "claimable_paths": [],
+  "file_count": 17,
+  "invalid_count": 17,
+  "invalid_paths": [
+    "benchmarks\\results\\backend_compare_8q_batch16_ising.json",
+    "benchmarks\\results\\backend_compare_8q_batch16_z_sum.json",
+    "benchmarks\\results\\backend_compare_8q_batch1_z_sum.json",
+    "benchmarks\\results\\cpu_jax_mps_compare_8q_b16_ising.json",
+    "benchmarks\\results\\cpu_jax_tn_compare_8q_b16_ising.json",
+    "benchmarks\\results\\cpu_pennylane_default_tensor_mps_vs_fq_jax_mps.json",
+    "benchmarks\\results\\cpu_pennylane_default_tensor_tn_vs_fq_jax_tn.json",
+    "benchmarks\\results\\cpu_pennylane_default_vs_fq_jax_mps.json",
+    "benchmarks\\results\\cpu_pl_tensor_mps_jax_quick.json",
+    "benchmarks\\results\\gpu_backend_compare_8q_b16_ising_highest.json",
+    "benchmarks\\results\\gpu_jax_mps_compare_8q_b16_ising_after_precision_fix.json",
+    "benchmarks\\results\\gpu_pennylane_lightning_tensor_mps_vs_fq_jax_mps.json",
+    "benchmarks\\results\\gpu_pennylane_lightning_tensor_tn_vs_fq_jax_tn.json",
+    "benchmarks\\results\\pennylane_default_qubit_cpu.json",
+    "benchmarks\\results\\pennylane_default_qubit_jax_cpu.json",
+    "benchmarks\\results\\pennylane_default_qubit_torch_cpu.json",
+    "benchmarks\\results\\pennylane_lightning_qubit_torch_gpu_highest.json"
+  ],
+  "records": [
+    {
+      "benchmark": "backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\backend_compare_8q_batch16_ising.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\backend_compare_8q_batch16_z_sum.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\backend_compare_8q_batch1_z_sum.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_jax_mps_compare_8q_b16_ising.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_jax_tn_compare_8q_b16_ising.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_pennylane_default_tensor_mps_vs_fq_jax_mps.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_pennylane_default_tensor_tn_vs_fq_jax_tn.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_pennylane_default_vs_fq_jax_mps.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_tensor_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\cpu_pl_tensor_mps_jax_quick.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "distributed_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\gpu_backend_compare_8q_b16_ising_highest.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "distributed_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\gpu_jax_mps_compare_8q_b16_ising_after_precision_fix.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\gpu_pennylane_lightning_tensor_mps_vs_fq_jax_mps.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\gpu_pennylane_lightning_tensor_tn_vs_fq_jax_tn.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\pennylane_default_qubit_cpu.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\pennylane_default_qubit_jax_cpu.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\pennylane_default_qubit_torch_cpu.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "pennylane_backend_compare",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks\\results\\pennylane_lightning_qubit_torch_gpu_highest.json",
+      "scalability_audit": {
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    }
+  ]
+}

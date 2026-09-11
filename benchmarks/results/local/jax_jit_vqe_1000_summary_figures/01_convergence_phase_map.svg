@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="900" viewBox="0 0 1680 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1632" height="852" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
+<text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
+<text x="58" y="91" class="title">VQE convergence after 1000 steps</text>
+<text x="58" y="119" class="sub">Adam lr=0.01 · Threshold: 1e-3 · Stable convergence: both backends remain below threshold at step 1000</text>
+<text x="354.0" y="174" text-anchor="middle" class="axis">DEPTH 2</text>
+<text x="572.0" y="174" text-anchor="middle" class="axis">DEPTH 4</text>
+<text x="790.0" y="174" text-anchor="middle" class="axis">DEPTH 8</text>
+<text x="1008.0" y="174" text-anchor="middle" class="axis">DEPTH 12</text>
+<text x="1226.0" y="174" text-anchor="middle" class="axis">DEPTH 16</text>
+<text x="1444.0" y="174" text-anchor="middle" class="axis">DEPTH 20</text>
+<text x="217" y="274" text-anchor="end" class="axis">8 QUBITS</text>
+<rect x="250" y="210" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="262" text-anchor="middle" class="cell">Not converged</text>
+<text x="354.0" y="287" text-anchor="middle" class="detail">PT 2.1e-03 · JAX 2.1e-03</text>
+<rect x="468" y="210" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="262" text-anchor="middle" class="cell">Not converged</text>
+<text x="572.0" y="287" text-anchor="middle" class="detail">PT 3.6e-03 · JAX 3.6e-03</text>
+<rect x="686" y="210" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="262" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="790.0" y="287" text-anchor="middle" class="detail">PT 1.5e-04 · JAX 1.5e-04</text>
+<rect x="904" y="210" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="262" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1008.0" y="287" text-anchor="middle" class="detail">PT 2.1e-04 · JAX 2.2e-04</text>
+<rect x="1122" y="210" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="262" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1226.0" y="287" text-anchor="middle" class="detail">PT 9.3e-05 · JAX 1.0e-04</text>
+<rect x="1340" y="210" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="262" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1444.0" y="287" text-anchor="middle" class="detail">PT 2.1e-05 · JAX 1.4e-05</text>
+<text x="217" y="402" text-anchor="end" class="axis">12 QUBITS</text>
+<rect x="250" y="338" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="390" text-anchor="middle" class="cell">Not converged</text>
+<text x="354.0" y="415" text-anchor="middle" class="detail">PT 4.3e-02 · JAX 4.3e-02</text>
+<rect x="468" y="338" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="390" text-anchor="middle" class="cell">Not converged</text>
+<text x="572.0" y="415" text-anchor="middle" class="detail">PT 3.0e-02 · JAX 3.0e-02</text>
+<rect x="686" y="338" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="390" text-anchor="middle" class="cell">Not converged</text>
+<text x="790.0" y="415" text-anchor="middle" class="detail">PT 4.1e-02 · JAX 4.1e-02</text>
+<rect x="904" y="338" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="390" text-anchor="middle" class="cell">Not converged</text>
+<text x="1008.0" y="415" text-anchor="middle" class="detail">PT 1.5e-03 · JAX 1.5e-03</text>
+<rect x="1122" y="338" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="390" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1226.0" y="415" text-anchor="middle" class="detail">PT 2.4e-04 · JAX 2.3e-04</text>
+<rect x="1340" y="338" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="390" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1444.0" y="415" text-anchor="middle" class="detail">PT 4.8e-04 · JAX 4.6e-04</text>
+<text x="217" y="530" text-anchor="end" class="axis">16 QUBITS</text>
+<rect x="250" y="466" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="518" text-anchor="middle" class="cell">Not converged</text>
+<text x="354.0" y="543" text-anchor="middle" class="detail">PT 1.2e-01 · JAX 1.2e-01</text>
+<rect x="468" y="466" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="518" text-anchor="middle" class="cell">Not converged</text>
+<text x="572.0" y="543" text-anchor="middle" class="detail">PT 1.0e-01 · JAX 1.0e-01</text>
+<rect x="686" y="466" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="518" text-anchor="middle" class="cell">Not converged</text>
+<text x="790.0" y="543" text-anchor="middle" class="detail">PT 1.1e-01 · JAX 1.1e-01</text>
+<rect x="904" y="466" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="518" text-anchor="middle" class="cell">Not converged</text>
+<text x="1008.0" y="543" text-anchor="middle" class="detail">PT 1.6e-02 · JAX 1.6e-02</text>
+<rect x="1122" y="466" width="208" height="118" rx="13" fill="#79B98C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="518" text-anchor="middle" class="cell">Stable convergence</text>
+<text x="1226.0" y="543" text-anchor="middle" class="detail">PT 7.0e-04 · JAX 7.2e-04</text>
+<rect x="1340" y="466" width="208" height="118" rx="13" fill="#F2B66D" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="518" text-anchor="middle" class="cell">Reached earlier</text>
+<text x="1444.0" y="543" text-anchor="middle" class="detail">PT 2.5e-03 · JAX 8.5e-04</text>
+<text x="217" y="658" text-anchor="end" class="axis">20 QUBITS</text>
+<rect x="250" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="354.0" y="671" text-anchor="middle" class="detail">PT 2.1e-01 · JAX 2.1e-01</text>
+<rect x="468" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="572.0" y="671" text-anchor="middle" class="detail">PT 1.9e-01 · JAX 1.9e-01</text>
+<rect x="686" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="790.0" y="671" text-anchor="middle" class="detail">PT 1.8e-01 · JAX 1.8e-01</text>
+<rect x="904" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="1008.0" y="671" text-anchor="middle" class="detail">PT 1.0e-02 · JAX 9.9e-03</text>
+<rect x="1122" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="1226.0" y="671" text-anchor="middle" class="detail">PT 4.1e-02 · JAX 4.1e-02</text>
+<rect x="1340" y="594" width="208" height="118" rx="13" fill="#E99A9A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="646" text-anchor="middle" class="cell">Not converged</text>
+<text x="1444.0" y="671" text-anchor="middle" class="detail">PT 2.2e-03 · JAX 2.1e-03</text>
+<line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
+<circle cx="74" cy="850" r="5" fill="#54319B"/>
+<text x="90" y="855" class="note">Minimum effective depth rises with qubit count. At 20 qubits, tested depths do not converge stably within 1000 steps.</text>
+</svg>

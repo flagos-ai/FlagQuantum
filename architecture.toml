@@ -1,0 +1,89 @@
+[layers]
+order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "executor_protocols", "planner", "compiler", "ir"]
+
+[package_layout]
+allowed_top_level_directories = [
+    "services",
+    "algorithms",
+    "benchmarking",
+    "compiler",
+    "core",
+    "deployment",
+    "drawer",
+    "ecosystem",
+    "experimental",
+    "noise",
+    "observables",
+    "qec",
+    "compute",
+    "remote",
+    "runtime",
+    "simulation",
+    "testing",
+    "twin",
+]
+
+[boundaries]
+core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
+compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "compute", "remote"]
+noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
+trajectory_runtime_forbidden = ["circuit", "simulation", "deployment"]
+simulation_forbidden = ["runtime", "compute", "remote", "deployment"]
+executor_policy_forbidden = ["audit", "release_policy"]
+default_module_line_ceiling = 1250
+root_init_line_ceiling = 140
+
+[accelerator_boundaries]
+torch_fl_import_allowed = [
+    "flagquantum/compute/flagos.py",
+]
+direct_cuda_allowed = [
+    "flagquantum/compute/pytorch.py",
+]
+
+[interop_boundaries]
+qiskit_import_allowed_prefixes = [
+    "flagquantum/ecosystem/qiskit/",
+]
+pennylane_import_allowed_prefixes = [
+    "flagquantum/ecosystem/pennylane/",
+]
+
+[simulation_boundaries]
+runtime_import_allowed = []
+
+[northbound_boundaries]
+service_forbidden = [
+    "compute",
+    "platforms",
+    "remote",
+    "simulation",
+]
+
+[long_horizon_boundaries]
+# Runtime may invoke Compiler only at explicit program-to-plan composition or
+# maintained raw-program compatibility boundaries. Backend execution, distributed
+# lifecycle, Simulation, Compute, and Remote must consume compiled IR or plans instead.
+# New imports remain blocked; do not invent a duplicate Core contract merely to
+# make this list shorter.
+runtime_compiler_import_allowed = [
+    "flagquantum/runtime/executors/statevector/noisy.py",
+    "flagquantum/runtime/executors/statevector/planning.py",
+    "flagquantum/runtime/dynamic/routing.py",
+    "flagquantum/runtime/execution.py",
+    "flagquantum/runtime/noise_registry.py",
+    "flagquantum/runtime/planner/__init__.py",
+    "flagquantum/runtime/planner/noise_selection.py",
+    "flagquantum/runtime/executors/mps/noisy.py",
+]
+
+[accelerator_boundaries.direct_cuda_call_ceiling]
+"flagquantum/benchmarking/statevector_local.py" = 5
+"flagquantum/runtime/executors/mps/compiled_layers.py" = 1
+"flagquantum/runtime/executors/mps/factorization.py" = 4
+"flagquantum/runtime/executors/mps/reverse_transport.py" = 5
+"flagquantum/runtime/executors/mps/training_engine.py" = 7
+"flagquantum/runtime/executors/statevector/training.py" = 4
+"flagquantum/runtime/distributed/context.py" = 1
+"flagquantum/runtime/executors/mps/transport.py" = 5
+"flagquantum/runtime/training_state.py" = 3

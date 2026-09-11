@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "status": "frozen",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_004_RESULT_MEASUREMENT_NOISE.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "protected_root_changes": ["ExecutionResult", "MeasurementResult"],
+  "public_signatures": {
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'"
+  },
+  "measurement_rules": {
+    "program_measurements_are_canonical": true,
+    "explicit_measurements_are_embedded_before_planning": true,
+    "explicit_and_program_measurements_conflict": "error",
+    "implicit_replace": false,
+    "implicit_append": false,
+    "measurement_order_is_preserved": true,
+    "measurement_identity_is_program_fingerprint": true
+  },
+  "noise_rules": {
+    "accepted_type": "flagquantum.noise.NoiseModel",
+    "stable_modes": ["auto", "density_matrix"],
+    "serialized_in_plan_extension": true,
+    "identity_verified_before_execution": true,
+    "plan_input_override_allowed": false,
+    "unsupported_mode_fails_during_planning": true
+  },
+  "plan_extension": {
+    "namespace": "flagquantum.noise",
+    "kind": "noise_model",
+    "version": "1.0",
+    "required_fields": ["namespace", "kind", "version", "identity", "payload"],
+    "maximum_count": 1,
+    "unknown_extensions_fail": true
+  },
+  "result_contract": {
+    "summary_schema": "flagquantum.execution_result.summary",
+    "summary_version": "1.0",
+    "measurement_value_types": ["torch.Tensor", "list[dict[str | int, int]]"],
+    "field_annotations": {
+      "ExecutionResult.plan": "ExecutionPlan | RuntimePlanContract | MPSProductionPlan | None",
+      "MeasurementResult.value": "MeasurementValue"
+    },
+    "accessors": [
+      "statevector",
+      "require_samples",
+      "measurement",
+      "expectation",
+      "native",
+      "summary"
+    ],
+    "properties": ["probabilities", "counts", "expectations"],
+    "missing_data_failure": "RuntimeError",
+    "implicit_native_attribute_delegation": false,
+    "native_output_stability": "none",
+    "tensor_payload_serialization": "not_promised"
+  },
+  "rules": {
+    "candidate_is_frozen_contract": true,
+    "whole_api_freeze_implied": false,
+    "future_breaking_changes_require_api_owner_approval": true
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "status": "draft",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_012_QUAFU_PROVIDER_CONTRACT.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "protected_contract_change_authorized": false,
+  "root_manifest_change": false,
+  "protected_schema_changes": [],
+  "bit_order": {
+    "local_measurement_counts": "measurement_wires_left_to_right",
+    "openqasm_classical_counts": "classical_msb_left",
+    "quafu_portal_counts": "classical_msb_left",
+    "provider_boundary_conversion_required": true,
+    "asymmetric_fixture": {
+      "operations": [
+        "x q[0]",
+        "measure q[0] -> c[0]",
+        "measure q[1] -> c[1]"
+      ],
+      "local_wires_0_1": "10",
+      "portal_counts": "01"
+    }
+  },
+  "adapter": {
+    "contains_flagquantum_implementation_source": false,
+    "allowed_contents": ["openapi", "schemas", "mock", "docs", "thin_binding"],
+    "forbidden_dependency": "fq.experimental.QPUTwin",
+    "calibration_entry": "flagquantum.deployment.quafu_noise_model_from_chip_info",
+    "execution_entry": "fq.run",
+    "measurement_kind": "probabilities"
+  },
+  "precompiled_submission": {
+    "qasm_qubits": "logical_zero_based_contiguous",
+    "compiler": null,
+    "target_qubits": "ordered_physical_qubit_for_each_logical_wire",
+    "deprecated_compile_flag_allowed": false
+  },
+  "task_states": ["Pending", "Running", "Finished", "Failed", "Cancelled"],
+  "error_categories": [
+    "precheck.badCircuit",
+    "precheck.noMeasurement",
+    "precheck.shotsOutOfRange",
+    "precheck.tooDeep",
+    "precheck.notTranspiled",
+    "precheck.qubitUnavailable",
+    "precheck.edgeUnusable",
+    "precheck.gateUnsupported",
+    "precheck.simTooLarge",
+    "runtime.deviceUnavailable",
+    "runtime.quotaExhausted",
+    "runtime.rejected",
+    "runtime.internal"
+  ],
+  "result_metadata_minimum": [
+    "backend",
+    "duration_ms",
+    "calibration_version",
+    "noise_model_version",
+    "counts_bit_order",
+    "physical_qubits",
+    "program_sha256"
+  ],
+  "rules": {
+    "submission_success_is_execution_success": false,
+    "mock_counts_are_physics_evidence": false,
+    "stable_root_change_allowed": false,
+    "protected_schema_change_requires_api_owner_approval": true
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "status": "frozen",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_005_MODULE_TRAINING.md",
+  "amendments": [
+    "docs/development/API_CHANGE_PROPOSAL_015_PRECISION_POLICY.md"
+  ],
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "stable_extension": {
+    "namespace": "flagquantum.training",
+    "additions": [
+      "NonFiniteTrainingError",
+      "PrecisionPolicy",
+      "PrecisionPolicyError",
+      "SeedContract",
+      "TopologyMismatchError",
+      "TrainingCheckpointRestore",
+      "TrainingStateError",
+      "seed_everything"
+    ],
+    "new_namespace_only": ["TrainingCheckpointRestore"]
+  },
+  "public_signatures": {
+    "Module.forward": "(self, inputs: 'torch.Tensor | None' = None, parameters: 'torch.Tensor | Mapping[str, torch.Tensor] | None' = None) -> 'torch.Tensor'",
+    "Module.execute": "(self, inputs: 'torch.Tensor | None' = None, parameters: 'torch.Tensor | Mapping[str, torch.Tensor] | None' = None) -> 'ExecutionResult'",
+    "Module.save_checkpoint": "(self, path: 'str | os.PathLike[str]', *, optimizer: 'torch.optim.Optimizer | None', seed: 'int', runtime_plan: 'object | None' = None, step: 'int' = 0) -> 'Path'",
+    "Module.load_checkpoint": "(self, path: 'str | os.PathLike[str]', *, optimizer: 'torch.optim.Optimizer | None') -> 'TrainingCheckpointRestore'",
+    "train": "(module: 'Module', *, optimizer: 'torch.optim.Optimizer', objective: 'TrainingObjective', steps: 'int', inputs: 'TrainingInputs' = None, log_interval: 'int | None' = None, callback: 'TrainingCallback | None' = None) -> 'TrainingResult'"
+  },
+  "module_semantics": {
+    "forward_returns": "torch.Tensor",
+    "execute_returns": "ExecutionResult",
+    "forward_value_equals_execute_value": true,
+    "forward_preserves_autograd": true,
+    "fq_run_accepts_module": false,
+    "module_run_method": false,
+    "owned_parameters_used_when_override_is_none": true,
+    "parameter_override_is_not_installed_as_owned_state": true,
+    "inputs_are_passed_to_two_argument_builder": true,
+    "implicit_cartesian_batch_broadcast": false
+  },
+  "training_semantics": {
+    "loop_scope": "minimal_pytorch_optimizer_loop",
+    "optimizer_owned_by_caller": true,
+    "objective_receives": "ExecutionResult.require_value()",
+    "callback_execution_is_detached": true,
+    "checkpoint_resume_in_train": false,
+    "early_stopping_in_train": false,
+    "validation_loop_in_train": false,
+    "distributed_training_namespace": "flagquantum.experimental.distributed"
+  },
+  "result_semantics": {
+    "required_value_accessor": "require_value",
+    "diagnostics_accessor": "diagnostics",
+    "diagnostics_schema": "flagquantum.execution_diagnostics",
+    "diagnostics_version": "1.0",
+    "diagnostic_section_keys_are_additive": true
+  },
+  "training_result": {
+    "summary_schema": "flagquantum.training_result.summary",
+    "summary_version": "1.0",
+    "fields": ["losses", "completed_steps", "last_execution", "optimizer"],
+    "properties": ["final_loss"],
+    "loss_count_equals_completed_steps": true,
+    "last_execution_is_detached": true
+  },
+  "checkpoint_semantics": {
+    "owner": "Module.save_checkpoint/load_checkpoint",
+    "format": "versioned_atomic_pytorch_training_state",
+    "portable_interchange_format": false,
+    "seed_input": "non_negative_int",
+    "restore_schema": "flagquantum.training_checkpoint_restore",
+    "restore_version": "1.0",
+    "workload_topology_precision_optimizer_mismatch": "fail_closed",
+    "fq_train_automatic_resume": false
+  },
+  "precision_policy": {
+    "fields": [
+      "complex_dtype",
+      "parameter_dtype",
+      "allow_parameter_downcast",
+      "atol",
+      "rtol"
+    ],
+    "supported_pairs": [
+      ["complex64", "float32"],
+      ["complex128", "float64"]
+    ],
+    "mixed_precision_control": false,
+    "accumulator_dtype_control": false
+  },
+  "backend_semantics": {
+    "primary_autograd_interface": "pytorch",
+    "jax_role": "optional_compiled_backend",
+    "jax_fallback_requires_policy": true,
+    "fallback_visible_in_compatibility": true
+  },
+  "rules": {
+    "candidate_is_frozen_contract": true,
+    "whole_api_freeze_implied": false,
+    "future_breaking_changes_require_api_owner_approval": true
+  }
+}

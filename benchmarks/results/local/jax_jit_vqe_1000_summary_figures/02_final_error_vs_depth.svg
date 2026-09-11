@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="900" viewBox="0 0 1680 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1632" height="852" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
+<text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
+<text x="58" y="91" class="title">Final energy error at 1000 steps: effective depth window</text>
+<text x="58" y="119" class="sub">Adam lr=0.01 · PyTorch: solid/squares · JAX: dashed/circles · Red dashed line: 1e-3 convergence threshold</text>
+<rect x="70" y="165" width="740" height="275" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
+<text x="90" y="195" class="panel">8 QUBITS</text>
+<line x1="148" y1="213.0" x2="776" y2="213.0" stroke="#E8EDF3"/>
+<line x1="148" y1="259.25" x2="776" y2="259.25" stroke="#E8EDF3"/>
+<line x1="148" y1="305.5" x2="776" y2="305.5" stroke="#E8EDF3"/>
+<line x1="148" y1="351.75" x2="776" y2="351.75" stroke="#E8EDF3"/>
+<line x1="148" y1="398.0" x2="776" y2="398.0" stroke="#E8EDF3"/>
+<line x1="148" y1="336.3333333333333" x2="776" y2="336.3333333333333" stroke="#B83A3A" stroke-dasharray="5 4"/>
+<rect x="144.0" y="319.2378812893299" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="213.77777777777777" y="309.619651422497" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="353.3333333333333" y="366.2464045707701" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="492.8888888888889" y="359.8188043164424" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="632.4444444444445" y="374.75741732705427" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="772.0" y="401.3874379274734" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<polyline points="148.0,323.2 217.8,313.6 357.3,370.2 496.9,363.8 636.4,378.8 776.0,405.4" fill="none" stroke="#8FBCE6" stroke-width="3"/>
+<circle cx="148.0" cy="323.2624298126886" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="217.77777777777777" cy="313.624423491168" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="357.3333333333333" cy="369.741609843535" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="496.8888888888889" cy="363.2716180375848" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="636.4444444444445" cy="377.26390515517437" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="776.0" cy="412.8631450177233" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<polyline points="148.0,323.3 217.8,313.6 357.3,369.7 496.9,363.3 636.4,377.3 776.0,412.9" fill="none" stroke="#54319B" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="148.0" y="417" text-anchor="middle" class="axis">2</text>
+<text x="217.77777777777777" y="417" text-anchor="middle" class="axis">4</text>
+<text x="357.3333333333333" y="417" text-anchor="middle" class="axis">8</text>
+<text x="496.8888888888889" y="417" text-anchor="middle" class="axis">12</text>
+<text x="636.4444444444445" y="417" text-anchor="middle" class="axis">16</text>
+<text x="776.0" y="417" text-anchor="middle" class="axis">20</text>
+<text x="138" y="381.44444444444446" text-anchor="end" class="axis">1e-4</text>
+<text x="138" y="340.3333333333333" text-anchor="end" class="axis">1e-3</text>
+<text x="138" y="299.22222222222223" text-anchor="end" class="axis">1e-2</text>
+<text x="138" y="258.1111111111111" text-anchor="end" class="axis">1e-1</text>
+<text x="138" y="217.0" text-anchor="end" class="axis">1e0</text>
+<rect x="870" y="165" width="740" height="275" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
+<text x="890" y="195" class="panel">12 QUBITS</text>
+<line x1="948" y1="213.0" x2="1576" y2="213.0" stroke="#E8EDF3"/>
+<line x1="948" y1="259.25" x2="1576" y2="259.25" stroke="#E8EDF3"/>
+<line x1="948" y1="305.5" x2="1576" y2="305.5" stroke="#E8EDF3"/>
+<line x1="948" y1="351.75" x2="1576" y2="351.75" stroke="#E8EDF3"/>
+<line x1="948" y1="398.0" x2="1576" y2="398.0" stroke="#E8EDF3"/>
+<line x1="948" y1="336.3333333333333" x2="1576" y2="336.3333333333333" stroke="#B83A3A" stroke-dasharray="5 4"/>
+<rect x="944.0" y="265.12128575214615" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1013.7777777777778" y="271.54430782162655" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1153.3333333333333" y="266.0704370662751" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1292.888888888889" y="324.7123419060276" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1432.4444444444443" y="358.0857736023635" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1572.0" y="345.34820754412533" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<polyline points="948.0,269.1 1017.8,275.5 1157.3,270.1 1296.9,328.7 1436.4,362.1 1576.0,349.3" fill="none" stroke="#8FBCE6" stroke-width="3"/>
+<circle cx="948.0" cy="269.1246409311863" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1017.7777777777778" cy="275.53299986588684" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1157.3333333333333" cy="270.07085331076314" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1296.888888888889" cy="328.70123397838506" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1436.4444444444443" cy="362.3762712381208" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1576.0" cy="350.03174450061954" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<polyline points="948.0,269.1 1017.8,275.5 1157.3,270.1 1296.9,328.7 1436.4,362.4 1576.0,350.0" fill="none" stroke="#54319B" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="948.0" y="417" text-anchor="middle" class="axis">2</text>
+<text x="1017.7777777777778" y="417" text-anchor="middle" class="axis">4</text>
+<text x="1157.3333333333333" y="417" text-anchor="middle" class="axis">8</text>
+<text x="1296.888888888889" y="417" text-anchor="middle" class="axis">12</text>
+<text x="1436.4444444444443" y="417" text-anchor="middle" class="axis">16</text>
+<text x="1576.0" y="417" text-anchor="middle" class="axis">20</text>
+<text x="938" y="381.44444444444446" text-anchor="end" class="axis">1e-4</text>
+<text x="938" y="340.3333333333333" text-anchor="end" class="axis">1e-3</text>
+<text x="938" y="299.22222222222223" text-anchor="end" class="axis">1e-2</text>
+<text x="938" y="258.1111111111111" text-anchor="end" class="axis">1e-1</text>
+<text x="938" y="217.0" text-anchor="end" class="axis">1e0</text>
+<rect x="70" y="480" width="740" height="275" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
+<text x="90" y="510" class="panel">16 QUBITS</text>
+<line x1="148" y1="528.0" x2="776" y2="528.0" stroke="#E8EDF3"/>
+<line x1="148" y1="574.25" x2="776" y2="574.25" stroke="#E8EDF3"/>
+<line x1="148" y1="620.5" x2="776" y2="620.5" stroke="#E8EDF3"/>
+<line x1="148" y1="666.75" x2="776" y2="666.75" stroke="#E8EDF3"/>
+<line x1="148" y1="713.0" x2="776" y2="713.0" stroke="#E8EDF3"/>
+<line x1="148" y1="651.3333333333334" x2="776" y2="651.3333333333334" stroke="#B83A3A" stroke-dasharray="5 4"/>
+<rect x="144.0" y="561.4772257302963" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="213.77777777777777" y="565.0569420187531" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="353.3333333333333" y="562.7816170514961" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="492.8888888888889" y="597.7361598970292" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="632.4444444444445" y="653.5751855312482" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="772.0" y="630.7584591341708" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<polyline points="148.0,565.5 217.8,569.1 357.3,566.8 496.9,601.7 636.4,657.6 776.0,634.8" fill="none" stroke="#8FBCE6" stroke-width="3"/>
+<circle cx="148.0" cy="565.4870914810227" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="217.77777777777777" cy="569.0554142771172" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="357.3333333333333" cy="566.786848379013" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="496.8888888888889" cy="601.7902295390577" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="636.4444444444445" cy="657.2165162254873" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="776.0" cy="654.2164613159339" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<polyline points="148.0,565.5 217.8,569.1 357.3,566.8 496.9,601.8 636.4,657.2 776.0,654.2" fill="none" stroke="#54319B" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="148.0" y="732" text-anchor="middle" class="axis">2</text>
+<text x="217.77777777777777" y="732" text-anchor="middle" class="axis">4</text>
+<text x="357.3333333333333" y="732" text-anchor="middle" class="axis">8</text>
+<text x="496.8888888888889" y="732" text-anchor="middle" class="axis">12</text>
+<text x="636.4444444444445" y="732" text-anchor="middle" class="axis">16</text>
+<text x="776.0" y="732" text-anchor="middle" class="axis">20</text>
+<text x="138" y="696.4444444444445" text-anchor="end" class="axis">1e-4</text>
+<text x="138" y="655.3333333333334" text-anchor="end" class="axis">1e-3</text>
+<text x="138" y="614.2222222222222" text-anchor="end" class="axis">1e-2</text>
+<text x="138" y="573.1111111111111" text-anchor="end" class="axis">1e-1</text>
+<text x="138" y="532.0" text-anchor="end" class="axis">1e0</text>
+<rect x="870" y="480" width="740" height="275" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
+<text x="890" y="510" class="panel">20 QUBITS</text>
+<line x1="948" y1="528.0" x2="1576" y2="528.0" stroke="#E8EDF3"/>
+<line x1="948" y1="574.25" x2="1576" y2="574.25" stroke="#E8EDF3"/>
+<line x1="948" y1="620.5" x2="1576" y2="620.5" stroke="#E8EDF3"/>
+<line x1="948" y1="666.75" x2="1576" y2="666.75" stroke="#E8EDF3"/>
+<line x1="948" y1="713.0" x2="1576" y2="713.0" stroke="#E8EDF3"/>
+<line x1="948" y1="651.3333333333334" x2="1576" y2="651.3333333333334" stroke="#B83A3A" stroke-dasharray="5 4"/>
+<rect x="944.0" y="552.2786920861176" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1013.7777777777778" y="553.2854505273219" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1153.3333333333333" y="554.6672012913918" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1292.888888888889" y="605.617078307949" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1432.4444444444443" y="580.836427581237" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<rect x="1572.0" y="633.5337749356823" width="8" height="8" fill="#FFFFFF" stroke="#8FBCE6" stroke-width="2.5"/>
+<polyline points="948.0,556.3 1017.8,557.3 1157.3,558.7 1296.9,609.6 1436.4,584.8 1576.0,637.5" fill="none" stroke="#8FBCE6" stroke-width="3"/>
+<circle cx="948.0" cy="556.2513277586855" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1017.7777777777778" cy="557.290016689013" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1157.3333333333333" cy="558.6765953227226" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1296.888888888889" cy="610.3546912011908" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1436.4444444444443" cy="584.970031815993" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<circle cx="1576.0" cy="638.1251776037877" r="4" fill="#FFFFFF" stroke="#54319B" stroke-width="2.5"/>
+<polyline points="948.0,556.3 1017.8,557.3 1157.3,558.7 1296.9,610.4 1436.4,585.0 1576.0,638.1" fill="none" stroke="#54319B" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="948.0" y="732" text-anchor="middle" class="axis">2</text>
+<text x="1017.7777777777778" y="732" text-anchor="middle" class="axis">4</text>
+<text x="1157.3333333333333" y="732" text-anchor="middle" class="axis">8</text>
+<text x="1296.888888888889" y="732" text-anchor="middle" class="axis">12</text>
+<text x="1436.4444444444443" y="732" text-anchor="middle" class="axis">16</text>
+<text x="1576.0" y="732" text-anchor="middle" class="axis">20</text>
+<text x="938" y="696.4444444444445" text-anchor="end" class="axis">1e-4</text>
+<text x="938" y="655.3333333333334" text-anchor="end" class="axis">1e-3</text>
+<text x="938" y="614.2222222222222" text-anchor="end" class="axis">1e-2</text>
+<text x="938" y="573.1111111111111" text-anchor="end" class="axis">1e-1</text>
+<text x="938" y="532.0" text-anchor="end" class="axis">1e0</text>
+<line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
+<circle cx="74" cy="850" r="5" fill="#54319B"/>
+<text x="90" y="855" class="note">An effective depth window exists: shallow circuits lack expressivity; deeper circuits do not guarantee monotonically lower error.</text>
+</svg>

@@ -1,0 +1,6211 @@
+{
+  "exports": {
+    "Circuit": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "n_qubits"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "n_wires"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "nqubits"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "torch.device | str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "torch.dtype | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          },
+          {
+            "annotation": "torch.Tensor | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "inputs"
+          },
+          {
+            "annotation": "RuntimeConfig | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "config"
+          }
+        ],
+        "return": "None"
+      },
+      "kind": "class",
+      "qualified_name": "flagquantum.circuit.Circuit"
+    },
+    "CircuitIR": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "n_wires"
+          },
+          {
+            "annotation": "tuple[Instruction, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "instructions"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "1.0"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "version"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "complex64"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "dtype"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "items": [],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "shape"
+          },
+          {
+            "annotation": "tuple[ObservableNode, ...]",
+            "default": {
+              "items": [],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observables"
+          },
+          {
+            "annotation": "tuple[MeasurementNode, ...]",
+            "default": {
+              "items": [],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "measurements"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metadata"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "n_wires",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "instructions",
+          "type": "tuple[Instruction, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "1.0"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "version",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "complex64"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "dtype",
+          "type": "str"
+        },
+        {
+          "default": {
+            "items": [],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "shape",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "items": [],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observables",
+          "type": "tuple[ObservableNode, ...]"
+        },
+        {
+          "default": {
+            "items": [],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "measurements",
+          "type": "tuple[MeasurementNode, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metadata",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.CircuitIR"
+    },
+    "ExecutionResult": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "torch.Tensor | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "value"
+          },
+          {
+            "annotation": "torch.Tensor | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "state"
+          },
+          {
+            "annotation": "torch.Tensor | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "samples"
+          },
+          {
+            "annotation": "tuple[MeasurementResult, ...]",
+            "default": {
+              "items": [],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "measurements"
+          },
+          {
+            "annotation": "RuntimePlanContract | Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "plan"
+          },
+          {
+            "annotation": "AccuracyContract",
+            "default": {
+              "kind": "object",
+              "repr": "AccuracyContract(version='1.0', metric='not_measured', value=None, tolerance=None, passed=None)",
+              "type": "flagquantum.core.contracts.AccuracyContract"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "accuracy"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metrics"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "provenance"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "runtime"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "compatibility"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "value",
+          "type": "torch.Tensor | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "state",
+          "type": "torch.Tensor | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "samples",
+          "type": "torch.Tensor | None"
+        },
+        {
+          "default": {
+            "items": [],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "measurements",
+          "type": "tuple[MeasurementResult, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "plan",
+          "type": "RuntimePlanContract | Any | None"
+        },
+        {
+          "default": {
+            "kind": "object",
+            "repr": "AccuracyContract(version='1.0', metric='not_measured', value=None, tolerance=None, passed=None)",
+            "type": "flagquantum.core.contracts.AccuracyContract"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "accuracy",
+          "type": "AccuracyContract"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metrics",
+          "type": "Mapping[str, Any]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "provenance",
+          "type": "Mapping[str, Any]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "runtime",
+          "type": "Mapping[str, Any]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "compatibility",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.result.ExecutionResult"
+    },
+    "GateInfo": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "name"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "aliases"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "n_wires"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "parameters"
+          },
+          {
+            "annotation": "Mapping[str, tuple[int, ...]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "parameter_shapes"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "differentiable"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "semantic_kind"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "name",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "aliases",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "n_wires",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "parameters",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "parameter_shapes",
+          "type": "Mapping[str, tuple[int, ...]]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "differentiable",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "semantic_kind",
+          "type": "str"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.operator_schema.GateInfo"
+    },
+    "HybridParallelPlan": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "data_parallel_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "state_parallel_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "model_parallel_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "input_batch_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "parameter_batch_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable_count"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable_group_count"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "global_quantum_state_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "parameter_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "input_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "per_rank_quantum_state_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "per_rank_input_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "state_exchange_bytes_per_gate"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "ddp_gradient_allreduce_bytes_per_step"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable_reduction_bytes_per_step"
+          },
+          {
+            "annotation": "tuple[tuple[int, ...], ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "data_groups"
+          },
+          {
+            "annotation": "tuple[tuple[int, ...], ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "state_groups"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "ddp_replicated"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "parameter_ownership"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "ddp_replicated"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "optimizer_state_ownership"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "sharded_across_state_group"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "quantum_state_ownership"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "parameters_only_state_shard_group_excluded"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "fsdp_compatibility"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "parameters_only_quantum_state_is_runtime_owned"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "dtensor_compatibility"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "world_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "data_parallel_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "state_parallel_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "model_parallel_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "input_batch_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "parameter_batch_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable_count",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable_group_count",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "global_quantum_state_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "parameter_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "input_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "per_rank_quantum_state_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "per_rank_input_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "state_exchange_bytes_per_gate",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "ddp_gradient_allreduce_bytes_per_step",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable_reduction_bytes_per_step",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "data_groups",
+          "type": "tuple[tuple[int, ...], ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "state_groups",
+          "type": "tuple[tuple[int, ...], ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "ddp_replicated"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "parameter_ownership",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "ddp_replicated"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "optimizer_state_ownership",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "sharded_across_state_group"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "quantum_state_ownership",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "parameters_only_state_shard_group_excluded"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "fsdp_compatibility",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "parameters_only_quantum_state_is_runtime_owned"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "dtensor_compatibility",
+          "type": "str"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.parallel.HybridParallelPlan"
+    },
+    "IRSerializationError": {
+      "constructor": null,
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.IRSerializationError"
+    },
+    "IRValidationError": {
+      "constructor": null,
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.IRValidationError"
+    },
+    "IR_VERSION": {
+      "kind": "value",
+      "qualified_type": "builtins.str",
+      "value": {
+        "kind": "literal",
+        "value": "1.0"
+      }
+    },
+    "Instruction": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "name"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "wires"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "params"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "matrix"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metadata"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "name",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "wires",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "params",
+          "type": "Mapping[str, Any]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "matrix",
+          "type": "Any | None"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metadata",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.Instruction"
+    },
+    "MPSAcceptanceGates": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "correctness_passed"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "performance_passed"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "capacity_passed"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "correctness_artifact"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "performance_artifact"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "capacity_artifact"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "correctness_passed",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "performance_passed",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "capacity_passed",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "correctness_artifact",
+          "type": "str | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "performance_artifact",
+          "type": "str | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "capacity_artifact",
+          "type": "str | None"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSAcceptanceGates"
+    },
+    "MPSCrossoverMeasurement": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "workload_min_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "workload_max_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "speedup_mean"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "speedup_ci_low"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "speedup_ci_high"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "sample_count"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "measured"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "world_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "workload_min_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "workload_max_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "speedup_mean",
+          "type": "float"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "speedup_ci_low",
+          "type": "float"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "speedup_ci_high",
+          "type": "float"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "sample_count",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": true
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "measured",
+          "type": "bool"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSCrossoverMeasurement"
+    },
+    "MPSProductionAcceptanceError": {
+      "constructor": null,
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionAcceptanceError"
+    },
+    "MPSProductionPlan": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "execution_class"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "world_size"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "rationale"
+          },
+          {
+            "annotation": "MPSAcceptanceGates",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "gates"
+          },
+          {
+            "annotation": "MPSProductionSupport",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "support"
+          },
+          {
+            "annotation": "MPSCrossoverMeasurement | None",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "matched_measurement"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "single_gpu_capacity_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "estimated_workload_bytes"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "distribution_semantics"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "production_promotion_allowed"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "execution_class",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "world_size",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "rationale",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "gates",
+          "type": "MPSAcceptanceGates"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "support",
+          "type": "MPSProductionSupport"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "matched_measurement",
+          "type": "MPSCrossoverMeasurement | None"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "single_gpu_capacity_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "estimated_workload_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "distribution_semantics",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "production_promotion_allowed",
+          "type": "bool"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionPlan"
+    },
+    "MPSProductionSupport": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": 1
+                },
+                {
+                  "kind": "literal",
+                  "value": 2
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "gate_arity"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "adjacent_only"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "two_site_topology"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "gloo"
+                },
+                {
+                  "kind": "literal",
+                  "value": "nccl"
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "backends"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "complex64"
+                },
+                {
+                  "kind": "literal",
+                  "value": "complex128"
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "precisions"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "exact"
+                },
+                {
+                  "kind": "literal",
+                  "value": "max_bond_cutoff"
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "truncation_policies"
+          },
+          {
+            "annotation": "tuple[str, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": "sgd"
+                },
+                {
+                  "kind": "literal",
+                  "value": "adam"
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "optimizers"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": 2
+                },
+                {
+                  "kind": "literal",
+                  "value": 4
+                },
+                {
+                  "kind": "literal",
+                  "value": 8
+                },
+                {
+                  "kind": "literal",
+                  "value": 16
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "world_sizes"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "full_mps_materialization_allowed"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "jax_required"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": 1
+              },
+              {
+                "kind": "literal",
+                "value": 2
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "gate_arity",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "adjacent_only"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "two_site_topology",
+          "type": "str"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": "gloo"
+              },
+              {
+                "kind": "literal",
+                "value": "nccl"
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "backends",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": "complex64"
+              },
+              {
+                "kind": "literal",
+                "value": "complex128"
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "precisions",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": "exact"
+              },
+              {
+                "kind": "literal",
+                "value": "max_bond_cutoff"
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "truncation_policies",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": "sgd"
+              },
+              {
+                "kind": "literal",
+                "value": "adam"
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "optimizers",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": 2
+              },
+              {
+                "kind": "literal",
+                "value": 4
+              },
+              {
+                "kind": "literal",
+                "value": 8
+              },
+              {
+                "kind": "literal",
+                "value": 16
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "world_sizes",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": false
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "full_mps_materialization_allowed",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": false
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "jax_required",
+          "type": "bool"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionSupport"
+    },
+    "MPSReverseCheckpointPolicy": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "mps_reverse_checkpoint_v3"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "version"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 268435456
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "max_saved_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "max_saved_factorization_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "rematerialization_interval"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "save_two_site_factorizations"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "mps_reverse_checkpoint_v3"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "version",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": 268435456
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "max_saved_bytes",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "max_saved_factorization_bytes",
+          "type": "int | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": 1
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "rematerialization_interval",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": false
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "save_two_site_factorizations",
+          "type": "bool"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.executors.mps.records.MPSReverseCheckpointPolicy"
+    },
+    "MeasurementNode": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "kind"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "wires"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "shots"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metadata"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "kind",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "wires",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "shots",
+          "type": "int | None"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metadata",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.MeasurementNode"
+    },
+    "MeasurementResult": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "kind"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "wires"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "value"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "shots"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metadata"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "statistics"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "kind",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "wires",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "value",
+          "type": "Any"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "shots",
+          "type": "int | None"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metadata",
+          "type": "Mapping[str, Any]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "statistics",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.result.MeasurementResult"
+    },
+    "Module": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "CircuitBuilder | Circuit",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit"
+          },
+          {
+            "annotation": "int | tuple[int, ...] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "n_parameters"
+          },
+          {
+            "annotation": "Mapping[str, int | tuple[int, ...] | torch.Tensor] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "parameters"
+          },
+          {
+            "annotation": "RuntimePolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "policy"
+          },
+          {
+            "annotation": "torch.Tensor | Mapping[str, Any] | str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "init"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "seed"
+          },
+          {
+            "annotation": "torch.dtype",
+            "default": {
+              "kind": "object",
+              "repr": "torch.float32",
+              "type": "torch.dtype"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          },
+          {
+            "annotation": "torch.device | str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "Mapping[str, Any] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "deployment_binding"
+          },
+          {
+            "annotation": "Hamiltonian | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "hamiltonian"
+          },
+          {
+            "annotation": "PrecisionPolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "precision"
+          }
+        ],
+        "return": "None"
+      },
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.module.Module"
+    },
+    "NoiseModel": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "list[NoiseRule]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "rules"
+          },
+          {
+            "annotation": "list[ReadoutRule]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "readout_rules"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "device_profile"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": false,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.list"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "rules",
+          "type": "list[NoiseRule]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.list"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "readout_rules",
+          "type": "list[ReadoutRule]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "device_profile",
+          "type": "Any | None"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.noise.model.NoiseModel"
+    },
+    "ObservableNode": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "name"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "wires"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "literal",
+              "value": 1.0
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "coefficient"
+          },
+          {
+            "annotation": "Mapping[str, Any]",
+            "default": {
+              "kind": "object",
+              "repr": "<factory>",
+              "type": "dataclasses._HAS_DEFAULT_FACTORY_CLASS"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "metadata"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "name",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "wires",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": 1.0
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "coefficient",
+          "type": "Any"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "factory",
+            "value": "builtins.dict"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "metadata",
+          "type": "Mapping[str, Any]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.ir.ObservableNode"
+    },
+    "Parameter": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "name"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "name",
+          "type": "str"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.parameters.Parameter"
+    },
+    "ParameterExpression": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "op"
+          },
+          {
+            "annotation": "tuple[Any, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "args"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "op",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "args",
+          "type": "tuple[Any, ...]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.core.parameters.ParameterExpression"
+    },
+    "PauliMeasurementPlan": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "Hamiltonian",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "hamiltonian"
+          },
+          {
+            "annotation": "tuple[ObservableGroup, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "groups"
+          },
+          {
+            "annotation": "tuple[DeploymentPackage, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "packages"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "hamiltonian",
+          "type": "Hamiltonian"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "groups",
+          "type": "tuple[ObservableGroup, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "packages",
+          "type": "tuple[DeploymentPackage, ...]"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.deployment.cloud.PauliMeasurementPlan"
+    },
+    "RuntimePolicy": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "statevector"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "mode"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "pytorch"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "backend"
+          },
+          {
+            "annotation": "ObservableKind",
+            "default": {
+              "kind": "literal",
+              "value": "z"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable"
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": {
+              "items": [
+                {
+                  "kind": "literal",
+                  "value": 0
+                }
+              ],
+              "kind": "tuple"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observable_wires"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "allow_backend_fallback"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "correctness_debug"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "mps_max_bond"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.0
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "mps_cutoff"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "statevector"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "mode",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "pytorch"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "backend",
+          "type": "str"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": "z"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable",
+          "type": "ObservableKind"
+        },
+        {
+          "default": {
+            "items": [
+              {
+                "kind": "literal",
+                "value": 0
+              }
+            ],
+            "kind": "tuple"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "observable_wires",
+          "type": "tuple[int, ...]"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": true
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "allow_backend_fallback",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": false
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "correctness_debug",
+          "type": "bool"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": null
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "mps_max_bond",
+          "type": "int | None"
+        },
+        {
+          "default": {
+            "kind": "literal",
+            "value": 0.0
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "mps_cutoff",
+          "type": "float"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.policy.RuntimePolicy"
+    },
+    "TrainingResult": {
+      "constructor": {
+        "parameters": [
+          {
+            "annotation": "tuple[float, ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "losses"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "completed_steps"
+          },
+          {
+            "annotation": "ExecutionResult",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "last_execution"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "optimizer"
+          }
+        ],
+        "return": "None"
+      },
+      "dataclass": [
+        {
+          "class_frozen": true,
+          "class_order": false
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "losses",
+          "type": "tuple[float, ...]"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "completed_steps",
+          "type": "int"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "last_execution",
+          "type": "ExecutionResult"
+        },
+        {
+          "default": {
+            "kind": "missing"
+          },
+          "default_factory": {
+            "kind": "missing"
+          },
+          "init": true,
+          "keyword_only": false,
+          "name": "optimizer",
+          "type": "str"
+        }
+      ],
+      "kind": "class",
+      "qualified_name": "flagquantum.runtime.training.TrainingResult"
+    },
+    "__version__": {
+      "kind": "value",
+      "qualified_type": "builtins.str",
+      "value": {
+        "kind": "literal",
+        "value": "0.2.0"
+      }
+    },
+    "build_mps_release_artifact": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.build_mps_release_artifact",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "MPSAcceptanceGates",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "gates"
+          },
+          {
+            "annotation": "tuple[Mapping[str, Any], ...]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "runtime_records"
+          }
+        ],
+        "return": "dict[str, Any]"
+      }
+    },
+    "compile_for_backend": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.compilation.compiler.compile_for_backend",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "CouplingMap | Iterable[tuple[int, int]] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "coupling_map"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "restore_after_each_gate"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "routing_strategy"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimize"
+          },
+          {
+            "annotation": "RuntimeConfig | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "config"
+          }
+        ],
+        "return": "CircuitIR"
+      }
+    },
+    "create_deployment_package": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.deployment.cloud.create_deployment_package",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Circuit | CircuitIR",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "CloudBackendProfile | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "flagquantum_job"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "name"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1024
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "shots"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 2.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "qasm_version"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimize"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "restore_after_each_gate"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "routing_strategy"
+          },
+          {
+            "annotation": "Mapping[str, Any] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "metadata"
+          }
+        ],
+        "return": "DeploymentPackage"
+      }
+    },
+    "create_pauli_measurement_plan": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.deployment.cloud.create_pauli_measurement_plan",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Circuit | CircuitIR",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Hamiltonian",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "hamiltonian"
+          },
+          {
+            "annotation": "CloudBackendProfile | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "flagquantum_measurement"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "name"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1024
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "shots"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 2.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "qasm_version"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimize"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "restore_after_each_gate"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "routing_strategy"
+          },
+          {
+            "annotation": "Mapping[str, Any] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "metadata"
+          }
+        ],
+        "return": "PauliMeasurementPlan"
+      }
+    },
+    "deploy_circuit": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.deployment.cloud.deploy_circuit",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Circuit | CircuitIR",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "QuantumProvider",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "provider"
+          },
+          {
+            "annotation": "CloudBackendProfile | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "flagquantum_job"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "name"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1024
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "shots"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 2.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "qasm_version"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimize"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "restore_after_each_gate"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "routing_strategy"
+          },
+          {
+            "annotation": "Mapping[str, Any] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "metadata"
+          }
+        ],
+        "return": "DeploymentResult"
+      }
+    },
+    "distributed_tensor_network_amplitude": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.distributed.tensor_network_execution.distributed_tensor_network_amplitude",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int | str | Sequence[int]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "bitstring"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_working_set_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 4.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_safety_factor"
+          },
+          {
+            "annotation": "DistributedTNWorkingSetPolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_policy"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_calibration"
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "plan_cache_path"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "distributed_executor"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "env://"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "init_method"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rank"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "local_rank"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "DistributedTensorNetworkAmplitude"
+      }
+    },
+    "distributed_tensor_network_amplitudes": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.distributed.tensor_network_execution.distributed_tensor_network_amplitudes",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Sequence[int | str | Sequence[int]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "bitstrings"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_working_set_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 4.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_safety_factor"
+          },
+          {
+            "annotation": "DistributedTNWorkingSetPolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_policy"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_calibration"
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "plan_cache_path"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "distributed_executor"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "env://"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "init_method"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rank"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "local_rank"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "DistributedTensorNetworkAmplitudes"
+      }
+    },
+    "distributed_tensor_network_expectation": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.distributed.tensor_network_execution.distributed_tensor_network_expectation",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "x"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "y"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "z"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_working_set_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 4.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_safety_factor"
+          },
+          {
+            "annotation": "DistributedTNWorkingSetPolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_policy"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_calibration"
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "plan_cache_path"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "distributed_executor"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "env://"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "init_method"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rank"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "local_rank"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "DistributedTensorNetworkExpectation"
+      }
+    },
+    "distributed_tensor_network_expectations": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.distributed.tensor_network_execution.distributed_tensor_network_expectations",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Sequence[Mapping[str, Sequence[int]]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observables"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_working_set_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 4.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_safety_factor"
+          },
+          {
+            "annotation": "DistributedTNWorkingSetPolicy | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "working_set_policy"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_calibration"
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "plan_cache_path"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "distributed_executor"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "env://"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "init_method"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rank"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "local_rank"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "DistributedTensorNetworkExpectations"
+      }
+    },
+    "experimental": {
+      "kind": "module",
+      "module": "flagquantum.experimental"
+    },
+    "gate_info": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.core.operator_schema.gate_info",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "name"
+          }
+        ],
+        "return": "GateInfo"
+      }
+    },
+    "get_version": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.version.get_version",
+      "signature": {
+        "parameters": [],
+        "return": "str"
+      }
+    },
+    "hamiltonian_expectation_from_grouped_counts": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.deployment.cloud.hamiltonian_expectation_from_grouped_counts",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Sequence[Mapping[str, int]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "counts_by_group"
+          },
+          {
+            "annotation": "PauliMeasurementPlan",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "plan"
+          }
+        ],
+        "return": "torch.Tensor"
+      }
+    },
+    "hello": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.hello",
+      "signature": {
+        "parameters": [],
+        "return": "None"
+      }
+    },
+    "info": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.info",
+      "signature": {
+        "parameters": [],
+        "return": "dict[str, str]"
+      }
+    },
+    "noisy_density_matrix": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.density_matrix.execution.noisy_density_matrix",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "NoiseModel | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "torch.device | str",
+            "default": {
+              "kind": "literal",
+              "value": "cpu"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "torch.dtype | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          }
+        ],
+        "return": "torch.Tensor"
+      }
+    },
+    "plan": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.compilation.planner.plan",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 8
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "complex_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_limit_bytes"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "state_mode"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "cutoff"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "trajectories"
+          },
+          {
+            "annotation": "OutputTarget",
+            "default": {
+              "kind": "literal",
+              "value": "full_state"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_gradients"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "allow_approximate"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target_count"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "coupling_map"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "restore_after_each_gate"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "routing_strategy"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimize"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "config"
+          }
+        ],
+        "return": "ExecutionPlan"
+      }
+    },
+    "plan_production_mps": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.plan_production_mps",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "estimated_workload_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "single_gpu_capacity_bytes"
+          },
+          {
+            "annotation": "MPSAcceptanceGates | Mapping[str, Any]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "gates"
+          },
+          {
+            "annotation": "tuple[MPSCrossoverMeasurement | Mapping[str, Any], ...]",
+            "default": {
+              "items": [],
+              "kind": "tuple"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "crossover"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "available_gpu_count"
+          }
+        ],
+        "return": "MPSProductionPlan"
+      }
+    },
+    "plan_runtime_selection": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.compilation.planner.plan_runtime_selection",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "local_world_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "node_count"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 8
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "complex_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_limit_bytes"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "cutoff"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "prefer_jax"
+          },
+          {
+            "annotation": "bool | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "prefer_distributed"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_gradients"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_deployment"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "allow_approximate"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "state_mode"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "distributed_profile"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "jax_backward_backend"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "inspect_jax_devices"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "assume_jax_devices_ready"
+          },
+          {
+            "annotation": "OutputTarget",
+            "default": {
+              "kind": "literal",
+              "value": "full_state"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target_count"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "tn_memory_calibration"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_tn_memory_calibration"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "accelerator_name"
+          }
+        ],
+        "return": "RuntimeSelectionPlan"
+      }
+    },
+    "resolve_device": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.backend_registry.resolve_device",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "str | torch.device | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "device"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "backend"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_accelerator"
+          }
+        ],
+        "return": "torch.device"
+      }
+    },
+    "run": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.execution.run",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "mode"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "Sequence[MeasurementNode] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "measurements"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "Any"
+      }
+    },
+    "run_mps": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.mps_execution.run_mps",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "torch.device | str",
+            "default": {
+              "kind": "literal",
+              "value": "cpu"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "torch.dtype | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "cutoff"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "fuse_single_qubit"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 12
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dense_observable_wires"
+          }
+        ],
+        "return": "MPSState"
+      }
+    },
+    "run_native": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.execution.run_native",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "mode"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "return_plan"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "Any"
+      }
+    },
+    "run_noisy_mps": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.mps_execution.run_noisy_mps",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "Any | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "noise_model"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 32
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "trajectories"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "min_trajectories"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target_standard_error"
+          },
+          {
+            "annotation": "torch.Generator | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "generator"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "seed"
+          },
+          {
+            "annotation": "str | os.PathLike[str] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "checkpoint_path"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "resume"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "checkpoint_interval"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_trajectories_per_run"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "retain_trajectories"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "retry_failed"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "continue_on_error"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rank"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "torch.device | str",
+            "default": {
+              "kind": "literal",
+              "value": "cpu"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "torch.dtype | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "cutoff"
+          }
+        ],
+        "return": "MPSMonteCarloResult"
+      }
+    },
+    "run_target": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.target_execution.run_target",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target"
+          },
+          {
+            "annotation": "int | str | Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bitstring"
+          },
+          {
+            "annotation": "Sequence[int | str | Sequence[int]] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bitstrings"
+          },
+          {
+            "annotation": "Sequence[Mapping[str, Sequence[int]]] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "observables"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "mode"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_gradients"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_limit_bytes"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 8
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "complex_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "options"
+          }
+        ],
+        "return": "TargetExecutionResult"
+      }
+    },
+    "run_tensor_network": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.tensor_execution.run_tensor_network",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "torch.device | str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "device"
+          },
+          {
+            "annotation": "torch.dtype | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dtype"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "greedy"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "contraction_strategy"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "dense_observable_wires"
+          }
+        ],
+        "return": "TensorNetworkState"
+      }
+    },
+    "select_backend_by_cost": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.compilation.backend_selection.select_backend_by_cost",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "OutputTarget",
+            "default": {
+              "kind": "literal",
+              "value": "full_state"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_gradients"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "bsz"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 8
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "complex_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_limit_bytes"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_bond"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": true
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "allow_approximate"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "auto"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "requested_backend"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "target_count"
+          },
+          {
+            "annotation": "TNWorkingSetCalibration | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "tn_memory_calibration"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "require_tn_memory_calibration"
+          },
+          {
+            "annotation": "str | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "accelerator_name"
+          }
+        ],
+        "return": "BackendSelection"
+      }
+    },
+    "tensor_network_amplitude": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.tensor_execution.tensor_network_amplitude",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "TensorNetworkContractionPlan | Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "plan_or_circuit"
+          },
+          {
+            "annotation": "int | str | Sequence[int]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "bitstring"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "quality_multistart"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "contraction_strategy"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          }
+        ],
+        "return": "torch.Tensor"
+      }
+    },
+    "tensor_network_amplitudes": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.tensor_execution.tensor_network_amplitudes",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "TensorNetworkContractionPlan | Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "plan_or_circuit"
+          },
+          {
+            "annotation": "Sequence[int | str | Sequence[int]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "bitstrings"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "quality_multistart"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "contraction_strategy"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          }
+        ],
+        "return": "torch.Tensor"
+      }
+    },
+    "tensor_network_expectations": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.simulation.tensor_execution.tensor_network_expectations",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "TensorNetworkContractionPlan | Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "plan_or_circuit"
+          },
+          {
+            "annotation": "Sequence[Mapping[str, Sequence[int]]]",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "observables"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_size"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_intermediate_bytes"
+          },
+          {
+            "annotation": "Sequence[int] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "sliced_labels"
+          },
+          {
+            "annotation": "str",
+            "default": {
+              "kind": "literal",
+              "value": "quality_multistart"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "contraction_strategy"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": 4096
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_slices"
+          },
+          {
+            "annotation": "float | None",
+            "default": {
+              "kind": "literal",
+              "value": 64.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "max_recomputation_factor"
+          }
+        ],
+        "return": "torch.Tensor"
+      }
+    },
+    "train": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.training.train",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Module",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "module"
+          },
+          {
+            "annotation": "torch.optim.Optimizer",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimizer"
+          },
+          {
+            "annotation": "TrainingObjective",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "objective"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "steps"
+          },
+          {
+            "annotation": "TrainingInputs",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "inputs"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "log_interval"
+          },
+          {
+            "annotation": "TrainingCallback | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "callback"
+          }
+        ],
+        "return": "TrainingResult"
+      }
+    },
+    "train_distributed_mps": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.mps.training.train_distributed_mps",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_POSITIONAL",
+            "name": "args"
+          },
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "VAR_KEYWORD",
+            "name": "kwargs"
+          }
+        ],
+        "return": "ShardedMPSTrainingResult"
+      }
+    },
+    "train_distributed_statevector": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.statevector.training.train_distributed_statevector",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "steps"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "observable_wire"
+          },
+          {
+            "annotation": "Literal['sgd', 'adam']",
+            "default": {
+              "kind": "literal",
+              "value": "sgd"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "optimizer"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 0.05
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "lr"
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "checkpoint_dir"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "resume"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 1
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "checkpoint_interval"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "literal",
+              "value": 0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "rematerialization_interval"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "memory_budget_bytes"
+          },
+          {
+            "annotation": "float",
+            "default": {
+              "kind": "literal",
+              "value": 120.0
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "timeout_seconds"
+          },
+          {
+            "annotation": "Callable[[], bool] | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "cancelled"
+          },
+          {
+            "annotation": "int | None",
+            "default": {
+              "kind": "literal",
+              "value": null
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "fault_rank"
+          },
+          {
+            "annotation": "bool",
+            "default": {
+              "kind": "literal",
+              "value": false
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "inject_collective_timeout"
+          }
+        ],
+        "return": "ShardedTrainingResult"
+      }
+    },
+    "validate_production_mps_workload": {
+      "kind": "callable",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.validate_production_mps_workload",
+      "signature": {
+        "parameters": [
+          {
+            "annotation": "Any",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "POSITIONAL_OR_KEYWORD",
+            "name": "circuit_or_ir"
+          },
+          {
+            "annotation": "int",
+            "default": {
+              "kind": "missing"
+            },
+            "kind": "KEYWORD_ONLY",
+            "name": "world_size"
+          }
+        ],
+        "return": "Any"
+      }
+    }
+  },
+  "package_version": "0.2.0",
+  "schema": "flagquantum_public_api_baseline_v1",
+  "source_manifest": "docs/public_api_v1.json",
+  "source_manifest_sha256": "15d493df935d5d4b6abca564a3ea1e99db11bae388ef531df14b0186a6ac7ca8",
+  "status": "pre_open_source_migration_baseline"
+}

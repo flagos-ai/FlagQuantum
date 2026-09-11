@@ -1,0 +1,12 @@
+{
+  "chip": "Shenglian",
+  "shots": 1024,
+  "status": "Finished",
+  "tid": "task-redacted",
+  "circuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[84];\ncreg c[1];\nh q[0];\nmeasure q[0] -> c[0];\n",
+  "transpiled": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[70];\ncreg c[1];\nu(1.5707963267948966,0.0,3.141592653589793) q[69];\nbarrier q[69];\nmeasure q[69] -> c[0];",
+  "count": {
+    "0": 479,
+    "1": 545
+  }
+}

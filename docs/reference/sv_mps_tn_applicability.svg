@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <style>
+      text { font-family: "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #172033; }
+      .title { font-size: 38px; font-weight: 700; }
+      .subtitle { font-size: 19px; fill: #596579; }
+      .axis { font-size: 19px; font-weight: 600; }
+      .region { font-size: 29px; font-weight: 800; }
+      .region-sub { font-size: 17px; font-weight: 600; }
+      .card-title { font-size: 23px; font-weight: 800; }
+      .body { font-size: 17px; }
+      .small { font-size: 15px; fill: #647086; }
+      .decision { font-size: 18px; font-weight: 650; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4b586d"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#26334a" flood-opacity=".12"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="980" fill="#f8fafc"/>
+  <text x="70" y="65" class="title">SV / MPS / TN: choosing a simulation method</text>
+  <text x="70" y="98" class="subtitle">Consider qubit count, entanglement/treewidth, circuit structure, precision, and required outputs</text>
+
+  <!-- Main scenario map -->
+  <rect x="72" y="142" width="910" height="570" rx="18" fill="#fff" stroke="#dbe2ec" filter="url(#shadow)"/>
+  <line x1="145" y1="645" x2="915" y2="645" stroke="#4b586d" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="145" y1="645" x2="145" y2="192" stroke="#4b586d" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="510" y="689" class="axis">Qubit count → (small to large)</text>
+  <text x="105" y="630" class="axis" transform="rotate(-90 105 630)">Entanglement / treewidth → (low to high)</text>
+
+  <!-- Difficult region -->
+  <path d="M560 205 C690 185 845 195 915 225 L915 355 C820 320 700 318 610 350
+           C585 300 570 255 560 205Z"
+        fill="#d95c5c" fill-opacity=".17" stroke="#b94c55" stroke-width="2.5" stroke-dasharray="10 8"/>
+  <text x="710" y="245" class="body" style="fill:#913b45">Large scale + high treewidth</text>
+  <text x="700" y="274" class="small">Difficult for all three</text>
+
+  <!-- SV region -->
+  <path d="M165 220 C285 185 440 205 530 285 C585 335 570 445 500 500
+           C405 575 250 552 175 470 C145 395 148 300 165 220Z"
+        fill="#4e86df" fill-opacity=".27" stroke="#326bc5" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="260" y="330" class="region" style="fill:#245cae">SV</text>
+  <text x="220" y="360" class="region-sub">Full state · General and exact</text>
+  <text x="215" y="390" class="small">Memory ≈ O(2ⁿ)</text>
+
+  <!-- MPS region -->
+  <path d="M175 500 C310 440 455 470 555 520 C680 585 805 565 915 520
+           L915 625 L175 625 C150 590 150 545 175 500Z"
+        fill="#4ead76" fill-opacity=".28" stroke="#298b55" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="610" y="575" class="region" style="fill:#1f7748">MPS</text>
+  <text x="565" y="606" class="region-sub">Low entanglement · Chains / neighbors</text>
+
+  <!-- TN region -->
+  <path d="M405 350 C500 285 650 300 750 345 C830 380 875 430 915 500
+           C805 555 680 570 565 520 C490 487 430 440 405 350Z"
+        fill="#eea447" fill-opacity=".31" stroke="#d78322" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="660" y="410" class="region" style="fill:#b86612">TN</text>
+  <text x="560" y="442" class="region-sub">Structured contraction · Sparse outputs</text>
+  <text x="575" y="470" class="small">Depends on treewidth and path</text>
+
+  <text x="170" y="176" class="small">Dashed boundaries: empirical crossover regions, not fixed thresholds</text>
+
+  <!-- Method cards -->
+  <g filter="url(#shadow)">
+    <rect x="1025" y="142" width="505" height="170" rx="16" fill="#eef5ff" stroke="#8eb5ee"/>
+    <rect x="1025" y="330" width="505" height="170" rx="16" fill="#eefaf2" stroke="#8dcea7"/>
+    <rect x="1025" y="518" width="505" height="194" rx="16" fill="#fff6e9" stroke="#efbd7c"/>
+  </g>
+
+  <text x="1055" y="180" class="card-title" style="fill:#245cae">SV | Full state amplitudes</text>
+  <text x="1055" y="214" class="body">Strength: general, exact, operator-dense workloads</text>
+  <text x="1055" y="244" class="body">Cost: approximately O(2ⁿ) memory</text>
+  <text x="1055" y="274" class="body">Use: small/medium scale, high entanglement, many outputs</text>
+
+  <text x="1055" y="368" class="card-title" style="fill:#1f7748">MPS | Low-entanglement chains</text>
+  <text x="1055" y="402" class="body">Strength: can reach large qubit counts</text>
+  <text x="1055" y="432" class="body">Cost: grows with bond dimension χ</text>
+  <text x="1055" y="462" class="body">Use: 1D/local gates, shallow circuits, training, evolution</text>
+
+  <text x="1055" y="556" class="card-title" style="fill:#b86612">TN | Structured contraction</text>
+  <text x="1055" y="590" class="body">Strength: graph structure, slicing, sparse outputs</text>
+  <text x="1055" y="620" class="body">Cost: treewidth and contraction path</text>
+  <text x="1055" y="650" class="body">Use: few amplitudes/expectations, structured circuits,</text>
+  <text x="1055" y="680" class="body">          moderate treewidth</text>
+
+  <!-- Decision strip -->
+  <rect x="72" y="752" width="1458" height="155" rx="18" fill="#172033"/>
+  <text x="105" y="793" font-size="21" font-weight="800" style="fill:#fff">Quick choice</text>
+  <line x1="235" y1="772" x2="235" y2="883" stroke="#536078"/>
+
+  <circle cx="285" cy="820" r="22" fill="#4e86df"/>
+  <text x="320" y="814" class="decision" style="fill:#fff">Need the full state?</text>
+  <text x="320" y="843" class="body" style="fill:#bcd5fb">→ SV</text>
+
+  <circle cx="590" cy="820" r="22" fill="#4ead76"/>
+  <text x="625" y="814" class="decision" style="fill:#fff">Low entanglement?</text>
+  <text x="625" y="835" class="decision" style="fill:#fff">Approximation acceptable?</text>
+  <text x="625" y="859" class="body" style="fill:#bde8cc">→ MPS</text>
+
+  <circle cx="955" cy="820" r="22" fill="#eea447"/>
+  <text x="990" y="814" class="decision" style="fill:#fff">Few outputs; exploitable structure?</text>
+  <text x="990" y="843" class="body" style="fill:#ffdbad">→ TN</text>
+
+  <text x="105" y="943" class="small">Empirical regions depend on hardware, precision, circuit structure, and outputs. Large scale plus high treewidth can challenge all three methods.</text>
+</svg>

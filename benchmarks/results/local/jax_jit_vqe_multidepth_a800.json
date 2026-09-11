@@ -1,0 +1,3642 @@
+{
+  "benchmark": "jax_jit_cold_vs_steady",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "claim_scope": "development_single_device_jax_kernel_acceleration",
+  "correctness_passed": true,
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A800-SXM4-80GB",
+    "device": "cuda:0",
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "limitations": [
+    "Development evidence from the current single-device environment, not release certification.",
+    "JAX persistent compilation cache is disabled to expose cold-start cost.",
+    "Results do not imply distributed scalability or universal backend superiority."
+  ],
+  "measurements": [
+    {
+      "break_even_calls": 171,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 3.6228448152542114e-07,
+          "jax_cold_total_seconds": 4.465201308019459,
+          "jax_first_value_grad_seconds": 4.176129448227584,
+          "jax_kernel_build_seconds": 0.2890718597918749,
+          "jax_steady_samples_seconds": [
+            0.0012335330247879028,
+            0.0010067378170788288,
+            0.0009926678612828255,
+            0.0009652492590248585,
+            0.0009577758610248566
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              2,
+              4,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 2,
+          "loss_abs_error": 3.5762786865234375e-07,
+          "n_wires": 4,
+          "pytorch_first_seconds": 0.11499693896621466,
+          "pytorch_steady_samples_seconds": [
+            0.02809114195406437,
+            0.02680343808606267,
+            0.026681087911128998,
+            0.026030680164694786,
+            0.026350243017077446
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 3.6228448152542114e-07,
+      "jax_cold_total_seconds_median": 4.465201308019459,
+      "jax_compile_tax_in_steady_steps": 4498.1826068681985,
+      "jax_first_value_grad_seconds_median": 4.176129448227584,
+      "jax_kernel_build_seconds_median": 0.2890718597918749,
+      "jax_steady_samples_seconds": [
+        0.0012335330247879028,
+        0.0010067378170788288,
+        0.0009926678612828255,
+        0.0009652492590248585,
+        0.0009577758610248566
+      ],
+      "jax_steady_seconds_median": 0.0009926678612828255,
+      "layers": 2,
+      "loss_abs_error_max": 3.5762786865234375e-07,
+      "n_wires": 4,
+      "pytorch_first_seconds_median": 0.11499693896621466,
+      "pytorch_steady_samples_seconds": [
+        0.02809114195406437,
+        0.02680343808606267,
+        0.026681087911128998,
+        0.026030680164694786,
+        0.026350243017077446
+      ],
+      "pytorch_steady_seconds_median": 0.026681087911128998,
+      "state_dimension": 16,
+      "steady_speedup_jax_over_pytorch": 26.878162325764237
+    },
+    {
+      "break_even_calls": 190,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 2.4437904357910156e-06,
+          "jax_cold_total_seconds": 8.24496333533898,
+          "jax_first_value_grad_seconds": 7.871854877565056,
+          "jax_kernel_build_seconds": 0.3731084577739239,
+          "jax_steady_samples_seconds": [
+            0.0021901829168200493,
+            0.0018563908524811268,
+            0.0018421020358800888,
+            0.0018625231459736824,
+            0.0018360079266130924
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              2,
+              8,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 2,
+          "loss_abs_error": 2.86102294921875e-06,
+          "n_wires": 8,
+          "pytorch_first_seconds": 0.13636358827352524,
+          "pytorch_steady_samples_seconds": [
+            0.053249981720000505,
+            0.05328418407589197,
+            0.044956508092582226,
+            0.04417554521933198,
+            0.04314500605687499
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 2.4437904357910156e-06,
+      "jax_cold_total_seconds_median": 8.24496333533898,
+      "jax_compile_tax_in_steady_steps": 4441.394076209392,
+      "jax_first_value_grad_seconds_median": 7.871854877565056,
+      "jax_kernel_build_seconds_median": 0.3731084577739239,
+      "jax_steady_samples_seconds": [
+        0.0021901829168200493,
+        0.0018563908524811268,
+        0.0018421020358800888,
+        0.0018625231459736824,
+        0.0018360079266130924
+      ],
+      "jax_steady_seconds_median": 0.0018563908524811268,
+      "layers": 2,
+      "loss_abs_error_max": 2.86102294921875e-06,
+      "n_wires": 8,
+      "pytorch_first_seconds_median": 0.13636358827352524,
+      "pytorch_steady_samples_seconds": [
+        0.053249981720000505,
+        0.05328418407589197,
+        0.044956508092582226,
+        0.04417554521933198,
+        0.04314500605687499
+      ],
+      "pytorch_steady_seconds_median": 0.044956508092582226,
+      "state_dimension": 256,
+      "steady_speedup_jax_over_pytorch": 24.21715665776762
+    },
+    {
+      "break_even_calls": 190,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 4.928559064865112e-06,
+          "jax_cold_total_seconds": 12.212309854105115,
+          "jax_first_value_grad_seconds": 11.837559094186872,
+          "jax_kernel_build_seconds": 0.3747507599182427,
+          "jax_steady_samples_seconds": [
+            0.0033036661334335804,
+            0.0029873009771108627,
+            0.00297012971714139,
+            0.00294438935816288,
+            0.002965860068798065
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              2,
+              12,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 2,
+          "loss_abs_error": 8.58306884765625e-06,
+          "n_wires": 12,
+          "pytorch_first_seconds": 0.1587283448316157,
+          "pytorch_steady_samples_seconds": [
+            0.07544764410704374,
+            0.06925767799839377,
+            0.06576936319470406,
+            0.06644397927448153,
+            0.06689588306471705
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 4.928559064865112e-06,
+      "jax_cold_total_seconds_median": 12.212309854105115,
+      "jax_compile_tax_in_steady_steps": 4111.709257553535,
+      "jax_first_value_grad_seconds_median": 11.837559094186872,
+      "jax_kernel_build_seconds_median": 0.3747507599182427,
+      "jax_steady_samples_seconds": [
+        0.0033036661334335804,
+        0.0029873009771108627,
+        0.00297012971714139,
+        0.00294438935816288,
+        0.002965860068798065
+      ],
+      "jax_steady_seconds_median": 0.00297012971714139,
+      "layers": 2,
+      "loss_abs_error_max": 8.58306884765625e-06,
+      "n_wires": 12,
+      "pytorch_first_seconds_median": 0.1587283448316157,
+      "pytorch_steady_samples_seconds": [
+        0.07544764410704374,
+        0.06925767799839377,
+        0.06576936319470406,
+        0.06644397927448153,
+        0.06689588306471705
+      ],
+      "pytorch_steady_seconds_median": 0.06689588306471705,
+      "state_dimension": 4096,
+      "steady_speedup_jax_over_pytorch": 22.522882646721975
+    },
+    {
+      "break_even_calls": 156,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 3.7997961044311523e-06,
+          "jax_cold_total_seconds": 14.05929813021794,
+          "jax_first_value_grad_seconds": 13.69883448118344,
+          "jax_kernel_build_seconds": 0.3604636490345001,
+          "jax_steady_samples_seconds": [
+            0.009527914226055145,
+            0.009170510806143284,
+            0.010167233180254698,
+            0.009120001923292875,
+            0.009091895073652267
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              2,
+              16,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 2,
+          "loss_abs_error": 9.5367431640625e-07,
+          "n_wires": 16,
+          "pytorch_first_seconds": 0.1999401031062007,
+          "pytorch_steady_samples_seconds": [
+            0.09188087424263358,
+            0.09961260110139847,
+            0.09916083421558142,
+            0.1053708540275693,
+            0.09367643669247627
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 3.7997961044311523e-06,
+      "jax_cold_total_seconds_median": 14.05929813021794,
+      "jax_compile_tax_in_steady_steps": 1533.098692910288,
+      "jax_first_value_grad_seconds_median": 13.69883448118344,
+      "jax_kernel_build_seconds_median": 0.3604636490345001,
+      "jax_steady_samples_seconds": [
+        0.009527914226055145,
+        0.009170510806143284,
+        0.010167233180254698,
+        0.009120001923292875,
+        0.009091895073652267
+      ],
+      "jax_steady_seconds_median": 0.009170510806143284,
+      "layers": 2,
+      "loss_abs_error_max": 9.5367431640625e-07,
+      "n_wires": 16,
+      "pytorch_first_seconds_median": 0.1999401031062007,
+      "pytorch_steady_samples_seconds": [
+        0.09188087424263358,
+        0.09961260110139847,
+        0.09916083421558142,
+        0.1053708540275693,
+        0.09367643669247627
+      ],
+      "pytorch_steady_seconds_median": 0.09916083421558142,
+      "state_dimension": 65536,
+      "steady_speedup_jax_over_pytorch": 10.813010999251429
+    },
+    {
+      "break_even_calls": 182,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 1.2777745723724365e-06,
+          "jax_cold_total_seconds": 8.262195041403174,
+          "jax_first_value_grad_seconds": 7.898060792591423,
+          "jax_kernel_build_seconds": 0.3641342488117516,
+          "jax_steady_samples_seconds": [
+            0.0019384692423045635,
+            0.0016324222087860107,
+            0.0015938780270516872,
+            0.0016029751859605312,
+            0.0015884758904576302
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              4,
+              4,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 4,
+          "loss_abs_error": 8.344650268554688e-07,
+          "n_wires": 4,
+          "pytorch_first_seconds": 0.13369497889652848,
+          "pytorch_steady_samples_seconds": [
+            0.05451603000983596,
+            0.041040658950805664,
+            0.04674238990992308,
+            0.04214038886129856,
+            0.05098076397553086
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 1.2777745723724365e-06,
+      "jax_cold_total_seconds_median": 8.262195041403174,
+      "jax_compile_tax_in_steady_steps": 5154.287548407881,
+      "jax_first_value_grad_seconds_median": 7.898060792591423,
+      "jax_kernel_build_seconds_median": 0.3641342488117516,
+      "jax_steady_samples_seconds": [
+        0.0019384692423045635,
+        0.0016324222087860107,
+        0.0015938780270516872,
+        0.0016029751859605312,
+        0.0015884758904576302
+      ],
+      "jax_steady_seconds_median": 0.0016029751859605312,
+      "layers": 4,
+      "loss_abs_error_max": 8.344650268554688e-07,
+      "n_wires": 4,
+      "pytorch_first_seconds_median": 0.13369497889652848,
+      "pytorch_steady_samples_seconds": [
+        0.05451603000983596,
+        0.041040658950805664,
+        0.04674238990992308,
+        0.04214038886129856,
+        0.05098076397553086
+      ],
+      "pytorch_steady_seconds_median": 0.04674238990992308,
+      "state_dimension": 16,
+      "steady_speedup_jax_over_pytorch": 29.159771354735106
+    },
+    {
+      "break_even_calls": 159,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 1.778826117515564e-06,
+          "jax_cold_total_seconds": 13.37091247504577,
+          "jax_first_value_grad_seconds": 13.007589363027364,
+          "jax_kernel_build_seconds": 0.3633231120184064,
+          "jax_steady_samples_seconds": [
+            0.0035781809128820896,
+            0.0032643056474626064,
+            0.0032166889868676662,
+            0.0032138852402567863,
+            0.003190466668456793
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              4,
+              8,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 4,
+          "loss_abs_error": 1.9073486328125e-06,
+          "n_wires": 8,
+          "pytorch_first_seconds": 0.17439550207927823,
+          "pytorch_steady_samples_seconds": [
+            0.09365565609186888,
+            0.08820996480062604,
+            0.08670332422479987,
+            0.08699565613642335,
+            0.08624244295060635
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 1.778826117515564e-06,
+      "jax_cold_total_seconds_median": 13.37091247504577,
+      "jax_compile_tax_in_steady_steps": 4156.73151169832,
+      "jax_first_value_grad_seconds_median": 13.007589363027364,
+      "jax_kernel_build_seconds_median": 0.3633231120184064,
+      "jax_steady_samples_seconds": [
+        0.0035781809128820896,
+        0.0032643056474626064,
+        0.0032166889868676662,
+        0.0032138852402567863,
+        0.003190466668456793
+      ],
+      "jax_steady_seconds_median": 0.0032166889868676662,
+      "layers": 4,
+      "loss_abs_error_max": 1.9073486328125e-06,
+      "n_wires": 8,
+      "pytorch_first_seconds_median": 0.17439550207927823,
+      "pytorch_steady_samples_seconds": [
+        0.09365565609186888,
+        0.08820996480062604,
+        0.08670332422479987,
+        0.08699565613642335,
+        0.08624244295060635
+      ],
+      "pytorch_steady_seconds_median": 0.08699565613642335,
+      "state_dimension": 256,
+      "steady_speedup_jax_over_pytorch": 27.04509403662852
+    },
+    {
+      "break_even_calls": 131,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 2.9206275939941406e-06,
+          "jax_cold_total_seconds": 15.910554486326873,
+          "jax_first_value_grad_seconds": 15.553343886043876,
+          "jax_kernel_build_seconds": 0.3572106002829969,
+          "jax_steady_samples_seconds": [
+            0.005811374634504318,
+            0.0054966723546385765,
+            0.005495444871485233,
+            0.00538054620847106,
+            0.005352728068828583
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              4,
+              12,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 4,
+          "loss_abs_error": 2.384185791015625e-06,
+          "n_wires": 12,
+          "pytorch_first_seconds": 0.22489574225619435,
+          "pytorch_steady_samples_seconds": [
+            0.12430833233520389,
+            0.12703173514455557,
+            0.12477916292846203,
+            0.1355657409876585,
+            0.13238535169512033
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 2.9206275939941406e-06,
+      "jax_cold_total_seconds_median": 15.910554486326873,
+      "jax_compile_tax_in_steady_steps": 2895.225929548227,
+      "jax_first_value_grad_seconds_median": 15.553343886043876,
+      "jax_kernel_build_seconds_median": 0.3572106002829969,
+      "jax_steady_samples_seconds": [
+        0.005811374634504318,
+        0.0054966723546385765,
+        0.005495444871485233,
+        0.00538054620847106,
+        0.005352728068828583
+      ],
+      "jax_steady_seconds_median": 0.005495444871485233,
+      "layers": 4,
+      "loss_abs_error_max": 2.384185791015625e-06,
+      "n_wires": 12,
+      "pytorch_first_seconds_median": 0.22489574225619435,
+      "pytorch_steady_samples_seconds": [
+        0.12430833233520389,
+        0.12703173514455557,
+        0.12477916292846203,
+        0.1355657409876585,
+        0.13238535169512033
+      ],
+      "pytorch_steady_seconds_median": 0.12703173514455557,
+      "state_dimension": 4096,
+      "steady_speedup_jax_over_pytorch": 23.115823762275898
+    },
+    {
+      "break_even_calls": 149,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 5.6549906730651855e-06,
+          "jax_cold_total_seconds": 22.896856244187802,
+          "jax_first_value_grad_seconds": 22.53756404714659,
+          "jax_kernel_build_seconds": 0.3592921970412135,
+          "jax_steady_samples_seconds": [
+            0.01746142143383622,
+            0.01691892882809043,
+            0.016917945817112923,
+            0.016811595764011145,
+            0.016746829263865948
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              4,
+              16,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 4,
+          "loss_abs_error": 0.0,
+          "n_wires": 16,
+          "pytorch_first_seconds": 0.2797628059051931,
+          "pytorch_steady_samples_seconds": [
+            0.17677521193400025,
+            0.16709009697660804,
+            0.16757358238101006,
+            0.17026261799037457,
+            0.1724118310958147
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 5.6549906730651855e-06,
+      "jax_cold_total_seconds_median": 22.896856244187802,
+      "jax_compile_tax_in_steady_steps": 1353.4064059377151,
+      "jax_first_value_grad_seconds_median": 22.53756404714659,
+      "jax_kernel_build_seconds_median": 0.3592921970412135,
+      "jax_steady_samples_seconds": [
+        0.01746142143383622,
+        0.01691892882809043,
+        0.016917945817112923,
+        0.016811595764011145,
+        0.016746829263865948
+      ],
+      "jax_steady_seconds_median": 0.016917945817112923,
+      "layers": 4,
+      "loss_abs_error_max": 0.0,
+      "n_wires": 16,
+      "pytorch_first_seconds_median": 0.2797628059051931,
+      "pytorch_steady_samples_seconds": [
+        0.17677521193400025,
+        0.16709009697660804,
+        0.16757358238101006,
+        0.17026261799037457,
+        0.1724118310958147
+      ],
+      "pytorch_steady_seconds_median": 0.17026261799037457,
+      "state_dimension": 65536,
+      "steady_speedup_jax_over_pytorch": 10.064024310690822
+    },
+    {
+      "break_even_calls": 171,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 1.1175870895385742e-06,
+          "jax_cold_total_seconds": 13.71295954938978,
+          "jax_first_value_grad_seconds": 13.354534089099616,
+          "jax_kernel_build_seconds": 0.35842546029016376,
+          "jax_steady_samples_seconds": [
+            0.0031138118356466293,
+            0.0028003286570310593,
+            0.002757750917226076,
+            0.0028112828731536865,
+            0.0037901727482676506
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              8,
+              4,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 8,
+          "loss_abs_error": 8.344650268554688e-07,
+          "n_wires": 4,
+          "pytorch_first_seconds": 0.16845728596672416,
+          "pytorch_steady_samples_seconds": [
+            0.09257015213370323,
+            0.07714608917012811,
+            0.08186291484162211,
+            0.08565206779167056,
+            0.08262388966977596
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 1.1175870895385742e-06,
+      "jax_cold_total_seconds_median": 13.71295954938978,
+      "jax_compile_tax_in_steady_steps": 4877.829862068143,
+      "jax_first_value_grad_seconds_median": 13.354534089099616,
+      "jax_kernel_build_seconds_median": 0.35842546029016376,
+      "jax_steady_samples_seconds": [
+        0.0031138118356466293,
+        0.0028003286570310593,
+        0.002757750917226076,
+        0.0028112828731536865,
+        0.0037901727482676506
+      ],
+      "jax_steady_seconds_median": 0.0028112828731536865,
+      "layers": 8,
+      "loss_abs_error_max": 8.344650268554688e-07,
+      "n_wires": 4,
+      "pytorch_first_seconds_median": 0.16845728596672416,
+      "pytorch_steady_samples_seconds": [
+        0.09257015213370323,
+        0.07714608917012811,
+        0.08186291484162211,
+        0.08565206779167056,
+        0.08262388966977596
+      ],
+      "pytorch_steady_seconds_median": 0.08262388966977596,
+      "state_dimension": 16,
+      "steady_speedup_jax_over_pytorch": 29.390101742799292
+    },
+    {
+      "break_even_calls": 145,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 2.576736733317375e-06,
+          "jax_cold_total_seconds": 22.8483005031012,
+          "jax_first_value_grad_seconds": 22.478346901014447,
+          "jax_kernel_build_seconds": 0.36995360208675265,
+          "jax_steady_samples_seconds": [
+            0.006767975632101297,
+            0.006394058931618929,
+            0.00625626603141427,
+            0.0061139133758842945,
+            0.006128835026174784
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              8,
+              8,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 8,
+          "loss_abs_error": 2.1457672119140625e-06,
+          "n_wires": 8,
+          "pytorch_first_seconds": 0.24855913501232862,
+          "pytorch_steady_samples_seconds": [
+            0.16565186297520995,
+            0.1586066260933876,
+            0.1647773408330977,
+            0.16424998687580228,
+            0.15787557605654
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 2.576736733317375e-06,
+      "jax_cold_total_seconds_median": 22.8483005031012,
+      "jax_compile_tax_in_steady_steps": 3652.066646203053,
+      "jax_first_value_grad_seconds_median": 22.478346901014447,
+      "jax_kernel_build_seconds_median": 0.36995360208675265,
+      "jax_steady_samples_seconds": [
+        0.006767975632101297,
+        0.006394058931618929,
+        0.00625626603141427,
+        0.0061139133758842945,
+        0.006128835026174784
+      ],
+      "jax_steady_seconds_median": 0.00625626603141427,
+      "layers": 8,
+      "loss_abs_error_max": 2.1457672119140625e-06,
+      "n_wires": 8,
+      "pytorch_first_seconds_median": 0.24855913501232862,
+      "pytorch_steady_samples_seconds": [
+        0.16565186297520995,
+        0.1586066260933876,
+        0.1647773408330977,
+        0.16424998687580228,
+        0.15787557605654
+      ],
+      "pytorch_steady_seconds_median": 0.16424998687580228,
+      "state_dimension": 256,
+      "steady_speedup_jax_over_pytorch": 26.253676881875254
+    },
+    {
+      "break_even_calls": 140,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 1.6242265701293945e-06,
+          "jax_cold_total_seconds": 31.887263867538422,
+          "jax_first_value_grad_seconds": 31.51275826478377,
+          "jax_kernel_build_seconds": 0.3745056027546525,
+          "jax_steady_samples_seconds": [
+            0.011276775039732456,
+            0.010821165051311255,
+            0.0106577780097723,
+            0.010495955124497414,
+            0.010377995669841766
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              8,
+              12,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 8,
+          "loss_abs_error": 9.5367431640625e-07,
+          "n_wires": 12,
+          "pytorch_first_seconds": 0.3277703318744898,
+          "pytorch_steady_samples_seconds": [
+            0.24596787616610527,
+            0.24603687785565853,
+            0.23791686724871397,
+            0.2382166050374508,
+            0.23890553321689367
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 1.6242265701293945e-06,
+      "jax_cold_total_seconds_median": 31.887263867538422,
+      "jax_compile_tax_in_steady_steps": 2991.92419266947,
+      "jax_first_value_grad_seconds_median": 31.51275826478377,
+      "jax_kernel_build_seconds_median": 0.3745056027546525,
+      "jax_steady_samples_seconds": [
+        0.011276775039732456,
+        0.010821165051311255,
+        0.0106577780097723,
+        0.010495955124497414,
+        0.010377995669841766
+      ],
+      "jax_steady_seconds_median": 0.0106577780097723,
+      "layers": 8,
+      "loss_abs_error_max": 9.5367431640625e-07,
+      "n_wires": 12,
+      "pytorch_first_seconds_median": 0.3277703318744898,
+      "pytorch_steady_samples_seconds": [
+        0.24596787616610527,
+        0.24603687785565853,
+        0.23791686724871397,
+        0.2382166050374508,
+        0.23890553321689367
+      ],
+      "pytorch_steady_seconds_median": 0.23890553321689367,
+      "state_dimension": 4096,
+      "steady_speedup_jax_over_pytorch": 22.416073312639565
+    },
+    {
+      "break_even_calls": 151,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 2.428889274597168e-06,
+          "jax_cold_total_seconds": 44.94621063396335,
+          "jax_first_value_grad_seconds": 44.575939062051475,
+          "jax_kernel_build_seconds": 0.37027157191187143,
+          "jax_steady_samples_seconds": [
+            0.033119359984993935,
+            0.03268077177926898,
+            0.026959422044456005,
+            0.026498024817556143,
+            0.02647446794435382
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              8,
+              16,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 8,
+          "loss_abs_error": 1.430511474609375e-06,
+          "n_wires": 16,
+          "pytorch_first_seconds": 0.4411847619339824,
+          "pytorch_steady_samples_seconds": [
+            0.3257939969189465,
+            0.3184642787091434,
+            0.32360825641080737,
+            0.3250363478437066,
+            0.33068478386849165
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 2.428889274597168e-06,
+      "jax_cold_total_seconds_median": 44.94621063396335,
+      "jax_compile_tax_in_steady_steps": 1667.180051554784,
+      "jax_first_value_grad_seconds_median": 44.575939062051475,
+      "jax_kernel_build_seconds_median": 0.37027157191187143,
+      "jax_steady_samples_seconds": [
+        0.033119359984993935,
+        0.03268077177926898,
+        0.026959422044456005,
+        0.026498024817556143,
+        0.02647446794435382
+      ],
+      "jax_steady_seconds_median": 0.026959422044456005,
+      "layers": 8,
+      "loss_abs_error_max": 1.430511474609375e-06,
+      "n_wires": 16,
+      "pytorch_first_seconds_median": 0.4411847619339824,
+      "pytorch_steady_samples_seconds": [
+        0.3257939969189465,
+        0.3184642787091434,
+        0.32360825641080737,
+        0.3250363478437066,
+        0.33068478386849165
+      ],
+      "pytorch_steady_seconds_median": 0.3250363478437066,
+      "state_dimension": 65536,
+      "steady_speedup_jax_over_pytorch": 12.056502817743
+    }
+  ],
+  "methodology": {
+    "cold_process_isolation": true,
+    "cold_repetitions": 1,
+    "jax_cold_definition": "kernel construction plus first value-and-gradient call",
+    "persistent_compilation_cache_disabled": true,
+    "steady_definition": "median value-and-gradient latency after first call",
+    "steady_repetitions_per_cold_process": 5
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.jax_jit_crossover.v1",
+  "workload": {
+    "depths": [
+      2,
+      4,
+      8
+    ],
+    "dtype": "complex64",
+    "hamiltonian": "-0.7 * sum(ZZ) - 0.25 * sum(X), open boundary",
+    "includes_forward_backward": true,
+    "layers": null,
+    "mode": "statevector",
+    "observable": "transverse_field_ising_energy",
+    "parameterization": "RX-RY-RZ chain CX plus closing RXX",
+    "task": "tfim_vqe"
+  }
+}

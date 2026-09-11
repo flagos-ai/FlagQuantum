@@ -1,0 +1,147 @@
+{
+  "schema": "flagquantum_split_real_imag_training_a800_evidence_v1",
+  "recorded_on": "2026-08-24",
+  "status": "passed",
+  "source": {
+    "revision": "9ef1d0448011fb6a618f7651446eea7faefc3e94",
+    "archive_sha256": "7ce20d7e1d1d46703c9e53fc99ca8cba07c1086bf76724842ab5a1e4f806f6f0",
+    "tree_dirty": false
+  },
+  "hardware": {
+    "host": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "driver_version": "580.126.20",
+    "visible_gpu_count": 8,
+    "validation_gpu_count": 1
+  },
+  "operator_profile": {
+    "name": "split_real_imag_statevector_p1",
+    "sha256": "1cdcb61eed56855abd704dbdef5a1ccf846abd8906c2b45fc3ab00d5c563cb54"
+  },
+  "matrix": {
+    "depths": [8, 32, 128],
+    "seeds": [0, 7]
+  },
+  "thresholds": {
+    "max_expectation_absolute_error": 5e-05,
+    "max_expectation_relative_error": 0.0005,
+    "max_gradient_relative_error": 0.002,
+    "min_gradient_cosine_similarity": 0.999,
+    "max_norm_drift": 5e-05
+  },
+  "environment": {
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
+    "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_package": "0.1.0",
+    "torch_fl_wheel_sha256": "b4339c6009ed041e3ecc9a9e349c4f86f991464093d66ff0790e99a17d86954d",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "FLAGOS_BUILD_JOBS": "8",
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+    }
+  },
+  "routes": [
+    {
+      "name": "native_cuda",
+      "status": "passed",
+      "device": "cuda:0",
+      "provider": "pytorch_cuda",
+      "torch_version": "2.13.0+cu130",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "5fbae54b4554556bec562fa5691ec3f5db410d04e044c47a0ca2e8f860eff60f",
+      "logical_device_residency": true
+    },
+    {
+      "name": "torch_fl_flagos",
+      "status": "passed",
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "torch_version": "2.11.0+cu130",
+      "torch_fl_package": "0.1.0",
+      "raw_result_sha256": "bb16fb401e8612780cced25e85bc062f10441b2bb12962b24314b55203a4dcd1",
+      "logical_device_residency": true,
+      "flagquantum_host_fallback": false,
+      "provider_internal_route_audited": false,
+      "opt_in_integration_test": "passed"
+    }
+  ],
+  "cases": [
+    {
+      "depth": 8,
+      "seed": 0,
+      "expectation_abs_error": 6.303248961669894e-08,
+      "expectation_rel_error": 2.0271852769207212e-07,
+      "gradient_relative_error": 1.7188538054216555e-07,
+      "gradient_cosine_similarity": 0.9999999999999865,
+      "norm_drift": 1.1920928955078125e-07,
+      "passed": true
+    },
+    {
+      "depth": 8,
+      "seed": 7,
+      "expectation_abs_error": 1.319211585526503e-07,
+      "expectation_rel_error": 4.2940481594295076e-07,
+      "gradient_relative_error": 1.9701425270089732e-07,
+      "gradient_cosine_similarity": 0.9999999999999848,
+      "norm_drift": 1.1920928955078125e-07,
+      "passed": true
+    },
+    {
+      "depth": 32,
+      "seed": 0,
+      "expectation_abs_error": 7.59847004205838e-08,
+      "expectation_rel_error": 2.7737410613923514e-07,
+      "gradient_relative_error": 2.732223255898955e-07,
+      "gradient_cosine_similarity": 0.9999999999999946,
+      "norm_drift": 1.1920928955078125e-07,
+      "passed": true
+    },
+    {
+      "depth": 32,
+      "seed": 7,
+      "expectation_abs_error": 3.4440835222637745e-07,
+      "expectation_rel_error": 1.464820783166862e-06,
+      "gradient_relative_error": 6.754598592973302e-07,
+      "gradient_cosine_similarity": 0.9999999999999861,
+      "norm_drift": 3.5762786865234375e-07,
+      "passed": true
+    },
+    {
+      "depth": 128,
+      "seed": 0,
+      "expectation_abs_error": 3.4642046187194353e-07,
+      "expectation_rel_error": 4.268815270409251e-06,
+      "gradient_relative_error": 5.5532956206581485e-06,
+      "gradient_cosine_similarity": 0.9999999999992919,
+      "norm_drift": 1.430511474609375e-06,
+      "passed": true
+    },
+    {
+      "depth": 128,
+      "seed": 7,
+      "expectation_abs_error": 7.584773761559749e-07,
+      "expectation_rel_error": 4.483963893438988e-06,
+      "gradient_relative_error": 3.3231442130728908e-06,
+      "gradient_cosine_similarity": 0.9999999999995384,
+      "norm_drift": 1.430511474609375e-06,
+      "passed": true
+    }
+  ],
+  "claims": {
+    "maturity": "experimental",
+    "validation_scope": "cuda_and_flagos_portability_reference",
+    "distribution_semantics": "single_device_fast_path",
+    "hardware_certification": false,
+    "domestic_accelerator_certification": false,
+    "provider_internal_route_audited": false,
+    "scalability_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "production_claim_allowed": false
+  }
+}

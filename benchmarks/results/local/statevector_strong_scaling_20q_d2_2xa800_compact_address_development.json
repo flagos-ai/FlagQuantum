@@ -1,0 +1,178 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_strong_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes_per_rank_max": 8388608,
+  "communication_fraction": 0.5,
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "global_invariants": {
+      "norm": 1.0,
+      "z_expectations": {
+        "0": -5.960464477539063e-08,
+        "1": -1.4901161193847656e-08,
+        "2": 1.0
+      }
+    },
+    "norm_absolute_error": 0.0,
+    "passed": true,
+    "rank_invariant_spread": 0.0
+  },
+  "device_timing": {
+    "coefficient_of_variation": 0.029313059586383892,
+    "mean_seconds": 0.00769486722946167,
+    "median_seconds": 0.007639679908752441,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.007865856170654297,
+      0.008269536018371581,
+      0.0076843838691711425,
+      0.007773248195648194,
+      0.007639135837554932,
+      0.007640223979949951,
+      0.007506752014160156,
+      0.0076072001457214355,
+      0.007445536136627197,
+      0.007516799926757812
+    ]
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "gpu_activity": "cuda_events_with_device_synchronization",
+  "hardware_inventory": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "rank_peak_memory_bytes": [
+    61481984,
+    61481984
+  ],
+  "rank_timings": [
+    {
+      "communication_bytes": 8388608,
+      "communication_count": 4,
+      "device": "cuda:0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        0.007865856170654297,
+        0.008230272293090821,
+        0.007593279838562012,
+        0.007557055950164795,
+        0.007591360092163086,
+        0.007472544193267822,
+        0.0073900799751281734,
+        0.007405280113220215,
+        0.007358848094940185,
+        0.0073842878341674805
+      ],
+      "host_samples_seconds": [
+        0.007897809147834778,
+        0.00826455419883132,
+        0.007626214995980263,
+        0.0075912862084805965,
+        0.007622802164405584,
+        0.007501525804400444,
+        0.007416917011141777,
+        0.007431128993630409,
+        0.007385194301605225,
+        0.007410414982587099
+      ],
+      "invariants": {
+        "norm": 1.0,
+        "z_expectations": {
+          "0": -5.960464477539063e-08,
+          "1": -1.4901161193847656e-08,
+          "2": 1.0
+        }
+      },
+      "local_state_bytes": 4194304,
+      "peak_memory_bytes": 61481984,
+      "rank": 0
+    },
+    {
+      "communication_bytes": 8388608,
+      "communication_count": 4,
+      "device": "cuda:1",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        0.007621823787689209,
+        0.008269536018371581,
+        0.0076843838691711425,
+        0.007773248195648194,
+        0.007639135837554932,
+        0.007640223979949951,
+        0.007506752014160156,
+        0.0076072001457214355,
+        0.007445536136627197,
+        0.007516799926757812
+      ],
+      "host_samples_seconds": [
+        0.0076591940596699715,
+        0.008304407820105553,
+        0.007718745153397322,
+        0.007806834764778614,
+        0.0076733119785785675,
+        0.007669134996831417,
+        0.007534480188041925,
+        0.00763344019651413,
+        0.00747244618833065,
+        0.007549480069428682
+      ],
+      "invariants": {
+        "norm": 1.0,
+        "z_expectations": {
+          "0": -5.960464477539063e-08,
+          "1": -1.4901161193847656e-08,
+          "2": 1.0
+        }
+      },
+      "local_state_bytes": 4194304,
+      "peak_memory_bytes": 61481984,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.strong_scaling.v1",
+  "timing": {
+    "coefficient_of_variation": 0.029440416205763043,
+    "mean_seconds": 0.007726009050384164,
+    "median_seconds": 0.007671223487704992,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.007897809147834778,
+      0.008304407820105553,
+      0.007718745153397322,
+      0.007806834764778614,
+      0.0076733119785785675,
+      0.007669134996831417,
+      0.007534480188041925,
+      0.00763344019651413,
+      0.00747244618833065,
+      0.007549480069428682
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "depth": 2,
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 536870912,
+    "gate_count": 16,
+    "n_wires": 20,
+    "name": "issue044_fixed_statevector_forward_v1"
+  },
+  "workload_sha256": "995507bb34e02ec39d2a102c476b1cd3593d7521579b2f4b1bc32771ed5dd3f7",
+  "world_size": 2
+}

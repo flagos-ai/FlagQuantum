@@ -1,0 +1,32 @@
+{
+  "schema": "flagquantum_operator_profile_v1",
+  "profile_version": "1.0",
+  "name": "split_real_imag_statevector_p4_device_double_single",
+  "representation": "split_real_imag_statevector_device_full_double_single",
+  "distribution": "local",
+  "requirements": [
+    {"operator": "aten::zeros", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::ones_like", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::full_like", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::reshape", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::permute", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::add", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::sub", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::mul", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::neg", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::abs", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::round", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::remainder", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::eq", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::gt", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::where", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::stack", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::sum", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::reciprocal", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::rsqrt", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::isfinite", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::all", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::any", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::_assert_async", "dtypes": ["float32"], "forward": true, "backward": false}
+  ]
+}

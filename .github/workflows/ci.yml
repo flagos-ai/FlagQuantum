@@ -1,79 +1,346 @@
-# Copyright 2026 FlagOS Contributors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, refactor/flagquantum-vnext-architecture]
   pull_request:
     branches: [main]
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - name: English repository content
+        run: python tools/check_repository_language.py
+      - name: Ruff production and test surface
+        run: ruff check flagquantum tests tools
+      - name: Black production and test surface
+        run: black --check flagquantum tests tools
+      - name: Typed foundation subset
+        run: >-
+          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
+          flagquantum/version.py flagquantum/core/ir.py
+          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
+          tools/ci_tier.py
+      - name: Strict typed runtime contracts
+        run: >-
+          mypy --strict --no-site-packages --follow-imports skip
+          flagquantum/core/contracts.py flagquantum/runtime/records.py
+          flagquantum/runtime/audit/contracts.py
+          flagquantum/runtime/executors/statevector/checkpointing.py
+          flagquantum/runtime/executors/statevector/gradient_reduction.py
+      - name: Strict typed trainable module
+        run: >-
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
+          flagquantum/runtime/module.py flagquantum/runtime/training.py
+      - name: Strict typed execution mainline
+        run: >-
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
+          flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
+          flagquantum/runtime/execution.py
+          flagquantum/runtime/distributed/protocols.py
+          flagquantum/runtime/backend_registry.py
+          flagquantum/deployment
+      - name: Strict typed interoperability contract
+        run: >-
+          mypy --strict --ignore-missing-imports
+          --follow-imports silent
+          flagquantum/ecosystem/contracts.py flagquantum/ecosystem/conformance.py
+          flagquantum/ecosystem/registry.py
+          flagquantum/ecosystem/pennylane/adapter.py
+          flagquantum/ecosystem/pennylane/conformance.py
+          flagquantum/ecosystem/pennylane/models.py
+          flagquantum/ecosystem/qiskit/adapter.py
+          flagquantum/ecosystem/qiskit/conformance.py
+          flagquantum/ecosystem/qiskit/models.py
+      - name: Enforce package boundaries and module budgets
+        run: python tools/check_architecture.py
+      - name: Validate multi-team ownership policy
+        run: python tools/check_team_scope.py --validate
+      - name: Enforce core, extras, interop, and external-platform dependencies
+        run: python tools/check_dependency_policy.py
+      - name: Verify Qiskit interoperability contract
+        run: python tools/check_qiskit_interop_contract.py
+      - name: Verify PennyLane interoperability contract
+        run: python tools/check_pennylane_interop_contract.py
+      - name: Verify Double-Single FP32 numerical contract
+        run: python tools/check_double_single_contract.py
+      - name: Verify split real/imag statevector P0 contract
+        run: python tools/check_split_real_imag_contract.py
+      - name: Verify split real/imag statevector P1 contract
+        run: python tools/check_split_real_imag_p1_contract.py
+      - name: Verify split real/imag P1 A800 reference evidence
+        run: python tools/validate_split_real_imag_training_evidence.py
+      - name: Verify split real/imag statevector P2 precision contract
+        run: python tools/check_split_real_imag_p2_precision_contract.py
+      - name: Verify split real/imag P2 A800 reference evidence
+        run: python tools/validate_split_real_imag_precision_evidence.py
+      - name: Verify split real/imag statevector P3 Double-Single contract
+        run: python tools/check_split_real_imag_p3_double_single_contract.py
+      - name: Verify split real/imag P3 A800 reference evidence
+        run: python tools/validate_split_real_imag_double_single_evidence.py
+      - name: Verify split real/imag statevector P4 device Double-Single contract
+        run: python tools/check_split_real_imag_p4_device_double_single_contract.py
+      - name: Verify split real/imag P4 A800 reference evidence
+        run: python tools/validate_split_real_imag_device_double_single_evidence.py
+      - name: Verify split real/imag statevector P5 autograd/optimizer contract
+        run: python tools/check_split_real_imag_p5_autograd_optimizer_contract.py
+      - name: Verify split real/imag P5 optimizer A800 reference evidence
+        run: python tools/validate_split_real_imag_optimizer_evidence.py
+      - name: Verify domestic single-card certification contract
+        run: python tools/check_domestic_single_card_contract.py
+      - name: Verify operator capability manifest
+        run: python tools/operator_manifest.py --check
+      - name: Verify runtime contract schema
+        run: python tools/runtime_contract_schema.py --check
+      - name: Verify documentation sources of truth
+        run: python tools/docs_source_of_truth.py --check
+      - name: Verify retained Stable Core against migration baseline
+        run: python tools/public_api_snapshot.py
+      - name: Verify proposed Stable Core classification
+        run: python -m pytest tests/unit/test_public_api_candidate.py -q
+      - name: Reject legacy root API in user-facing files
+        run: python tools/check_legacy_root_api_usage.py
+      - name: Verify correctness certification matrix
+        run: python tools/correctness_certification.py --check
+      - name: Verify capability maturity claims
+        run: python tools/check_capability_maturity.py
+      - name: Verify checked-in FlagOS reference evidence
+        run: >-
+          python tools/validate_flagos_reference_evidence.py
+          artifacts/flagos_cuda_reference_a800_20260824.json
+      - name: Verify branch-protection required-check contract
+        run: python tools/validate_required_checks.py
+      - name: Repository size and forbidden artifacts
+        run: python tools/check_repository_hygiene.py
+      - name: Lazy import budget
+        run: python tools/check_import_time.py
 
-      - name: Install dependencies
-        run: |
-          pip install ruff black mypy
+  cpu-core:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - run: python tools/ci_tier.py pr-default
+      - run: python tools/ci_tier.py pr-runtime
+      - name: Prove JAX is absent from the PyTorch-only environment
+        run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove external quantum frameworks are absent from core
+        run: >-
+          python -c "import importlib.util;
+          assert all(importlib.util.find_spec(name) is None
+          for name in ('pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
+      - name: Prove core import does not load JAX
+        run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Prove native distributed runtime does not require JAX
+        run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
 
-      - name: Run linting
-        run: |
-          ruff check .
-          black --check .
-          # mypy flagquantum/ --ignore-missing-imports
+  jax-optional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
-  test:
+  qiskit-optional:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        qiskit-version: ["2.0.*", "2.5.*"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - name: Install the certified Qiskit and Aer lane
+        run: >-
+          python -m pip install
+          'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'
+          'qiskit-aer==0.17.*'
+      - name: Verify the machine-readable interoperability contract
+        run: python tools/check_qiskit_interop_contract.py
+      - name: Verify Qiskit IR, statevector, and Aer conformance
+        run: python -m pytest -m qiskit -q
+      - name: Prove the stable root still does not import Qiskit
+        run: >-
+          python -c "import sys, flagquantum;
+          assert not any(name == 'qiskit' or name.startswith('qiskit.')
+          or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
+          for name in sys.modules)"
+
+  pennylane-optional:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pennylane-version: ["0.44.1", "0.45.1"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - name: Install the certified PennyLane lane
+        run: python -m pip install 'pennylane==${{ matrix.pennylane-version }}'
+      - name: Verify the machine-readable interoperability contract
+        run: python tools/check_pennylane_interop_contract.py
+      - name: Verify PennyLane QuantumScript and complex128 conformance
+        run: python -m pytest -m pennylane -q
+      - name: Prove the stable root still does not import PennyLane
+        run: >-
+          python -c "import sys, flagquantum;
+          assert not any(name == 'pennylane' or name.startswith('pennylane.')
+          for name in sys.modules)"
+
+  dependency-bounds:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-
+        include:
+          - python: "3.10"
+            torch: "torch==2.5.*"
+          - python: "3.12"
+            torch: "torch>=2.5,<2.14"
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install pytest
+      - run: python -m pip install -e . --no-deps
+      - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install numpy pytest pytest-cov
-          pip install datasets transformers
-          pip install -e .
-
-      - name: Run tests with run_tests.py
-        run: |
-          # run_tests.py 会自动检测 GPU 并选择运行方式
-          # 在 CI 环境中没有 GPU，会自动使用 pytest
-          python run_tests.py --cov=flagquantum --cov-report=xml
-        env:
-          FLAGQUANTUM_SKIP_VERSION_CHECK: 1
-          CUDA_VISIBLE_DEVICES: ""
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      - name: Reproducible wheel and sdist builds
+        run: |
+          SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-a
+          SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-b
+          python tools/verify_reproducible_builds.py dist-a dist-b
+          mkdir -p dist
+          cp dist-a/* dist/
+      - name: Verify artifact contents
+        run: python tools/verify_distribution_artifacts.py dist
+      - name: Clean-install wheel and run quick start
+        run: |
+          python -m venv /tmp/fq-wheel
+          /tmp/fq-wheel/bin/python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          /tmp/fq-wheel/bin/python -m pip install dist/*.whl
+          /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
+          /tmp/fq-wheel/bin/python -c "from flagquantum.runtime.capabilities import load_operator_profile; assert load_operator_profile('statevector_local_p0').name == 'statevector_local_p0'"
+          /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
+          /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
+          rm -rf /tmp/fq-wheel
+      - name: Clean-install sdist and run quick start
+        run: |
+          python -m venv /tmp/fq-sdist
+          /tmp/fq-sdist/bin/python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          /tmp/fq-sdist/bin/python -m pip install dist/*.tar.gz
+          /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
+          /tmp/fq-sdist/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
+      - name: Write checksummed artifact manifest
+        run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist/
+
+  distributed-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,jax]'
+      - run: python tools/ci_tier.py pr-distributed
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,jax]'
+      - name: Enforce maintained-runtime coverage floor
+        run: >-
+          python -m pytest -m "smoke or unit or integration"
+          --cov=flagquantum
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=55
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage.xml
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and security tooling
+        run: >-
+          python -m pip install -e '.[dev]'
+          pip-audit bandit cyclonedx-bom
+      - name: Audit installed dependencies
+        run: |
+          python -m pip list --format freeze --exclude flagquantum > audit-requirements.txt
+          pip-audit --strict --no-deps --requirement audit-requirements.txt
+      - name: Static security analysis
+        run: bandit -q -lll -r flagquantum -x flagquantum/testing
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
+      - name: Validate SBOM
+        run: python tools/validate_sbom.py sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.cdx.json

@@ -1,0 +1,369 @@
+{
+  "cases": [
+    {
+      "actual_dtype": "torch.complex64",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 1.2000000476837158,
+      "name": "conj",
+      "passed": false,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_dtype": "torch.complex64",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 0.0,
+      "name": "matrix_hermitian",
+      "passed": true,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_dtype": "torch.complex64",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 5.960464477539063e-08,
+      "name": "matrix_multiply",
+      "passed": true,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_dtype": "torch.complex64",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 0.7209195253837465,
+      "name": "conjugate_inner_sum",
+      "passed": false,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_dtype": "torch.float32",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 0.12499997019767761,
+      "name": "conjugate_inner_real",
+      "passed": false,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_dtype": "torch.float32",
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "kind": "primitive",
+      "max_abs_error": 0.0,
+      "name": "absolute_square",
+      "passed": true,
+      "tolerance": 3e-05
+    },
+    {
+      "actual_gradients": [
+        -0.22797752916812897
+      ],
+      "analytic_rotation_derivative_count": 1,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "expected_gradients": [
+        -0.2279775235351884
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        5.632940558442101e-09
+      ],
+      "gradient_max_abs_error": 5.632940558442101e-09,
+      "kind": "reverse",
+      "name": "ry",
+      "passed": true,
+      "tolerance": 6e-05,
+      "value_max_abs_error": 3.451427865730494e-08
+    },
+    {
+      "actual_gradients": [
+        -0.22797754406929016
+      ],
+      "analytic_rotation_derivative_count": 1,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "expected_gradients": [
+        -0.22797752353518833
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        2.0534101835556484e-08
+      ],
+      "gradient_max_abs_error": 2.0534101835556484e-08,
+      "kind": "reverse",
+      "name": "rz_interference",
+      "passed": true,
+      "tolerance": 6e-05,
+      "value_max_abs_error": 3.451427887934955e-08
+    },
+    {
+      "actual_gradients": [
+        0.3616154193878174
+      ],
+      "analytic_rotation_derivative_count": 0,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "expected_gradients": [
+        0.36161543196496193
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        1.2577144548053809e-08
+      ],
+      "gradient_max_abs_error": 1.2577144548053809e-08,
+      "kind": "reverse",
+      "name": "rxx",
+      "passed": true,
+      "tolerance": 6e-05,
+      "value_max_abs_error": 1.5493576865921455e-08
+    },
+    {
+      "actual_gradients": [
+        0.1808077096939087
+      ],
+      "analytic_rotation_derivative_count": 0,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "expected_gradients": [
+        0.18080771598248097
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        6.2885722740269046e-09
+      ],
+      "gradient_max_abs_error": 6.2885722740269046e-09,
+      "kind": "reverse",
+      "name": "crx",
+      "passed": true,
+      "tolerance": 6e-05,
+      "value_max_abs_error": 3.754911070963374e-08
+    },
+    {
+      "actual_gradients": [
+        -0.190451979637146,
+        0.8325779438018799
+      ],
+      "analytic_rotation_derivative_count": 2,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "expected_gradients": [
+        -0.19045195630158535,
+        0.8325778771204967
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        2.33355606504837e-08,
+        6.66813831928792e-08
+      ],
+      "gradient_max_abs_error": 6.66813831928792e-08,
+      "kind": "reverse",
+      "name": "composite",
+      "passed": true,
+      "tolerance": 6e-05,
+      "value_max_abs_error": 4.477039738937094e-08
+    },
+    {
+      "actual_dtype": "torch.complex128",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 1.2,
+      "name": "conj",
+      "passed": false,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_dtype": "torch.complex128",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 0.0,
+      "name": "matrix_hermitian",
+      "passed": true,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_dtype": "torch.complex128",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 1.1102230246251565e-16,
+      "name": "matrix_multiply",
+      "passed": true,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_dtype": "torch.complex128",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 0.7209195516838199,
+      "name": "conjugate_inner_sum",
+      "passed": false,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_dtype": "torch.float64",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 0.125,
+      "name": "conjugate_inner_real",
+      "passed": false,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_dtype": "torch.float64",
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "kind": "primitive",
+      "max_abs_error": 2.220446049250313e-16,
+      "name": "absolute_square",
+      "passed": true,
+      "tolerance": 3e-12
+    },
+    {
+      "actual_gradients": [
+        -0.2279775235351884
+      ],
+      "analytic_rotation_derivative_count": 1,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "expected_gradients": [
+        -0.2279775235351884
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        0.0
+      ],
+      "gradient_max_abs_error": 0.0,
+      "kind": "reverse",
+      "name": "ry",
+      "passed": true,
+      "tolerance": 3e-10,
+      "value_max_abs_error": 0.0
+    },
+    {
+      "actual_gradients": [
+        -0.22797752353518833
+      ],
+      "analytic_rotation_derivative_count": 1,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "expected_gradients": [
+        -0.22797752353518833
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        0.0
+      ],
+      "gradient_max_abs_error": 0.0,
+      "kind": "reverse",
+      "name": "rz_interference",
+      "passed": true,
+      "tolerance": 3e-10,
+      "value_max_abs_error": 0.0
+    },
+    {
+      "actual_gradients": [
+        0.36161543196496193
+      ],
+      "analytic_rotation_derivative_count": 0,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "expected_gradients": [
+        0.36161543196496193
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        0.0
+      ],
+      "gradient_max_abs_error": 0.0,
+      "kind": "reverse",
+      "name": "rxx",
+      "passed": true,
+      "tolerance": 3e-10,
+      "value_max_abs_error": 0.0
+    },
+    {
+      "actual_gradients": [
+        0.18080771598248097
+      ],
+      "analytic_rotation_derivative_count": 0,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "expected_gradients": [
+        0.18080771598248097
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        0.0
+      ],
+      "gradient_max_abs_error": 0.0,
+      "kind": "reverse",
+      "name": "crx",
+      "passed": true,
+      "tolerance": 3e-10,
+      "value_max_abs_error": 0.0
+    },
+    {
+      "actual_gradients": [
+        -0.19045195630158535,
+        0.8325778771204966
+      ],
+      "analytic_rotation_derivative_count": 2,
+      "backward_uses_full_state_replay": false,
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "expected_gradients": [
+        -0.19045195630158535,
+        0.8325778771204967
+      ],
+      "full_state_materialization": false,
+      "gradient_errors": [
+        0.0,
+        1.1102230246251565e-16
+      ],
+      "gradient_max_abs_error": 1.1102230246251565e-16,
+      "kind": "reverse",
+      "name": "composite",
+      "passed": true,
+      "tolerance": 3e-10,
+      "value_max_abs_error": 0.0
+    }
+  ],
+  "environment": {
+    "logical_device": "flagos:0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cu130",
+    "torch_cuda_runtime": "13.0",
+    "torch_fl": "unknown"
+  },
+  "flagcx_route_verified": false,
+  "primitive_failures": [
+    "conj",
+    "conjugate_inner_real",
+    "conjugate_inner_sum"
+  ],
+  "release_gate_allowed": false,
+  "reverse_failures": [],
+  "schema": "flagquantum_flagos_statevector_reverse_differential_v1",
+  "source_revision": "af3b9e246317bb5e6fcb689e4cf0e3370bf515cb",
+  "status": "failed",
+  "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+}

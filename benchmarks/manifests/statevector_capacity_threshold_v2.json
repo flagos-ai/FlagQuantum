@@ -1,0 +1,23 @@
+{
+  "schema_version": "flagquantum.issue044.capacity_threshold.v2",
+  "issue": "ISSUE-044",
+  "artifact_classification": "development_calibrated_future_threshold",
+  "release_eligible": false,
+  "calibration_note": "This threshold was frozen after development measurement and cannot retroactively serve as preregistered release evidence.",
+  "workload": {
+    "name": "issue044_single_node_capacity_v1",
+    "workload_sha256": "5f2103ace667c0cf44a5c6c70421a3dc744fcdf7b59e03cbab4d8dae9ae6862b",
+    "n_wires": 31,
+    "dtype": "complex64",
+    "optimizer": "adam",
+    "optimizer_steps": 2
+  },
+  "acceptance": {
+    "single_gpu_measured_oom_required": true,
+    "minimum_completion_world_size": 2,
+    "all_ranks_must_complete": true,
+    "rank_losses_must_match": true,
+    "rank_updated_parameters_must_match": true,
+    "distribution_semantics": "sharded_across_ranks"
+  }
+}

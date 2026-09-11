@@ -4,6 +4,10 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.fq_jax_cache/
+.ipynb_checkpoints/
+.tox/
+.nox/
 
 # Distribution / packaging
 build/
@@ -13,6 +17,7 @@ dist/
 # IDE
 .vscode/
 .idea/
+*.swp
 
 # Virtual environment
 .venv/
@@ -20,12 +25,51 @@ venv/
 env/
 ENV/
 
-# Environment variables
+# Local environment files; keep explicitly named templates versioned.
 .env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
 
 # OS files
 .DS_Store
 
 # Coverage
 .coverage
+.coverage.*
+coverage.xml
+coverage.json
 htmlcov/
+
+# Saved local verification artifacts
+test-results/*.log
+test-results/**/*.xml
+/outputs/
+examples/.assets/
+
+# Runtime logs, checkpoints, and profiler captures
+*.log
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.npy
+*.npz
+*.parquet
+*.nsys-rep
+*.sqlite
+benchmarks/results/heisenberg_vqe/forward_operator_trace_*/
+benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay.json
+benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay099_100.json
+
+# Local, unaudited hardware certification workspaces. Promote validated,
+# provenance-sealed artifacts through benchmarks/results/smoke/release_candidates/.
+benchmarks/results/smoke/hardware-certification-*/
+
+# Private research manuscripts and submission plans are excluded from publication.
+/paper/

@@ -1,0 +1,51 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "base_commit": "ef3affbd",
+  "scope": "Pure-image resident executor startup and single-A100 Bell-state execution",
+  "image": {
+    "id": "676e971e-ef46-44a1-b583-ccee58402d34",
+    "name": "flagquantum-runtime",
+    "tag": "v0.2.0-ef3affbd-cu128-a100",
+    "status": 10,
+    "size": "7.10GiB",
+    "wheel_sha256": "f5eac87203950659f78b1342db20f0193882cd1fb07f9002dc7f835c047098e0"
+  },
+  "workspace": {
+    "id": "6c9e1728-7469-4e87-bdd8-70828a759e43",
+    "name": "fq-warm-image-test",
+    "image_id_matched": true,
+    "source_or_module_uploaded_after_creation": false,
+    "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 1,
+    "cpu_cores": 4,
+    "memory_gib": 16,
+    "final_status": 2,
+    "stopped_after_validation": true
+  },
+  "result": {
+    "runs": 3,
+    "device": "cuda:0",
+    "dtype": "complex64",
+    "bell_state_assertion_passed": true,
+    "cpu_fallback_used": false,
+    "first_total_seconds": 22.056603749995702,
+    "first_execute_seconds": 0.483286764472723,
+    "warm_total_seconds": [
+      0.01859645800141152,
+      0.017639792000409216
+    ],
+    "warm_execute_seconds": [
+      0.0026334375143051147,
+      0.0023425891995429993
+    ]
+  },
+  "claims": {
+    "pure_image_autostart_validated": true,
+    "resident_channel_reuse_validated": true,
+    "single_gpu_forward_validated": true,
+    "training_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false
+  }
+}

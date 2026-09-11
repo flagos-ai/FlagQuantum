@@ -1,0 +1,44 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_domestic_single_card_certification_contract_v1"
+maturity = "experimental"
+execution_semantics = "single_device_fast_path"
+provider = "torch_fl"
+logical_device = "flagos:0"
+artifact_class = "hardware_execution_candidate"
+
+[acceptance_matrix]
+phases = ["p0_forward", "p1_expectation_gradient", "p2_selective_double_single", "p3_full_double_single", "p4_device_double_single", "p5_double_single_sgd"]
+depths = [8, 32, 128]
+seeds = [0, 7]
+optimizer_steps = [1, 16, 64]
+
+[attestation]
+schema = "flagquantum_domestic_single_card_attestation_v1"
+accelerator_class = "domestic_accelerator"
+evidence_source = "provisioner_owned_runtime_probe"
+required_physical_device_fields = ["vendor", "model", "architecture", "device_identifier", "logical_device_name"]
+required_software_fields = ["driver_version", "vendor_runtime_version", "torch_fl_revision", "container_image_digest"]
+provider_internal_route_audited = true
+logical_to_physical_device_verified = true
+cpu_fallback_allowed = false
+cpu_fallback_observed = false
+host_execution_observed = false
+
+[claim_policy]
+domestic_accelerator_hardware_exercised = true
+single_device_correctness_evidence = true
+domestic_accelerator_certification_candidate = true
+hardware_certification = false
+convergence_certification = false
+flagcx_collectives_validated = false
+scalability_claim_allowed = false
+performance_claim_allowed = false
+production_claim_allowed = false
+
+[verification_paths]
+runner = "tools/validate_domestic_single_card.py"
+contract_checker = "tools/check_domestic_single_card_contract.py"
+attestation_template = "ci/domestic_single_card_attestation.template.json"
+unit = "tests/unit/test_domestic_single_card_certification.py"
+integration = "tests/test_domestic_single_card_certification.py"
+documentation = "docs/reference/DOMESTIC_SINGLE_CARD_CERTIFICATION.md"

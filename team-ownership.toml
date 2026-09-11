@@ -1,0 +1,108 @@
+schema = "flagquantum.team_ownership"
+version = "1.0"
+
+[policy]
+integration_team = "integration"
+protected_paths = [
+    "AGENTS.md",
+    "architecture.toml",
+    "team-ownership.toml",
+    "contracts/**",
+    ".github/**",
+    "pyproject.toml",
+    "requirements*.txt",
+    "flagquantum/__init__.py",
+    "flagquantum/_api.py",
+    "flagquantum/core/_artifacts.py",
+    "flagquantum/core/ir/**",
+    "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
+    "docs/architecture/decisions/**",
+]
+shared_paths = [
+    "tests/**",
+    "benchmarks/**",
+    "examples/**",
+    "docs/**",
+]
+
+[teams.integration]
+branch = "refactor/flagquantum-vnext-architecture"
+worktree = "FlagQuantum-vNext"
+owns = ["**"]
+
+[teams.core]
+branch = "refactor/vnext-team-core"
+worktree = "FlagQuantum-vNext-core"
+owns = [
+    "flagquantum/core/**",
+    "flagquantum/circuit.py",
+    "flagquantum/noise/**",
+    "flagquantum/ops/**",
+    "flagquantum/observables/**",
+]
+
+[teams.compiler]
+branch = "refactor/vnext-team-compiler"
+worktree = "FlagQuantum-vNext-compiler"
+owns = [
+    "flagquantum/compiler/**",
+    "flagquantum/_compiler/**",
+    "flagquantum/compilation/**",
+    "flagquantum/drawer/**",
+]
+
+[teams.runtime]
+branch = "refactor/vnext-team-runtime"
+worktree = "FlagQuantum-vNext-runtime"
+owns = [
+    "flagquantum/runtime/**",
+]
+
+[teams.simulation]
+branch = "refactor/vnext-team-simulation"
+worktree = "FlagQuantum-vNext-simulation"
+owns = [
+    "flagquantum/simulation/**",
+    "flagquantum/runtime/executors/**",
+]
+
+[teams.compute]
+branch = "refactor/vnext-team-platform-providers"
+worktree = "FlagQuantum-vNext-platform"
+owns = [
+    "flagquantum/compute/**",
+    "flagquantum/devices/**",
+]
+
+[teams.remote]
+branch = "refactor/vnext-team-execution-providers"
+worktree = "FlagQuantum-vNext-execution"
+owns = [
+    "flagquantum/remote/**",
+    "flagquantum/deployment/**",
+    "flagquantum/runtime/target_execution.py",
+]
+
+[teams.ecosystem]
+branch = "refactor/vnext-team-ecosystem"
+worktree = "FlagQuantum-vNext-ecosystem"
+owns = [
+    "flagquantum/ecosystem/**",
+    "flagquantum/encoding/**",
+]
+
+[teams.services]
+branch = "refactor/vnext-team-agent-services"
+worktree = "FlagQuantum-vNext-agent"
+owns = [
+    "flagquantum/services/**",
+]
+
+[teams.docs]
+branch = "docs/vnext-team-docs"
+worktree = "FlagQuantum-vNext-docs"
+owns = [
+    "docs/roadmap/VNEXT_EXPERIENCE.md",
+    "docs/development/DOCUMENTATION_STRATEGY.md",
+    "docs/site/**",
+]

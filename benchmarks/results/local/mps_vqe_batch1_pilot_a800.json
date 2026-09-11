@@ -1,0 +1,855 @@
+{
+  "batch_size": 1,
+  "benchmark": "mps_vqe_batch1_pilot_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "cases": [
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          0.9260202241130173,
+          1.3043524026870728,
+          1.6798529657535255
+        ],
+        "eager_two_site_regions": [
+          62,
+          62,
+          62
+        ],
+        "energies": [
+          -27.350940704345703,
+          -27.610912322998047,
+          -27.730539321899414
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          18063360,
+          18065408,
+          18065408
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 4,
+      "learning_rate": 0.02,
+      "max_bond": 16,
+      "n_wires": 32,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.5132297599319293,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          2.1862603276968002,
+          2.5670063593424857,
+          3.27310124412179
+        ],
+        "eager_two_site_regions": [
+          62,
+          62,
+          62
+        ],
+        "energies": [
+          -27.350940704345703,
+          -27.610912322998047,
+          -27.730539321899414
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          17894400,
+          18065408,
+          18065408
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          1.6199365332722664,
+          2.232054677326232,
+          2.8368946085684
+        ],
+        "eager_two_site_regions": [
+          124,
+          124,
+          124
+        ],
+        "energies": [
+          -26.703041076660156,
+          -27.334754943847656,
+          -27.61087989807129
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          19887104,
+          19891200,
+          19891200
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          2.0266982479836984e-09,
+          4.372080431633102e-09,
+          1.0255474134223676e-07
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 8,
+      "learning_rate": 0.02,
+      "max_bond": 16,
+      "n_wires": 32,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.7306128478768421,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          2.67085632821545,
+          3.2772822831757367,
+          3.882897237315774
+        ],
+        "eager_two_site_regions": [
+          124,
+          124,
+          124
+        ],
+        "energies": [
+          -26.703041076660156,
+          -27.334754943847656,
+          -27.61087989807129
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          19593216,
+          19891200,
+          19891200
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          2.0266982479836984e-09,
+          4.372080431633102e-09,
+          1.0255474134223676e-07
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          0.934115462936461,
+          1.3083192850463092,
+          1.689160111360252
+        ],
+        "eager_two_site_regions": [
+          62,
+          62,
+          62
+        ],
+        "energies": [
+          -27.350940704345703,
+          -27.610912322998047,
+          -27.730539321899414
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          18063360,
+          18065408,
+          18065408
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 4,
+      "learning_rate": 0.02,
+      "max_bond": 64,
+      "n_wires": 32,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.587330879258295,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          2.1063513583503664,
+          2.4913088683970273,
+          2.8759940452873707
+        ],
+        "eager_two_site_regions": [
+          62,
+          62,
+          62
+        ],
+        "energies": [
+          -27.350940704345703,
+          -27.610912322998047,
+          -27.730539321899414
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          17894400,
+          18065408,
+          18065408
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          1.9187871338799596,
+          2.8815784826874733,
+          3.7337983837351203
+        ],
+        "eager_two_site_regions": [
+          124,
+          124,
+          124
+        ],
+        "energies": [
+          -26.678621292114258,
+          -27.33755874633789,
+          -27.560579299926758
+        ],
+        "max_bonds": [
+          64,
+          64,
+          64
+        ],
+        "peak_memory_bytes": [
+          38064640,
+          38068736,
+          38068736
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          5.862588907768643e-10,
+          7.275740875940741e-10,
+          8.595987835307151e-10
+        ]
+      },
+      "final_energy_abs_delta": 0.000232696533203125,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 8,
+      "learning_rate": 0.02,
+      "max_bond": 64,
+      "n_wires": 32,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.5419997740830936,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          5.146910128183663,
+          6.02107477048412,
+          6.888929778710008
+        ],
+        "eager_two_site_regions": [
+          115,
+          115,
+          115
+        ],
+        "energies": [
+          -26.680700302124023,
+          -27.335044860839844,
+          -27.56081199645996
+        ],
+        "max_bonds": [
+          64,
+          64,
+          64
+        ],
+        "peak_memory_bytes": [
+          34126848,
+          38068736,
+          38068736
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          9,
+          9,
+          9
+        ],
+        "truncation_errors": [
+          5.843800568828442e-10,
+          7.320981758084059e-10,
+          6.75790137142871e-10
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          1.8267150497995317,
+          2.715190070681274,
+          3.4802370155230165
+        ],
+        "eager_two_site_regions": [
+          126,
+          126,
+          126
+        ],
+        "energies": [
+          -55.64101791381836,
+          -56.16133117675781,
+          -56.4250373840332
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          19171328,
+          19175424,
+          19175424
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 4,
+      "learning_rate": 0.02,
+      "max_bond": 16,
+      "n_wires": 64,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.6424355175960207,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          3.8429840891622007,
+          4.641615765169263,
+          5.417254993226379
+        ],
+        "eager_two_site_regions": [
+          126,
+          126,
+          126
+        ],
+        "energies": [
+          -55.64101791381836,
+          -56.16133117675781,
+          -56.4250373840332
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          18805760,
+          19175424,
+          19175424
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          3.5482507119886577,
+          4.779966994188726,
+          6.0081054689362645
+        ],
+        "eager_two_site_regions": [
+          252,
+          252,
+          252
+        ],
+        "energies": [
+          -54.22760772705078,
+          -55.518741607666016,
+          -56.1314582824707
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          23258112,
+          23266304,
+          23266304
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0003830866545713831,
+          1.1646094387683391e-06,
+          1.9001520511874806e-05
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 8,
+      "learning_rate": 0.02,
+      "max_bond": 16,
+      "n_wires": 64,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.7838043635133685,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          5.164954334963113,
+          6.433965242002159,
+          7.665312606841326
+        ],
+        "eager_two_site_regions": [
+          252,
+          252,
+          252
+        ],
+        "energies": [
+          -54.22760772705078,
+          -55.518741607666016,
+          -56.1314582824707
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          22603776,
+          23266304,
+          23266304
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0003830866545713831,
+          1.1646094387683391e-06,
+          1.9001520511874806e-05
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          1.7582985260523856,
+          2.5982848154380918,
+          3.331604610197246
+        ],
+        "eager_two_site_regions": [
+          126,
+          126,
+          126
+        ],
+        "energies": [
+          -55.64101791381836,
+          -56.16133117675781,
+          -56.4250373840332
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          19171328,
+          19175424,
+          19175424
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "final_energy_abs_delta": 0.0,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 4,
+      "learning_rate": 0.02,
+      "max_bond": 64,
+      "n_wires": 64,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.8550641644846722,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          2.4285350730642676,
+          3.165525013115257,
+          3.8963211751542985
+        ],
+        "eager_two_site_regions": [
+          126,
+          126,
+          126
+        ],
+        "energies": [
+          -55.64101791381836,
+          -56.16133117675781,
+          -56.4250373840332
+        ],
+        "max_bonds": [
+          16,
+          16,
+          16
+        ],
+        "peak_memory_bytes": [
+          18805760,
+          19175424,
+          19175424
+        ],
+        "svd_gradient_methods": [
+          "not_used",
+          "not_used",
+          "not_used"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+      "batch_size": 1,
+      "benchmark": "flagquantum_mps_vqe_triton_runtime",
+      "benchmark_evidence_class": "local",
+      "cutoff": 0.0,
+      "device": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "single_device_fast_path",
+      "eager": {
+        "cumulative_seconds": [
+          4.21339993365109,
+          6.171701777726412,
+          8.113368204794824
+        ],
+        "eager_two_site_regions": [
+          252,
+          252,
+          252
+        ],
+        "energies": [
+          -54.150535583496094,
+          -55.3565788269043,
+          -55.96405792236328
+        ],
+        "max_bonds": [
+          64,
+          64,
+          64
+        ],
+        "peak_memory_bytes": [
+          68829696,
+          68837888,
+          68837888
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          0,
+          0,
+          0
+        ],
+        "truncation_errors": [
+          1.4577477616161209e-09,
+          2.3546679094872606e-09,
+          1.587154898650555e-09
+        ]
+      },
+      "final_energy_abs_delta": 0.001033782958984375,
+      "hamiltonian": "-sum ZZ + 0.1 sum Z",
+      "iterations": 3,
+      "layers": 8,
+      "learning_rate": 0.02,
+      "max_bond": 64,
+      "n_wires": 64,
+      "non_release_evidence": true,
+      "release_gate_allowed": false,
+      "speedup_eager_over_triton": 0.5917720971201335,
+      "task": "end_to_end_mps_vqe_training",
+      "torch_version": "2.13.0+cu130",
+      "triton": {
+        "cumulative_seconds": [
+          9.795540824066848,
+          11.78175548510626,
+          13.710291925352067
+        ],
+        "eager_two_site_regions": [
+          227,
+          227,
+          227
+        ],
+        "energies": [
+          -54.15583419799805,
+          -55.36125564575195,
+          -55.9630241394043
+        ],
+        "max_bonds": [
+          64,
+          64,
+          64
+        ],
+        "peak_memory_bytes": [
+          60310016,
+          68837888,
+          68837888
+        ],
+        "svd_gradient_methods": [
+          "projected_stop_subspace",
+          "projected_stop_subspace",
+          "projected_stop_subspace"
+        ],
+        "triton_two_site_regions": [
+          25,
+          25,
+          25
+        ],
+        "truncation_errors": [
+          1.4520356715269992e-09,
+          2.2343928034894894e-09,
+          1.7298005574826474e-09
+        ]
+      }
+    }
+  ],
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false
+}

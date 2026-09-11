@@ -1,0 +1,93 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "scope": "Five VQE updates with an eight-parameter, two-layer entangling ansatz",
+  "workspace": {
+    "name": "flagquantum-b30886cb-a100",
+    "id": "8df84f50-f8fa-462c-afeb-41e26a399356",
+    "target": "jiuding:gpu",
+    "device": "cuda:0",
+    "clean_workspace": true
+  },
+  "image": {
+    "name": "flagquantum-runtime:v0.2.0-b30886cb-cu128-a100",
+    "id": "77b1b518-cadc-42f6-9a42-6df33ebf3420",
+    "source_commit": "b30886cb",
+    "wheel_sha256": "374458bddd9f77aa64377fec4c4629c29b97b842912e351f2aeaede638a87dd2",
+    "image_size": "7.25GiB"
+  },
+  "remediation": {
+    "observed_failure": "the first Triton-backed fused CX sequence failed while Torch-only RY circuits succeeded",
+    "root_cause": "the runtime image lacked the C compiler required by Triton's first-use driver bootstrap",
+    "remote_exception": "RuntimeError: Failed to find C compiler. Please specify via CC environment variable.",
+    "workspace_validation_change": "installed gcc and libc6-dev in the running development workspace",
+    "durable_image_change": "docker/runtime recipes now install gcc and libc6-dev",
+    "cpu_fallback_used": false
+  },
+  "program": {
+    "ansatz": "four qubits; RY on every qubit, chained CX, second RY layer, chained CX",
+    "observable": "sum of four Pauli-Z terms",
+    "parameter_dtype": "float32",
+    "parameter_count": 8,
+    "shifted_circuits_per_step": 16,
+    "learning_rate": 0.35,
+    "steps": 5
+  },
+  "execution": {
+    "gradient_batch_calls": 5,
+    "batch_calls_per_step": [1, 1, 1, 1, 1],
+    "batch_remote_seconds": [
+      0.1447790525853634,
+      0.14554697647690773,
+      0.1444518193602562,
+      0.1453108787536621,
+      0.14459152147173882
+    ],
+    "gradient_total_seconds": [
+      0.20173537500522798,
+      0.1850339160009753,
+      0.18293362500116928,
+      0.18310083300457336,
+      0.18330616599996574
+    ],
+    "total_seconds": 12.74731824999617,
+    "cpu_fallback_used": false
+  },
+  "correctness": {
+    "energy_trajectory": [
+      2.0632987022399902,
+      0.8174664974212646,
+      0.1288275569677353,
+      -0.19109418988227844,
+      -0.6013548374176025,
+      -1.2734856605529785
+    ],
+    "gradient_norms": [
+      1.968129277229309,
+      1.569014549255371,
+      0.989184558391571,
+      1.0060865879058838,
+      1.3343509435653687
+    ],
+    "maximum_gradient_errors_against_local_autograd": [
+      3.5762786865234375e-7,
+      1.7881393432617188e-7,
+      2.60770320892334e-7,
+      3.5762786865234375e-7,
+      2.384185791015625e-7
+    ],
+    "maximum_gradient_error": 3.5762786865234375e-7,
+    "energy_decreased_every_step": true
+  },
+  "claims": {
+    "entangling_ansatz_validated": true,
+    "multi_parameter_gradient_validated": true,
+    "multi_step_optimizer_updates_validated": true,
+    "one_remote_gradient_round_trip_per_step": true,
+    "single_gpu_execution_validated": true,
+    "shot_based_gradient_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false,
+    "rebuilt_image_validated": true
+  }
+}

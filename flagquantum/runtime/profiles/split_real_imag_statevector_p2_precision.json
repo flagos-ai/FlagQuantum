@@ -1,0 +1,24 @@
+{
+  "schema": "flagquantum_operator_profile_v1",
+  "profile_version": "1.0",
+  "name": "split_real_imag_statevector_p2_precision",
+  "representation": "split_real_imag_statevector_selective_double_single",
+  "distribution": "local",
+  "requirements": [
+    {"operator": "aten::zeros", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::reshape", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::permute", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::transpose", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::matmul", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::add", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::sub", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::mul", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::neg", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::stack", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::sum", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::cos", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::sin", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::isfinite", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::all", "dtypes": ["float32"], "forward": true, "backward": false}
+  ]
+}

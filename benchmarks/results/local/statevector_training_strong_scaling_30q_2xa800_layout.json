@@ -1,0 +1,124 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.005455100445815547,
+    "mean_seconds": 0.30210295086726546,
+    "median_seconds": 0.30296941800042987,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.30296941800042987,
+      0.299796006642282,
+      0.3035434279590845
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 16,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 1.0730526467384038e-07
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.056831216389962344,
+    "mean_seconds": 0.15925130962083736,
+    "median_seconds": 0.15286969114094973,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.1528336820192635,
+      0.15286969114094973,
+      0.17205055570229888
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.06812655030083115,
+    "mean_seconds": 0.48898483378191787,
+    "median_seconds": 0.47817352414131165,
+    "peak_memory_bytes_max": 17339522048,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.5341013893485069,
+      0.4546795878559351,
+      0.47817352414131165
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.48527983052045365,
+    "mean_seconds": 0.5692034483266374,
+    "median_seconds": 0.3880046810954809,
+    "peak_memory_bytes_max": 10603204096,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.9595092460513115,
+      0.3880046810954809,
+      0.36009641783311963
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.3163282343016374,
+    "mean_seconds": 0.027239594298104446,
+    "median_seconds": 0.0021251370199024677,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07794723194092512,
+      0.0016464139334857464,
+      0.0021251370199024677
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 1,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 1,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 536870912,
+    "n_wires": 30,
+    "observable": "Z(28)",
+    "optimizer": "adam"
+  },
+  "world_size": 2
+}

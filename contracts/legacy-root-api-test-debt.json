@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "status": "migration_complete",
+  "rule": "Legacy root API references must remain at zero.",
+  "total_references": 0,
+  "files": {}
+}

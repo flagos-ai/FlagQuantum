@@ -1,23 +1,14 @@
-# Copyright 2026 FlagOS Contributors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$)
       - id: end-of-file-fixer
+        exclude: ^benchmarks/results/
       - id: check-docstring-first
       - id: check-yaml
       - id: debug-statements
@@ -26,16 +17,83 @@ repos:
     rev: "v0.12.7"
     hooks:
       - id: ruff
-        exclude: docs/source/conf.py|ipynb_filter.py
+        files: ^(flagquantum|tests|tools)/.*\.py$
         args: ["--fix"]
-      # - id: ruff-format
-      #   exclude: docs/source/conf.py|ipynb_filter.py
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: "v1.17.1"
-    # hooks:
-    #   - id: mypy
-    #     exclude: ipynb_filter.py|docs/source/conf.py|noxfile.py
-    #     additional_dependencies:
-    #       - types-setuptools
-    #       - pandas-stubs
-    #       - types-psutil
+  - repo: local
+    hooks:
+      - id: english-repository-content
+        name: English repository content
+        entry: python tools/check_repository_language.py
+        language: system
+      - id: architecture-boundaries
+        name: architecture boundaries
+        entry: python tools/check_architecture.py
+        language: system
+        pass_filenames: false
+      - id: repository-hygiene
+        name: repository hygiene
+        entry: python tools/check_repository_hygiene.py
+        language: system
+        pass_filenames: false
+      - id: operator-manifest
+        name: operator manifest
+        entry: python -m tools.operator_manifest --check
+        language: system
+        pass_filenames: false
+      - id: runtime-contract-schema
+        name: runtime contract schema
+        entry: python -m tools.runtime_contract_schema --check
+        language: system
+        pass_filenames: false
+      - id: documentation-source-of-truth
+        name: documentation source of truth
+        entry: python -m tools.docs_source_of_truth --check
+        language: system
+        pass_filenames: false
+      - id: public-api-baseline
+        name: public API migration baseline
+        entry: python -m tools.public_api_snapshot
+        language: system
+        pass_filenames: false
+      - id: legacy-root-api-usage
+        name: legacy root API usage
+        entry: python tools/check_legacy_root_api_usage.py
+        language: system
+        pass_filenames: false
+      - id: correctness-certification
+        name: correctness certification matrix
+        entry: python -m tools.correctness_certification --check
+        language: system
+        pass_filenames: false
+      - id: black-production-surface
+        name: black production and test surface
+        entry: black --check
+        language: system
+        files: ^(flagquantum|tests|tools)/.*\.py$
+      - id: mypy-foundation
+        name: mypy typed foundation subset
+        entry: >-
+          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
+          flagquantum/version.py flagquantum/core/ir.py
+          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
+          tools/ci_tier.py
+        language: system
+        pass_filenames: false
+      - id: mypy-runtime-contracts
+        name: mypy strict runtime contracts
+        entry: >-
+          mypy --strict --no-site-packages --follow-imports skip
+          flagquantum/core/contracts.py flagquantum/runtime/records.py
+          flagquantum/runtime/audit/contracts.py
+          flagquantum/runtime/executors/statevector/checkpointing.py
+          flagquantum/runtime/executors/statevector/gradient_reduction.py
+        language: system
+        pass_filenames: false
+        files: ^(flagquantum|tools)/.*\.py$
+      - id: pre-push-ci
+        name: FlagQuantum CPU pre-push gate
+        entry: python tools/pre_push.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

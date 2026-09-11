@@ -1,0 +1,549 @@
+schema = "flagquantum_capability_maturity_v2"
+
+[levels.experimental]
+rank = 0
+description = "Unstable research surface without compatibility or production guarantees."
+required_evidence = ["owner", "limitations", "focused_tests"]
+
+[levels.development_evidence]
+rank = 1
+description = "Executable development evidence; never sufficient for production or scalability claims."
+required_evidence = ["owner", "limitations", "focused_tests", "development_artifact"]
+
+[levels.production_supported]
+rank = 2
+description = "Supported production path with compatibility, operations, and target-hardware evidence."
+required_evidence = ["owner", "limitations", "focused_tests", "integration_tests", "hardware_evidence", "operational_runbook"]
+
+[levels.release_certified]
+rank = 3
+description = "Release-gated capability with audited, reproducible evidence and no unresolved release blocker."
+required_evidence = ["owner", "limitations", "focused_tests", "integration_tests", "hardware_evidence", "operational_runbook", "release_gate", "release_artifact"]
+
+[capabilities.ir]
+title = "Unified circuit API and FlagQuantum IR"
+summary = "Build, validate, serialize, compile, and inspect quantum circuits through the stable FlagQuantum interface."
+category = "build_and_compile"
+user_goals = ["Build portable quantum circuits", "Compile or export a circuit", "Inspect a stable circuit representation"]
+public_apis = ["Circuit", "CircuitIR", "flagquantum.compiler.compile"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "examples/quick_start.py"
+documentation = "docs/reference/API.md"
+level = "release_certified"
+owner = "FlagQuantum core maintainers"
+limitations = "IR v1; incompatible schema changes require an explicit migration."
+focused_tests = "tests/unit/test_ir_public_api.py"
+integration_tests = "tests/test_native_circuit.py"
+hardware_evidence = "not_applicable_pure_contract"
+operational_runbook = "docs/reference/PUBLIC_API_POLICY.md"
+release_gate = "tools/runtime_contract_schema.py"
+release_artifact = "docs/generated/STABLE_API.md"
+
+[capabilities.local_statevector]
+title = "Local statevector simulation and training"
+summary = "Run exact circuits and differentiable quantum workloads on a CPU or one GPU."
+category = "simulation_and_training"
+user_goals = ["Simulate a small or medium circuit exactly", "Train a parameterized quantum circuit", "Run local VQE and quantum machine learning"]
+public_apis = ["Circuit", "run", "Module", "train"]
+runtime_modes = ["statevector"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/single_machine_quantum_ai/01_vqe_statevector.py"
+documentation = "examples/single_machine_quantum_ai/README.md"
+level = "production_supported"
+owner = "PyTorch runtime maintainers"
+limitations = "Capacity is bounded by one device; distributed capacity claims use the sharded capability."
+focused_tests = "tests/test_native_circuit.py"
+integration_tests = "tests/test_backends.py"
+hardware_evidence = ".github/workflows/local-gpu.yml"
+operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
+
+[capabilities.sharded_statevector_training]
+title = "Sharded statevector training"
+summary = "Partition one logical statevector workload across ranks while preserving differentiable training semantics."
+category = "distributed_execution"
+user_goals = ["Train one statevector workload across multiple ranks", "Plan distributed statevector ownership", "Inspect communication and sharding semantics"]
+public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["multi_gpu", "multi_node"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "examples/distributed_statevector_topologies/run.sh"
+documentation = "examples/distributed_statevector_topologies/README.md"
+level = "production_supported"
+owner = "PyTorch distributed maintainers"
+limitations = "Multi-node release certification remains dependent on promoted audited hardware evidence."
+focused_tests = "tests/unit/test_statevector_training.py"
+integration_tests = "tests/distributed/statevector_training_runtime.py"
+hardware_evidence = ".github/workflows/local-gpu.yml"
+operational_runbook = "docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
+
+[capabilities.flagos_statevector_reference]
+title = "FlagOS local statevector CUDA reference"
+summary = "Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment."
+category = "simulation_and_training"
+user_goals = ["Check FlagQuantum and Torch-FL integration", "Audit the statevector operator profile", "Compare complex numerical behavior with a CPU complex128 reference"]
+public_apis = ["flagquantum.runtime.resolve_device", "run"]
+runtime_modes = ["statevector"]
+hardware = ["nvidia_a100_cuda_reference"]
+gradient_support = "development_evidence"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md"
+documentation = "docs/reference/STATEVECTOR_OPERATOR_PROFILES.md"
+level = "development_evidence"
+owner = "FlagQuantum and Torch-FL integration maintainers"
+limitations = "CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim."
+focused_tests = "tests/unit/test_flagos_reference_evidence.py"
+development_artifact = "artifacts/flagos_cuda_reference_a800_20260824.json"
+
+[capabilities.flagos_distributed_statevector_workloads]
+title = "FlagOS distributed statevector workloads"
+summary = "Run sharded statevector forward and bounded training workloads through the public FlagOS boundary on the locked CUDA development reference."
+category = "distributed_execution"
+user_goals = ["Audit FlagOS distributed statevector workload support", "Run sharded FlagOS statevector forward workloads", "Run bounded sharded FlagOS training trajectories"]
+public_apis = ["flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_2_4_8_gpu"]
+gradient_support = "development_evidence_exact_autograd"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md"
+documentation = "docs/reference/FLAGOS_WORKLOAD_CAPABILITY_F4.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "Development evidence only for complex64 and complex128 on one CUDA-backed A800 node at 2, 4, and 8 cards. The inner communication route and host staging remain unattributed; complex reduce_scatter_tensor is unsupported in the tested full collective matrix; multi-node behavior, single-device capacity failure, performance, convergence, production support, scalability, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_workload_capability.py"
+development_artifact = "artifacts/flagos_workload_capability_f4_20260826.json"
+
+[capabilities.flagos_statevector_capacity_expansion]
+title = "FlagOS statevector capacity expansion"
+summary = "Demonstrate one matched complex128 statevector that fails on a single device and completes when sharded across eight devices through the public FlagOS boundary."
+category = "distributed_execution"
+user_goals = ["Audit matched FlagOS statevector capacity expansion", "Run one full-width complex128 statevector across eight ranks", "Inspect fail-closed single, replicated, and sharded capacity evidence"]
+public_apis = ["flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_8_gpu"]
+gradient_support = "forward_only_development_evidence"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/reference/FLAGOS_STATEVECTOR_CAPACITY_F5.md"
+documentation = "docs/reference/FLAGOS_STATEVECTOR_CAPACITY_F5.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "One exact 32-qubit complex128 forward workload on one CUDA-backed eight-A800 node. The single-device and replicated paths measured OOM while the eight-rank sharded path completed. The inner communication route and host staging remain unattributed; determinism replay, backward and optimizer capacity, performance, convergence, multi-node behavior, production support, general scalability, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_statevector_capacity_evidence.py"
+development_artifact = "artifacts/flagos_statevector_capacity_f5_a800_20260827.json"
+
+[capabilities.flagos_transport_observability]
+title = "FlagOS distributed transport observability"
+summary = "Observe a fixed multi-rank complex collective matrix through the public FlagOS boundary while keeping inner-route and host-staging claims fail-closed."
+category = "distributed_execution"
+user_goals = ["Audit observable FlagOS collective behavior", "Inspect bounded profiler evidence for complex collectives", "Distinguish FlagOS validation from unverified FlagCX route attribution"]
+public_apis = ["flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_transport_observation"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_2_4_8_gpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "rank_local_collective_observation"
+quick_start = "docs/reference/FLAGOS_TRANSPORT_OBSERVABILITY_F6.md"
+documentation = "docs/reference/FLAGOS_TRANSPORT_OBSERVABILITY_F6.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "One CUDA-backed A800 node at 2, 4, and 8 ranks for four collectives with complex64 and complex128. Correctness and logical FlagOS residency passed, but CUPTI device activity capture was incomplete. The inner communication route, FlagCX use, absence of host staging, performance, multi-node behavior, scalability, production support, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_transport_observability_evidence.py"
+development_artifact = "artifacts/flagos_transport_observability_f6_a800_20260827.json"
+
+[capabilities.sharded_mps_training]
+title = "Differentiable and sharded MPS training"
+summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
+category = "distributed_execution"
+user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
+public_apis = ["flagquantum.simulation.mps.run_mps", "flagquantum.experimental.distributed.train_distributed_mps"]
+runtime_modes = ["mps", "distributed_mps"]
+hardware = ["cpu", "single_gpu", "multi_gpu", "multi_node"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
+documentation = "examples/distributed_mps/README.md"
+level = "development_evidence"
+owner = "MPS maintainers"
+limitations = "Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
+focused_tests = "tests/unit/test_mps_training.py"
+development_artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
+
+[[capabilities.sharded_mps_training.performance_claims]]
+id = "mps-capacity-131072-chi768-20260806"
+title = "Sharded MPS exact-workload capacity"
+artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
+artifact_sha256 = "df8c19b74cc173799e3894025fb8e72de72a786d4542a9aa5e67687298f482f5"
+code_version = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
+maturity = "development_evidence"
+scope = "One batch-one, complex64, χ768 MPS training step for the checked-in all-rank and all-boundary workload. This is not arbitrary statevector capacity, fixed-plan strong scaling, or release evidence."
+environment_limitations = "The artifact records rank count, per-rank device memory, topology fingerprint, and CUDA allocator policy. It does not record the exact GPU model or Python, PyTorch, CUDA, NCCL, driver, host, and operating-system versions, so the claim is restricted to the recorded environment fields."
+
+[capabilities.sharded_mps_training.performance_claims.evidence_checks]
+schema = "flagquantum.issue092.general_mps_capacity.v1"
+distribution_semantics = "sharded_across_ranks"
+world_size = 16
+source_integrity_finalized = true
+single_gpu_capacity_failure = true
+scalability_claim_allowed = false
+release_gate_allowed = false
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Sites"
+selector = "n_sites"
+format = "integer"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Logical MPS state"
+selector = "logical_mps_bytes"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Maximum elapsed time"
+selector = "rank_records[].elapsed_seconds"
+aggregate = "max"
+format = "seconds"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Maximum peak allocated memory per rank"
+selector = "rank_records[].peak_memory_bytes"
+aggregate = "max"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Cumulative discarded weight"
+selector = "discarded_weight"
+format = "scientific"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Ranks"
+selector = "rank_records[].rank"
+aggregate = "count"
+format = "integer"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Reported device memory per rank"
+selector = "rank_records[].device_total_memory_bytes"
+aggregate = "unique"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "CUDA allocator policy"
+selector = "cuda_allocator_policy"
+format = "string"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Topology fingerprint"
+selector = "topology_fingerprint"
+format = "string"
+
+[capabilities.double_single_fp32]
+title = "Double-Single FP32 numerical primitives"
+summary = "Use residual-preserving pairs of float32 tensors for bounded real and split-complex arithmetic experiments on PyTorch devices."
+category = "simulation_and_training"
+user_goals = ["Evaluate software-extended precision on FP32 hardware", "Measure cancellation error against a float64 reference", "Prepare a precision provider without changing the runtime"]
+public_apis = []
+runtime_modes = ["numerical_primitive_conformance"]
+hardware = ["cpu", "device_generic_pytorch"]
+gradient_support = "experimental_composed_primitives"
+distribution_semantics = "single_device_primitive_only"
+quick_start = "docs/reference/DOUBLE_SINGLE_FP32.md"
+documentation = "docs/reference/DOUBLE_SINGLE_FP32.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Pure FP32 real and split-complex eager primitives, selective split-statevector P2 reductions, full-state P3, and bounded device-generated-gate P4 experiments are available. P4 removes CPU float64/complex128 gate encoding for its certified gate and angle scope, but optimized kernels, compiled execution, distributed collectives, decompositions, optimizer state, provider-owned Torch-FL route auditing, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128."
+focused_tests = "tests/test_double_single_conformance.py"
+
+[capabilities.split_real_imag_statevector_p0]
+title = "Split real/imag FP32 local statevector P0"
+summary = "Execute a bounded forward-only statevector using two device-resident float32 tensors without requiring accelerator complex dtypes."
+category = "simulation_and_training"
+user_goals = ["Evaluate statevector forward execution on FP32-only PyTorch devices", "Validate Torch-FL flagos logical-device residency", "Compare split FP32 numerical error with a CPU complex128 reference"]
+public_apis = ["experimental.numerics.execute_split_real_imag_statevector"]
+runtime_modes = ["split_real_imag_statevector_p0"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+focused_tests = "tests/test_split_real_imag_conformance.py"
+
+[capabilities.split_real_imag_statevector_p1]
+title = "Split real/imag FP32 observable and parameter-shift P1"
+summary = "Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using two device-resident float32 state tensors without accelerator complex dtypes."
+category = "simulation_and_training"
+user_goals = ["Evaluate Pauli expectation values on FP32-only PyTorch devices", "Compute explicit parameter-shift gradients for named rotation parameters", "Compare training primitives with a CPU complex128 reference"]
+public_apis = ["experimental.numerics.execute_split_real_imag_expectation", "experimental.numerics.parameter_shift_split_real_imag_gradient"]
+runtime_modes = ["split_real_imag_statevector_p1"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "parameter_shift_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+focused_tests = "tests/test_split_real_imag_training_conformance.py"
+
+[capabilities.split_real_imag_statevector_p2_precision]
+title = "Selective Double-Single split statevector precision P2"
+summary = "Retain FP32 state and gates while upgrading Pauli inner products, Hamiltonian sums, and parameter-shift accumulation to explicit Double-Single high/low reductions."
+category = "simulation_and_training"
+user_goals = ["Survive cancellation-sensitive Hamiltonian reductions on FP32-only devices", "Request an auditable selective precision plan", "Fail closed when requested accuracy exceeds certified evidence"]
+public_apis = []
+runtime_modes = ["split_real_imag_statevector_p2_precision"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "parameter_shift_selective_double_single_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit experimental selective precision path only. State storage, gate generation, and gate application remain split FP32; only Pauli inner products, Hamiltonian term sums, and parameter-shift accumulation retain Double-Single high/low words. Full Double-Single statevectors, native autograd, optimizer integration, residual checkpoints, decomposition, compilation, distributed execution, automatic selection, convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported."
+focused_tests = "tests/test_split_real_imag_precision_conformance.py"
+
+[capabilities.split_real_imag_statevector_p3_double_single]
+title = "Full Double-Single split statevector P3"
+summary = "Store every complex amplitude as four FP32 high/low words and retain residuals through gate application, periodic normalization, observables, and parameter-shift gradients."
+category = "simulation_and_training"
+user_goals = ["Evaluate full Double-Single state evolution on FP32-only PyTorch devices", "Break the FP32 state-evolution error floor", "Measure state, norm, expectation, and gradient errors against complex128"]
+public_apis = []
+runtime_modes = ["split_real_imag_statevector_p3_double_single"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "parameter_shift_full_double_single_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit correctness-first full Double-Single state experiment. CPU float64/complex128 parameter and gate encoding is required before four FP32 words are transferred to the execution device; state evolution itself has no host fallback. Device-only Double-Single trigonometry, optimized/fused kernels, native autograd, optimizer integration, compilation, distributed execution, automatic selection, algorithmic convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported."
+focused_tests = "tests/test_split_real_imag_double_single_conformance.py"
+
+[capabilities.split_real_imag_statevector_p4_device_double_single]
+title = "Device-generated Double-Single split statevector P4"
+summary = "Generate bounded fixed and rotation gates with device-resident FP32 Double-Single arithmetic, then retain four FP32 words through state evolution, observables, and parameter-shift gradients."
+category = "simulation_and_training"
+user_goals = ["Avoid CPU complex128 gate encoding on FP32-only PyTorch devices", "Evaluate bounded Double-Single trigonometry and state evolution", "Measure state, norm, expectation, and gradient errors against complex128 diagnostics"]
+public_apis = []
+runtime_modes = ["split_real_imag_statevector_p4_device_double_single"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "parameter_shift_device_double_single_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit correctness-first P4 path for built-in gates and direct scalar parameters within |angle| <= 1024. Python scalars are host-ingested as FP32 values; device-resident FP32 or Double-Single parameters remain on device. Parameter expressions, float64 parameter tensors, custom matrices, unbounded angles, native autograd, optimizer integration, compilation, distributed execution, automatic selection, algorithmic convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported."
+focused_tests = "tests/test_split_real_imag_device_double_single_conformance.py"
+
+[capabilities.split_real_imag_statevector_p5_autograd_bridge]
+title = "CPU PyTorch autograd bridge over Double-Single P5"
+summary = "Expose a bounded first-order PyTorch autograd path whose forward and parameter-shift backward use P4 Double-Single arithmetic before an explicit FP32 tensor delivery boundary."
+category = "simulation_and_training"
+user_goals = ["Train through a conventional PyTorch scalar loss on CPU", "Retain Double-Single arithmetic inside forward and parameter-shift evaluation", "Audit the exact boundary where PyTorch receives one FP32 gradient word"]
+public_apis = []
+runtime_modes = ["split_real_imag_statevector_p5_autograd_bridge"]
+hardware = ["cpu"]
+gradient_support = "first_order_parameter_shift_internal_double_single_float32_delivery_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit CPU-only first-order PyTorch autograd bridge for direct named scalar FP32 parameters and bounded Pauli expectations. Forward and backward use P4 Double-Single arithmetic internally, but the scalar loss and Tensor.grad are one-word FP32 delivery boundaries and no end-to-end Double-Single gradient claim is made. A separate explicit Double-Single SGD lane is available; higher-order and compiled autograd, CUDA, Torch-FL flagos, FlagCX, distributed execution, automatic selection, convergence, hardware certification, performance, and production use remain unsupported."
+focused_tests = "tests/test_split_real_imag_autograd_conformance.py"
+
+[capabilities.split_real_imag_statevector_p5_double_single_sgd]
+title = "Single-device precision-preserving Double-Single SGD P5"
+summary = "Consume explicit P4 high/low parameter-shift gradients and return updated high/low master parameters without crossing the one-word PyTorch Tensor.grad boundary."
+category = "simulation_and_training"
+user_goals = ["Preserve parameter updates below one FP32 ULP", "Compare Double-Single and FP32-master optimization against complex128 trajectories", "Run auditable precision SGD without claiming torch.optim compatibility"]
+public_apis = []
+runtime_modes = ["split_real_imag_statevector_p5_double_single_sgd"]
+hardware = ["cpu", "single_cuda_reference", "torch_fl_flagos_cuda_reference"]
+gradient_support = "explicit_parameter_shift_double_single_optimizer_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit single-device functional high/low master-parameter SGD using P4 high/low parameter-shift gradients. CPU, native CUDA on A800, and CUDA-backed Torch-FL flagos:0 portability trajectories are recorded; the A800 routes do not certify a domestic accelerator or provider internals. It is not torch.optim compatible and has no momentum, weight decay, loss scaling, Adam-family algorithm, checkpoint/state-dict compatibility, higher-order autograd, FlagCX, distributed execution, automatic selection, convergence certification, hardware certification, performance, or production claim."
+focused_tests = "tests/test_split_real_imag_optimizer_conformance.py"
+
+[capabilities.local_mps_tebd]
+title = "Constrained local MPS TEBD"
+summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."
+category = "simulation_and_training"
+user_goals = ["Reproduce small open-chain imaginary-time TEBD studies", "Cross-check MPS evolution against an independent oracle", "Inspect truncation and normalization evidence"]
+public_apis = ["experimental.simulation.run_tebd"]
+runtime_modes = ["mps_tebd"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/guides/TEBD.md"
+documentation = "docs/guides/TEBD.md"
+level = "experimental"
+owner = "MPS maintainers"
+limitations = "Static real one-site and adjacent two-site Pauli terms on an open chain, batch one, second-order imaginary-time evolution, and product initial states only. Real-time evolution, periodic and nonlocal terms, gradients, TDVP, distributed execution, and production or scalability claims are unsupported."
+focused_tests = "tests/test_tebd.py"
+
+[capabilities.tensor_network_training]
+title = "Tensor-network execution and training"
+summary = "Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows."
+category = "simulation_and_training"
+user_goals = ["Evaluate a circuit with tensor-network contraction", "Compare statevector, MPS, and tensor-network modes"]
+public_apis = ["flagquantum.simulation.tensor_network.run_tensor_network"]
+runtime_modes = ["tensor_network"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "experimental"
+distribution_semantics = "manual_sliced_tensor_contraction"
+quick_start = "examples/vqe_switch_sv_mps_tn.py"
+documentation = "docs/reference/KNOWN_LIMITATIONS.md"
+level = "experimental"
+owner = "tensor-network maintainers"
+limitations = "General reverse contraction and production distributed transport are not certified."
+focused_tests = "tests/test_tensor_network.py"
+
+[capabilities.noisy_simulation]
+title = "Exact and trajectory-based noisy simulation"
+summary = "Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths."
+category = "simulation_and_training"
+user_goals = ["Validate small noisy circuits exactly", "Evaluate low-entanglement noisy circuits with MPS trajectories", "Resume reproducible trajectory ensembles"]
+public_apis = ["flagquantum.noise.NoiseModel", "flagquantum.noise.noisy_density_matrix", "flagquantum.runtime.run_noisy_mps", "flagquantum.runtime.run_noisy_statevector"]
+runtime_modes = ["density_matrix", "noisy_mps"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path_or_rank_local_trajectory_partition"
+quick_start = "examples/noisy_simulation_v1.py"
+documentation = "docs/guides/NOISY_SIMULATION.md"
+level = "experimental"
+owner = "noise runtime maintainers"
+limitations = "Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback."
+focused_tests = "tests/test_noise.py"
+
+[capabilities.cloud_deployment]
+title = "Circuit packaging and cloud deployment"
+summary = "Package trained circuits, export provider formats, and route them through deployment provider abstractions."
+category = "deployment_and_extension"
+user_goals = ["Package a trained parameterized circuit", "Export a circuit for a provider", "Run a circuit through a deployment abstraction"]
+public_apis = ["flagquantum.deployment.create_deployment_package", "flagquantum.deployment.deploy_circuit"]
+runtime_modes = ["provider"]
+hardware = ["provider_dependent"]
+gradient_support = "not_applicable"
+distribution_semantics = "provider_dependent"
+quick_start = "examples/train_parameterized_circuit_then_deploy.py"
+documentation = "docs/reference/API.md"
+level = "development_evidence"
+owner = "deployment maintainers"
+limitations = "Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix."
+focused_tests = "tests/test_deployment.py"
+development_artifact = "flagquantum/deployment"
+
+[capabilities.interop_adapter_contract]
+title = "Interoperability adapter contract"
+summary = "Implement and certify optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract."
+category = "deployment_and_extension"
+user_goals = ["Discover registered interoperability adapters", "Implement a framework adapter without changing FlagQuantum core", "Certify round-trip and fail-closed adapter behavior", "Handle conversion diagnostics consistently"]
+public_apis = ["flagquantum.ecosystem"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "adapter_defined"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/development/INTEROP_ADAPTERS.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "The framework-neutral protocol is candidate-stable pending API-owner approval; PennyLane and Qiskit implementations remain experimental. Common conformance does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers."
+focused_tests = "tests/unit/test_interop_conformance.py"
+
+[capabilities.pennylane_interop]
+title = "PennyLane QuantumScript interoperability"
+summary = "Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported PennyLane QuantumScript", "Export static FlagQuantum IR to PennyLane", "Audit semantic loss at the boundary"]
+public_apis = ["flagquantum.ecosystem.pennylane.from_pennylane", "flagquantum.ecosystem.pennylane.to_pennylane"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "bound_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers."
+focused_tests = "tests/test_pennylane_interop.py"
+
+[capabilities.qiskit_interop]
+title = "Qiskit IR interoperability"
+summary = "Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported Qiskit circuit", "Export FlagQuantum IR to Qiskit", "Audit semantic loss at a framework boundary"]
+public_apis = ["flagquantum.ecosystem.qiskit.from_qiskit", "flagquantum.ecosystem.qiskit.to_qiskit"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "symbolic_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through an executable operation, wire-order, statevector, classical-bit, and round-trip contract. Qiskit control flow and arbitrary ParameterExpression import are rejected; named or multiple registers require explicit lossy flattening; custom multi-qubit unitary matrices remain blocked until basis ordering is specified. Conversion does not make Qiskit a runtime dependency or certify any provider hardware."
+focused_tests = "tests/test_qiskit_interop_conformance.py"
+
+[capabilities.dynamic_circuits]
+title = "Dynamic circuits and backend assessment"
+summary = "Execute dynamic circuits locally, including a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features."
+category = "deployment_and_extension"
+user_goals = ["Prototype mid-circuit measurement and feed-forward", "Assess backend support before execution"]
+public_apis = ["flagquantum.dynamic.DynamicCircuit", "flagquantum.experimental.dynamic.assess_dynamic_backend", "flagquantum.experimental.dynamic.run_dynamic"]
+runtime_modes = ["local_statevector_trajectory", "local_statevector_noisy_trajectory", "backend_assessment"]
+hardware = ["cpu", "provider_profiles_unverified"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "deployment maintainers"
+limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Local dynamic noise is limited to one-wire bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
+focused_tests = "tests/test_dynamic_conformance.py"
+
+[capabilities.repetition_code_memory]
+title = "Repetition-code memory experiment"
+summary = "Run a bounded three-data-qubit memory experiment with timed errors or circuit-location bit-flip/readout noise, compiled feedback, per-round Runtime decoding, or Pauli-frame correction, including a two-round temporal reference decoder."
+category = "simulation_and_training"
+user_goals = ["Exercise a fixed-round QEC control workflow", "Inspect syndrome and detection-event records", "Prototype a decoder against a typed contract"]
+public_apis = ["flagquantum.qec.run_repetition_memory_experiment", "flagquantum.qec.run_repetition_memory_noise_sweep", "flagquantum.qec.RepetitionNoiseProfile", "flagquantum.qec.ErrorSchedule", "flagquantum.qec.Decoder", "flagquantum.qec.StreamingDecoder", "flagquantum.qec.RepetitionTemporalDecoder"]
+runtime_modes = ["local_statevector_compiled_feedback", "local_statevector_runtime_decoder", "local_statevector_runtime_pauli_frame", "local_statevector_runtime_temporal_decoder", "local_statevector_runtime_temporal_pauli_frame", "local_statevector_offline_pauli_frame", "local_statevector_noisy_trajectory"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "flagquantum/qec/README.md"
+documentation = "flagquantum/qec/README.md"
+level = "development_evidence"
+owner = "QEC maintainers"
+limitations = "A synchronous local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules, replaceable per-round trajectory decoding with physical-X or Pauli-frame-X actions, and a two-round temporal rule that rejects an isolated readout excursion. Confirmable data errors require a following round; terminal-round onsets remain unconfirmed. The circuit-location stochastic profile contains independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Feedback traces separate true and observed bits, actions, and frame evolution. Sweeps report finite-shot observations only, not logical suppression or thresholds. The temporal rule is not maximum-likelihood decoding and repeated readout faults may mimic data errors. Batched decoder feedback, general channels/codes, correlated or timing noise, hard-real-time/provider control, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The feedback records are private subinterfaces and the namespace is not exported from the stable package root."
+focused_tests = "tests/qec/test_repetition_memory.py"
+development_artifact = "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
+
+[capabilities.extension_sdk]
+title = "Extension SDK"
+summary = "Build and qualify optional extensions through the Ecosystem extension protocol."
+category = "deployment_and_extension"
+user_goals = ["Prototype a FlagQuantum extension", "Register custom framework behavior", "Install an external circuit compiler"]
+public_apis = ["flagquantum.ecosystem.extensions"]
+runtime_modes = ["extension_defined"]
+hardware = ["extension_defined"]
+gradient_support = "extension_defined"
+distribution_semantics = "extension_defined"
+quick_start = "docs/guides/COMPILER_PLUGINS.md"
+documentation = "docs/reference/EXTENSION_SDK.md"
+level = "experimental"
+owner = "extension maintainers"
+limitations = "The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported."
+focused_tests = "tests/unit/test_extension_sdk.py"

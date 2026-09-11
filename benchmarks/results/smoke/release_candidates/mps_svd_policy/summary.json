@@ -1,0 +1,221 @@
+{
+  "approximate_residual_budget": 0.0001,
+  "artifact_class": "derived_development_report",
+  "benchmark": "mps_svd_driver_calibration",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 0,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "exact_residual_budget": 1e-05,
+  "local_memory_bytes_by_rank": [
+    162172928
+  ],
+  "local_world_size": 1,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "passed": true,
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    }
+  ],
+  "records": [
+    {
+      "dimension": 256,
+      "driver": "gesvd",
+      "mean_seconds": 0.02646494787186384,
+      "p50_seconds": 0.026466619223356247,
+      "peak_allocated_memory_bytes": 6305280,
+      "relative_reconstruction_residual": 2.462732709318516e-06,
+      "samples_seconds": [
+        0.026469673961400986,
+        0.02648346498608589,
+        0.02644812036305666,
+        0.026466619223356247,
+        0.026456860825419426
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 256,
+      "driver": "gesvdj",
+      "mean_seconds": 0.019482521712779997,
+      "p50_seconds": 0.01947318809106946,
+      "peak_allocated_memory_bytes": 12860416,
+      "relative_reconstruction_residual": 0.00014225443010218441,
+      "samples_seconds": [
+        0.019440234173089266,
+        0.0195561982691288,
+        0.019461215008050203,
+        0.01947318809106946,
+        0.019481773022562265
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 256,
+      "driver": "gesvda",
+      "mean_seconds": 0.0035819677636027337,
+      "p50_seconds": 0.003555702045559883,
+      "peak_allocated_memory_bytes": 21116928,
+      "relative_reconstruction_residual": 2.6549403742137656e-07,
+      "samples_seconds": [
+        0.003693719394505024,
+        0.003555702045559883,
+        0.0035500330850481987,
+        0.0035561411641538143,
+        0.003554243128746748
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 512,
+      "driver": "gesvd",
+      "mean_seconds": 0.054112032614648344,
+      "p50_seconds": 0.0540926824323833,
+      "peak_allocated_memory_bytes": 31089152,
+      "relative_reconstruction_residual": 3.3884823551488807e-06,
+      "samples_seconds": [
+        0.05401620641350746,
+        0.0540926824323833,
+        0.05404820013791323,
+        0.05413123220205307,
+        0.05427184188738465
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 512,
+      "driver": "gesvdj",
+      "mean_seconds": 0.0565643141977489,
+      "p50_seconds": 0.05656284000724554,
+      "peak_allocated_memory_bytes": 25584640,
+      "relative_reconstruction_residual": 0.00030471564969047904,
+      "samples_seconds": [
+        0.056573149748146534,
+        0.05658802296966314,
+        0.056562500074505806,
+        0.05656284000724554,
+        0.056535058189183474
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 512,
+      "driver": "gesvda",
+      "mean_seconds": 0.008118637837469578,
+      "p50_seconds": 0.00793872307986021,
+      "peak_allocated_memory_bytes": 50467328,
+      "relative_reconstruction_residual": 7.126079140107322e-07,
+      "samples_seconds": [
+        0.00793872307986021,
+        0.007932376116514206,
+        0.007932569831609726,
+        0.008789655286818743,
+        0.007999864872545004
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 1024,
+      "driver": "gesvd",
+      "mean_seconds": 0.21912453984841704,
+      "p50_seconds": 0.15314745577052236,
+      "peak_allocated_memory_bytes": 95074816,
+      "relative_reconstruction_residual": 4.767075097333873e-06,
+      "samples_seconds": [
+        0.15314745577052236,
+        0.48342685075476766,
+        0.15281105181202292,
+        0.15347538702189922,
+        0.15276195388287306
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 1024,
+      "driver": "gesvdj",
+      "mean_seconds": 0.18451659800484776,
+      "p50_seconds": 0.1845237109810114,
+      "peak_allocated_memory_bytes": 76211200,
+      "relative_reconstruction_residual": 0.0005768897826783359,
+      "samples_seconds": [
+        0.1845237109810114,
+        0.18490024376660585,
+        0.18461394309997559,
+        0.1843015579506755,
+        0.1842435342259705
+      ],
+      "supported": true
+    },
+    {
+      "dimension": 1024,
+      "driver": "gesvda",
+      "mean_seconds": 0.01970776226371527,
+      "p50_seconds": 0.019717303104698658,
+      "peak_allocated_memory_bytes": 162172928,
+      "relative_reconstruction_residual": 6.536657792821643e-07,
+      "samples_seconds": [
+        0.019690883811563253,
+        0.019752767402678728,
+        0.019724709913134575,
+        0.019717303104698658,
+        0.01965314708650112
+      ],
+      "supported": true
+    }
+  ],
+  "release_gate_allowed": false,
+  "samples": 5,
+  "scalability_blockers": [
+    "single_device_driver_calibration",
+    "a800_only_portability_not_established",
+    "single_run_unsigned_development_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_svd_policy_report.v1",
+  "selections": [
+    {
+      "approximate_driver": "gesvda",
+      "approximate_mean_seconds": 0.0035819677636027337,
+      "approximate_residual": 2.6549403742137656e-07,
+      "approximate_speedup": 7.388382480931505,
+      "bond": 128,
+      "dimension": 256,
+      "exact_driver": "gesvd",
+      "exact_mean_seconds": 0.02646494787186384,
+      "exact_residual": 2.462732709318516e-06
+    },
+    {
+      "approximate_driver": "gesvda",
+      "approximate_mean_seconds": 0.008118637837469578,
+      "approximate_residual": 7.126079140107322e-07,
+      "approximate_speedup": 6.665161532998498,
+      "bond": 256,
+      "dimension": 512,
+      "exact_driver": "gesvd",
+      "exact_mean_seconds": 0.054112032614648344,
+      "exact_residual": 3.3884823551488807e-06
+    },
+    {
+      "approximate_driver": "gesvda",
+      "approximate_mean_seconds": 0.01970776226371527,
+      "approximate_residual": 6.536657792821643e-07,
+      "approximate_speedup": 11.118692062358383,
+      "bond": 512,
+      "dimension": 1024,
+      "exact_driver": "gesvd",
+      "exact_mean_seconds": 0.21912453984841704,
+      "exact_residual": 4.767075097333873e-06
+    }
+  ],
+  "source_commit": "8eb8657dfaeb3e48fc5394078ee5cba3c033a522",
+  "source_tree_dirty": false,
+  "warmups": 2,
+  "world_size": 1
+}

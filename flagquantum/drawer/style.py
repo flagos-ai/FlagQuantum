@@ -1,20 +1,11 @@
-# Copyright 2026 FlagOS Contributors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """
 Drawing style management
 """
+
+from collections.abc import Callable
+from functools import wraps
+
+from ..core.runtime_config import get_runtime_config, set_runtime_config
 
 _has_mpl = True
 try:
@@ -24,8 +15,9 @@ except (ModuleNotFoundError, ImportError):
     plt = None
 
 
-def _needs_mpl(func):
-    def wrapper():
+def _needs_mpl(func: Callable[[], None]) -> Callable[[], None]:
+    @wraps(func)
+    def wrapper() -> None:
         if not _has_mpl:
             raise ImportError(
                 "The drawer style module requires matplotlib. "
@@ -37,7 +29,7 @@ def _needs_mpl(func):
 
 
 @_needs_mpl
-def _black_white():
+def _black_white() -> None:
     """Black and white style - suitable for printing"""
     plt.rcParams["savefig.facecolor"] = "white"
     plt.rcParams["figure.facecolor"] = "white"
@@ -53,7 +45,7 @@ def _black_white():
 
 
 @_needs_mpl
-def _black_white_dark():
+def _black_white_dark() -> None:
     """Black and white dark style"""
     almost_black = "#151515"
     plt.rcParams["savefig.facecolor"] = almost_black
@@ -68,7 +60,7 @@ def _black_white_dark():
 
 
 @_needs_mpl
-def _sketch():
+def _sketch() -> None:
     """Hand-drawn sketch style"""
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["savefig.facecolor"] = "white"
@@ -84,7 +76,7 @@ def _sketch():
 
 
 @_needs_mpl
-def _flagquantum():
+def _flagquantum() -> None:
     """FlagQuantum signature style"""
     almost_black = "#151515"
     plt.rcParams["figure.facecolor"] = "white"
@@ -101,14 +93,14 @@ def _flagquantum():
 
 
 @_needs_mpl
-def _flagquantum_sketch():
+def _flagquantum_sketch() -> None:
     """FlagQuantum hand-drawn sketch style"""
     _flagquantum()
     plt.rcParams["path.sketch"] = (1, 250, 1)
 
 
 @_needs_mpl
-def _sketch_dark():
+def _sketch_dark() -> None:
     """Hand-drawn dark sketch style"""
     almost_black = "#151515"
     plt.rcParams["figure.facecolor"] = almost_black
@@ -125,7 +117,7 @@ def _sketch_dark():
 
 
 @_needs_mpl
-def _solarized_light():
+def _solarized_light() -> None:
     """Solarized light theme"""
     plt.rcParams["savefig.facecolor"] = "#fdf6e3"
     plt.rcParams["figure.facecolor"] = "#fdf6e3"
@@ -140,7 +132,7 @@ def _solarized_light():
 
 
 @_needs_mpl
-def _solarized_dark():
+def _solarized_dark() -> None:
     """Solarized dark theme"""
     plt.rcParams["savefig.facecolor"] = "#002b36"
     plt.rcParams["figure.facecolor"] = "#002b36"
@@ -167,27 +159,24 @@ _STYLES_MAP = {
     "default": _needs_mpl(lambda: plt.style.use("default")),
 }
 
-_current_style = _black_white
 
-
-def available_styles():
+def available_styles() -> tuple[str, ...]:
     """Get all available styles"""
     return tuple(_STYLES_MAP.keys())
 
 
-def use_style(style: str):
-    """Set the global drawing style"""
-    global _current_style
+def use_style(style: str) -> None:
+    """Select drawing style in the current task context."""
     if style in _STYLES_MAP:
-        _current_style = _STYLES_MAP[style]
+        set_runtime_config(get_runtime_config().with_overrides(drawing_style=style))
     else:
         raise ValueError(f"Unknown style: {style}. Available: {available_styles()}")
 
 
-def _apply_style(style: str = None):
+def _apply_style(style: str | None = None) -> None:
     """Apply style (for internal use)"""
     if style is None:
-        _current_style()
+        _STYLES_MAP[get_runtime_config().drawing_style]()
     elif style in _STYLES_MAP:
         _STYLES_MAP[style]()
     else:

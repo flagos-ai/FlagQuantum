@@ -1,0 +1,46 @@
+{
+  "benchmark": "mps_single_node_certification_preflight",
+  "benchmark_evidence_class": "non_release_smoke",
+  "blockers": [
+    "FQ_EVIDENCE_SIGNING_KEY is not configured"
+  ],
+  "claim_evidence_type": "plan_preflight",
+  "commands": [
+    "python -m torch.distributed.run --standalone --nproc-per-node=1 benchmarks/internal/evidence/mps_training_acceptance.py --output benchmarks/results/smoke/release_candidates/mps_single_node/1gpu-adam.json --family variable_bond_training --scaling-mode strong --n-wires 16 --layers 4 --max-bond 64 --warmup 5 --repetitions 20 --gradient-policy exact",
+    "python -m torch.distributed.run --standalone --nproc-per-node=2 benchmarks/internal/evidence/mps_training_acceptance.py --output benchmarks/results/smoke/release_candidates/mps_single_node/2gpu-adam.json --family variable_bond_training --scaling-mode strong --n-wires 16 --layers 4 --max-bond 64 --warmup 5 --repetitions 20 --gradient-policy exact",
+    "python -m torch.distributed.run --standalone --nproc-per-node=4 benchmarks/internal/evidence/mps_training_acceptance.py --output benchmarks/results/smoke/release_candidates/mps_single_node/4gpu-adam.json --family variable_bond_training --scaling-mode strong --n-wires 16 --layers 4 --max-bond 64 --warmup 5 --repetitions 20 --gradient-policy exact",
+    "python -m torch.distributed.run --standalone --nproc-per-node=8 benchmarks/internal/evidence/mps_training_acceptance.py --output benchmarks/results/smoke/release_candidates/mps_single_node/8gpu-adam.json --family variable_bond_training --scaling-mode strong --n-wires 16 --layers 4 --max-bond 64 --warmup 5 --repetitions 20 --gradient-policy exact"
+  ],
+  "cuda_available": true,
+  "detected_gpu_count": 8,
+  "device_names": [
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB",
+    "NVIDIA A800-SXM4-80GB"
+  ],
+  "distribution_semantics": "preflight_only",
+  "non_release_evidence": true,
+  "nccl_available": true,
+  "ready": false,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "preflight evidence is not a measured scalability result"
+  ],
+  "required_gpu_count": 8,
+  "required_world_sizes": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_single_node_certification_preflight.v1",
+  "signing_key_present": false,
+  "source_commit": "5c08b45c5466a3cc262b7b10300e0fe12dc738b6",
+  "source_tree_dirty": false
+}

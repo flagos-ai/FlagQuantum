@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_and_verified",
+  "approval": {
+    "approved_at": "2026-09-09",
+    "approved_by": "API owner via explicit user directive"
+  },
+  "public_signature_changes": [],
+  "supported_request": {
+    "provider": "quafu",
+    "output_count": 1,
+    "output_kind": "expectation",
+    "observable": "real weighted sum of Pauli products",
+    "shots_semantics": "per_measurement_group"
+  },
+  "rules": {
+    "compile_source_once": true,
+    "preserve_target_qubits_across_groups": true,
+    "reuse_qubit_wise_commuting_groups": true,
+    "seal_each_deployment_package": true,
+    "report_estimator_standard_error": true,
+    "preserve_provider_evidence": true,
+    "implicit_fallback": false,
+    "remote_autograd": false,
+    "unsupported_outputs_fail_before_submission": true
+  }
+}

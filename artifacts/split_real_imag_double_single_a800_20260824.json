@@ -1,0 +1,105 @@
+{
+  "schema": "flagquantum_split_real_imag_double_single_a800_evidence_v1",
+  "recorded_on": "2026-08-24",
+  "status": "passed",
+  "source": {
+    "revision": "4e8c67c7026e4b080eb4cb1c26e7b6e40f66fa1b",
+    "archive_sha256": "aba47e301f703d7f79d636a5d4a0120dea12dca50501a462293b636ecafa3300",
+    "tree_dirty": false
+  },
+  "hardware": {
+    "host": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "driver_version": "580.126.20",
+    "visible_gpu_count": 8,
+    "validation_gpu_count": 1
+  },
+  "operator_profile": {
+    "name": "split_real_imag_statevector_p3_double_single",
+    "sha256": "0ccd4d210f02e442338cef95d29cd26559608c8bd2410836de66979628d119a0"
+  },
+  "matrix": {
+    "depths": [8, 32, 128],
+    "seeds": [0, 7]
+  },
+  "thresholds": {
+    "max_state_absolute_error": 1e-10,
+    "max_state_infidelity": 1e-10,
+    "max_norm_drift": 1e-10,
+    "max_expectation_absolute_error": 1e-10,
+    "max_gradient_relative_error": 1e-8,
+    "min_expectation_improvement_factor": 100.0,
+    "min_gradient_improvement_factor": 100.0
+  },
+  "environment": {
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
+    "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "flagos_image_id": "sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_source_archive_sha256": "cde803ab5d5f4d8cdd9a730215ffd8b4d0f98ef8de7c808296ca2b61e5e47444",
+    "torch_fl_package": "0.1.0",
+    "torch_fl_wheel_sha256": "259d1664d8b8492695e28ad3051913913114fe33024fa422a38eec9c6a22c16b",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "FLAGOS_BUILD_JOBS": "8",
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+    }
+  },
+  "routes": [
+    {
+      "name": "native_cuda",
+      "status": "passed",
+      "device": "cuda:0",
+      "provider": "pytorch_cuda",
+      "torch_version": "2.13.0+cu130",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "7a590a80663379699148956e38b977b7998fffc0b5670715695170204e728077",
+      "logical_device_residency": true,
+      "host_gate_encoding": true,
+      "state_host_fallback": false
+    },
+    {
+      "name": "torch_fl_flagos",
+      "status": "passed",
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "torch_version": "2.11.0+cu130",
+      "torch_fl_package": "0.1.0",
+      "raw_result_sha256": "628ae039914451f03aa30bdb5a0edefd7337f49b30ad7e001f84645c6ca9c405",
+      "logical_device_residency": true,
+      "host_gate_encoding": true,
+      "state_host_fallback": false,
+      "provider_internal_route_audited": false,
+      "opt_in_integration_test": "passed"
+    }
+  ],
+  "cases": [
+    {"depth": 8, "seed": 0, "max_state_abs_error": 2.2744441032640757e-15, "state_infidelity": 0.0, "norm_drift": 6.661338147750939e-16, "expectation_abs_error": 1.7208456881689926e-15, "p2_expectation_abs_error": 8.759353681275783e-08, "expectation_improvement_factor": 50901447.70967742, "gradient_relative_error": 1.2627564024276611e-14, "p2_gradient_relative_error": 9.475696624205413e-08, "gradient_improvement_factor": 7503978.285905577, "passed": true},
+    {"depth": 8, "seed": 7, "max_state_abs_error": 7.781269559886978e-15, "state_infidelity": 2.220446049250313e-16, "norm_drift": 6.439293542825908e-15, "expectation_abs_error": 3.3861802251067274e-15, "p2_expectation_abs_error": 6.500962640432206e-08, "expectation_improvement_factor": 19198513.393442623, "gradient_relative_error": 1.4979598365540223e-14, "p2_gradient_relative_error": 2.213333632595844e-07, "gradient_improvement_factor": 14775654.050161328, "passed": true},
+    {"depth": 32, "seed": 0, "max_state_abs_error": 9.255725007488893e-15, "state_infidelity": 2.220446049250313e-16, "norm_drift": 1.4432899320127035e-15, "expectation_abs_error": 9.769962616701378e-15, "p2_expectation_abs_error": 1.1258108467693262e-07, "expectation_improvement_factor": 11523184.795454545, "gradient_relative_error": 3.9319284672073064e-14, "p2_gradient_relative_error": 2.5485265952809666e-07, "gradient_improvement_factor": 6481619.939263759, "passed": true},
+    {"depth": 32, "seed": 7, "max_state_abs_error": 1.0374386663324176e-14, "state_infidelity": 2.220446049250313e-16, "norm_drift": 0.0, "expectation_abs_error": 1.326716514427062e-14, "p2_expectation_abs_error": 2.936766252958911e-07, "expectation_improvement_factor": 22135597.32635983, "gradient_relative_error": 7.817200824847969e-15, "p2_gradient_relative_error": 5.650806465724743e-07, "gradient_improvement_factor": 72286827.37384634, "passed": true},
+    {"depth": 128, "seed": 0, "max_state_abs_error": 2.8254276223685703e-14, "state_infidelity": 0.0, "norm_drift": 4.6629367034256575e-15, "expectation_abs_error": 2.0164425684754406e-14, "p2_expectation_abs_error": 3.233746865144438e-07, "expectation_improvement_factor": 16036890.490708878, "gradient_relative_error": 6.041130653975754e-14, "p2_gradient_relative_error": 6.2445149426924624e-06, "gradient_improvement_factor": 103366659.32862847, "passed": true},
+    {"depth": 128, "seed": 7, "max_state_abs_error": 1.891070620383694e-14, "state_infidelity": 2.220446049250313e-16, "norm_drift": 2.220446049250313e-16, "expectation_abs_error": 1.1823875212257917e-14, "p2_expectation_abs_error": 6.832072110829479e-07, "expectation_improvement_factor": 57782004.53051643, "gradient_relative_error": 1.6245320712757028e-13, "p2_gradient_relative_error": 3.348660479338654e-06, "gradient_improvement_factor": 20613077.07338174, "passed": true}
+  ],
+  "claims": {
+    "maturity": "experimental",
+    "validation_scope": "cuda_and_flagos_portability_reference",
+    "distribution_semantics": "single_device_fast_path",
+    "full_state_double_single": true,
+    "host_gate_encoding": true,
+    "state_host_fallback": false,
+    "device_only_double_single_trigonometry": false,
+    "convergence_certification": false,
+    "hardware_certification": false,
+    "domestic_accelerator_certification": false,
+    "provider_internal_route_audited": false,
+    "scalability_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "production_claim_allowed": false
+  }
+}

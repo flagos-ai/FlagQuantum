@@ -1,0 +1,141 @@
+{
+  "schema": "flagquantum.program_artifact_v2_candidate_contract",
+  "status": "approved_artifact_to_artifact_compilation_complete",
+  "approved_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
+  "envelope_schema": "flagquantum.program_artifact",
+  "version": "2.0",
+  "initial_kinds": ["circuit", "executable"],
+  "top_level_fields": [
+    "schema", "version", "kind", "producer", "profile", "payload",
+    "payload_sha256", "circuit_content_hash", "requirements", "target",
+    "compilation", "parameter_schema", "result_schema", "artifact_identity"
+  ],
+  "profiles": {
+    "circuit-ir-1.0": {
+      "kind": "circuit",
+      "media_type": "application/vnd.flagquantum.circuit-ir+json;version=1.0",
+      "encoding": "canonical-json",
+      "payload": "strict_circuit_ir_to_dict",
+      "requirements": null,
+      "target": null,
+      "compilation": null,
+      "result_schema": null
+    },
+    "openqasm-2.0": {
+      "kind": "executable",
+      "media_type": "text/x-openqasm;version=2.0;charset=utf-8",
+      "encoding": "utf-8"
+    },
+    "openqasm-3.0": {
+      "kind": "executable",
+      "media_type": "text/x-openqasm;version=3.0;charset=utf-8",
+      "encoding": "utf-8"
+    },
+    "qcis-1.0": {
+      "kind": "executable",
+      "media_type": "text/x-qcis;version=1.0;charset=utf-8",
+      "encoding": "utf-8"
+    }
+  },
+  "payload_hash_encoding": {
+    "circuit-ir-1.0": "canonical_json_utf8",
+    "executable_text_profiles": "exact_text_utf8"
+  },
+  "identity_fields": {
+    "payload": "payload_sha256",
+    "final_circuit": "circuit_content_hash",
+    "target": "target.snapshot_id_when_executable",
+    "compilation": [
+      "target_legalization_identity", "schedule_identity",
+      "emission_identity", "conformance_identity"
+    ],
+    "envelope": "artifact_identity"
+  },
+  "artifact_identity_encoding": {
+    "algorithm": "sha256",
+    "input": "all_top_level_fields_except_artifact_identity",
+    "character_encoding": "utf-8",
+    "sort_keys": true,
+    "separators": [",", ":"],
+    "ensure_ascii": true,
+    "allow_nan": false
+  },
+  "requirements": {
+    "circuit-ir-1.0": null,
+    "executable_text_profiles": "canonical_core_requirement_set"
+  },
+  "parameter_schema": {
+    "circuit-ir-1.0": {
+      "binding": ["fully_bound", "symbolic"],
+      "parameters": "sorted_names_derived_from_circuit_ir"
+    },
+    "executable_text_profiles": {
+      "binding": "fully_bound",
+      "parameters": []
+    }
+  },
+  "result_schema": {
+    "circuit-ir-1.0": null,
+    "executable_text_profiles": {
+      "kind": "samples",
+      "wires": "dense_zero_based_full_register",
+      "shots_source": "execution_request"
+    }
+  },
+  "limits": {
+    "maximum_payload_utf8_bytes": 16777216,
+    "maximum_envelope_utf8_bytes": 18874368,
+    "maximum_nesting_depth": 8,
+    "maximum_total_entries": 4096,
+    "maximum_non_payload_string_utf8_bytes": 4096
+  },
+  "prohibited_content_scope": "structured_fields_outside_profile_validated_payload",
+  "prohibited_content": [
+    "credentials", "tokens", "secrets", "private_keys",
+    "account_or_tenant_state", "provider_sdk_objects", "live_handles",
+    "job_ids_or_queue_state", "callback_urls", "local_file_paths",
+    "arbitrary_remote_urls", "mutable_calibration_objects"
+  ],
+  "excluded_request_fields": [
+    "shots", "seed", "timeout", "priority", "mitigation_policy",
+    "result_delivery"
+  ],
+  "v1_circuit_migration": {
+    "source_kind": "circuit",
+    "required_empty_fields": [
+      "metadata", "required_capabilities", "parent_hashes"
+    ],
+    "payload_validation": "flagquantum.core.ir.CircuitIR.from_dict",
+    "destination_profile": "circuit-ir-1.0",
+    "other_v1_artifacts": "readable_but_automatic_migration_fails_closed"
+  },
+  "write_policy_after_approval": {
+    "new_artifacts": "v2_only",
+    "v1": "read_only_compatibility"
+  },
+  "compatibility": {
+    "v1_reader_unchanged": true,
+    "v1_content_hash_unchanged": true,
+    "explicit_version_dispatch": true,
+    "implicit_upgrade": false,
+    "implicit_downgrade": false,
+    "reinterpret_v1_metadata": false,
+    "old_reader_accepts_v2": false
+  },
+  "implementation": {
+    "authorized": true,
+    "core_schema_changed": true,
+    "core_v1_migrator_added": true,
+    "compiler_adapter_added": true,
+    "runtime_adapter_added": true,
+    "deployment_adapter_added": true,
+    "local_circuit_execution_added": true,
+    "local_target_text_execution_added": false,
+    "explicit_circuit_binding_added": true,
+    "trainable_tensor_artifact_binding_added": false,
+    "artifact_to_artifact_compilation_added": true,
+    "public_export_added": false
+  }
+}

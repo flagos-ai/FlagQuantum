@@ -1,0 +1,53 @@
+{
+  "schema": "flagquantum.artifact_public_lifecycle_candidate",
+  "version": "1.0",
+  "status": "approved_experimental_read_only_complete",
+  "proposed_on": "2026-09-10",
+  "approved_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE",
+  "initial_namespace": "flagquantum.experimental.artifacts",
+  "initial_lifecycle": "experimental_read_only",
+  "approved_symbols": [
+    "ProgramArtifact",
+    "CompilationEvidence",
+    "load_program_artifact",
+    "dump_program_artifact",
+    "load_compilation_evidence",
+    "dump_compilation_evidence"
+  ],
+  "concrete_version_classes_public": false,
+  "returns_frozen_role_view": true,
+  "core_dispatch_authoritative": true,
+  "canonical_bytes_changed": false,
+  "stable_root_exports_changed": false,
+  "default_path_changed": false,
+  "authorized_operations": [
+    "load_supported_json_text",
+    "inspect_common_portable_fields",
+    "dump_exact_canonical_json"
+  ],
+  "lifecycle_states": [
+    "experimental_read_only",
+    "stable_read_only_candidate",
+    "stable_workflow_candidate"
+  ],
+  "later_approval_required": [
+    "stable_namespace_promotion",
+    "artifact_construction_or_binding",
+    "compiler_workflow",
+    "runtime_verification_workflow",
+    "deployment_workflow",
+    "target_capability_public_contract",
+    "provider_binding_or_submission",
+    "qec_or_fault_tolerant_semantics"
+  ],
+  "implementation": {
+    "authorized": true,
+    "experimental_domain_added": true,
+    "role_views_added": true,
+    "loaders_added": true,
+    "dumpers_added": true,
+    "stable_exports_added": false
+  }
+}

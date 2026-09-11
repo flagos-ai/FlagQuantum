@@ -1,0 +1,158 @@
+{
+  "benchmark": "noise_selector_a800_calibrated_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "calibration_device": "NVIDIA A800-SXM4-80GB",
+  "candidates": [
+    {
+      "eligible": false,
+      "estimated_memory_bytes": 524288,
+      "evolution": "exact_channel",
+      "exact_quantum_channel": true,
+      "fits_memory": true,
+      "metadata": {
+        "calibrated_estimated_seconds": 3.3985397573560476,
+        "calibration_match": true,
+        "calibration_record": {
+          "depth": 8,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "executed_trajectories": null,
+          "median_seconds": 3.3985397573560476,
+          "torch_version": "2.13.0+cu130",
+          "world_size": 1
+        }
+      },
+      "mode": "density_matrix",
+      "reasons": [
+        "small_system_correctness_oracle"
+      ],
+      "rejection_reasons": [
+        "trajectory_execution_explicitly_requested"
+      ],
+      "representation": "density_matrix",
+      "sampling_error": false,
+      "truncation_error": false
+    },
+    {
+      "eligible": true,
+      "estimated_memory_bytes": 786432,
+      "evolution": "quantum_trajectory",
+      "exact_quantum_channel": false,
+      "fits_memory": true,
+      "metadata": {
+        "calibrated_estimated_seconds": 1.2563700474856887,
+        "calibration_match": true,
+        "calibration_record": {
+          "depth": 8,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "executed_trajectories": 128,
+          "median_seconds": 1.6081536607816815,
+          "torch_version": "2.13.0+cu130",
+          "world_size": 1
+        },
+        "estimated_trajectories_to_target": 100,
+        "target_feasible_within_cap": true,
+        "trajectory_batch_size": 64,
+        "trajectory_cap": 128,
+        "trajectory_estimate_basis": "bounded_pauli_variance_le_one",
+        "workspace_factor": 6,
+        "world_size": 1
+      },
+      "mode": "noisy_statevector",
+      "reasons": [
+        "general_dense_circuit_trajectory_path"
+      ],
+      "rejection_reasons": [],
+      "representation": "statevector",
+      "sampling_error": true,
+      "truncation_error": false
+    },
+    {
+      "eligible": true,
+      "estimated_memory_bytes": 32768,
+      "evolution": "quantum_trajectory",
+      "exact_quantum_channel": false,
+      "fits_memory": true,
+      "metadata": {
+        "calibrated_estimated_seconds": 166.5262117923703,
+        "calibration_match": true,
+        "calibration_record": {
+          "depth": 8,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "executed_trajectories": 8,
+          "median_seconds": 13.322096943389624,
+          "torch_version": "2.13.0+cu130",
+          "world_size": 1
+        },
+        "cutoff": 0.0,
+        "estimated_trajectories_to_target": 100,
+        "max_bond": null,
+        "target_feasible_within_cap": true,
+        "trajectory_cap": 128,
+        "trajectory_estimate_basis": "bounded_pauli_variance_le_one",
+        "world_size": 1
+      },
+      "mode": "noisy_mps",
+      "reasons": [
+        "compressed_state_fallback"
+      ],
+      "rejection_reasons": [],
+      "representation": "mps",
+      "sampling_error": true,
+      "truncation_error": true
+    }
+  ],
+  "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "estimated_trajectories_to_target": 100,
+  "maximum_kraus_rank": 4,
+  "memory_limit_bytes": 85899345920,
+  "noise_event_count": 120,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "planner": "noise_execution_selection_v1",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noise_execution_selection_evidence.v1",
+  "selected_candidate": {
+    "eligible": true,
+    "estimated_memory_bytes": 786432,
+    "evolution": "quantum_trajectory",
+    "exact_quantum_channel": false,
+    "fits_memory": true,
+    "metadata": {
+      "calibrated_estimated_seconds": 1.2563700474856887,
+      "calibration_match": true,
+      "calibration_record": {
+        "depth": 8,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "executed_trajectories": 128,
+        "median_seconds": 1.6081536607816815,
+        "torch_version": "2.13.0+cu130",
+        "world_size": 1
+      },
+      "estimated_trajectories_to_target": 100,
+      "target_feasible_within_cap": true,
+      "trajectory_batch_size": 64,
+      "trajectory_cap": 128,
+      "trajectory_estimate_basis": "bounded_pauli_variance_le_one",
+      "workspace_factor": 6,
+      "world_size": 1
+    },
+    "mode": "noisy_statevector",
+    "reasons": [
+      "general_dense_circuit_trajectory_path"
+    ],
+    "rejection_reasons": [],
+    "representation": "statevector",
+    "sampling_error": true,
+    "truncation_error": false
+  },
+  "selected_mode": "noisy_statevector",
+  "selection_basis": "exact_device_calibration",
+  "target_feasible_within_cap": true,
+  "target_standard_error": 0.1
+}

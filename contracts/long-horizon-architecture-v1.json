@@ -1,0 +1,138 @@
+{
+  "schema": "flagquantum.long_horizon_architecture",
+  "version": "1.1",
+  "status": "candidate",
+  "shared_contract_owner": "core",
+  "stable_contracts": [
+    "program_artifact",
+    "target_capabilities",
+    "execution_request",
+    "execution_result"
+  ],
+  "execution_modes": ["job", "session", "realtime_session", "workflow"],
+  "compute_boundaries": {
+    "direct": ["cpu", "accelerator", "communication"],
+    "remote": ["qpu", "accelerator_service", "hpc_service", "cloud_service"]
+  },
+  "domains": {
+    "core": {"may_depend_on": []},
+    "compiler": {"may_depend_on": ["core"]},
+    "runtime": {"may_depend_on": ["core"]},
+    "simulation": {"may_depend_on": ["core", "noise"]},
+    "noise": {"may_depend_on": ["core"]},
+    "compute": {"may_depend_on": ["core", "vendor_runtime"]},
+    "remote": {"may_depend_on": ["core", "deployment", "external_sdk"]},
+    "twin": {
+      "may_depend_on": ["core", "noise", "simulation_public_api", "remote_qpu_public_api"]
+    },
+    "ecosystem": {"may_depend_on": ["core", "public_api"]},
+    "services": {
+      "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
+    },
+    "gateways": {"repository": "external", "may_depend_on": ["services", "public_api"]}
+  },
+  "migration_tracks": [
+    {
+      "name": "core_contracts",
+      "owner": "core-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": [
+        "flagquantum/core",
+        "flagquantum/runtime",
+        "flagquantum/compute/contracts.py",
+        "flagquantum/deployment/cloud.py"
+      ],
+      "target_authority": "flagquantum/core",
+      "compatibility_adapter": "stable Runtime projections and provider-local protocols",
+      "completion_evidence": "portable cross-domain program, capability, audit request/result/evidence, and provider contracts are Core-owned; stable Runtime objects project through tested boundaries",
+      "retirement_condition": "duplicate private contract definitions have no importers and provider-local protocols no longer define cross-domain semantics",
+      "status": "in_progress"
+    },
+    {
+      "name": "compiler_convergence",
+      "owner": "compiler-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": ["flagquantum/compiler"],
+      "target_authority": "flagquantum/compiler",
+      "compatibility_adapter": "Runtime compiler call boundary",
+      "completion_evidence": "one pipeline can be replaced without Runtime or user API changes",
+      "retirement_condition": "all supported compiler entry points delegate to the target facade and legacy internal imports reach zero",
+      "status": "complete"
+    },
+    {
+      "name": "simulation_extraction",
+      "owner": "simulation-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": ["flagquantum/simulation"],
+      "target_authority": "flagquantum/simulation",
+      "compatibility_adapter": "Runtime execution-provider adapter",
+      "completion_evidence": "a real engine and a contract fake pass the same conformance suite without Runtime consumer changes",
+      "retirement_condition": "numerical algorithm ownership under runtime/executors reaches zero",
+      "status": "complete"
+    },
+    {
+      "name": "compute_convergence",
+      "owner": "platform-maintainers",
+      "target_milestone": "vnext-phase-3",
+      "current_authority": ["flagquantum/compute"],
+      "target_authority": "flagquantum/compute",
+      "compatibility_adapter": "PlatformRuntime contract",
+      "completion_evidence": "two platform implementations pass capability, precision, communication, fallback, and replacement tests",
+      "retirement_condition": "no general-purpose module imports a concrete vendor runtime",
+      "status": "in_progress"
+    },
+    {
+      "name": "remote_convergence",
+      "owner": "runtime-provider-maintainers",
+      "target_milestone": "vnext-phase-3",
+      "current_authority": ["flagquantum/remote", "flagquantum/runtime/executors", "flagquantum/deployment"],
+      "target_authority": "flagquantum/remote",
+      "compatibility_adapter": "Runtime provider facade",
+      "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",
+      "retirement_condition": "backend selection and vendor result decoding exist only behind execution-provider contracts",
+      "status": "in_progress"
+    },
+    {
+      "name": "twin_convergence",
+      "owner": "twin-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["FlagQuantum-qpu-digital-twin/flagquantum"],
+      "target_authority": "flagquantum/twin",
+      "compatibility_adapter": "none",
+      "completion_evidence": "a frozen calibration produces a prediction and an identity-bound hardware validation report through existing Noise, Simulation, and Remote public boundaries",
+      "retirement_condition": "only independently reviewed models leave the research worktree and no stage-numbered research module becomes a public API",
+      "status": "in_progress"
+    },
+    {
+      "name": "ecosystem_convergence",
+      "owner": "ecosystem-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["flagquantum/ecosystem"],
+      "target_authority": "flagquantum/ecosystem",
+      "compatibility_adapter": "none",
+      "completion_evidence": "external objects are converted at the boundary and round-trip conformance tests pass",
+      "retirement_condition": "external framework objects no longer cross into Core, Compiler, Runtime, or Simulation",
+      "status": "in_progress"
+    },
+    {
+      "name": "service_gateway_separation",
+      "owner": "application-service-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["flagquantum/services"],
+      "target_authority": "focused application workflows in FlagQuantum; protocol gateways at the system edge",
+      "compatibility_adapter": "none",
+      "completion_evidence": "local SDK and Services pass with the MCP SDK absent; protocol adapters call public APIs or composite services",
+      "retirement_condition": "the main repository has no production MCP transport dependency",
+      "status": "in_progress"
+    }
+  ],
+  "future_extensions": [
+    "fault_tolerance",
+    "pulse_control",
+    "realtime_feedback",
+    "multi_qpu",
+    "quantum_network",
+    "domestic_accelerators",
+    "protocol_adapters"
+  ]
+}

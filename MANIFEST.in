@@ -1,0 +1,13 @@
+prune tests
+prune benchmarks
+prune examples
+prune .fq_jax_cache
+prune .pytest_cache
+global-exclude *.py[cod]
+global-exclude *.parquet
+global-exclude *.ipynb
+global-exclude *.onnx
+global-exclude *.ckpt
+global-exclude *.safetensors
+global-exclude *.pt
+global-exclude *.pth

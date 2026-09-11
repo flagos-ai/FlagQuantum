@@ -1,0 +1,72 @@
+{
+  "schema": "flagquantum_quafu_live_execution_evidence_v1",
+  "evidence_class": "development_evidence",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "source_revision": "a24328ff406739baf93a8cc69acd85720abc768b",
+  "golden_path_merge_revision": "4e94976575310568b52135b1e458b3d40744a42e",
+  "working_tree_clean": false,
+  "execution_source_sha256": {
+    "flagquantum/_api.py": "2a5470264ea41bf7bb3b86d389f16e1cc47419627d3b35857f77a322e668a186",
+    "flagquantum/remote/qpu/quafu.py": "997bbcb7039d4d65bbc848cf1b7f044ec336152c3dad675d5f5ff14874475094"
+  },
+  "compiler_plugin": {
+    "distribution": "flagquantum-compiler-qsteed",
+    "revision": "a5142274c6730e718e56708e7cfe9165cb6f6485",
+    "extension_sha256": "7bfe8800e12ddefb0176aa353808e3117d99b85b1936798c87b6b8e5b353b58b",
+    "qsteed_revision": "46584efde731aea9eec27b5466919b76fe5f3184"
+  },
+  "provider": "quafu",
+  "backend": "Dongling",
+  "calibration": {
+    "timestamp": "2026-09-10 16:27:44",
+    "physical_qubits": [4, 10],
+    "coupler": "C7",
+    "coupler_fidelity": 0.984
+  },
+  "task": {
+    "name": "flagquantum_vnext_golden_path",
+    "task_id": "2609101827285200448",
+    "status": "Finished",
+    "created": "2026-09-10 18:27:29.892235",
+    "finished": "2026-09-10 18:27:31.859412",
+    "shots": 1024,
+    "client_elapsed_seconds": 5.371
+  },
+  "program": {
+    "description": "Two-qubit Bell circuit",
+    "public_entry": "fq.run",
+    "compiler": "qsteed",
+    "target": "quafu:Dongling",
+    "target_qubits": [4, 10]
+  },
+  "submission": {
+    "compiler": null,
+    "routing_evidence_sha256": "34cd0a490e1061bafe627750c5f4476a441ac0fdfb2434017a6c1417c3b70f1b",
+    "deployment_artifact_sha256": "53abbb342417e5812540e8fd851b0494beda54811d9e2ee1f1a7cfa230438893"
+  },
+  "provider_result": {
+    "physical_qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[11];\ncreg c[2];\nh q[4];\ncx q[4],q[10];\nbarrier q[4],q[10];\nmeasure q[4] -> c[0];\nmeasure q[10] -> c[1];",
+    "physical_operations": [
+      ["H", "Q4"],
+      ["Cnot", ["Q4", "Q10"]],
+      ["Barrier", ["Q4", "Q10"]],
+      [["Measure", 0], "Q4"],
+      [["Measure", 1], "Q10"]
+    ],
+    "counts": {"00": 452, "01": 88, "10": 55, "11": 429},
+    "reported_error": ""
+  },
+  "checks": {
+    "compiler_preflight_completed_before_submission": true,
+    "requested_mapping_preserved_by_compiler": true,
+    "provider_result_uses_requested_physical_qubits": true,
+    "receipt_identity_preserved_in_result": true,
+    "shot_accounting_matches": true
+  },
+  "limitations": [
+    "This is one live development run, not release certification or a statistical hardware-quality claim.",
+    "The integration checkout contained unrelated in-progress changes, so exact execution files are identified by SHA-256 rather than attributed solely to the Git revision.",
+    "Quafu exposes the final physical circuit after submission, so platform-side circuit confirmation remains post-execution diagnostic evidence."
+  ]
+}

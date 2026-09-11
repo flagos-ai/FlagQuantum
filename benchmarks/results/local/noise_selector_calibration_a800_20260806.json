@@ -1,0 +1,404 @@
+{
+  "benchmark": "noise_selector_calibration_a800_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "non_release_evidence": true,
+  "records": [
+    {
+      "channel_count": 32,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 9318912,
+      "median_seconds": 0.4408539687283337,
+      "mode": "noisy_statevector",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.44169224984943867,
+        0.44001568760722876
+      ]
+    },
+    {
+      "channel_count": 32,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": null,
+      "max_cuda_peak_allocated_bytes": 11146752,
+      "median_seconds": 0.9170086192898452,
+      "mode": "density_matrix",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.9185513816773891,
+        0.9154658569023013
+      ]
+    },
+    {
+      "channel_count": 32,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": 8,
+      "max_cuda_peak_allocated_bytes": 15094272,
+      "median_seconds": 2.910105333663523,
+      "mode": "noisy_mps",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        2.9847575025632977,
+        2.8354531647637486
+      ]
+    },
+    {
+      "channel_count": 60,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 10365952,
+      "median_seconds": 0.8098292322829366,
+      "mode": "noisy_statevector",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        0.8108241409063339,
+        0.8088343236595392
+      ]
+    },
+    {
+      "channel_count": 60,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": null,
+      "max_cuda_peak_allocated_bytes": 11146752,
+      "median_seconds": 1.6973375882953405,
+      "mode": "density_matrix",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        1.6986880786716938,
+        1.6959870979189873
+      ]
+    },
+    {
+      "channel_count": 60,
+      "circuit_digest": "b2856a457a045d0d466df2f84174bbcf77502cd945f40ed5f41dc749f0803b5b",
+      "depth": 4,
+      "executed_trajectories": 8,
+      "max_cuda_peak_allocated_bytes": 15094272,
+      "median_seconds": 6.647115611936897,
+      "mode": "noisy_mps",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        6.649921986274421,
+        6.644309237599373
+      ]
+    },
+    {
+      "channel_count": 64,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 9319424,
+      "median_seconds": 0.8562477184459567,
+      "mode": "noisy_statevector",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.8551922235637903,
+        0.8573032133281231
+      ]
+    },
+    {
+      "channel_count": 64,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": null,
+      "max_cuda_peak_allocated_bytes": 11146752,
+      "median_seconds": 1.7891800883226097,
+      "mode": "density_matrix",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        1.7897021854296327,
+        1.7886579912155867
+      ]
+    },
+    {
+      "channel_count": 64,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": 8,
+      "max_cuda_peak_allocated_bytes": 15106048,
+      "median_seconds": 5.731646097265184,
+      "mode": "noisy_mps",
+      "n_wires": 8,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        5.731235219165683,
+        5.732056975364685
+      ]
+    },
+    {
+      "channel_count": 120,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 10365952,
+      "median_seconds": 1.6081536607816815,
+      "mode": "noisy_statevector",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        1.608872844837606,
+        1.6074344767257571
+      ]
+    },
+    {
+      "channel_count": 120,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": null,
+      "max_cuda_peak_allocated_bytes": 11146752,
+      "median_seconds": 3.3985397573560476,
+      "mode": "density_matrix",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        3.3932532966136932,
+        3.403826218098402
+      ]
+    },
+    {
+      "channel_count": 120,
+      "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+      "depth": 8,
+      "executed_trajectories": 8,
+      "max_cuda_peak_allocated_bytes": 15102464,
+      "median_seconds": 13.322096943389624,
+      "mode": "noisy_mps",
+      "n_wires": 8,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        13.311789049766958,
+        13.332404837012291
+      ]
+    },
+    {
+      "channel_count": 40,
+      "circuit_digest": "4cd24226ab5d64f629a2fd06665ab59d7701652b85c15ff2bcc38ca74620ff42",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 11685376,
+      "median_seconds": 0.5377968423999846,
+      "mode": "noisy_statevector",
+      "n_wires": 10,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.538540038280189,
+        0.5370536465197802
+      ]
+    },
+    {
+      "channel_count": 76,
+      "circuit_digest": "4cd24226ab5d64f629a2fd06665ab59d7701652b85c15ff2bcc38ca74620ff42",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 15877632,
+      "median_seconds": 1.0246767443604767,
+      "mode": "noisy_statevector",
+      "n_wires": 10,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        1.0242102267220616,
+        1.0251432619988918
+      ]
+    },
+    {
+      "channel_count": 80,
+      "circuit_digest": "568cf075e55bb33408bb7ce25b0af205d70b2186e382daaeeb3998046b5455cd",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 11685376,
+      "median_seconds": 1.0760191911831498,
+      "mode": "noisy_statevector",
+      "n_wires": 10,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        1.0761713413521647,
+        1.0758670410141349
+      ]
+    },
+    {
+      "channel_count": 152,
+      "circuit_digest": "568cf075e55bb33408bb7ce25b0af205d70b2186e382daaeeb3998046b5455cd",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 15877632,
+      "median_seconds": 2.043602205812931,
+      "mode": "noisy_statevector",
+      "n_wires": 10,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        2.0420079873874784,
+        2.0451964242383838
+      ]
+    },
+    {
+      "channel_count": 48,
+      "circuit_digest": "9c703ca698dd5efd023626b11dfb99eff3cc8b6622db3a19f045c89210bb8e83",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 21147648,
+      "median_seconds": 0.6510185310617089,
+      "mode": "noisy_statevector",
+      "n_wires": 12,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.6508321026340127,
+        0.6512049594894052
+      ]
+    },
+    {
+      "channel_count": 92,
+      "circuit_digest": "9c703ca698dd5efd023626b11dfb99eff3cc8b6622db3a19f045c89210bb8e83",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 37922816,
+      "median_seconds": 1.2430435493588448,
+      "mode": "noisy_statevector",
+      "n_wires": 12,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        1.2428045133128762,
+        1.2432825854048133
+      ]
+    },
+    {
+      "channel_count": 96,
+      "circuit_digest": "b8c258c2ff7484dfd89278eb78450fc14f92f4282978034d4d92c934a5c257d4",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 21147648,
+      "median_seconds": 1.2921768794767559,
+      "mode": "noisy_statevector",
+      "n_wires": 12,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        1.292718207463622,
+        1.2916355514898896
+      ]
+    },
+    {
+      "channel_count": 184,
+      "circuit_digest": "b8c258c2ff7484dfd89278eb78450fc14f92f4282978034d4d92c934a5c257d4",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 37922816,
+      "median_seconds": 2.477236069738865,
+      "mode": "noisy_statevector",
+      "n_wires": 12,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        2.4763185949996114,
+        2.4781535444781184
+      ]
+    },
+    {
+      "channel_count": 64,
+      "circuit_digest": "5c00bd582af32a8e88b5d8bee17c575602a8fcefdb620c41ea1c3ad2a8471efa",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 210383872,
+      "median_seconds": 0.9282327541150153,
+      "mode": "noisy_statevector",
+      "n_wires": 16,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        0.9285339582711458,
+        0.9279315499588847
+      ]
+    },
+    {
+      "channel_count": 124,
+      "circuit_digest": "5c00bd582af32a8e88b5d8bee17c575602a8fcefdb620c41ea1c3ad2a8471efa",
+      "depth": 4,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 478817280,
+      "median_seconds": 1.9572459738701582,
+      "mode": "noisy_statevector",
+      "n_wires": 16,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        1.9567860765382648,
+        1.9577058712020516
+      ]
+    },
+    {
+      "channel_count": 128,
+      "circuit_digest": "dcd0329172d750f4bd885d463a0f08ae4afc3a9f89d6ded300164a0e0701c1a8",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 210383872,
+      "median_seconds": 1.8531486736610532,
+      "mode": "noisy_statevector",
+      "n_wires": 16,
+      "noise_kind": "local",
+      "noise_model_identity": "59fcc7bb57a58b1da4653bcfe9b184d887d5ccf4393a733d428be11f9efe3277",
+      "repeat_seconds": [
+        1.8535476848483086,
+        1.8527496624737978
+      ]
+    },
+    {
+      "channel_count": 248,
+      "circuit_digest": "dcd0329172d750f4bd885d463a0f08ae4afc3a9f89d6ded300164a0e0701c1a8",
+      "depth": 8,
+      "executed_trajectories": 128,
+      "max_cuda_peak_allocated_bytes": 478817280,
+      "median_seconds": 3.9065657942555845,
+      "mode": "noisy_statevector",
+      "n_wires": 16,
+      "noise_kind": "full",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "repeat_seconds": [
+        3.902466150932014,
+        3.910665437579155
+      ]
+    }
+  ],
+  "release_gate_allowed": false,
+  "requested_trajectories": 128,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noise_selector_calibration.v1",
+  "torch_version": "2.13.0+cu130",
+  "trajectory_batch_size": 64,
+  "world_size": 1
+}

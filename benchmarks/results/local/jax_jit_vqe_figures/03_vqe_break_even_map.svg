@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="730" viewBox="0 0 1440 730">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1392" height="682" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="7" height="98" rx="3.5" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#243447}.title{font-size:27px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:14px;font-weight:650;fill:#334155}.cell{font-size:20px;font-weight:750}.detail{font-size:11px;font-weight:500;fill:#334155}.hint{font-size:12px;fill:#475569}.tag{font-size:11px;font-weight:700;fill:#54319B;letter-spacing:.7px}.takeaway{font-size:13px;font-weight:650;fill:#30245C}</style>
+<text x="54" y="52" class="tag">FLAGQUANTUM · PERFORMANCE STUDY</text>
+<text x="54" y="84" class="title">JAX JIT compilation break-even</text>
+<text x="54" y="111" class="sub">NVIDIA A800-SXM4-80GB · TFIM energy + gradient · Statevector · single_device_fast_path</text>
+<rect x="54" y="136" width="1332" height="38" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+<text x="74" y="160" class="hint">Cells: same-shape calls until cumulative time first beats PyTorch. Darker cells indicate later break-even.</text>
+<rect x="220" y="218" width="1150" height="372" rx="12" fill="#F8FAFC"/>
+<text x="335.0" y="203" text-anchor="middle" class="axis">4 QUBITS</text>
+<text x="565.0" y="203" text-anchor="middle" class="axis">8 QUBITS</text>
+<text x="795.0" y="203" text-anchor="middle" class="axis">12 QUBITS</text>
+<text x="1025.0" y="203" text-anchor="middle" class="axis">16 QUBITS</text>
+<text x="1255.0" y="203" text-anchor="middle" class="axis">20 QUBITS</text>
+<text x="196" y="295.0" text-anchor="end" class="axis">DEPTH 2</text>
+<rect x="225" y="235" width="220" height="110" rx="10" fill="#CCCDEC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="335.0" y="289.0" text-anchor="middle" class="cell">171</text>
+<text x="335.0" y="311.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="455" y="235" width="220" height="110" rx="10" fill="#C1BEE5" stroke="#FFFFFF" stroke-width="3"/>
+<text x="565.0" y="289.0" text-anchor="middle" class="cell">190</text>
+<text x="565.0" y="311.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="685" y="235" width="220" height="110" rx="10" fill="#C1BEE5" stroke="#FFFFFF" stroke-width="3"/>
+<text x="795.0" y="289.0" text-anchor="middle" class="cell">190</text>
+<text x="795.0" y="311.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="915" y="235" width="220" height="110" rx="10" fill="#D6D9F3" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1025.0" y="289.0" text-anchor="middle" class="cell">156</text>
+<text x="1025.0" y="311.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="1145" y="235" width="220" height="110" rx="10" fill="#54319B" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1255.0" y="289.0" text-anchor="middle" class="cell">534</text>
+<text x="1255.0" y="311.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<text x="196" y="415.0" text-anchor="end" class="axis">DEPTH 4</text>
+<rect x="225" y="355" width="220" height="110" rx="10" fill="#C5C4E8" stroke="#FFFFFF" stroke-width="3"/>
+<text x="335.0" y="409.0" text-anchor="middle" class="cell">182</text>
+<text x="335.0" y="431.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="455" y="355" width="220" height="110" rx="10" fill="#D4D7F1" stroke="#FFFFFF" stroke-width="3"/>
+<text x="565.0" y="409.0" text-anchor="middle" class="cell">159</text>
+<text x="565.0" y="431.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="685" y="355" width="220" height="110" rx="10" fill="#E8F1FF" stroke="#FFFFFF" stroke-width="3"/>
+<text x="795.0" y="409.0" text-anchor="middle" class="cell">131</text>
+<text x="795.0" y="431.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="915" y="355" width="220" height="110" rx="10" fill="#DADFF6" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1025.0" y="409.0" text-anchor="middle" class="cell">149</text>
+<text x="1025.0" y="431.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="1145" y="355" width="220" height="110" rx="10" fill="#54319B" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1255.0" y="409.0" text-anchor="middle" class="cell">533</text>
+<text x="1255.0" y="431.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<text x="196" y="535.0" text-anchor="end" class="axis">DEPTH 8</text>
+<rect x="225" y="475" width="220" height="110" rx="10" fill="#CCCDEC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="335.0" y="529.0" text-anchor="middle" class="cell">171</text>
+<text x="335.0" y="551.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="455" y="475" width="220" height="110" rx="10" fill="#DDE3F8" stroke="#FFFFFF" stroke-width="3"/>
+<text x="565.0" y="529.0" text-anchor="middle" class="cell">145</text>
+<text x="565.0" y="551.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="685" y="475" width="220" height="110" rx="10" fill="#E1E8FA" stroke="#FFFFFF" stroke-width="3"/>
+<text x="795.0" y="529.0" text-anchor="middle" class="cell">140</text>
+<text x="795.0" y="551.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="915" y="475" width="220" height="110" rx="10" fill="#D9DEF5" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1025.0" y="529.0" text-anchor="middle" class="cell">151</text>
+<text x="1025.0" y="551.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<rect x="1145" y="475" width="220" height="110" rx="10" fill="#5A399F" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1255.0" y="529.0" text-anchor="middle" class="cell">505</text>
+<text x="1255.0" y="551.0" text-anchor="middle" class="detail">Same-shape VQE steps</text>
+<line x1="54" y1="621" x2="1386" y2="621" stroke="#E2E8F0"/>
+<circle cx="70" cy="648" r="5" fill="#54319B"/>
+<text x="85" y="653" class="takeaway">Break-even is typically 130–190 steps at 4–16 qubits, rising to about 500 steps at 20 qubits.</text>
+</svg>

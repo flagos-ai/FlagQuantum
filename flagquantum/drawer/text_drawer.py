@@ -1,23 +1,12 @@
-# Copyright 2026 FlagOS Contributors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """
 Text mode circuit drawer
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
+from .ir_adapter import to_drawable_circuit
 
 
 @dataclass
@@ -108,16 +97,17 @@ class TextDrawer:
 
     def __init__(
         self,
-        qdev,
-        wire_order=None,
-        show_all_wires=False,
-        decimals=3,
-        max_length=100,
-        show_initial_state=False,
-    ):
+        qdev: object,
+        wire_order: Sequence[int | str] | None = None,
+        show_all_wires: bool = False,
+        decimals: int | None = 3,
+        max_length: int = 100,
+        show_initial_state: bool = False,
+    ) -> None:
+        qdev = to_drawable_circuit(qdev)
         self.qdev = qdev
-        self.op_history = qdev.op_history if hasattr(qdev, "op_history") else []
-        self.n_wires = (
+        self.op_history: Sequence[dict[str, Any]] = getattr(qdev, "op_history", ())
+        self.n_wires: int = (
             qdev.n_wires if hasattr(qdev, "n_wires") else self._detect_n_wires()
         )
         self.decimals = decimals
@@ -146,7 +136,9 @@ class TextDrawer:
                     max_wire = w
         return max_wire + 1 if max_wire >= 0 else 0
 
-    def _create_wire_order(self, wire_order):
+    def _create_wire_order(
+        self, wire_order: Sequence[int | str] | None
+    ) -> list[int | str]:
         """Create wire order"""
         if wire_order is None:
             wire_order = list(range(self.n_wires))
@@ -160,7 +152,7 @@ class TextDrawer:
                 used_wires.update(wires)
             wire_order = [w for w in wire_order if w in used_wires]
 
-        return wire_order
+        return list(wire_order)
 
     def _is_parameterized_gate(self, name: str) -> bool:
         """Check if the gate has trainable parameters"""
@@ -182,14 +174,14 @@ class TextDrawer:
             "rzz",
         ]
 
-    def _create_layers(self) -> List[List[Dict]]:
+    def _create_layers(self) -> list[list[dict[str, Any]]]:
         """
         Layering algorithm
 
         Multi-qubit gates occupy all wires in between to prevent overlap with other operations
         """
-        last_layer = {}  # wire -> last_layer_index
-        layers = []
+        last_layer: dict[int, int] = {}  # wire -> last_layer_index
+        layers: list[list[dict[str, Any]]] = []
 
         for op in self.op_history:
             wires = op.get("wires", [])
@@ -234,7 +226,7 @@ class TextDrawer:
 
         return layers
 
-    def _get_param_str(self, params) -> str:
+    def _get_param_str(self, params: object) -> str:
         """Format parameter string (fixed decimal places, preserve trailing zeros)"""
         if self.decimals is None or params is None:
             return ""
@@ -253,7 +245,7 @@ class TextDrawer:
             return f"{p}"
         return ""
 
-    def _render_single_gate(self, name: str, params) -> str:
+    def _render_single_gate(self, name: str, params: object) -> str:
         """Render single-qubit gate: ─RX(0.31)─"""
         symbol = self.GATE_SYMBOLS.get(name.lower(), name.upper() if name else "?")
         param_str = self._get_param_str(params)
@@ -261,7 +253,7 @@ class TextDrawer:
             return f"─{symbol}({param_str})─"
         return f"─{symbol}─"
 
-    def _render_toffoli(self, wires: List[int]) -> List[tuple]:
+    def _render_toffoli(self, wires: List[int]) -> list[tuple[int, str]]:
         """
         Render Toffoli (CCX) gate
 
@@ -297,7 +289,7 @@ class TextDrawer:
 
         return lines
 
-    def _render_cswap(self, wires: List[int]) -> List[tuple]:
+    def _render_cswap(self, wires: List[int]) -> list[tuple[int, str]]:
         """
         Render Fredkin (CSWAP) gate
 
@@ -333,7 +325,7 @@ class TextDrawer:
 
         return lines
 
-    def _render_swap_gate(self, wires: List[int]) -> List[tuple]:
+    def _render_swap_gate(self, wires: List[int]) -> list[tuple[int, str]]:
         """
         Render SWAP gate (avoid misleading: draw only ends, connectors in between)
 
@@ -367,7 +359,9 @@ class TextDrawer:
 
         return lines
 
-    def _render_controlled_gate(self, wires, target_symbol):
+    def _render_controlled_gate(
+        self, wires: Sequence[int], target_symbol: str
+    ) -> list[tuple[int, str]]:
         """Render controlled gate (CZ, CY, CX, etc.)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
@@ -393,7 +387,9 @@ class TextDrawer:
 
         return lines
 
-    def _render_controlled_gate_with_param(self, wires, gate_name, params):
+    def _render_controlled_gate_with_param(
+        self, wires: Sequence[int], gate_name: str, params: object
+    ) -> list[tuple[int, str]]:
         """Render parameterized controlled gate (CRX, CRY, CRZ)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
@@ -422,7 +418,9 @@ class TextDrawer:
 
         return lines
 
-    def _render_ising_gate(self, wires, gate_name, params):
+    def _render_ising_gate(
+        self, wires: Sequence[int], gate_name: str, params: object
+    ) -> list[tuple[int, str]]:
         """Render Ising gate (RXX, RYY, RZZ)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
@@ -451,7 +449,9 @@ class TextDrawer:
 
         return lines
 
-    def _render_multi_gate(self, name: str, wires: List[int], params) -> List[tuple]:
+    def _render_multi_gate(
+        self, name: str, wires: List[int], params: object
+    ) -> list[tuple[int, str]]:
         """
         Render multi-qubit gate (e.g., QFT)
 
@@ -489,7 +489,7 @@ class TextDrawer:
 
         return lines
 
-    def _render_op(self, op: Dict) -> List[tuple]:
+    def _render_op(self, op: dict[str, Any]) -> list[tuple[int, str]]:
         """
         Render a single operation, returning [(wire_index, string), ...]
 
@@ -738,18 +738,18 @@ class TextDrawer:
 
 
 def draw_text(
-    qdev,
-    wire_order=None,
-    show_all_wires=False,
-    decimals=3,
-    max_length=100,
-    show_initial_state=False,
-):
+    qdev: object,
+    wire_order: Sequence[int | str] | None = None,
+    show_all_wires: bool = False,
+    decimals: int | None = 3,
+    max_length: int = 100,
+    show_initial_state: bool = False,
+) -> str:
     """
     Draw a text circuit diagram
 
     Args:
-        qdev: FlagQuantum device object
+        qdev: FlagQuantum Circuit, CircuitIR, or device object
         wire_order: Wire order (top to bottom), e.g., [0, 1, 2, 3] or ["q0", "q1"]
         show_all_wires: Whether to show all wires (including unused ones)
         decimals: Precision for parameter display

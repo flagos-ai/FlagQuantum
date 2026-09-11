@@ -1,0 +1,72 @@
+{
+  "benchmark": "noisy_statevector_a800_single_gpu_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 8,
+  "device": "cuda",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "maximum_expectation_difference": 1.1920928955078125e-07,
+  "n_wires": 12,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "results": [
+    {
+      "cuda_peak_allocated_bytes": 9544704,
+      "cuda_peak_reserved_bytes": 23068672,
+      "median_seconds": 21.603179294150323,
+      "repeat_seconds": [
+        21.776847057044506,
+        21.42951153125614
+      ],
+      "speedup_vs_first": 1.0,
+      "trajectories_per_second": 5.9250538199560125,
+      "trajectory_batch_size": 1
+    },
+    {
+      "cuda_peak_allocated_bytes": 11969024,
+      "cuda_peak_reserved_bytes": 27262976,
+      "median_seconds": 4.673930783756077,
+      "repeat_seconds": [
+        4.679788733832538,
+        4.6680728336796165
+      ],
+      "speedup_vs_first": 4.622058026454024,
+      "trajectories_per_second": 27.38594256569976,
+      "trajectory_batch_size": 8
+    },
+    {
+      "cuda_peak_allocated_bytes": 22193664,
+      "cuda_peak_reserved_bytes": 29360128,
+      "median_seconds": 2.7955554858781397,
+      "repeat_seconds": [
+        2.797850862145424,
+        2.7932601096108556
+      ],
+      "speedup_vs_first": 7.727687539481741,
+      "trajectories_per_second": 45.786964575232766,
+      "trajectory_batch_size": 32
+    },
+    {
+      "cuda_peak_allocated_bytes": 35826688,
+      "cuda_peak_reserved_bytes": 50331648,
+      "median_seconds": 2.4931822405196726,
+      "repeat_seconds": [
+        2.4887701719999313,
+        2.497594309039414
+      ],
+      "speedup_vs_first": 8.664901804228883,
+      "trajectories_per_second": 51.34000953469009,
+      "trajectory_batch_size": 64
+    }
+  ],
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noisy_statevector_benchmark.v1",
+  "seed": 20260806,
+  "torch_version": "2.13.0+cu130",
+  "trajectories": 128
+}

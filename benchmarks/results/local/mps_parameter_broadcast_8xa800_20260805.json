@@ -1,0 +1,31 @@
+{
+  "backend": "nccl",
+  "bucketed_collective_count": 1,
+  "bucketed_median_seconds": 0.00048072123900055885,
+  "communication_protocol": "bounded_dtype_padded_all_gather_single",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "requires_runtime_summary",
+  "dtype": "float64",
+  "exact_parameter_parity": true,
+  "legacy_collective_count": 1000,
+  "legacy_median_seconds": 0.05332647589966655,
+  "local_world_size": 8,
+  "node_count": 1,
+  "parameter_count": 1000,
+  "parameter_owner_policy": "round_robin_unique_owner",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "end_to_end_scaling_evidence_not_attached",
+    "per-rank memory evidence is not attached",
+    "specialized_parameter_synchronization_microbenchmark"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_parameter_broadcast_ab.v1",
+  "speedup": 110.93014323755426,
+  "world_size": 8,
+  "benchmark": "mps_parameter_broadcast_8xa800_20260805",
+  "benchmark_evidence_class": "local_non_release",
+  "non_release_evidence": true,
+  "claim_evidence_type": "development_smoke",
+  "intended_distribution_semantics": "sharded_across_ranks"
+}

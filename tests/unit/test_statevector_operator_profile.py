@@ -1,0 +1,156 @@
+from __future__ import annotations
+
+from types import SimpleNamespace
+
+import pytest
+import torch
+
+from flagquantum import Circuit
+from flagquantum.runtime import execution
+from flagquantum.runtime.capabilities import (
+    CapabilityPreflightReport,
+    load_operator_profile,
+)
+from flagquantum.runtime.operator_probes import (
+    _loss,
+    preflight_statevector_local_p0,
+    probe_operator_profile,
+)
+
+
+@pytest.mark.parametrize("empty", ((), []))
+def test_operator_probe_loss_rejects_empty_outputs(empty: object) -> None:
+    with pytest.raises(ValueError, match="at least one output tensor"):
+        _loss(empty)
+
+
+def test_operator_probe_loss_preserves_multiple_output_gradients() -> None:
+    real = torch.tensor([2.0, -3.0], dtype=torch.float64, requires_grad=True)
+    complex_value = torch.tensor([1 + 2j], dtype=torch.complex128, requires_grad=True)
+
+    loss = _loss((real, complex_value))
+    real_gradient, complex_gradient = torch.autograd.grad(loss, (real, complex_value))
+
+    torch.testing.assert_close(loss, torch.tensor(18.0, dtype=torch.float64))
+    torch.testing.assert_close(real_gradient, 2 * real)
+    torch.testing.assert_close(complex_gradient, 2 * complex_value)
+
+
+def test_statevector_local_p0_profile_is_packaged_and_stably_hashed() -> None:
+    first = load_operator_profile("statevector_local_p0")
+    second = load_operator_profile("statevector_local_p0")
+
+    assert first == second
+    assert first.profile_hash == second.profile_hash
+    assert len(first.profile_hash) == 64
+    assert first.representation == "statevector"
+    assert first.distribution == "local"
+    assert {item.operator for item in first.requirements} >= {
+        "aten::bmm",
+        "aten::reshape",
+        "aten::permute",
+        "aten::cos",
+        "aten::real",
+        "aten::imag",
+        "aten::abs",
+    }
+
+
+def test_statevector_local_p0_cpu_reference_probe_passes_complex64() -> None:
+    report = preflight_statevector_local_p0(
+        device="cpu",
+        dtype=torch.complex64,
+        provider="pytorch_cpu_test",
+        refresh=True,
+    )
+
+    assert report.supported
+    assert report.required_dtypes == ("complex64",)
+    assert len(report.evidence_ids) == 21
+
+
+def test_probe_evidence_is_bound_to_profile_hash_and_device() -> None:
+    profile = load_operator_profile("statevector_local_p0")
+    evidence = probe_operator_profile(
+        profile,
+        device="cpu",
+        dtype="complex64",
+        provider="pytorch_cpu_test",
+        refresh=True,
+    )
+
+    assert len(evidence) == len(profile.requirements)
+    assert {item.profile_hash for item in evidence} == {profile.profile_hash}
+    assert {item.device_type for item in evidence} == {"cpu"}
+    assert all(item.is_verified for item in evidence)
+
+
+def test_cpu_statevector_does_not_enter_flagos_validation(monkeypatch) -> None:
+    monkeypatch.setattr(execution, "resolve_device", lambda device: torch.device("cpu"))
+
+    report = execution._validate_flagos_statevector(
+        Circuit(1).to_ir(), {"device": "cpu"}
+    )
+
+    assert report is None
+
+
+def test_cpu_statevector_rejects_flagos_only_numerical_contract(monkeypatch) -> None:
+    monkeypatch.setattr(execution, "resolve_device", lambda device: torch.device("cpu"))
+
+    with pytest.raises(NotImplementedError, match="only.*flagos"):
+        execution._validate_flagos_statevector(
+            Circuit(1).to_ir(),
+            {"device": "cpu"},
+            accuracy_requirement={},
+        )
+
+
+def test_flagos_statevector_validation_uses_platform_provider(monkeypatch) -> None:
+    profile = load_operator_profile("statevector_local_p0")
+    expected = CapabilityPreflightReport(
+        profile=profile.name,
+        profile_hash=profile.profile_hash,
+        device_type="flagos",
+        required_dtypes=("complex64",),
+        supported=True,
+        evidence_ids=("evidence",),
+        blockers=(),
+    )
+    captured: dict[str, object] = {}
+
+    def fake_preflight(**kwargs):
+        captured.update(kwargs)
+        return expected
+
+    numerical_report = SimpleNamespace(require_accepted=lambda: None)
+
+    monkeypatch.setattr(
+        execution,
+        "resolve_device",
+        lambda device: SimpleNamespace(type="flagos"),
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.operator_probes.preflight_statevector_local_p0",
+        fake_preflight,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.numerical_validation.certify_statevector_local_p0",
+        lambda **kwargs: numerical_report,
+    )
+    monkeypatch.setattr(
+        "flagquantum.compute.get_platform_runtime",
+        lambda name: SimpleNamespace(
+            identity=lambda: SimpleNamespace(provider="torch_fl")
+        ),
+    )
+
+    contracts = execution._validate_flagos_statevector(
+        Circuit(1).to_ir(), {"device": "flagos:0", "dtype": "complex64"}
+    )
+
+    assert contracts is not None
+    assert contracts[0] is expected
+    assert contracts[3] is numerical_report
+    assert captured["provider"] == "torch_fl"
+    assert captured["dtype"] == "complex64"

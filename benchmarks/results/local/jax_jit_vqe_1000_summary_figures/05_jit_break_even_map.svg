@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="900" viewBox="0 0 1680 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1632" height="852" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
+<text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
+<text x="58" y="91" class="title">JAX JIT cumulative-time break-even steps</text>
+<text x="58" y="119" class="sub">Same-shape steps until cumulative JAX time first beats PyTorch · Larger values mean later cold-compile break-even</text>
+<text x="354.0" y="174" text-anchor="middle" class="axis">DEPTH 2</text>
+<text x="572.0" y="174" text-anchor="middle" class="axis">DEPTH 4</text>
+<text x="790.0" y="174" text-anchor="middle" class="axis">DEPTH 8</text>
+<text x="1008.0" y="174" text-anchor="middle" class="axis">DEPTH 12</text>
+<text x="1226.0" y="174" text-anchor="middle" class="axis">DEPTH 16</text>
+<text x="1444.0" y="174" text-anchor="middle" class="axis">DEPTH 20</text>
+<text x="217" y="274" text-anchor="end" class="axis">8 QUBITS</text>
+<rect x="250" y="210" width="208" height="118" rx="13" fill="#E1EBE9" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="262" text-anchor="middle" class="cell">154</text>
+<text x="354.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="468" y="210" width="208" height="118" rx="13" fill="#E3EDEA" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="262" text-anchor="middle" class="cell">146</text>
+<text x="572.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="686" y="210" width="208" height="118" rx="13" fill="#E5F1EB" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="262" text-anchor="middle" class="cell">135</text>
+<text x="790.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="904" y="210" width="208" height="118" rx="13" fill="#E4F0EB" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="262" text-anchor="middle" class="cell">139</text>
+<text x="1008.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1122" y="210" width="208" height="118" rx="13" fill="#E4EFEB" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="262" text-anchor="middle" class="cell">141</text>
+<text x="1226.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1340" y="210" width="208" height="118" rx="13" fill="#E8F5ED" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="262" text-anchor="middle" class="cell">123</text>
+<text x="1444.0" y="287" text-anchor="middle" class="detail">optimizer steps</text>
+<text x="217" y="402" text-anchor="end" class="axis">12 QUBITS</text>
+<rect x="250" y="338" width="208" height="118" rx="13" fill="#DFE9E8" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="390" text-anchor="middle" class="cell">159</text>
+<text x="354.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="468" y="338" width="208" height="118" rx="13" fill="#EAF7EE" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="390" text-anchor="middle" class="cell">117</text>
+<text x="572.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="686" y="338" width="208" height="118" rx="13" fill="#E6F2EC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="390" text-anchor="middle" class="cell">132</text>
+<text x="790.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="904" y="338" width="208" height="118" rx="13" fill="#E3EEEA" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="390" text-anchor="middle" class="cell">143</text>
+<text x="1008.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1122" y="338" width="208" height="118" rx="13" fill="#E7F4ED" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="390" text-anchor="middle" class="cell">127</text>
+<text x="1226.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1340" y="338" width="208" height="118" rx="13" fill="#DFE9E8" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="390" text-anchor="middle" class="cell">159</text>
+<text x="1444.0" y="415" text-anchor="middle" class="detail">optimizer steps</text>
+<text x="217" y="530" text-anchor="end" class="axis">16 QUBITS</text>
+<rect x="250" y="466" width="208" height="118" rx="13" fill="#E6F2EC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="518" text-anchor="middle" class="cell">131</text>
+<text x="354.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="468" y="466" width="208" height="118" rx="13" fill="#E6F1EC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="518" text-anchor="middle" class="cell">134</text>
+<text x="572.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="686" y="466" width="208" height="118" rx="13" fill="#E4EFEB" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="518" text-anchor="middle" class="cell">142</text>
+<text x="790.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="904" y="466" width="208" height="118" rx="13" fill="#E7F3EC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="518" text-anchor="middle" class="cell">129</text>
+<text x="1008.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1122" y="466" width="208" height="118" rx="13" fill="#E6F2EC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="518" text-anchor="middle" class="cell">133</text>
+<text x="1226.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1340" y="466" width="208" height="118" rx="13" fill="#E1EBE9" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="518" text-anchor="middle" class="cell">152</text>
+<text x="1444.0" y="543" text-anchor="middle" class="detail">optimizer steps</text>
+<text x="217" y="658" text-anchor="end" class="axis">20 QUBITS</text>
+<rect x="250" y="594" width="208" height="118" rx="13" fill="#A69DC8" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="646" text-anchor="middle" class="cell">387</text>
+<text x="354.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="468" y="594" width="208" height="118" rx="13" fill="#9688BF" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="646" text-anchor="middle" class="cell">452</text>
+<text x="572.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="686" y="594" width="208" height="118" rx="13" fill="#9587BF" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="646" text-anchor="middle" class="cell">454</text>
+<text x="790.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="904" y="594" width="208" height="118" rx="13" fill="#806BB3" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="646" text-anchor="middle" class="cell">539</text>
+<text x="1008.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1122" y="594" width="208" height="118" rx="13" fill="#6446A4" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="646" text-anchor="middle" class="cell">651</text>
+<text x="1226.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<rect x="1340" y="594" width="208" height="118" rx="13" fill="#54319B" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="646" text-anchor="middle" class="cell">713</text>
+<text x="1444.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
+<line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
+<circle cx="74" cy="850" r="5" fill="#54319B"/>
+<text x="90" y="855" class="note">Small/medium cases typically break even in about 100 steps; 20-qubit cases take hundreds, with deep circuits near the training horizon.</text>
+</svg>

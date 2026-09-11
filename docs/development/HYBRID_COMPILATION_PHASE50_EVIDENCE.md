@@ -1,0 +1,16 @@
+# Hybrid compilation Phase 50 evidence
+
+Date: 2026-09-10
+
+Status: **complete — proposal recorded and subsequently approved**
+
+Phase 50 defines the minimum public naming and lifecycle candidate after Proposal
+025's private exit. The candidate uses an experimental, read-only artifact domain
+with frozen role views and strict load/dump operations. It avoids versioned
+concrete class exports and makes no stable-root or default-path change.
+
+No implementation was performed in Phase 50. The API owner subsequently supplied
+the required token; implementation is recorded separately in Phase 51.
+
+Authorization subsequently received:
+`approve API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE`

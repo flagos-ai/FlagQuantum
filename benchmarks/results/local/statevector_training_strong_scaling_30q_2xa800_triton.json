@@ -1,0 +1,124 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.0987497899795281,
+    "mean_seconds": 2.389647312772771,
+    "median_seconds": 2.547905611805618,
+    "sample_count": 3,
+    "samples_seconds": [
+      2.547905611805618,
+      2.0560705843381584,
+      2.564965742174536
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 34359738384,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 7.591082795688209e-08
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.12646263678796707,
+    "mean_seconds": 0.9231007316460212,
+    "median_seconds": 0.9523698119446635,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.9523698119446635,
+      1.049175270833075,
+      0.767757112160325
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.056952779297682506,
+    "mean_seconds": 3.3406016565859318,
+    "median_seconds": 3.335481752641499,
+    "peak_memory_bytes_max": 17649638400,
+    "sample_count": 3,
+    "samples_seconds": [
+      3.5761351510882378,
+      3.1101880660280585,
+      3.335481752641499
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.38598059757008535,
+    "mean_seconds": 0.7981824558228254,
+    "median_seconds": 0.6495431992225349,
+    "peak_memory_bytes_max": 10603204096,
+    "sample_count": 3,
+    "samples_seconds": [
+      1.2271884619258344,
+      0.517815706320107,
+      0.6495431992225349
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.2359982717280362,
+    "mean_seconds": 0.027551241374264162,
+    "median_seconds": 0.004593392834067345,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07569271326065063,
+      0.004593392834067345,
+      0.002367618028074503
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 1,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 1,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 536870912,
+    "n_wires": 30,
+    "observable": "Z(28)",
+    "optimizer": "adam"
+  },
+  "world_size": 2
+}

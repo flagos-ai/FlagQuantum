@@ -1,0 +1,141 @@
+{
+  "blockers": [
+    "inner_communication_route_unattributed",
+    "host_staging_unverified",
+    "single_node_development_evidence_only",
+    "single_device_capacity_failure_not_measured",
+    "full_collective_suite_unsupported",
+    "performance_convergence_and_multinode_not_certified"
+  ],
+  "capabilities": {
+    "flagos.collectives.full": {
+      "details": {
+        "unsupported_checks": [
+          {
+            "dtype": "complex64",
+            "error": "TypeError: Input tensor data type is not supported for FlagCX process group: ComplexFloat",
+            "primitive": "reduce_scatter_tensor"
+          },
+          {
+            "dtype": "complex128",
+            "error": "TypeError: Input tensor data type is not supported for FlagCX process group: ComplexDouble",
+            "primitive": "reduce_scatter_tensor"
+          }
+        ]
+      },
+      "distribution_semantics": "process_group_collectives",
+      "dtypes": [
+        "complex64",
+        "complex128"
+      ],
+      "evidence_level": "development_evidence",
+      "limitations": [
+        "complex_reduce_scatter_tensor_unsupported"
+      ],
+      "name": "flagos.collectives.full",
+      "required_collectives": [
+        "all_gather_into_tensor",
+        "all_reduce",
+        "broadcast",
+        "isend_irecv",
+        "reduce_scatter_tensor"
+      ],
+      "scope": "single_node_2_card",
+      "status": "unsupported",
+      "world_sizes": [
+        2
+      ]
+    },
+    "flagos.statevector.forward": {
+      "distribution_semantics": "sharded_across_ranks",
+      "dtypes": [
+        "complex64",
+        "complex128"
+      ],
+      "evidence_level": "development_evidence",
+      "limitations": [
+        "single_node_only",
+        "inner_communication_route_unattributed"
+      ],
+      "name": "flagos.statevector.forward",
+      "required_collectives": [
+        "all_gather_into_tensor",
+        "isend_irecv"
+      ],
+      "scope": "single_node_2_4_8_card",
+      "status": "development_verified",
+      "world_sizes": [
+        2,
+        4,
+        8
+      ]
+    },
+    "flagos.statevector.training": {
+      "details": {
+        "gradient_distribution": "replicated_after_all_reduce",
+        "optimizer_update_semantics": "owner_step_then_broadcast"
+      },
+      "distribution_semantics": "sharded_across_ranks",
+      "dtypes": [
+        "complex64",
+        "complex128"
+      ],
+      "evidence_level": "development_evidence",
+      "limitations": [
+        "single_node_bounded_trajectories_only",
+        "performance_and_convergence_not_certified"
+      ],
+      "name": "flagos.statevector.training",
+      "required_collectives": [
+        "all_gather_into_tensor",
+        "all_reduce",
+        "broadcast",
+        "isend_irecv"
+      ],
+      "scope": "single_node_2_4_8_card",
+      "status": "development_verified",
+      "world_sizes": [
+        2,
+        4,
+        8
+      ]
+    }
+  },
+  "capability_matrix_accepted": true,
+  "claim_evidence_type": "development_artifact_aggregation",
+  "communication_claim_allowed": false,
+  "distribution_semantics": "sharded_across_ranks",
+  "environment": {
+    "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+  },
+  "evidence_artifacts": [
+    {
+      "path": "artifacts/flagos_distributed_conformance_a800_f11_20260825.json",
+      "schema": "flagquantum_flagos_distributed_conformance_v1",
+      "sha256": "2d0b41e6042086da89b9c5c6b03807f3beefe6f9a1c2962f136440b552a4663a",
+      "source_revision": "6d20e81daf67e7a9fbb946ddf067225aa9c6ddc5"
+    },
+    {
+      "path": "artifacts/flagos_statevector_scale_f2_a800_20260826.json",
+      "schema": "flagquantum_flagos_statevector_scale_profile_v1",
+      "sha256": "eb4112563edd2ec73f5f8aff187ab3bf34f598ae790c8f0f7d3e8076d325ef47",
+      "source_revision": "21e220960e9756882ece2932614f3cc4d368a49a"
+    },
+    {
+      "path": "artifacts/flagos_statevector_training_f3_a800_20260826.json",
+      "schema": "flagquantum_flagos_statevector_training_profile_v1",
+      "sha256": "13ff25cbe21fec697efccc359ed393da8b84c7f755cdc51516d3805a36d7351e",
+      "source_revision": "fa38063534edaaa5044c4cdcc8ade58013f55d0b"
+    }
+  ],
+  "flagcx_route_verified": false,
+  "host_staging_observed": null,
+  "inner_communication_route": "unattributed",
+  "outer_backend": "flagos",
+  "production_support_claim_allowed": false,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum_flagos_workload_capability_v1",
+  "status": "passed",
+  "validation_scope": "flagos_workload_capability_development_evidence"
+}

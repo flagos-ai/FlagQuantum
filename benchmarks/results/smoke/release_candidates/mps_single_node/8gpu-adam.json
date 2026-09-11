@@ -1,0 +1,6024 @@
+{
+  "benchmark": "mps_single_node_training_certification",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "non_release_evidence": true,
+  "scalability_blockers": [
+    "development_smoke_not_release_scalability_evidence"
+  ],
+  "coefficient_of_variation": 0.027747121504989314,
+  "communication_bytes": 1876640,
+  "communication_bytes_by_rank": [
+    93600,
+    786080,
+    1630880,
+    1876640,
+    1876640,
+    1630880,
+    786080,
+    93600
+  ],
+  "communication_protocol": "batched_isend_irecv_and_owner_gradient_collectives",
+  "completed_work_units": 20,
+  "component_samples_seconds": [
+    {
+      "end_to_end": 0.4714798550121486,
+      "forward": 0.31051831459626555,
+      "optimizer": 0.001360208261758089,
+      "reverse": 0.18908813316375017
+    },
+    {
+      "end_to_end": 0.4915123339742422,
+      "forward": 0.31704790610820055,
+      "optimizer": 0.001716035883873701,
+      "reverse": 0.19899382395669818
+    },
+    {
+      "end_to_end": 0.5352150220423937,
+      "forward": 0.3474790300242603,
+      "optimizer": 0.0016308180056512356,
+      "reverse": 0.22551038907840848
+    },
+    {
+      "end_to_end": 0.4891615412198007,
+      "forward": 0.3234053491614759,
+      "optimizer": 0.0017755720764398575,
+      "reverse": 0.19423635257408023
+    },
+    {
+      "end_to_end": 0.5010051890276372,
+      "forward": 0.32419987209141254,
+      "optimizer": 0.0014099129475653172,
+      "reverse": 0.20588731905445457
+    },
+    {
+      "end_to_end": 0.49325397703796625,
+      "forward": 0.32538159377872944,
+      "optimizer": 0.0015902956947684288,
+      "reverse": 0.20252916123718023
+    },
+    {
+      "end_to_end": 0.4857126008719206,
+      "forward": 0.3164531742222607,
+      "optimizer": 0.0014037289656698704,
+      "reverse": 0.19904637895524502
+    },
+    {
+      "end_to_end": 0.4865419361740351,
+      "forward": 0.3210464990697801,
+      "optimizer": 0.0017557507380843163,
+      "reverse": 0.19910330511629581
+    },
+    {
+      "end_to_end": 0.4900334137491882,
+      "forward": 0.31547756493091583,
+      "optimizer": 0.001824747771024704,
+      "reverse": 0.20993814803659916
+    },
+    {
+      "end_to_end": 0.4966856902465224,
+      "forward": 0.31929147569462657,
+      "optimizer": 0.00136887701228261,
+      "reverse": 0.2105239829979837
+    },
+    {
+      "end_to_end": 0.49924920313060284,
+      "forward": 0.31848963303491473,
+      "optimizer": 0.002063396852463484,
+      "reverse": 0.21383877890184522
+    },
+    {
+      "end_to_end": 0.5103881931863725,
+      "forward": 0.3220474235713482,
+      "optimizer": 0.0015418743714690208,
+      "reverse": 0.22248962987214327
+    },
+    {
+      "end_to_end": 0.5022531962022185,
+      "forward": 0.3200850961729884,
+      "optimizer": 0.0014323540963232517,
+      "reverse": 0.2158963461406529
+    },
+    {
+      "end_to_end": 0.4895775760523975,
+      "forward": 0.317644689232111,
+      "optimizer": 0.0015091951936483383,
+      "reverse": 0.21082531893625855
+    },
+    {
+      "end_to_end": 0.5069282273761928,
+      "forward": 0.3168008313514292,
+      "optimizer": 0.001444049645215273,
+      "reverse": 0.22239368595182896
+    },
+    {
+      "end_to_end": 0.5167519827373326,
+      "forward": 0.32821104396134615,
+      "optimizer": 0.0017145369201898575,
+      "reverse": 0.222107351757586
+    },
+    {
+      "end_to_end": 0.4935043519362807,
+      "forward": 0.31871746480464935,
+      "optimizer": 0.0012404420413076878,
+      "reverse": 0.2069911239668727
+    },
+    {
+      "end_to_end": 0.4934968650341034,
+      "forward": 0.32843868527561426,
+      "optimizer": 0.0011730790138244629,
+      "reverse": 0.2026103399693966
+    },
+    {
+      "end_to_end": 0.505419242195785,
+      "forward": 0.3153956229798496,
+      "optimizer": 0.0014845370315015316,
+      "reverse": 0.22418150771409273
+    },
+    {
+      "end_to_end": 0.5149584379978478,
+      "forward": 0.33690770203247666,
+      "optimizer": 0.0013396241702139378,
+      "reverse": 0.21637890627607703
+    }
+  ],
+  "confidence_interval_95_seconds": [
+    0.49218093739932206,
+    0.5051319461211768
+  ],
+  "cuda": "13.0",
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "sharded_across_ranks",
+  "evidence_source": "measured_runtime",
+  "family": "variable_bond_training",
+  "full_mps_materialization": false,
+  "hostname": "redacted",
+  "local_memory_bytes_by_rank": [
+    23374848,
+    23434752,
+    23526912,
+    23526912,
+    23526912,
+    23508480,
+    23390208,
+    17076736
+  ],
+  "local_world_size": 8,
+  "losses": [
+    0.8792456388473511,
+    0.8724731206893921,
+    0.8655136227607727,
+    0.8583791255950928,
+    0.8510669469833374,
+    0.8435913324356079,
+    0.8359601497650146,
+    0.8281703591346741,
+    0.8202430009841919,
+    0.8121733665466309,
+    0.8039877414703369,
+    0.7956838011741638,
+    0.787274181842804,
+    0.7787541151046753,
+    0.7701479196548462,
+    0.761451244354248,
+    0.7526719570159912,
+    0.7438133358955383,
+    0.7348661422729492,
+    0.7258378863334656
+  ],
+  "mean_seconds": 0.4986564417602494,
+  "measured": true,
+  "memory_growth_bytes": 0,
+  "node_count": 1,
+  "p50_seconds": 0.4935043519362807,
+  "p95_seconds": 0.5167519827373326,
+  "peak_memory_bytes": 23526912,
+  "peak_memory_bytes_samples": [
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912,
+    23526912
+  ],
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "node_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "redacted",
+      "local_rank": 1,
+      "node_rank": 0,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "redacted",
+      "local_rank": 2,
+      "node_rank": 0,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "redacted",
+      "local_rank": 3,
+      "node_rank": 0,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "redacted",
+      "local_rank": 4,
+      "node_rank": 0,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "redacted",
+      "local_rank": 5,
+      "node_rank": 0,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "redacted",
+      "local_rank": 6,
+      "node_rank": 0,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "redacted",
+      "local_rank": 7,
+      "node_rank": 0,
+      "rank": 7
+    }
+  ],
+  "rank_useful_work": true,
+  "release_gate_allowed": false,
+  "repetitions": 20,
+  "samples_seconds": [
+    0.4714798550121486,
+    0.4915123339742422,
+    0.5352150220423937,
+    0.4891615412198007,
+    0.5010051890276372,
+    0.49325397703796625,
+    0.4857126008719206,
+    0.4865419361740351,
+    0.4900334137491882,
+    0.4966856902465224,
+    0.49924920313060284,
+    0.5103881931863725,
+    0.5022531962022185,
+    0.4895775760523975,
+    0.5069282273761928,
+    0.5167519827373326,
+    0.4935043519362807,
+    0.4934968650341034,
+    0.505419242195785,
+    0.5149584379978478
+  ],
+  "scalability_claim_allowed": false,
+  "scaling_mode": "strong",
+  "schema": "flagquantum.issue052.mps_training_measurement.v1",
+  "source_commit": "f4242786c17419669b32ddc287f97da8acbd0827",
+  "source_tree_dirty": false,
+  "timestamp": 1785216058.9015808,
+  "torch": "2.13.0+cu130",
+  "training": {
+    "blockers": [
+      "release_speedup_evidence_not_attached",
+      "release_capacity_evidence_not_attached",
+      "multi_gpu_scaling_report_not_attached"
+    ],
+    "capacity_gate_passed": false,
+    "checkpoint_contract_fingerprint": "614ff0c7cf72ddc6f59f31441065f718d986e31d0b8b8468b312bc3f8b259b4b",
+    "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+    "communication_setup_seconds": 0.7364097801037133,
+    "communication_stream": "dedicated_cuda_stream",
+    "completed_steps": 25,
+    "correctness_gate_passed": true,
+    "distribution_semantics": "sharded_across_ranks",
+    "executor": "pytorch_native_sharded_mps_training_v1",
+    "full_mps_materialization": false,
+    "local_world_size": 8,
+    "losses": [
+      0.9100883603096008,
+      0.9043412208557129,
+      0.8983763456344604,
+      0.8922086954116821,
+      0.8858213424682617,
+      0.8792456388473511,
+      0.8724731206893921,
+      0.8655136227607727,
+      0.8583791255950928,
+      0.8510669469833374,
+      0.8435913324356079,
+      0.8359601497650146,
+      0.8281703591346741,
+      0.8202430009841919,
+      0.8121733665466309,
+      0.8039877414703369,
+      0.7956838011741638,
+      0.787274181842804,
+      0.7787541151046753,
+      0.7701479196548462,
+      0.761451244354248,
+      0.7526719570159912,
+      0.7438133358955383,
+      0.7348661422729492,
+      0.7258378863334656
+    ],
+    "memory_growth_bytes": 0,
+    "memory_warmup_steps": 1,
+    "node_count": 1,
+    "optimizer": "adam",
+    "optimizer_ownership": [
+      {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "optimizer_state_local": true,
+        "owner_rank": 0,
+        "parameter_index": 0,
+        "update_route": "owner_step_then_broadcast"
+      },
+      {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "optimizer_state_local": false,
+        "owner_rank": 1,
+        "parameter_index": 1,
+        "update_route": "owner_step_then_broadcast"
+      }
+    ],
+    "optimizer_state_ownership_semantics": "sharded_across_ranks",
+    "rank": 0,
+    "rank_useful_work": true,
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "speedup_gate_passed": false,
+    "start_step": 0,
+    "step_metrics": [
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 3.057399644050747,
+        "forward_peak_memory_bytes": 17074176,
+        "forward_seconds": 1.5723198521882296,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9100883603096008,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.06777516100555658,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23358464,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23358464,
+        "reverse_seconds": 1.4166978229768574,
+        "step": 0,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.491605332121253,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3228925340808928,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9043412208557129,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0016632829792797565,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16636471776291728,
+        "step": 1,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5087785110808909,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.33783707628026605,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8983763456344604,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0011477833613753319,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16933752736076713,
+        "step": 2,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4954789951443672,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3271595030091703,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8922086954116821,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001958566252142191,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16595817962661386,
+        "step": 3,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4877964807674289,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.32197162602096796,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8858213424682617,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001630065031349659,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16373735899105668,
+        "step": 4,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4714798550121486,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31051831459626555,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8792456388473511,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0012433952651917934,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1591569622978568,
+        "step": 5,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4911430352367461,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31704790610820055,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8724731206893921,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001624880824238062,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.17204593494534492,
+        "step": 6,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5351771651767194,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3474790300242603,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8655136227607727,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0014874432235956192,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18558364594355226,
+        "step": 7,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4888705061748624,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3234053491614759,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8583791255950928,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0017563370056450367,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16327918274328113,
+        "step": 8,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5009932704269886,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.32419987209141254,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8510669469833374,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001312463078647852,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1750648459419608,
+        "step": 9,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4932370809838176,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.32538159377872944,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8435913324356079,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0014405101537704468,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16592755587771535,
+        "step": 10,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4857126008719206,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3164531742222607,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8359601497650146,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001384279690682888,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1673236363567412,
+        "step": 11,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4865419361740351,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3210464990697801,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8281703591346741,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0016668499447405338,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1631528432480991,
+        "step": 12,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4896993269212544,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31547756493091583,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8202430009841919,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0017448170110583305,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1720558968372643,
+        "step": 13,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4966247156262398,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31929147569462657,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8121733665466309,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0012143137864768505,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1756844320334494,
+        "step": 14,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.49893143540248275,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31848963303491473,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.8039877414703369,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0017961310222744942,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.178127430845052,
+        "step": 15,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5102869449183345,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3220474235713482,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7956838011741638,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0015196879394352436,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18626236775889993,
+        "step": 16,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5022531962022185,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3200850961729884,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.787274181842804,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0011726696975529194,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18041192507371306,
+        "step": 17,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.48929936718195677,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.317644689232111,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7787541151046753,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0015091951936483383,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16973856603726745,
+        "step": 18,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5069282273761928,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3168008313514292,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7701479196548462,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0014277668669819832,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18820613296702504,
+        "step": 19,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5166429560631514,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.32821104396134615,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.761451244354248,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0016330182552337646,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18632499873638153,
+        "step": 20,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.4935043519362807,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.31871746480464935,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7526719570159912,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.001116895116865635,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1730459900572896,
+        "step": 21,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.49321232084184885,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.32843868527561426,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7438133358955383,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0010866252705454826,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.16327194590121508,
+        "step": 22,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5052154632285237,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.3153956229798496,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7348661422729492,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0014083138667047024,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.18790035508573055,
+        "step": 23,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17057280,
+        "bond_updates": [
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 24,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "7603ae3afea0560c",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 47,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bd1d666e1ffe5ea0",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 86,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "bf02eb27578e4eec",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 1,
+            "communication_peer": 1,
+            "communication_sequence": 109,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "55ef4a581f9b1bc4",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                8
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 1280,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 4672,
+        "boundary_exchanges": 5,
+        "boundary_forward_exchanges": 5,
+        "boundary_reverse_exchanges": 5,
+        "communication_buffer_bytes": 4672,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5149584379978478,
+        "forward_peak_memory_bytes": 23374848,
+        "forward_seconds": 0.33690770203247666,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 4,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.7258378863334656,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0011933348141610622,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 9,
+        "owned_site_work": 8,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23374848,
+        "qr_activity": 1,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23359488,
+        "reverse_seconds": 0.1761655048467219,
+        "step": 24,
+        "svd_activity": 8,
+        "tape_memory_bytes": 10048,
+        "truncated_splits": 0,
+        "two_site_splits": 8,
+        "useful_work_completed": true
+      }
+    ],
+    "suspected_memory_leak": false,
+    "world_size": 8
+  },
+  "warmup": 5,
+  "workload": {
+    "cutoff": 0.0,
+    "family": "variable_bond_training",
+    "layers": 4,
+    "learning_rate": 0.01,
+    "max_bond": 64,
+    "n_wires": 16,
+    "optimizer": "adam",
+    "scaling_mode": "strong",
+    "seed": 520052
+  },
+  "workload_sha256": "46b347d71e04ccb019fe182ed10cc6988378b8b4d45edba7875b26c7c45c3d45",
+  "world_size": 8
+}

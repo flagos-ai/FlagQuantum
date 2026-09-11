@@ -1,0 +1,410 @@
+{
+  "allocator_oom_count": 0,
+  "allocator_retry_count": 0,
+  "artifact_class": "derived_development_report",
+  "benchmark": "mps_factorization_staging_workspace_pool",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 0,
+  "distribution_semantics": "sharded_across_ranks",
+  "local_memory_bytes_by_rank": [
+    50798080,
+    50823680,
+    50823680,
+    50823680,
+    50823680,
+    50823680,
+    50823680,
+    50797056
+  ],
+  "local_world_size": 8,
+  "memory_plateau_audit": {
+    "blockers": [],
+    "maximum_slope_fraction_per_layer": 0.01,
+    "memory_budget_bytes": 21474836480,
+    "passed": true,
+    "rank_audits": [
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1392.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3174.4,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1836.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 0.0,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 0.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 0
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 1
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 2
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 3
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 4
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 5
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1344.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3379.2,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1484.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 1126.4,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 1126.4,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 6
+      },
+      {
+        "depths": [
+          {
+            "allocated_slope_bytes_per_layer": 1792.0,
+            "depth": 1,
+            "non_state_residual_slope_bytes_per_layer": 1392.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 3
+          },
+          {
+            "allocated_slope_bytes_per_layer": 3174.4,
+            "depth": 2,
+            "non_state_residual_slope_bytes_per_layer": 1836.8,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          },
+          {
+            "allocated_slope_bytes_per_layer": 0.0,
+            "depth": 4,
+            "non_state_residual_slope_bytes_per_layer": 0.0,
+            "slope_limit_bytes_per_layer": 214748364.8,
+            "tail_layer_count": 5
+          }
+        ],
+        "rank": 7
+      }
+    ],
+    "slope_limit_bytes_per_layer": 214748364.8,
+    "target_depth": 4
+  },
+  "node_count": 1,
+  "non_release_evidence": true,
+  "passed": true,
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "redacted",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "redacted",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "redacted",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "redacted",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "redacted",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "redacted",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "redacted",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "rank_records": [
+    {
+      "allocation_count": 16,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:0",
+      "entry_count": 16,
+      "factorization_decision_count": 16,
+      "peak_allocated_memory_bytes": 50798080,
+      "rank": 0,
+      "reserved_bytes": 9568,
+      "reuse_count": 16
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:1",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 1,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:2",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 2,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:3",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 3,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:4",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 4,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:5",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 5,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 12,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:6",
+      "entry_count": 12,
+      "factorization_decision_count": 8,
+      "peak_allocated_memory_bytes": 50823680,
+      "rank": 6,
+      "reserved_bytes": 18752,
+      "reuse_count": 4
+    },
+    {
+      "allocation_count": 16,
+      "allocator_oom_count": 0,
+      "allocator_retry_count": 0,
+      "device": "cuda:7",
+      "entry_count": 16,
+      "factorization_decision_count": 16,
+      "peak_allocated_memory_bytes": 50797056,
+      "rank": 7,
+      "reserved_bytes": 9568,
+      "reuse_count": 16
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "staging_pool_only_cusolver_workspace_not_externally_controllable",
+    "stable_bond8_reuse_workload_not_large_bond_performance",
+    "bond128_depth4_gesvd_convergence_blocker_observed"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_workspace_pool_report.v1",
+  "source_commit": "a9e9ec2",
+  "source_tree_dirty": false,
+  "total_allocation_count": 104,
+  "total_reuse_count": 56,
+  "workload": {
+    "depth": 4,
+    "dtype": "complex64",
+    "max_bond": 8,
+    "n_wires": 64,
+    "purpose": "stable_shape_workspace_reuse"
+  },
+  "world_size": 8
+}

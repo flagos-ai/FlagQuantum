@@ -1,0 +1,892 @@
+{
+  "benchmark": "statevector_pmap_all_to_all_profile",
+  "communication_bytes": 5120,
+  "comparison": {
+    "grad_atol": 1e-05,
+    "grad_max_abs_error": 5.103647708892822e-07,
+    "loss_abs_error": 9.5367431640625e-07,
+    "loss_atol": 1e-05,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX pmap statevector all-to-all backward is precision-aligned and sharded across devices.",
+    "non_release_observation": "Development smoke only; not release scalability evidence. One logical 8-qubit statevector used a sharded JAX pmap development path with multi-sharded-wire all-to-all metadata; steady loss+gradient averaged 3.51524s, estimated transfer bytes=5120."
+  },
+  "configuration": {
+    "complex_bytes": 8,
+    "distributed_profile": "production",
+    "iters": 1,
+    "jax_distributed": false,
+    "layers": 1,
+    "n_wires": 8,
+    "parameter_count": 20,
+    "sharded_wires": [
+      5,
+      6,
+      7
+    ],
+    "warmup": 1,
+    "world_size": 8
+  },
+  "distribution_semantics": "sharded_across_ranks",
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "jax": "0.10.2",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "xla_flags": "--xla_force_host_platform_device_count=8",
+    "xla_python_client_preallocate": "false"
+  },
+  "estimated_transfer_bytes": 5120,
+  "flagquantum_pmap": {
+    "avg_seconds": 3.515235400001984,
+    "first_loss_grad_seconds": 4.352860800019698,
+    "gradient_norm": 1.0181585550308228,
+    "loss": 7.627206802368164,
+    "summary": {
+      "backend": "jax",
+      "backend_policy": {
+        "jax_backend": "pmap",
+        "local_world_size": 1,
+        "profile": "production",
+        "requires_gpu": true,
+        "requires_torchrun": true,
+        "source": {
+          "FQ_DISTRIBUTED_PROFILE": "production",
+          "FQ_JAX_DISTRIBUTED_BACKEND": null,
+          "FQ_LOCAL_WORLD_SIZE": null,
+          "FQ_TORCH_DISTRIBUTED_BACKEND": null,
+          "WORLD_SIZE": null
+        },
+        "torch_backend": "torch_distributed"
+      },
+      "backward_backend": "pmap",
+      "backward_execution": "jax_pmap_backward",
+      "backward_strategy": "reverse_mode_amplitude_sharded",
+      "batch_size": 1,
+      "communication_execution": "jax_pmap_amplitude_exchange_backward_replay",
+      "communication_tiers": {
+        "communication_tiers": [
+          "intra_node"
+        ],
+        "communications": [
+          "all_to_all",
+          "pair_exchange"
+        ],
+        "edge_count": 40,
+        "inter_node_communication_bytes": 0,
+        "intra_node_communication_bytes": 94208,
+        "layout": "hypercube",
+        "local_world_size": 8,
+        "node_count": 1,
+        "rank_coordinates": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            1
+          ]
+        ],
+        "world_size": 8
+      },
+      "distributed_gate_count": 10,
+      "distribution_semantics": "sharded_across_ranks",
+      "estimated_transfer_bytes": 5120,
+      "executor": "jax_sharded_statevector_parameter_reverse_mode",
+      "full_state_reconstruction_count": 0,
+      "gradient_blockers": [],
+      "gradient_execution": "jax_reverse_mode_amplitude_sharded_parameter_backprop",
+      "gradient_reduction_collective_count": 1,
+      "gradient_target": "parameterized_gate_tensors",
+      "inter_node_communication_bytes": 0,
+      "interface": "torch",
+      "intra_node_communication_bytes": 94208,
+      "jax_distributed_plan": {
+        "backend": "jax",
+        "communication_tiers": {
+          "communication_segment_count": 6,
+          "estimated_transfer_bytes": 5120,
+          "inter_node_communication_bytes": 0,
+          "intra_node_communication_bytes": 94208,
+          "model": "jax_pmap_collectives_planned_from_statevector_topology",
+          "topology_layout": "hypercube"
+        },
+        "distributed_backend_policy": {
+          "jax_backend": "pmap",
+          "local_world_size": 1,
+          "profile": "production",
+          "requires_gpu": true,
+          "requires_torchrun": true,
+          "source": {
+            "FQ_DISTRIBUTED_PROFILE": "production",
+            "FQ_JAX_DISTRIBUTED_BACKEND": null,
+            "FQ_LOCAL_WORLD_SIZE": null,
+            "FQ_TORCH_DISTRIBUTED_BACKEND": null,
+            "WORLD_SIZE": null
+          },
+          "torch_backend": "torch_distributed"
+        },
+        "distribution_semantics": "requires_runtime_summary",
+        "executor": "jax_distributed_quantum_backend_plan",
+        "gradient_blockers": [
+          "jax_sharded_statevector_backward_pending"
+        ],
+        "intended_distribution_semantics": "sharded_across_ranks",
+        "interface": "torch",
+        "jax_backend": "pmap",
+        "local_memory_bytes_by_rank": [
+          256,
+          256,
+          256,
+          256,
+          256,
+          256,
+          256,
+          256
+        ],
+        "local_world_size": 8,
+        "mode": "statevector",
+        "n_wires": 8,
+        "node_count": 1,
+        "rank_local_jax_kernel_allowed_for_capacity_claim": false,
+        "rank_ownership": [
+          {
+            "amplitude_end": 32,
+            "amplitude_start": 0,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 0,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 64,
+            "amplitude_start": 32,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 1,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 96,
+            "amplitude_start": 64,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 2,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 128,
+            "amplitude_start": 96,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 3,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 160,
+            "amplitude_start": 128,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 4,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 192,
+            "amplitude_start": 160,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 5,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 224,
+            "amplitude_start": 192,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 6,
+            "state_partition": "amplitude_range"
+          },
+          {
+            "amplitude_end": 256,
+            "amplitude_start": 224,
+            "local_amplitudes": 32,
+            "local_memory_bytes": 256,
+            "rank": 7,
+            "state_partition": "amplitude_range"
+          }
+        ],
+        "scalability_blockers": [
+          "jax_pmap_statevector_executor_pending",
+          "rank_local_jax_kernel_is_not_capacity_scaling"
+        ],
+        "scalability_claim_allowed": false,
+        "single_workload_sharding_required": true,
+        "status": "planned_not_executed",
+        "task_summary": {
+          "communication_gate_count": 10,
+          "execution_segment_count": 11,
+          "sharded_wires": [
+            5,
+            6,
+            7
+          ]
+        },
+        "torch_backend": "torch_distributed",
+        "world_size": 8
+      },
+      "local_gate_count": 13,
+      "local_memory_bytes_by_rank": [
+        256,
+        256,
+        256,
+        256,
+        256,
+        256,
+        256,
+        256
+      ],
+      "local_world_size": 8,
+      "n_wires": 8,
+      "node_count": 1,
+      "observable": "z_sum",
+      "parameter_shape": [
+        20
+      ],
+      "production_blockers": [],
+      "production_device_summary": {
+        "global_device_count": 8,
+        "local_device_count": 8,
+        "process_count": 1,
+        "process_index": 0
+      },
+      "rank_coordinates": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          1
+        ]
+      ],
+      "rank_local_jax_kernel_allowed_for_capacity_claim": false,
+      "rank_shards": [
+        {
+          "amplitude_end": 32,
+          "amplitude_start": 0,
+          "basis_filter": [
+            {
+              "bit": 0,
+              "wire": 5
+            },
+            {
+              "bit": 0,
+              "wire": 6
+            },
+            {
+              "bit": 0,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 0,
+          "rank_coordinates": [
+            0,
+            0,
+            0
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 64,
+          "amplitude_start": 32,
+          "basis_filter": [
+            {
+              "bit": 0,
+              "wire": 5
+            },
+            {
+              "bit": 0,
+              "wire": 6
+            },
+            {
+              "bit": 1,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 1,
+          "rank_coordinates": [
+            0,
+            0,
+            1
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 96,
+          "amplitude_start": 64,
+          "basis_filter": [
+            {
+              "bit": 0,
+              "wire": 5
+            },
+            {
+              "bit": 1,
+              "wire": 6
+            },
+            {
+              "bit": 0,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 2,
+          "rank_coordinates": [
+            0,
+            1,
+            0
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 128,
+          "amplitude_start": 96,
+          "basis_filter": [
+            {
+              "bit": 0,
+              "wire": 5
+            },
+            {
+              "bit": 1,
+              "wire": 6
+            },
+            {
+              "bit": 1,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 3,
+          "rank_coordinates": [
+            0,
+            1,
+            1
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 160,
+          "amplitude_start": 128,
+          "basis_filter": [
+            {
+              "bit": 1,
+              "wire": 5
+            },
+            {
+              "bit": 0,
+              "wire": 6
+            },
+            {
+              "bit": 0,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 4,
+          "rank_coordinates": [
+            1,
+            0,
+            0
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 192,
+          "amplitude_start": 160,
+          "basis_filter": [
+            {
+              "bit": 1,
+              "wire": 5
+            },
+            {
+              "bit": 0,
+              "wire": 6
+            },
+            {
+              "bit": 1,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 5,
+          "rank_coordinates": [
+            1,
+            0,
+            1
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 224,
+          "amplitude_start": 192,
+          "basis_filter": [
+            {
+              "bit": 1,
+              "wire": 5
+            },
+            {
+              "bit": 1,
+              "wire": 6
+            },
+            {
+              "bit": 0,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 6,
+          "rank_coordinates": [
+            1,
+            1,
+            0
+          ],
+          "state_partition": "qubit_address_sharded"
+        },
+        {
+          "amplitude_end": 256,
+          "amplitude_start": 224,
+          "basis_filter": [
+            {
+              "bit": 1,
+              "wire": 5
+            },
+            {
+              "bit": 1,
+              "wire": 6
+            },
+            {
+              "bit": 1,
+              "wire": 7
+            }
+          ],
+          "local_amplitudes": 32,
+          "local_state_bytes": 256,
+          "rank": 7,
+          "rank_coordinates": [
+            1,
+            1,
+            1
+          ],
+          "state_partition": "qubit_address_sharded"
+        }
+      ],
+      "scalability_blockers": [],
+      "scalability_claim_allowed": false,
+      "sharded_wires": [
+        5,
+        6,
+        7
+      ],
+      "silent_statevector_fallback": false,
+      "simulated_communication_bytes": 5120,
+      "simulated_communication_count": 10,
+      "state_mode": "jax_sharded_statevector",
+      "state_partition": "qubit_address_sharded",
+      "statevector_gate_communication_count": 10,
+      "world_size": 8
+    }
+  },
+  "inter_node_communication_bytes": 0,
+  "intra_node_communication_bytes": 94208,
+  "jax_distributed_initialization": null,
+  "jax_global_device_count": 8,
+  "jax_local_device_count": 8,
+  "jax_process_count": 1,
+  "jax_process_index": 0,
+  "local_memory_bytes_by_rank": [
+    256,
+    256,
+    256,
+    256,
+    256,
+    256,
+    256,
+    256
+  ],
+  "local_world_size": 8,
+  "node_count": 1,
+  "peak_intermediate_bytes": 256,
+  "rank_coordinates": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      1,
+      1
+    ],
+    [
+      1,
+      0,
+      0
+    ],
+    [
+      1,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      0
+    ],
+    [
+      1,
+      1,
+      1
+    ]
+  ],
+  "rank_shards": [
+    {
+      "amplitude_end": 32,
+      "amplitude_start": 0,
+      "basis_filter": [
+        {
+          "bit": 0,
+          "wire": 5
+        },
+        {
+          "bit": 0,
+          "wire": 6
+        },
+        {
+          "bit": 0,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 0,
+      "rank_coordinates": [
+        0,
+        0,
+        0
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 64,
+      "amplitude_start": 32,
+      "basis_filter": [
+        {
+          "bit": 0,
+          "wire": 5
+        },
+        {
+          "bit": 0,
+          "wire": 6
+        },
+        {
+          "bit": 1,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 1,
+      "rank_coordinates": [
+        0,
+        0,
+        1
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 96,
+      "amplitude_start": 64,
+      "basis_filter": [
+        {
+          "bit": 0,
+          "wire": 5
+        },
+        {
+          "bit": 1,
+          "wire": 6
+        },
+        {
+          "bit": 0,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 2,
+      "rank_coordinates": [
+        0,
+        1,
+        0
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 128,
+      "amplitude_start": 96,
+      "basis_filter": [
+        {
+          "bit": 0,
+          "wire": 5
+        },
+        {
+          "bit": 1,
+          "wire": 6
+        },
+        {
+          "bit": 1,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 3,
+      "rank_coordinates": [
+        0,
+        1,
+        1
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 160,
+      "amplitude_start": 128,
+      "basis_filter": [
+        {
+          "bit": 1,
+          "wire": 5
+        },
+        {
+          "bit": 0,
+          "wire": 6
+        },
+        {
+          "bit": 0,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 4,
+      "rank_coordinates": [
+        1,
+        0,
+        0
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 192,
+      "amplitude_start": 160,
+      "basis_filter": [
+        {
+          "bit": 1,
+          "wire": 5
+        },
+        {
+          "bit": 0,
+          "wire": 6
+        },
+        {
+          "bit": 1,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 5,
+      "rank_coordinates": [
+        1,
+        0,
+        1
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 224,
+      "amplitude_start": 192,
+      "basis_filter": [
+        {
+          "bit": 1,
+          "wire": 5
+        },
+        {
+          "bit": 1,
+          "wire": 6
+        },
+        {
+          "bit": 0,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 6,
+      "rank_coordinates": [
+        1,
+        1,
+        0
+      ],
+      "state_partition": "qubit_address_sharded"
+    },
+    {
+      "amplitude_end": 256,
+      "amplitude_start": 224,
+      "basis_filter": [
+        {
+          "bit": 1,
+          "wire": 5
+        },
+        {
+          "bit": 1,
+          "wire": 6
+        },
+        {
+          "bit": 1,
+          "wire": 7
+        }
+      ],
+      "local_amplitudes": 32,
+      "local_state_bytes": 256,
+      "rank": 7,
+      "rank_coordinates": [
+        1,
+        1,
+        1
+      ],
+      "state_partition": "qubit_address_sharded"
+    }
+  ],
+  "reference": {
+    "backend": "flagquantum_jax_rank_local_reference",
+    "gradient_norm": 1.0181585550308228,
+    "loss": 7.6272077560424805
+  },
+  "run_commands": "\nCPU 8-device local pmap:\n  PowerShell:\n    $env:XLA_FLAGS=\"--xla_force_host_platform_device_count=8\"\n    python benchmarks/statevector_pmap_all_to_all_profile.py --world-size 8 --n-wires 8 --layers 2 --iters 10 --warmup 2 --json-output benchmarks/results/statevector_pmap_all_to_all_cpu8.json\n\n  Bash:\n    XLA_FLAGS=--xla_force_host_platform_device_count=8 python benchmarks/statevector_pmap_all_to_all_profile.py --world-size 8 --n-wires 8 --layers 2 --iters 10 --warmup 2 --json-output benchmarks/results/statevector_pmap_all_to_all_cpu8.json\n\nSingle-node 4-GPU pmap:\n  python benchmarks/statevector_pmap_all_to_all_profile.py --world-size 4 --n-wires 8 --layers 2 --iters 50 --warmup 10 --json-output benchmarks/results/statevector_pmap_all_to_all_4gpu.json\n\nSingle-node 8-GPU pmap:\n  python benchmarks/statevector_pmap_all_to_all_profile.py --world-size 8 --n-wires 10 --layers 2 --iters 50 --warmup 10 --json-output benchmarks/results/statevector_pmap_all_to_all_8gpu.json\n\nTwo-node 16-GPU pmap, one Python process per node:\n  node 0:\n    python benchmarks/statevector_pmap_all_to_all_profile.py --jax-distributed --jax-coordinator-address <node0-ip>:12355 --jax-num-processes 2 --jax-process-id 0 --world-size 16 --n-wires 12 --layers 2 --iters 50 --warmup 10 --json-output benchmarks/results/statevector_pmap_all_to_all_2node16gpu.json\n  node 1:\n    python benchmarks/statevector_pmap_all_to_all_profile.py --jax-distributed --jax-coordinator-address <node0-ip>:12355 --jax-num-processes 2 --jax-process-id 1 --world-size 16 --n-wires 12 --layers 2 --iters 50 --warmup 10\n",
+  "scalability_audit": {
+    "distribution_semantics": "sharded_across_ranks",
+    "errors": [],
+    "scalability_claim_allowed": false,
+    "valid": true,
+    "warnings": []
+  },
+  "scalability_claim_allowed": false,
+  "sharded_wires": [
+    5,
+    6,
+    7
+  ],
+  "single_gpu_expected_oom": false,
+  "state_partition": "qubit_address_sharded",
+  "world_size": 8,
+  "benchmark_evidence_class": "non_release_smoke",
+  "payload_kind": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "non_release_evidence": true,
+  "scalability_blockers": [
+    "development_smoke_not_release_scalability_evidence"
+  ],
+  "benchmark_hygiene_note": "development_smoke_not_release_scalability_evidence",
+  "release_gate_blockers": [
+    "single_gpu_capacity_failure_not_demonstrated",
+    "optimizer_update_ownership_not_release_evidence",
+    "development_smoke_not_promotable"
+  ]
+}

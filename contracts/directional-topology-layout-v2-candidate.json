@@ -1,0 +1,84 @@
+{
+  "schema": "flagquantum.directional_topology_layout_candidate_contract",
+  "status": "approved_evidence_handoff_complete",
+  "proposed_on": "2026-09-10",
+  "approved_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT",
+  "evidence_schema": "flagquantum.compilation_evidence_bundle",
+  "candidate_version": "2.0",
+  "v1_policy": "strict_read_only_compatibility",
+  "top_level_fields_unchanged": true,
+  "coupling_fields": ["n_wires", "directed_edges", "direction_semantics"],
+  "direction_semantics": "directed_cx",
+  "physical_plan_added_fields": [
+    "direction_legalization_identity",
+    "reversed_cx_count"
+  ],
+  "instruction_added_fields": [
+    "native_instruction_index",
+    "direction_replacement_ordinal",
+    "direction_rewrite"
+  ],
+  "direction_rewrite_values": [
+    "none",
+    "reverse_cx_h_conjugation"
+  ],
+  "pipeline": [
+    "explicit_initial_placement_and_topology_routing",
+    "native_gate_legalization",
+    "directed_two_qubit_legalization",
+    "final_native_and_directional_legality",
+    "dependency_schedule",
+    "deterministic_emission_and_conformance"
+  ],
+  "semantic_profile": {
+    "authoritative_circuit": "flagquantum.core.ir.CircuitIR",
+    "topology": "directed_cx_edges",
+    "initial_layout": "explicit_complete_permutation",
+    "final_layout": "identity_restored",
+    "physical_capacity": "equal_to_logical_capacity",
+    "initial_state": "standard_all_zero",
+    "reverse_cx": "h_conjugation_when_h_and_cx_are_target_native",
+    "other_asymmetric_two_qubit_rewrites": "unsupported_fail_closed",
+    "second_target_ir": false
+  },
+  "compatibility": {
+    "coupling_map_changed": false,
+    "compilation_evidence_v1_changed": false,
+    "program_artifact_v1_changed": false,
+    "program_artifact_v2_changed": false,
+    "automatic_v1_promotion": false,
+    "public_root_export": false,
+    "default_path_change": false
+  },
+  "limits_inherited_from_v1": true,
+  "excluded_claims": [
+    "physical_ancilla_allocation",
+    "partial_or_sparse_layout",
+    "observable_remapping",
+    "arbitrary_directed_two_qubit_synthesis",
+    "calibration_aware_optimization",
+    "gate_duration",
+    "pulse_scheduling",
+    "crosstalk",
+    "fault_tolerant_resource_expansion",
+    "qpu_correctness_or_performance"
+  ],
+  "historical_migration": {
+    "semantic_oracle": "ir_phase2_batch_c",
+    "restore_removed_private_tree": false,
+    "reuse_directed_graph_invariants": true,
+    "reuse_reverse_cx_identity": true,
+    "reuse_layout_and_gradient_differential_cases": true
+  },
+  "implementation": {
+    "authorized": true,
+    "compiler_types_added": true,
+    "compiler_pipeline_changed": true,
+    "physical_plan_v2_added": true,
+    "core_evidence_v2_added": true,
+    "runtime_verifier_added": true,
+    "deployment_adapter_added": true
+  }
+}

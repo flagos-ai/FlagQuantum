@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""Run the CPU-safe checks that should block a FlagQuantum push.
+
+The hook reuses checked-in pre-commit hooks and CI tiers. It intentionally
+leaves clean-environment version matrices, package installation, supply-chain
+audits, and accelerator jobs to GitHub Actions.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Sequence
+
+Command = tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Check:
+    name: str
+    command: Command
+
+
+def environment_executable(python_executable: str, name: str) -> str:
+    python_path = Path(python_executable)
+    if python_path.is_absolute():
+        candidate = python_path.with_name(name)
+        if candidate.is_file():
+            return str(candidate)
+    return name
+
+
+def checks(python_executable: str) -> tuple[Check, ...]:
+    pre_commit = environment_executable(python_executable, "pre-commit")
+    mypy = environment_executable(python_executable, "mypy")
+    return (
+        Check(
+            "pre-commit",
+            (
+                pre_commit,
+                "run",
+                "--all-files",
+                "--hook-stage",
+                "pre-commit",
+                "--show-diff-on-failure",
+            ),
+        ),
+        Check(
+            "strict typed trainable module",
+            (
+                mypy,
+                "--strict",
+                "--ignore-missing-imports",
+                "--follow-imports",
+                "silent",
+                "flagquantum/runtime/module.py",
+                "flagquantum/runtime/training.py",
+            ),
+        ),
+        Check(
+            "strict typed execution mainline",
+            (
+                mypy,
+                "--strict",
+                "--ignore-missing-imports",
+                "--follow-imports",
+                "silent",
+                "flagquantum/runtime/execution_plan.py",
+                "flagquantum/runtime/execution_plan_contract.py",
+                "flagquantum/runtime/execution.py",
+                "flagquantum/runtime/distributed/protocols.py",
+                "flagquantum/runtime/backend_registry.py",
+                "flagquantum/deployment",
+            ),
+        ),
+        Check(
+            "strict typed interoperability contract",
+            (
+                mypy,
+                "--strict",
+                "--ignore-missing-imports",
+                "--follow-imports",
+                "silent",
+                "flagquantum/ecosystem/contracts.py",
+                "flagquantum/ecosystem/conformance.py",
+                "flagquantum/ecosystem/registry.py",
+                "flagquantum/ecosystem/pennylane/adapter.py",
+                "flagquantum/ecosystem/pennylane/conformance.py",
+                "flagquantum/ecosystem/pennylane/models.py",
+                "flagquantum/ecosystem/qiskit/adapter.py",
+                "flagquantum/ecosystem/qiskit/conformance.py",
+                "flagquantum/ecosystem/qiskit/models.py",
+            ),
+        ),
+        Check(
+            "capability maturity",
+            (python_executable, "tools/check_capability_maturity.py"),
+        ),
+        Check(
+            "dependency policy",
+            (python_executable, "tools/check_dependency_policy.py"),
+        ),
+        Check(
+            "Qiskit interoperability contract",
+            (python_executable, "tools/check_qiskit_interop_contract.py"),
+        ),
+        Check(
+            "PennyLane interoperability contract",
+            (python_executable, "tools/check_pennylane_interop_contract.py"),
+        ),
+        Check(
+            "Double-Single FP32 contract",
+            (python_executable, "tools/check_double_single_contract.py"),
+        ),
+        Check(
+            "split real/imag statevector P0 contract",
+            (python_executable, "tools/check_split_real_imag_contract.py"),
+        ),
+        Check(
+            "split real/imag statevector P1 contract",
+            (python_executable, "tools/check_split_real_imag_p1_contract.py"),
+        ),
+        Check(
+            "split real/imag P1 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_training_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P2 precision contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p2_precision_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P2 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_precision_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P3 Double-Single contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p3_double_single_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P3 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_double_single_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P4 device Double-Single contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p4_device_double_single_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P4 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_device_double_single_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P5 autograd/optimizer contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P5 optimizer A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_optimizer_evidence.py",
+            ),
+        ),
+        Check(
+            "domestic single-card certification contract",
+            (
+                python_executable,
+                "tools/check_domestic_single_card_contract.py",
+            ),
+        ),
+        Check(
+            "required-check contract",
+            (python_executable, "tools/validate_required_checks.py"),
+        ),
+        Check(
+            "lazy import budget",
+            (python_executable, "tools/check_import_time.py"),
+        ),
+        Check(
+            "smoke and unit tier",
+            (python_executable, "tools/ci_tier.py", "pr-default"),
+        ),
+        Check(
+            "runtime integration tier",
+            (python_executable, "tools/ci_tier.py", "pr-runtime"),
+        ),
+        Check(
+            "distributed CPU and release-contract tier",
+            (python_executable, "tools/ci_tier.py", "pr-distributed"),
+        ),
+    )
+
+
+def run_checks(
+    selected: Sequence[Check],
+    *,
+    root: Path,
+    dry_run: bool,
+    python_executable: str | None = None,
+) -> int:
+    environment = os.environ.copy()
+    environment.setdefault(
+        "BLACK_CACHE_DIR",
+        str(Path(tempfile.gettempdir()) / "flagquantum-black-cache"),
+    )
+    if python_executable:
+        python_bin = str(Path(python_executable).resolve().parent)
+        environment["PATH"] = os.pathsep.join((python_bin, environment.get("PATH", "")))
+    for index, check in enumerate(selected, start=1):
+        rendered = " ".join(check.command)
+        print(
+            f"\n[{index}/{len(selected)}] {check.name}\n+ {rendered}",
+            flush=True,
+        )
+        if dry_run:
+            continue
+        executable = check.command[0]
+        if shutil.which(executable, path=environment["PATH"]) is None:
+            print(
+                f"error: required executable is not installed: {executable}",
+                file=sys.stderr,
+            )
+            return 127
+        result = subprocess.run(
+            check.command,
+            cwd=root,
+            check=False,
+            env=environment,
+        )
+        if result.returncode != 0:
+            print(
+                f"\npre-push blocked by: {check.name}",
+                file=sys.stderr,
+            )
+            return result.returncode
+    print("\nFlagQuantum pre-push gate passed.", flush=True)
+    return 0
+
+
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the gate without executing commands.",
+    )
+    parser.add_argument(
+        "--python",
+        default=sys.executable,
+        help="Python executable used by checked-in CI tools.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+    root = Path(__file__).resolve().parents[1]
+    return run_checks(
+        checks(args.python),
+        root=root,
+        dry_run=args.dry_run,
+        python_executable=args.python,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

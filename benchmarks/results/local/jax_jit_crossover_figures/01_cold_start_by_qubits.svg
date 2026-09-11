@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#243447}.title{font-size:25px;font-weight:700;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:12px;fill:#64748B}.label{font-size:13px}.value{font-size:12px;font-weight:700}</style>
+<text x="105" y="38" class="title">JAX JIT initial compilation cost versus simulation size</text>
+<text x="105" y="62" class="sub">NVIDIA A800-SXM4-80GB · single_device_fast_path · loss + gradient · median of fresh-process runs</text>
+<line x1="105" y1="528.0" x2="1035" y2="528.0" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="532.0" text-anchor="end" class="axis">10^-1</text>
+<line x1="105" y1="380.7" x2="1035" y2="380.7" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="384.7" text-anchor="end" class="axis">10^0</text>
+<line x1="105" y1="233.3" x2="1035" y2="233.3" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="237.3" text-anchor="end" class="axis">10^1</text>
+<line x1="105" y1="86.0" x2="1035" y2="86.0" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="90.0" text-anchor="end" class="axis">10^2</text>
+<line x1="105" y1="528" x2="1035" y2="528" stroke="#94A3B8"/>
+<text x="105.0" y="556" text-anchor="middle" class="label">4</text>
+<text x="337.5" y="556" text-anchor="middle" class="label">8</text>
+<text x="570.0" y="556" text-anchor="middle" class="label">12</text>
+<text x="802.5" y="556" text-anchor="middle" class="label">16</text>
+<text x="1035.0" y="556" text-anchor="middle" class="label">20</text>
+<text x="570.0" y="593" text-anchor="middle" class="label">Qubits（state dimension = 2ⁿ）</text>
+<text transform="translate(28 307.0) rotate(-90)" text-anchor="middle" class="label">Cold-start time (s, log scale)</text>
+<polyline points="105.0,489.2 337.5,481.0 570.0,472.8 802.5,464.5 1035.0,452.2" fill="none" stroke="#3478C5" stroke-width="3"/>
+<circle cx="105.0" cy="489.2" r="5" fill="#3478C5" stroke="#FFF" stroke-width="2"/>
+<circle cx="337.5" cy="481.0" r="5" fill="#3478C5" stroke="#FFF" stroke-width="2"/>
+<circle cx="570.0" cy="472.8" r="5" fill="#3478C5" stroke="#FFF" stroke-width="2"/>
+<circle cx="802.5" cy="464.5" r="5" fill="#3478C5" stroke="#FFF" stroke-width="2"/>
+<circle cx="1035.0" cy="452.2" r="5" fill="#3478C5" stroke="#FFF" stroke-width="2"/>
+<line x1="705" y1="60" x2="730" y2="60" stroke="#3478C5" stroke-width="4"/>
+<text x="737" y="65" class="axis">PyTorch first</text>
+<polyline points="105.0,277.5 337.5,241.8 570.0,218.2 802.5,209.6 1035.0,199.0" fill="none" stroke="#D07124" stroke-width="3"/>
+<circle cx="105.0" cy="277.5" r="5" fill="#D07124" stroke="#FFF" stroke-width="2"/>
+<circle cx="337.5" cy="241.8" r="5" fill="#D07124" stroke="#FFF" stroke-width="2"/>
+<circle cx="570.0" cy="218.2" r="5" fill="#D07124" stroke="#FFF" stroke-width="2"/>
+<circle cx="802.5" cy="209.6" r="5" fill="#D07124" stroke="#FFF" stroke-width="2"/>
+<circle cx="1035.0" cy="199.0" r="5" fill="#D07124" stroke="#FFF" stroke-width="2"/>
+<line x1="870" y1="60" x2="895" y2="60" stroke="#D07124" stroke-width="4"/>
+<text x="902" y="65" class="axis">JAX build+first</text>
+</svg>

@@ -1,0 +1,203 @@
+"""Local tensor-network plan construction and numerical execution."""
+
+from __future__ import annotations
+
+from typing import Any, Sequence
+
+import torch
+
+from ..gate_matrix import gate_matrix
+from .models import (
+    CompiledTNProgram,
+    ContractionPathStep,
+    TensorNetworkContractionPlan,
+    TensorNetworkNode,
+)
+from .path_search import _as_ir
+from .state import TensorNetworkState
+
+
+def _initial_state_tensors(
+    circuit_or_ir: Any,
+    *,
+    bsz: int,
+    n_wires: int,
+    device: torch.device | str,
+    dtype: torch.dtype,
+) -> tuple[tuple[torch.Tensor, ...], bool]:
+    """Keep explicit inputs joint and represent the default zero state sparsely."""
+
+    if getattr(circuit_or_ir, "_inputs", None) is not None:
+        state = circuit_or_ir.initial_state().to(device=device, dtype=dtype)
+        if state.ndim == 1:
+            state = state.reshape(1, -1)
+        reshaped = state.reshape((state.shape[0],) + (2,) * n_wires)
+        return (reshaped,), True
+    zero = torch.zeros(int(bsz), 2, dtype=dtype, device=device)
+    zero[:, 0] = 1
+    return tuple(zero for _ in range(n_wires)), False
+
+
+def build_local_tensor_network(
+    circuit_or_ir: Any,
+    *,
+    bsz: int = 1,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype | None = None,
+) -> TensorNetworkContractionPlan:
+    """Build a local tensor-network contraction plan from a circuit or IR."""
+
+    ir = _as_ir(circuit_or_ir)
+    dtype = dtype or torch.complex64
+    initial_tensors, joint_initial_state = _initial_state_tensors(
+        circuit_or_ir, bsz=bsz, n_wires=ir.n_wires, device=device, dtype=dtype
+    )
+    bsz = int(initial_tensors[0].shape[0]) if initial_tensors else int(bsz)
+    batch_label = 0
+    current_labels = list(range(1, ir.n_wires + 1))
+    next_label = ir.n_wires + 1
+    nodes: list[TensorNetworkNode] = []
+    dynamic_tensors = list(initial_tensors)
+    binding_source = getattr(circuit_or_ir, "_parameter_bindings", None)
+    parameter_bindings = None if binding_source is None else binding_source.values()
+    program_cache = getattr(circuit_or_ir, "_backend_programs", None)
+    program_key = ("tensor_network", bsz)
+    compiled_structure = (
+        None if program_cache is None else program_cache.get(program_key)
+    )
+    if compiled_structure is not None and not isinstance(
+        compiled_structure, CompiledTNProgram
+    ):
+        raise TypeError("cached tensor-network program must be a CompiledTNProgram")
+    # Binding many small node objects costs more than rebuilding descriptors on
+    # CPU. Reuse the compiled template only with the fused CUDA path.
+    active_structure = (
+        compiled_structure if torch.device(device).type == "cuda" else None
+    )
+
+    if active_structure is None:
+        if joint_initial_state:
+            nodes.append(
+                TensorNetworkNode(
+                    tensor=initial_tensors[0],
+                    labels=(batch_label, *current_labels),
+                    name="initial_state",
+                )
+            )
+        else:
+            nodes.extend(
+                TensorNetworkNode(
+                    tensor=tensor,
+                    labels=(batch_label, current_labels[wire]),
+                    name=f"init_{wire}",
+                )
+                for wire, tensor in enumerate(initial_tensors)
+            )
+
+    for index, instruction in enumerate(ir.instructions):
+        if instruction.metadata.get("is_channel"):
+            raise NotImplementedError(
+                "Tensor network mode currently supports unitary circuit instructions."
+            )
+        matrix = gate_matrix(
+            instruction,
+            bsz=bsz,
+            device=device,
+            dtype=dtype,
+            parameter_bindings=parameter_bindings,
+        )
+        if matrix.ndim == 2:
+            tensor = matrix.reshape((2,) * len(instruction.wires) * 2)
+            input_labels = tuple(current_labels[wire] for wire in instruction.wires)
+            output_labels = tuple(
+                range(next_label, next_label + len(instruction.wires))
+            )
+            next_label += len(instruction.wires)
+            labels = output_labels + input_labels
+        else:
+            tensor = matrix.reshape((bsz,) + (2,) * len(instruction.wires) * 2)
+            input_labels = tuple(current_labels[wire] for wire in instruction.wires)
+            output_labels = tuple(
+                range(next_label, next_label + len(instruction.wires))
+            )
+            next_label += len(instruction.wires)
+            labels = (batch_label,) + output_labels + input_labels
+        for wire, label in zip(instruction.wires, output_labels):
+            current_labels[wire] = label
+        dynamic_tensors.append(tensor)
+        if active_structure is None:
+            nodes.append(
+                TensorNetworkNode(
+                    tensor=tensor,
+                    labels=labels,
+                    name=f"{index}:{instruction.name}",
+                    metadata={"wires": instruction.wires},
+                )
+            )
+
+    if active_structure is not None:
+        return active_structure.bind(dynamic_tensors, program_cache=program_cache)
+
+    output_labels = (batch_label,) + tuple(current_labels)
+    path = tuple(
+        ContractionPathStep(
+            node_index=index,
+            name=node.name,
+            labels=node.labels,
+            shape=tuple(node.tensor.shape),
+        )
+        for index, node in enumerate(nodes)
+    )
+    plan = TensorNetworkContractionPlan(
+        n_wires=ir.n_wires,
+        bsz=bsz,
+        nodes=tuple(nodes),
+        output_labels=output_labels,
+        path=path,
+        program_cache=program_cache,
+    )
+    if program_cache is not None and compiled_structure is None:
+        program_cache[program_key] = CompiledTNProgram.compile(plan)
+    return plan
+
+
+def ensure_local_tensor_network_plan(
+    plan_or_circuit: TensorNetworkContractionPlan | Any,
+) -> TensorNetworkContractionPlan:
+    """Return an existing plan or build one with the caller's local settings."""
+
+    if isinstance(plan_or_circuit, TensorNetworkContractionPlan):
+        return plan_or_circuit
+    if hasattr(plan_or_circuit, "to_ir"):
+        return build_local_tensor_network(
+            plan_or_circuit,
+            bsz=plan_or_circuit.bsz,
+            device=plan_or_circuit.device,
+            dtype=plan_or_circuit.dtype,
+        )
+    return build_local_tensor_network(plan_or_circuit)
+
+
+def run_local_tensor_network(
+    circuit_or_ir: Any,
+    *,
+    bsz: int,
+    device: torch.device | str,
+    dtype: torch.dtype | None,
+    contraction_strategy: str,
+    max_intermediate_size: int | None,
+    sliced_labels: Sequence[int] | None,
+    dense_observable_wires: int,
+) -> TensorNetworkState:
+    """Build and return one local tensor-network numerical state."""
+
+    plan = build_local_tensor_network(
+        circuit_or_ir, bsz=bsz, device=device, dtype=dtype
+    )
+    return TensorNetworkState(
+        plan,
+        contraction_strategy=contraction_strategy,
+        max_intermediate_size=max_intermediate_size,
+        sliced_labels=sliced_labels,
+        dense_observable_wires=dense_observable_wires,
+    )

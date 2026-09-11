@@ -1,0 +1,3521 @@
+{
+  "benchmark": "mps_site_compiled_24q_8xa100_site_sharded",
+  "benchmark_evidence_class": "non_release_smoke",
+  "best_checkpoints": [
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-0.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-1.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-2.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-3.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-4.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-5.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-6.pt",
+    "benchmarks/results/scalability/mps_site_compiled_24q_8xa100/site_sharded.result.json.best.rank-7.pt"
+  ],
+  "capacity_blockers": [
+    "production_gpu_capacity_baseline_not_attached"
+  ],
+  "capacity_claim_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "cold_step_seconds": 9.85201546549797,
+  "communication": {
+    "backend": "nccl",
+    "measured_logical_boundary_bytes": 9856
+  },
+  "coupling_relative_error": 0.20010167360305786,
+  "distribution_semantics": "requires_runtime_summary",
+  "early_stopping": {
+    "best_loss": 2.0180086721666157e-05,
+    "best_step": 2,
+    "min_delta": 1e-08,
+    "patience": 0,
+    "patience_improvement_anchor": 2.0180086721666157e-05,
+    "stop_reason": "maximum_steps_reached",
+    "target_loss": 1e-07
+  },
+  "field_relative_error": 0.29419848322868347,
+  "final_loss": 2.0180086721666157e-05,
+  "full_learned_mps_materialization": false,
+  "gpu_evidence": {
+    "accelerator": true,
+    "peak_memory_bytes_by_rank": [
+      59168256,
+      23524864,
+      23523840,
+      23523840,
+      23523840,
+      23523840,
+      23523840,
+      59165184
+    ],
+    "rank_owned_tensor_bytes": [
+      288,
+      384,
+      384,
+      384,
+      384,
+      384,
+      384,
+      288
+    ]
+  },
+  "held_out_validation": {
+    "execution": "site_sharded_observation_scan",
+    "mse": 0.00025044585345312953,
+    "probe_count": 1,
+    "seed": 2027,
+    "time_steps": [
+      2
+    ]
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "kernel_execution": "torch_compile_rank_local_buckets",
+  "local_world_size": 8,
+  "loss_history": [
+    2.3932798285386525e-05,
+    2.0180086721666157e-05
+  ],
+  "mps_state_sharded_across_ranks": true,
+  "n_wires": 24,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "observable_execution": "torch_compile_real_channel_rank_scan",
+  "observable_term_count": 24,
+  "observation_sites": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22
+  ],
+  "optimizer_steps": 2,
+  "parameters": {
+    "learned_coupling": [
+      0.6399219036102295,
+      0.6399728655815125,
+      0.6399665474891663,
+      0.639970600605011,
+      0.6399620771408081,
+      0.6399669647216797,
+      0.6399641036987305,
+      0.6399705410003662,
+      0.6399710774421692,
+      0.6399612426757812,
+      0.6399534344673157,
+      0.6005036234855652,
+      0.6039368510246277,
+      0.6000721454620361,
+      0.6000935435295105,
+      0.6000850200653076,
+      0.6001315116882324,
+      0.6003533601760864,
+      0.600999116897583,
+      0.6033347249031067,
+      0.6061533689498901,
+      0.6396073698997498,
+      0.6394712328910828
+    ],
+    "learned_field": [
+      0.5399489998817444,
+      0.539934515953064,
+      0.5399722456932068,
+      0.5399578809738159,
+      0.5399641394615173,
+      0.5399401187896729,
+      0.5399649739265442,
+      0.5399371981620789,
+      0.5399706363677979,
+      0.5399397611618042,
+      0.5399525761604309,
+      0.5398711562156677,
+      0.5002297163009644,
+      0.5001404285430908,
+      0.5000724196434021,
+      0.5000833868980408,
+      0.5001293420791626,
+      0.5001773834228516,
+      0.5013082027435303,
+      0.5019665956497192,
+      0.506270706653595,
+      0.5076281428337097,
+      0.5394083857536316,
+      0.5390997529029846
+    ],
+    "true_coupling": [
+      0.7700000405311584,
+      0.8084993958473206,
+      0.8244311213493347,
+      0.8290029764175415,
+      0.835759162902832,
+      0.8526862859725952,
+      0.8773971796035767,
+      0.8978204131126404,
+      0.8980976343154907,
+      0.8668063879013062,
+      0.8034548759460449,
+      0.7200000286102295,
+      0.6365452408790588,
+      0.5731936693191528,
+      0.5419023633003235,
+      0.5421796441078186,
+      0.5626028776168823,
+      0.587313711643219,
+      0.604240894317627,
+      0.6109970808029175,
+      0.615568995475769,
+      0.631500780582428,
+      0.6700000762939453
+    ],
+    "true_field": [
+      0.5574086904525757,
+      0.5749493837356567,
+      0.5653478503227234,
+      0.5233314037322998,
+      0.46023815870285034,
+      0.3979564309120178,
+      0.35637515783309937,
+      0.34221431612968445,
+      0.34621790051460266,
+      0.3503839671611786,
+      0.3405402600765228,
+      0.31619730591773987,
+      0.2913587689399719,
+      0.28573843836784363,
+      0.3119513690471649,
+      0.3668338656425476,
+      0.43245258927345276,
+      0.48623546957969666,
+      0.5138876438140869,
+      0.5169943571090698,
+      0.5105950236320496,
+      0.5123729705810547,
+      0.5304185748100281,
+      0.5574086904525757
+    ]
+  },
+  "probe_count": 1,
+  "probe_microbatches_per_step": 1,
+  "rank_records": [
+    {
+      "allocated_memory_bytes": 17096192,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 48,
+      "boundary_gate_count": 7,
+      "boundary_messages": 2,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 120,
+      "communication_messages": 6,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 12.110919869504869,
+        "compiled_calls": 107,
+        "dynamo_graphs": 19,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 11,
+        "transfer_calls": 82,
+        "triton_kernels": 222
+      },
+      "device": "cuda:0",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 59168256,
+      "rank": 0,
+      "rank_ownership": {
+        "local_tensor_bytes": 288,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          0,
+          1,
+          2
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 0,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 0,
+        "node_rank": 0,
+        "rank": 0
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17096192,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.502151946537197,
+        "compiled_calls": 92,
+        "dynamo_graphs": 13,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 69,
+        "triton_kernels": 163
+      },
+      "device": "cuda:1",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23524864,
+      "rank": 1,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          3,
+          4,
+          5
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 1,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 1,
+        "node_rank": 0,
+        "rank": 1
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17095168,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.510115275159478,
+        "compiled_calls": 107,
+        "dynamo_graphs": 13,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 84,
+        "triton_kernels": 147
+      },
+      "device": "cuda:2",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23523840,
+      "rank": 2,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          6,
+          7,
+          8
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 2,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 2,
+        "node_rank": 0,
+        "rank": 2
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17095168,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.248019045218825,
+        "compiled_calls": 92,
+        "dynamo_graphs": 13,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 69,
+        "triton_kernels": 147
+      },
+      "device": "cuda:3",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23523840,
+      "rank": 3,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          9,
+          10,
+          11
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 3,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 3,
+        "node_rank": 0,
+        "rank": 3
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17095168,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.329629428684711,
+        "compiled_calls": 107,
+        "dynamo_graphs": 13,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 84,
+        "triton_kernels": 147
+      },
+      "device": "cuda:4",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23523840,
+      "rank": 4,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          12,
+          13,
+          14
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 4,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 4,
+        "node_rank": 0,
+        "rank": 4
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17095168,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.21819369494915,
+        "compiled_calls": 92,
+        "dynamo_graphs": 13,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 69,
+        "triton_kernels": 151
+      },
+      "device": "cuda:5",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23523840,
+      "rank": 5,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          15,
+          16,
+          17
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 5,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 5,
+        "node_rank": 0,
+        "rank": 5
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17095168,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 208,
+      "boundary_gate_count": 7,
+      "boundary_messages": 4,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 408,
+      "communication_messages": 9,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 10.414953889325261,
+        "compiled_calls": 107,
+        "dynamo_graphs": 14,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 9,
+        "transfer_calls": 84,
+        "triton_kernels": 158
+      },
+      "device": "cuda:6",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 23523840,
+      "rank": 6,
+      "rank_ownership": {
+        "local_tensor_bytes": 384,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          18,
+          19,
+          20
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 6,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 6,
+        "node_rank": 0,
+        "rank": 6
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    },
+    {
+      "allocated_memory_bytes": 17093120,
+      "backend": "nccl",
+      "blockers": [
+        "mps_sharded_backward_pending",
+        "mps_sharded_optimizer_pending",
+        "accelerator_capacity_acceptance_pending"
+      ],
+      "bond_dimensions": [
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2,
+        4,
+        2
+      ],
+      "boundary_bytes": 48,
+      "boundary_gate_count": 7,
+      "boundary_messages": 2,
+      "canonicalization_bytes_by_rank": [
+        72,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        72
+      ],
+      "canonicalization_messages_by_rank": [
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        4
+      ],
+      "canonicalization_temporary_bytes_by_rank": [
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384
+      ],
+      "claim_evidence_type": "accelerator_semantics",
+      "communication_bytes": 120,
+      "communication_messages": 6,
+      "communication_primitive": "torch.distributed_point_to_point",
+      "compiled_site_kernels": {
+        "compile_seconds": 12.671107155270875,
+        "compiled_calls": 94,
+        "dynamo_graphs": 17,
+        "rxx_bucket_calls": 14,
+        "ry_bucket_calls": 11,
+        "transfer_calls": 69,
+        "triton_kernels": 219
+      },
+      "device": "cuda:7",
+      "distribution_semantics": "sharded_across_ranks",
+      "error_budget_policy": "enforce",
+      "error_budget_satisfied": null,
+      "executor": "pytorch_native_rank_owned_mps_forward_v1",
+      "full_mps_reconstruction_count": 0,
+      "full_state_materialization": false,
+      "global_error_budget": null,
+      "hostname": "redacted",
+      "jax_imported": false,
+      "jax_required": false,
+      "local_gate_count": 8,
+      "local_tensor_bytes_by_rank": [
+        288,
+        384,
+        384,
+        384,
+        384,
+        384,
+        384,
+        288
+      ],
+      "local_world_size": 8,
+      "mixed_canonical_residual": 4.172325134277344e-07,
+      "node_count": 1,
+      "orthogonality_center": 23,
+      "partition_history": [
+        [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ]
+      ],
+      "peak_memory_bytes": 59165184,
+      "rank": 7,
+      "rank_ownership": {
+        "local_tensor_bytes": 288,
+        "local_tensor_count": 3,
+        "local_tensor_wires": [
+          21,
+          22,
+          23
+        ],
+        "ownership": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ],
+          [
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            12,
+            13,
+            14
+          ],
+          [
+            15,
+            16,
+            17
+          ],
+          [
+            18,
+            19,
+            20
+          ],
+          [
+            21,
+            22,
+            23
+          ]
+        ],
+        "rank": 7,
+        "world_size": 8
+      },
+      "rank_placement": {
+        "local_rank": 7,
+        "node_rank": 0,
+        "rank": 7
+      },
+      "rebalance_bytes": 0,
+      "rebalance_count": 0,
+      "rebalance_messages": 0,
+      "scalability_claim_allowed": false,
+      "state_mode": "distributed_mps",
+      "state_norms": [
+        1.0000001192092896
+      ],
+      "truncation_error": 0.0,
+      "truncation_gradient_metadata": {
+        "exact": false,
+        "policy": "unsupported",
+        "status": "unsupported"
+      },
+      "truncation_records": [
+        {
+          "bond": 0,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 2,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 1,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 4,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 3,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 5,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 6,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 8,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 7,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 10,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 9,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 11,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 12,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 14,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 13,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 16,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 15,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 17,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 18,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 20,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_boundary_gate"
+        },
+        {
+          "bond": 19,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 22,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 2,
+          "rank": 2,
+          "source": "rank_local_gate"
+        },
+        {
+          "bond": 21,
+          "discarded_weight": 0.0,
+          "method": "qr",
+          "original_rank": 4,
+          "rank": 4,
+          "source": "rank_local_gate"
+        }
+      ],
+      "truncation_semantics": "exact",
+      "world_size": 8
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "runtime evidence summary incomplete"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_hamiltonian_identification.site_sharded.v2",
+  "seconds": 10.157728226855397,
+  "seconds_per_completed_step": 5.078864113427699,
+  "task": "nonuniform_1d_hamiltonian_identification",
+  "teacher_full_mps_materialization": false,
+  "teacher_target_generation": "site_sharded_observation_scan",
+  "time_steps": [
+    1
+  ],
+  "training_steps": 2,
+  "warm_step_seconds": [
+    0.30143611412495375
+  ],
+  "world_size": 8
+}

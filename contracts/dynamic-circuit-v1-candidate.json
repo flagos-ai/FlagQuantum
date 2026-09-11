@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "status": "frozen",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_010_DYNAMIC_CIRCUIT.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-09-01",
+    "approved_scope": "DynamicCircuit construction contract only"
+  },
+  "stable_extension": {
+    "namespace": "flagquantum.dynamic",
+    "additions": ["DynamicCircuit"],
+    "new_namespace_only": ["DynamicCircuit"]
+  },
+  "public_signatures": {
+    "DynamicCircuit": "(n_qubits: 'int | None' = None, *, n_wires: 'int | None' = None, nqubits: 'int | None' = None, bsz: 'int' = 1, device: 'torch.device | str | None' = None, dtype: 'torch.dtype | None' = None, inputs: 'torch.Tensor | None' = None, config: 'RuntimeConfig | None' = None) -> 'None'",
+    "DynamicCircuit.measure": "(self, wire: 'int', *, classical_bit: 'int | None' = None) -> 'DynamicCircuit'",
+    "DynamicCircuit.reset": "(self, wire: 'int') -> 'DynamicCircuit'",
+    "DynamicCircuit.conditional": "(self, name: 'str', wires: 'Iterable[int] | int', *, classical_bit: 'int | None' = None, equals: 'int' = 1, conditions: 'Mapping[int, int] | None' = None, params: 'Mapping[str, Any] | None' = None, matrix: 'Any | None' = None) -> 'DynamicCircuit'",
+    "DynamicCircuit.state": "(self, *, refresh: 'bool' = False) -> 'torch.Tensor'"
+  },
+  "construction_semantics": {
+    "ir_boundary": "CircuitIR v1",
+    "measure_default_classical_bit": "same index as measured wire",
+    "classical_bits": "non-negative integers",
+    "condition_values": [0, 1],
+    "multiple_conditions": "logical conjunction in ascending classical-bit order",
+    "reset_semantics": "measure and prepare computational zero",
+    "builder_methods_are_chainable": true,
+    "static_gate_set": "inherits frozen Circuit operator schema",
+    "dense_state_execution_for_dynamic_instructions": false
+  },
+  "error_contract": {
+    "invalid_wire_or_condition": "ValidationError",
+    "state_on_dynamic_program": "CapabilityError",
+    "wrong_python_type": "TypeError"
+  },
+  "result_boundary": {
+    "stable_result": "flagquantum.ExecutionResult",
+    "experimental_native_result": "flagquantum.experimental.dynamic.DynamicExecutionResult",
+    "projection": "DynamicExecutionResult.to_execution_result",
+    "native_result_candidate_stable": false,
+    "reason": "native final-state availability and provider metadata differ by implementation"
+  },
+  "excluded_from_stable_extension": [
+    "DynamicExecutionResult",
+    "run_dynamic",
+    "routing",
+    "deployment",
+    "OpenQASM dialects",
+    "Braket IQM integration",
+    "Qiskit Aer execution",
+    "dynamic conformance implementations"
+  ],
+  "rules": {
+    "candidate_is_frozen_contract": true,
+    "whole_api_freeze_implied": false,
+    "execution_stabilization_requires_separate_proposal": true,
+    "future_breaking_changes_require_api_owner_approval": true
+  }
+}

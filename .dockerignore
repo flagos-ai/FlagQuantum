@@ -1,0 +1,16 @@
+.git
+.conda-root
+.pytest_cache
+.mypy_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+benchmarks/results
+docs
+tests
+*.log
+*.pt
+*.pth
+*.ckpt
+*.nsys-rep
+*.sqlite

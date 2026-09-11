@@ -1,0 +1,576 @@
+{
+  "artifact_class": "derived_development_report",
+  "baseline_n_wires": 30,
+  "benchmark": "statevector_differentiable_training_scaling_report",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "definition": "constant_2^30_amplitudes_per_rank",
+  "display_efficiency_baseline_world_size": 2,
+  "display_efficiency_rationale": "world_size=1 has no communication; distributed weak-scaling efficiency is normalized at the first genuinely distributed point",
+  "distribution_semantics": "single_device_fast_path",
+  "local_amplitudes": 1073741824,
+  "non_release_evidence": true,
+  "points": [
+    {
+      "backward_communication_bytes_per_rank_max": 0,
+      "end_to_end_peak_memory_bytes": 34519392256,
+      "forward_peak_memory_bytes": 17758817280,
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "n_wires": 30,
+      "node_count": 1,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0002457284226881405,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 0.5774157741107047,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.05398955731915883,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 0.298552333842963,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.0530132693949355,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 0.8767907568253577,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.8008320468673361,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 0.18238395219668746,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        }
+      },
+      "world_size": 1
+    },
+    {
+      "backward_communication_bytes_per_rank_max": 68719476752,
+      "end_to_end_peak_memory_bytes": 34829507584,
+      "forward_peak_memory_bytes": 19193138688,
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "n_wires": 31,
+      "node_count": 1,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0008506997683652539,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 2.586964167188853,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.22309878818859577,
+              0.2236498243588792
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.2232020765630312
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.013456472075935852,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 0.8486063019372523,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.3263920123655575,
+              0.383803921799094
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.35181489126513527
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.010410496703146161,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 3.4588807420805097,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.2453249050756205,
+              0.2831040335988462
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.25348973329967134
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.2954435313434801,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 0.729931497015059,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.12722467940746762,
+              1.1986875464917484
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.24986447761539018
+          }
+        }
+      },
+      "world_size": 2
+    },
+    {
+      "backward_communication_bytes_per_rank_max": 146028888080,
+      "end_to_end_peak_memory_bytes": 34896616448,
+      "forward_peak_memory_bytes": 19327356416,
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "n_wires": 32,
+      "node_count": 1,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0024705786005489723,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7257833419222497,
+              0.7312090496022471
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7275941865367178
+          },
+          "median_seconds": 3.5555041739717126,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.1622238436842235,
+              0.16322987172135753
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.1624005333301849
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.0015679662249935657,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7486136748679214,
+              0.775437619975722
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7551329814073696
+          },
+          "median_seconds": 1.1237839199602604,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.25218033006301194,
+              0.2883648651448575
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.2656670277445512
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.009105977917194433,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7197236340115881,
+              0.7539934158634789
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7381333198290694
+          },
+          "median_seconds": 4.685983750037849,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.18106398846018001,
+              0.20815599890865155
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.18710921838307182
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.3351458442633619,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.3813341033445561,
+              1.3470468838237226
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7518199191496148
+          },
+          "median_seconds": 0.9708860837854445,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.08812436566080874,
+              0.8889344000844785
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.1878530913591634
+          }
+        }
+      },
+      "world_size": 4
+    },
+    {
+      "backward_communication_bytes_per_rank_max": 146028888080,
+      "end_to_end_peak_memory_bytes": 34896616448,
+      "forward_peak_memory_bytes": 19327356416,
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "n_wires": 33,
+      "node_count": 1,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.001155643064521972,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.583301282087535,
+              0.5859302210107532
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.5845536848727263
+          },
+          "median_seconds": 4.425537352915853,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.13037689147777692,
+              0.13079886643262628
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.1304735963261643
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.005698832782544463,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.689228808950935,
+              0.7213271619363849
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6991192006044835
+          },
+          "median_seconds": 1.2138220509514213,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.23217575949417277,
+              0.2682426083269223
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.24596054554203467
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.00762282077383904,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.5986798674044636,
+              0.6239352201313489
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6140012130387211
+          },
+          "median_seconds": 5.6333451280370355,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.1506124844044215,
+              0.1722506540086899
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.15564300373886011
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.413169665140604,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.28882214826644054,
+              1.204859041802425
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6471038102578143
+          },
+          "median_seconds": 1.1279975259676576,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.06674532485172094,
+              0.7951027260986983
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.16168825551299734
+          }
+        }
+      },
+      "world_size": 8
+    },
+    {
+      "backward_communication_bytes_per_rank_max": 146028888080,
+      "end_to_end_peak_memory_bytes": 34896616448,
+      "forward_peak_memory_bytes": 19327356416,
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "n_wires": 34,
+      "node_count": 2,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.05584780670722207,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.2802273281537249,
+              0.3153813286137003
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.3153362010148921
+          },
+          "median_seconds": 8.203828671947122,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.06263515797711347,
+              0.07040346921434956
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.07038369488202136
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.003907390866504155,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.32638023086037016,
+              0.3400750823341572
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.33081328341366845
+          },
+          "median_seconds": 2.5652122949250042,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.10994545933045054,
+              0.1264649827789963
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.11638503933324215
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.046726647700146846,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.2887169714865855,
+              0.3265769391948559
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.3210941667403678
+          },
+          "median_seconds": 10.77216935204342,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.07263377763785307,
+              0.09015854458196455
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.08139407469109604
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.05943993300853557,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.25925238368198805,
+              0.5336802852566274
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.3009876373590339
+          },
+          "median_seconds": 2.42512118909508,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.059911903125498295,
+              0.3521828155415527
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.0752061187774055
+          }
+        }
+      },
+      "world_size": 16
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling_report.v1",
+  "source_world_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "validation_blockers": [
+    "development_artifacts_not_release_scalability_evidence",
+    "matched_external_simulator_comparison_pending"
+  ],
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 1073741824,
+    "n_wires": 30,
+    "observable": "Z(28)",
+    "optimizer": "adam"
+  }
+}

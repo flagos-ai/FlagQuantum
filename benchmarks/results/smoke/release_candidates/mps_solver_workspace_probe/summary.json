@@ -1,0 +1,41 @@
+{
+  "artifact_class": "auxiliary_report",
+  "benchmark_evidence_class": "non_release_smoke",
+  "blockers": [
+    "native_extension_not_implemented",
+    "stream_and_allocator_contract_not_audited",
+    "xgesvd_numerical_parity_not_audited"
+  ],
+  "capabilities": {
+    "classic_complex_gesvd_workspace_api": true,
+    "cusolver_library": "libcusolver.so.12",
+    "cusolver_loadable": true,
+    "native_extension_required": true,
+    "recommended_path": "cpp_cuda_extension_cusolver_xgesvd",
+    "torch_cuda_version": "13.0",
+    "torch_public_external_workspace": false,
+    "torch_version": "2.13.0+cu130",
+    "xgesvd_device_host_workspace_api": true
+  },
+  "decision": {
+    "direct_python_ctypes_execution_allowed": false,
+    "private_aten_abi_allowed": false,
+    "production_integration": "cpp_cuda_extension_cusolver_xgesvd",
+    "reason": "torch.linalg has no public caller-owned workspace contract; native cuSOLVER integration requires a compiled, stream-aware extension with explicit lifetime and numerical audits"
+  },
+  "environment": {
+    "hostname": "redacted",
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35"
+  },
+  "schema": "flagquantum.mps_solver_workspace_probe.v1",
+  "status": "passed",
+  "benchmark": "mps_solver_workspace_probe",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_blockers": [
+    "derived development report is not release-certified"
+  ]
+}

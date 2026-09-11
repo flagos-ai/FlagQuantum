@@ -1,0 +1,729 @@
+{
+  "benchmark": "mps_single_node_training_certification",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "coefficient_of_variation": 0.0037888758921058997,
+  "communication_bytes": 17304,
+  "communication_bytes_by_rank": [
+    8664,
+    17304,
+    17304,
+    8664
+  ],
+  "communication_protocol": "batched_isend_irecv_and_owner_gradient_collectives",
+  "completed_work_units": 3,
+  "component_samples_seconds": [
+    {
+      "end_to_end": 0.5068575358018279,
+      "forward": 0.2973179491236806,
+      "optimizer": 0.007746163755655289,
+      "reverse": 0.2354585980065167
+    },
+    {
+      "end_to_end": 0.5087875700555742,
+      "forward": 0.2963008829392493,
+      "optimizer": 0.013453217688947916,
+      "reverse": 0.2319039930589497
+    },
+    {
+      "end_to_end": 0.5107129891403019,
+      "forward": 0.3017220268957317,
+      "optimizer": 0.010675475932657719,
+      "reverse": 0.23934560688212514
+    }
+  ],
+  "confidence_interval_95_seconds": [
+    0.5064565775502012,
+    0.5111154857816014
+  ],
+  "cuda": "13.0",
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "sharded_across_ranks",
+  "evidence_source": "measured_runtime",
+  "family": "circuit_training",
+  "full_mps_materialization": false,
+  "hostname": "redacted",
+  "local_memory_bytes_by_rank": [
+    23426560,
+    23429120,
+    23427584,
+    23416832
+  ],
+  "local_world_size": 4,
+  "losses": [
+    0.9751260280609131,
+    0.9735065698623657,
+    0.9718061089515686
+  ],
+  "mean_seconds": 0.5087860316659013,
+  "measured": true,
+  "memory_growth_bytes": 0,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "p50_seconds": 0.5087875700555742,
+  "p95_seconds": 0.5087875700555742,
+  "peak_memory_bytes": 23429120,
+  "peak_memory_bytes_samples": [
+    23429120,
+    23429120,
+    23429120
+  ],
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "node_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "redacted",
+      "local_rank": 1,
+      "node_rank": 0,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "redacted",
+      "local_rank": 2,
+      "node_rank": 0,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "redacted",
+      "local_rank": 3,
+      "node_rank": 0,
+      "rank": 3
+    }
+  ],
+  "rank_useful_work": true,
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "samples_seconds": [
+    0.5068575358018279,
+    0.5087875700555742,
+    0.5107129891403019
+  ],
+  "scalability_blockers": [
+    "development_smoke_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "scaling_mode": "strong",
+  "schema": "flagquantum.issue052.mps_training_measurement.v1",
+  "source_commit": "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708",
+  "source_tree_dirty": false,
+  "timestamp": 1785820613.8667867,
+  "torch": "2.13.0+cu130",
+  "training": {
+    "blockers": [
+      "release_speedup_evidence_not_attached",
+      "release_capacity_evidence_not_attached",
+      "multi_gpu_scaling_report_not_attached"
+    ],
+    "capacity_gate_passed": false,
+    "checkpoint_contract_fingerprint": "3cb07c273d5eb299451c09a0a7aa3d4879fa460617600fc5a9b511d50606dc94",
+    "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+    "communication_setup_seconds": 0.5312279490754008,
+    "communication_stream": "dedicated_cuda_stream",
+    "completed_steps": 4,
+    "correctness_gate_passed": true,
+    "distribution_semantics": "sharded_across_ranks",
+    "executor": "pytorch_native_sharded_mps_training_v1",
+    "full_mps_materialization": false,
+    "local_world_size": 4,
+    "losses": [
+      0.9766861200332642,
+      0.9751260280609131,
+      0.9735065698623657,
+      0.9718061089515686
+    ],
+    "memory_growth_bytes": 0,
+    "memory_warmup_steps": 1,
+    "node_count": 1,
+    "optimizer": "adam",
+    "optimizer_ownership": [
+      {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "optimizer_state_local": true,
+        "owner_rank": 0,
+        "parameter_index": 0,
+        "update_route": "owner_step_then_broadcast"
+      },
+      {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "optimizer_state_local": false,
+        "owner_rank": 1,
+        "parameter_index": 1,
+        "update_route": "owner_step_then_broadcast"
+      }
+    ],
+    "optimizer_state_ownership_semantics": "sharded_across_ranks",
+    "rank": 0,
+    "rank_useful_work": true,
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "speedup_gate_passed": false,
+    "start_step": 0,
+    "step_metrics": [
+      {
+        "allocated_memory_bytes": 17078784,
+        "bond_updates": [
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 51,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "27b8556f90a6beba",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 98,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "ae002d4b66e689a5",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 2880,
+        "boundary_exchanges": 3,
+        "boundary_forward_exchanges": 3,
+        "boundary_reverse_exchanges": 3,
+        "communication_buffer_bytes": 2880,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 2.133957616984844,
+        "forward_peak_memory_bytes": 17113088,
+        "forward_seconds": 0.9050890067592263,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 8,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9766861200332642,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.07025532005354762,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 23,
+        "owned_site_work": 16,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23393792,
+        "qr_activity": 7,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23393792,
+        "reverse_seconds": 1.158141836989671,
+        "step": 0,
+        "svd_activity": 16,
+        "tape_memory_bytes": 21440,
+        "truncated_splits": 0,
+        "two_site_splits": 16,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17078784,
+        "bond_updates": [
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 51,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "27b8556f90a6beba",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 98,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "ae002d4b66e689a5",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 2880,
+        "boundary_exchanges": 3,
+        "boundary_forward_exchanges": 3,
+        "boundary_reverse_exchanges": 3,
+        "communication_buffer_bytes": 2880,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5068575358018279,
+        "forward_peak_memory_bytes": 23426560,
+        "forward_seconds": 0.2973179491236806,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 8,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9751260280609131,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0008865757845342159,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 23,
+        "owned_site_work": 16,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23426560,
+        "qr_activity": 7,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23394816,
+        "reverse_seconds": 0.2080590259283781,
+        "step": 1,
+        "svd_activity": 16,
+        "tape_memory_bytes": 21440,
+        "truncated_splits": 0,
+        "two_site_splits": 16,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17078784,
+        "bond_updates": [
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 51,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "27b8556f90a6beba",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 98,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "ae002d4b66e689a5",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 2880,
+        "boundary_exchanges": 3,
+        "boundary_forward_exchanges": 3,
+        "boundary_reverse_exchanges": 3,
+        "communication_buffer_bytes": 2880,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5086269602179527,
+        "forward_peak_memory_bytes": 23426560,
+        "forward_seconds": 0.2963008829392493,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 8,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9735065698623657,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.0009120716713368893,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 23,
+        "owned_site_work": 16,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23426560,
+        "qr_activity": 7,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23394816,
+        "reverse_seconds": 0.21090134093537927,
+        "step": 2,
+        "svd_activity": 16,
+        "tape_memory_bytes": 21440,
+        "truncated_splits": 0,
+        "two_site_splits": 16,
+        "useful_work_completed": true
+      },
+      {
+        "allocated_memory_bytes": 17078784,
+        "bond_updates": [
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 51,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                1
+              ],
+              [
+                1,
+                1,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "27b8556f90a6beba",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 320,
+            "reverse_transport": "batched_isend_irecv"
+          },
+          {
+            "bond": 7,
+            "communication_peer": 1,
+            "communication_sequence": 98,
+            "compute_owner": 0,
+            "discarded_weight": 0.0,
+            "forward_transport": "batched_isend_irecv",
+            "input_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "kept_rank": 4,
+            "operation_id": "ae002d4b66e689a5",
+            "original_rank": 4,
+            "output_shapes": [
+              [
+                1,
+                2,
+                2,
+                4
+              ],
+              [
+                1,
+                4,
+                2,
+                2
+              ]
+            ],
+            "owner_ranks": [
+              0,
+              1
+            ],
+            "payload_bytes": 512,
+            "reverse_transport": "batched_isend_irecv"
+          }
+        ],
+        "boundary_bytes": 2880,
+        "boundary_exchanges": 3,
+        "boundary_forward_exchanges": 3,
+        "boundary_reverse_exchanges": 3,
+        "communication_buffer_bytes": 2880,
+        "discarded_weight": 0.0,
+        "end_to_end_seconds": 0.5107129891403019,
+        "forward_peak_memory_bytes": 23426560,
+        "forward_seconds": 0.3017220268957317,
+        "gradient_collective_bytes": 8,
+        "gradient_collective_count": 2,
+        "largest_realized_bond": 8,
+        "lbfgs_history_length": 0,
+        "learning_rate": 0.01,
+        "loss": 0.9718061089515686,
+        "objective_evaluations": 1,
+        "objective_execution": "single_observable_scan",
+        "objective_scan_forward_messages": 0,
+        "objective_scan_pairs": 0,
+        "objective_scan_reverse_messages": 0,
+        "optimizer_collective_bytes": 0,
+        "optimizer_collective_count": 0,
+        "optimizer_memory_bytes": 12,
+        "optimizer_seconds": 0.000944861676543951,
+        "optimizer_stage": "adam",
+        "owned_bond_work": 23,
+        "owned_site_work": 16,
+        "parameter_gradients": [],
+        "parameter_values": [],
+        "peak_memory_bytes": 23426560,
+        "qr_activity": 7,
+        "reserved_memory_bytes": 44040192,
+        "reverse_peak_memory_bytes": 23394816,
+        "reverse_seconds": 0.2072928841225803,
+        "step": 3,
+        "svd_activity": 16,
+        "tape_memory_bytes": 21440,
+        "truncated_splits": 0,
+        "two_site_splits": 16,
+        "useful_work_completed": true
+      }
+    ],
+    "suspected_memory_leak": false,
+    "world_size": 4
+  },
+  "warmup": 1,
+  "workload": {
+    "cutoff": 0.0,
+    "family": "circuit_training",
+    "layers": 2,
+    "learning_rate": 0.01,
+    "max_bond": 16,
+    "n_wires": 32,
+    "optimizer": "adam",
+    "scaling_mode": "strong",
+    "seed": 520052
+  },
+  "workload_sha256": "19cca76b8189f3b3b212a848de8ad16685f14b925c74c29ef243d891e7a649eb",
+  "world_size": 4
+}

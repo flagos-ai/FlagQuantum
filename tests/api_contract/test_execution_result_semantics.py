@@ -1,0 +1,125 @@
+from __future__ import annotations
+
+import json
+
+import pytest
+import torch
+
+import flagquantum as fq
+import flagquantum.noise as fqn
+
+pytestmark = pytest.mark.unit
+
+
+def test_explicit_measurements_are_embedded_in_the_executable_plan() -> None:
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    request = fq.probabilities((0, 1), name="bell_probabilities")
+
+    plan = fq.plan(circuit, outputs=request)
+    restored = fq.ExecutionPlan.from_json(plan.to_json())
+    result = fq.run(restored)
+
+    assert restored.program_fingerprint == plan.program_fingerprint
+    assert result.plan is restored
+    torch.testing.assert_close(
+        result.probabilities,
+        torch.tensor([[0.5, 0.0, 0.0, 0.5]]),
+    )
+
+
+def test_explicit_measurements_never_overwrite_program_measurements() -> None:
+    from flagquantum.core.ir import MeasurementNode
+
+    program = fq.CircuitIR(
+        n_wires=1,
+        instructions=(),
+        measurements=(MeasurementNode("probabilities", (0,)),),
+    )
+
+    with pytest.raises(ValueError, match="already contains measurement requests"):
+        fq.plan(
+            program,
+            outputs=fq.expectation(fq.Z(0)),
+        )
+
+
+def test_noise_model_is_verified_serialized_and_executed_from_the_plan() -> None:
+    circuit = fq.Circuit(1).x(0)
+    noise_model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(1.0))
+
+    plan = fq.plan(circuit, noise_model=noise_model)
+    payload = plan.to_dict()
+    restored = fq.ExecutionPlan.from_dict(payload)
+    result = fq.run(restored)
+
+    assert payload["extensions"][0]["identity"] == noise_model.identity
+    assert restored.identity == plan.identity
+    assert restored.summary() == plan.summary()
+    assert result.plan is restored
+    torch.testing.assert_close(
+        result.state[:, 0, 0], torch.ones(1, dtype=torch.complex64)
+    )
+
+    tampered = json.loads(plan.to_json())
+    tampered["extensions"][0]["identity"] = "0" * 64
+    with pytest.raises(ValueError, match="extension_incompatible"):
+        fq.ExecutionPlan.from_dict(tampered)
+
+
+def test_noisy_density_probability_measurement_uses_wire_order_and_readout() -> None:
+    circuit = fq.Circuit(2).x(0)
+    noise_model = fqn.NoiseModel().add_readout(
+        0,
+        fqn.ReadoutError(((0.0, 1.0), (1.0, 0.0))),
+    )
+
+    result = fq.run(
+        circuit,
+        outputs=fq.probabilities((1, 0)),
+        noise_model=noise_model,
+    )
+
+    # True |10> becomes observed |00> after flipping wire 0 at readout. The
+    # requested wire order is still (1, 0), so the returned basis order is
+    # explicitly tied to the request rather than an internal tensor layout.
+    torch.testing.assert_close(
+        result.probabilities,
+        torch.tensor([[1.0, 0.0, 0.0, 0.0]]),
+    )
+
+
+def test_result_accessors_are_explicit_and_backend_attributes_do_not_leak() -> None:
+    circuit = fq.Circuit(1).x(0)
+    result = fq.run(
+        circuit,
+        outputs=fq.expectation(fq.Z(0), name="energy"),
+    )
+
+    torch.testing.assert_close(result.expectation(), torch.tensor([-1.0]))
+    assert result.expectation("energy") is not None
+    assert result.statevector() is result.state
+    assert result.native() is result.state
+    assert result.summary()["schema"] == "flagquantum.execution_result.summary"
+    assert result.summary()["version"] == "1.0"
+    with pytest.raises(RuntimeError, match="does not contain samples"):
+        result.require_samples()
+    with pytest.raises(AttributeError):
+        _ = result.shape
+
+
+def test_result_measurement_selector_fails_closed_on_missing_or_ambiguous_data() -> (
+    None
+):
+    result = fq.ExecutionResult(
+        measurements=(
+            fq.MeasurementResult("expectation_z", (0,), torch.ones(1)),
+            fq.MeasurementResult("expectation_z", (1,), torch.zeros(1)),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="ambiguous"):
+        result.measurement("expectation_z")
+    with pytest.raises(RuntimeError, match="multiple expectations"):
+        result.expectation()
+    with pytest.raises(RuntimeError, match="no measurement"):
+        result.measurement("missing")

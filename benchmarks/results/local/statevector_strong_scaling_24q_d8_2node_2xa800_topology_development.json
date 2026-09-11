@@ -1,0 +1,214 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_strong_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes_per_rank_max": 335544320,
+  "communication_fraction": 0.7142857142857143,
+  "communication_tiers": {
+    "inter_node_logical_bytes_per_rank_max": 335544320,
+    "intra_node_logical_bytes_per_rank_max": 0,
+    "physical_route": "topology_dependent_nccl_collective",
+    "route_classification": "inter_node_collective"
+  },
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "global_invariants": {
+      "norm": 0.9999998211860657,
+      "z_expectations": {
+        "0": 1.289299689233303e-08,
+        "1": -2.60770320892334e-08,
+        "2": -7.009657565504313e-08
+      }
+    },
+    "norm_absolute_error": 1.7881393432617188e-07,
+    "passed": true,
+    "rank_invariant_spread": 0.0
+  },
+  "device_timing": {
+    "coefficient_of_variation": 0.3021831295728415,
+    "mean_seconds": 0.14096629867553712,
+    "median_seconds": 0.12665446472167968,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.12660326385498047,
+      0.2687528991699219,
+      0.12799078369140626,
+      0.12671180725097655,
+      0.12660428619384764,
+      0.12657357025146485,
+      0.12657766723632813,
+      0.12670464324951172,
+      0.12636569976806641,
+      0.1267783660888672
+    ]
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "gpu_activity": "cuda_events_with_device_synchronization",
+  "hardware_inventory": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 1,
+  "node_count": 2,
+  "non_release_evidence": true,
+  "rank_peak_memory_bytes": [
+    679641088,
+    679641088
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "node_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "node_rank": 1,
+      "rank": 1
+    }
+  ],
+  "rank_timings": [
+    {
+      "communication_bytes": 335544320,
+      "communication_count": 11,
+      "device": "cuda:0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        0.12659097290039062,
+        0.268685302734375,
+        0.12799078369140626,
+        0.12661862182617187,
+        0.12650495910644532,
+        0.12646195220947265,
+        0.12657766723632813,
+        0.1267015686035156,
+        0.12633293151855468,
+        0.12671078491210938
+      ],
+      "exchange_workspace_allocation_count": 1,
+      "exchange_workspace_reserved_bytes": 134217728,
+      "exchange_workspace_reuse_count": 10,
+      "executor_peak_scratch_bytes": 402653184,
+      "host_samples_seconds": [
+        0.1266038049943745,
+        0.26869865506887436,
+        0.1280024340376258,
+        0.12662997702136636,
+        0.12651736196130514,
+        0.12647545617073774,
+        0.1265988382510841,
+        0.12671347009018064,
+        0.12634493224322796,
+        0.12672210671007633
+      ],
+      "hostname": "redacted",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 1.289299689233303e-08,
+          "1": -2.60770320892334e-08,
+          "2": -7.009657565504313e-08
+        }
+      },
+      "local_rank": 0,
+      "local_state_bytes": 67108864,
+      "node_rank": 0,
+      "peak_memory_bytes": 679641088,
+      "rank": 0
+    },
+    {
+      "communication_bytes": 335544320,
+      "communication_count": 11,
+      "device": "cuda:0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        0.12660326385498047,
+        0.2687528991699219,
+        0.1269002227783203,
+        0.12671180725097655,
+        0.12660428619384764,
+        0.12657357025146485,
+        0.12653977966308594,
+        0.12670464324951172,
+        0.12636569976806641,
+        0.1267783660888672
+      ],
+      "exchange_workspace_allocation_count": 1,
+      "exchange_workspace_reserved_bytes": 134217728,
+      "exchange_workspace_reuse_count": 10,
+      "executor_peak_scratch_bytes": 402653184,
+      "host_samples_seconds": [
+        0.12661407003179193,
+        0.26876478316262364,
+        0.12691093795001507,
+        0.12672250112518668,
+        0.12661431077867746,
+        0.1265861541032791,
+        0.12655013101175427,
+        0.12671548500657082,
+        0.1263765823096037,
+        0.126788638997823
+      ],
+      "hostname": "redacted",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 1.289299689233303e-08,
+          "1": -2.60770320892334e-08,
+          "2": -7.009657565504313e-08
+        }
+      },
+      "local_rank": 0,
+      "local_state_bytes": 67108864,
+      "node_rank": 1,
+      "peak_memory_bytes": 679641088,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.strong_scaling.v1",
+  "timing": {
+    "coefficient_of_variation": 0.3021567490621589,
+    "mean_seconds": 0.14097837978042663,
+    "median_seconds": 0.12666489789262414,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.12661407003179193,
+      0.26876478316262364,
+      0.1280024340376258,
+      0.12672250112518668,
+      0.12661431077867746,
+      0.1265861541032791,
+      0.1265988382510841,
+      0.12671548500657082,
+      0.1263765823096037,
+      0.126788638997823
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "depth": 8,
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 536870912,
+    "gate_count": 64,
+    "n_wires": 24,
+    "name": "issue044_fixed_statevector_forward_v1"
+  },
+  "workload_sha256": "3308dffc01d9eee7d521a0ba624c84a75ef7157529e318c75a321e4ade103438",
+  "world_size": 2
+}

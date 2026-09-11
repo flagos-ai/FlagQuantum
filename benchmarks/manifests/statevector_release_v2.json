@@ -1,0 +1,65 @@
+{
+  "schema_version": "flagquantum.issue044.release_manifest.v2",
+  "issue": "ISSUE-044",
+  "supersedes": "benchmarks/manifests/statevector_release_v1.json",
+  "frozen_before_release_run": true,
+  "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 31-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible.",
+  "runtime": {
+    "backend": "pytorch_native",
+    "collective_backend": "nccl",
+    "launcher": "torchrun",
+    "jax_is_optional_comparison_only": true
+  },
+  "topologies": {
+    "single_node_world_sizes": [1, 2, 4, 8],
+    "multi_node_required": true,
+    "minimum_multi_node_count": 2
+  },
+  "correctness": {
+    "seed": 440044,
+    "complex64_atol": 0.00003,
+    "complex64_rtol": 0.00003,
+    "complex128_atol": 1e-08,
+    "complex128_rtol": 1e-07,
+    "minimum_optimizer_steps": 4,
+    "required_comparisons": ["loss", "outputs", "gradients", "updated_parameters"]
+  },
+  "speed_workload": {
+    "name": "issue044_matched_statevector_training_speed_v1",
+    "qubits": [24, 26, 28],
+    "depths": [8, 16, 32],
+    "cross_shard_gate_fractions": [0.1, 0.25, 0.5],
+    "warmup_steps": 5,
+    "measured_steps": 30,
+    "minimum_speedup": 1.05,
+    "confidence_level": 0.95,
+    "confidence_interval_must_exclude_speedup": 1.0,
+    "minimum_scaling_efficiency": 0.5
+  },
+  "capacity_workload": {
+    "name": "issue044_single_node_capacity_v2",
+    "manifest_path": "benchmarks/manifests/statevector_capacity_workload_v2.json",
+    "workload_sha256": "1c937d01db177ba6e69ea3b7b07b7282b2aa621a2533e9fa5847c16228ce9bf0",
+    "n_wires": 31,
+    "dtype": "complex64",
+    "optimizer": "adam",
+    "minimum_optimizer_steps": 2,
+    "single_gpu_measured_oom_required": true,
+    "multi_gpu_completion_required": true,
+    "full_state_materialization_forbidden": true,
+    "prior_development_measurements_release_eligible": false
+  },
+  "required_artifact_fields": [
+    "raw_log_sha256",
+    "hardware_inventory",
+    "commit",
+    "workload_sha256",
+    "rank_outputs",
+    "rank_gradients",
+    "rank_timings",
+    "rank_peak_memory_bytes",
+    "communication_fraction",
+    "gpu_activity",
+    "distribution_semantics"
+  ]
+}

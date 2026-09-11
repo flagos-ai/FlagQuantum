@@ -1,0 +1,30 @@
+{
+  "schema": "flagquantum_operator_profile_v1",
+  "profile_version": "1.0",
+  "name": "statevector_local_p0",
+  "representation": "statevector",
+  "distribution": "local",
+  "requirements": [
+    {"operator": "aten::zeros", "dtypes": ["complex64", "complex128"], "forward": true, "backward": false},
+    {"operator": "aten::reshape", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::permute", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::expand", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::bmm", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::diagonal", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::unsqueeze", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::mul", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::unbind", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::flip", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::stack", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::cat", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::_to_copy", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::complex", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::cos", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::sin", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::real", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::imag", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::neg", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::abs", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true},
+    {"operator": "aten::sum", "dtypes": ["complex64", "complex128"], "forward": true, "backward": true}
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_review",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_011_EXPERIMENTAL_SURFACE.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "frozen_governance_baseline": {
+    "path": "contracts/experimental-namespace-v1-candidate.json",
+    "sha256": "852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4",
+    "modified": false
+  },
+  "top_level_namespaces": [
+    "artifacts",
+    "distributed",
+    "dynamic",
+    "execution",
+    "interop",
+    "mps",
+    "numerics",
+    "planning",
+    "simulation"
+  ],
+  "discoverable_exports": {
+    "artifacts": [
+      "CompilationEvidence",
+      "ProgramArtifact",
+      "dump_compilation_evidence",
+      "dump_program_artifact",
+      "load_compilation_evidence",
+      "load_program_artifact"
+    ],
+    "distributed": [
+      "train_distributed_mps",
+      "train_distributed_statevector"
+    ],
+    "dynamic": [
+      "assess_dynamic_backend",
+      "run_dynamic"
+    ],
+    "execution": [],
+    "interop": ["pennylane", "qiskit"],
+    "mps": [],
+    "numerics": [
+      "execute_split_real_imag_expectation",
+      "execute_split_real_imag_statevector",
+      "parameter_shift_split_real_imag_gradient"
+    ],
+    "planning": [],
+    "simulation": ["run_tebd"]
+  },
+  "surface_metrics_scope": "Historical Proposal 011 reduction; excludes subsequent approved additive domains.",
+  "approved_additions": [
+    {
+      "proposal": "docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md",
+      "namespace": "artifacts",
+      "discoverable_feature_exports": 6
+    }
+  ],
+  "current_total_discoverable_feature_exports": 16,
+  "surface_metrics": {
+    "previous_discoverable_feature_exports": 114,
+    "current_discoverable_feature_exports": 10,
+    "removed_from_discovery": 104,
+    "reduction_percent": 91.2
+  },
+  "excluded_categories": [
+    "evidence and audit records",
+    "rank, shard and checkpoint implementation records",
+    "backend-specific executors",
+    "kernel counters and reset hooks",
+    "conformance cases, reports and runners",
+    "result record classes",
+    "workflow implementation steps such as export, routing and deployment",
+    "precision-stage planning and diagnostic helpers",
+    "release artifact builders"
+  ],
+  "transition": {
+    "non_discoverable_internal_routes_temporarily_resolvable": false,
+    "internal_routes_are_public_api": false,
+    "repository_callers_migrated_to_implementation_modules": true,
+    "internal_routes_removed": true
+  },
+  "rules": {
+    "top_level_governance_changed": false,
+    "stable_core_changed": false,
+    "experimental_compatibility_guarantee": false,
+    "discoverable_names_are_limited_to_user_workflows_or_adapter_namespaces": true,
+    "non_contract_names_fail_with_attribute_error": true,
+    "candidate_is_frozen_contract": false
+  }
+}

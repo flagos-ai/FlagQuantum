@@ -1,0 +1,66 @@
+{
+  "schema": "flagquantum.validation.jiuding_submission_latency",
+  "version": "1.0",
+  "date": "2026-09-10",
+  "implementation_commit": "ea7db394",
+  "workspace": "example-resident-a100",
+  "target": "jiuding:gpu",
+  "image": "flagquantum-runtime:v0.2.0-cu128-a100",
+  "program": "two-qubit Bell state",
+  "batch_submission": {
+    "baseline": {
+      "jobId": "3cffcd47-2c82-49d0-b3fb-3eaf9433b6ab",
+      "total_seconds": 20.31391708299634,
+      "workspace_ssh_discovery_seconds": 4.669373333003023,
+      "source_archive_seconds": 0.36936329200398177,
+      "result_counts": {
+        "00": 550,
+        "11": 474
+      }
+    },
+    "optimized_cold_snapshot": {
+      "jobId": "4de5d3cf-7051-478a-8ba2-d5797f9055ce",
+      "total_seconds": 17.995605209012865,
+      "workspace_ssh_discovery_seconds": 0.052682792011182755,
+      "source_archive_seconds": 0.4275543749972712,
+      "new_source_upload_seconds": 4.32844270899659,
+      "result_counts": {
+        "00": 519,
+        "11": 505
+      }
+    },
+    "interpretation": "The optimized run was still faster while paying a one-time upload for its new source fingerprint. No steady-state batch timing is claimed from an estimate."
+  },
+  "resident_execution": {
+    "job_created": false,
+    "runs": [
+      {
+        "total_seconds": 13.913271750003332,
+        "execute_seconds": 0.4738760609179735,
+        "device": "cuda:0"
+      },
+      {
+        "total_seconds": 0.08929029198770877,
+        "execute_seconds": 0.0060332100838422775,
+        "device": "cuda:0"
+      },
+      {
+        "total_seconds": 0.019878708000760525,
+        "execute_seconds": 0.0035902075469493866,
+        "device": "cuda:0"
+      }
+    ],
+    "statevector_equivalence_asserted": true,
+    "interpretation": "The first call includes discovery and connection setup. Later calls reuse the resident process and SSH channel."
+  },
+  "claims": {
+    "duplicate_workspace_transport_query_removed": true,
+    "detached_batch_submission_preserved": true,
+    "resident_connection_reuse_validated": true,
+    "distributed_scalability_claimed": false
+  },
+  "_privacy_redaction": {
+    "kind": "publication_copy",
+    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
+  }
+}

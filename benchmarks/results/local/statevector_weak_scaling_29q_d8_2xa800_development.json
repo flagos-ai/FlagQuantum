@@ -1,0 +1,214 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_strong_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes_per_rank_max": 10737418240,
+  "communication_fraction": 0.7142857142857143,
+  "communication_tiers": {
+    "inter_node_logical_bytes_per_rank_max": 0,
+    "intra_node_logical_bytes_per_rank_max": 10737418240,
+    "physical_route": "topology_dependent_nccl_collective",
+    "route_classification": "intra_node_collective"
+  },
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "global_invariants": {
+      "norm": 0.9999997615814209,
+      "z_expectations": {
+        "0": -1.4277617310654023e-08,
+        "1": -3.5405719245318323e-08,
+        "2": -7.450580596923828e-08
+      }
+    },
+    "norm_absolute_error": 2.384185791015625e-07,
+    "passed": true,
+    "rank_invariant_spread": 0.0
+  },
+  "device_timing": {
+    "coefficient_of_variation": 0.00027136307297414024,
+    "mean_seconds": 2.6879947753906253,
+    "median_seconds": 2.6880511474609374,
+    "sample_count": 10,
+    "samples_seconds": [
+      2.687971435546875,
+      2.68811572265625,
+      2.68904541015625,
+      2.688446533203125,
+      2.687052734375,
+      2.688625732421875,
+      2.68876708984375,
+      2.68703125,
+      2.6869052734375,
+      2.687986572265625
+    ]
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "gpu_activity": "cuda_events_with_device_synchronization",
+  "hardware_inventory": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "rank_peak_memory_bytes": [
+    12893423104,
+    12893423104
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "redacted",
+      "local_rank": 0,
+      "node_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "redacted",
+      "local_rank": 1,
+      "node_rank": 0,
+      "rank": 1
+    }
+  ],
+  "rank_timings": [
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.687965087890625,
+        2.68811572265625,
+        2.68904541015625,
+        2.688446533203125,
+        2.687052734375,
+        2.688625732421875,
+        2.68876708984375,
+        2.68703125,
+        2.6869052734375,
+        2.687986572265625
+      ],
+      "exchange_workspace_allocation_count": 1,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 71,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.6879975087940693,
+        2.688137410674244,
+        2.6890695691108704,
+        2.6884701708331704,
+        2.687075432855636,
+        2.688650778029114,
+        2.688791143707931,
+        2.6870976299978793,
+        2.686932208016515,
+        2.688012168277055
+      ],
+      "hostname": "redacted",
+      "invariants": {
+        "norm": 0.9999997615814209,
+        "z_expectations": {
+          "0": -1.4277617310654023e-08,
+          "1": -3.5405719245318323e-08,
+          "2": -7.450580596923828e-08
+        }
+      },
+      "local_rank": 0,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 0
+    },
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:1",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.687971435546875,
+        2.6877666015625,
+        2.68878125,
+        2.68841357421875,
+        2.686939208984375,
+        2.68819970703125,
+        2.6882509765625,
+        2.687016845703125,
+        2.686742431640625,
+        2.68775732421875
+      ],
+      "exchange_workspace_allocation_count": 1,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 71,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.687988673336804,
+        2.687784637324512,
+        2.6888074199669063,
+        2.688433430157602,
+        2.686957625672221,
+        2.688214047346264,
+        2.6882729828357697,
+        2.6870391801930964,
+        2.6867605331353843,
+        2.687780515756458
+      ],
+      "hostname": "redacted",
+      "invariants": {
+        "norm": 0.9999997615814209,
+        "z_expectations": {
+          "0": -1.4277617310654023e-08,
+          "1": -3.5405719245318323e-08,
+          "2": -7.450580596923828e-08
+        }
+      },
+      "local_rank": 1,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.strong_scaling.v1",
+  "timing": {
+    "coefficient_of_variation": 0.0002692281349739368,
+    "mean_seconds": 2.6880234020296485,
+    "median_seconds": 2.6880747894756496,
+    "sample_count": 10,
+    "samples_seconds": [
+      2.6879975087940693,
+      2.688137410674244,
+      2.6890695691108704,
+      2.6884701708331704,
+      2.687075432855636,
+      2.688650778029114,
+      2.688791143707931,
+      2.6870976299978793,
+      2.686932208016515,
+      2.688012168277055
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "depth": 8,
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 536870912,
+    "gate_count": 64,
+    "n_wires": 29,
+    "name": "issue044_fixed_statevector_forward_v1"
+  },
+  "workload_sha256": "2c82118a23b8c38fc73cf2f16a643d0e7385f7858584c2634d170a369837f246",
+  "world_size": 2
+}

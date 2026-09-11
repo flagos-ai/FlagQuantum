@@ -1,0 +1,182 @@
+{
+  "artifact_class": "derived_development_report",
+  "baseline_world_size": 1,
+  "benchmark": "differentiable_statevector_strong_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "fixed_n_wires": 30,
+  "non_release_evidence": true,
+  "points": [
+    {
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "node_count": 1,
+      "peak_memory_gib_per_rank": 32.14868927001953,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0002457284226881405,
+          "median_seconds": 0.5774157741107047,
+          "parallel_efficiency": 1.0,
+          "speedup_vs_1_gpu": 1.0
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.05398955731915883,
+          "median_seconds": 0.298552333842963,
+          "parallel_efficiency": 1.0,
+          "speedup_vs_1_gpu": 1.0
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.0530132693949355,
+          "median_seconds": 0.8767907568253577,
+          "parallel_efficiency": 1.0,
+          "speedup_vs_1_gpu": 1.0
+        },
+        "forward": {
+          "coefficient_of_variation": 0.8008320468673361,
+          "median_seconds": 0.18238395219668746,
+          "parallel_efficiency": 1.0,
+          "speedup_vs_1_gpu": 1.0
+        }
+      },
+      "world_size": 1
+    },
+    {
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "node_count": 1,
+      "peak_memory_gib_per_rank": 16.148688316345215,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.008098538238922894,
+          "median_seconds": 0.29969546291977167,
+          "parallel_efficiency": 0.9633375301802259,
+          "speedup_vs_1_gpu": 1.9266750603604519
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.03003347408168795,
+          "median_seconds": 0.15657015005126595,
+          "parallel_efficiency": 0.9534139609153074,
+          "speedup_vs_1_gpu": 1.9068279218306148
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.06061483110198038,
+          "median_seconds": 0.4684058562852442,
+          "parallel_efficiency": 0.9359306091717821,
+          "speedup_vs_1_gpu": 1.8718612183435641
+        },
+        "forward": {
+          "coefficient_of_variation": 0.9748648328561953,
+          "median_seconds": 0.1168456906452775,
+          "parallel_efficiency": 0.7804479189154366,
+          "speedup_vs_1_gpu": 1.5608958378308733
+        }
+      },
+      "world_size": 2
+    },
+    {
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "node_count": 1,
+      "peak_memory_gib_per_rank": 8.148688316345215,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0176921651404537,
+          "median_seconds": 0.15757723711431026,
+          "parallel_efficiency": 0.9160837324680239,
+          "speedup_vs_1_gpu": 3.6643349298720955
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.08657355009682942,
+          "median_seconds": 0.0829317169263959,
+          "parallel_efficiency": 0.8999944318888758,
+          "speedup_vs_1_gpu": 3.5999777275555034
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.1536341523449376,
+          "median_seconds": 0.24800801929086447,
+          "parallel_efficiency": 0.8838330705317387,
+          "speedup_vs_1_gpu": 3.5353322821269546
+        },
+        "forward": {
+          "coefficient_of_variation": 1.1163522988275414,
+          "median_seconds": 0.06996568292379379,
+          "parallel_efficiency": 0.6516907452877255,
+          "speedup_vs_1_gpu": 2.606762981150902
+        }
+      },
+      "world_size": 4
+    },
+    {
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "node_count": 1,
+      "peak_memory_gib_per_rank": 4.148688316345215,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0035975307214649557,
+          "median_seconds": 0.09031164180487394,
+          "parallel_efficiency": 0.7991989772457313,
+          "speedup_vs_1_gpu": 6.39359181796585
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.1170619433644844,
+          "median_seconds": 0.05816578399389982,
+          "parallel_efficiency": 0.6415978461544374,
+          "speedup_vs_1_gpu": 5.132782769235499
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.2297528202419003,
+          "median_seconds": 0.14990303805097938,
+          "parallel_efficiency": 0.7311315769724231,
+          "speedup_vs_1_gpu": 5.849052615779385
+        },
+        "forward": {
+          "coefficient_of_variation": 1.2225282879850792,
+          "median_seconds": 0.038927874993532896,
+          "parallel_efficiency": 0.5856470210196003,
+          "speedup_vs_1_gpu": 4.6851761681568025
+        }
+      },
+      "world_size": 8
+    },
+    {
+      "gradient_absolute_error_max": 3.3531009357989916e-08,
+      "node_count": 2,
+      "peak_memory_gib_per_rank": 2.148688316345215,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.03948768827458828,
+          "median_seconds": 0.05330732278525829,
+          "parallel_efficiency": 0.6769892764507585,
+          "speedup_vs_1_gpu": 10.831828423212135
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.2224555081882676,
+          "median_seconds": 0.05154238687828183,
+          "parallel_efficiency": 0.3620228319897164,
+          "speedup_vs_1_gpu": 5.7923653118354625
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.16813651838572932,
+          "median_seconds": 0.12299393583089113,
+          "parallel_efficiency": 0.4455457249285086,
+          "speedup_vs_1_gpu": 7.128731598856137
+        },
+        "forward": {
+          "coefficient_of_variation": 1.176216661286006,
+          "median_seconds": 0.04657210176810622,
+          "parallel_efficiency": 0.24476020148395566,
+          "speedup_vs_1_gpu": 3.9161632237432906
+        }
+      },
+      "world_size": 16
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_strong_scaling.v1",
+  "validation_blockers": [
+    "development_artifacts_not_release_scalability_evidence",
+    "communication_dominated_three_gate_diagnostic_workload"
+  ]
+}

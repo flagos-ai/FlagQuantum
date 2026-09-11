@@ -1,0 +1,60 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_split_real_imag_statevector_p2_precision_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.runtime.executors.statevector.split_real_imag_precision"
+operator_profile = "split_real_imag_statevector_p2_precision"
+base_executor = "split_real_imag_statevector_p1"
+representation = "split_real_imag"
+state_storage_dtype = "float32"
+kernel_compute_dtype = "float32"
+reduction_dtype = "double_single_fp32"
+reference_dtype = "complex128_cpu_only"
+gradient_method = "parameter_shift"
+distribution_semantics = "single_device_fast_path"
+runtime_default = false
+host_fallback_allowed = false
+complex_accelerator_tensor_allowed = false
+full_state_double_single_claim_allowed = false
+native_autograd_claim_allowed = false
+convergence_claim_allowed = false
+hardware_certification = false
+
+[precision_plan]
+complex_representation = "split_real_imag"
+parameter_dtype = "float32"
+gate_generation_dtype = "float32"
+state_storage_dtype = "float32"
+kernel_compute_dtype = "float32"
+reduction_dtype = "double_single_fp32"
+decomposition_dtype = "not_applicable"
+gradient_dtype = "double_single_fp32"
+optimizer_master_dtype = "not_integrated"
+communication_dtype = "not_applicable"
+checkpoint_dtype = "float32"
+refinement = "compensated_reduction"
+allow_dtype_demotion = false
+
+[scope]
+double_single_operations = ["pauli_inner_product", "hamiltonian_term_sum", "parameter_shift_gradient_accumulation"]
+float32_operations = ["state_storage", "gate_generation", "gate_application"]
+unsupported = ["full_state_double_single", "double_single_gate_generation", "decomposition", "native_autograd", "optimizer_step_api", "checkpoint_residual_words", "distributed_execution", "automatic_runtime_selection", "convergence_certification", "vendor_certification"]
+
+[thresholds]
+depths = [8, 32, 128]
+seeds = [0, 7]
+max_expectation_absolute_error = 5e-5
+max_gradient_relative_error = 2e-3
+min_expectation_improvement_factor = 100.0
+min_gradient_improvement_factor = 100.0
+
+[conformance_workload]
+cancellation_large_coefficient = 1e8
+cancellation_small_term_count = 8
+cancellation_small_coefficient = 1.0
+
+[verification]
+contract = "tests/unit/test_split_real_imag_p2_precision_contract.py"
+unit = "tests/unit/test_split_real_imag_precision.py"
+conformance = "tests/test_split_real_imag_precision_conformance.py"
+flagos_validator = "tools/validate_split_real_imag_precision_flagos.py"
+policy = "tools/check_split_real_imag_p2_precision_contract.py"

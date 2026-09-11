@@ -1,0 +1,48 @@
+{
+  "benchmark": "tn_stage_contraction",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": "NVIDIA A100-SXM4-40GB",
+  "distribution_semantics": "single_device_fast_path",
+  "fused": {
+    "median_step_seconds": 0.0004438429046422243,
+    "peak_memory_bytes": 8585216,
+    "samples_seconds": [
+      0.0004497736506164074,
+      0.00044576575048267843,
+      0.0004438429046422243,
+      0.00044241379015147686,
+      0.00044308667071163655
+    ]
+  },
+  "fused_cold_seconds": 1.3654015017673373,
+  "iterations": 100,
+  "max_abs_error": 9.830249609876773e-07,
+  "native": {
+    "median_step_seconds": 0.00034012306481599806,
+    "peak_memory_bytes": 17104896,
+    "samples_seconds": [
+      0.00034072019159793855,
+      0.00034012306481599806,
+      0.00034021121449768544,
+      0.00033892228268086913,
+      0.0003374521899968386
+    ]
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "repeats": 5,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "shape": [
+    16,
+    8,
+    8,
+    8
+  ],
+  "speedup": 0.7663140747741966,
+  "torch_version": "2.13.0+cu130",
+  "warmup": 10
+}

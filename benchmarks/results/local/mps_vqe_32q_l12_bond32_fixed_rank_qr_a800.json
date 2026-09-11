@@ -1,0 +1,82 @@
+{
+  "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+  "batch_size": 1,
+  "benchmark": "flagquantum_mps_vqe_triton_runtime",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "cutoff": 0.0,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "eager": {
+    "cumulative_seconds": [
+      4.7583800833672285,
+      5.735570513643324,
+      6.635168198961765,
+      7.530499930027872,
+      8.443126053083688
+    ],
+    "eager_two_site_regions": [
+      112,
+      112,
+      112,
+      112,
+      112
+    ],
+    "energies": [
+      -10.630029678344727,
+      -12.250334739685059,
+      -11.002753257751465,
+      -8.805288314819336,
+      -9.90395736694336
+    ],
+    "max_bonds": [
+      32,
+      32,
+      32,
+      32,
+      32
+    ],
+    "peak_memory_bytes": [
+      36625920,
+      39632896,
+      39632896,
+      39632896,
+      39632896
+    ],
+    "svd_gradient_methods": [
+      "fixed_rank_range_qr",
+      "fixed_rank_range_qr",
+      "fixed_rank_range_qr",
+      "fixed_rank_range_qr",
+      "fixed_rank_range_qr"
+    ],
+    "triton_two_site_regions": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "truncation_errors": [
+      NaN,
+      NaN,
+      NaN,
+      NaN,
+      NaN
+    ]
+  },
+  "hamiltonian": "-sum ZZ + 0.1 sum Z",
+  "iterations": 5,
+  "layers": 12,
+  "learning_rate": 0.02,
+  "max_bond": 32,
+  "n_wires": 32,
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "task": "end_to_end_mps_vqe_training",
+  "torch_version": "2.13.0+cu130"
+}

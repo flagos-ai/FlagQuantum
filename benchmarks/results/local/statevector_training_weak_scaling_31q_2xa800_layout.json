@@ -1,0 +1,124 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.0022793403499271896,
+    "mean_seconds": 0.5947680054232478,
+    "median_seconds": 0.595316716004163,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.5960845570079982,
+      0.5929027432575822,
+      0.595316716004163
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 16,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 1.0730526467384038e-07
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.000820209722914178,
+    "mean_seconds": 0.29525066663821536,
+    "median_seconds": 0.2951340298168361,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.29503012215718627,
+      0.29558784794062376,
+      0.2951340298168361
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.04022098374326475,
+    "mean_seconds": 0.9182745850024124,
+    "median_seconds": 0.8932303739711642,
+    "peak_memory_bytes_max": 34519391232,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.9704925450496376,
+      0.8911008359864354,
+      0.8932303739711642
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.30185378019660203,
+    "mean_seconds": 0.9136824182545146,
+    "median_seconds": 0.7230152413249016,
+    "peak_memory_bytes_max": 19193138688,
+    "sample_count": 3,
+    "samples_seconds": [
+      1.30368825327605,
+      0.7230152413249016,
+      0.7143437601625919
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.2957354811298991,
+    "mean_seconds": 0.027891665541877348,
+    "median_seconds": 0.0025165178813040257,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07900123484432697,
+      0.002157243900001049,
+      0.0025165178813040257
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "redacted",
+      "local_rank": 1,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 1,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 1073741824,
+    "n_wires": 31,
+    "observable": "Z(29)",
+    "optimizer": "adam"
+  },
+  "world_size": 2
+}

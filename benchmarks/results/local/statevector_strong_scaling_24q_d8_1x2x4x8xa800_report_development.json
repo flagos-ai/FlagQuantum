@@ -1,0 +1,108 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark": "statevector_strong_scaling_report",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "non_release_evidence": true,
+  "points": [
+    {
+      "communication_fraction": 0.0,
+      "median_seconds": 0.15609105303883553,
+      "rank_peak_memory_bytes_max": 1082294272,
+      "scaling_efficiency": 1.0,
+      "source_artifact_class": "measured_development_run",
+      "speedup": {
+        "confidence_interval": [
+          1.0,
+          1.0
+        ],
+        "confidence_level": 0.95,
+        "method": "baseline",
+        "speedup": 1.0
+      },
+      "world_size": 1
+    },
+    {
+      "communication_fraction": 0.7142857142857143,
+      "median_seconds": 0.10603419016115367,
+      "rank_peak_memory_bytes_max": 864191488,
+      "scaling_efficiency": 0.736041142963435,
+      "source_artifact_class": "measured_development_run",
+      "speedup": {
+        "confidence_interval": [
+          1.4687320879971841,
+          1.4754153255620643
+        ],
+        "confidence_level": 0.95,
+        "method": "independent_bootstrap_median_ratio",
+        "resamples": 10000,
+        "seed": 440044,
+        "speedup": 1.47208228592687
+      },
+      "world_size": 2
+    },
+    {
+      "communication_fraction": 0.5555555555555556,
+      "median_seconds": 0.05828791204839945,
+      "rank_peak_memory_bytes_max": 578978816,
+      "scaling_efficiency": 0.6694829491800337,
+      "source_artifact_class": "measured_development_run",
+      "speedup": {
+        "confidence_interval": [
+          2.5492968411834283,
+          2.699981996692132
+        ],
+        "confidence_level": 0.95,
+        "method": "independent_bootstrap_median_ratio",
+        "resamples": 10000,
+        "seed": 440044,
+        "speedup": 2.677931796720135
+      },
+      "world_size": 4
+    },
+    {
+      "communication_fraction": 0.38461538461538464,
+      "median_seconds": 0.03647445305250585,
+      "rank_peak_memory_bytes_max": 344097792,
+      "scaling_efficiency": 0.5349328090476734,
+      "source_artifact_class": "measured_development_run",
+      "speedup": {
+        "confidence_interval": [
+          4.0351308745484635,
+          4.445380233943279
+        ],
+        "confidence_level": 0.95,
+        "method": "independent_bootstrap_median_ratio",
+        "resamples": 10000,
+        "seed": 440044,
+        "speedup": 4.279462472381387
+      },
+      "world_size": 8
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.scaling_report.v1",
+  "source_world_sizes": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "validation_blockers": [
+    "development_artifacts_not_release_scalability_evidence"
+  ],
+  "workload": {
+    "depth": 8,
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 536870912,
+    "gate_count": 64,
+    "n_wires": 24,
+    "name": "issue044_fixed_statevector_forward_v1"
+  },
+  "workload_sha256": "3308dffc01d9eee7d521a0ba624c84a75ef7157529e318c75a321e4ade103438"
+}

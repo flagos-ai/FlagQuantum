@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#243447}.title{font-size:25px;font-weight:700;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:12px;fill:#64748B}.label{font-size:13px}.value{font-size:12px;font-weight:700}</style>
+<text x="105" y="38" class="title">JAX JIT steady-state speedup</text>
+<text x="105" y="62" class="sub">NVIDIA A800-SXM4-80GB · single_device_fast_path · loss + gradient · fresh-process medians · &gt;1× means JAX is faster</text>
+<line x1="105" y1="528.0" x2="1035" y2="528.0" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="532.0" text-anchor="end" class="axis">0.0×</text>
+<line x1="105" y1="417.5" x2="1035" y2="417.5" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="421.5" text-anchor="end" class="axis">8.2×</text>
+<line x1="105" y1="307.0" x2="1035" y2="307.0" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="311.0" text-anchor="end" class="axis">16.4×</text>
+<line x1="105" y1="196.5" x2="1035" y2="196.5" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="200.5" text-anchor="end" class="axis">24.6×</text>
+<line x1="105" y1="86.0" x2="1035" y2="86.0" stroke="#D8E0EA" stroke-width="1"/>
+<text x="93" y="90.0" text-anchor="end" class="axis">32.7×</text>
+<line x1="105" y1="528" x2="1035" y2="528" stroke="#94A3B8"/>
+<text x="105.0" y="556" text-anchor="middle" class="label">4</text>
+<text x="337.5" y="556" text-anchor="middle" class="label">8</text>
+<text x="570.0" y="556" text-anchor="middle" class="label">12</text>
+<text x="802.5" y="556" text-anchor="middle" class="label">16</text>
+<text x="1035.0" y="556" text-anchor="middle" class="label">20</text>
+<text x="570.0" y="593" text-anchor="middle" class="label">Qubits（state dimension = 2ⁿ）</text>
+<text transform="translate(28 307.0) rotate(-90)" text-anchor="middle" class="label">PyTorch / JAX（×）</text>
+<rect x="60.4" y="153.4" width="89.3" height="374.6" rx="5" fill="#54319B"/>
+<text x="105.0" y="144.4" text-anchor="middle" class="value">27.7×</text>
+<rect x="292.9" y="262.8" width="89.3" height="265.2" rx="5" fill="#54319B"/>
+<text x="337.5" y="253.8" text-anchor="middle" class="value">19.6×</text>
+<rect x="525.4" y="286.6" width="89.3" height="241.4" rx="5" fill="#54319B"/>
+<text x="570.0" y="277.6" text-anchor="middle" class="value">17.9×</text>
+<rect x="757.9" y="431.2" width="89.3" height="96.8" rx="5" fill="#54319B"/>
+<text x="802.5" y="422.2" text-anchor="middle" class="value">7.2×</text>
+<rect x="990.4" y="513.9" width="89.3" height="14.1" rx="5" fill="#54319B"/>
+<text x="1035.0" y="504.9" text-anchor="middle" class="value">1.0×</text>
+</svg>

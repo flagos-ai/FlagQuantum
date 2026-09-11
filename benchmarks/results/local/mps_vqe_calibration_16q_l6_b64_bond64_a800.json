@@ -1,0 +1,72 @@
+{
+  "ansatz": "independent batched RY/RZ plus alternating nearest-neighbor CX brickwork",
+  "batch_size": 64,
+  "benchmark": "flagquantum_mps_vqe_triton_runtime",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "cutoff": 0.0,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "eager": {
+    "cumulative_seconds": [
+      1.064894431270659
+    ],
+    "eager_two_site_regions": [
+      45
+    ],
+    "energies": [
+      -839.2911376953125
+    ],
+    "max_bonds": [
+      64
+    ],
+    "peak_memory_bytes": [
+      166870016
+    ],
+    "triton_two_site_regions": [
+      0
+    ],
+    "truncation_errors": [
+      0.0
+    ]
+  },
+  "final_energy_abs_delta": 0.0,
+  "hamiltonian": "-sum ZZ + 0.1 sum Z",
+  "iterations": 1,
+  "layers": 6,
+  "learning_rate": 0.02,
+  "max_bond": 64,
+  "n_wires": 16,
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "speedup_eager_over_triton": 0.13526565157073817,
+  "task": "end_to_end_mps_vqe_training",
+  "torch_version": "2.13.0+cu130",
+  "triton": {
+    "cumulative_seconds": [
+      7.872615249361843
+    ],
+    "eager_two_site_regions": [
+      40
+    ],
+    "energies": [
+      -839.2911376953125
+    ],
+    "max_bonds": [
+      64
+    ],
+    "peak_memory_bytes": [
+      158350336
+    ],
+    "triton_two_site_regions": [
+      5
+    ],
+    "truncation_errors": [
+      0.0
+    ]
+  }
+}

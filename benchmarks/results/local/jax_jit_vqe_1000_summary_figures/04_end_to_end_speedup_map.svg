@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="900" viewBox="0 0 1680 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1632" height="852" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
+<text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
+<text x="58" y="91" class="title">End-to-end JAX JIT speedup over 1000 steps</text>
+<text x="58" y="119" class="sub">PyTorch / JAX cumulative wall time · Includes initial JAX compilation · Higher values mean greater end-to-end JAX benefit</text>
+<text x="354.0" y="174" text-anchor="middle" class="axis">DEPTH 2</text>
+<text x="572.0" y="174" text-anchor="middle" class="axis">DEPTH 4</text>
+<text x="790.0" y="174" text-anchor="middle" class="axis">DEPTH 8</text>
+<text x="1008.0" y="174" text-anchor="middle" class="axis">DEPTH 12</text>
+<text x="1226.0" y="174" text-anchor="middle" class="axis">DEPTH 16</text>
+<text x="1444.0" y="174" text-anchor="middle" class="axis">DEPTH 20</text>
+<text x="217" y="274" text-anchor="end" class="axis">8 QUBITS</text>
+<rect x="250" y="210" width="208" height="118" rx="13" fill="#649F82" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="262" text-anchor="middle" class="cell">5.10×</text>
+<text x="354.0" y="287" text-anchor="middle" class="detail">PT 50s · JAX 10s</text>
+<rect x="468" y="210" width="208" height="118" rx="13" fill="#549573" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="262" text-anchor="middle" class="cell">5.59×</text>
+<text x="572.0" y="287" text-anchor="middle" class="detail">PT 90s · JAX 16s</text>
+<rect x="686" y="210" width="208" height="118" rx="13" fill="#408860" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="262" text-anchor="middle" class="cell">6.19×</text>
+<text x="790.0" y="287" text-anchor="middle" class="detail">PT 181s · JAX 29s</text>
+<rect x="904" y="210" width="208" height="118" rx="13" fill="#418961" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="262" text-anchor="middle" class="cell">6.18×</text>
+<text x="1008.0" y="287" text-anchor="middle" class="detail">PT 249s · JAX 40s</text>
+<rect x="1122" y="210" width="208" height="118" rx="13" fill="#4C906C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="262" text-anchor="middle" class="cell">5.83×</text>
+<text x="1226.0" y="287" text-anchor="middle" class="detail">PT 317s · JAX 54s</text>
+<rect x="1340" y="210" width="208" height="118" rx="13" fill="#358155" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="262" text-anchor="middle" class="cell">6.55×</text>
+<text x="1444.0" y="287" text-anchor="middle" class="detail">PT 422s · JAX 65s</text>
+<text x="217" y="402" text-anchor="end" class="axis">12 QUBITS</text>
+<rect x="250" y="338" width="208" height="118" rx="13" fill="#609C7E" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="390" text-anchor="middle" class="cell">5.23×</text>
+<text x="354.0" y="415" text-anchor="middle" class="detail">PT 79s · JAX 15s</text>
+<rect x="468" y="338" width="208" height="118" rx="13" fill="#2E7D4F" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="390" text-anchor="middle" class="cell">6.75×</text>
+<text x="572.0" y="415" text-anchor="middle" class="detail">PT 141s · JAX 21s</text>
+<rect x="686" y="338" width="208" height="118" rx="13" fill="#438A63" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="390" text-anchor="middle" class="cell">6.11×</text>
+<text x="790.0" y="415" text-anchor="middle" class="detail">PT 253s · JAX 41s</text>
+<rect x="904" y="338" width="208" height="118" rx="13" fill="#4D906C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="390" text-anchor="middle" class="cell">5.81×</text>
+<text x="1008.0" y="415" text-anchor="middle" class="detail">PT 367s · JAX 63s</text>
+<rect x="1122" y="338" width="208" height="118" rx="13" fill="#3A855B" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="390" text-anchor="middle" class="cell">6.38×</text>
+<text x="1226.0" y="415" text-anchor="middle" class="detail">PT 502s · JAX 79s</text>
+<rect x="1340" y="338" width="208" height="118" rx="13" fill="#5E9B7C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="390" text-anchor="middle" class="cell">5.29×</text>
+<text x="1444.0" y="415" text-anchor="middle" class="detail">PT 598s · JAX 113s</text>
+<text x="217" y="530" text-anchor="end" class="axis">16 QUBITS</text>
+<rect x="250" y="466" width="208" height="118" rx="13" fill="#68A186" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="518" text-anchor="middle" class="cell">4.99×</text>
+<text x="354.0" y="543" text-anchor="middle" class="detail">PT 110s · JAX 22s</text>
+<rect x="468" y="466" width="208" height="118" rx="13" fill="#6CA48A" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="518" text-anchor="middle" class="cell">4.87×</text>
+<text x="572.0" y="543" text-anchor="middle" class="detail">PT 180s · JAX 37s</text>
+<rect x="686" y="466" width="208" height="118" rx="13" fill="#73A890" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="518" text-anchor="middle" class="cell">4.65×</text>
+<text x="790.0" y="543" text-anchor="middle" class="detail">PT 334s · JAX 72s</text>
+<rect x="904" y="466" width="208" height="118" rx="13" fill="#659F83" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="518" text-anchor="middle" class="cell">5.07×</text>
+<text x="1008.0" y="543" text-anchor="middle" class="detail">PT 508s · JAX 100s</text>
+<rect x="1122" y="466" width="208" height="118" rx="13" fill="#80B09C" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="518" text-anchor="middle" class="cell">4.26×</text>
+<text x="1226.0" y="543" text-anchor="middle" class="detail">PT 655s · JAX 154s</text>
+<rect x="1340" y="466" width="208" height="118" rx="13" fill="#87B4A3" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="518" text-anchor="middle" class="cell">4.05×</text>
+<text x="1444.0" y="543" text-anchor="middle" class="detail">PT 853s · JAX 210s</text>
+<text x="217" y="658" text-anchor="end" class="axis">20 QUBITS</text>
+<rect x="250" y="594" width="208" height="118" rx="13" fill="#E4EEFB" stroke="#FFFFFF" stroke-width="3"/>
+<text x="354.0" y="646" text-anchor="middle" class="cell">1.21×</text>
+<text x="354.0" y="671" text-anchor="middle" class="detail">PT 130s · JAX 107s</text>
+<rect x="468" y="594" width="208" height="118" rx="13" fill="#E5EFFC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="572.0" y="646" text-anchor="middle" class="cell">1.18×</text>
+<text x="572.0" y="671" text-anchor="middle" class="detail">PT 227s · JAX 193s</text>
+<rect x="686" y="594" width="208" height="118" rx="13" fill="#E5EFFC" stroke="#FFFFFF" stroke-width="3"/>
+<text x="790.0" y="646" text-anchor="middle" class="cell">1.17×</text>
+<text x="790.0" y="671" text-anchor="middle" class="detail">PT 433s · JAX 370s</text>
+<rect x="904" y="594" width="208" height="118" rx="13" fill="#E6F0FD" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1008.0" y="646" text-anchor="middle" class="cell">1.14×</text>
+<text x="1008.0" y="671" text-anchor="middle" class="detail">PT 643s · JAX 566s</text>
+<rect x="1122" y="594" width="208" height="118" rx="13" fill="#E7F1FE" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1226.0" y="646" text-anchor="middle" class="cell">1.11×</text>
+<text x="1226.0" y="671" text-anchor="middle" class="detail">PT 855s · JAX 773s</text>
+<rect x="1340" y="594" width="208" height="118" rx="13" fill="#E8F1FF" stroke="#FFFFFF" stroke-width="3"/>
+<text x="1444.0" y="646" text-anchor="middle" class="cell">1.09×</text>
+<text x="1444.0" y="671" text-anchor="middle" class="detail">PT 1067s · JAX 983s</text>
+<line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
+<circle cx="74" cy="850" r="5" fill="#54319B"/>
+<text x="90" y="855" class="note">JAX maintains roughly 4–6× benefit at 8–16 qubits, falling to about 1.1× at 20 qubits.</text>
+</svg>

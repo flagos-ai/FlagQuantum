@@ -1,0 +1,41 @@
+{
+  "schema": "flagquantum.program_artifact",
+  "version": "2.0",
+  "kind": "circuit",
+  "producer": "phase31-v1-compatibility-fixture",
+  "profile": {
+    "name": "circuit-ir-1.0",
+    "media_type": "application/vnd.flagquantum.circuit-ir+json;version=1.0",
+    "encoding": "canonical-json"
+  },
+  "payload": {
+    "kind": "flagquantum.circuit_ir",
+    "version": "1.0",
+    "n_wires": 1,
+    "dtype": "complex128",
+    "shape": [2],
+    "instructions": [
+      {
+        "opcode": "h",
+        "wires": [0],
+        "params": {},
+        "matrix": null,
+        "metadata": {}
+      }
+    ],
+    "observables": [],
+    "measurements": [],
+    "metadata": {}
+  },
+  "payload_sha256": "60ed04925dc8565b3ff880b6252fe2cc6eefa0635b989497d988f1522c3bb8bb",
+  "circuit_content_hash": "60ed04925dc8565b3ff880b6252fe2cc6eefa0635b989497d988f1522c3bb8bb",
+  "requirements": null,
+  "target": null,
+  "compilation": null,
+  "parameter_schema": {
+    "binding": "fully_bound",
+    "parameters": []
+  },
+  "result_schema": null,
+  "artifact_identity": "b2ec6616b54a0a97241b5b2c7bdf40fd4a698219eca1f5e7d594664322e99292"
+}
