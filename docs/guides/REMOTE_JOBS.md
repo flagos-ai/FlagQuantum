@@ -64,26 +64,44 @@ local context, not cryptographic proof of the circuit executed by hardware.
 If submission itself loses its network response, reconcile with the provider
 before retrying: the server may already have accepted the job.
 
-## Jiuding managed batch jobs
+## Jiuding native jobs
 
-The same job methods adapt Jiuding's existing managed program submission:
+Configure `JIUDING_AK` and `JIUDING_SK`, then choose your project, queue and image:
 
 ```python
 job = fq.submit(
     fq.Circuit(2).h(0).cx(0, 1),
-    target="jiuding:cpu",
+    target="jiuding:gpu",
+    project="YOUR_PROJECT_SET.YOUR_PROJECT",
+    queue="YOUR_QUEUE",
     image="YOUR_FLAGQUANTUM_IMAGE",
-    workspace="YOUR_WORKSPACE",
+    outputs=fq.counts(),
+    shots=1024,
 )
 job.save("jiuding-job.json")
+print(job.id)
 ```
 
-Choose an image containing the matching FlagQuantum version and configure the
-existing Jiuding credentials and managed workspace transport. This path uses a
-batch job; synchronous `fq.run()` retains its resident-workspace execution path.
-Jiuding restoration resolves the saved job ID in the configured workspace and
-retrieves results through the existing artifact transport. No provider SDK or
-credential object appears in the common user-facing job interface.
+This path uses native HTTP jobs, without SSH, workspace pods or source uploads.
+The image must contain a compatible FlagQuantum program executor. You can set
+`JIUDING_PROJECT` instead of passing `project`; omit `queue` only when exactly one
+active queue is available. The current adapter requires a queue with one
+high-priority resource configuration and uses its private image catalog.
+Synchronous `fq.run()` retains its resident-workspace execution path.
+
+The circuit is carried in a command bounded to 64 KiB. Results travel through
+chunked authenticated job logs, bounded to 8 MiB and checked for completeness
+and SHA-256 integrity. This is intended for small circuits and compact outputs;
+prefer counts or expectations over large statevectors. Log retention and account
+permissions determine how long results remain retrievable. The checksum detects
+transport corruption; it does not attest hardware execution. Logs may become
+readable shortly after completion; `wait()` retries incomplete results until its
+deadline, while `result()` reports that no result is available yet.
+
+Restore with `fq.restore_job("jiuding-job.json")` in a later process, using the same
+account and endpoint. It retrieves the existing job without resubmitting. If a
+submission response is lost, the exception names a private local journal: inspect
+that experiment before retrying to avoid duplicate jobs.
 
 No background watcher is started automatically. Manual checks and explicit waits
 are supported; a notebook notification widget is outside this API's scope.

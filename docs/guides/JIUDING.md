@@ -11,6 +11,11 @@ and refresh according to the server expiry. Requests use HTTPS, reject redirects
 have a 20-second socket timeout, and are not retried blindly. No CLI installation
 or manual project and queue IDs are required.
 
+For native jobs without a workspace or SSH, use the development-version
+[`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs). It requires project
+membership, queue capacity and a compatible image. The workspace examples below
+remain useful for repeated interactive execution and shared-storage jobs.
+
 ## First account check
 
 A new account must first be added to a Jiuding project and an active compute
@@ -46,17 +51,19 @@ available runtime image remain platform administration operations.
 
 ## Choose an execution path
 
-Jiuding has two primary execution paths. They return the same FlagQuantum
+Jiuding offers native jobs and workspace-backed execution. They return the same FlagQuantum
 result type but have different latency and lifecycle semantics.
 
 | Need | Entry point | Required resource | Lifecycle |
 | --- | --- | --- | --- |
 | Interactive or repeated execution | [`fq.run(..., target="jiuding:...")`](#repeated-low-latency-workspace-execution) | A running development workspace | Reuses one resident process and SSH channel; no Job ID |
-| Isolated, schedulable, recoverable work | [`JiudingClient.submit_program(...)`](#recoverable-batch-execution) | A running workspace, runtime image and queue capacity | Creates a batch Job; recoverable by Job ID |
+| Native detached circuits (development version) | [`fq.submit(...)`](REMOTE_JOBS.md#jiuding-native-jobs) | Project, queue and runtime image | HTTP submission and bounded log results; no SSH or workspace |
+| Shared-storage, recoverable work | [`JiudingClient.submit_program(...)`](#recoverable-batch-execution) | A running workspace, runtime image and queue capacity | Creates a batch Job; recoverable by Job ID |
 
 Use `fq.run` when startup latency would dominate the calculation. Use
 `submit_program` when the work should survive the caller process, wait in the
-queue, or be recovered later. Neither path creates a development workspace
+queue, or be recovered later. Use `fq.submit` for native jobs without shared
+storage or workspace discovery. None of these paths creates a development workspace
 implicitly. `JiudingClient.submit()` is the advanced escape hatch for an
 existing Python script and shared-storage layout; ordinary circuit users do
 not need it.
@@ -366,8 +373,9 @@ cancels. `client.cancel(receipt)` requests that active jobs stop and does not
 archive/delete experiments. Check status afterward to verify termination.
 If launch is still uncertain and no jobs are visible, an empty status/cancel
 result does not establish that no job exists. Queue quota availability and
-scheduler delay remain platform concerns. Log streaming, automatic resume from
-partial creation, multi-GPU tasks and result downloads are not implemented.
+scheduler delay remain platform concerns. The shared-storage path does not stream logs or download results. Native
+`fq.submit` retrieves bounded structured results from logs. Automatic resume
+from partial creation and multi-GPU jobs remain unsupported.
 
 Queue detail and job-snapshot endpoints returned 403 for the test account.
 The adapter uses its authorized workspace and job queries instead. Endpoint

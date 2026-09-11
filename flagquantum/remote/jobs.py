@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from ..errors import CapabilityError, ExecutionError
 from ..runtime.result import ExecutionResult
+from .compute._native_job import NativeJiudingJobClient
 from .compute.jiuding import JiudingClient
 from .qpu.contracts import (
     ProviderTaskHandle,
@@ -40,6 +41,7 @@ class _Receipt:
     output_name: str | None = None
     workspace: str | None = None
     submission_identity: dict[str, str] = field(default_factory=dict)
+    native_receipt: dict[str, Any] | None = None
     schema: str = "flagquantum.remote-job.v1"
 
 
@@ -148,6 +150,9 @@ class RemoteJob:
                 target_qubits=r.target_qubits,
                 name=r.name,
             )
+        if isinstance(self._client, NativeJiudingJobClient):
+            return self._client.read_result(self._jiuding_receipt())
+
         from .compute._managed_program import read_managed_result
         from .compute._program_submission import decode_job_result
 
@@ -176,7 +181,7 @@ class RemoteJob:
                 try:
                     return self.result()
                 except RuntimeError as exc:
-                    # Quafu may mark completion before its result endpoint is ready.
+                    # Providers may report completion before results become readable.
                     if "has no result yet" not in str(exc):
                         raise
             if state in {"failed", "cancelled"}:
@@ -225,10 +230,12 @@ def submit(
     name: str | None = None,
     image: str | None = None,
     workspace: str | None = None,
+    project: str | None = None,
+    queue: str | None = None,
 ) -> RemoteJob:
     """Submit once and return without waiting for remote execution.
 
-    Quafu supports full-register counts. Jiuding uses managed batch execution and
+    Quafu supports full-register counts. Jiuding uses native HTTP batch execution and
     requires an image; credentials come from the existing provider configuration.
     Submission includes preparation and network I/O. Unsupported output requests
     fail before a task is submitted. Save the returned job for later restoration.
@@ -246,20 +253,26 @@ def submit(
             )
         if not isinstance(image, str) or not image.strip():
             raise ValueError("Jiuding batch submission requires image")
-        selected_workspace = workspace or os.environ.get("JIUDING_WORKSPACE") or None
-        client = JiudingClient(workspace=selected_workspace)
+        if workspace is not None:
+            raise TypeError("Native jobs use project and queue, not workspace")
+        selected_project = project or os.environ.get("JIUDING_PROJECT")
+        if not selected_project:
+            raise ValueError(
+                "Jiuding submission requires project='project-set.project'"
+            )
+        client = NativeJiudingJobClient(project=selected_project, queue=queue)
         native = client.submit_program(
             ir, target=target, image=image, outputs=outputs, shots=shots
         )
         return RemoteJob(
-            _Receipt(
-                str(native["jobId"]), target, ir.n_wires, workspace=selected_workspace
-            ),
+            _Receipt(str(native["jobId"]), target, ir.n_wires, native_receipt=native),
             client,
             native,
         )
-    if image is not None or workspace is not None:
-        raise TypeError("image and workspace apply only to Jiuding submission")
+    if any(value is not None for value in (image, workspace, project, queue)):
+        raise TypeError(
+            "image, project, queue and workspace apply only to Jiuding submission"
+        )
     return _submit_quafu(
         ir,
         target=target,
@@ -389,6 +402,23 @@ def restore_job(path: str | Path) -> RemoteJob:
             receipt, QuafuProvider(reverse_result_bits=receipt.compiler is None)
         )
     if provider == "jiuding":
+        native = receipt.native_receipt
+        if native is not None:
+            if (
+                not isinstance(native, dict)
+                or native.get("jobId") != receipt.id
+                or native.get("artifact_transport") != "job_logs"
+                or not isinstance(native.get("project"), str)
+                or not isinstance(native.get("queue"), str)
+            ):
+                raise ValueError("Invalid native job receipt")
+            return RemoteJob(
+                receipt,
+                NativeJiudingJobClient(
+                    project=native["project"], queue=native["queue"]
+                ),
+                native,
+            )
         return RemoteJob(receipt, JiudingClient(workspace=receipt.workspace))
     raise ValueError("Unsupported receipt provider")
 

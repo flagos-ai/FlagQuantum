@@ -11,7 +11,7 @@
     "restore_job"
   ],
   "public_signatures": {
-    "submit": "(program: 'Circuit | CircuitIR', *, target: 'str', outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, shots: 'int | None' = None, compiler: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, name: 'str | None' = None, image: 'str | None' = None, workspace: 'str | None' = None) -> 'RemoteJob'",
+    "submit": "(program: 'Circuit | CircuitIR', *, target: 'str', outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, shots: 'int | None' = None, compiler: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, name: 'str | None' = None, image: 'str | None' = None, workspace: 'str | None' = None, project: 'str | None' = None, queue: 'str | None' = None) -> 'RemoteJob'",
     "restore_job": "(path: 'str | Path') -> 'RemoteJob'",
     "RemoteJob.status": "(self) -> 'JobStatus'",
     "RemoteJob.result": "(self) -> 'ExecutionResult'",

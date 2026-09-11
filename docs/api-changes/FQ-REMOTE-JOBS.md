@@ -20,8 +20,12 @@ thread, event loop, service, registry, or automatic retry is introduced.
 Quafu initially supports full-register counts, with service-side or explicit
 local compilation. Grouped expectations must use `run`; they are rejected before
 submission because multiple provider IDs need a separately designed group API.
-Jiuding uses existing managed batch jobs and requires an explicit image. This is
-different from `run`'s resident-workspace execution and is documented accordingly.
+The owner subsequently required native Jiuding job mode without SSH, using a
+project and queue. The authorized candidate adds `project` and `queue` arguments
+and rejects `workspace` for new submissions. Jiuding submits an inline circuit
+through HTTP, runs the image-installed executor, and retrieves bounded results
+through authenticated job logs. It requires an explicit image. Synchronous `run`
+retains its resident-workspace behavior. No released API is removed.
 
 A job exposes `id`, `target`, `raw_status`, `status()`, `result()`,
 `wait(timeout=300.0, poll_interval=3.0)`, `cancel()`, and `save(path)`.
@@ -36,8 +40,9 @@ credentials from the current environment. A new receipt stores only identity and
 result decoding context. It contains no credentials or executable payload. Files
 are created exclusively with owner-only access; callers retain them privately.
 This preserves output names, physical mapping, and count ordering across restarts.
-Saved Jiuding IDs are resolved through the configured workspace's existing
-managed-receipt mechanism.
+Jiuding receipts retain project, queue, experiment and job identities plus log
+decoding context. Older development receipts remain readable through their
+existing managed-workspace transport; new receipts require no workspace.
 
 ## Validation and release
 
@@ -49,4 +54,6 @@ clients establish lifecycle semantics, not hardware or cluster availability.
 
 A [Quafu hardware check](../development/evidence/remote_jobs_quafu_20260911.json)
 completed submission and separate-process restoration for one counts task.
-Jiuding lifecycle tests use a fake client; no new live Jiuding job was submitted.
+A [native Jiuding A100 job](../development/evidence/remote_jobs_jiuding_20260911.json) also completed with exact two-qubit X counts (1024
+shots), using HTTP submission and separate-process log retrieval without SSH.
+This is a small correctness check, not a performance or scalability claim.

@@ -151,24 +151,29 @@ def test_receipt_validation_precedes_network(quafu, tmp_path):
     assert len(quafu.posts) == 1
 
 
-def test_jiuding_uses_managed_jobs_without_resubmission(monkeypatch, tmp_path):
-    from flagquantum.remote.compute.jiuding import JiudingClient
+def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path):
+    from flagquantum.remote.compute._native_job import NativeJiudingJobClient
 
     calls = []
     state = ["Pending"]
     expected = fq.run(fq.Circuit(1))
 
-    class Client(JiudingClient):
-        def __init__(self, *, workspace=None):
-            self.workspace_name = workspace
+    class Client(NativeJiudingJobClient):
+        def __init__(self, *, project, queue=None):
+            self.project = project
+            self.queue = queue
 
         def submit_program(self, *args, **kwargs):
             calls.append("submit")
-            return {"jobId": "compute-123"}
+            return {
+                "jobId": "compute-123",
+                "project": self.project,
+                "queue": self.queue,
+                "artifact_transport": "job_logs",
+            }
 
-        def restore_receipt(self, job_id):
-            calls.append("restore")
-            return {"jobId": job_id}
+        def read_result(self, receipt):
+            return expected
 
         def status(self, receipt):
             return [
@@ -180,16 +185,13 @@ def test_jiuding_uses_managed_jobs_without_resubmission(monkeypatch, tmp_path):
             calls.append("cancel")
             state[0] = "Cancelled"
 
-    monkeypatch.setattr(jobs, "JiudingClient", Client)
-    monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program.read_managed_result",
-        lambda client, receipt: expected,
-    )
+    monkeypatch.setattr(jobs, "NativeJiudingJobClient", Client)
     job = fq.submit(
         fq.Circuit(1),
         target="jiuding:cpu",
         image="test-image",
-        workspace="test-workspace",
+        project="test.project",
+        queue="test-queue",
     )
     assert job.status() == "queued"
     with pytest.raises(ExecutionError):
@@ -200,14 +202,14 @@ def test_jiuding_uses_managed_jobs_without_resubmission(monkeypatch, tmp_path):
     state[0] = "Succeed"
     assert restored.result() is expected
     assert calls.count("submit") == 1
-    assert calls.count("restore") == 1
+    assert calls == ["submit"]
     restored.cancel()
     assert restored.status() == "cancelled"
 
 
 def test_jiuding_missing_image_fails_before_client(monkeypatch):
     client = Mock(side_effect=AssertionError("must not connect"))
-    monkeypatch.setattr(jobs, "JiudingClient", client)
+    monkeypatch.setattr(jobs, "NativeJiudingJobClient", client)
     with pytest.raises(ValueError, match="requires image"):
         fq.submit(fq.Circuit(1), target="jiuding:cpu")
     client.assert_not_called()
@@ -264,3 +266,26 @@ def test_wait_handles_delayed_quafu_result(quafu, monkeypatch):
     assert job.wait(timeout=5).counts == [{"10": 1000, "00": 24}]
     assert len(result_reads) == 2
     assert len(quafu.posts) == 1
+
+
+@pytest.mark.parametrize(
+    "options, error, message",
+    [
+        ({}, ValueError, "requires project"),
+        ({"workspace": "old-workspace"}, TypeError, "project and queue"),
+        ({"project": "invalid"}, ValueError, "project-set.project"),
+    ],
+)
+def test_native_job_configuration_fails_before_network(
+    monkeypatch, options, error, message
+):
+    from flagquantum.remote.compute._native_job import NativeJiudingJobClient
+
+    monkeypatch.delenv("JIUDING_PROJECT", raising=False)
+    monkeypatch.setattr(
+        NativeJiudingJobClient,
+        "_request",
+        Mock(side_effect=AssertionError("must not connect")),
+    )
+    with pytest.raises(error, match=message):
+        fq.submit(fq.Circuit(1), target="jiuding:cpu", image="test-image", **options)
