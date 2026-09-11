@@ -157,7 +157,9 @@ def run(
             name=name,
         )
 
-    if target is None:
+    if target is None or (
+        compiler is None and not (separator == ":" and provider_name.lower() == "quafu")
+    ):
         raise TypeError("remote execution requires both compiler and target")
     if options is not None or noise_model is not None:
         raise TypeError(
