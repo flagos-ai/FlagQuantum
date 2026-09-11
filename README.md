@@ -27,10 +27,18 @@ been tested and what remains a research goal.
 
 ## Train your first quantum model
 
-Requires Python **3.10–3.12**:
+Requires Python **3.10–3.12**. Install the released version:
 
 ```console
 python -m pip install flagquantum
+```
+
+Or install the development version from source (editable, with development tools):
+
+```console
+git clone https://github.com/flagos-ai/FlagQuantum.git
+cd FlagQuantum
+python -m pip install -e ".[dev]"
 ```
 
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
