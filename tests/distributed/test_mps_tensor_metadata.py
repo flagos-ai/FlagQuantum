@@ -9,7 +9,11 @@ import pytest
 @pytest.mark.distributed_cpu
 def test_tensor_metadata_cache_and_generation_invalidation(tmp_path):
     output = tmp_path / "metadata.json"
-    env = {**os.environ, "PYTHONPATH": ".", "FQ_MPS_TENSOR_METADATA_OUTPUT": str(output)}
+    env = {
+        **os.environ,
+        "PYTHONPATH": ".",
+        "FQ_MPS_TENSOR_METADATA_OUTPUT": str(output),
+    }
     done = subprocess.run(
         [
             sys.executable,
