@@ -24,6 +24,28 @@ the tested upstream commit in `requirements-qsteed.txt`, followed by the release
 adapter (in `/opt/qsteed` for JAX-enabled variants). The compiler remains independently replaceable through FlagQuantum's
 extension interface. No provider credentials are included.
 
+## JupyterLab
+
+All four variants include JupyterLab 4 and IPython kernels. Launch it from the
+repository root (replace the profile/service for the desired variant):
+
+```bash
+docker compose -f compose.dev.yaml --profile cpu-no-jax run --rm \
+  -p 127.0.0.1:8888:8888 dev-no-jax \
+  jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+```
+
+Open the local URL with the token printed in the terminal. The checkout is
+mounted at `/workspace`, so notebooks and edits persist on the host. Token
+authentication remains enabled. On a remote host, access port 8888 through an
+SSH tunnel.
+
+Choose **FlagQuantum** for the main environment. JAX-enabled images also offer
+**FlagQuantum (QSteed)** for the isolated compiler environment. No-JAX images
+support training and QSteed in the main kernel. Each image build launches its
+registered kernels and executes FlagQuantum code; compiler kernels also run
+an offline QSteed compilation.
+
 ## Without JAX
 
 Choose `cpu-no-jax` or `cuda-amd64-no-jax` to train and compile from the same

@@ -37,7 +37,10 @@ COPY . /opt/FlagQuantum
 WORKDIR /opt/FlagQuantum
 
 RUN python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip install "torch==${TORCH_VERSION}" --index-url "${TORCH_INDEX_URL}"
+    && python -m pip install "torch==${TORCH_VERSION}" --index-url "${TORCH_INDEX_URL}" \
+    && python -m pip install "jupyterlab>=4,<5" "ipykernel>=6,<8" \
+    && python -m ipykernel install --sys-prefix --name python3 --display-name "FlagQuantum" \
+    && jupyter lab --version
 
 ENV PYTHONPATH=/workspace
 ENTRYPOINT ["/usr/bin/tini", "--"]
@@ -49,7 +52,8 @@ ARG EXTRAS=dev,viz,examples,quafu
 RUN python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" -e ".[${EXTRAS}]" -r docker/dev/requirements-qsteed.txt \
     && python -m pip check \
     && python -c "import importlib.util; assert importlib.util.find_spec('jax') is None; assert importlib.util.find_spec('jaxlib') is None" \
-    && python docker/dev/smoke.py --qsteed
+    && python docker/dev/smoke.py --qsteed \
+    && python docker/dev/check_notebook.py --qsteed
 WORKDIR /workspace
 
 FROM base AS full
@@ -57,16 +61,19 @@ ARG EXTRAS=dev,jax,viz,examples,interop-all
 ARG JAX_SPEC=jax>=0.10,<0.11
 RUN python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" "${JAX_SPEC}" -e ".[${EXTRAS}]" \
     && python -m pip check \
-    && JAX_PLATFORMS=cpu python docker/dev/smoke.py
+    && JAX_PLATFORMS=cpu python docker/dev/smoke.py \
+    && python docker/dev/check_notebook.py
 
 # QSteed/pyquafu require NumPy 1.x, while JAX requires NumPy 2.x.
 # Keep the compiler in an isolated environment; never bypass dependency checks.
 RUN python -m venv /opt/qsteed \
     && /opt/qsteed/bin/python -m pip install --upgrade pip setuptools wheel \
     && /opt/qsteed/bin/python -m pip install "torch==${TORCH_VERSION}" --index-url https://download.pytorch.org/whl/cpu \
-    && /opt/qsteed/bin/python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" -e ".[quafu]" -r docker/dev/requirements-qsteed.txt \
+    && /opt/qsteed/bin/python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" -e ".[quafu]" -r docker/dev/requirements-qsteed.txt "ipykernel>=6,<8" \
     && /opt/qsteed/bin/python -m pip check \
     && /opt/qsteed/bin/python docker/dev/smoke.py --qsteed \
+    && /opt/qsteed/bin/python -m ipykernel install --prefix=/usr/local --name flagquantum-qsteed --display-name "FlagQuantum (QSteed)" \
+    && python docker/dev/check_notebook.py --kernel flagquantum-qsteed --qsteed \
     && install -m 755 docker/dev/flagquantum-qsteed-python /usr/local/bin/flagquantum-qsteed-python
 
 ENV XLA_PYTHON_CLIENT_PREALLOCATE=false

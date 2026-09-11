@@ -108,6 +108,7 @@ jobs:
             SOURCE_URL=https://github.com/${{ github.repository }}
             SOURCE_REVISION=${{ github.sha }}
           cache-from: type=gha,scope=flagquantum-dev-${{ matrix.variant }}
-          cache-to: type=gha,mode=max,scope=flagquantum-dev-${{ matrix.variant }}
+          # PRs validate the image without uploading multi-GB CUDA caches.
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope=flagquantum-dev-{0}', matrix.variant) || '' }}
           provenance: mode=max
           sbom: true
