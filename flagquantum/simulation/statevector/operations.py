@@ -205,7 +205,7 @@ def _fuse_gate_sequences(
             continue
         if len(step.instruction.wires) == 1:
             cursor = index
-            gate_steps_by_wire: dict[int, list[_StatevectorGateStep]] = {}
+            gate_steps_by_wire: dict[int, list[tuple[int, _StatevectorGateStep]]] = {}
             while cursor < len(program):
                 candidate = program[cursor]
                 if not (
@@ -214,25 +214,22 @@ def _fuse_gate_sequences(
                 ):
                     break
                 wire = candidate.instruction.wires[0]
-                if wire not in gate_steps_by_wire:
-                    gate_steps_by_wire[wire] = []
-                gate_steps_by_wire[wire].append(candidate)
+                gate_steps_by_wire.setdefault(wire, []).append(
+                    (cursor - index, candidate)
+                )
                 cursor += 1
-            for wire, wire_steps in gate_steps_by_wire.items():
-                if len(wire_steps) == 1:
-                    fused_program.append(wire_steps[0])
+            for wire, positioned_steps in gate_steps_by_wire.items():
+                if len(positioned_steps) == 1:
+                    fused_program.append(positioned_steps[0][1])
                 else:
-                    wire_step_ids = {id(item) for item in wire_steps}
-                    positions = [
-                        position
-                        for position, candidate in enumerate(program[index:cursor])
-                        if id(candidate) in wire_step_ids
-                    ]
+                    positions = tuple(position for position, _ in positioned_steps)
                     fused_program.append(
                         _StatevectorFusedGateStep(
-                            instructions=tuple(item.instruction for item in wire_steps),
+                            instructions=tuple(
+                                item.instruction for _, item in positioned_steps
+                            ),
                             wires=(wire,),
-                            layout=wire_steps[0].layout,
+                            layout=positioned_steps[0][1].layout,
                             dependency_reordered=any(
                                 right != left + 1
                                 for left, right in zip(positions, positions[1:])

@@ -22,6 +22,25 @@ from flagquantum.simulation.statevector.operations import (
 pytestmark = pytest.mark.unit
 
 
+def test_single_qubit_fusion_preserves_wire_order_and_reordering_evidence() -> None:
+    layout = ((), ())
+    program = tuple(
+        statevector_ops._StatevectorGateStep(
+            Instruction(name, (wire,)),
+            layout,
+        )
+        for name, wire in (("h", 0), ("x", 1), ("s", 0), ("t", 1))
+    )
+
+    fused = statevector_ops._fuse_gate_sequences(program)
+
+    assert tuple(step.wires for step in fused) == ((0,), (1,))
+    assert tuple(
+        tuple(instruction.name for instruction in step.instructions) for step in fused
+    ) == (("h", "s"), ("x", "t"))
+    assert all(step.dependency_reordered for step in fused)
+
+
 def test_rotation_region_angles_preserve_values_and_gradients() -> None:
     circuit = Circuit(1)
     theta = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
