@@ -1,95 +1,90 @@
-# FlagQuantum development container
+# Development containers
 
-This image is for daily editable development and remote GPU testing. It is not
-an SC27 frozen evidence image and must not be used to promote benchmark claims.
+The main Python environment installs FlagQuantum from the repository checkout,
+JAX, plotting and example dependencies, and the Braket, PennyLane, Quafu and
+Qiskit interoperability dependencies. A second environment in the same image
+installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
 
-## Local CPU development
+| Tag | Platform | Numerical stack |
+| --- | --- | --- |
+| `cpu` | Linux amd64 / arm64 | CPU PyTorch and JAX |
+| `cuda-amd64` | Linux amd64 | PyTorch CUDA 12.8, JAX CUDA 12 and Triton |
 
-Build the default Python 3.12 image and run the daily test tier:
+The CUDA image includes CPU execution as well. Images install PyTorch 2.10.0;
+other dependency constraints come from `pyproject.toml`. QSteed is installed from
+the tested upstream commit in `requirements-qsteed.txt`, followed by the released
+adapter in `/opt/qsteed`. The compiler remains independently replaceable through FlagQuantum's
+extension interface. No provider credentials are included.
 
-```bash
-docker compose -f compose.dev.yaml build dev
-docker compose -f compose.dev.yaml run --rm dev \
-  python tools/ci_tier.py pr-default
-```
+## Use QSteed
 
-The default build installs PyTorch from its CPU wheel index, avoiding the
-multi-gigabyte CUDA dependency closure on a non-NVIDIA laptop.
-
-Open an interactive shell with the live checkout mounted at `/workspace`:
-
-```bash
-docker compose -f compose.dev.yaml run --rm dev
-```
-
-## Remote NVIDIA GPU development
-
-The remote host needs the NVIDIA Container Toolkit. Use a CUDA/PyTorch base
-that is already validated on that host; for example, the existing FlagQuantum
-development base can be selected without changing this Dockerfile:
+QSteed and pyquafu currently require NumPy < 2, while JAX 0.10 requires NumPy >= 2.
+They cannot share one Python environment. The image isolates the compiler and
+provides an explicit command:
 
 ```bash
-export FLAGQUANTUM_BASE_IMAGE='tovx/flagquantum@sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5'
-export FLAGQUANTUM_DEV_EXTRAS='dev,jax,cuda'
-export FLAGQUANTUM_DEV_IMAGE='flagquantum-dev:cuda-local'
-
-docker compose -f compose.dev.yaml build dev-gpu
-docker compose -f compose.dev.yaml run --rm dev-gpu \
-  python -c 'import torch; print(torch.__version__, torch.cuda.device_count())'
-docker compose -f compose.dev.yaml run --rm dev-gpu \
-  python tools/ci_tier.py gpu-scheduled
+flagquantum-qsteed-python your_compilation_script.py
 ```
 
-The repository is bind-mounted, so code changes do not require an image
-rebuild. Rebuild only when dependencies or the selected base image change.
+Inside that script, use the usual `import flagquantum as fq` and
+`fq.compile(circuit, compiler="qsteed", target=...)`. The main `python` command
+runs the training/JAX environment and does not discover the isolated plugin.
+Transfer trained parameter values or supported circuit artifacts explicitly
+between scripts. The compiler environment uses CPU PyTorch; GPU training runs
+in the main environment. No dependency constraints are overridden.
 
-## Private GHCR publishing
+## Run the GPU image
 
-The GitHub Actions workflow `.github/workflows/publish-dev-container.yml`
-publishes a multi-architecture CPU image on changes to `main`, or when manually
-dispatched:
-
-```text
-ghcr.io/flagquantum/flagquantum-dev:cpu
-ghcr.io/flagquantum/flagquantum-dev:cpu-sha-<commit>
-```
-
-It authenticates with `GITHUB_TOKEN`, attaches OCI provenance and an SBOM, and
-fails if the resulting organization package is not private. The image is
-explicitly labelled `development_only` and cannot serve as SC27 evidence.
-
-The CUDA base is available on the A800 development host rather than a public
-registry, so publish CUDA images from that AMD64 host after logging in to GHCR:
+After the publishing workflow succeeds on `main`:
 
 ```bash
-read -s GHCR_TOKEN
-printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
-  -u '<github-user>' --password-stdin
-unset GHCR_TOKEN
-
-tools/containers/publish_dev_image.sh cuda
+docker run --rm -it --gpus all --shm-size=8g \
+  ghcr.io/flagos-ai/flagquantum-dev:cuda-amd64
 ```
 
-This publishes both a rolling and immutable tag:
+The host needs a compatible NVIDIA driver and NVIDIA Container Toolkit. The
+image provides CUDA user-space libraries; it does not install the host driver.
+See the [JAX installation requirements](https://docs.jax.dev/en/latest/installation.html)
+and [NVIDIA Container Toolkit guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+JAX memory preallocation is disabled so PyTorch and JAX can share the device.
 
-```text
-ghcr.io/flagquantum/flagquantum-dev:cuda-amd64
-ghcr.io/flagquantum/flagquantum-dev:cuda-<commit>
-```
+For an immutable revision, use the workflow's `cuda-amd64-sha-<commit>` tag or
+image digest. Package visibility is managed separately in GHCR settings; a
+private package still requires authentication.
 
-The login token needs `write:packages` on the publishing host. A test host only
-needs `read:packages` to pull the private image.
-
-## Push once, pull over SSH
-
-After `docker login`, choose a registry path and push the image:
+## Build with a live checkout
 
 ```bash
-export FLAGQUANTUM_DEV_IMAGE='ghcr.io/flagquantum/flagquantum-dev:cuda-amd64'
-docker compose -f compose.dev.yaml build dev-gpu
-docker push "$FLAGQUANTUM_DEV_IMAGE"
+docker compose -f compose.dev.yaml --profile gpu build dev-gpu
+docker compose -f compose.dev.yaml --profile gpu run --rm dev-gpu
 ```
 
-On each remote node, pull the same tag (or preferably its immutable digest),
-keep a synchronized source checkout, and use the `dev-gpu` service. Never put
-registry passwords or tokens in this repository or in Docker build arguments.
+Use `--profile cpu` and `dev` on a CPU machine. The two services use different
+local image tags, so a CPU build cannot replace the GPU image. Both mount the
+current checkout at `/workspace`.
+
+## Verify the installed stack
+
+Every image build runs `pip check` in both environments. The main environment
+tests PyTorch autograd, JAX JIT and FlagQuantum execution; the isolated compiler
+tests PyTorch autograd, FlagQuantum execution and QSteed topology compilation.
+On an NVIDIA host, also run:
+
+```bash
+docker run --rm --gpus all ghcr.io/flagos-ai/flagquantum-dev:cuda-amd64 \
+  python /opt/FlagQuantum/docker/dev/smoke.py --gpu
+```
+
+This command fails if PyTorch or JAX cannot execute on the GPU. Build-time CPU
+checks do not certify GPU correctness or distributed performance. Quantum cloud
+submission still requires separately configured provider access; installing all
+these dependencies does not grant access to a quantum device.
+
+The workflow attaches image provenance and an SBOM. These are development
+images, not frozen research evidence images; they cannot certify benchmark
+claims. Rebuild when dependencies change. For distributed runs, use the same
+image digest on every node and synchronize any mounted source checkout.
+
+Maintainers can also publish from an authenticated build host with
+`tools/containers/publish_dev_image.sh cpu` or `tools/containers/publish_dev_image.sh cuda`.
+Keep registry tokens outside source files and Docker build arguments.

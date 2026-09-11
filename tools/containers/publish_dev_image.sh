@@ -21,7 +21,7 @@ case "$variant" in
     ;;
 esac
 
-owner="${GHCR_OWNER:-flagquantum}"
+owner="${GHCR_OWNER:-flagos-ai}"
 owner="$(printf '%s' "$owner" | tr '[:upper:]' '[:lower:]')"
 image="${GHCR_IMAGE:-ghcr.io/${owner}/flagquantum-dev}"
 
@@ -46,7 +46,7 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-source_url="https://github.com/FlagQuantum/FlagQuantum"
+source_url="https://github.com/flagos-ai/FlagQuantum"
 
 case "$variant" in
   cpu)
@@ -54,7 +54,7 @@ case "$variant" in
       --platform linux/amd64,linux/arm64 \
       --file docker/dev/Dockerfile \
       --build-arg BASE_IMAGE=python:3.12-slim-bookworm \
-      --build-arg EXTRAS=dev,jax \
+      --build-arg EXTRAS=dev,jax,viz,examples,interop-all \
       --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu \
       --build-arg SOURCE_URL="$source_url" \
       --build-arg SOURCE_REVISION="$version" \
@@ -66,7 +66,7 @@ case "$variant" in
       .
     ;;
   cuda)
-    base_image="${FLAGQUANTUM_BASE_IMAGE:-tovx/flagquantum@sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5}"
+    base_image="${FLAGQUANTUM_BASE_IMAGE:-python:3.12-slim-bookworm}"
     version_tag="$image:cuda-$version"
     current_tag="$image:cuda-amd64"
 
@@ -74,8 +74,9 @@ case "$variant" in
       --platform linux/amd64 \
       --file docker/dev/Dockerfile \
       --build-arg BASE_IMAGE="$base_image" \
-      --build-arg EXTRAS=dev,jax,cuda \
-      --build-arg TORCH_INDEX_URL=https://pypi.org/simple \
+      --build-arg EXTRAS=dev,jax,viz,examples,interop-all,cuda \
+      --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu128 \
+      --build-arg 'JAX_SPEC=jax[cuda12]>=0.10,<0.11' \
       --build-arg SOURCE_URL="$source_url" \
       --build-arg SOURCE_REVISION="$version" \
       --tag "$version_tag" \
