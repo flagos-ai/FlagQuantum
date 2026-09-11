@@ -247,34 +247,7 @@ class PhysicalCircuitPlan:
             if topology is None
             else topology.source_program
         )
-        identity_layout = tuple(range(source.n_wires))
-        if self.logical_wire_count != source.n_wires:
-            raise PhysicalPlanError("physical plan logical-wire count is inconsistent")
-        if self.physical_slot_count != self.program.n_wires:
-            raise PhysicalPlanError("physical plan physical-slot count is inconsistent")
-        if self.physical_slot_count < self.logical_wire_count:
-            raise PhysicalPlanError("physical plan has insufficient physical slots")
-        allocated = self.physical_slot_count > self.logical_wire_count
-        if (
-            len(self.initial_logical_to_physical) != source.n_wires
-            or len(set(self.initial_logical_to_physical)) != source.n_wires
-            or any(
-                physical < 0 or physical >= self.physical_slot_count
-                for physical in self.initial_logical_to_physical
-            )
-        ):
-            raise PhysicalPlanError("physical plan initial layout is invalid")
-        if not allocated and set(self.initial_logical_to_physical) != set(
-            identity_layout
-        ):
-            raise PhysicalPlanError("physical plan initial layout is invalid")
-        if (
-            self.coupling_direction_semantics != "directed_cx"
-            and self.initial_logical_to_physical != identity_layout
-        ):
-            raise PhysicalPlanError(
-                "undirected physical plan initial layout must be identity"
-            )
+        identity_layout, allocated = self._validate_wire_layout(source)
         self._validate_stage_identities()
         recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
         if topology is None:
@@ -352,6 +325,37 @@ class PhysicalCircuitPlan:
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _validate_wire_layout(self, source: CircuitIR) -> tuple[tuple[int, ...], bool]:
+        identity_layout = tuple(range(source.n_wires))
+        if self.logical_wire_count != source.n_wires:
+            raise PhysicalPlanError("physical plan logical-wire count is inconsistent")
+        if self.physical_slot_count != self.program.n_wires:
+            raise PhysicalPlanError("physical plan physical-slot count is inconsistent")
+        if self.physical_slot_count < self.logical_wire_count:
+            raise PhysicalPlanError("physical plan has insufficient physical slots")
+        allocated = self.physical_slot_count > self.logical_wire_count
+        if (
+            len(self.initial_logical_to_physical) != source.n_wires
+            or len(set(self.initial_logical_to_physical)) != source.n_wires
+            or any(
+                physical < 0 or physical >= self.physical_slot_count
+                for physical in self.initial_logical_to_physical
+            )
+        ):
+            raise PhysicalPlanError("physical plan initial layout is invalid")
+        if not allocated and set(self.initial_logical_to_physical) != set(
+            identity_layout
+        ):
+            raise PhysicalPlanError("physical plan initial layout is invalid")
+        if (
+            self.coupling_direction_semantics != "directed_cx"
+            and self.initial_logical_to_physical != identity_layout
+        ):
+            raise PhysicalPlanError(
+                "undirected physical plan initial layout must be identity"
+            )
+        return identity_layout, allocated
 
     def _validate_stage_identities(self) -> None:
         direction = self.legalization.direction_legalization
