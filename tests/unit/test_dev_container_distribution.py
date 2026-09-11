@@ -14,20 +14,23 @@ def test_development_image_is_fail_closed_for_sc27_evidence() -> None:
     assert "org.opencontainers.image.source" in dockerfile
 
 
-def test_ghcr_workflow_publishes_private_multiarch_cpu_tags() -> None:
+def test_ghcr_workflow_publishes_cpu_and_cuda_variants() -> None:
     workflow = (ROOT / ".github/workflows/publish-dev-container.yml").read_text(
         encoding="utf-8"
     )
 
     assert "packages: write" in workflow
-    assert "linux/amd64,linux/arm64" in workflow
-    assert "type=raw,value=cpu" in workflow
-    assert "type=sha,prefix=cpu-sha-" in workflow
-    assert "github.event.repository.owner.type" in workflow
-    assert 'owner_scope="users"' in workflow
-    assert 'owner_scope="orgs"' in workflow
-    assert '"/${owner_scope}/${GITHUB_REPOSITORY_OWNER}/packages/container/' in workflow
-    assert 'test "$visibility" = private' in workflow
+    assert "platforms: linux/amd64" in workflow
+    assert "linux/arm64" not in workflow
+    assert "variant: cpu-no-jax" in workflow
+    assert "variant: cuda-amd64-no-jax" in workflow
+    assert "target: no-jax" in workflow
+    assert "variant: cpu" in workflow
+    assert "variant: cuda-amd64" in workflow
+    assert "https://download.pytorch.org/whl/cu128" in workflow
+    assert "jax[cuda12]>=0.10,<0.11" in workflow
+    assert "type=raw,value=${{ matrix.variant }}" in workflow
+    assert "type=sha,prefix=${{ matrix.variant }}-sha-" in workflow
     assert "provenance: mode=max" in workflow
     assert "sbom: true" in workflow
 
@@ -39,5 +42,5 @@ def test_remote_publisher_keeps_cuda_and_cpu_namespaces_separate() -> None:
 
     assert 'current_tag="$image:cuda-amd64"' in publisher
     assert 'version_tag="$image:cuda-$version"' in publisher
-    assert '--tag "$image:cpu"' in publisher
-    assert '--tag "$image:cpu-$version"' in publisher
+    assert '--tag "$image:cpu${suffix}"' in publisher
+    assert '--tag "$image:cpu${suffix}-$version"' in publisher

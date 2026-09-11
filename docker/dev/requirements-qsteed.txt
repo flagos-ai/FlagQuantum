@@ -1,0 +1,3 @@
+# Upstream fixes required by the compiler adapter; see the plugin installation guide.
+qsteed @ git+https://github.com/BAQIS-Quantum/qsteed.git@46584efde731aea9eec27b5466919b76fe5f3184
+flagquantum-compiler-qsteed==0.1.1
