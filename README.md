@@ -20,18 +20,21 @@ distributed training, device modeling, and fault-tolerant quantum computing rese
 - **Connect simulation to hardware.** Keep the circuit and requested observable
   explicit as you move between supported execution targets.
 
-This is a pre-release framework. Local training and selected distributed paths
-have correctness evidence; support is specific to each backend and workload.
+Support is specific to each backend and workload. Local training and selected
+distributed paths have correctness evidence.
 See the [validation scope](docs/reference/PUBLICATION_VALIDATION.md) for what has
 been tested and what remains a research goal.
 
 ## Train your first quantum model
 
-Requires Python **3.10–3.12**. From the repository root:
+Requires Python **3.10–3.12**:
 
 ```console
-python -m pip install -e .
+python -m pip install flagquantum
 ```
+
+To build a CPU or GPU environment with QSteed and optional JAX, follow the
+[container guide](docker/dev/README.md).
 
 Build a two-qubit circuit and learn its rotation angle by minimizing ⟨Z₀⟩. `fq.Module` exposes the quantum model to PyTorch; `outputs` selects what
 to measure after training.
