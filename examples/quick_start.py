@@ -66,10 +66,10 @@ def main() -> None:
     # Unsure what a gate needs? Try: flagquantum.operators.gate_info("ry").
     def quantum_circuit(parameters, encoded_inputs):
         q = fq.Circuit(args.n_qubits, bsz=len(encoded_inputs))
-        for wire in range(args.n_qubits):
-            q.ry(wire, encoded_inputs[:, wire] + parameters["angles"][wire])
-        for wire in range(args.n_qubits - 1):
-            q.cx(wire, wire + 1)
+        for qubit in range(args.n_qubits):
+            q.ry(qubit, encoded_inputs[:, qubit] + parameters["angles"][qubit])
+        for qubit in range(args.n_qubits - 1):
+            q.cx(qubit, qubit + 1)
         return q
 
     # Stage 4: compose an ordinary PyTorch layer with a FlagQuantum layer.
