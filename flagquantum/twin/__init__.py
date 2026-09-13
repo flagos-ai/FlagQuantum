@@ -1,6 +1,6 @@
 """Calibration-conditioned digital models of quantum processing units."""
 
-from .assessment import TwinAssessment, TwinDecision, TwinSupportEnvelope
+from .evidence import TwinEvidenceEnvelope, TwinEvidenceReport, TwinEvidenceStatus
 from .experiment import TwinExperiment, TwinHardwareReport
 from .model import QPUDigitalTwin, TwinSnapshot
 from .prediction import TwinPrediction
@@ -8,12 +8,12 @@ from .validation import TwinValidationReport
 
 __all__ = (
     "QPUDigitalTwin",
-    "TwinAssessment",
-    "TwinDecision",
+    "TwinEvidenceEnvelope",
+    "TwinEvidenceReport",
+    "TwinEvidenceStatus",
     "TwinExperiment",
     "TwinHardwareReport",
     "TwinPrediction",
     "TwinSnapshot",
-    "TwinSupportEnvelope",
     "TwinValidationReport",
 )

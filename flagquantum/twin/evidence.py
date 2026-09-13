@@ -1,4 +1,4 @@
-"""Evidence-bounded decisions for QPU digital-twin predictions."""
+"""Empirical evidence reports for QPU digital-twin predictions."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from typing import Any, Literal, Mapping, Sequence
 from ..core.ir import CircuitIR
 from .prediction import TwinPrediction
 
-_SUPPORT_SCHEMA = "flagquantum.twin_support_envelope.v1"
-_ASSESSMENT_SCHEMA = "flagquantum.twin_assessment.v1"
+_ENVELOPE_SCHEMA = "flagquantum.twin_evidence_envelope.v1"
+_REPORT_SCHEMA = "flagquantum.twin_evidence_report.v1"
 
-TwinDecision = Literal[
-    "verified_prediction",
-    "bounded_estimate",
-    "physical_reference",
-    "unsupported",
+TwinEvidenceStatus = Literal[
+    "exact_circuit_verified",
+    "within_evidence_envelope",
+    "unverified",
+    "out_of_scope",
 ]
 
 
@@ -48,8 +48,8 @@ def _radius(value: float | None, name: str) -> float | None:
 
 
 @dataclass(frozen=True)
-class TwinSupportEnvelope:
-    """Immutable evidence boundary for one mapped Twin.
+class TwinEvidenceEnvelope:
+    """Immutable empirical evidence boundary for one mapped Twin.
 
     The envelope distinguishes exact circuits verified against later hardware
     from unseen circuits that only remain inside a measured structural scope.
@@ -63,14 +63,14 @@ class TwinSupportEnvelope:
     maximum_instruction_count: int
     verified_circuit_identities: tuple[str, ...]
     evidence_identity: str
-    verified_tv_error_radius: float | None = None
-    estimated_tv_error_radius: float | None = None
+    verified_tv_error_bound: float | None = None
+    estimated_tv_error_bound: float | None = None
     confidence_level: float | None = None
-    schema: str = _SUPPORT_SCHEMA
+    schema: str = _ENVELOPE_SCHEMA
 
     def __post_init__(self) -> None:
-        if self.schema != _SUPPORT_SCHEMA:
-            raise ValueError("unsupported Twin support-envelope schema")
+        if self.schema != _ENVELOPE_SCHEMA:
+            raise ValueError("unsupported Twin evidence-envelope schema")
         _digest(self.snapshot_identity, "snapshot_identity")
         _digest(self.evidence_identity, "evidence_identity")
         physical_qubits = tuple(int(qubit) for qubit in self.physical_qubits)
@@ -97,26 +97,26 @@ class TwinSupportEnvelope:
         )
         if len(identities) != len(set(identities)):
             raise ValueError("verified_circuit_identities must be unique")
-        verified_radius = _radius(
-            self.verified_tv_error_radius, "verified_tv_error_radius"
+        verified_bound = _radius(
+            self.verified_tv_error_bound, "verified_tv_error_bound"
         )
-        estimated_radius = _radius(
-            self.estimated_tv_error_radius, "estimated_tv_error_radius"
+        estimated_bound = _radius(
+            self.estimated_tv_error_bound, "estimated_tv_error_bound"
         )
         confidence = self.confidence_level
         if confidence is not None:
             confidence = float(confidence)
             if not math.isfinite(confidence) or not 0.0 < confidence < 1.0:
                 raise ValueError("confidence_level must be finite and in (0, 1)")
-        if (verified_radius is not None or estimated_radius is not None) and (
+        if (verified_bound is not None or estimated_bound is not None) and (
             confidence is None
         ):
             raise ValueError("an error radius requires confidence_level")
         object.__setattr__(self, "physical_qubits", physical_qubits)
         object.__setattr__(self, "supported_operations", operations)
         object.__setattr__(self, "verified_circuit_identities", identities)
-        object.__setattr__(self, "verified_tv_error_radius", verified_radius)
-        object.__setattr__(self, "estimated_tv_error_radius", estimated_radius)
+        object.__setattr__(self, "verified_tv_error_bound", verified_bound)
+        object.__setattr__(self, "estimated_tv_error_bound", estimated_bound)
         object.__setattr__(self, "confidence_level", confidence)
 
     @property
@@ -144,189 +144,180 @@ class TwinSupportEnvelope:
             "maximum_instruction_count": self.maximum_instruction_count,
             "verified_circuit_identities": list(self.verified_circuit_identities),
             "evidence_identity": self.evidence_identity,
-            "verified_tv_error_radius": self.verified_tv_error_radius,
-            "estimated_tv_error_radius": self.estimated_tv_error_radius,
+            "verified_tv_error_bound": self.verified_tv_error_bound,
+            "estimated_tv_error_bound": self.estimated_tv_error_bound,
             "confidence_level": self.confidence_level,
         }
 
 
 @dataclass(frozen=True)
-class TwinAssessment:
-    """A prediction classified by its frozen empirical support."""
+class TwinEvidenceReport:
+    """Empirical support facts for one frozen Twin prediction."""
 
-    decision: TwinDecision
+    status: TwinEvidenceStatus
     prediction: TwinPrediction | None
-    support_envelope_identity: str | None
+    evidence_envelope_identity: str | None
     evidence_identity: str | None
     exact_circuit_verified: bool
     structurally_supported: bool
-    tv_error_radius: float | None
+    tv_error_bound: float | None
     confidence_level: float | None
     reasons: tuple[str, ...]
-    schema: str = _ASSESSMENT_SCHEMA
+    schema: str = _REPORT_SCHEMA
 
     def __post_init__(self) -> None:
-        if self.schema != _ASSESSMENT_SCHEMA:
-            raise ValueError("unsupported Twin assessment schema")
-        if self.decision not in {
-            "verified_prediction",
-            "bounded_estimate",
-            "physical_reference",
-            "unsupported",
+        if self.schema != _REPORT_SCHEMA:
+            raise ValueError("unsupported Twin evidence-report schema")
+        if self.status not in {
+            "exact_circuit_verified",
+            "within_evidence_envelope",
+            "unverified",
+            "out_of_scope",
         }:
-            raise ValueError("unsupported Twin assessment decision")
-        if self.support_envelope_identity is not None:
-            _digest(self.support_envelope_identity, "support_envelope_identity")
+            raise ValueError("unsupported Twin evidence status")
+        if self.evidence_envelope_identity is not None:
+            _digest(self.evidence_envelope_identity, "evidence_envelope_identity")
         if self.evidence_identity is not None:
             _digest(self.evidence_identity, "evidence_identity")
-        radius = _radius(self.tv_error_radius, "tv_error_radius")
+        bound = _radius(self.tv_error_bound, "tv_error_bound")
         confidence = self.confidence_level
         if confidence is not None:
             confidence = float(confidence)
             if not math.isfinite(confidence) or not 0.0 < confidence < 1.0:
                 raise ValueError("confidence_level must be finite and in (0, 1)")
-        if (radius is None) != (confidence is None):
-            raise ValueError(
-                "tv_error_radius and confidence_level must appear together"
-            )
-        if self.decision == "verified_prediction" and (
-            not self.exact_circuit_verified or radius is None
+        if (bound is None) != (confidence is None):
+            raise ValueError("tv_error_bound and confidence_level must appear together")
+        if self.status == "exact_circuit_verified" and (
+            not self.exact_circuit_verified or bound is None
         ):
             raise ValueError(
-                "verified_prediction requires exact-circuit evidence and an error bound"
+                "exact_circuit_verified requires exact evidence and an error bound"
             )
-        if self.decision == "bounded_estimate" and (
-            not self.structurally_supported or radius is None
+        if self.status == "within_evidence_envelope" and (
+            not self.structurally_supported or bound is None
         ):
             raise ValueError(
-                "bounded_estimate requires structural support and an error bound"
+                "within_evidence_envelope requires structural support and a bound"
             )
         reasons = tuple(str(reason).strip() for reason in self.reasons)
         if any(not reason for reason in reasons):
-            raise ValueError("assessment reasons cannot be empty")
-        object.__setattr__(self, "tv_error_radius", radius)
+            raise ValueError("evidence-report reasons cannot be empty")
+        object.__setattr__(self, "tv_error_bound", bound)
         object.__setattr__(self, "confidence_level", confidence)
         object.__setattr__(self, "reasons", reasons)
-
-    @property
-    def actionable(self) -> bool:
-        """Whether the assessment carries an empirically bounded prediction."""
-
-        return self.decision in {"verified_prediction", "bounded_estimate"}
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema": self.schema,
-            "decision": self.decision,
+            "status": self.status,
             "prediction": (
                 None if self.prediction is None else self.prediction.to_dict()
             ),
-            "support_envelope_identity": self.support_envelope_identity,
+            "evidence_envelope_identity": self.evidence_envelope_identity,
             "evidence_identity": self.evidence_identity,
             "exact_circuit_verified": self.exact_circuit_verified,
             "structurally_supported": self.structurally_supported,
-            "tv_error_radius": self.tv_error_radius,
+            "tv_error_bound": self.tv_error_bound,
             "confidence_level": self.confidence_level,
             "reasons": list(self.reasons),
-            "actionable": self.actionable,
         }
 
 
-def assess_prediction(
+def build_evidence_report(
     prediction: TwinPrediction,
     circuit: CircuitIR,
     *,
     physical_qubits: Sequence[int],
-    support: TwinSupportEnvelope | None,
-) -> TwinAssessment:
-    """Classify one prediction without manufacturing missing evidence."""
+    evidence: TwinEvidenceEnvelope | None,
+) -> TwinEvidenceReport:
+    """Describe empirical support without making an application decision."""
 
-    if support is None:
-        return TwinAssessment(
-            decision="physical_reference",
+    if evidence is None:
+        return TwinEvidenceReport(
+            status="unverified",
             prediction=prediction,
-            support_envelope_identity=None,
+            evidence_envelope_identity=None,
             evidence_identity=None,
             exact_circuit_verified=False,
             structurally_supported=False,
-            tv_error_radius=None,
+            tv_error_bound=None,
             confidence_level=None,
-            reasons=("support_envelope_missing",),
+            reasons=("evidence_envelope_missing",),
         )
-    envelope_identity = support.identity
+    envelope_identity = evidence.identity
     reasons: list[str] = []
-    if support.snapshot_identity != prediction.snapshot_identity:
+    if evidence.snapshot_identity != prediction.snapshot_identity:
         reasons.append("snapshot_identity_mismatch")
-    if support.physical_qubits != tuple(int(value) for value in physical_qubits):
+    if evidence.physical_qubits != tuple(int(value) for value in physical_qubits):
         reasons.append("physical_mapping_mismatch")
     if reasons:
-        return TwinAssessment(
-            decision="unsupported",
+        return TwinEvidenceReport(
+            status="out_of_scope",
             prediction=prediction,
-            support_envelope_identity=envelope_identity,
-            evidence_identity=support.evidence_identity,
+            evidence_envelope_identity=envelope_identity,
+            evidence_identity=evidence.evidence_identity,
             exact_circuit_verified=False,
             structurally_supported=False,
-            tv_error_radius=None,
+            tv_error_bound=None,
             confidence_level=None,
             reasons=tuple(reasons),
         )
 
-    structurally_supported = support.supports_structure(circuit)
-    exact = circuit.content_hash in support.verified_circuit_identities
+    structurally_supported = evidence.supports_structure(circuit)
+    exact = circuit.content_hash in evidence.verified_circuit_identities
     if (
         exact
         and structurally_supported
-        and support.verified_tv_error_radius is not None
+        and evidence.verified_tv_error_bound is not None
     ):
-        return TwinAssessment(
-            decision="verified_prediction",
+        return TwinEvidenceReport(
+            status="exact_circuit_verified",
             prediction=prediction,
-            support_envelope_identity=envelope_identity,
-            evidence_identity=support.evidence_identity,
+            evidence_envelope_identity=envelope_identity,
+            evidence_identity=evidence.evidence_identity,
             exact_circuit_verified=True,
             structurally_supported=True,
-            tv_error_radius=support.verified_tv_error_radius,
-            confidence_level=support.confidence_level,
+            tv_error_bound=evidence.verified_tv_error_bound,
+            confidence_level=evidence.confidence_level,
             reasons=(),
         )
-    if structurally_supported and support.estimated_tv_error_radius is not None:
-        return TwinAssessment(
-            decision="bounded_estimate",
+    if structurally_supported and evidence.estimated_tv_error_bound is not None:
+        return TwinEvidenceReport(
+            status="within_evidence_envelope",
             prediction=prediction,
-            support_envelope_identity=envelope_identity,
-            evidence_identity=support.evidence_identity,
+            evidence_envelope_identity=envelope_identity,
+            evidence_identity=evidence.evidence_identity,
             exact_circuit_verified=exact,
             structurally_supported=True,
-            tv_error_radius=support.estimated_tv_error_radius,
-            confidence_level=support.confidence_level,
+            tv_error_bound=evidence.estimated_tv_error_bound,
+            confidence_level=evidence.confidence_level,
             reasons=("exact_circuit_not_verified",) if not exact else (),
         )
 
     if not structurally_supported:
         reasons.append("outside_structural_support")
-    if exact and support.verified_tv_error_radius is None:
+    if exact and evidence.verified_tv_error_bound is None:
         reasons.append("verified_error_bound_missing")
     elif not exact:
         reasons.append("exact_circuit_not_verified")
-    if support.estimated_tv_error_radius is None:
+    if evidence.estimated_tv_error_bound is None:
         reasons.append("estimated_error_bound_missing")
-    return TwinAssessment(
-        decision="unsupported" if not structurally_supported else "physical_reference",
+    return TwinEvidenceReport(
+        status="out_of_scope" if not structurally_supported else "unverified",
         prediction=prediction,
-        support_envelope_identity=envelope_identity,
-        evidence_identity=support.evidence_identity,
+        evidence_envelope_identity=envelope_identity,
+        evidence_identity=evidence.evidence_identity,
         exact_circuit_verified=exact,
         structurally_supported=structurally_supported,
-        tv_error_radius=None,
+        tv_error_bound=None,
         confidence_level=None,
         reasons=tuple(reasons),
     )
 
 
 __all__ = (
-    "assess_prediction",
-    "TwinAssessment",
-    "TwinDecision",
-    "TwinSupportEnvelope",
+    "build_evidence_report",
+    "TwinEvidenceEnvelope",
+    "TwinEvidenceReport",
+    "TwinEvidenceStatus",
 )

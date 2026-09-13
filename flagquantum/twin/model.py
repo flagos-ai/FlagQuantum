@@ -12,7 +12,7 @@ import torch
 
 from ..core.ir import ensure_circuit_ir
 from ..noise import NoiseModel, noisy_density_matrix
-from .assessment import TwinAssessment, TwinSupportEnvelope, assess_prediction
+from .evidence import TwinEvidenceEnvelope, TwinEvidenceReport, build_evidence_report
 from .prediction import TwinPrediction
 from .validation import _total_variation
 
@@ -217,21 +217,21 @@ class QPUDigitalTwin:
             total_variation_from_ideal=_total_variation(ideal, predicted),
         )
 
-    def assess(
+    def evidence_report(
         self,
         circuit: Any,
         *,
-        support: TwinSupportEnvelope | None = None,
-    ) -> TwinAssessment:
-        """Predict a circuit and classify the result against frozen evidence."""
+        evidence: TwinEvidenceEnvelope | None = None,
+    ) -> TwinEvidenceReport:
+        """Report empirical support for a frozen-model prediction."""
 
         ir = ensure_circuit_ir(circuit)
         prediction = self.predict(circuit)
-        return assess_prediction(
+        return build_evidence_report(
             prediction,
             ir,
             physical_qubits=self.snapshot.physical_qubits,
-            support=support,
+            evidence=evidence,
         )
 
 
