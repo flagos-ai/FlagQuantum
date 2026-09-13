@@ -432,7 +432,9 @@ class Module(torch.nn.Module):
             for key, value in instruction.params.items()
             if isinstance(value, torch.Tensor)
         )
-        bound = type(template)(**template.circuit_param)
+        constructor = dict(template.circuit_param)
+        constructor["n_qubits"] = constructor.pop("n_wires")
+        bound = type(template)(**constructor)
         bound._parameter_bindings = self._builder_bindings
         slot_index = 0
         compiled_instructions: list[CompiledInstruction] = []
@@ -533,7 +535,7 @@ class Module(torch.nn.Module):
             ),
             self.policy.mode,
             self.policy.observable,
-            self.policy.observable_wires,
+            self.policy.observable_qubits,
         )
         signature = hashlib.sha256(repr(structure).encode("utf-8")).hexdigest()
         if signature == self._compiled_topology_signature:
@@ -661,7 +663,7 @@ class Module(torch.nn.Module):
         )
         circuit = self._build(inputs, self._owned_parameters())
         ir = ensure_circuit_ir(circuit)
-        wires = self.policy.observable_wires
+        wires = self.policy.observable_qubits
         if self.policy.observable != "z" or len(wires) != 1:
             raise CapabilityError(
                 "production MPS integration currently supports one Z observable"
@@ -756,7 +758,7 @@ class Module(torch.nn.Module):
             )
         selected_backend = requested_backend
         compatibility: dict[str, Any] = {"fallback_used": False}
-        wires = self.policy.observable_wires or (0,)
+        wires = self.policy.observable_qubits or (0,)
         runtime: Mapping[str, Any]
         if requested_backend == "jax":
             try:
@@ -1039,7 +1041,7 @@ class Module(torch.nn.Module):
                     "local fq.Module execution requires a Circuit builder result"
                 )
             self._last_ir = detached_ir_snapshot(ensure_circuit_ir(circuit))
-            wires = self.policy.observable_wires or (0,)
+            wires = self.policy.observable_qubits or (0,)
             backend_state: Any = None
             if self.policy.mode == "statevector":
                 circuit.state(refresh=True)

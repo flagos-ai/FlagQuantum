@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from numbers import Real
 from typing import Iterable, Sequence
 
+from .._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..core.ir import MeasurementNode
 
 _DEFAULT_MAX_PAULI_SAMPLE_WIRES = 8
@@ -175,36 +176,55 @@ def expectation(observable: Observable, *, name: str | None = None) -> OutputReq
     return OutputRequest("expectation", observable=observable, name=name)
 
 
-def probabilities(
-    wires: Iterable[int] | int | None = None, *, name: str | None = None
-) -> OutputRequest:
-    """Request exact computational-basis probabilities."""
+def _selection_alias(
+    qubits: Iterable[int] | int | Observable | None | Omitted,
+    wires: Iterable[int] | int | Observable | None | Omitted,
+) -> Iterable[int] | int | Observable | None:
+    if not isinstance(wires, Omitted):
+        if not isinstance(qubits, Omitted):
+            raise TypeError("pass qubits or deprecated wires, not both")
+        warn_qubit_alias("wires", "qubits", stacklevel=4)
+        return wires
+    return None if isinstance(qubits, Omitted) else qubits
 
-    return OutputRequest("probabilities", _optional_wires(wires), name=name)
+
+def probabilities(
+    qubits: Iterable[int] | int | None | Omitted = OMITTED,
+    *,
+    name: str | None = None,
+    wires: Iterable[int] | int | None | Omitted = OMITTED,
+) -> OutputRequest:
+    """Request exact computational-basis probabilities on selected qubits."""
+    selected = _selection_alias(qubits, wires)
+    if isinstance(selected, Observable):
+        raise TypeError("probabilities requires qubit indices, not an Observable")
+    return OutputRequest("probabilities", _optional_wires(selected), name=name)
 
 
 def samples(
-    wires: Iterable[int] | int | Observable | None = None,
+    qubits: Iterable[int] | int | Observable | None | Omitted = OMITTED,
     *,
     name: str | None = None,
+    wires: Iterable[int] | int | Observable | None | Omitted = OMITTED,
 ) -> OutputRequest:
     """Request computational- or Pauli-basis samples."""
-
-    if isinstance(wires, Observable):
-        return OutputRequest("samples", observable=wires, name=name)
-    return OutputRequest("samples", _optional_wires(wires), name=name)
+    selected = _selection_alias(qubits, wires)
+    if isinstance(selected, Observable):
+        return OutputRequest("samples", observable=selected, name=name)
+    return OutputRequest("samples", _optional_wires(selected), name=name)
 
 
 def counts(
-    wires: Iterable[int] | int | Observable | None = None,
+    qubits: Iterable[int] | int | Observable | None | Omitted = OMITTED,
     *,
     name: str | None = None,
+    wires: Iterable[int] | int | Observable | None | Omitted = OMITTED,
 ) -> OutputRequest:
     """Request computational- or Pauli-basis outcome counts."""
-
-    if isinstance(wires, Observable):
-        return OutputRequest("counts", observable=wires, name=name)
-    return OutputRequest("counts", _optional_wires(wires), name=name)
+    selected = _selection_alias(qubits, wires)
+    if isinstance(selected, Observable):
+        return OutputRequest("counts", observable=selected, name=name)
+    return OutputRequest("counts", _optional_wires(selected), name=name)
 
 
 def _optional_wires(wires: Iterable[int] | int | None) -> tuple[int, ...]:

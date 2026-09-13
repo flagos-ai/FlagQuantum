@@ -100,6 +100,11 @@ class Circuit:
         inputs: torch.Tensor | None = None,
         config: RuntimeConfig | None = None,
     ) -> None:
+        from ._qubit_aliases import warn_qubit_alias
+
+        for alias, value in (("n_wires", n_wires), ("nqubits", nqubits)):
+            if value is not None:
+                warn_qubit_alias(alias, "n_qubits")
         counts = {
             name: int(value)
             for name, value in (

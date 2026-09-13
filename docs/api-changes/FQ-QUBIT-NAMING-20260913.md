@@ -1,6 +1,6 @@
 # Qubit terminology migration
 
-Status: proposed; implementation of protected signatures and schemas awaits API-owner review.
+Status: implementation candidate; protected signatures and schema changes await API-owner review.
 
 The user explicitly requested gradual retirement of wire terminology and alignment
 between executable code and documentation on 2026-09-13. This authorizes preparing
@@ -10,8 +10,9 @@ this proposal and PR; it does not record a completed API-owner review.
 
 New users encounter `n_qubits` alongside `wires` and `observable_wires`. Documentation
 must not invent unsupported keyword replacements, but should teach one vocabulary.
-This first PR renames the quick-start example's local variables to `qubit` without
-changing public signatures, behavior, serialized schemas or API snapshots.
+This PR renames the quick-start indices and implements the public keyword aliases
+and policy schema reader/writer described below. Frozen API snapshots remain
+unchanged pending review.
 
 ## Proposed public spelling
 
@@ -23,8 +24,8 @@ changing public signatures, behavior, serialized schemas or API snapshots.
 | RuntimePolicy(observable_wires=...) | RuntimePolicy(observable_qubits=...) | Constructor alias plus explicit old-payload reader |
 | Example local variable wire | qubit | Rename now; no compatibility obligation |
 
-The next implementation PR must specify the exact signatures and omission
-semantics before updating contracts. Both old and new keywords together must
+The implementation uses an OMITTED sentinel to distinguish omitted arguments
+from explicit None. Contract updates remain a separate review step. Both old and new keywords together must
 raise an actionable TypeError; do not guess precedence. Preserve validation of
 indices, batch semantics, output ordering, observable selection and gradients.
 
@@ -79,3 +80,12 @@ Immediate removal breaks existing notebooks and configuration files. Keeping two
 canonical spellings indefinitely creates documentation and maintenance debt.
 Renaming only local variables is safe but incomplete; that is why this PR records
 the follow-on API and serialization work explicitly.
+
+## Implementation candidate (user continuation)
+
+The user explicitly requested implementation after reviewing the migration steps.
+The branch now contains selection aliases, policy schema v2 with an old reader,
+constructor deprecations and compatibility/gradient/state-loading tests. API-owner
+review remains pending. Proposed release targets are 0.3.x deprecation and 0.4.0
+removal; no version bump or frozen-contract regeneration is included. See
+`docs/reference/QUBIT_NAMING_MIGRATION.md` for implemented behavior.

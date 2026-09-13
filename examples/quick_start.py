@@ -89,7 +89,7 @@ def main() -> None:
                         mode=SIMULATION_MODES[args.mode]
                     ),
                     observable="z_sum",
-                    observable_wires=tuple(range(args.n_qubits)),
+                    observable_qubits=tuple(range(args.n_qubits)),
                 ),
             )
 
