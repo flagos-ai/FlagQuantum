@@ -46,7 +46,8 @@ The counts above illustrate the comparison interface; they are not a live
 hardware observation. Use `TwinExperiment` to bind a real submission and result.
 
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
-OpenQASM directly from the circuit:
+OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
+circuit qubit, so no measurement operation is added to the `Circuit` itself:
 
 ```python
 experiment = fq.twin.TwinExperiment.prepare(
@@ -68,6 +69,12 @@ result, executed program, counts, and shot count before producing exact-circuit
 evidence. Its TV radius adds a conservative multinomial finite-shot radius to
 the observed Twin-to-hardware distance. It grants no estimate for unseen
 circuits.
+
+The snippet above continues from the provider and Twin construction shown in
+the preceding sections. For a complete copy-and-run Quafu workflow—including
+token validation, live calibration retrieval, bounded polling, evidence
+persistence, and report loading—run
+[`examples/remote/quafu_twin_evidence.py`](../../examples/remote/quafu_twin_evidence.py).
 
 ## Inspect evidence for a prediction
 

@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from examples.remote import quafu_twin_evidence
 from flagquantum.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
@@ -161,6 +162,74 @@ def test_direct_experiment_generates_exact_circuit_evidence():
     )
     evidence_report = twin.evidence_report(circuit, evidence=evidence)
     assert evidence_report.status == "exact_circuit_verified"
+
+
+def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_path):
+    class Provider:
+        provider = "quafu"
+
+        def __init__(self):
+            self.qasm = None
+
+        def fetch_chip_info(self, chip):
+            assert chip == "Baihua"
+            return _chip_info()
+
+        def submit_qasm(self, qasm, *, chip, name, shots, target_qubits):
+            assert (chip, name, shots, target_qubits) == (
+                "Baihua",
+                "flagquantum-twin-bell",
+                1024,
+                (3, 4),
+            )
+            self.qasm = qasm
+            digest = hashlib.sha256(qasm.encode()).hexdigest()
+            return ProviderTaskHandle(
+                provider="quafu",
+                task_id="example-task",
+                backend_name=chip,
+                payload={
+                    "deployment_receipt_schema": "flagquantum_submission_receipt_v1",
+                    "deployment_package_schema": "flagquantum_submitted_qasm_v1",
+                    "deployment_program_format": "openqasm-2",
+                    "routing_evidence_sha256": digest,
+                    "deployment_artifact_sha256": digest,
+                    "submitted_qasm_sha256": digest,
+                    "compiler": None,
+                    "target_qubits": list(target_qubits),
+                },
+            )
+
+        def query_status(self, receipt):
+            assert receipt.task_id == "example-task"
+            return "Finished"
+
+        def fetch_result(self, receipt):
+            assert self.qasm is not None
+            return DeploymentResult(
+                handle=receipt,
+                counts={"00": 512, "11": 512},
+                shots=1024,
+                metadata=build_result_metadata(
+                    receipt,
+                    {"chip": "Baihua", "transpiled": self.qasm},
+                ),
+            )
+
+    provider = Provider()
+    destination = tmp_path / "twin-evidence.json"
+    monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setattr(quafu_twin_evidence, "QuafuProvider", lambda: provider)
+    monkeypatch.setattr(quafu_twin_evidence, "TARGET", "quafu:Baihua")
+    monkeypatch.setattr(quafu_twin_evidence, "BACKEND", "Baihua")
+    monkeypatch.setattr(quafu_twin_evidence, "QUBITS", (3, 4))
+    monkeypatch.setattr(quafu_twin_evidence, "EVIDENCE_PATH", destination)
+
+    quafu_twin_evidence.main()
+
+    assert destination.is_file()
+    restored = fq.twin.load_evidence(destination)
+    assert restored.physical_qubits == (3, 4)
 
 
 def test_evidence_generation_rejects_custom_or_rewritten_programs():
