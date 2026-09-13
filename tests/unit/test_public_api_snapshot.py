@@ -33,6 +33,7 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     observable_outputs = json.loads(
         (ROOT / "contracts/observable-outputs-v1-candidate.json").read_text()
     )
+    twin = json.loads((ROOT / "contracts/twin-v1-candidate.json").read_text())
     authorized_additions = (
         {options["root_addition"]}
         if options["root_manifest_authorized"] is True
@@ -53,6 +54,11 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     )
     if jobs_contract["implementation_authorized"] is True:
         authorized_additions.update(jobs_contract["root_additions"])
+    if (
+        twin["implementation_authorized"] is True
+        and twin["root_manifest_authorized"] is True
+    ):
+        authorized_additions.add(twin["root_addition"])
 
     assert (
         set(manifest["stable_exports"])
