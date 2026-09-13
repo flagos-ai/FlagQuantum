@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -132,6 +133,85 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     assert len(report.identity) == 64
 
 
+def test_direct_experiment_generates_exact_circuit_evidence():
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(submitted_qasm=None, circuit=circuit)
+    receipt = _handle(experiment)
+    report = experiment.validate_result(
+        _result(experiment, executed_qasm=experiment.submitted_qasm),
+        receipt=receipt,
+    )
+
+    evidence = experiment.evidence_from_report(report, circuit=circuit)
+
+    finite_shot_radius = math.sqrt((math.log(14.0) + math.log(20.0)) / (2.0 * 1024.0))
+    assert experiment.submitted_qasm.startswith("OPENQASM 2.0;")
+    assert evidence.snapshot_identity == experiment.snapshot_identity
+    assert evidence.physical_qubits == (3, 4)
+    assert evidence.verified_circuit_identities == (circuit.to_ir().content_hash,)
+    assert evidence.evidence_identity == report.identity
+    assert evidence.verified_tv_error_bound == pytest.approx(
+        report.validation.twin_hardware_total_variation + finite_shot_radius
+    )
+    assert evidence.estimated_tv_error_bound is None
+    assert evidence.confidence_level == pytest.approx(0.95)
+
+    twin = QPUDigitalTwin.from_quafu_chip_info(
+        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    )
+    evidence_report = twin.evidence_report(circuit, evidence=evidence)
+    assert evidence_report.status == "exact_circuit_verified"
+
+
+def test_evidence_generation_rejects_custom_or_rewritten_programs():
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    custom = _experiment(circuit=circuit)
+    custom_receipt = _handle(custom)
+    custom_report = custom.validate_result(
+        _result(custom, executed_qasm=custom.submitted_qasm), receipt=custom_receipt
+    )
+    with pytest.raises(RuntimeError, match="not directly bound"):
+        custom.evidence_from_report(custom_report, circuit=circuit)
+
+    direct = _experiment(submitted_qasm=None, circuit=circuit)
+    direct_receipt = _handle(direct)
+    rewritten = direct.validate_result(
+        _result(direct, executed_qasm=direct.submitted_qasm + "\n"),
+        receipt=direct_receipt,
+    )
+    with pytest.raises(RuntimeError, match="executed program"):
+        direct.evidence_from_report(rewritten, circuit=circuit)
+
+    echoed_result = DeploymentResult(
+        handle=direct_receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            direct_receipt, {"circuit": direct.submitted_qasm}
+        ),
+    )
+    echoed = direct.validate_result(echoed_result, receipt=direct_receipt)
+    assert echoed.executed_program_matches_submission is True
+    with pytest.raises(RuntimeError, match="authoritative executed program"):
+        direct.evidence_from_report(echoed, circuit=circuit)
+
+
+@pytest.mark.parametrize("confidence", [0.0, 1.0, float("nan")])
+def test_evidence_generation_rejects_invalid_confidence(confidence):
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(submitted_qasm=None, circuit=circuit)
+    receipt = _handle(experiment)
+    report = experiment.validate_result(
+        _result(experiment, executed_qasm=experiment.submitted_qasm),
+        receipt=receipt,
+    )
+
+    with pytest.raises(ValueError, match="confidence_level"):
+        experiment.evidence_from_report(
+            report, circuit=circuit, confidence_level=confidence
+        )
+
+
 @pytest.mark.parametrize("receipt", [None, {}, "task-42"])
 def test_experiment_rejects_invalid_provider_receipt(receipt: object) -> None:
     class Provider:
@@ -211,6 +291,26 @@ def test_experiment_rejects_receipt_or_result_from_another_program():
     foreign.handle.payload["submitted_qasm_sha256"] = "0" * 64
     with pytest.raises(RuntimeError, match="submitted QASM"):
         experiment.validate_result(foreign, receipt=foreign.handle)
+
+
+def test_experiment_rejects_receipt_from_another_physical_mapping():
+    experiment = _experiment()
+    receipt = _handle(experiment)
+    receipt.payload["target_qubits"] = [4, 3]
+
+    class Provider:
+        provider = "quafu"
+
+        def submit_qasm(self, qasm, *, chip, name, shots, target_qubits):
+            return receipt
+
+    with pytest.raises(RuntimeError, match="physical mapping"):
+        experiment.submit(Provider())
+
+    result = _result(experiment)
+    result.handle.payload["target_qubits"] = [4, 3]
+    with pytest.raises(RuntimeError, match="physical mapping"):
+        experiment.validate_result(result, receipt=result.handle)
 
 
 def test_experiment_rejects_result_from_another_task_receipt():

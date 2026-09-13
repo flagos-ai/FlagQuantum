@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from ..compiler.openqasm import emit_openqasm
+from ..core.ir import ensure_circuit_ir
 from ..remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
     validate_deployment_result,
 )
+from .evidence import TwinEvidenceEnvelope
 from .model import QPUDigitalTwin
 from .prediction import TwinPrediction
 from .validation import TwinValidationReport
@@ -39,6 +43,24 @@ def _json_mapping(payload: Mapping[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _finite_shot_tv_radius(
+    *, outcome_count: int, shots: int, confidence_level: float
+) -> float:
+    confidence = float(confidence_level)
+    if not math.isfinite(confidence) or not 0.0 < confidence < 1.0:
+        raise ValueError("confidence_level must be finite and in (0, 1)")
+    if outcome_count < 2 or shots <= 0:
+        raise ValueError("finite-shot bounds require outcomes and positive shots")
+    log_two = math.log(2.0)
+    log_prefactor = outcome_count * log_two + math.log1p(
+        -2.0 * math.exp(-outcome_count * log_two)
+    )
+    return min(
+        1.0,
+        math.sqrt((log_prefactor - math.log1p(-confidence)) / (2.0 * float(shots))),
+    )
+
+
 @dataclass(frozen=True)
 class TwinExperiment:
     """A prediction frozen together with the exact program submitted to a QPU."""
@@ -59,13 +81,22 @@ class TwinExperiment:
         twin: QPUDigitalTwin,
         circuit: Any,
         *,
-        submitted_qasm: str,
+        submitted_qasm: str | None = None,
         name: str,
         shots: int,
-    ) -> "TwinExperiment":
-        """Freeze the model, prediction, and submitted program before dispatch."""
+    ) -> TwinExperiment:
+        """Freeze the model, prediction, and submitted program before dispatch.
 
-        program = str(submitted_qasm)
+        Omitting ``submitted_qasm`` emits deterministic OpenQASM 2.0 directly
+        from the FlagQuantum circuit. That direct binding is required when a
+        later hardware report is converted into verified Twin evidence.
+        """
+
+        program = (
+            emit_openqasm(circuit, version=2.0)
+            if submitted_qasm is None
+            else str(submitted_qasm)
+        )
         task_name = str(name).strip()
         shot_count = int(shots)
         if not program.lstrip().startswith("OPENQASM 2.0;"):
@@ -128,6 +159,8 @@ class TwinExperiment:
             raise RuntimeError("provider receipt identifies a different QPU target")
         if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
             raise RuntimeError("provider receipt does not match the submitted QASM")
+        if tuple(handle.payload.get("target_qubits", ())) != self.target_qubits:
+            raise RuntimeError("provider receipt does not match the physical mapping")
         return handle
 
     def validate_result(
@@ -135,7 +168,7 @@ class TwinExperiment:
         result: DeploymentResult,
         *,
         receipt: ProviderTaskHandle,
-    ) -> "TwinHardwareReport":
+    ) -> TwinHardwareReport:
         """Bind a remote result to this experiment and evaluate its prediction."""
 
         validate_deployment_result(result)
@@ -148,6 +181,8 @@ class TwinExperiment:
             raise RuntimeError("provider result identifies a different QPU target")
         if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
             raise RuntimeError("provider result does not match the submitted QASM")
+        if tuple(handle.payload.get("target_qubits", ())) != self.target_qubits:
+            raise RuntimeError("provider result does not match the physical mapping")
         if result.shots != self.shots:
             raise RuntimeError(
                 "provider result shot count does not match the experiment"
@@ -178,6 +213,75 @@ class TwinExperiment:
             counts=counts,
             validation=self.prediction.compare_counts(counts),
             result_metadata=metadata,
+        )
+
+    def evidence_from_report(
+        self,
+        report: TwinHardwareReport,
+        *,
+        circuit: Any,
+        confidence_level: float = 0.95,
+    ) -> TwinEvidenceEnvelope:
+        """Convert one directly bound hardware report into exact evidence.
+
+        The method fails closed unless the FlagQuantum circuit, canonical
+        submitted OpenQASM, provider result, and reported executed program all
+        retain the identities frozen by this experiment.
+        """
+
+        if not isinstance(report, TwinHardwareReport):
+            raise TypeError("report must be a TwinHardwareReport")
+        if report.experiment_identity != self.identity:
+            raise RuntimeError("hardware report does not match this experiment")
+        if report.provider != "quafu" or report.backend_name != self.backend_name:
+            raise RuntimeError("hardware report identifies a different QPU target")
+        if not report.executed_program_matches_submission:
+            raise RuntimeError("executed program does not match the frozen submission")
+        executed_qasm = report.result_metadata.get("transpiled")
+        if (
+            not isinstance(executed_qasm, str)
+            or not executed_qasm.strip()
+            or _sha256(executed_qasm) != report.executed_qasm_identity
+        ):
+            raise RuntimeError("authoritative executed program is unavailable")
+
+        ir = ensure_circuit_ir(circuit)
+        if ir.content_hash != self.prediction.circuit_identity:
+            raise RuntimeError("circuit does not match the frozen prediction")
+        canonical_qasm = emit_openqasm(circuit, version=2.0)
+        if self.submitted_qasm != canonical_qasm:
+            raise RuntimeError(
+                "submitted QASM is not directly bound to the FlagQuantum circuit"
+            )
+        expected_validation = self.prediction.compare_counts(report.counts)
+        if (
+            report.validation != expected_validation
+            or expected_validation.shots != self.shots
+        ):
+            raise RuntimeError("hardware validation does not match the frozen result")
+
+        finite_shot_radius = _finite_shot_tv_radius(
+            outcome_count=len(expected_validation.hardware_probabilities),
+            shots=expected_validation.shots,
+            confidence_level=confidence_level,
+        )
+        verified_radius = min(
+            1.0,
+            expected_validation.twin_hardware_total_variation + finite_shot_radius,
+        )
+        operations = tuple(
+            sorted({instruction.name for instruction in ir.instructions} | {"measure"})
+        )
+        return TwinEvidenceEnvelope(
+            snapshot_identity=self.snapshot_identity,
+            physical_qubits=self.target_qubits,
+            supported_operations=operations,
+            maximum_instruction_count=len(ir.instructions),
+            verified_circuit_identities=(ir.content_hash,),
+            evidence_identity=report.identity,
+            verified_tv_error_bound=verified_radius,
+            estimated_tv_error_bound=None,
+            confidence_level=confidence_level,
         )
 
     def to_dict(self) -> dict[str, Any]:

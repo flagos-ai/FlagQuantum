@@ -42,7 +42,6 @@ from flagquantum.twin import TwinExperiment
 experiment = TwinExperiment.prepare(
     twin,
     circuit,
-    submitted_qasm=submitted_qasm,
     name="frozen-bell",
     shots=1024,
 )
@@ -50,19 +49,28 @@ handle = experiment.submit(provider)
 # Poll through the provider, then fetch the matching result.
 result = provider.fetch_result(handle)
 hardware_report = experiment.validate_result(result, receipt=handle)
+evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
 ```
+
+Omitting `submitted_qasm` creates a direct, deterministic binding from the
+FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted
+from a matching later hardware report into exact-circuit evidence. Supplying a
+custom QASM program remains supported for retrospective diagnostics, but it is
+rejected by `evidence_from_report()` because FlagQuantum cannot infer semantic
+equivalence from unrelated text.
 
 The public Quafu task path does not return an authoritative final circuit before
 submission. Local QuarkCircuit or QSteed transpilation can produce a useful
 candidate, but it is not a provider-issued execution receipt. Quafu may still
 lower gates or remap qubits when compilation was not requested.
 
-Consequently, `TwinHardwareReport.validation_scope` is
-`"retrospective_diagnostic"`. The separately reported
+`TwinHardwareReport.validation_scope` remains `"retrospective_diagnostic"`.
+The separately reported
 `executed_program_matches_submission` flag records whether the final circuit
 returned after execution has the same digest as the frozen submission; it does
-not turn the result into a strict pre-execution circuit-level prediction.
-Missing or rewritten executed programs fail closed.
+not by itself turn the result into verified evidence. Exact evidence additionally
+requires the canonical FlagQuantum IR-to-QASM binding checked by
+`evidence_from_report()`. Missing, rewritten, or custom programs fail closed.
 
 Run the focused checks with:
 

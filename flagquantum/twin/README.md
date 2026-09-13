@@ -45,6 +45,30 @@ report = prediction.compare_counts({"00": 500, "11": 500})
 The counts above illustrate the comparison interface; they are not a live
 hardware observation. Use `TwinExperiment` to bind a real submission and result.
 
+The shortest identity-bound validation path lets FlagQuantum emit the submitted
+OpenQASM directly from the circuit:
+
+```python
+experiment = fq.twin.TwinExperiment.prepare(
+    twin,
+    circuit,
+    name="frozen-bell",
+    shots=1024,
+)
+handle = experiment.submit(provider)
+# Poll explicitly through the provider, then fetch the matching result.
+result = provider.fetch_result(handle)
+hardware_report = experiment.validate_result(result, receipt=handle)
+evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
+fq.twin.dump_evidence(evidence, "twin-evidence.json")
+```
+
+`evidence_from_report()` verifies the circuit, canonical OpenQASM, receipt,
+result, executed program, counts, and shot count before producing exact-circuit
+evidence. Its TV radius adds a conservative multinomial finite-shot radius to
+the observed Twin-to-hardware distance. It grants no estimate for unseen
+circuits.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

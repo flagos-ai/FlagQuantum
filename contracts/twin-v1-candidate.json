@@ -33,6 +33,10 @@
     "dump_evidence": "(evidence: 'TwinEvidenceEnvelope', path: 'str | PathLike[str]') -> 'None'",
     "load_evidence": "(path: 'str | PathLike[str]') -> 'TwinEvidenceEnvelope'"
   },
+  "public_method_signatures": {
+    "TwinExperiment.prepare": "(twin: 'QPUDigitalTwin', circuit: 'Any', *, submitted_qasm: 'str | None' = None, name: 'str', shots: 'int') -> 'TwinExperiment'",
+    "TwinExperiment.evidence_from_report": "(self, report: 'TwinHardwareReport', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinEvidenceEnvelope'"
+  },
   "forbidden_responsibilities": [
     "application_policy",
     "agent_protocol",
