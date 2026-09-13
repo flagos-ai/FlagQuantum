@@ -67,6 +67,29 @@ evidence = fq.twin.TwinEvidenceEnvelope(
 report = twin.evidence_report(circuit, evidence=evidence)
 ```
 
+Production evidence should be stored as the canonical versioned JSON returned
+by `evidence.to_dict()`. It can be restored without provider access:
+
+```python
+evidence = fq.twin.load_evidence("twin-evidence.json")
+report = twin.evidence_report(circuit, evidence=evidence)
+```
+
+The loader accepts only the complete `flagquantum.twin_evidence_envelope.v1`
+schema and fails on missing or unknown fields. Research artifacts must first be
+converted by their owning validation workflow. A converter may bind evidence
+only when the frozen Twin snapshot identity and FlagQuantum IR circuit
+identities were recorded before the target hardware outcomes. Physical-QASM
+hashes, calibration identifiers, or retrospective matches cannot substitute
+for those identities.
+
+Q-ATLAS research workflows can use
+`tools/convert_q_atlas_twin_evidence.py` after freezing the companion identity
+binding. The tool is an offline compatibility boundary, not a public framework
+API. Existing historical audits that did not record this bridge prospectively
+remain useful research evidence but cannot be relabeled as evidence for a
+different `QPUDigitalTwin` snapshot.
+
 The evidence status is one of:
 
 - `exact_circuit_verified`: this exact circuit has a bound from later hardware;
