@@ -94,8 +94,7 @@ def test_twin_builds_from_a_provider_neutral_device_noise_model():
 
     twin = fq.twin.from_noise_model(
         device_model,
-        provider="example-provider",
-        backend="example-qpu",
+        target="example-provider:example-qpu",
         qubits=(3, 4),
     )
     advanced = QPUDigitalTwin.from_noise_model(
@@ -112,7 +111,9 @@ def test_twin_builds_from_a_provider_neutral_device_noise_model():
 
 
 def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
-    twin = fq.twin.from_quafu_chip_info(_chip_info(), backend="Baihua", qubits=(3, 4))
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
+    )
 
     prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 
@@ -125,6 +126,20 @@ def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
     assert prediction.snapshot_identity == twin.snapshot.identity
     assert sum(prediction.twin_probabilities) == pytest.approx(1.0, abs=1e-6)
     assert prediction.total_variation_from_ideal > 0
+
+
+@pytest.mark.parametrize(
+    "target",
+    ("quafu", ":Baihua", "quafu:"),
+)
+def test_concise_twin_factories_reject_invalid_targets(target):
+    with pytest.raises(ValueError, match="provider:backend"):
+        fq.twin.from_quafu_chip_info(_chip_info(), target=target, qubits=(3, 4))
+
+
+def test_quafu_factory_rejects_another_provider_target():
+    with pytest.raises(ValueError, match="requires target='quafu:<backend>'"):
+        fq.twin.from_quafu_chip_info(_chip_info(), target="other:Baihua", qubits=(3, 4))
 
 
 def test_twin_applies_readout_and_compares_hardware_counts():

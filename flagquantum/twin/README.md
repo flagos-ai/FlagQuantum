@@ -10,17 +10,16 @@ adapters and task submission.
 
 ## Build a Twin for any QPU
 
-Start from a FlagQuantum `NoiseModel` carrying a device profile. The provider
-name, backend name, and ordered physical mapping become part of the immutable
-Twin identity:
+Start from a FlagQuantum `NoiseModel` carrying a device profile. The execution
+target and ordered physical mapping become part of the immutable Twin identity.
+The target uses the same `provider:backend` form as `fq.run`:
 
 ```python
 import flagquantum as fq
 
 twin = fq.twin.from_noise_model(
     device_noise_model,
-    provider="your-provider",
-    backend="your-qpu",
+    target="your-provider:your-qpu",
     qubits=(12, 13),
 )
 prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
@@ -36,7 +35,7 @@ Quafu calibration conversion is built in, so no custom adapter is needed:
 ```python
 twin = fq.twin.from_quafu_chip_info(
     chip_info,
-    backend="Baihua",
+    target="quafu:Baihua",
     qubits=(3, 4),
 )
 prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))

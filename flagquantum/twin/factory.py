@@ -8,15 +8,26 @@ from ..noise import NoiseModel
 from .model import QPUDigitalTwin
 
 
+def _split_target(target: str) -> tuple[str, str]:
+    if not isinstance(target, str):
+        raise TypeError("target must be a string in the form 'provider:backend'")
+    provider, separator, backend = target.partition(":")
+    provider = provider.strip()
+    backend = backend.strip()
+    if separator != ":" or not provider or not backend:
+        raise ValueError("target must use the form 'provider:backend'")
+    return provider.lower(), backend
+
+
 def from_noise_model(
     noise_model: NoiseModel,
     *,
-    provider: str,
-    backend: str,
+    target: str,
     qubits: Sequence[int],
 ) -> QPUDigitalTwin:
     """Build a mapped QPU digital twin from a device-backed noise model."""
 
+    provider, backend = _split_target(target)
     return QPUDigitalTwin.from_noise_model(
         noise_model,
         provider=provider,
@@ -28,13 +39,16 @@ def from_noise_model(
 def from_quafu_chip_info(
     chip_info: Mapping[str, Any],
     *,
-    backend: str,
+    target: str,
     qubits: Sequence[int],
     readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
     correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
 ) -> QPUDigitalTwin:
     """Build a mapped QPU digital twin from native Quafu calibration data."""
 
+    provider, backend = _split_target(target)
+    if provider != "quafu":
+        raise ValueError("from_quafu_chip_info requires target='quafu:<backend>'")
     return QPUDigitalTwin.from_quafu_chip_info(
         chip_info,
         backend_name=backend,

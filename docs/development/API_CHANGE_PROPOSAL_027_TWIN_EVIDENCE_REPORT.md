@@ -67,15 +67,14 @@ without implying empirical validity or deciding what an application should do.
 def from_noise_model(
     noise_model: NoiseModel,
     *,
-    provider: str,
-    backend: str,
+    target: str,
     qubits: Sequence[int],
 ) -> QPUDigitalTwin: ...
 
 def from_quafu_chip_info(
     chip_info: Mapping[str, Any],
     *,
-    backend: str,
+    target: str,
     qubits: Sequence[int],
     readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
     correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
@@ -89,6 +88,10 @@ class QPUDigitalTwin:
         evidence: TwinEvidenceEnvelope | None = None,
     ) -> TwinEvidenceReport: ...
 ```
+
+Both concise constructors use the same `provider:backend` target identity as
+`fq.run`. The Quafu-native constructor requires a `quafu:<backend>` target.
+The advanced class factories retain separate provider and backend fields.
 
 `TwinEvidenceEnvelope`, `TwinEvidenceReport`, and `TwinEvidenceStatus` are
 exported only from `flagquantum.twin`.

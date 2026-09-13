@@ -26,8 +26,8 @@
     "TwinValidationReport"
   ],
   "public_signatures": {
-    "from_noise_model": "(noise_model: 'NoiseModel', *, provider: 'str', backend: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
-    "from_quafu_chip_info": "(chip_info: 'Mapping[str, Any]', *, backend: 'str', qubits: 'Sequence[int]', readout_confusion_matrices: 'Sequence[Sequence[Sequence[float]]] | None' = None, correlated_readout_confusion_matrix: 'Sequence[Sequence[float]] | None' = None) -> 'QPUDigitalTwin'"
+    "from_noise_model": "(noise_model: 'NoiseModel', *, target: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
+    "from_quafu_chip_info": "(chip_info: 'Mapping[str, Any]', *, target: 'str', qubits: 'Sequence[int]', readout_confusion_matrices: 'Sequence[Sequence[Sequence[float]]] | None' = None, correlated_readout_confusion_matrix: 'Sequence[Sequence[float]] | None' = None) -> 'QPUDigitalTwin'"
   },
   "forbidden_responsibilities": [
     "application_policy",
