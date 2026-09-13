@@ -248,7 +248,7 @@ def test_evidence_generation_rejects_custom_or_rewritten_programs():
         _result(direct, executed_qasm=direct.submitted_qasm + "\n"),
         receipt=direct_receipt,
     )
-    with pytest.raises(RuntimeError, match="executed program"):
+    with pytest.raises(RuntimeError, match="not bound to the frozen submission"):
         direct.evidence_from_report(rewritten, circuit=circuit)
 
     echoed_result = DeploymentResult(
@@ -263,6 +263,124 @@ def test_evidence_generation_rejects_custom_or_rewritten_programs():
     assert echoed.executed_program_matches_submission is True
     with pytest.raises(RuntimeError, match="authoritative executed program"):
         direct.evidence_from_report(echoed, circuit=circuit)
+
+
+def test_evidence_generation_accepts_provider_bound_physical_transpilation():
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(
+        submitted_qasm=None,
+        circuit=circuit,
+        physical_qubits=(3, 4),
+    )
+    receipt = _handle(experiment)
+    transpiled = """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[84];
+creg c[2];
+u(1.5707963267948966,0.0,3.141592653589793) q[3];
+cx q[3],q[4];
+barrier q[3],q[4];
+measure q[3] -> c[0];
+measure q[4] -> c[1];"""
+    result = DeploymentResult(
+        handle=receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            receipt,
+            {"circuit": experiment.submitted_qasm, "transpiled": transpiled},
+        ),
+    )
+    report = experiment.validate_result(result, receipt=receipt)
+
+    evidence = experiment.evidence_from_report(report, circuit=circuit)
+
+    assert report.executed_program_matches_submission is False
+    assert evidence.evidence_identity == report.identity
+    assert evidence.physical_qubits == (3, 4)
+
+
+@pytest.mark.parametrize(
+    ("transpiled", "message"),
+    [
+        (
+            """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[84];
+creg c[2];
+h q[3];
+cx q[3],q[5];
+measure q[3] -> c[0];
+measure q[4] -> c[1];""",
+            "physical mapping",
+        ),
+        (
+            """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[84];
+creg c[2];
+h q[3];
+cx q[3],q[4];
+measure q[4] -> c[0];
+measure q[3] -> c[1];""",
+            "physical mapping",
+        ),
+        (
+            """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[84];
+creg c[2];
+h q[3];
+cx q[3],q[4];
+measure q[3] -> c[0];
+measure q[4] -> c[0];""",
+            "physical mapping",
+        ),
+    ],
+)
+def test_evidence_generation_rejects_transpilation_mapping_changes(transpiled, message):
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(
+        submitted_qasm=None,
+        circuit=circuit,
+        physical_qubits=(3, 4),
+    )
+    receipt = _handle(experiment)
+    result = DeploymentResult(
+        handle=receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            receipt,
+            {"circuit": experiment.submitted_qasm, "transpiled": transpiled},
+        ),
+    )
+    report = experiment.validate_result(result, receipt=receipt)
+
+    with pytest.raises(RuntimeError, match=message):
+        experiment.evidence_from_report(report, circuit=circuit)
+
+
+def test_evidence_generation_rejects_transpilation_with_wrong_source_echo():
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    experiment = _experiment(submitted_qasm=None, circuit=circuit)
+    receipt = _handle(experiment)
+    result = DeploymentResult(
+        handle=receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            receipt,
+            {
+                "circuit": experiment.submitted_qasm + "\n",
+                "transpiled": experiment.submitted_qasm + "\n",
+            },
+        ),
+    )
+    report = experiment.validate_result(result, receipt=receipt)
+
+    with pytest.raises(RuntimeError, match="not bound to the frozen submission"):
+        experiment.evidence_from_report(report, circuit=circuit)
 
 
 @pytest.mark.parametrize("confidence", [0.0, 1.0, float("nan")])

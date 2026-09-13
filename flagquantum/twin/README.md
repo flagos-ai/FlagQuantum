@@ -65,10 +65,14 @@ fq.twin.dump_evidence(evidence, "twin-evidence.json")
 ```
 
 `evidence_from_report()` verifies the circuit, canonical OpenQASM, receipt,
-result, executed program, counts, and shot count before producing exact-circuit
-evidence. Its TV radius adds a conservative multinomial finite-shot radius to
-the observed Twin-to-hardware distance. It grants no estimate for unseen
-circuits.
+result, authoritative executed program, physical mapping, counts, and shot
+count before producing exact-circuit evidence. Quafu may lower gates after
+submission; that provider-attested transformation is accepted only when the
+result echoes the frozen source, uses exactly the selected physical qubits, and
+preserves their measurement order. This is not an independent proof of compiler
+semantic equivalence or state fidelity. The TV radius adds a conservative
+multinomial finite-shot radius to the observed Twin-to-hardware distance. It
+grants no estimate for unseen circuits.
 
 The snippet above continues from the provider and Twin construction shown in
 the preceding sections. For a complete copy-and-run Quafu workflow—including

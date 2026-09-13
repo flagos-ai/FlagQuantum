@@ -23,10 +23,15 @@ would be unsound.
   FlagQuantum circuit and freeze it before dispatch.
 - Add `TwinExperiment.evidence_from_report(...)`.
 - Require matching experiment, provider/backend, circuit identity, canonical
-  IR-to-QASM text, submitted program identity, executed program identity,
-  physical mapping, counts, validation report, and shot count. The executed
-  program must come from the provider's explicit transpiled-program field; an
-  echoed input circuit is insufficient.
+  IR-to-QASM text, submitted program identity, authoritative executed program
+  identity, physical mapping, counts, validation report, and shot count. The
+  executed program must come from the provider's explicit transpiled-program
+  field; an echoed input circuit is insufficient.
+- Accept Quafu's provider-attested gate lowering when the same result echoes the
+  exact frozen source program, the authoritative executed program references
+  exactly the selected physical qubits, and its classical measurement mapping
+  preserves the ordered logical-to-physical mapping. Retain separate submitted
+  and executed identities in the hardware report.
 - Derive a conservative exact-circuit TV error radius by adding the observed
   Twin-to-hardware TV distance to a 95% multinomial finite-shot radius, capped
   at one.
@@ -86,6 +91,12 @@ not change.
 - The shortest path emits deterministic QASM without user-supplied text.
 - A fully matching later result produces exact-circuit evidence.
 - The error radius includes the recorded observation and finite-shot bound.
-- Custom, rewritten, missing, foreign, or tampered identities fail closed.
+- Custom, missing, foreign, or tampered identities fail closed. Provider
+  transpilation is accepted only under the source-echo and physical-mapping
+  checks above; extra qubits and reordered measurements fail closed.
 - Evidence for the exact circuit does not imply support for unseen circuits.
 - Documentation and PR description include complete usage examples.
+
+FlagQuantum treats the Quafu task result as the provider's attestation of the
+gate-lowering transformation. These checks do not independently prove unitary
+equivalence of arbitrary compiler output and do not establish state fidelity.

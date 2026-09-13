@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
@@ -22,6 +23,10 @@ from .validation import TwinValidationReport
 
 _EXPERIMENT_SCHEMA = "flagquantum.twin_experiment.v1"
 _HARDWARE_REPORT_SCHEMA = "flagquantum.twin_hardware_report.v1"
+_QASM_QUBIT_DECLARATION = re.compile(r"qreg\s+q\[([1-9][0-9]*)\]\s*;")
+_QASM_CLASSICAL_DECLARATION = re.compile(r"creg\s+c\[([1-9][0-9]*)\]\s*;")
+_QASM_QUBIT_REFERENCE = re.compile(r"q\[([0-9]+)\]")
+_QASM_MEASUREMENT = re.compile(r"measure\s+q\[([0-9]+)\]\s*->\s*c\[([0-9]+)\]\s*;")
 
 
 def _sha256(value: str) -> str:
@@ -59,6 +64,66 @@ def _finite_shot_tv_radius(
         1.0,
         math.sqrt((log_prefactor - math.log1p(-confidence)) / (2.0 * float(shots))),
     )
+
+
+def _provider_transpilation_preserves_mapping(
+    executed_qasm: str,
+    *,
+    target_qubits: tuple[int, ...],
+) -> bool:
+    """Check the observable physical footprint of provider-transpiled QASM."""
+
+    lines = tuple(line.strip() for line in executed_qasm.splitlines() if line.strip())
+    if len(lines) < 5 or lines[:2] != (
+        "OPENQASM 2.0;",
+        'include "qelib1.inc";',
+    ):
+        return False
+    declarations = tuple(
+        match
+        for line in lines
+        if (match := _QASM_QUBIT_DECLARATION.fullmatch(line)) is not None
+    )
+    if len(declarations) != 1:
+        return False
+    register_width = int(declarations[0].group(1))
+    if any(qubit >= register_width for qubit in target_qubits):
+        return False
+    classical_declarations = tuple(
+        match
+        for line in lines
+        if (match := _QASM_CLASSICAL_DECLARATION.fullmatch(line)) is not None
+    )
+    if len(classical_declarations) != 1 or int(
+        classical_declarations[0].group(1)
+    ) != len(target_qubits):
+        return False
+
+    body = tuple(
+        line
+        for line in lines
+        if _QASM_QUBIT_DECLARATION.fullmatch(line) is None
+        and _QASM_CLASSICAL_DECLARATION.fullmatch(line) is None
+        and line not in {"OPENQASM 2.0;", 'include "qelib1.inc";'}
+    )
+    referenced = {
+        int(match.group(1))
+        for line in body
+        for match in _QASM_QUBIT_REFERENCE.finditer(line)
+    }
+    if referenced != set(target_qubits):
+        return False
+
+    measurements = []
+    for line in body:
+        if not line.startswith("measure"):
+            continue
+        match = _QASM_MEASUREMENT.fullmatch(line)
+        if match is None:
+            return False
+        measurements.append((int(match.group(2)), int(match.group(1))))
+    ordered_measurements = tuple(sorted(measurements))
+    return ordered_measurements == tuple(enumerate(target_qubits))
 
 
 @dataclass(frozen=True)
@@ -235,8 +300,6 @@ class TwinExperiment:
             raise RuntimeError("hardware report does not match this experiment")
         if report.provider != "quafu" or report.backend_name != self.backend_name:
             raise RuntimeError("hardware report identifies a different QPU target")
-        if not report.executed_program_matches_submission:
-            raise RuntimeError("executed program does not match the frozen submission")
         executed_qasm = report.result_metadata.get("transpiled")
         if (
             not isinstance(executed_qasm, str)
@@ -253,6 +316,19 @@ class TwinExperiment:
             raise RuntimeError(
                 "submitted QASM is not directly bound to the FlagQuantum circuit"
             )
+        if not report.executed_program_matches_submission:
+            echoed_qasm = report.result_metadata.get("circuit")
+            if echoed_qasm != self.submitted_qasm:
+                raise RuntimeError(
+                    "provider transpilation is not bound to the frozen submission"
+                )
+            if not _provider_transpilation_preserves_mapping(
+                executed_qasm,
+                target_qubits=self.target_qubits,
+            ):
+                raise RuntimeError(
+                    "provider transpilation changes the frozen physical mapping"
+                )
         expected_validation = self.prediction.compare_counts(report.counts)
         if (
             report.validation != expected_validation

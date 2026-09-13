@@ -30,8 +30,12 @@ def _wait_for_result(
     """Poll one submitted task without resubmitting it."""
 
     deadline = time.monotonic() + timeout
+    previous_status: str | None = None
     while True:
         status = provider.query_status(receipt)
+        if status != previous_status:
+            print("task status:", status, flush=True)
+            previous_status = status
         if status in {"Finished", "Completed", "Done"}:
             return provider.fetch_result(receipt)
         if status in {"Failed", "Cancelled", "Canceled"}:
@@ -62,6 +66,7 @@ def main() -> None:
         shots=SHOTS,
     )
     receipt = experiment.submit(provider)
+    print("submitted task:", receipt.task_id, flush=True)
     result = _wait_for_result(provider, receipt)
     hardware_report = experiment.validate_result(result, receipt=receipt)
     evidence = experiment.evidence_from_report(

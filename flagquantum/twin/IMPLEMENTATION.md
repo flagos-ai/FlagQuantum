@@ -62,7 +62,7 @@ equivalence from unrelated text.
 The public Quafu task path does not return an authoritative final circuit before
 submission. Local QuarkCircuit or QSteed transpilation can produce a useful
 candidate, but it is not a provider-issued execution receipt. Quafu may still
-lower gates or remap qubits when compilation was not requested.
+lower gates after submission even when service compilation was not requested.
 
 `TwinHardwareReport.validation_scope` remains `"retrospective_diagnostic"`.
 The separately reported
@@ -70,7 +70,13 @@ The separately reported
 returned after execution has the same digest as the frozen submission; it does
 not by itself turn the result into verified evidence. Exact evidence additionally
 requires the canonical FlagQuantum IR-to-QASM binding checked by
-`evidence_from_report()`. Missing, rewritten, or custom programs fail closed.
+`evidence_from_report()`. A provider-transpiled program is accepted only when
+the result echoes the exact frozen source program, its authoritative
+`transpiled` field uses exactly the selected physical qubits, and measurements
+preserve the ordered logical-to-physical mapping. Missing or custom programs,
+extra physical qubits, and reordered measurements fail closed. The Quafu result
+attests this lowering; FlagQuantum does not independently prove arbitrary
+compiler semantic equivalence or state fidelity.
 
 Run the focused checks with:
 
