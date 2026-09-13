@@ -130,14 +130,14 @@ def test_runtime_policy_has_one_execution_source_and_round_trips() -> None:
     policy = RuntimePolicy(
         execution_options=ExecutionOptions(mode="mps", require_gradients=True),
         observable="z_sum",
-        observable_wires=(0, 1),
+        observable_qubits=(0, 1),
         correctness_debug=True,
     )
 
     assert [field.name for field in fields(policy)] == [
         "execution_options",
         "observable",
-        "observable_wires",
+        "observable_qubits",
         "correctness_debug",
     ]
     assert policy.mode == "mps"
