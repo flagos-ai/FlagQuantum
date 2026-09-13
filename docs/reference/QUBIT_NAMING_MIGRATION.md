@@ -21,4 +21,4 @@ forward-reading.
 
 IR and backend-native fields are unchanged. The deprecated observable_wires
 property remains available on RuntimePolicy for callers migrating gradually.
-API snapshots are deliberately not regenerated before contract review.
+The four affected candidate signatures are updated for this explicitly requested migration; the historical baseline and checker remain unchanged.

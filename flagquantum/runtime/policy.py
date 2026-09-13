@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
-from .._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
+from ..core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..errors import ValidationError
 from .options import ExecutionOptions
 

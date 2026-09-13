@@ -25,9 +25,9 @@
     "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
     "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
     "expectation": "(observable: 'Observable', *, name: 'str | None' = None) -> 'OutputRequest'",
-    "probabilities": "(wires: 'Iterable[int] | int | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'",
-    "samples": "(wires: 'Iterable[int] | int | Observable | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'",
-    "counts": "(wires: 'Iterable[int] | int | Observable | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'"
+    "probabilities": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | None | Omitted' = OMITTED) -> 'OutputRequest'",
+    "samples": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",
+    "counts": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'"
   },
   "rules": {
     "measurement_nodes_are_internal": true,
@@ -35,5 +35,6 @@
     "hamiltonian_terms_recombine_at_result_boundary": true,
     "pauli_basis_sampling_requires_one_unweighted_product": true,
     "silent_basis_rotation": false
-  }
+  },
+  "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
 }

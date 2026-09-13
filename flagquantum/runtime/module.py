@@ -432,9 +432,15 @@ class Module(torch.nn.Module):
             for key, value in instruction.params.items()
             if isinstance(value, torch.Tensor)
         )
-        constructor = dict(template.circuit_param)
-        constructor["n_qubits"] = constructor.pop("n_wires")
-        bound = type(template)(**constructor)
+        constructor = template.circuit_param
+        bound = type(template)(
+            n_qubits=constructor["n_wires"],
+            bsz=constructor["bsz"],
+            device=constructor["device"],
+            dtype=constructor["dtype"],
+            inputs=constructor["inputs"],
+            config=constructor["config"],
+        )
         bound._parameter_bindings = self._builder_bindings
         slot_index = 0
         compiled_instructions: list[CompiledInstruction] = []

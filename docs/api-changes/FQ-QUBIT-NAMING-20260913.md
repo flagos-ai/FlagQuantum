@@ -11,8 +11,8 @@ this proposal and PR; it does not record a completed API-owner review.
 New users encounter `n_qubits` alongside `wires` and `observable_wires`. Documentation
 must not invent unsupported keyword replacements, but should teach one vocabulary.
 This PR renames the quick-start indices and implements the public keyword aliases
-and policy schema reader/writer described below. Frozen API snapshots remain
-unchanged pending review.
+and policy schema reader/writer described below. The historical baseline remains unchanged; the four affected candidate signatures
+are updated with this user-authorized migration.
 
 ## Proposed public spelling
 
@@ -25,7 +25,7 @@ unchanged pending review.
 | Example local variable wire | qubit | Rename now; no compatibility obligation |
 
 The implementation uses an OMITTED sentinel to distinguish omitted arguments
-from explicit None. Contract updates remain a separate review step. Both old and new keywords together must
+from explicit None. The four candidate signature updates are included for review. Both old and new keywords together must
 raise an actionable TypeError; do not guess precedence. Preserve validation of
 indices, batch semantics, output ordering, observable selection and gradients.
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from numbers import Real
 from typing import Iterable, Sequence
 
-from .._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
+from ..core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..core.ir import MeasurementNode
 
 _DEFAULT_MAX_PAULI_SAMPLE_WIRES = 8

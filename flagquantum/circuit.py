@@ -100,7 +100,7 @@ class Circuit:
         inputs: torch.Tensor | None = None,
         config: RuntimeConfig | None = None,
     ) -> None:
-        from ._qubit_aliases import warn_qubit_alias
+        from .core._qubit_aliases import warn_qubit_alias
 
         for alias, value in (("n_wires", n_wires), ("nqubits", nqubits)):
             if value is not None:
