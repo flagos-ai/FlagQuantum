@@ -46,6 +46,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "QPUDigitalTwin",
         "from_noise_model",
         "from_quafu_chip_info",
+        "load_evidence",
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
         "TwinEvidenceStatus",

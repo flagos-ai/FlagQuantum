@@ -6,6 +6,8 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass
+from os import PathLike
+from pathlib import Path
 from typing import Any, Literal, Mapping, Sequence
 
 from ..core.ir import CircuitIR
@@ -148,6 +150,70 @@ class TwinEvidenceEnvelope:
             "estimated_tv_error_bound": self.estimated_tv_error_bound,
             "confidence_level": self.confidence_level,
         }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "TwinEvidenceEnvelope":
+        """Restore an envelope from its versioned serialized form."""
+
+        if not isinstance(payload, Mapping):
+            raise TypeError("Twin evidence must be a mapping")
+        expected = {
+            "schema",
+            "snapshot_identity",
+            "physical_qubits",
+            "supported_operations",
+            "maximum_instruction_count",
+            "verified_circuit_identities",
+            "evidence_identity",
+            "verified_tv_error_bound",
+            "estimated_tv_error_bound",
+            "confidence_level",
+        }
+        actual = set(payload)
+        if actual != expected:
+            missing = sorted(expected - actual)
+            unexpected = sorted(actual - expected)
+            raise ValueError(
+                "Twin evidence fields do not match the v1 schema: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        try:
+            return cls(
+                schema=str(payload["schema"]),
+                snapshot_identity=str(payload["snapshot_identity"]),
+                physical_qubits=tuple(payload["physical_qubits"]),
+                supported_operations=tuple(payload["supported_operations"]),
+                maximum_instruction_count=int(payload["maximum_instruction_count"]),
+                verified_circuit_identities=tuple(
+                    payload["verified_circuit_identities"]
+                ),
+                evidence_identity=str(payload["evidence_identity"]),
+                verified_tv_error_bound=payload["verified_tv_error_bound"],
+                estimated_tv_error_bound=payload["estimated_tv_error_bound"],
+                confidence_level=payload["confidence_level"],
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError("Invalid Twin evidence envelope") from error
+
+
+def load_evidence(path: str | PathLike[str]) -> TwinEvidenceEnvelope:
+    """Load one offline Twin evidence envelope without contacting a provider.
+
+    Examples:
+        evidence = fq.twin.load_evidence("twin-evidence.json")
+
+    Raises:
+        ValueError: If the file is not a canonical v1 evidence envelope.
+    """
+
+    source = Path(path)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Cannot load Twin evidence from {source}") from error
+    if not isinstance(payload, Mapping):
+        raise ValueError("Twin evidence file must contain a JSON object")
+    return TwinEvidenceEnvelope.from_dict(payload)
 
 
 @dataclass(frozen=True)
@@ -317,6 +383,7 @@ def build_evidence_report(
 
 __all__ = (
     "build_evidence_report",
+    "load_evidence",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
