@@ -216,6 +216,53 @@ def load_evidence(path: str | PathLike[str]) -> TwinEvidenceEnvelope:
     return TwinEvidenceEnvelope.from_dict(payload)
 
 
+def dump_evidence(
+    evidence: TwinEvidenceEnvelope,
+    path: str | PathLike[str],
+) -> None:
+    """Write one canonical Twin evidence envelope without replacing evidence.
+
+    Repeating the call with the same envelope is a no-op. An existing file with
+    different or invalid evidence is never overwritten.
+
+    Examples:
+        fq.twin.dump_evidence(evidence, "twin-evidence.json")
+
+    Raises:
+        TypeError: If ``evidence`` is not a Twin evidence envelope.
+        ValueError: If the destination cannot be written safely.
+    """
+
+    if not isinstance(evidence, TwinEvidenceEnvelope):
+        raise TypeError("evidence must be a TwinEvidenceEnvelope")
+    destination = Path(path)
+    encoded = (
+        json.dumps(
+            evidence.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    )
+    try:
+        with destination.open("x", encoding="utf-8") as stream:
+            stream.write(encoded)
+    except FileExistsError:
+        try:
+            existing = load_evidence(destination)
+        except ValueError as error:
+            raise ValueError(
+                f"Refusing to replace invalid Twin evidence at {destination}"
+            ) from error
+        if existing.identity != evidence.identity:
+            raise ValueError(
+                f"Refusing to replace different Twin evidence at {destination}"
+            )
+    except OSError as error:
+        raise ValueError(f"Cannot write Twin evidence to {destination}") from error
+
+
 @dataclass(frozen=True)
 class TwinEvidenceReport:
     """Empirical support facts for one frozen Twin prediction."""
@@ -383,6 +430,7 @@ def build_evidence_report(
 
 __all__ = (
     "build_evidence_report",
+    "dump_evidence",
     "load_evidence",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",

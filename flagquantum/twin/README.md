@@ -67,13 +67,20 @@ evidence = fq.twin.TwinEvidenceEnvelope(
 report = twin.evidence_report(circuit, evidence=evidence)
 ```
 
-Production evidence should be stored as the canonical versioned JSON returned
-by `evidence.to_dict()`. It can be restored without provider access:
+Production evidence can be written and restored without provider access:
 
 ```python
+fq.twin.dump_evidence(evidence, "twin-evidence.json")
 evidence = fq.twin.load_evidence("twin-evidence.json")
 report = twin.evidence_report(circuit, evidence=evidence)
+
+print(report.status)
+print(report.tv_error_bound)
+print(report.confidence_level)
 ```
+
+`dump_evidence()` writes canonical JSON once. Repeating it with the same
+evidence is safe; it refuses to replace a different or invalid file.
 
 The loader accepts only the complete `flagquantum.twin_evidence_envelope.v1`
 schema and fails on missing or unknown fields. Research artifacts must first be

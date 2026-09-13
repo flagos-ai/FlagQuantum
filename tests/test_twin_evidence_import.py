@@ -36,6 +36,59 @@ def test_load_evidence_round_trips_canonical_envelope(tmp_path):
     )
 
 
+def test_dump_evidence_writes_canonical_round_trip(tmp_path):
+    destination = tmp_path / "twin-evidence.json"
+    evidence = fq.twin.TwinEvidenceEnvelope.from_dict(_payload())
+
+    fq.twin.dump_evidence(evidence, destination)
+
+    assert destination.read_text(encoding="utf-8") == (
+        json.dumps(_payload(), sort_keys=True, separators=(",", ":")) + "\n"
+    )
+    assert fq.twin.load_evidence(destination) == evidence
+
+
+def test_dump_evidence_is_idempotent_for_the_same_identity(tmp_path):
+    destination = tmp_path / "twin-evidence.json"
+    evidence = fq.twin.TwinEvidenceEnvelope.from_dict(_payload())
+    fq.twin.dump_evidence(evidence, destination)
+    original = destination.read_bytes()
+
+    fq.twin.dump_evidence(evidence, destination)
+
+    assert destination.read_bytes() == original
+
+
+def test_dump_evidence_refuses_to_replace_different_evidence(tmp_path):
+    destination = tmp_path / "twin-evidence.json"
+    first = fq.twin.TwinEvidenceEnvelope.from_dict(_payload())
+    changed_payload = _payload()
+    changed_payload["evidence_identity"] = "e" * 64
+    changed = fq.twin.TwinEvidenceEnvelope.from_dict(changed_payload)
+    fq.twin.dump_evidence(first, destination)
+
+    with pytest.raises(ValueError, match="Refusing to replace different"):
+        fq.twin.dump_evidence(changed, destination)
+
+    assert fq.twin.load_evidence(destination) == first
+
+
+def test_dump_evidence_refuses_to_replace_invalid_file(tmp_path):
+    destination = tmp_path / "twin-evidence.json"
+    destination.write_text("not evidence", encoding="utf-8")
+    evidence = fq.twin.TwinEvidenceEnvelope.from_dict(_payload())
+
+    with pytest.raises(ValueError, match="Refusing to replace invalid"):
+        fq.twin.dump_evidence(evidence, destination)
+
+    assert destination.read_text(encoding="utf-8") == "not evidence"
+
+
+def test_dump_evidence_requires_an_envelope(tmp_path):
+    with pytest.raises(TypeError, match="TwinEvidenceEnvelope"):
+        fq.twin.dump_evidence(_payload(), tmp_path / "evidence.json")
+
+
 @pytest.mark.parametrize(
     "mutate",
     [

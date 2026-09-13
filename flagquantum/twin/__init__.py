@@ -4,6 +4,7 @@ from .evidence import (
     TwinEvidenceEnvelope,
     TwinEvidenceReport,
     TwinEvidenceStatus,
+    dump_evidence,
     load_evidence,
 )
 from .experiment import TwinExperiment, TwinHardwareReport
@@ -16,6 +17,7 @@ __all__ = (
     "QPUDigitalTwin",
     "from_noise_model",
     "from_quafu_chip_info",
+    "dump_evidence",
     "load_evidence",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
