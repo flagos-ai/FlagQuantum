@@ -42,7 +42,8 @@
       "run",
       "samples",
       "submit",
-      "train"
+      "train",
+      "twin"
     ],
     "planned_additions": []
   },
@@ -166,7 +167,8 @@
     "counts",
     "expectation",
     "probabilities",
-    "samples"
+    "samples",
+    "twin"
   ],
   "experimental": [
     {
@@ -215,7 +217,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 33,
+    "root_export_budget": 34,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,

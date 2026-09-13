@@ -9,6 +9,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.twin import (
     QPUDigitalTwin,
+    TwinEvidenceEnvelope,
+    TwinEvidenceReport,
     TwinExperiment,
     TwinHardwareReport,
     TwinPrediction,
@@ -38,8 +40,15 @@ def _chip_info():
 def test_twin_namespace_is_small_and_domain_named():
     import flagquantum.twin as fqt
 
+    assert fq.twin is fqt
+    assert "twin" in fq.__all__
     assert fqt.__all__ == (
         "QPUDigitalTwin",
+        "from_noise_model",
+        "from_quafu_chip_info",
+        "TwinEvidenceEnvelope",
+        "TwinEvidenceReport",
+        "TwinEvidenceStatus",
         "TwinExperiment",
         "TwinHardwareReport",
         "TwinPrediction",
@@ -50,18 +59,60 @@ def test_twin_namespace_is_small_and_domain_named():
         value in fqt.__all__
         for value in (
             QPUDigitalTwin.__name__,
+            "from_noise_model",
+            "from_quafu_chip_info",
+            TwinEvidenceEnvelope.__name__,
+            TwinEvidenceReport.__name__,
             TwinExperiment.__name__,
             TwinHardwareReport.__name__,
             TwinPrediction.__name__,
             TwinSnapshot.__name__,
             TwinValidationReport.__name__,
+            "TwinEvidenceStatus",
         )
     )
 
 
+def test_twin_builds_from_a_provider_neutral_device_noise_model():
+    from flagquantum.noise import (
+        DeviceNoiseProfile,
+        GateDuration,
+        NoiseModel,
+        QubitNoiseCalibration,
+    )
+
+    profile = DeviceNoiseProfile(
+        qubits=(
+            QubitNoiseCalibration(0, t1=40_000.0, t2=60_000.0),
+            QubitNoiseCalibration(1, t1=35_000.0, t2=50_000.0),
+        ),
+        gate_durations=(GateDuration("h", 64.0), GateDuration("cx", 224.0)),
+        source="example-provider-calibration",
+        captured_at="2026-08-14T10:30:00+08:00",
+    )
+    device_model = NoiseModel.from_device_profile(profile)
+
+    twin = fq.twin.from_noise_model(
+        device_model,
+        target="example-provider:example-qpu",
+        qubits=(3, 4),
+    )
+    advanced = QPUDigitalTwin.from_noise_model(
+        device_model,
+        provider="example-provider",
+        backend_name="example-qpu",
+        physical_qubits=(3, 4),
+    )
+
+    assert twin.snapshot.provider == "example-provider"
+    assert twin.snapshot.backend_name == "example-qpu"
+    assert twin.snapshot == advanced.snapshot
+    assert twin.noise_model.identity == advanced.noise_model.identity
+
+
 def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
 
     prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
@@ -75,6 +126,20 @@ def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
     assert prediction.snapshot_identity == twin.snapshot.identity
     assert sum(prediction.twin_probabilities) == pytest.approx(1.0, abs=1e-6)
     assert prediction.total_variation_from_ideal > 0
+
+
+@pytest.mark.parametrize(
+    "target",
+    ("quafu", ":Baihua", "quafu:"),
+)
+def test_concise_twin_factories_reject_invalid_targets(target):
+    with pytest.raises(ValueError, match="provider:backend"):
+        fq.twin.from_quafu_chip_info(_chip_info(), target=target, qubits=(3, 4))
+
+
+def test_quafu_factory_rejects_another_provider_target():
+    with pytest.raises(ValueError, match="requires target='quafu:<backend>'"):
+        fq.twin.from_quafu_chip_info(_chip_info(), target="other:Baihua", qubits=(3, 4))
 
 
 def test_twin_applies_readout_and_compares_hardware_counts():

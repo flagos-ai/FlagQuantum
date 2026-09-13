@@ -1,0 +1,39 @@
+{
+  "schema": "flagquantum.twin_v1_candidate_contract",
+  "version": "1.0",
+  "status": "implemented_pending_freeze",
+  "implementation_authorized": true,
+  "root_manifest_authorized": true,
+  "root_addition": "twin",
+  "namespace": "flagquantum.twin",
+  "root_object_kind": "module",
+  "provider_neutral_model_entry": "from_noise_model",
+  "native_provider_adapters": [
+    "from_quafu_chip_info",
+    "QPUDigitalTwin.from_quafu_provider"
+  ],
+  "public_symbols": [
+    "QPUDigitalTwin",
+    "from_noise_model",
+    "from_quafu_chip_info",
+    "TwinEvidenceEnvelope",
+    "TwinEvidenceReport",
+    "TwinEvidenceStatus",
+    "TwinExperiment",
+    "TwinHardwareReport",
+    "TwinPrediction",
+    "TwinSnapshot",
+    "TwinValidationReport"
+  ],
+  "public_signatures": {
+    "from_noise_model": "(noise_model: 'NoiseModel', *, target: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
+    "from_quafu_chip_info": "(chip_info: 'Mapping[str, Any]', *, target: 'str', qubits: 'Sequence[int]', readout_confusion_matrices: 'Sequence[Sequence[Sequence[float]]] | None' = None, correlated_readout_confusion_matrix: 'Sequence[Sequence[float]] | None' = None) -> 'QPUDigitalTwin'"
+  },
+  "forbidden_responsibilities": [
+    "application_policy",
+    "agent_protocol",
+    "natural_language_interface",
+    "model_context_protocol_server"
+  ],
+  "candidate_is_frozen_contract": false
+}
