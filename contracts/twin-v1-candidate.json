@@ -7,13 +7,15 @@
   "root_addition": "twin",
   "namespace": "flagquantum.twin",
   "root_object_kind": "module",
-  "provider_neutral_model_entry": "QPUDigitalTwin.from_noise_model",
+  "provider_neutral_model_entry": "from_noise_model",
   "native_provider_adapters": [
-    "QPUDigitalTwin.from_quafu_chip_info",
+    "from_quafu_chip_info",
     "QPUDigitalTwin.from_quafu_provider"
   ],
   "public_symbols": [
     "QPUDigitalTwin",
+    "from_noise_model",
+    "from_quafu_chip_info",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
@@ -23,6 +25,10 @@
     "TwinSnapshot",
     "TwinValidationReport"
   ],
+  "public_signatures": {
+    "from_noise_model": "(noise_model: 'NoiseModel', *, provider: 'str', backend: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
+    "from_quafu_chip_info": "(chip_info: 'Mapping[str, Any]', *, backend: 'str', qubits: 'Sequence[int]', readout_confusion_matrices: 'Sequence[Sequence[Sequence[float]]] | None' = None, correlated_readout_confusion_matrix: 'Sequence[Sequence[float]] | None' = None) -> 'QPUDigitalTwin'"
+  },
   "forbidden_responsibilities": [
     "application_policy",
     "agent_protocol",

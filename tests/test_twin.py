@@ -44,6 +44,8 @@ def test_twin_namespace_is_small_and_domain_named():
     assert "twin" in fq.__all__
     assert fqt.__all__ == (
         "QPUDigitalTwin",
+        "from_noise_model",
+        "from_quafu_chip_info",
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
         "TwinEvidenceStatus",
@@ -57,6 +59,8 @@ def test_twin_namespace_is_small_and_domain_named():
         value in fqt.__all__
         for value in (
             QPUDigitalTwin.__name__,
+            "from_noise_model",
+            "from_quafu_chip_info",
             TwinEvidenceEnvelope.__name__,
             TwinEvidenceReport.__name__,
             TwinExperiment.__name__,
@@ -88,7 +92,13 @@ def test_twin_builds_from_a_provider_neutral_device_noise_model():
     )
     device_model = NoiseModel.from_device_profile(profile)
 
-    twin = fq.twin.QPUDigitalTwin.from_noise_model(
+    twin = fq.twin.from_noise_model(
+        device_model,
+        provider="example-provider",
+        backend="example-qpu",
+        qubits=(3, 4),
+    )
+    advanced = QPUDigitalTwin.from_noise_model(
         device_model,
         provider="example-provider",
         backend_name="example-qpu",
@@ -97,12 +107,12 @@ def test_twin_builds_from_a_provider_neutral_device_noise_model():
 
     assert twin.snapshot.provider == "example-provider"
     assert twin.snapshot.backend_name == "example-qpu"
+    assert twin.snapshot == advanced.snapshot
+    assert twin.noise_model.identity == advanced.noise_model.identity
 
 
 def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
-    )
+    twin = fq.twin.from_quafu_chip_info(_chip_info(), backend="Baihua", qubits=(3, 4))
 
     prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 

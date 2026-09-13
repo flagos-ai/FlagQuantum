@@ -335,6 +335,19 @@ def validate() -> tuple[str, ...]:
             errors.append(f"authorized Twin root namespace missing: {name}")
         if not isinstance(value, ModuleType) or value.__name__ != "flagquantum.twin":
             errors.append("authorized Twin root object must be flagquantum.twin")
+        else:
+            missing_symbols = sorted(
+                set(twin_contract["public_symbols"]) - set(value.__all__)
+            )
+            if missing_symbols:
+                errors.append(
+                    "authorized Twin public API missing: " + ", ".join(missing_symbols)
+                )
+            for symbol, expected_signature in twin_contract[
+                "public_signatures"
+            ].items():
+                if str(inspect.signature(getattr(value, symbol))) != expected_signature:
+                    errors.append(f"authorized Twin API signature changed: {symbol}")
     return tuple(errors)
 
 

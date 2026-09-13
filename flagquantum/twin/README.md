@@ -17,11 +17,11 @@ Twin identity:
 ```python
 import flagquantum as fq
 
-twin = fq.twin.QPUDigitalTwin.from_noise_model(
+twin = fq.twin.from_noise_model(
     device_noise_model,
     provider="your-provider",
-    backend_name="your-qpu",
-    physical_qubits=(12, 13),
+    backend="your-qpu",
+    qubits=(12, 13),
 )
 prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 ```
@@ -34,10 +34,10 @@ calibration into FlagQuantum's provider-neutral noise and device-profile types.
 Quafu calibration conversion is built in, so no custom adapter is needed:
 
 ```python
-twin = fq.twin.QPUDigitalTwin.from_quafu_chip_info(
+twin = fq.twin.from_quafu_chip_info(
     chip_info,
-    backend_name="Baihua",
-    physical_qubits=(3, 4),
+    backend="Baihua",
+    qubits=(3, 4),
 )
 prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 report = prediction.compare_counts({"00": 500, "11": 500})

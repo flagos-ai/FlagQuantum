@@ -11,7 +11,7 @@ change remains additive and does not promote a capability-maturity claim.
 
 - `fq.twin` is a provider-neutral FlagQuantum framework namespace.
 - Any QPU integration can build a Twin from a FlagQuantum device-backed
-  `NoiseModel` through `QPUDigitalTwin.from_noise_model(...)`.
+  `NoiseModel` through `fq.twin.from_noise_model(...)`.
 - Quafu calibration conversion and provider access are supported natively, but
   Quafu does not define the general Twin abstraction.
 - This repository contains Python modeling, prediction, evidence, validation,
@@ -64,6 +64,23 @@ without implying empirical validity or deciding what an application should do.
 ## Public surface
 
 ```python
+def from_noise_model(
+    noise_model: NoiseModel,
+    *,
+    provider: str,
+    backend: str,
+    qubits: Sequence[int],
+) -> QPUDigitalTwin: ...
+
+def from_quafu_chip_info(
+    chip_info: Mapping[str, Any],
+    *,
+    backend: str,
+    qubits: Sequence[int],
+    readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
+    correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
+) -> QPUDigitalTwin: ...
+
 class QPUDigitalTwin:
     def evidence_report(
         self,
@@ -77,7 +94,8 @@ class QPUDigitalTwin:
 exported only from `flagquantum.twin`.
 
 The module itself is available as the lazily loaded `fq.twin` root namespace.
-No Twin class or provider-specific constructor is flattened into the root API.
+The short construction functions live inside that namespace; no Twin class or
+provider-specific constructor is flattened into the package root.
 This narrowly supersedes Proposal 017's decision not to add a root namespace;
 all other Proposal 017 ownership and maturity boundaries remain unchanged.
 
@@ -99,6 +117,8 @@ identifiers. No compatibility alias is introduced.
 - The public result contains no actionable, routing, or approval field.
 - `import flagquantum as fq` exposes the generic API through `fq.twin`.
 - Generic construction and native Quafu construction are tested separately.
+- The short construction functions are equivalent to the corresponding class
+  factories and have machine-checked signatures.
 - Scenario tests cover all four evidence paths and deterministic identities.
 - Documentation states that the bound applies to measured output distributions,
   not full quantum-state amplitudes.
