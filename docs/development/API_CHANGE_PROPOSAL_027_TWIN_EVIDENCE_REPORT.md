@@ -2,9 +2,21 @@
 
 ## Status
 
-**Proposed for API-owner review.** The implementation is intentionally additive
-and remains in the candidate `flagquantum.twin` namespace. It does not change the
-stable root namespace or promote a capability-maturity claim.
+**Implementation authorized; pending API freeze review.** On 2026-09-13, an
+explicit user directive established `fq.twin` as the framework entry point for
+constructing digital twins of arbitrary QPUs, with native Quafu support. The
+change remains additive and does not promote a capability-maturity claim.
+
+## Framework boundary
+
+- `fq.twin` is a provider-neutral FlagQuantum framework namespace.
+- Any QPU integration can build a Twin from a FlagQuantum device-backed
+  `NoiseModel` through `QPUDigitalTwin.from_noise_model(...)`.
+- Quafu calibration conversion and provider access are supported natively, but
+  Quafu does not define the general Twin abstraction.
+- This repository contains Python modeling, prediction, evidence, validation,
+  and provider integration APIs. It contains no natural-language interface,
+  agent protocol, MCP server, or application policy.
 
 ## Problem
 
@@ -33,8 +45,8 @@ validated accuracy.
   per-shot success probability.
 - Keep task submission, polling, model training, promotion policy, and Q-ATLAS
   state machines outside this change.
-- Keep `actionable`, safe-to-use, routing, submission, and approval decisions in
-  FlagQAI or another application policy layer. FlagQuantum reports facts only.
+- Keep actionable, safe-to-use, routing, and approval decisions outside the
+  Twin model and evidence-report API. FlagQuantum reports facts only.
 
 ## Evidence semantics
 
@@ -64,6 +76,11 @@ class QPUDigitalTwin:
 `TwinEvidenceEnvelope`, `TwinEvidenceReport`, and `TwinEvidenceStatus` are
 exported only from `flagquantum.twin`.
 
+The module itself is available as the lazily loaded `fq.twin` root namespace.
+No Twin class or provider-specific constructor is flattened into the root API.
+This narrowly supersedes Proposal 017's decision not to add a root namespace;
+all other Proposal 017 ownership and maturity boundaries remain unchanged.
+
 ## Compatibility
 
 The proposal is additive. Existing `predict()` and validation behavior remain
@@ -80,6 +97,8 @@ identifiers. No compatibility alias is introduced.
   `out_of_scope`.
 - Every error bound requires a confidence level.
 - The public result contains no actionable, routing, or approval field.
+- `import flagquantum as fq` exposes the generic API through `fq.twin`.
+- Generic construction and native Quafu construction are tested separately.
 - Scenario tests cover all four evidence paths and deterministic identities.
 - Documentation states that the bound applies to measured output distributions,
   not full quantum-state amplitudes.

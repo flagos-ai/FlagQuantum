@@ -43,12 +43,13 @@ __all__ = (
     "train",
     "__version__",
     "experimental",
+    "twin",
 )
 
 
 def __getattr__(name: str) -> Any:
-    if name == "experimental":
-        return import_module(".experimental", __name__)
+    if name in {"experimental", "twin"}:
+        return import_module(f".{name}", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
     if name in {

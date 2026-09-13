@@ -1,0 +1,33 @@
+{
+  "schema": "flagquantum.twin_v1_candidate_contract",
+  "version": "1.0",
+  "status": "implemented_pending_freeze",
+  "implementation_authorized": true,
+  "root_manifest_authorized": true,
+  "root_addition": "twin",
+  "namespace": "flagquantum.twin",
+  "root_object_kind": "module",
+  "provider_neutral_model_entry": "QPUDigitalTwin.from_noise_model",
+  "native_provider_adapters": [
+    "QPUDigitalTwin.from_quafu_chip_info",
+    "QPUDigitalTwin.from_quafu_provider"
+  ],
+  "public_symbols": [
+    "QPUDigitalTwin",
+    "TwinEvidenceEnvelope",
+    "TwinEvidenceReport",
+    "TwinEvidenceStatus",
+    "TwinExperiment",
+    "TwinHardwareReport",
+    "TwinPrediction",
+    "TwinSnapshot",
+    "TwinValidationReport"
+  ],
+  "forbidden_responsibilities": [
+    "application_policy",
+    "agent_protocol",
+    "natural_language_interface",
+    "model_context_protocol_server"
+  ],
+  "candidate_is_frozen_contract": false
+}

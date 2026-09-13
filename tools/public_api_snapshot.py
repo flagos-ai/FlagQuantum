@@ -34,6 +34,7 @@ EXTENSION_PROTOCOL_CONTRACT = (
 OBSERVABLE_OUTPUTS_CONTRACT = (
     ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 )
+TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -197,6 +198,7 @@ def validate() -> tuple[str, ...]:
     jobs_contract = json.loads(
         (ROOT / "contracts/remote-jobs-v1-candidate.json").read_text()
     )
+    twin_contract = json.loads(TWIN_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -241,6 +243,11 @@ def validate() -> tuple[str, ...]:
     authorized_changes.update(observable_outputs_contract.get("root_removals", ()))
     if jobs_contract.get("implementation_authorized") is True:
         authorized_changes.update(jobs_contract["root_additions"])
+    if (
+        twin_contract.get("implementation_authorized") is True
+        and twin_contract.get("root_manifest_authorized") is True
+    ):
+        authorized_changes.add(str(twin_contract["root_addition"]))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -319,6 +326,15 @@ def validate() -> tuple[str, ...]:
         for name in jobs_contract["root_additions"]:
             if name not in names or name not in fq.__all__:
                 errors.append(f"authorized remote job root API missing: {name}")
+    if twin_contract.get("implementation_authorized") is True:
+        import flagquantum as fq
+
+        name = str(twin_contract["root_addition"])
+        value = getattr(fq, name)
+        if name not in names or name not in fq.__all__:
+            errors.append(f"authorized Twin root namespace missing: {name}")
+        if not isinstance(value, ModuleType) or value.__name__ != "flagquantum.twin":
+            errors.append("authorized Twin root object must be flagquantum.twin")
     return tuple(errors)
 
 

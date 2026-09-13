@@ -34,7 +34,8 @@
     "run",
     "samples",
     "submit",
-    "train"
+    "train",
+    "twin"
   ],
   "verification": {
     "Circuit": "tests/unit/test_ir_public_api.py::test_public_api_snapshot_and_internal_root_exports_are_closed",
@@ -69,7 +70,8 @@
     "samples": "tests/api_contract/test_observable_outputs.py::test_probability_sample_and_count_outputs",
     "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop",
     "submit": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore",
-    "restore_job": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore"
+    "restore_job": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore",
+    "twin": "tests/test_twin.py::test_twin_namespace_is_small_and_domain_named"
   },
   "experimental_stability": "none"
 }

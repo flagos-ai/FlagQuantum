@@ -40,6 +40,8 @@ def _chip_info():
 def test_twin_namespace_is_small_and_domain_named():
     import flagquantum.twin as fqt
 
+    assert fq.twin is fqt
+    assert "twin" in fq.__all__
     assert fqt.__all__ == (
         "QPUDigitalTwin",
         "TwinEvidenceEnvelope",
@@ -65,6 +67,36 @@ def test_twin_namespace_is_small_and_domain_named():
             "TwinEvidenceStatus",
         )
     )
+
+
+def test_twin_builds_from_a_provider_neutral_device_noise_model():
+    from flagquantum.noise import (
+        DeviceNoiseProfile,
+        GateDuration,
+        NoiseModel,
+        QubitNoiseCalibration,
+    )
+
+    profile = DeviceNoiseProfile(
+        qubits=(
+            QubitNoiseCalibration(0, t1=40_000.0, t2=60_000.0),
+            QubitNoiseCalibration(1, t1=35_000.0, t2=50_000.0),
+        ),
+        gate_durations=(GateDuration("h", 64.0), GateDuration("cx", 224.0)),
+        source="example-provider-calibration",
+        captured_at="2026-08-14T10:30:00+08:00",
+    )
+    device_model = NoiseModel.from_device_profile(profile)
+
+    twin = fq.twin.QPUDigitalTwin.from_noise_model(
+        device_model,
+        provider="example-provider",
+        backend_name="example-qpu",
+        physical_qubits=(3, 4),
+    )
+
+    assert twin.snapshot.provider == "example-provider"
+    assert twin.snapshot.backend_name == "example-qpu"
 
 
 def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
