@@ -49,6 +49,19 @@ report = prediction.compare_counts({"00": 500, "11": 500})
 The counts above illustrate the comparison interface; they are not a live
 hardware observation. Use `TwinExperiment` to bind a real submission and result.
 
+Persist the complete model when predictions must remain reproducible across
+processes or calibration changes:
+
+```python
+fq.twin.dump_twin(twin, "qpu-twin.json")
+restored = fq.twin.load_twin("qpu-twin.json")
+prediction = restored.predict(fq.Circuit(2).h(0).cx(0, 1))
+```
+
+The strict v1 model artifact contains the frozen snapshot and provider-neutral
+noise model, but no credentials or task receipt. Loading is offline and does not
+refresh calibration, submit work, or claim that the saved model remains current.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:

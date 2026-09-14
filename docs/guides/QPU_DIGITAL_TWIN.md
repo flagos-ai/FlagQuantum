@@ -43,6 +43,32 @@ twin = fq.twin.from_quafu_chip_info(
 Fetching calibration performs provider I/O. Constructing the Twin from the
 returned dictionary is local and does not schedule a QPU task.
 
+## Save and restore the model
+
+Persist the calibrated model before its source calibration changes:
+
+```python
+fq.twin.dump_twin(twin, "shenglian-twin.json")
+```
+
+Restore the same snapshot and model in a later process:
+
+```python
+import flagquantum as fq
+
+restored = fq.twin.load_twin("shenglian-twin.json")
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+prediction = restored.predict(circuit)
+
+print(restored.snapshot.identity)
+print(prediction.twin_probabilities)
+```
+
+Loading is entirely offline and reproduces the frozen model identity; it does
+not fetch current calibration or contact a provider. The private mode-0600 file
+contains the full provider-neutral noise model but no credential or task
+receipt. It is a model artifact, not proof that the model is still accurate.
+
 ## Freeze a hardware validation
 
 ```python
@@ -165,7 +191,8 @@ application responsibilities outside FlagQuantum.
 
 ## Version 1 compatibility
 
-The public `fq.twin` v1 API, `flagquantum.twin_submission.v1`,
+The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
+`flagquantum.twin_submission.v1`,
 `flagquantum.twin_evidence_envelope.v1`, and
 `flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,

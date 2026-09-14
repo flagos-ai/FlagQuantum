@@ -34,6 +34,18 @@ prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 report = prediction.compare_counts({"00": 500, "11": 500})
 ```
 
+Persist and restore that exact model without provider access:
+
+```python
+fq.twin.dump_twin(twin, "qpu-twin.json")
+restored = fq.twin.load_twin("qpu-twin.json")
+assert restored.snapshot.identity == twin.snapshot.identity
+```
+
+The model artifact is separate from evidence and submission artifacts. It
+contains the full provider-neutral noise specification but no credentials,
+remote task, accuracy proof, or automatic refresh behavior.
+
 For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:
 
