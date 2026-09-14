@@ -125,6 +125,85 @@ def test_validation_history_is_json_ready_without_collapsing_metrics():
     json.dumps(payload, allow_nan=False)
 
 
+def test_validation_history_round_trip_is_private_and_idempotent(tmp_path):
+    history = fq.twin.build_validation_history(_observations())
+    destination = tmp_path / "validation-history.json"
+
+    fq.twin.dump_validation_history(history, destination)
+    original = destination.read_bytes()
+    restored = fq.twin.load_validation_history(destination)
+    fq.twin.dump_validation_history(history, destination)
+
+    assert restored == history
+    assert destination.read_bytes() == original
+    assert destination.stat().st_mode & 0o777 == 0o600
+
+
+def test_validation_history_refuses_different_or_invalid_existing_file(tmp_path):
+    history = fq.twin.build_validation_history(_observations())
+    destination = tmp_path / "validation-history.json"
+    fq.twin.dump_validation_history(history, destination)
+    changed_observations = list(_observations())
+    twin, series = changed_observations[-1]
+    changed_observations[-1] = (
+        twin,
+        replace(
+            series,
+            mean_twin_hardware_total_variation=0.08,
+            maximum_twin_hardware_total_variation=0.08,
+            verified_tv_error_bound=0.13,
+        ),
+    )
+    different = fq.twin.build_validation_history(changed_observations)
+
+    with pytest.raises(ValueError, match="different Twin validation history"):
+        fq.twin.dump_validation_history(different, destination)
+
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("not-json\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid Twin validation history"):
+        fq.twin.dump_validation_history(history, invalid)
+    assert invalid.read_text(encoding="utf-8") == "not-json\n"
+
+
+def test_validation_history_loader_rejects_tampering_and_non_objects(tmp_path):
+    history = fq.twin.build_validation_history(_observations())
+    destination = tmp_path / "validation-history.json"
+    fq.twin.dump_validation_history(history, destination)
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    payload["mean_twin_qpu_agreements"][0] = 0.99
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid Twin validation history"):
+        fq.twin.load_validation_history(destination)
+
+    destination.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a JSON object"):
+        fq.twin.load_validation_history(destination)
+
+
+def test_validation_history_loader_rejects_unknown_and_malformed_series(tmp_path):
+    history = fq.twin.build_validation_history(_observations())
+    payload = history.to_dict()
+    payload["unexpected"] = True
+    destination = tmp_path / "unexpected.json"
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="fields do not match"):
+        fq.twin.load_validation_history(destination)
+
+    payload = history.to_dict()
+    payload["validation_series"] = [False]
+    destination = tmp_path / "malformed.json"
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="series must be JSON objects"):
+        fq.twin.load_validation_history(destination)
+
+
+def test_validation_history_persistence_requires_public_record(tmp_path):
+    with pytest.raises(TypeError, match="TwinValidationHistory"):
+        fq.twin.dump_validation_history(object(), tmp_path / "history.json")
+
+
 def test_validation_history_rejects_snapshot_mismatch():
     first, second = _observations()[:2]
     with pytest.raises(ValueError, match="does not match its Twin snapshot"):

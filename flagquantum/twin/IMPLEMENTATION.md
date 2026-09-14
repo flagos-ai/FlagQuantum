@@ -153,6 +153,8 @@ history = fq.twin.build_validation_history(
         (current_twin, current_series),
     ]
 )
+fq.twin.dump_validation_history(history, "validation-history.json")
+history = fq.twin.load_validation_history("validation-history.json")
 print(history.mean_twin_qpu_agreements)
 print(history.mean_ideal_qpu_agreements)
 print(history.mean_qpu_repeatabilities)
@@ -164,6 +166,11 @@ The paired input makes snapshot binding explicit. All observations must share
 one QPU mapping and fixed circuit, appear in strictly increasing calibration
 time, and use globally distinct hardware reports. Construction is offline and
 does not assign a trust threshold or mutate a Twin.
+
+Validation-history persistence uses a strict canonical schema. The loader
+reconstructs the nested validation series and recomputes derived agreement and
+uncertainty arrays; the private writer is idempotent only for identical content
+and never replaces a different or malformed artifact.
 
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted

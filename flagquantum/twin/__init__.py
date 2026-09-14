@@ -31,7 +31,12 @@ from .series import (
 )
 from .submission import TwinSubmission, dump_submission, load_submission
 from .validation import TwinValidationReport
-from .validation_history import TwinValidationHistory, build_validation_history
+from .validation_history import (
+    TwinValidationHistory,
+    build_validation_history,
+    dump_validation_history,
+    load_validation_history,
+)
 
 __all__ = (
     "QPUDigitalTwin",
@@ -44,11 +49,13 @@ __all__ = (
     "dump_evidence",
     "dump_submission",
     "dump_twin",
+    "dump_validation_history",
     "dump_validation_series",
     "load_calibration_history",
     "load_evidence",
     "load_submission",
     "load_twin",
+    "load_validation_history",
     "load_validation_series",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",

@@ -192,6 +192,8 @@ observations = [
     ),
 ]
 history = fq.twin.build_validation_history(observations)
+fq.twin.dump_validation_history(history, "validation-history.json")
+history = fq.twin.load_validation_history("validation-history.json")
 
 print(history.mean_twin_qpu_agreements)
 print(history.mean_ideal_qpu_agreements)
@@ -204,6 +206,11 @@ The builder verifies snapshot identity, target, ordered physical mapping,
 circuit identity and structure, chronological order, and globally distinct
 hardware reports. These values remain measurement-distribution comparisons;
 they are not state fidelity or a workload-routing decision.
+
+The canonical history file is private, credential-free, and safe to load
+offline. Saving the same content is idempotent; different or invalid existing
+content is never replaced. Loading recomputes every derived metric from the
+nested validation series and rejects tampering.
 
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed

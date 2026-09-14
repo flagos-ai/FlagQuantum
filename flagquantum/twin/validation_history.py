@@ -2,14 +2,41 @@
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Sequence
+from os import PathLike
+from pathlib import Path
+from typing import Any, Mapping, Sequence
 
 from .model import QPUDigitalTwin
 from .series import TwinValidationSeries
 
 _HISTORY_SCHEMA = "flagquantum.twin_validation_history.v1"
+_HISTORY_FIELDS = {
+    "schema",
+    "provider",
+    "backend_name",
+    "physical_qubits",
+    "circuit_identity",
+    "snapshot_identities",
+    "captured_at",
+    "observation_count",
+    "mean_twin_qpu_agreements",
+    "mean_ideal_qpu_agreements",
+    "mean_qpu_repeatabilities",
+    "simultaneous_finite_shot_tv_radii",
+    "confidence_levels",
+    "verified_tv_error_bounds",
+    "validation_series",
+}
+
+
+def _canonical(payload: Mapping[str, Any]) -> str:
+    return json.dumps(
+        dict(payload), sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
 
 
 @dataclass(frozen=True)
@@ -189,4 +216,103 @@ def build_validation_history(
     )
 
 
-__all__ = ("build_validation_history", "TwinValidationHistory")
+def load_validation_history(
+    path: str | PathLike[str],
+) -> TwinValidationHistory:
+    """Load one validation history offline without contacting a provider.
+
+    Examples:
+        history = fq.twin.load_validation_history("validation-history.json")
+
+    Raises:
+        ValueError: If the file is not a canonical v1 validation history.
+    """
+
+    source = Path(path)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"Cannot load Twin validation history from {source}"
+        ) from error
+    if not isinstance(payload, Mapping):
+        raise ValueError("Twin validation-history file must contain a JSON object")
+    actual = set(payload)
+    if actual != _HISTORY_FIELDS:
+        raise ValueError(
+            "Twin validation-history fields do not match the v1 schema: "
+            f"missing={sorted(_HISTORY_FIELDS - actual)}, "
+            f"unexpected={sorted(actual - _HISTORY_FIELDS)}"
+        )
+    series_payloads = payload["validation_series"]
+    if not isinstance(series_payloads, list) or any(
+        not isinstance(item, Mapping) for item in series_payloads
+    ):
+        raise ValueError("Twin validation-history series must be JSON objects")
+    try:
+        history = TwinValidationHistory(
+            schema=str(payload["schema"]),
+            provider=str(payload["provider"]),
+            backend_name=str(payload["backend_name"]),
+            physical_qubits=tuple(payload["physical_qubits"]),
+            circuit_identity=str(payload["circuit_identity"]),
+            snapshot_identities=tuple(payload["snapshot_identities"]),
+            captured_at=tuple(payload["captured_at"]),
+            validation_series=tuple(
+                TwinValidationSeries.from_dict(item) for item in series_payloads
+            ),
+        )
+        if _canonical(history.to_dict()) != _canonical(payload):
+            raise ValueError("Twin validation history is not in canonical v1 form")
+        return history
+    except (TypeError, ValueError, KeyError) as error:
+        raise ValueError("Invalid Twin validation history") from error
+
+
+def dump_validation_history(
+    history: TwinValidationHistory,
+    path: str | PathLike[str],
+) -> None:
+    """Write one private history file without replacing different content.
+
+    Examples:
+        fq.twin.dump_validation_history(history, "validation-history.json")
+
+    Raises:
+        TypeError: If ``history`` is not a Twin validation history.
+        ValueError: If the destination cannot be written safely.
+    """
+
+    if not isinstance(history, TwinValidationHistory):
+        raise TypeError("history must be a TwinValidationHistory")
+    destination = Path(path)
+    encoded = _canonical(history.to_dict()) + "\n"
+    try:
+        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(encoded)
+    except FileExistsError:
+        try:
+            existing = load_validation_history(destination)
+        except ValueError as error:
+            raise ValueError(
+                "Refusing to replace invalid Twin validation history at "
+                f"{destination}"
+            ) from error
+        if _canonical(existing.to_dict()) != _canonical(history.to_dict()):
+            raise ValueError(
+                "Refusing to replace different Twin validation history at "
+                f"{destination}"
+            )
+    except OSError as error:
+        raise ValueError(
+            f"Cannot write Twin validation history to {destination}"
+        ) from error
+
+
+__all__ = (
+    "build_validation_history",
+    "dump_validation_history",
+    "load_validation_history",
+    "TwinValidationHistory",
+)
