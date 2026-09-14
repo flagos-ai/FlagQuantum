@@ -7,6 +7,8 @@ import json
 import math
 from dataclasses import dataclass
 from itertools import combinations
+from os import PathLike
+from pathlib import Path
 from statistics import fmean
 from typing import Any, Mapping, Sequence
 
@@ -347,5 +349,155 @@ class TwinValidationSeries:
             "maximum_instruction_count": self.maximum_instruction_count,
         }
 
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> TwinValidationSeries:
+        """Restore a validation series from its strict versioned schema."""
 
-__all__ = ("TwinValidationSeries",)
+        if not isinstance(payload, Mapping):
+            raise TypeError("Twin validation series must be a mapping")
+        expected = {
+            "schema",
+            "snapshot_identity",
+            "circuit_identity",
+            "physical_qubits",
+            "report_identities",
+            "repetitions",
+            "total_shots",
+            "mean_twin_hardware_total_variation",
+            "maximum_twin_hardware_total_variation",
+            "mean_ideal_hardware_total_variation",
+            "maximum_ideal_hardware_total_variation",
+            "mean_hardware_repeatability_total_variation",
+            "maximum_hardware_repeatability_total_variation",
+            "simultaneous_finite_shot_tv_radius",
+            "verified_tv_error_bound",
+            "confidence_level",
+            "supported_operations",
+            "maximum_instruction_count",
+        }
+        actual = set(payload)
+        if actual != expected:
+            missing = sorted(expected - actual)
+            unexpected = sorted(actual - expected)
+            raise ValueError(
+                "Twin validation-series fields do not match the v1 schema: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        try:
+            return cls(
+                schema=str(payload["schema"]),
+                snapshot_identity=str(payload["snapshot_identity"]),
+                circuit_identity=str(payload["circuit_identity"]),
+                physical_qubits=tuple(payload["physical_qubits"]),
+                report_identities=tuple(payload["report_identities"]),
+                repetitions=int(payload["repetitions"]),
+                total_shots=int(payload["total_shots"]),
+                mean_twin_hardware_total_variation=float(
+                    payload["mean_twin_hardware_total_variation"]
+                ),
+                maximum_twin_hardware_total_variation=float(
+                    payload["maximum_twin_hardware_total_variation"]
+                ),
+                mean_ideal_hardware_total_variation=float(
+                    payload["mean_ideal_hardware_total_variation"]
+                ),
+                maximum_ideal_hardware_total_variation=float(
+                    payload["maximum_ideal_hardware_total_variation"]
+                ),
+                mean_hardware_repeatability_total_variation=(
+                    None
+                    if payload["mean_hardware_repeatability_total_variation"] is None
+                    else float(payload["mean_hardware_repeatability_total_variation"])
+                ),
+                maximum_hardware_repeatability_total_variation=(
+                    None
+                    if payload["maximum_hardware_repeatability_total_variation"] is None
+                    else float(
+                        payload["maximum_hardware_repeatability_total_variation"]
+                    )
+                ),
+                simultaneous_finite_shot_tv_radius=float(
+                    payload["simultaneous_finite_shot_tv_radius"]
+                ),
+                verified_tv_error_bound=float(payload["verified_tv_error_bound"]),
+                confidence_level=float(payload["confidence_level"]),
+                supported_operations=tuple(payload["supported_operations"]),
+                maximum_instruction_count=int(payload["maximum_instruction_count"]),
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError("Invalid Twin validation series") from error
+
+
+def load_validation_series(path: str | PathLike[str]) -> TwinValidationSeries:
+    """Load one validation series without contacting a provider.
+
+    Examples:
+        series = fq.twin.load_validation_series("twin-validation.json")
+
+    Raises:
+        ValueError: If the file is not a canonical v1 validation series.
+    """
+
+    source = Path(path)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"Cannot load Twin validation series from {source}") from error
+    if not isinstance(payload, Mapping):
+        raise ValueError("Twin validation-series file must contain a JSON object")
+    return TwinValidationSeries.from_dict(payload)
+
+
+def dump_validation_series(
+    series: TwinValidationSeries,
+    path: str | PathLike[str],
+) -> None:
+    """Write one canonical series without replacing different observations.
+
+    Examples:
+        fq.twin.dump_validation_series(series, "twin-validation.json")
+
+    Raises:
+        TypeError: If ``series`` is not a Twin validation series.
+        ValueError: If the destination cannot be written safely.
+    """
+
+    if not isinstance(series, TwinValidationSeries):
+        raise TypeError("series must be a TwinValidationSeries")
+    destination = Path(path)
+    encoded = (
+        json.dumps(
+            series.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    )
+    try:
+        with destination.open("x", encoding="utf-8") as stream:
+            stream.write(encoded)
+    except FileExistsError:
+        try:
+            existing = load_validation_series(destination)
+        except ValueError as error:
+            raise ValueError(
+                "Refusing to replace invalid Twin validation series at "
+                f"{destination}"
+            ) from error
+        if existing.identity != series.identity:
+            raise ValueError(
+                "Refusing to replace different Twin validation series at "
+                f"{destination}"
+            )
+    except OSError as error:
+        raise ValueError(
+            f"Cannot write Twin validation series to {destination}"
+        ) from error
+
+
+__all__ = (
+    "TwinValidationSeries",
+    "dump_validation_series",
+    "load_validation_series",
+)

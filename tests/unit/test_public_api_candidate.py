@@ -210,6 +210,18 @@ def test_twin_candidate_protects_public_method_signatures() -> None:
     assert actual == signatures
 
 
+def test_twin_candidate_protects_public_function_signatures() -> None:
+    contract = _load(TWIN)
+    signatures = contract["public_signatures"]
+    assert isinstance(signatures, dict)
+
+    actual = {
+        name: str(inspect.signature(getattr(fq.twin, name))) for name in signatures
+    }
+
+    assert actual == signatures
+
+
 def test_candidate_records_approval_but_is_not_yet_frozen() -> None:
     candidate = _load(CANDIDATE)
     rules = candidate["rules"]

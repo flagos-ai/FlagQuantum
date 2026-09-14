@@ -70,6 +70,19 @@ execution for its verified bound. Pairwise QPU repeatability still contains
 shot noise. It does not promote an unseen circuit or assume that hardware is
 stationary across observations.
 
+Persist the series separately from its reduced evidence envelope when an
+application needs to retain its display and audit metrics:
+
+```python
+fq.twin.dump_validation_series(series, "twin-validation.json")
+restored_series = fq.twin.load_validation_series("twin-validation.json")
+```
+
+The canonical JSON round-trip preserves the series identity. Existing
+different or invalid files are never overwritten. Loading is offline and does
+not contact a provider; publication and product history remain outside this
+module.
+
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted
 from a matching later hardware report into exact-circuit evidence. Supplying a

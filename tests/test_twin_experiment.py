@@ -220,19 +220,28 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
 
     provider = Provider()
     destination = tmp_path / "twin-evidence.json"
+    validation_destination = tmp_path / "twin-validation.json"
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
     monkeypatch.setattr(quafu_twin_evidence, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_evidence, "TARGET", "quafu:Baihua")
     monkeypatch.setattr(quafu_twin_evidence, "BACKEND", "Baihua")
     monkeypatch.setattr(quafu_twin_evidence, "QUBITS", (3, 4))
     monkeypatch.setattr(quafu_twin_evidence, "EVIDENCE_PATH", destination)
+    monkeypatch.setattr(
+        quafu_twin_evidence,
+        "VALIDATION_PATH",
+        validation_destination,
+    )
 
     quafu_twin_evidence.main()
 
     assert destination.is_file()
+    assert validation_destination.is_file()
     assert provider.submissions == 2
     restored = fq.twin.load_evidence(destination)
     assert restored.physical_qubits == (3, 4)
+    restored_series = fq.twin.load_validation_series(validation_destination)
+    assert restored_series.repetitions == 2
 
 
 def test_evidence_generation_rejects_custom_or_rewritten_programs():
