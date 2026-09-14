@@ -76,3 +76,6 @@ weaken or reinterpret the frozen Twin v1 contract.
 The additive prospective candidate-trial API now supports evidence-qualified
 comparison of two frozen models on one later result. It still does not automate
 calibration collection, model construction, promotion, scheduling, or routing.
+Candidate submissions can now be persisted as one strict binding containing the
+complete trial and its existing provider receipt, then restored for result
+validation without a resubmission path.

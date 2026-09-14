@@ -282,6 +282,32 @@ conservative finite-shot confidence interval excludes zero; otherwise it is
 promotion. The complete one-submission Quafu program is
 [`examples/remote/quafu_twin_candidate.py`](../../examples/remote/quafu_twin_candidate.py).
 
+Persist a submitted candidate comparison when the provider queue may outlive
+the current process:
+
+```python
+receipt = trial.experiment.submit(provider)  # submits exactly one task
+submission = fq.twin.TwinCandidateSubmission.from_receipt(trial, receipt)
+fq.twin.dump_candidate_submission(
+    submission,
+    "twin-candidate-submission.json",
+)
+
+# Run in a later process; loading and validation cannot resubmit.
+restored = fq.twin.load_candidate_submission(
+    "twin-candidate-submission.json"
+)
+result = provider.fetch_result(restored.receipt)
+evaluation = restored.validate_result(result, circuit=circuit)
+```
+
+The full submit/resume Quafu example is
+[`examples/remote/quafu_twin_candidate_resume.py`](../../examples/remote/quafu_twin_candidate_resume.py).
+Its `submit` command creates one task; its `resume` command only polls and
+fetches the retained receipt. If submission succeeds but the process exits
+before the checkpoint is written, reconcile the provider task history instead
+of submitting again.
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified

@@ -435,6 +435,48 @@ python examples/remote/quafu_twin_candidate.py
 That example loads `twin-incumbent.json`, fetches one newer Shenglian
 calibration, and explicitly submits one 1,024-shot task.
 
+### Resume a queued candidate comparison
+
+Persist the complete comparison and its one existing provider receipt
+immediately after explicit submission:
+
+```python
+receipt = trial.experiment.submit(provider)  # submits exactly one task
+submission = fq.twin.TwinCandidateSubmission.from_receipt(trial, receipt)
+fq.twin.dump_candidate_submission(
+    submission,
+    "twin-candidate-submission.json",
+)
+```
+
+A later process can fetch and validate that same task without a submission
+operation:
+
+```python
+submission = fq.twin.load_candidate_submission(
+    "twin-candidate-submission.json"
+)
+result = provider.fetch_result(submission.receipt)
+evaluation = submission.validate_result(result, circuit=circuit)
+```
+
+The restored object has no `submit()` method. Its private, create-once file
+binds the complete incumbent and candidate trial to one allowlisted provider
+receipt and rejects unknown fields, changed identities, mismatched experiments,
+or replacement with different content.
+
+For a complete two-command Quafu program, run:
+
+```bash
+python examples/remote/quafu_twin_candidate_resume.py submit
+python examples/remote/quafu_twin_candidate_resume.py resume
+```
+
+The first command is the only command that creates hardware work. If the
+provider accepted a task but the process exited before saving the checkpoint,
+reconcile the printed task ID or provider task history; do not blindly rerun
+`submit`.
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.
@@ -452,6 +494,7 @@ application responsibilities outside FlagQuantum.
 
 The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_submission.v1`,
+`flagquantum.twin_candidate_submission.v1`,
 `flagquantum.twin_evidence_envelope.v1`, and
 `flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
