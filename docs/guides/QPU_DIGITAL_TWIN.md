@@ -311,6 +311,30 @@ The optional output is canonical private JSON. Loading it verifies its strict
 schema, nested series, all cross-observation invariants, and every derived
 metric; tampered summaries and destructive replacement are rejected.
 
+To incorporate one newly validated calibration, extend the saved history
+immutably and write a new versioned artifact:
+
+```python
+import flagquantum as fq
+
+history = fq.twin.load_validation_history("shenglian-history-state-02.json")
+later_twin = fq.twin.load_twin("shenglian-state-03.json")
+later_series = fq.twin.load_validation_series("shenglian-validation-03.json")
+
+updated = history.append(later_twin, later_series)
+fq.twin.dump_validation_history(updated, "shenglian-history-state-03.json")
+
+print(updated.captured_at[-1])
+print(updated.mean_twin_qpu_agreements[-1])
+print(updated.verified_tv_error_bounds[-1])
+```
+
+The original object and file remain unchanged. The append fails if the new
+observation is out of order, repeats a snapshot or hardware report, changes the
+target, mapping, circuit identity or structure, or is not bound to the supplied
+Twin. Scheduling, collecting, validating and approving new hardware evidence
+remain explicit operations outside this method.
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.

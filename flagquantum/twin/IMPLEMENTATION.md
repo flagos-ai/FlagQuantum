@@ -172,6 +172,21 @@ reconstructs the nested validation series and recomputes derived agreement and
 uncertainty arrays; the private writer is idempotent only for identical content
 and never replaces a different or malformed artifact.
 
+Incremental evolution is immutable and append-only:
+
+```python
+history = fq.twin.load_validation_history("validation-history-state-02.json")
+later_twin = fq.twin.load_twin("qpu-state-03.json")
+later_series = fq.twin.load_validation_series("validation-state-03.json")
+
+updated = history.append(later_twin, later_series)
+fq.twin.dump_validation_history(updated, "validation-history-state-03.json")
+```
+
+The method reruns the complete history invariants and never mutates the model,
+the previous history, or its persisted artifact. The framework does not decide
+when to collect the next observation.
+
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted
 from a matching later hardware report into exact-circuit evidence. Supplying a

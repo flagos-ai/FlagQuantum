@@ -138,6 +138,46 @@ class TwinValidationHistory:
     def verified_tv_error_bounds(self) -> tuple[float, ...]:
         return tuple(item.verified_tv_error_bound for item in self.validation_series)
 
+    def append(
+        self,
+        twin: QPUDigitalTwin,
+        series: TwinValidationSeries,
+    ) -> TwinValidationHistory:
+        """Return a new history with one later bound observation.
+
+        Examples:
+            updated = history.append(later_twin, later_series)
+
+        Raises:
+            TypeError: If ``twin`` or ``series`` has the wrong public type.
+            ValueError: If the observation is not the next comparable state.
+        """
+
+        if not isinstance(twin, QPUDigitalTwin):
+            raise TypeError("twin must be a QPUDigitalTwin")
+        if not isinstance(series, TwinValidationSeries):
+            raise TypeError("series must be a TwinValidationSeries")
+        snapshot = twin.snapshot
+        if (
+            snapshot.provider,
+            snapshot.backend_name,
+            snapshot.physical_qubits,
+        ) != (self.provider, self.backend_name, self.physical_qubits):
+            raise ValueError(
+                "appended observation must use the same target and mapping"
+            )
+        if series.snapshot_identity != snapshot.identity:
+            raise ValueError("validation series does not match its Twin snapshot")
+        return type(self)(
+            provider=self.provider,
+            backend_name=self.backend_name,
+            physical_qubits=self.physical_qubits,
+            circuit_identity=self.circuit_identity,
+            snapshot_identities=(*self.snapshot_identities, snapshot.identity),
+            captured_at=(*self.captured_at, snapshot.captured_at),
+            validation_series=(*self.validation_series, series),
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema": self.schema,
