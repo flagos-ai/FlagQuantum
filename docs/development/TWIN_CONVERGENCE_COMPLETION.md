@@ -72,3 +72,7 @@ Migration completion does not claim pulse-level equivalence, arbitrary-circuit
 accuracy, continuous self-evolution, or validity across calibration windows.
 Those are future, additive capabilities and evidence programs. They must not
 weaken or reinterpret the frozen Twin v1 contract.
+
+The additive prospective candidate-trial API now supports evidence-qualified
+comparison of two frozen models on one later result. It still does not automate
+calibration collection, model construction, promotion, scheduling, or routing.

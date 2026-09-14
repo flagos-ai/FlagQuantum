@@ -373,6 +373,68 @@ snapshot identities and capture times. It deliberately reports correlation in
 time without claiming that calibration drift caused a prediction change. It
 does not choose a threshold, retrain or promote a Twin, or submit hardware.
 
+## Compare an incumbent and candidate prospectively
+
+Freeze both model predictions before collecting one future QPU result:
+
+```python
+import flagquantum as fq
+
+incumbent = fq.twin.load_twin("twin-incumbent.json")
+candidate = fq.twin.from_quafu_chip_info(
+    current_chip_info,
+    target="quafu:Shenglian",
+    qubits=incumbent.snapshot.physical_qubits,
+)
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+trial = fq.twin.prepare_candidate_trial(
+    incumbent,
+    candidate,
+    circuit,
+    name="candidate-bell",
+    shots=1024,
+)
+
+# This is the workflow's only QPU submission.
+receipt = trial.experiment.submit(provider)
+result = provider.fetch_result(receipt)
+evaluation = trial.validate_result(
+    result,
+    receipt=receipt,
+    circuit=circuit,
+    confidence_level=0.95,
+)
+
+print(evaluation.decision)
+print(f"incumbent agreement: {1 - evaluation.incumbent_hardware_total_variation:.2%}")
+print(f"candidate agreement: {1 - evaluation.candidate_hardware_total_variation:.2%}")
+print(
+    "candidate improvement interval:",
+    evaluation.candidate_improvement_lower_bound,
+    evaluation.candidate_improvement_upper_bound,
+)
+```
+
+The candidate must be a later snapshot of the same target and ordered physical
+mapping. Both predictions use one fixed circuit and are compared with the same
+hardware counts, avoiding a second task as a source of QPU variation. The
+reported improvement is incumbent TV distance minus candidate TV distance. Its
+conservative uncertainty radius is twice the finite-shot TV radius because both
+distances depend on the same empirical distribution.
+
+`improved` and `degraded` require the confidence interval to exclude zero;
+`inconclusive` means the collected shots cannot distinguish the models. This is
+not state fidelity, a causal claim, or permission to replace the incumbent.
+
+For a complete Quafu program with token checking and bounded polling, run:
+
+```bash
+python examples/remote/quafu_twin_candidate.py
+```
+
+That example loads `twin-incumbent.json`, fetches one newer Shenglian
+calibration, and explicitly submits one 1,024-shot task.
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.

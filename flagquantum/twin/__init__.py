@@ -1,5 +1,11 @@
 """Calibration-conditioned digital models of quantum processing units."""
 
+from .candidate import (
+    TwinCandidateDecision,
+    TwinCandidateEvaluation,
+    TwinCandidateTrial,
+    prepare_candidate_trial,
+)
 from .drift import (
     TwinCalibrationDrift,
     TwinGateDurationDrift,
@@ -59,8 +65,12 @@ __all__ = (
     "load_twin",
     "load_validation_history",
     "load_validation_series",
+    "prepare_candidate_trial",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
+    "TwinCandidateDecision",
+    "TwinCandidateEvaluation",
+    "TwinCandidateTrial",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
