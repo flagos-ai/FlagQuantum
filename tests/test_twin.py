@@ -11,6 +11,7 @@ from flagquantum.twin import (
     QPUDigitalTwin,
     TwinEvidenceEnvelope,
     TwinEvidenceReport,
+    TwinEvolutionHistory,
     TwinExperiment,
     TwinHardwareReport,
     TwinPrediction,
@@ -45,6 +46,7 @@ def test_twin_namespace_is_small_and_domain_named():
     assert "twin" in fq.__all__
     assert fqt.__all__ == (
         "QPUDigitalTwin",
+        "align_histories",
         "build_calibration_history",
         "build_validation_history",
         "compare_calibrations",
@@ -67,6 +69,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
         "TwinEvidenceStatus",
+        "TwinEvolutionHistory",
         "TwinExperiment",
         "TwinGateDurationDrift",
         "TwinHardwareReport",
@@ -82,6 +85,7 @@ def test_twin_namespace_is_small_and_domain_named():
         value in fqt.__all__
         for value in (
             QPUDigitalTwin.__name__,
+            "align_histories",
             "from_noise_model",
             "from_quafu_chip_info",
             "compare_calibrations",
@@ -97,6 +101,7 @@ def test_twin_namespace_is_small_and_domain_named():
             "TwinQubitCalibrationDrift",
             TwinEvidenceEnvelope.__name__,
             TwinEvidenceReport.__name__,
+            TwinEvolutionHistory.__name__,
             TwinExperiment.__name__,
             TwinHardwareReport.__name__,
             TwinPrediction.__name__,

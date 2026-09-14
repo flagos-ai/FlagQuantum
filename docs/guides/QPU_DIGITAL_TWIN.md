@@ -335,6 +335,44 @@ target, mapping, circuit identity or structure, or is not bound to the supplied
 Twin. Scheduling, collecting, validating and approving new hardware evidence
 remain explicit operations outside this method.
 
+## Align device drift with Twin accuracy
+
+Use the exact same snapshot sequence to place the calibration-drift and
+validation timelines side by side:
+
+```python
+import flagquantum as fq
+
+calibration = fq.twin.load_calibration_history("shenglian-calibration-history.json")
+validation = fq.twin.load_validation_history("shenglian-validation-history.json")
+evolution = fq.twin.align_histories(calibration, validation)
+
+print(evolution.latest_calibration_drift)
+print(evolution.latest_twin_agreement_change)
+print(evolution.latest_ideal_agreement_change)
+print(evolution.latest_qpu_repeatability_change)
+print(evolution.latest_verified_bound_change)
+```
+
+The executable offline form is:
+
+```bash
+python examples/twin_evolution_history.py \
+  --calibration-history shenglian-calibration-history.json \
+  --validation-history shenglian-validation-history.json
+```
+
+`latest_calibration_drift` is the latest adjacent-interval drift record. The
+other values are signed changes from the preceding observation: positive
+agreement means closer measurement distributions, while a negative verified-
+bound change means a tighter error bound. The full change sequences remain
+available on the evolution object.
+
+Alignment requires identical provider, backend, ordered physical mapping,
+snapshot identities and capture times. It deliberately reports correlation in
+time without claiming that calibration drift caused a prediction change. It
+does not choose a threshold, retrain or promote a Twin, or submit hardware.
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.

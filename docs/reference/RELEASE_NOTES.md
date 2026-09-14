@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.align_histories()` and immutable `TwinEvolutionHistory` to
+  align calibration drift with Twin↔QPU, Ideal↔QPU, QPU-repeatability and
+  verified-bound changes over the exact same snapshots. The offline comparison
+  reports synchronized observations without claiming causality or choosing an
+  update/promotion policy. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added immutable `TwinValidationHistory.append()` for incorporating one later
   snapshot-bound validation series without rebuilding or mutating earlier
   evidence. It preserves target, mapping, circuit, chronology and globally
