@@ -187,6 +187,22 @@ The method reruns the complete history invariants and never mutates the model,
 the previous history, or its persisted artifact. The framework does not decide
 when to collect the next observation.
 
+Align the two independently audited timelines by exact snapshot identity:
+
+```python
+calibration = fq.twin.load_calibration_history("calibration-history.json")
+validation = fq.twin.load_validation_history("validation-history.json")
+evolution = fq.twin.align_histories(calibration, validation)
+
+print(evolution.latest_calibration_drift)
+print(evolution.latest_twin_agreement_change)
+print(evolution.latest_verified_bound_change)
+```
+
+`TwinEvolutionHistory` retains both source histories and derives signed adjacent
+changes without a causal or promotion claim. Target, ordered mapping, snapshot
+identities and captured times must match exactly.
+
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted
 from a matching later hardware report into exact-circuit evidence. Supplying a

@@ -228,6 +228,24 @@ the same target, physical mapping, fixed circuit and structure, and previously
 unused hardware reports. Use a new output path so earlier evidence remains
 append-only and auditable.
 
+Align device drift with validation changes only when both histories contain the
+exact same snapshots:
+
+```python
+calibration = fq.twin.load_calibration_history("calibration-history.json")
+validation = fq.twin.load_validation_history("validation-history.json")
+evolution = fq.twin.align_histories(calibration, validation)
+
+print(evolution.latest_calibration_drift)
+print(evolution.latest_twin_agreement_change)
+print(evolution.latest_ideal_agreement_change)
+print(evolution.latest_qpu_repeatability_change)
+print(evolution.latest_verified_bound_change)
+```
+
+These are synchronized observations, not a causal model: the API never claims
+that a measured calibration change caused an accuracy change.
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified
