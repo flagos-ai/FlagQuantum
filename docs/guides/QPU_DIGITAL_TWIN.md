@@ -114,11 +114,14 @@ twins = [
     fq.twin.load_twin("shenglian-state-03.json"),
 ]
 history = fq.twin.build_calibration_history(twins)
+fq.twin.dump_calibration_history(history, "shenglian-history.json")
+
+restored = fq.twin.load_calibration_history("shenglian-history.json")
 
 for timestamp, cumulative, incremental in zip(
-    history.captured_at[1:],
-    history.baseline_drifts,
-    history.interval_drifts,
+    restored.captured_at[1:],
+    restored.baseline_drifts,
+    restored.interval_drifts,
 ):
     print(
         timestamp,
@@ -136,8 +139,14 @@ The same workflow is available as a copy-and-run command:
 
 ```bash
 python examples/twin_calibration_history.py \
-  shenglian-state-01.json shenglian-state-02.json shenglian-state-03.json
+  shenglian-state-01.json shenglian-state-02.json shenglian-state-03.json \
+  --output shenglian-history.json
 ```
+
+The canonical history file is written with private permissions. Repeating the
+same write is idempotent; an existing different or invalid file is never
+replaced. Loading validates every nested drift and derived summary and performs
+no provider operation.
 
 ## Freeze a hardware validation
 

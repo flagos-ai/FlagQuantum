@@ -67,6 +67,8 @@ Build a pure, chart-ready history from already persisted Twins:
 history = fq.twin.build_calibration_history(
     [reference_twin, next_twin, current_twin]
 )
+fq.twin.dump_calibration_history(history, "calibration-history.json")
+history = fq.twin.load_calibration_history("calibration-history.json")
 for drift in history.baseline_drifts:
     print(drift.maximum_relative_t1_change)
 for drift in history.interval_drifts:
@@ -76,6 +78,11 @@ for drift in history.interval_drifts:
 The first sequence is cumulative from `reference_twin`; the second is
 incremental between neighbors. Input order and identity are validated, and no
 provider operation or model mutation occurs.
+
+The history persistence functions use canonical JSON and mode-0600 creation.
+They permit an identical repeated write but refuse to replace different or
+invalid content. Loading reconstructs and validates every nested public drift
+record; it does not reconstruct the source models or contact a provider.
 
 For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:

@@ -70,6 +70,59 @@ def test_calibration_history_is_json_ready():
     json.dumps(payload, allow_nan=False)
 
 
+def test_calibration_history_round_trip_is_private_and_idempotent(tmp_path):
+    history = fq.twin.build_calibration_history(_series())
+    destination = tmp_path / "calibration-history.json"
+
+    fq.twin.dump_calibration_history(history, destination)
+    original = destination.read_bytes()
+    restored = fq.twin.load_calibration_history(destination)
+    fq.twin.dump_calibration_history(history, destination)
+
+    assert restored == history
+    assert destination.read_bytes() == original
+    assert destination.stat().st_mode & 0o777 == 0o600
+
+
+def test_calibration_history_refuses_different_or_invalid_existing_file(tmp_path):
+    history = fq.twin.build_calibration_history(_series())
+    destination = tmp_path / "calibration-history.json"
+    fq.twin.dump_calibration_history(history, destination)
+    different = fq.twin.build_calibration_history(
+        (*_series()[:2], _twin(captured_at="2026-08-14 13:30:00", t1=49.0))
+    )
+
+    with pytest.raises(ValueError, match="different Twin calibration history"):
+        fq.twin.dump_calibration_history(different, destination)
+
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("not-json\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid Twin calibration history"):
+        fq.twin.dump_calibration_history(history, invalid)
+    assert invalid.read_text(encoding="utf-8") == "not-json\n"
+
+
+def test_calibration_history_loader_rejects_tampering_and_non_objects(tmp_path):
+    history = fq.twin.build_calibration_history(_series())
+    destination = tmp_path / "history.json"
+    fq.twin.dump_calibration_history(history, destination)
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    payload["baseline_drifts"][0]["maximum_relative_t1_change"] = 0.9
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid Twin calibration history"):
+        fq.twin.load_calibration_history(destination)
+
+    destination.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a JSON object"):
+        fq.twin.load_calibration_history(destination)
+
+
+def test_calibration_history_persistence_requires_public_record(tmp_path):
+    with pytest.raises(TypeError, match="TwinCalibrationHistory"):
+        fq.twin.dump_calibration_history(object(), tmp_path / "history.json")
+
+
 @pytest.mark.parametrize(
     ("twins", "error", "message"),
     [
