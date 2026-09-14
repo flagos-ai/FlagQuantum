@@ -2,12 +2,18 @@
 
 ## Status
 
-**Freeze preparation implemented; final freeze requires explicit approval.**
+**Contract frozen — the API owner approved the reviewed Twin v1 surface and
+serialized schemas.**
 Proposals 017 and 027–032 established the first complete Twin vertical slice.
 This review removes one avoidable pre-release ambiguity and extends the
-machine-readable contract to the complete intended v1 surface. It deliberately
-leaves `candidate_is_frozen_contract` false until a maintainer approves the
-final contract.
+machine-readable contract to the complete intended v1 surface.
+
+Freeze record: on 2026-09-14, the API owner explicitly approved freezing the
+reviewed `fq.twin` v1 API and v1 JSON schemas. The machine-readable contract now
+records `status: frozen` and `candidate_is_frozen_contract: true`. This freezes
+the reviewed compatibility surface, not all future Twin capabilities: additive
+features remain possible, while breaking changes require a versioned contract
+or the repository's documented deprecation process.
 
 ## Product boundary
 
@@ -88,11 +94,14 @@ noise.
 
 ## Compatibility
 
-The repository is pre-release and the Twin contract explicitly remains a
-candidate. Removing the duplicate class construction methods prevents permanent
-compatibility debt. The recommended module-level APIs, serialized evidence v1,
-serialized validation-series v1, prediction behavior, hardware validation, and
-Quafu example remain unchanged.
+The Twin v1 compatibility surface is frozen. Removing the duplicate class
+construction methods before the freeze prevented permanent compatibility debt.
+The module-level APIs, serialized evidence v1, serialized validation-series v1,
+prediction behavior, hardware validation, and Quafu example remain unchanged.
+Compatible additions may be proposed without changing v1 meanings. Removing or
+renaming protected symbols, changing protected signatures or fields, adding
+values to closed status sets, or changing v1 serialization semantics requires a
+versioned contract or the repository's documented deprecation process.
 
 ## Final freeze checklist
 
@@ -104,5 +113,5 @@ Quafu example remain unchanged.
 - Exact-circuit statistical scope is stated beside every agreement example.
 - Focused API and Twin tests, default smoke/unit tests, strict typing, formatting,
   and package checks pass.
-- A maintainer explicitly approves changing `candidate_is_frozen_contract` to
-  true in a separate reviewed commit.
+- The API owner explicitly approved changing `candidate_is_frozen_contract` to
+  true in a separate reviewed change on 2026-09-14.

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.twin_v1_candidate_contract",
   "version": "1.0",
-  "status": "freeze_review_pending",
+  "status": "frozen",
   "implementation_authorized": true,
   "root_manifest_authorized": true,
   "root_addition": "twin",
@@ -119,5 +119,5 @@
     "natural_language_interface",
     "model_context_protocol_server"
   ],
-  "candidate_is_frozen_contract": false
+  "candidate_is_frozen_contract": true
 }
