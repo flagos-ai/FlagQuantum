@@ -16,7 +16,8 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
 - `TwinSnapshot`: immutable calibration and model identity;
 - `TwinPrediction`: ideal and calibration-conditioned probabilities;
-- `TwinValidationReport`: comparison with a hardware observation.
+- `TwinValidationReport`: comparison with one hardware observation;
+- `TwinValidationSeries`: conservative summary of distinct repeated results.
 
 ## Ten-minute path
 
@@ -52,6 +53,23 @@ hardware_report = experiment.validate_result(result, receipt=handle)
 evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
 ```
 
+For repeated executions of that same frozen experiment, keep model error,
+ideal-baseline error, observed QPU repeatability, and finite-shot uncertainty
+separate:
+
+```python
+series = experiment.validation_series(
+    [first_hardware_report, second_hardware_report],
+    circuit=circuit,
+)
+evidence = series.to_evidence()
+```
+
+The series uses a simultaneous confidence correction and the worst distinct
+execution for its verified bound. Pairwise QPU repeatability still contains
+shot noise. It does not promote an unseen circuit or assume that hardware is
+stationary across observations.
+
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted
 from a matching later hardware report into exact-circuit evidence. Supplying a
@@ -83,6 +101,7 @@ Run the focused checks with:
 ```bash
 python -m pytest tests/test_twin.py -q
 python -m pytest tests/test_twin_experiment.py -q
+python -m pytest tests/test_twin_validation_series.py -q
 ```
 
 The current implementation is an exact, single-circuit density-matrix path.

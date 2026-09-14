@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import re
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from ..compiler.openqasm import emit_openqasm
 from ..core.ir import ensure_circuit_ir
@@ -16,10 +15,14 @@ from ..remote.qpu import (
     ProviderTaskHandle,
     validate_deployment_result,
 )
+from ._statistics import finite_shot_tv_radius
 from .evidence import TwinEvidenceEnvelope
 from .model import QPUDigitalTwin
 from .prediction import TwinPrediction
 from .validation import TwinValidationReport
+
+if TYPE_CHECKING:
+    from .series import TwinValidationSeries
 
 _EXPERIMENT_SCHEMA = "flagquantum.twin_experiment.v1"
 _HARDWARE_REPORT_SCHEMA = "flagquantum.twin_hardware_report.v1"
@@ -46,24 +49,6 @@ def _json_mapping(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(normalized, dict):
         raise TypeError("normalized experiment metadata must be a JSON object")
     return normalized
-
-
-def _finite_shot_tv_radius(
-    *, outcome_count: int, shots: int, confidence_level: float
-) -> float:
-    confidence = float(confidence_level)
-    if not math.isfinite(confidence) or not 0.0 < confidence < 1.0:
-        raise ValueError("confidence_level must be finite and in (0, 1)")
-    if outcome_count < 2 or shots <= 0:
-        raise ValueError("finite-shot bounds require outcomes and positive shots")
-    log_two = math.log(2.0)
-    log_prefactor = outcome_count * log_two + math.log1p(
-        -2.0 * math.exp(-outcome_count * log_two)
-    )
-    return min(
-        1.0,
-        math.sqrt((log_prefactor - math.log1p(-confidence)) / (2.0 * float(shots))),
-    )
 
 
 def _provider_transpilation_preserves_mapping(
@@ -336,8 +321,8 @@ class TwinExperiment:
         ):
             raise RuntimeError("hardware validation does not match the frozen result")
 
-        finite_shot_radius = _finite_shot_tv_radius(
-            outcome_count=len(expected_validation.hardware_probabilities),
+        finite_shot_radius = finite_shot_tv_radius(
+            outcome_count=2**self.prediction.n_wires,
             shots=expected_validation.shots,
             confidence_level=confidence_level,
         )
@@ -357,6 +342,32 @@ class TwinExperiment:
             evidence_identity=report.identity,
             verified_tv_error_bound=verified_radius,
             estimated_tv_error_bound=None,
+            confidence_level=confidence_level,
+        )
+
+    def validation_series(
+        self,
+        reports: Sequence[TwinHardwareReport],
+        *,
+        circuit: Any,
+        confidence_level: float = 0.95,
+    ) -> TwinValidationSeries:
+        """Summarize distinct bound results with one simultaneous confidence.
+
+        Examples:
+            series = experiment.validation_series(
+                [first_report, second_report],
+                circuit=circuit,
+            )
+            evidence = series.to_evidence()
+        """
+
+        from .series import TwinValidationSeries
+
+        return TwinValidationSeries._from_reports(
+            self,
+            reports,
+            circuit=circuit,
             confidence_level=confidence_level,
         )
 

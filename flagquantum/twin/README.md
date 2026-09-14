@@ -80,6 +80,33 @@ token validation, live calibration retrieval, bounded polling, evidence
 persistence, and report loading—run
 [`examples/remote/quafu_twin_evidence.py`](../../examples/remote/quafu_twin_evidence.py).
 
+## Summarize repeated validation
+
+Keep Twin error, the noiseless baseline, QPU repeatability, and shot uncertainty
+separate when the same frozen experiment is executed more than once:
+
+```python
+series = experiment.validation_series(
+    [first_hardware_report, second_hardware_report],
+    circuit=circuit,
+    confidence_level=0.95,
+)
+
+print(series.mean_twin_qpu_agreement)
+print(series.mean_ideal_qpu_agreement)
+print(series.mean_qpu_repeatability)
+print(series.simultaneous_finite_shot_tv_radius)
+
+evidence = series.to_evidence()
+fq.twin.dump_evidence(evidence, "twin-evidence.json")
+```
+
+Each agreement is `1 - TV distance` for classical measurement-output
+distributions. QPU repeatability is the pairwise agreement between observed
+hardware distributions and still includes finite-shot noise. The verified
+bound uses the worst distinct execution and a simultaneous confidence
+correction; repetitions do not establish support for a different circuit.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not
@@ -156,7 +183,8 @@ From the repository root:
 python -m pytest \
   tests/test_twin.py \
   tests/test_twin_evidence.py \
-  tests/test_twin_experiment.py -q
+  tests/test_twin_experiment.py \
+  tests/test_twin_validation_series.py -q
 ```
 
 Check calibration identity, physical mapping, task binding, and rejection of

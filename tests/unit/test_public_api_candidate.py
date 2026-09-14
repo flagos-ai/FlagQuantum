@@ -202,6 +202,9 @@ def test_twin_candidate_protects_public_method_signatures() -> None:
         "TwinExperiment.evidence_from_report": str(
             inspect.signature(fq.twin.TwinExperiment.evidence_from_report)
         ),
+        "TwinExperiment.validation_series": str(
+            inspect.signature(fq.twin.TwinExperiment.validation_series)
+        ),
     }
 
     assert actual == signatures
