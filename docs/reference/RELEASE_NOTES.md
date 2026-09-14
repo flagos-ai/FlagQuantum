@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.dump_calibration_history()` and
+  `fq.twin.load_calibration_history()` for canonical, credential-free offline
+  persistence of cumulative and interval calibration-drift series. Loading
+  validates nested records and summaries; writing is private, idempotent for
+  identical content, and refuses destructive replacement. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.build_calibration_history()` and immutable
   `TwinCalibrationHistory`. Applications can now turn strictly chronological,
   comparable frozen Twins into cumulative-from-baseline and adjacent-interval

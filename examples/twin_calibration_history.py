@@ -19,13 +19,21 @@ def main() -> None:
         type=Path,
         help="Twin JSON files in strictly increasing calibration time",
     )
-    paths = parser.parse_args().twins
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="optionally save the canonical calibration-history JSON",
+    )
+    arguments = parser.parse_args()
+    paths = arguments.twins
     if len(paths) < 2:
         parser.error("provide at least two saved Twin files")
 
     history = fq.twin.build_calibration_history(
         [fq.twin.load_twin(path) for path in paths]
     )
+    if arguments.output is not None:
+        fq.twin.dump_calibration_history(history, arguments.output)
     print(
         f"{history.provider}:{history.backend_name}",
         history.physical_qubits,

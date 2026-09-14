@@ -55,7 +55,8 @@ identify the same provider, backend, ordered physical mapping, logical
 calibration structure, readout availability, and gate-duration scopes.
 
 `TwinCalibrationHistory.to_dict()` returns a JSON-ready value. Persistence of a
-long-lived history store is intentionally not introduced in this change.
+long-lived history store was intentionally not introduced in this change;
+canonical file persistence followed separately in proposal 038.
 The executable `examples/twin_calibration_history.py` accepts two or more saved
 Twin files and prints the same cumulative and interval series.
 

@@ -15,7 +15,12 @@ from .evidence import (
 )
 from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
-from .history import TwinCalibrationHistory, build_calibration_history
+from .history import (
+    TwinCalibrationHistory,
+    build_calibration_history,
+    dump_calibration_history,
+    load_calibration_history,
+)
 from .model import QPUDigitalTwin, TwinSnapshot
 from .persistence import dump_twin, load_twin
 from .prediction import TwinPrediction
@@ -33,10 +38,12 @@ __all__ = (
     "compare_calibrations",
     "from_noise_model",
     "from_quafu_chip_info",
+    "dump_calibration_history",
     "dump_evidence",
     "dump_submission",
     "dump_twin",
     "dump_validation_series",
+    "load_calibration_history",
     "load_evidence",
     "load_submission",
     "load_twin",

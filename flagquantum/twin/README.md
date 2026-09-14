@@ -88,6 +88,8 @@ twins = [
     fq.twin.load_twin("qpu-state-03.json"),
 ]
 history = fq.twin.build_calibration_history(twins)
+fq.twin.dump_calibration_history(history, "qpu-history.json")
+history = fq.twin.load_calibration_history("qpu-history.json")
 
 for timestamp, cumulative, incremental in zip(
     history.captured_at[1:], history.baseline_drifts, history.interval_drifts
@@ -101,6 +103,10 @@ incremental series compares adjacent snapshots. The builder requires one
 strictly chronological, identity-unique series for the same target and ordered
 mapping. It does not collect calibrations, manage a database, or decide when a
 Twin is trustworthy.
+
+The history artifact is canonical, credential-free, and written once with
+private permissions. Loading validates its nested drift records and derived
+summaries without fetching calibration or restoring the source Twin models.
 
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
