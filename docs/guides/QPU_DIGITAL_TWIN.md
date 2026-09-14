@@ -99,6 +99,46 @@ calibration values differ—it does not prove statistical significance, reduced
 prediction accuracy, or an expired trust window. Comparison is offline and does
 not refresh or update either Twin.
 
+## Build a calibration history
+
+Load frozen models in strictly increasing calibration time, then build both a
+cumulative series from the first snapshot and an incremental series between
+adjacent snapshots:
+
+```python
+import flagquantum as fq
+
+twins = [
+    fq.twin.load_twin("shenglian-state-01.json"),
+    fq.twin.load_twin("shenglian-state-02.json"),
+    fq.twin.load_twin("shenglian-state-03.json"),
+]
+history = fq.twin.build_calibration_history(twins)
+
+for timestamp, cumulative, incremental in zip(
+    history.captured_at[1:],
+    history.baseline_drifts,
+    history.interval_drifts,
+):
+    print(
+        timestamp,
+        f"from baseline: {cumulative.maximum_relative_t1_change:.2%}",
+        f"since previous: {incremental.maximum_relative_t1_change:.2%}",
+    )
+```
+
+Every snapshot must identify the same provider, backend, ordered physical
+mapping, and comparable calibration structure. Duplicate identities and
+non-increasing timestamps fail closed. `history.to_dict()` is JSON-ready for a
+drift chart, but FlagQuantum does not fetch snapshots on a schedule, persist a
+history database, set trust thresholds, or update a model automatically.
+The same workflow is available as a copy-and-run command:
+
+```bash
+python examples/twin_calibration_history.py \
+  shenglian-state-01.json shenglian-state-02.json shenglian-state-03.json
+```
+
 ## Freeze a hardware validation
 
 ```python

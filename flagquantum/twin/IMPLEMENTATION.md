@@ -13,6 +13,8 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 
 - `QPUDigitalTwin`: a frozen device model bound to a physical mapping;
 - `TwinCalibrationDrift`: offline change facts between comparable Twin snapshots;
+- `TwinCalibrationHistory`: cumulative and adjacent drift across chronological
+  comparable Twin snapshots;
 - `TwinExperiment`: a prediction bound to the exact program submitted;
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
 - `TwinSubmission`: a persistable binding of an experiment to its original task;
@@ -58,6 +60,22 @@ for qubit in drift.qubit_drifts:
 Time values are normalized to seconds, and gate scopes are translated from
 logical wires back to physical qubits. The report provides no significance
 threshold and does not infer accuracy decay or update either model.
+
+Build a pure, chart-ready history from already persisted Twins:
+
+```python
+history = fq.twin.build_calibration_history(
+    [reference_twin, next_twin, current_twin]
+)
+for drift in history.baseline_drifts:
+    print(drift.maximum_relative_t1_change)
+for drift in history.interval_drifts:
+    print(drift.maximum_relative_t1_change)
+```
+
+The first sequence is cumulative from `reference_twin`; the second is
+incremental between neighbors. Input order and identity are validated, and no
+provider operation or model mutation occurs.
 
 For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:
