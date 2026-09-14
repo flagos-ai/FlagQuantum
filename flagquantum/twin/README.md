@@ -178,6 +178,33 @@ evidence = series.to_evidence()
 fq.twin.dump_evidence(evidence, "twin-evidence.json")
 ```
 
+Track the same fixed validation circuit across later frozen calibrations:
+
+```python
+observations = [
+    (
+        fq.twin.load_twin("qpu-state-01.json"),
+        fq.twin.load_validation_series("validation-state-01.json"),
+    ),
+    (
+        fq.twin.load_twin("qpu-state-02.json"),
+        fq.twin.load_validation_series("validation-state-02.json"),
+    ),
+]
+history = fq.twin.build_validation_history(observations)
+
+print(history.mean_twin_qpu_agreements)
+print(history.mean_ideal_qpu_agreements)
+print(history.mean_qpu_repeatabilities)
+print(history.simultaneous_finite_shot_tv_radii)
+print(history.verified_tv_error_bounds)
+```
+
+The builder verifies snapshot identity, target, ordered physical mapping,
+circuit identity and structure, chronological order, and globally distinct
+hardware reports. These values remain measurement-distribution comparisons;
+they are not state fidelity or a workload-routing decision.
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified

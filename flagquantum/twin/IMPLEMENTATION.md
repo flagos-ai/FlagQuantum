@@ -21,6 +21,7 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinSnapshot`: immutable calibration and model identity;
 - `TwinPrediction`: ideal and calibration-conditioned probabilities;
 - `TwinValidationReport`: comparison with one hardware observation;
+- `TwinValidationHistory`: fixed-circuit validation across chronological Twins;
 - `TwinValidationSeries`: conservative summary of distinct repeated results.
 
 ## Ten-minute path
@@ -141,6 +142,28 @@ The canonical JSON round-trip preserves the series identity. Existing
 different or invalid files are never overwritten. Loading is offline and does
 not contact a provider; publication and product history remain outside this
 module.
+
+Align persisted models and validation series to inspect accuracy evidence over
+calibration time:
+
+```python
+history = fq.twin.build_validation_history(
+    [
+        (reference_twin, reference_series),
+        (current_twin, current_series),
+    ]
+)
+print(history.mean_twin_qpu_agreements)
+print(history.mean_ideal_qpu_agreements)
+print(history.mean_qpu_repeatabilities)
+print(history.simultaneous_finite_shot_tv_radii)
+print(history.verified_tv_error_bounds)
+```
+
+The paired input makes snapshot binding explicit. All observations must share
+one QPU mapping and fixed circuit, appear in strictly increasing calibration
+time, and use globally distinct hardware reports. Construction is offline and
+does not assign a trust threshold or mutate a Twin.
 
 Omitting `submitted_qasm` creates a direct, deterministic binding from the
 FlagQuantum IR circuit to OpenQASM 2.0. Only that canonical form can be promoted

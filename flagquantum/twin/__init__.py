@@ -31,10 +31,12 @@ from .series import (
 )
 from .submission import TwinSubmission, dump_submission, load_submission
 from .validation import TwinValidationReport
+from .validation_history import TwinValidationHistory, build_validation_history
 
 __all__ = (
     "QPUDigitalTwin",
     "build_calibration_history",
+    "build_validation_history",
     "compare_calibrations",
     "from_noise_model",
     "from_quafu_chip_info",
@@ -61,5 +63,6 @@ __all__ = (
     "TwinSnapshot",
     "TwinSubmission",
     "TwinValidationReport",
+    "TwinValidationHistory",
     "TwinValidationSeries",
 )
