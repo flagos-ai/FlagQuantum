@@ -23,12 +23,11 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 
 ```python
 import flagquantum as fq
-from flagquantum.twin import QPUDigitalTwin
 
-twin = QPUDigitalTwin.from_quafu_chip_info(
+twin = fq.twin.from_quafu_chip_info(
     chip_info,
-    backend_name="Baihua",
-    physical_qubits=(3, 4),
+    target="quafu:Baihua",
+    qubits=(3, 4),
 )
 prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 report = prediction.compare_counts({"00": 500, "11": 500})

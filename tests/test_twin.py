@@ -106,17 +106,9 @@ def test_twin_builds_from_a_provider_neutral_device_noise_model():
         target="example-provider:example-qpu",
         qubits=(3, 4),
     )
-    advanced = QPUDigitalTwin.from_noise_model(
-        device_model,
-        provider="example-provider",
-        backend_name="example-qpu",
-        physical_qubits=(3, 4),
-    )
-
     assert twin.snapshot.provider == "example-provider"
     assert twin.snapshot.backend_name == "example-qpu"
-    assert twin.snapshot == advanced.snapshot
-    assert twin.noise_model.identity == advanced.noise_model.identity
+    assert isinstance(twin, QPUDigitalTwin)
 
 
 def test_quafu_twin_freezes_calibration_and_predicts_decoherence():
@@ -152,10 +144,10 @@ def test_quafu_factory_rejects_another_provider_target():
 
 
 def test_twin_applies_readout_and_compares_hardware_counts():
-    twin = QPUDigitalTwin.from_quafu_chip_info(
+    twin = fq.twin.from_quafu_chip_info(
         _chip_info(),
-        backend_name="Baihua",
-        physical_qubits=(3, 4),
+        target="quafu:Baihua",
+        qubits=(3, 4),
         readout_confusion_matrices=(
             ((0.8, 0.2), (0.1, 0.9)),
             ((1.0, 0.0), (0.0, 1.0)),
@@ -176,17 +168,15 @@ def test_twin_applies_readout_and_compares_hardware_counts():
 def test_snapshot_identity_changes_with_selected_calibration():
     changed = copy.deepcopy(_chip_info())
     changed["qubits_info"]["Q3"]["T1"] = 39.0
-    first = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    first = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
-    second = QPUDigitalTwin.from_quafu_chip_info(
-        changed, backend_name="Baihua", physical_qubits=(3, 4)
-    )
+    second = fq.twin.from_quafu_chip_info(changed, target="quafu:Baihua", qubits=(3, 4))
 
     assert first.snapshot.identity != second.snapshot.identity
 
 
-def test_twin_can_freeze_calibration_fetched_by_provider():
+def test_twin_can_freeze_calibration_fetched_explicitly_from_provider():
     class Provider:
         provider = "quafu"
 
@@ -194,8 +184,11 @@ def test_twin_can_freeze_calibration_fetched_by_provider():
             assert backend_name == "Baihua"
             return _chip_info()
 
-    twin = QPUDigitalTwin.from_quafu_provider(
-        Provider(), backend_name="Baihua", physical_qubits=(3, 4)
+    provider = Provider()
+    twin = fq.twin.from_quafu_chip_info(
+        provider.fetch_chip_info("Baihua"),
+        target="quafu:Baihua",
+        qubits=(3, 4),
     )
 
     assert twin.snapshot.provider == "quafu"
@@ -207,11 +200,10 @@ def test_twin_copies_and_guards_its_noise_model():
     from flagquantum.remote.qpu import quafu_noise_model_from_chip_info
 
     source = quafu_noise_model_from_chip_info(_chip_info(), physical_qubits=(3, 4))
-    twin = QPUDigitalTwin.from_noise_model(
+    twin = fq.twin.from_noise_model(
         source,
-        provider="quafu",
-        backend_name="Baihua",
-        physical_qubits=(3, 4),
+        target="quafu:Baihua",
+        qubits=(3, 4),
     )
 
     assert twin.noise_model is not source
@@ -221,8 +213,8 @@ def test_twin_copies_and_guards_its_noise_model():
 
 
 def test_twin_rejects_mismatched_circuit_and_invalid_counts():
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
     with pytest.raises(ValueError, match="width"):
         twin.predict(fq.Circuit(1))

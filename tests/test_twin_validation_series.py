@@ -13,7 +13,7 @@ from flagquantum.remote.qpu import (
     ProviderTaskHandle,
     build_result_metadata,
 )
-from flagquantum.twin import QPUDigitalTwin, TwinExperiment, TwinValidationSeries
+from flagquantum.twin import TwinExperiment, TwinValidationSeries
 
 
 def _chip_info():
@@ -35,8 +35,8 @@ def _chip_info():
 
 
 def _experiment():
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     return (

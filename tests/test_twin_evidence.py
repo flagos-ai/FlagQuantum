@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 import flagquantum as fq
-from flagquantum.twin import QPUDigitalTwin, TwinEvidenceEnvelope
+from flagquantum.twin import TwinEvidenceEnvelope
 
 
 def _chip_info():
@@ -27,8 +27,8 @@ def _chip_info():
 
 
 def _twin():
-    return QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    return fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
 
 

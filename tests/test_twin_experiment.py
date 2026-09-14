@@ -17,7 +17,7 @@ from flagquantum.remote.qpu import (
     QuafuProvider,
     build_result_metadata,
 )
-from flagquantum.twin import QPUDigitalTwin, TwinExperiment
+from flagquantum.twin import TwinExperiment
 
 SUBMITTED_QASM = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -57,8 +57,10 @@ def _experiment(
     circuit=None,
     physical_qubits=(3, 4),
 ):
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name=backend_name, physical_qubits=physical_qubits
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(),
+        target=f"quafu:{backend_name}",
+        qubits=physical_qubits,
     )
     return TwinExperiment.prepare(
         twin,
@@ -157,8 +159,8 @@ def test_direct_experiment_generates_exact_circuit_evidence():
     assert evidence.estimated_tv_error_bound is None
     assert evidence.confidence_level == pytest.approx(0.95)
 
-    twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+    twin = fq.twin.from_quafu_chip_info(
+        _chip_info(), target="quafu:Baihua", qubits=(3, 4)
     )
     evidence_report = twin.evidence_report(circuit, evidence=evidence)
     assert evidence_report.status == "exact_circuit_verified"
