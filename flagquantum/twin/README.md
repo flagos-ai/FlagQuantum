@@ -107,6 +107,22 @@ hardware distributions and still includes finite-shot noise. The verified
 bound uses the worst distinct execution and a simultaneous confidence
 correction; repetitions do not establish support for a different circuit.
 
+Persist the complete validation summary when a downstream product needs the
+separate display metrics after the process exits:
+
+```python
+fq.twin.dump_validation_series(series, "twin-validation.json")
+restored_series = fq.twin.load_validation_series("twin-validation.json")
+
+print(f"Twin ↔ QPU: {restored_series.mean_twin_qpu_agreement:.2%}")
+print(f"Ideal SV ↔ QPU: {restored_series.mean_ideal_qpu_agreement:.2%}")
+```
+
+The writer creates a canonical file, permits an idempotent save of the same
+series, and refuses to replace different or invalid content. The artifact is
+an offline summary rather than a signed provider receipt. FlagQuantum does not
+publish it or assign application access policy.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

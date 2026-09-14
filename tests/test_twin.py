@@ -48,7 +48,9 @@ def test_twin_namespace_is_small_and_domain_named():
         "from_noise_model",
         "from_quafu_chip_info",
         "dump_evidence",
+        "dump_validation_series",
         "load_evidence",
+        "load_validation_series",
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
         "TwinEvidenceStatus",
@@ -74,6 +76,8 @@ def test_twin_namespace_is_small_and_domain_named():
             TwinValidationReport.__name__,
             TwinValidationSeries.__name__,
             "TwinEvidenceStatus",
+            "dump_validation_series",
+            "load_validation_series",
         )
     )
 

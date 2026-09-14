@@ -11,7 +11,11 @@ from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
 from .model import QPUDigitalTwin, TwinSnapshot
 from .prediction import TwinPrediction
-from .series import TwinValidationSeries
+from .series import (
+    TwinValidationSeries,
+    dump_validation_series,
+    load_validation_series,
+)
 from .validation import TwinValidationReport
 
 __all__ = (
@@ -19,7 +23,9 @@ __all__ = (
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_evidence",
+    "dump_validation_series",
     "load_evidence",
+    "load_validation_series",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",

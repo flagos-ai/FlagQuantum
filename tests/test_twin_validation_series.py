@@ -162,6 +162,76 @@ def test_validation_series_produces_exact_circuit_evidence(tmp_path):
     assert restored == evidence
 
 
+def test_validation_series_persistence_is_canonical_and_non_replacing(tmp_path):
+    experiment, circuit = _experiment()
+    first = _report(
+        experiment,
+        task_id="task-1",
+        counts={"00": 512, "11": 512},
+    )
+    second = _report(
+        experiment,
+        task_id="task-2",
+        counts={"00": 480, "01": 32, "10": 32, "11": 480},
+    )
+    series = experiment.validation_series((first, second), circuit=circuit)
+    destination = tmp_path / "twin-validation.json"
+
+    fq.twin.dump_validation_series(series, destination)
+    original = destination.read_bytes()
+    restored = fq.twin.load_validation_series(destination)
+    fq.twin.dump_validation_series(series, destination)
+
+    assert restored == series
+    assert restored.identity == series.identity
+    assert destination.read_bytes() == original
+
+    different = experiment.validation_series((first,), circuit=circuit)
+    with pytest.raises(ValueError, match="Refusing to replace different"):
+        fq.twin.dump_validation_series(different, destination)
+
+
+def test_validation_series_loader_rejects_noncanonical_payloads(tmp_path):
+    experiment, circuit = _experiment()
+    report = _report(
+        experiment,
+        task_id="task-1",
+        counts={"00": 512, "11": 512},
+    )
+    payload = experiment.validation_series((report,), circuit=circuit).to_dict()
+    payload["unexpected"] = True
+
+    with pytest.raises(ValueError, match="fields do not match"):
+        TwinValidationSeries.from_dict(payload)
+
+    del payload["unexpected"]
+    del payload["schema"]
+    with pytest.raises(ValueError, match="fields do not match"):
+        TwinValidationSeries.from_dict(payload)
+
+    destination = tmp_path / "invalid.json"
+    destination.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a JSON object"):
+        fq.twin.load_validation_series(destination)
+
+
+def test_validation_series_writer_preserves_invalid_existing_file(tmp_path):
+    experiment, circuit = _experiment()
+    report = _report(
+        experiment,
+        task_id="task-1",
+        counts={"00": 512, "11": 512},
+    )
+    series = experiment.validation_series((report,), circuit=circuit)
+    destination = tmp_path / "invalid.json"
+    destination.write_text("not-json\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Refusing to replace invalid"):
+        fq.twin.dump_validation_series(series, destination)
+
+    assert destination.read_text(encoding="utf-8") == "not-json\n"
+
+
 def test_validation_series_rejects_duplicate_hardware_tasks():
     experiment, circuit = _experiment()
     report = _report(

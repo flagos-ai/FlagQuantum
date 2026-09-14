@@ -21,6 +21,7 @@ QUBITS = (20, 27)
 SHOTS = 1024
 REPETITIONS = 2
 EVIDENCE_PATH = Path("twin-evidence.json")
+VALIDATION_PATH = Path("twin-validation.json")
 
 
 def _wait_for_result(
@@ -84,26 +85,29 @@ def main() -> None:
         circuit=circuit,
         confidence_level=0.95,
     )
+    fq.twin.dump_validation_series(series, VALIDATION_PATH)
+    restored_series = fq.twin.load_validation_series(VALIDATION_PATH)
     evidence = series.to_evidence()
     fq.twin.dump_evidence(evidence, EVIDENCE_PATH)
 
     restored = fq.twin.load_evidence(EVIDENCE_PATH)
     report = twin.evidence_report(circuit, evidence=restored)
     print("status:", report.status)
-    print("Twin-QPU agreement:", f"{series.mean_twin_qpu_agreement:.2%}")
-    print("ideal-QPU agreement:", f"{series.mean_ideal_qpu_agreement:.2%}")
-    repeatability = series.mean_qpu_repeatability
+    print("Twin-QPU agreement:", f"{restored_series.mean_twin_qpu_agreement:.2%}")
+    print("ideal-QPU agreement:", f"{restored_series.mean_ideal_qpu_agreement:.2%}")
+    repeatability = restored_series.mean_qpu_repeatability
     print(
         "QPU repeatability:",
         "not available" if repeatability is None else f"{repeatability:.2%}",
     )
     print(
         "simultaneous shot radius:",
-        f"{series.simultaneous_finite_shot_tv_radius:.2%}",
+        f"{restored_series.simultaneous_finite_shot_tv_radius:.2%}",
     )
     print("TV error bound:", report.tv_error_bound)
     print("confidence level:", report.confidence_level)
     print("evidence:", EVIDENCE_PATH)
+    print("validation series:", VALIDATION_PATH)
 
 
 if __name__ == "__main__":
