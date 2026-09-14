@@ -135,3 +135,11 @@ reproduction bundle.
 Evidence does not automatically authorize routing or hardware control. Global
 publication, dashboards, access control, drift monitoring, agents, and MCP are
 application responsibilities outside FlagQuantum.
+
+## Version 1 compatibility
+
+The public `fq.twin` v1 API, `flagquantum.twin_evidence_envelope.v1`, and
+`flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
+Compatible capabilities may be added, but existing v1 names, signatures,
+fields, status meanings, and serialized meanings will not change without a
+versioned replacement or the documented deprecation process.

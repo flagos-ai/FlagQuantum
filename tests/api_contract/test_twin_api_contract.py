@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 import flagquantum as fq
@@ -13,6 +16,20 @@ from flagquantum.noise import (
 )
 
 pytestmark = pytest.mark.unit
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_twin_v1_contract_is_formally_frozen() -> None:
+    contract = json.loads((ROOT / "contracts" / "twin-v1-candidate.json").read_text())
+
+    assert contract["status"] == "frozen"
+    assert contract["candidate_is_frozen_contract"] is True
+    assert contract["public_schema_defaults"]["TwinEvidenceEnvelope"] == (
+        "flagquantum.twin_evidence_envelope.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinValidationSeries"] == (
+        "flagquantum.twin_validation_series.v1"
+    )
 
 
 def _device_noise_model() -> NoiseModel:
