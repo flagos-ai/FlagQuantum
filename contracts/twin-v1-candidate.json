@@ -1,15 +1,20 @@
 {
   "schema": "flagquantum.twin_v1_candidate_contract",
   "version": "1.0",
-  "status": "implemented_pending_freeze",
+  "status": "freeze_review_pending",
   "implementation_authorized": true,
   "root_manifest_authorized": true,
   "root_addition": "twin",
   "namespace": "flagquantum.twin",
   "root_object_kind": "module",
   "provider_neutral_model_entry": "from_noise_model",
+  "preferred_construction": "module_level_factories",
   "native_provider_adapters": [
-    "from_quafu_chip_info",
+    "from_quafu_chip_info"
+  ],
+  "removed_before_freeze": [
+    "QPUDigitalTwin.from_noise_model",
+    "QPUDigitalTwin.from_quafu_chip_info",
     "QPUDigitalTwin.from_quafu_provider"
   ],
   "public_symbols": [
@@ -38,10 +43,75 @@
     "load_evidence": "(path: 'str | PathLike[str]') -> 'TwinEvidenceEnvelope'",
     "load_validation_series": "(path: 'str | PathLike[str]') -> 'TwinValidationSeries'"
   },
+  "public_class_signatures": {
+    "QPUDigitalTwin": "(snapshot: 'TwinSnapshot', noise_model: 'NoiseModel') -> None",
+    "TwinEvidenceEnvelope": "(snapshot_identity: 'str', physical_qubits: 'tuple[int, ...]', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', verified_circuit_identities: 'tuple[str, ...]', evidence_identity: 'str', verified_tv_error_bound: 'float | None' = None, estimated_tv_error_bound: 'float | None' = None, confidence_level: 'float | None' = None, schema: 'str' = 'flagquantum.twin_evidence_envelope.v1') -> None",
+    "TwinEvidenceReport": "(status: 'TwinEvidenceStatus', prediction: 'TwinPrediction | None', evidence_envelope_identity: 'str | None', evidence_identity: 'str | None', exact_circuit_verified: 'bool', structurally_supported: 'bool', tv_error_bound: 'float | None', confidence_level: 'float | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_evidence_report.v1') -> None",
+    "TwinExperiment": "(snapshot_identity: 'str', prediction: 'TwinPrediction', name: 'str', backend_name: 'str', target_qubits: 'tuple[int, ...]', submitted_qasm: 'str', submitted_qasm_identity: 'str', shots: 'int', schema: 'str' = 'flagquantum.twin_experiment.v1') -> None",
+    "TwinHardwareReport": "(experiment_identity: 'str', provider: 'str', backend_name: 'str', task_id: 'str', submitted_qasm_identity: 'str', executed_qasm_identity: 'str | None', counts: 'Mapping[str, int]', validation: 'TwinValidationReport', result_metadata: 'Mapping[str, Any]', schema: 'str' = 'flagquantum.twin_hardware_report.v1') -> None",
+    "TwinPrediction": "(snapshot_identity: 'str', circuit_identity: 'str', n_wires: 'int', ideal_probabilities: 'tuple[float, ...]', twin_probabilities: 'tuple[float, ...]', total_variation_from_ideal: 'float', schema: 'str' = 'flagquantum.twin_prediction.v1') -> None",
+    "TwinSnapshot": "(provider: 'str', backend_name: 'str', captured_at: 'str', physical_qubits: 'tuple[int, ...]', calibration_identity: 'str', noise_model_identity: 'str', schema: 'str' = 'flagquantum.twin_snapshot.v1') -> None",
+    "TwinValidationReport": "(snapshot_identity: 'str', circuit_identity: 'str', hardware_probabilities: 'tuple[float, ...]', ideal_hardware_total_variation: 'float', twin_hardware_total_variation: 'float', total_variation_improvement: 'float', shots: 'int', schema: 'str' = 'flagquantum.twin_validation_report.v1') -> None",
+    "TwinValidationSeries": "(snapshot_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', report_identities: 'tuple[str, ...]', repetitions: 'int', total_shots: 'int', mean_twin_hardware_total_variation: 'float', maximum_twin_hardware_total_variation: 'float', mean_ideal_hardware_total_variation: 'float', maximum_ideal_hardware_total_variation: 'float', mean_hardware_repeatability_total_variation: 'float | None', maximum_hardware_repeatability_total_variation: 'float | None', simultaneous_finite_shot_tv_radius: 'float', verified_tv_error_bound: 'float', confidence_level: 'float', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', schema: 'str' = 'flagquantum.twin_validation_series.v1') -> None"
+  },
   "public_method_signatures": {
+    "QPUDigitalTwin.evidence_report": "(self, circuit: 'Any', *, evidence: 'TwinEvidenceEnvelope | None' = None) -> 'TwinEvidenceReport'",
+    "QPUDigitalTwin.predict": "(self, circuit: 'Any') -> 'TwinPrediction'",
+    "TwinEvidenceEnvelope.from_dict": "(payload: 'Mapping[str, Any]') -> \"'TwinEvidenceEnvelope'\"",
+    "TwinEvidenceEnvelope.supports_structure": "(self, circuit: 'CircuitIR') -> 'bool'",
+    "TwinEvidenceEnvelope.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinEvidenceReport.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinExperiment.prepare": "(twin: 'QPUDigitalTwin', circuit: 'Any', *, submitted_qasm: 'str | None' = None, name: 'str', shots: 'int') -> 'TwinExperiment'",
+    "TwinExperiment.submit": "(self, provider: 'Any') -> 'ProviderTaskHandle'",
+    "TwinExperiment.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinExperiment.validate_result": "(self, result: 'DeploymentResult', *, receipt: 'ProviderTaskHandle') -> 'TwinHardwareReport'",
     "TwinExperiment.evidence_from_report": "(self, report: 'TwinHardwareReport', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinEvidenceEnvelope'",
-    "TwinExperiment.validation_series": "(self, reports: 'Sequence[TwinHardwareReport]', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinValidationSeries'"
+    "TwinExperiment.validation_series": "(self, reports: 'Sequence[TwinHardwareReport]', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinValidationSeries'",
+    "TwinHardwareReport.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinPrediction.compare_counts": "(self, counts: 'Mapping[str, int]', *, reverse_bits: 'bool' = False) -> 'TwinValidationReport'",
+    "TwinPrediction.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinSnapshot.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinValidationReport.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinValidationSeries.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinValidationSeries'",
+    "TwinValidationSeries.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinValidationSeries.to_evidence": "(self) -> 'TwinEvidenceEnvelope'"
+  },
+  "public_dataclass_fields": {
+    "QPUDigitalTwin": ["snapshot", "noise_model"],
+    "TwinEvidenceEnvelope": ["snapshot_identity", "physical_qubits", "supported_operations", "maximum_instruction_count", "verified_circuit_identities", "evidence_identity", "verified_tv_error_bound", "estimated_tv_error_bound", "confidence_level", "schema"],
+    "TwinEvidenceReport": ["status", "prediction", "evidence_envelope_identity", "evidence_identity", "exact_circuit_verified", "structurally_supported", "tv_error_bound", "confidence_level", "reasons", "schema"],
+    "TwinExperiment": ["snapshot_identity", "prediction", "name", "backend_name", "target_qubits", "submitted_qasm", "submitted_qasm_identity", "shots", "schema"],
+    "TwinHardwareReport": ["experiment_identity", "provider", "backend_name", "task_id", "submitted_qasm_identity", "executed_qasm_identity", "counts", "validation", "result_metadata", "schema"],
+    "TwinPrediction": ["snapshot_identity", "circuit_identity", "n_wires", "ideal_probabilities", "twin_probabilities", "total_variation_from_ideal", "schema"],
+    "TwinSnapshot": ["provider", "backend_name", "captured_at", "physical_qubits", "calibration_identity", "noise_model_identity", "schema"],
+    "TwinValidationReport": ["snapshot_identity", "circuit_identity", "hardware_probabilities", "ideal_hardware_total_variation", "twin_hardware_total_variation", "total_variation_improvement", "shots", "schema"],
+    "TwinValidationSeries": ["snapshot_identity", "circuit_identity", "physical_qubits", "report_identities", "repetitions", "total_shots", "mean_twin_hardware_total_variation", "maximum_twin_hardware_total_variation", "mean_ideal_hardware_total_variation", "maximum_ideal_hardware_total_variation", "mean_hardware_repeatability_total_variation", "maximum_hardware_repeatability_total_variation", "simultaneous_finite_shot_tv_radius", "verified_tv_error_bound", "confidence_level", "supported_operations", "maximum_instruction_count", "schema"]
+  },
+  "public_properties": {
+    "TwinEvidenceEnvelope": ["identity"],
+    "TwinExperiment": ["identity"],
+    "TwinHardwareReport": ["executed_program_matches_submission", "identity", "validation_scope"],
+    "TwinSnapshot": ["identity"],
+    "TwinValidationReport": ["outperforms_ideal_baseline"],
+    "TwinValidationSeries": ["identity", "mean_ideal_qpu_agreement", "mean_qpu_repeatability", "mean_twin_qpu_agreement"]
+  },
+  "public_schema_defaults": {
+    "TwinEvidenceEnvelope": "flagquantum.twin_evidence_envelope.v1",
+    "TwinEvidenceReport": "flagquantum.twin_evidence_report.v1",
+    "TwinExperiment": "flagquantum.twin_experiment.v1",
+    "TwinHardwareReport": "flagquantum.twin_hardware_report.v1",
+    "TwinPrediction": "flagquantum.twin_prediction.v1",
+    "TwinSnapshot": "flagquantum.twin_snapshot.v1",
+    "TwinValidationReport": "flagquantum.twin_validation_report.v1",
+    "TwinValidationSeries": "flagquantum.twin_validation_series.v1"
+  },
+  "public_literal_values": {
+    "TwinEvidenceStatus": [
+      "exact_circuit_verified",
+      "within_evidence_envelope",
+      "unverified",
+      "out_of_scope"
+    ]
   },
   "forbidden_responsibilities": [
     "application_policy",

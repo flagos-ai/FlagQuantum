@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 import torch
 
@@ -94,94 +94,6 @@ class QPUDigitalTwin:
             raise ValueError(
                 "device calibration does not match the frozen twin snapshot"
             )
-
-    @classmethod
-    def from_noise_model(
-        cls,
-        noise_model: NoiseModel,
-        *,
-        provider: str,
-        backend_name: str,
-        physical_qubits: Sequence[int],
-    ) -> "QPUDigitalTwin":
-        """Freeze a device-backed noise model as a mapped QPU digital twin."""
-
-        if not isinstance(noise_model, NoiseModel):
-            raise TypeError("noise_model must be a NoiseModel")
-        frozen_model = NoiseModel.from_dict(noise_model.to_dict())
-        profile = frozen_model.device_profile
-        if profile is None:
-            raise ValueError("a QPU digital twin requires a device noise profile")
-        selected = tuple(int(wire) for wire in physical_qubits)
-        logical_wires = {calibration.wire for calibration in profile.qubits}
-        if logical_wires != set(range(len(selected))):
-            raise ValueError(
-                "device profile wires must match the logical order of physical_qubits"
-            )
-        snapshot = TwinSnapshot(
-            provider=str(provider).strip(),
-            backend_name=str(backend_name).strip(),
-            captured_at=profile.captured_at,
-            physical_qubits=selected,
-            calibration_identity=profile.identity,
-            noise_model_identity=frozen_model.identity,
-        )
-        return cls(snapshot=snapshot, noise_model=frozen_model)
-
-    @classmethod
-    def from_quafu_chip_info(
-        cls,
-        chip_info: Mapping[str, Any],
-        *,
-        backend_name: str,
-        physical_qubits: Sequence[int],
-        readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
-        correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
-    ) -> "QPUDigitalTwin":
-        """Build and freeze a twin from one Quafu calibration response."""
-
-        from ..remote.qpu import quafu_noise_model_from_chip_info
-
-        selected = tuple(int(wire) for wire in physical_qubits)
-        model = quafu_noise_model_from_chip_info(
-            chip_info,
-            physical_qubits=selected,
-            readout_confusion_matrices=readout_confusion_matrices,
-            correlated_readout_confusion_matrix=correlated_readout_confusion_matrix,
-        )
-        return cls.from_noise_model(
-            model,
-            provider="quafu",
-            backend_name=backend_name,
-            physical_qubits=selected,
-        )
-
-    @classmethod
-    def from_quafu_provider(
-        cls,
-        provider: Any,
-        *,
-        backend_name: str,
-        physical_qubits: Sequence[int],
-        readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
-        correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
-    ) -> "QPUDigitalTwin":
-        """Fetch, convert, and freeze one Quafu calibration snapshot."""
-
-        if getattr(provider, "provider", None) != "quafu" or not hasattr(
-            provider, "fetch_chip_info"
-        ):
-            raise TypeError("from_quafu_provider requires a Quafu provider")
-        name = str(backend_name).strip()
-        if not name:
-            raise ValueError("backend_name cannot be empty")
-        return cls.from_quafu_chip_info(
-            provider.fetch_chip_info(name),
-            backend_name=name,
-            physical_qubits=physical_qubits,
-            readout_confusion_matrices=readout_confusion_matrices,
-            correlated_readout_confusion_matrix=correlated_readout_confusion_matrix,
-        )
 
     def predict(self, circuit: Any) -> TwinPrediction:
         """Predict ideal and calibration-conditioned output probabilities."""

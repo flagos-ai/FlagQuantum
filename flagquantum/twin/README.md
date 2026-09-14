@@ -8,6 +8,10 @@ Twin owns snapshots, mapped models, predictions, and comparison reports.
 Noise owns channels, Simulation owns evolution, and Remote owns calibration
 adapters and task submission.
 
+See the [QPU digital-twin guide](../../docs/guides/QPU_DIGITAL_TWIN.md) for the
+complete offline, Quafu validation, repetition, persistence, and interpretation
+workflows.
+
 ## Build a Twin for any QPU
 
 Start from a FlagQuantum `NoiseModel` carrying a device profile. The execution

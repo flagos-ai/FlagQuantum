@@ -1,5 +1,8 @@
 # Guides
 
+- [QPU digital twins](QPU_DIGITAL_TWIN.md): construct, validate, persist, and
+  interpret calibration-conditioned QPU models.
+
 Operational guidance, performance engineering practices, and reproducible case
 studies.
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import dataclasses
 import inspect
 import json
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
@@ -195,17 +197,13 @@ def test_twin_candidate_protects_public_method_signatures() -> None:
     signatures = contract["public_method_signatures"]
     assert isinstance(signatures, dict)
 
-    actual = {
-        "TwinExperiment.prepare": str(
-            inspect.signature(fq.twin.TwinExperiment.prepare)
-        ),
-        "TwinExperiment.evidence_from_report": str(
-            inspect.signature(fq.twin.TwinExperiment.evidence_from_report)
-        ),
-        "TwinExperiment.validation_series": str(
-            inspect.signature(fq.twin.TwinExperiment.validation_series)
-        ),
-    }
+    actual = {}
+    for qualified_name in signatures:
+        class_name, method_name = qualified_name.split(".", 1)
+        class_object = getattr(fq.twin, class_name)
+        actual[qualified_name] = str(
+            inspect.signature(getattr(class_object, method_name))
+        )
 
     assert actual == signatures
 
@@ -220,6 +218,66 @@ def test_twin_candidate_protects_public_function_signatures() -> None:
     }
 
     assert actual == signatures
+
+
+def test_twin_candidate_protects_public_class_signatures() -> None:
+    contract = _load(TWIN)
+    signatures = contract["public_class_signatures"]
+    assert isinstance(signatures, dict)
+
+    actual = {
+        name: str(inspect.signature(getattr(fq.twin, name))) for name in signatures
+    }
+
+    assert actual == signatures
+
+
+def test_twin_candidate_protects_namespace_dataclasses_and_schemas() -> None:
+    contract = _load(TWIN)
+    assert tuple(fq.twin.__all__) == tuple(contract["public_symbols"])
+
+    expected_fields = contract["public_dataclass_fields"]
+    expected_properties = contract["public_properties"]
+    expected_schemas = contract["public_schema_defaults"]
+    assert isinstance(expected_fields, dict)
+    assert isinstance(expected_properties, dict)
+    assert isinstance(expected_schemas, dict)
+
+    for class_name, field_names in expected_fields.items():
+        class_object = getattr(fq.twin, class_name)
+        assert dataclasses.is_dataclass(class_object)
+        assert class_object.__dataclass_params__.frozen is True
+        fields = dataclasses.fields(class_object)
+        assert [field.name for field in fields] == field_names
+        if class_name in expected_schemas:
+            schema = next(field for field in fields if field.name == "schema")
+            assert schema.default == expected_schemas[class_name]
+
+    actual_properties = {}
+    for class_name in expected_properties:
+        class_object = getattr(fq.twin, class_name)
+        actual_properties[class_name] = sorted(
+            name
+            for name, value in inspect.getmembers(class_object)
+            if not name.startswith("_") and isinstance(value, property)
+        )
+    assert actual_properties == expected_properties
+
+
+def test_twin_candidate_protects_status_values_and_construction_boundary() -> None:
+    contract = _load(TWIN)
+    literal_values = contract["public_literal_values"]
+    assert isinstance(literal_values, dict)
+    assert (
+        list(get_args(fq.twin.TwinEvidenceStatus))
+        == literal_values["TwinEvidenceStatus"]
+    )
+
+    removed = contract["removed_before_freeze"]
+    assert isinstance(removed, list)
+    for qualified_name in removed:
+        class_name, method_name = qualified_name.split(".", 1)
+        assert not hasattr(getattr(fq.twin, class_name), method_name)
 
 
 def test_candidate_records_approval_but_is_not_yet_frozen() -> None:
