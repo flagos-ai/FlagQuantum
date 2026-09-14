@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.dump_twin()` and `fq.twin.load_twin()` so a calibrated QPU
+  digital Twin can be reproduced after a process restart without fetching a
+  newer calibration. The strict `flagquantum.qpu_digital_twin.v1` artifact
+  binds the complete provider-neutral noise model to its frozen snapshot,
+  contains no credential or task receipt, and performs no provider operation.
+  See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.TwinSubmission`, `fq.twin.dump_submission()`, and
   `fq.twin.load_submission()` so a frozen Twin experiment and its credential-free
   Quafu receipt can survive a process restart. Loading is offline and never

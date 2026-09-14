@@ -48,8 +48,12 @@ def test_twin_namespace_is_small_and_domain_named():
         "from_noise_model",
         "from_quafu_chip_info",
         "dump_evidence",
+        "dump_submission",
+        "dump_twin",
         "dump_validation_series",
         "load_evidence",
+        "load_submission",
+        "load_twin",
         "load_validation_series",
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
@@ -58,6 +62,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "TwinHardwareReport",
         "TwinPrediction",
         "TwinSnapshot",
+        "TwinSubmission",
         "TwinValidationReport",
         "TwinValidationSeries",
     )
@@ -78,6 +83,8 @@ def test_twin_namespace_is_small_and_domain_named():
             "TwinEvidenceStatus",
             "dump_validation_series",
             "load_validation_series",
+            "dump_twin",
+            "load_twin",
         )
     )
 
