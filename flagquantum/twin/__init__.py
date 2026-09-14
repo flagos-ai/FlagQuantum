@@ -16,6 +16,7 @@ from .series import (
     dump_validation_series,
     load_validation_series,
 )
+from .submission import TwinSubmission, dump_submission, load_submission
 from .validation import TwinValidationReport
 
 __all__ = (
@@ -23,8 +24,10 @@ __all__ = (
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_evidence",
+    "dump_submission",
     "dump_validation_series",
     "load_evidence",
+    "load_submission",
     "load_validation_series",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
@@ -33,6 +36,7 @@ __all__ = (
     "TwinHardwareReport",
     "TwinPrediction",
     "TwinSnapshot",
+    "TwinSubmission",
     "TwinValidationReport",
     "TwinValidationSeries",
 )
