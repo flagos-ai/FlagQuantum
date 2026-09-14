@@ -79,6 +79,29 @@ The report uses physical identifiers for qubits and gate scopes so an
 application can draw topology overlays. It reports calibration changes, not
 Twin-to-QPU accuracy, statistical significance, or a policy decision.
 
+Build chart-ready history from saved snapshots without provider I/O:
+
+```python
+twins = [
+    fq.twin.load_twin("qpu-state-01.json"),
+    fq.twin.load_twin("qpu-state-02.json"),
+    fq.twin.load_twin("qpu-state-03.json"),
+]
+history = fq.twin.build_calibration_history(twins)
+
+for timestamp, cumulative, incremental in zip(
+    history.captured_at[1:], history.baseline_drifts, history.interval_drifts
+):
+    print(timestamp, cumulative.maximum_relative_t1_change)
+    print(timestamp, incremental.maximum_relative_t1_change)
+```
+
+The cumulative series compares every later snapshot with the first; the
+incremental series compares adjacent snapshots. The builder requires one
+strictly chronological, identity-unique series for the same target and ordered
+mapping. It does not collect calibrations, manage a database, or decide when a
+Twin is trustworthy.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:

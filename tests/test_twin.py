@@ -45,6 +45,7 @@ def test_twin_namespace_is_small_and_domain_named():
     assert "twin" in fq.__all__
     assert fqt.__all__ == (
         "QPUDigitalTwin",
+        "build_calibration_history",
         "compare_calibrations",
         "from_noise_model",
         "from_quafu_chip_info",
@@ -57,6 +58,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "load_twin",
         "load_validation_series",
         "TwinCalibrationDrift",
+        "TwinCalibrationHistory",
         "TwinEvidenceEnvelope",
         "TwinEvidenceReport",
         "TwinEvidenceStatus",
@@ -77,7 +79,9 @@ def test_twin_namespace_is_small_and_domain_named():
             "from_noise_model",
             "from_quafu_chip_info",
             "compare_calibrations",
+            "build_calibration_history",
             "TwinCalibrationDrift",
+            "TwinCalibrationHistory",
             "TwinGateDurationDrift",
             "TwinQubitCalibrationDrift",
             TwinEvidenceEnvelope.__name__,
