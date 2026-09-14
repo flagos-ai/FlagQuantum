@@ -204,6 +204,67 @@ def test_validation_history_persistence_requires_public_record(tmp_path):
         fq.twin.dump_validation_history(object(), tmp_path / "history.json")
 
 
+def test_validation_history_append_returns_new_chronological_history(tmp_path):
+    observations = _observations()
+    original = fq.twin.build_validation_history(observations[:2])
+    source = tmp_path / "history-state-02.json"
+    fq.twin.dump_validation_history(original, source)
+
+    restored = fq.twin.load_validation_history(source)
+    updated = restored.append(*observations[2])
+
+    assert original.observation_count == 2
+    assert restored.observation_count == 2
+    assert updated == fq.twin.build_validation_history(observations)
+    assert updated.observation_count == 3
+    assert updated.mean_twin_qpu_agreements[-1] == pytest.approx(0.93)
+
+
+def test_validation_history_append_rejects_wrong_types_and_binding():
+    observations = _observations()
+    history = fq.twin.build_validation_history(observations[:2])
+
+    with pytest.raises(TypeError, match="QPUDigitalTwin"):
+        history.append(object(), observations[2][1])
+    with pytest.raises(TypeError, match="TwinValidationSeries"):
+        history.append(observations[2][0], object())
+
+    other = _twin(captured_at="2026-08-14 13:30:00", t1=48.0, backend="Baihua")
+    other_series = _series(
+        other, label="other", twin_distance=0.07, ideal_distance=0.13
+    )
+    with pytest.raises(ValueError, match="same target and mapping"):
+        history.append(other, other_series)
+    with pytest.raises(ValueError, match="does not match its Twin snapshot"):
+        history.append(observations[2][0], observations[1][1])
+
+
+def test_validation_history_append_rejects_reuse_and_incompatible_circuit():
+    observations = _observations()
+    history = fq.twin.build_validation_history(observations[:2])
+
+    with pytest.raises(ValueError, match="identities must be unique"):
+        history.append(*observations[1])
+
+    twin = observations[2][0]
+    changed_circuit = _series(
+        twin,
+        label="changed-circuit",
+        twin_distance=0.07,
+        ideal_distance=0.13,
+        circuit_identity="a" * 64,
+    )
+    with pytest.raises(ValueError, match="one circuit and mapping"):
+        history.append(twin, changed_circuit)
+
+    reused_reports = replace(
+        observations[0][1],
+        snapshot_identity=twin.snapshot.identity,
+    )
+    with pytest.raises(ValueError, match="distinct hardware reports"):
+        history.append(twin, reused_reports)
+
+
 def test_validation_history_rejects_snapshot_mismatch():
     first, second = _observations()[:2]
     with pytest.raises(ValueError, match="does not match its Twin snapshot"):

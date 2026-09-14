@@ -114,6 +114,7 @@
     "TwinSubmission.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinSubmission.validate_result": "(self, result: 'DeploymentResult') -> 'TwinHardwareReport'",
     "TwinValidationReport.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinValidationHistory.append": "(self, twin: 'QPUDigitalTwin', series: 'TwinValidationSeries') -> 'TwinValidationHistory'",
     "TwinValidationHistory.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinValidationSeries.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinValidationSeries'",
     "TwinValidationSeries.to_dict": "(self) -> 'dict[str, Any]'",

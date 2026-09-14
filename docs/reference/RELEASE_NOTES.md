@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added immutable `TwinValidationHistory.append()` for incorporating one later
+  snapshot-bound validation series without rebuilding or mutating earlier
+  evidence. It preserves target, mapping, circuit, chronology and globally
+  unique hardware-report invariants; collection and scheduling remain explicit.
+  See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.dump_validation_history()` and
   `fq.twin.load_validation_history()` for canonical offline persistence of
   longitudinal Twin accuracy evidence. Loading reconstructs nested validation

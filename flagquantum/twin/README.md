@@ -212,6 +212,22 @@ offline. Saving the same content is idempotent; different or invalid existing
 content is never replaced. Loading recomputes every derived metric from the
 nested validation series and rejects tampering.
 
+Append a later validated calibration without rebuilding the earlier history:
+
+```python
+history = fq.twin.load_validation_history("validation-history-state-02.json")
+later_twin = fq.twin.load_twin("qpu-state-03.json")
+later_series = fq.twin.load_validation_series("validation-state-03.json")
+
+updated = history.append(later_twin, later_series)
+fq.twin.dump_validation_history(updated, "validation-history-state-03.json")
+```
+
+`append()` returns a new immutable history. It requires a later unique snapshot,
+the same target, physical mapping, fixed circuit and structure, and previously
+unused hardware reports. Use a new output path so earlier evidence remains
+append-only and auditable.
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified
