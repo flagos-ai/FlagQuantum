@@ -1,5 +1,11 @@
 """Calibration-conditioned digital models of quantum processing units."""
 
+from .drift import (
+    TwinCalibrationDrift,
+    TwinGateDurationDrift,
+    TwinQubitCalibrationDrift,
+    compare_calibrations,
+)
 from .evidence import (
     TwinEvidenceEnvelope,
     TwinEvidenceReport,
@@ -22,6 +28,7 @@ from .validation import TwinValidationReport
 
 __all__ = (
     "QPUDigitalTwin",
+    "compare_calibrations",
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_evidence",
@@ -32,12 +39,15 @@ __all__ = (
     "load_submission",
     "load_twin",
     "load_validation_series",
+    "TwinCalibrationDrift",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
     "TwinExperiment",
+    "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
+    "TwinQubitCalibrationDrift",
     "TwinSnapshot",
     "TwinSubmission",
     "TwinValidationReport",

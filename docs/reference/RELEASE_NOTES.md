@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.compare_calibrations()` and immutable per-qubit, per-gate, and
+  summary drift records. Comparable saved Twins now expose time-normalized T1,
+  T2, readout, gate-duration, and channel-model changes using physical QPU
+  identifiers. The comparison is offline and reports calibration facts without
+  inventing a significance threshold, accuracy claim, automatic model update,
+  or trust decision. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.dump_twin()` and `fq.twin.load_twin()` so a calibrated QPU
   digital Twin can be reproduced after a process restart without fetching a
   newer calibration. The strict `flagquantum.qpu_digital_twin.v1` artifact

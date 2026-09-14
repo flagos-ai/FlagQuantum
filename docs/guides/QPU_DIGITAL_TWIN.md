@@ -69,6 +69,36 @@ not fetch current calibration or contact a provider. The private mode-0600 file
 contains the full provider-neutral noise model but no credential or task
 receipt. It is a model artifact, not proof that the model is still accurate.
 
+## Compare calibration drift
+
+Compare two saved Twins for the same QPU mapping:
+
+```python
+import flagquantum as fq
+
+reference = fq.twin.load_twin("shenglian-before.json")
+current = fq.twin.load_twin("shenglian-after.json")
+drift = fq.twin.compare_calibrations(reference, current)
+
+print(f"max T1 change: {drift.maximum_relative_t1_change:.2%}")
+print(f"max T2 change: {drift.maximum_relative_t2_change:.2%}")
+if drift.maximum_readout_tv_distance is not None:
+    print(f"max readout drift: {drift.maximum_readout_tv_distance:.2%}")
+```
+
+`qubit_drifts` identifies every result by physical qubit;
+`gate_duration_drifts` identifies gate scopes by physical qubits, including
+couplers. This gives topology and history applications stable facts to display.
+The comparison normalizes timing units and requires the same target, mapping,
+logical calibration structure, and gate scopes.
+
+Relative changes are signed `(current - reference) / reference`; summary values
+use absolute magnitudes. Readout drift is total-variation distance between
+conditional measurement rows. `has_observed_drift` only says represented
+calibration values differ—it does not prove statistical significance, reduced
+prediction accuracy, or an expired trust window. Comparison is offline and does
+not refresh or update either Twin.
+
 ## Freeze a hardware validation
 
 ```python
