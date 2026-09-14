@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.prepare_candidate_trial()` and immutable candidate-evaluation
+  records for comparing an incumbent and later Twin against the exact same
+  prospectively collected QPU counts. The result reports a conservative
+  finite-shot interval and returns `improved`, `degraded`, or `inconclusive`;
+  only the trial's explicit experiment submission performs provider I/O, and no
+  model is automatically promoted. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.align_histories()` and immutable `TwinEvolutionHistory` to
   align calibration drift with Twin↔QPU, Ideal↔QPU, QPU-repeatability and
   verified-bound changes over the exact same snapshots. The offline comparison

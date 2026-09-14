@@ -246,6 +246,42 @@ print(evolution.latest_verified_bound_change)
 These are synchronized observations, not a causal model: the API never claims
 that a measured calibration change caused an accuracy change.
 
+Compare a newer candidate with the incumbent on one future hardware result:
+
+```python
+trial = fq.twin.prepare_candidate_trial(
+    incumbent,
+    candidate,
+    circuit,
+    name="candidate-bell",
+    shots=1024,
+)
+
+# The only hardware submission in this comparison.
+receipt = trial.experiment.submit(provider)
+result = provider.fetch_result(receipt)
+evaluation = trial.validate_result(
+    result,
+    receipt=receipt,
+    circuit=circuit,
+)
+
+print(evaluation.decision)
+print(evaluation.candidate_improvement)
+print(
+    evaluation.candidate_improvement_lower_bound,
+    evaluation.candidate_improvement_upper_bound,
+)
+```
+
+Both predictions are frozen before submission and compared with the exact same
+counts. Positive improvement means the candidate has lower measurement-
+distribution TV distance. The decision is `improved` or `degraded` only when a
+conservative finite-shot confidence interval excludes zero; otherwise it is
+`inconclusive`. It is evidence for this circuit and mapping, not automatic model
+promotion. The complete one-submission Quafu program is
+[`examples/remote/quafu_twin_candidate.py`](../../examples/remote/quafu_twin_candidate.py).
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified
@@ -345,6 +381,7 @@ python -m pytest \
   tests/test_twin.py \
   tests/test_twin_evidence.py \
   tests/test_twin_experiment.py \
+  tests/test_twin_candidate.py \
   tests/test_twin_validation_series.py -q
 ```
 
