@@ -46,6 +46,12 @@ def test_architecture_contract_declares_independent_domains() -> None:
     )
     assert compiler["status"] == "complete"
     assert compiler["current_authority"] == [compiler["target_authority"]]
+    twin = next(
+        track for track in migration_tracks if track["name"] == "twin_convergence"
+    )
+    assert twin["status"] == "complete"
+    assert twin["current_authority"] == [twin["target_authority"]]
+    assert "FlagQuantum-qpu-digital-twin" not in twin["current_authority"]
 
 
 def test_program_artifact_wraps_circuit_without_replacing_circuit_ir() -> None:
