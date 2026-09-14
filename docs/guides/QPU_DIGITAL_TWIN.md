@@ -62,6 +62,33 @@ It does not submit a task. The explicit submission boundary is:
 receipt = experiment.submit(provider)  # submits one real Quafu task
 ```
 
+Save the exact experiment and receipt together when the QPU may remain queued
+after this process exits:
+
+```python
+submission = fq.twin.TwinSubmission.from_receipt(experiment, receipt)
+fq.twin.dump_submission(submission, "twin-submission.json")
+```
+
+Resume in a later process without creating another task:
+
+```python
+from flagquantum.remote.qpu import QuafuProvider
+
+provider = QuafuProvider()
+submission = fq.twin.load_submission("twin-submission.json")
+status = provider.query_status(submission.receipt)  # one explicit status query
+
+if status == "Finished":
+    result = provider.fetch_result(submission.receipt)
+    hardware_report = submission.validate_result(result)
+```
+
+Loading is offline. It does not poll, submit, retry, cancel, or fetch anything.
+The private mode-0600 file contains no credentials, is identity-bound to the
+submitted QASM and ordered physical mapping, and is never overwritten with
+different content.
+
 Poll with the provider workflow, fetch the terminal result, and bind it back to
 the exact receipt:
 
@@ -138,7 +165,8 @@ application responsibilities outside FlagQuantum.
 
 ## Version 1 compatibility
 
-The public `fq.twin` v1 API, `flagquantum.twin_evidence_envelope.v1`, and
+The public `fq.twin` v1 API, `flagquantum.twin_submission.v1`,
+`flagquantum.twin_evidence_envelope.v1`, and
 `flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a

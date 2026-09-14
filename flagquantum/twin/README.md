@@ -61,10 +61,18 @@ experiment = fq.twin.TwinExperiment.prepare(
     shots=1024,
 )
 handle = experiment.submit(provider)
+submission = fq.twin.TwinSubmission.from_receipt(experiment, handle)
+fq.twin.dump_submission(submission, "twin-submission.json")
+
+# A later process restores the same task; loading never submits or polls.
+submission = fq.twin.load_submission("twin-submission.json")
 # Poll explicitly through the provider, then fetch the matching result.
-result = provider.fetch_result(handle)
-hardware_report = experiment.validate_result(result, receipt=handle)
-evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
+result = provider.fetch_result(submission.receipt)
+hardware_report = submission.validate_result(result)
+evidence = submission.experiment.evidence_from_report(
+    hardware_report,
+    circuit=circuit,
+)
 fq.twin.dump_evidence(evidence, "twin-evidence.json")
 ```
 
@@ -77,6 +85,12 @@ preserves their measurement order. This is not an independent proof of compiler
 semantic equivalence or state fidelity. The TV radius adds a conservative
 multinomial finite-shot radius to the observed Twin-to-hardware distance. It
 grants no estimate for unseen circuits.
+
+The submission artifact is credential-free, written with private mode-0600
+permissions, and never replaces different or invalid content. Its strict v1
+loader restores only the frozen experiment and original task receipt; provider
+construction, status queries, result retrieval, cancellation, and retry policy
+remain explicit application responsibilities.
 
 The snippet above continues from the provider and Twin construction shown in
 the preceding sections. For a complete copy-and-run Quafu workflow—including

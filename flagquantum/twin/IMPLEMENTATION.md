@@ -14,6 +14,7 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `QPUDigitalTwin`: a frozen device model bound to a physical mapping;
 - `TwinExperiment`: a prediction bound to the exact program submitted;
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
+- `TwinSubmission`: a persistable binding of an experiment to its original task;
 - `TwinSnapshot`: immutable calibration and model identity;
 - `TwinPrediction`: ideal and calibration-conditioned probabilities;
 - `TwinValidationReport`: comparison with one hardware observation;
@@ -46,11 +47,20 @@ experiment = TwinExperiment.prepare(
     shots=1024,
 )
 handle = experiment.submit(provider)
+submission = fq.twin.TwinSubmission.from_receipt(experiment, handle)
+fq.twin.dump_submission(submission, "twin-submission.json")
 # Poll through the provider, then fetch the matching result.
-result = provider.fetch_result(handle)
-hardware_report = experiment.validate_result(result, receipt=handle)
-evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
+submission = fq.twin.load_submission("twin-submission.json")
+result = provider.fetch_result(submission.receipt)
+hardware_report = submission.validate_result(result)
+evidence = submission.experiment.evidence_from_report(
+    hardware_report,
+    circuit=circuit,
+)
 ```
+
+The submission file allows a later process to continue the original task. It
+contains no credentials and loading it performs no provider operation.
 
 For repeated executions of that same frozen experiment, keep model error,
 ideal-baseline error, observed QPU repeatability, and finite-shot uncertainty

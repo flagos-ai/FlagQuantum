@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.TwinSubmission`, `fq.twin.dump_submission()`, and
+  `fq.twin.load_submission()` so a frozen Twin experiment and its credential-free
+  Quafu receipt can survive a process restart. Loading is offline and never
+  submits, polls, retries, cancels, or fetches a task; those provider actions
+  remain explicit. The strict `flagquantum.twin_submission.v1` file is private,
+  identity-bound, and refuses destructive replacement. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.submit()` and `fq.restore_job()` for detached Quafu counts and
   Jiuding managed program jobs. Jobs support one-shot status/result queries,
   explicit waits, cancellation requests, and credential-free JSON receipts.
