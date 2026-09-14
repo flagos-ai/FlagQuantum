@@ -45,6 +45,41 @@ report = prediction.compare_counts({"00": 500, "11": 500})
 The counts above illustrate the comparison interface; they are not a live
 hardware observation. Use `TwinExperiment` to bind a real submission and result.
 
+The shortest identity-bound validation path lets FlagQuantum emit the submitted
+OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
+circuit qubit, so no measurement operation is added to the `Circuit` itself:
+
+```python
+experiment = fq.twin.TwinExperiment.prepare(
+    twin,
+    circuit,
+    name="frozen-bell",
+    shots=1024,
+)
+handle = experiment.submit(provider)
+# Poll explicitly through the provider, then fetch the matching result.
+result = provider.fetch_result(handle)
+hardware_report = experiment.validate_result(result, receipt=handle)
+evidence = experiment.evidence_from_report(hardware_report, circuit=circuit)
+fq.twin.dump_evidence(evidence, "twin-evidence.json")
+```
+
+`evidence_from_report()` verifies the circuit, canonical OpenQASM, receipt,
+result, authoritative executed program, physical mapping, counts, and shot
+count before producing exact-circuit evidence. Quafu may lower gates after
+submission; that provider-attested transformation is accepted only when the
+result echoes the frozen source, uses exactly the selected physical qubits, and
+preserves their measurement order. This is not an independent proof of compiler
+semantic equivalence or state fidelity. The TV radius adds a conservative
+multinomial finite-shot radius to the observed Twin-to-hardware distance. It
+grants no estimate for unseen circuits.
+
+The snippet above continues from the provider and Twin construction shown in
+the preceding sections. For a complete copy-and-run Quafu workflow—including
+token validation, live calibration retrieval, bounded polling, evidence
+persistence, and report loading—run
+[`examples/remote/quafu_twin_evidence.py`](../../examples/remote/quafu_twin_evidence.py).
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

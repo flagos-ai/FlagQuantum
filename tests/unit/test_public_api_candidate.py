@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 
@@ -187,6 +188,23 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core
+
+
+def test_twin_candidate_protects_public_method_signatures() -> None:
+    contract = _load(TWIN)
+    signatures = contract["public_method_signatures"]
+    assert isinstance(signatures, dict)
+
+    actual = {
+        "TwinExperiment.prepare": str(
+            inspect.signature(fq.twin.TwinExperiment.prepare)
+        ),
+        "TwinExperiment.evidence_from_report": str(
+            inspect.signature(fq.twin.TwinExperiment.evidence_from_report)
+        ),
+    }
+
+    assert actual == signatures
 
 
 def test_candidate_records_approval_but_is_not_yet_frozen() -> None:
