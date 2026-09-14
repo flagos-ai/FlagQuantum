@@ -16,6 +16,7 @@ from flagquantum.twin import (
     TwinPrediction,
     TwinSnapshot,
     TwinValidationReport,
+    TwinValidationSeries,
 )
 
 
@@ -56,6 +57,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "TwinPrediction",
         "TwinSnapshot",
         "TwinValidationReport",
+        "TwinValidationSeries",
     )
     assert all(
         value in fqt.__all__
@@ -70,6 +72,7 @@ def test_twin_namespace_is_small_and_domain_named():
             TwinPrediction.__name__,
             TwinSnapshot.__name__,
             TwinValidationReport.__name__,
+            TwinValidationSeries.__name__,
             "TwinEvidenceStatus",
         )
     )

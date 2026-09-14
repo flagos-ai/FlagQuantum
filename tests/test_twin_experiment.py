@@ -170,6 +170,7 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
 
         def __init__(self):
             self.qasm = None
+            self.submissions = 0
 
         def fetch_chip_info(self, chip):
             assert chip == "Baihua"
@@ -183,10 +184,11 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
                 (3, 4),
             )
             self.qasm = qasm
+            self.submissions += 1
             digest = hashlib.sha256(qasm.encode()).hexdigest()
             return ProviderTaskHandle(
                 provider="quafu",
-                task_id="example-task",
+                task_id=f"example-task-{self.submissions}",
                 backend_name=chip,
                 payload={
                     "deployment_receipt_schema": "flagquantum_submission_receipt_v1",
@@ -201,7 +203,7 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
             )
 
         def query_status(self, receipt):
-            assert receipt.task_id == "example-task"
+            assert receipt.task_id.startswith("example-task-")
             return "Finished"
 
         def fetch_result(self, receipt):
@@ -228,6 +230,7 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
     quafu_twin_evidence.main()
 
     assert destination.is_file()
+    assert provider.submissions == 2
     restored = fq.twin.load_evidence(destination)
     assert restored.physical_qubits == (3, 4)
 

@@ -11,6 +11,7 @@ from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
 from .model import QPUDigitalTwin, TwinSnapshot
 from .prediction import TwinPrediction
+from .series import TwinValidationSeries
 from .validation import TwinValidationReport
 
 __all__ = (
@@ -27,4 +28,5 @@ __all__ = (
     "TwinPrediction",
     "TwinSnapshot",
     "TwinValidationReport",
+    "TwinValidationSeries",
 )

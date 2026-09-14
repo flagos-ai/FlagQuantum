@@ -25,7 +25,8 @@
     "TwinHardwareReport",
     "TwinPrediction",
     "TwinSnapshot",
-    "TwinValidationReport"
+    "TwinValidationReport",
+    "TwinValidationSeries"
   ],
   "public_signatures": {
     "from_noise_model": "(noise_model: 'NoiseModel', *, target: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
@@ -35,7 +36,8 @@
   },
   "public_method_signatures": {
     "TwinExperiment.prepare": "(twin: 'QPUDigitalTwin', circuit: 'Any', *, submitted_qasm: 'str | None' = None, name: 'str', shots: 'int') -> 'TwinExperiment'",
-    "TwinExperiment.evidence_from_report": "(self, report: 'TwinHardwareReport', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinEvidenceEnvelope'"
+    "TwinExperiment.evidence_from_report": "(self, report: 'TwinHardwareReport', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinEvidenceEnvelope'",
+    "TwinExperiment.validation_series": "(self, reports: 'Sequence[TwinHardwareReport]', *, circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinValidationSeries'"
   },
   "forbidden_responsibilities": [
     "application_policy",
