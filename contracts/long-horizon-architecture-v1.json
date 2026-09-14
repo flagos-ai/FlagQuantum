@@ -96,12 +96,12 @@
       "name": "twin_convergence",
       "owner": "twin-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["FlagQuantum-qpu-digital-twin/flagquantum"],
+      "current_authority": ["flagquantum/twin"],
       "target_authority": "flagquantum/twin",
       "compatibility_adapter": "none",
-      "completion_evidence": "a frozen calibration produces a prediction and an identity-bound hardware validation report through existing Noise, Simulation, and Remote public boundaries",
+      "completion_evidence": "the frozen fq.twin v1 contract builds calibration-bound snapshots, predicts through Noise and Simulation, and produces identity-bound hardware validation reports through Remote without exposing research-stage modules",
       "retirement_condition": "only independently reviewed models leave the research worktree and no stage-numbered research module becomes a public API",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "name": "ecosystem_convergence",
