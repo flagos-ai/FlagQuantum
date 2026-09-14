@@ -79,3 +79,8 @@ calibration collection, model construction, promotion, scheduling, or routing.
 Candidate submissions can now be persisted as one strict binding containing the
 complete trial and its existing provider receipt, then restored for result
 validation without a resubmission path.
+
+Candidate circuit suites now compare the same two frozen models over multiple
+distinct circuits on one ordered physical mapping. They preserve per-task
+identity binding and apply simultaneous finite-shot confidence correction, but
+they do not generalize evidence beyond the predeclared suite or promote a model.

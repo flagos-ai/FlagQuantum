@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added fixed Twin candidate circuit suites. Applications can freeze distinct
+  circuit predictions for one incumbent and candidate, explicitly submit and
+  checkpoint each existing single-task trial, then obtain a simultaneous
+  finite-shot comparison across the suite. The result reports mean incumbent,
+  candidate, and ideal-SV agreement without claiming arbitrary-circuit support
+  or automatically promoting a model. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added resumable Twin candidate submissions. A complete frozen incumbent-versus-
   candidate trial can be bound to one existing Quafu receipt, written once to a
   private file, restored in a later process, and validated without submitting a

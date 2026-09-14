@@ -308,6 +308,50 @@ fetches the retained receipt. If submission succeeds but the process exits
 before the checkpoint is written, reconcile the provider task history instead
 of submitting again.
 
+Compare the same incumbent and candidate over a predeclared circuit suite:
+
+```python
+circuits = (
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).x(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(1, 0).x(1),
+)
+suite = fq.twin.prepare_candidate_suite(
+    incumbent,
+    candidate,
+    circuits,
+    name="candidate-workloads",
+    shots=1024,
+)
+
+# Each task remains explicit and uses the existing one-task checkpoint.
+submissions = []
+for index, trial in enumerate(suite.trials, start=1):
+    receipt = trial.experiment.submit(provider)
+    submission = fq.twin.TwinCandidateSubmission.from_receipt(trial, receipt)
+    fq.twin.dump_candidate_submission(
+        submission,
+        f"candidate-submission-{index:02d}.json",
+    )
+    submissions.append(submission)
+
+evaluation = suite.validate_results(
+    submissions,
+    results,
+    circuits=circuits,
+)
+print(evaluation.decision)
+print(evaluation.mean_candidate_qpu_agreement)
+```
+
+The confidence correction covers all fixed circuits simultaneously. The result
+is a mean measurement-distribution comparison for this suite and mapping, not
+arbitrary-circuit accuracy or automatic model promotion. The complete Quafu
+workflow is
+[`examples/remote/quafu_twin_candidate_suite.py`](../../examples/remote/quafu_twin_candidate_suite.py);
+it prepares offline, submits one indexed task per invocation, checkpoints it,
+and evaluates only after every fixed result exists.
+
 Each agreement is `1 - TV distance` for classical measurement-output
 distributions. QPU repeatability is the pairwise agreement between observed
 hardware distributions and still includes finite-shot noise. The verified

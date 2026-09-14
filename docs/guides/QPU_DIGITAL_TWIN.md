@@ -477,6 +477,90 @@ provider accepted a task but the process exited before saving the checkpoint,
 reconcile the printed task ID or provider task history; do not blindly rerun
 `submit`.
 
+## Compare a candidate across fixed circuits
+
+A single trial proves only one exact circuit. Freeze a small, predeclared suite
+when the question is whether a candidate is closer to later QPU measurements
+across several circuit structures on the same physical mapping:
+
+```python
+import flagquantum as fq
+
+incumbent = fq.twin.load_twin("twin-incumbent.json")
+candidate = fq.twin.from_quafu_chip_info(
+    current_chip_info,
+    target="quafu:Shenglian",
+    qubits=incumbent.snapshot.physical_qubits,
+)
+circuits = (
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).x(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(1, 0).x(1),
+)
+suite = fq.twin.prepare_candidate_suite(
+    incumbent,
+    candidate,
+    circuits,
+    name="candidate-workloads",
+    shots=1024,
+)
+fq.twin.dump_candidate_suite(suite, "candidate-suite.json")
+```
+
+Submission remains explicit and individually checkpointed:
+
+```python
+submissions = []
+for index, trial in enumerate(suite.trials, start=1):
+    receipt = trial.experiment.submit(provider)  # one QPU task
+    submission = fq.twin.TwinCandidateSubmission.from_receipt(trial, receipt)
+    fq.twin.dump_candidate_submission(
+        submission,
+        f"candidate-submission-{index:02d}.json",
+    )
+    submissions.append(submission)
+```
+
+After the application has fetched one terminal result for every retained
+receipt, validate the complete suite without another submission:
+
+```python
+evaluation = suite.validate_results(
+    submissions,
+    results,
+    circuits=circuits,
+    confidence_level=0.95,
+)
+
+print("decision:", evaluation.decision)
+print(f"incumbent Twin ↔ QPU: {evaluation.mean_incumbent_qpu_agreement:.2%}")
+print(f"candidate Twin ↔ QPU: {evaluation.mean_candidate_qpu_agreement:.2%}")
+print(f"ideal SV ↔ QPU: {evaluation.mean_ideal_qpu_agreement:.2%}")
+print(
+    "95% mean improvement interval:",
+    evaluation.candidate_improvement_lower_bound,
+    evaluation.candidate_improvement_upper_bound,
+)
+```
+
+The suite applies a simultaneous confidence correction over its fixed circuits.
+It rejects missing, reordered, duplicate, or mismatched trials, submissions,
+results, circuits, snapshots, mappings, programs, and task IDs. Its mean
+agreement concerns classical measurement distributions for this suite only; it
+is not quantum-state fidelity, arbitrary-circuit accuracy, or a promotion
+decision.
+
+The complete Quafu workflow deliberately separates offline preparation,
+one indexed submission per command, and submission-free evaluation:
+
+```bash
+python examples/remote/quafu_twin_candidate_suite.py prepare
+python examples/remote/quafu_twin_candidate_suite.py submit 1
+python examples/remote/quafu_twin_candidate_suite.py submit 2
+python examples/remote/quafu_twin_candidate_suite.py submit 3
+python examples/remote/quafu_twin_candidate_suite.py evaluate
+```
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.
@@ -495,6 +579,8 @@ application responsibilities outside FlagQuantum.
 The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_submission.v1`,
 `flagquantum.twin_candidate_submission.v1`,
+`flagquantum.twin_candidate_suite.v1`,
+`flagquantum.twin_candidate_suite_evaluation.v1`,
 `flagquantum.twin_evidence_envelope.v1`, and
 `flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
