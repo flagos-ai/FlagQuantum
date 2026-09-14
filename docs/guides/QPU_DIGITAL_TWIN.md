@@ -255,6 +255,56 @@ The evidence envelope is the reduced support object used to assess one
 prediction. Neither artifact is a signed provider receipt or a raw-count
 reproduction bundle.
 
+## Track validation across calibrations
+
+Pair each saved Twin with the validation series produced for that exact
+snapshot. Every pair must use the same fixed circuit and ordered physical
+mapping:
+
+```python
+import flagquantum as fq
+
+observations = [
+    (
+        fq.twin.load_twin("shenglian-state-01.json"),
+        fq.twin.load_validation_series("shenglian-validation-01.json"),
+    ),
+    (
+        fq.twin.load_twin("shenglian-state-02.json"),
+        fq.twin.load_validation_series("shenglian-validation-02.json"),
+    ),
+]
+history = fq.twin.build_validation_history(observations)
+
+for timestamp, twin_match, ideal_match, qpu_repeatability, shot_radius, bound in zip(
+    history.captured_at,
+    history.mean_twin_qpu_agreements,
+    history.mean_ideal_qpu_agreements,
+    history.mean_qpu_repeatabilities,
+    history.simultaneous_finite_shot_tv_radii,
+    history.verified_tv_error_bounds,
+    strict=True,
+):
+    print(timestamp, twin_match, ideal_match, qpu_repeatability, shot_radius, bound)
+```
+
+This is a longitudinal history of classical measurement-distribution metrics,
+not state fidelity. It preserves Twin↔QPU agreement, noiseless Ideal↔QPU
+agreement, observed QPU repeatability, and evidence-qualified TV bounds as
+separate values. Snapshots must be chronological and unique; hardware-report
+identities cannot be reused across observations.
+
+Run the same offline workflow from the command line:
+
+```bash
+python examples/twin_validation_history.py \
+  --observation shenglian-state-01.json shenglian-validation-01.json \
+  --observation shenglian-state-02.json shenglian-validation-02.json
+```
+
+Building the history never fetches calibration, submits hardware work, updates
+a model, or decides whether an application should trust or route a workload.
+
 ## Evidence statuses
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.

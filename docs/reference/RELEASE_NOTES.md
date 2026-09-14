@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.build_validation_history()` and immutable
+  `TwinValidationHistory` for one fixed circuit across chronological frozen
+  Twins. It keeps Twin↔QPU agreement, noiseless Ideal↔QPU agreement, QPU
+  repeatability, and verified TV bounds separate while enforcing snapshot,
+  target, mapping, circuit, chronology, and hardware-report identity. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.dump_calibration_history()` and
   `fq.twin.load_calibration_history()` for canonical, credential-free offline
   persistence of cumulative and interval calibration-drift series. Loading
