@@ -275,6 +275,8 @@ observations = [
     ),
 ]
 history = fq.twin.build_validation_history(observations)
+fq.twin.dump_validation_history(history, "shenglian-validation-history.json")
+history = fq.twin.load_validation_history("shenglian-validation-history.json")
 
 for timestamp, twin_match, ideal_match, qpu_repeatability, shot_radius, bound in zip(
     history.captured_at,
@@ -299,11 +301,15 @@ Run the same offline workflow from the command line:
 ```bash
 python examples/twin_validation_history.py \
   --observation shenglian-state-01.json shenglian-validation-01.json \
-  --observation shenglian-state-02.json shenglian-validation-02.json
+  --observation shenglian-state-02.json shenglian-validation-02.json \
+  --output shenglian-validation-history.json
 ```
 
 Building the history never fetches calibration, submits hardware work, updates
 a model, or decides whether an application should trust or route a workload.
+The optional output is canonical private JSON. Loading it verifies its strict
+schema, nested series, all cross-observation invariants, and every derived
+metric; tampered summaries and destructive replacement are rejected.
 
 ## Evidence statuses
 

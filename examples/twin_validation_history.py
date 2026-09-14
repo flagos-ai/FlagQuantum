@@ -23,6 +23,11 @@ def main() -> None:
         required=True,
         help="repeat in strictly increasing calibration time",
     )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="optionally save the canonical validation history",
+    )
     arguments = parser.parse_args()
     if len(arguments.observation) < 2:
         parser.error("provide at least two --observation pairs")
@@ -35,6 +40,8 @@ def main() -> None:
         for twin_path, validation_path in arguments.observation
     ]
     history = fq.twin.build_validation_history(observations)
+    if arguments.output is not None:
+        fq.twin.dump_validation_history(history, arguments.output)
 
     print(
         f"{history.provider}:{history.backend_name}",
