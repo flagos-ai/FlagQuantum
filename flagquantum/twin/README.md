@@ -62,6 +62,23 @@ The strict v1 model artifact contains the frozen snapshot and provider-neutral
 noise model, but no credentials or task receipt. Loading is offline and does not
 refresh calibration, submit work, or claim that the saved model remains current.
 
+Compare two model snapshots for the same physical mapping without provider I/O:
+
+```python
+before = fq.twin.load_twin("qpu-before.json")
+after = fq.twin.load_twin("qpu-after.json")
+drift = fq.twin.compare_calibrations(before, after)
+
+print(drift.maximum_relative_t1_change)
+print(drift.maximum_readout_tv_distance)
+for qubit in drift.qubit_drifts:
+    print(qubit.physical_qubit, qubit.relative_t2_delta)
+```
+
+The report uses physical identifiers for qubits and gate scopes so an
+application can draw topology overlays. It reports calibration changes, not
+Twin-to-QPU accuracy, statistical significance, or a policy decision.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:

@@ -12,6 +12,7 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 ## Public entry points
 
 - `QPUDigitalTwin`: a frozen device model bound to a physical mapping;
+- `TwinCalibrationDrift`: offline change facts between comparable Twin snapshots;
 - `TwinExperiment`: a prediction bound to the exact program submitted;
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
 - `TwinSubmission`: a persistable binding of an experiment to its original task;
@@ -45,6 +46,18 @@ assert restored.snapshot.identity == twin.snapshot.identity
 The model artifact is separate from evidence and submission artifacts. It
 contains the full provider-neutral noise specification but no credentials,
 remote task, accuracy proof, or automatic refresh behavior.
+
+Compare two frozen models only when they identify the same target and mapping:
+
+```python
+drift = fq.twin.compare_calibrations(reference_twin, current_twin)
+for qubit in drift.qubit_drifts:
+    print(qubit.physical_qubit, qubit.relative_t1_delta)
+```
+
+Time values are normalized to seconds, and gate scopes are translated from
+logical wires back to physical qubits. The report provides no significance
+threshold and does not infer accuracy decay or update either model.
 
 For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:
