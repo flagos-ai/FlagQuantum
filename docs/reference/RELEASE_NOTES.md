@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added resumable Twin candidate submissions. A complete frozen incumbent-versus-
+  candidate trial can be bound to one existing Quafu receipt, written once to a
+  private file, restored in a later process, and validated without submitting a
+  second hardware task. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.prepare_candidate_trial()` and immutable candidate-evaluation
   records for comparing an incumbent and later Twin against the exact same
   prospectively collected QPU counts. The result reports a conservative

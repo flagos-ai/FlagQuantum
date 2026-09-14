@@ -6,6 +6,11 @@ from .candidate import (
     TwinCandidateTrial,
     prepare_candidate_trial,
 )
+from .candidate_submission import (
+    TwinCandidateSubmission,
+    dump_candidate_submission,
+    load_candidate_submission,
+)
 from .drift import (
     TwinCalibrationDrift,
     TwinGateDurationDrift,
@@ -54,12 +59,14 @@ __all__ = (
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_calibration_history",
+    "dump_candidate_submission",
     "dump_evidence",
     "dump_submission",
     "dump_twin",
     "dump_validation_history",
     "dump_validation_series",
     "load_calibration_history",
+    "load_candidate_submission",
     "load_evidence",
     "load_submission",
     "load_twin",
@@ -70,6 +77,7 @@ __all__ = (
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
     "TwinCandidateEvaluation",
+    "TwinCandidateSubmission",
     "TwinCandidateTrial",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",

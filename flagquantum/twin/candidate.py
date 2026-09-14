@@ -15,6 +15,11 @@ from ._statistics import finite_shot_tv_radius
 from .experiment import TwinExperiment, TwinHardwareReport
 from .model import QPUDigitalTwin, TwinSnapshot
 from .prediction import TwinPrediction
+from .submission import (
+    _experiment_from_dict,
+    _prediction_from_dict,
+    _require_fields,
+)
 from .validation import TwinValidationReport
 
 _TRIAL_SCHEMA = "flagquantum.twin_candidate_trial.v1"
@@ -36,6 +41,38 @@ def _digest(value: str, name: str) -> str:
     ):
         raise ValueError(f"{name} must be a lowercase SHA-256 digest")
     return value
+
+
+def _snapshot_from_dict(payload: Mapping[str, Any]) -> TwinSnapshot:
+    _require_fields(
+        payload,
+        {
+            "schema",
+            "provider",
+            "backend_name",
+            "captured_at",
+            "physical_qubits",
+            "calibration_identity",
+            "noise_model_identity",
+        },
+        name="Twin snapshot",
+    )
+    try:
+        return TwinSnapshot(
+            schema=str(payload["schema"]),
+            provider=str(payload["provider"]),
+            backend_name=str(payload["backend_name"]),
+            captured_at=str(payload["captured_at"]),
+            physical_qubits=tuple(payload["physical_qubits"]),
+            calibration_identity=_digest(
+                str(payload["calibration_identity"]), "calibration_identity"
+            ),
+            noise_model_identity=_digest(
+                str(payload["noise_model_identity"]), "noise_model_identity"
+            ),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin snapshot") from error
 
 
 @dataclass(frozen=True)
@@ -318,6 +355,48 @@ class TwinCandidateTrial:
             "incumbent_prediction": self.incumbent_prediction.to_dict(),
             "experiment": self.experiment.to_dict(),
         }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> TwinCandidateTrial:
+        """Restore a trial from its strict version-1 serialized form."""
+
+        if not isinstance(payload, Mapping):
+            raise TypeError("Twin candidate trial must be a mapping")
+        _require_fields(
+            payload,
+            {
+                "schema",
+                "incumbent_snapshot",
+                "candidate_snapshot",
+                "incumbent_prediction",
+                "experiment",
+            },
+            name="Twin candidate trial",
+        )
+        incumbent_snapshot = payload["incumbent_snapshot"]
+        candidate_snapshot = payload["candidate_snapshot"]
+        incumbent_prediction = payload["incumbent_prediction"]
+        experiment = payload["experiment"]
+        if not all(
+            isinstance(member, Mapping)
+            for member in (
+                incumbent_snapshot,
+                candidate_snapshot,
+                incumbent_prediction,
+                experiment,
+            )
+        ):
+            raise ValueError("Twin candidate trial members must be JSON objects")
+        try:
+            return cls(
+                schema=str(payload["schema"]),
+                incumbent_snapshot=_snapshot_from_dict(incumbent_snapshot),
+                candidate_snapshot=_snapshot_from_dict(candidate_snapshot),
+                incumbent_prediction=_prediction_from_dict(incumbent_prediction),
+                experiment=_experiment_from_dict(experiment),
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError("Invalid Twin candidate trial") from error
 
 
 def prepare_candidate_trial(
