@@ -601,6 +601,38 @@ from provider topology, compose independently validated cells, estimate a new
 bound, or claim arbitrary-circuit accuracy. The complete offline example is
 `examples/twin_circuit_support.py`.
 
+### Compose connected structural coverage
+
+Several overlapping `TwinCircuitSupport` cells from the same QPU and calibration
+capture can be combined into a structural region:
+
+```python
+region = fq.twin.compose_connected_region(
+    [(twin_a, support_a), (twin_b, support_b)]
+)
+
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+coverage = region.coverage_report(
+    circuit,
+    physical_qubits=(20, 27, 34),
+)
+
+print(coverage.status)
+print(coverage.missing_qubits)
+print(coverage.missing_directed_couplers)
+```
+
+The mapping is mandatory and ordered: logical wire `i` maps to
+`physical_qubits[i]`. Composition rejects different targets, calibration
+capture times, mismatched evidence identities, and disconnected cells. It uses
+the most conservative common operation, instruction-count, and depth boundary.
+
+Region coverage is structural only. Local cell error bounds are neither
+averaged nor combined, so `coverage.tv_error_bound` and
+`coverage.confidence_level` are always `None`. A region-level accuracy claim
+requires prospective evidence for the complete mapped workload. See
+`examples/twin_connected_region.py` for the complete offline workflow.
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.

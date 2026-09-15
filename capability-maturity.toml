@@ -447,20 +447,20 @@ development_artifact = "flagquantum/deployment"
 
 [capabilities.qpu_digital_twin]
 title = "Evidence-qualified QPU digital twins"
-summary = "Predict calibration-conditioned measurement distributions and qualify them against identity-bound hardware evidence."
+summary = "Predict calibration-conditioned measurement distributions, qualify them against identity-bound hardware evidence, and compose connected structural coverage."
 category = "deployment_and_extension"
-user_goals = ["Predict a mapped QPU measurement distribution", "Compare a frozen prediction with later QPU counts", "Reject circuits outside validated topology and depth"]
+user_goals = ["Predict a mapped QPU measurement distribution", "Compare a frozen prediction with later QPU counts", "Reject circuits outside validated topology and depth", "Check explicit circuit mappings against connected validated cells"]
 public_apis = ["flagquantum.twin"]
 runtime_modes = ["offline_density_prediction", "offline_evidence_assessment", "explicit_provider_submission"]
 hardware = ["cpu", "quafu_development_evidence"]
 gradient_support = "unsupported"
 distribution_semantics = "single_process"
-quick_start = "examples/twin_circuit_support.py"
+quick_start = "examples/twin_connected_region.py"
 documentation = "docs/guides/QPU_DIGITAL_TWIN.md"
 level = "development_evidence"
 owner = "QPU digital-twin maintainers"
-limitations = "Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, and topology- and depth-qualified evidence are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, cell composition, arbitrary-circuit generalization, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability."
-focused_tests = "tests/test_twin_circuit_support.py"
+limitations = "Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, and connected structural cell composition are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region composition checks topology and conservative common limits only; it never combines local bounds into region accuracy. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-level statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability."
+focused_tests = "tests/test_twin_connected_region.py"
 development_artifact = "flagquantum/twin"
 
 [capabilities.interop_adapter_contract]

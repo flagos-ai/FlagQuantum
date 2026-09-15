@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.compose_connected_region()` and immutable connected-region
+  coverage reports. Applications can combine overlapping, contemporaneous
+  `TwinCircuitSupport` cells from one QPU and check an explicit circuit mapping
+  against their directed couplers and conservative shared limits. Composition
+  is structural only: local TV error bounds and confidence levels are never
+  combined into a region-level accuracy claim. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.TwinCircuitSupport` so an existing frozen evidence envelope can
   be narrowed to prospectively validated directed physical couplers and circuit
   depth. Offline support checks fail closed without an error bound for untested

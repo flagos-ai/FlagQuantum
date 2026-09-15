@@ -33,6 +33,16 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinCircuitSupport"] == (
         "flagquantum.twin_circuit_support.v1"
     )
+    assert contract["public_schema_defaults"]["TwinConnectedRegion"] == (
+        "flagquantum.twin_connected_region.v1"
+    )
+    assert contract["public_schema_defaults"]["TwinRegionCoverage"] == (
+        "flagquantum.twin_region_coverage.v1"
+    )
+    assert contract["public_literal_values"]["TwinRegionCoverageStatus"] == [
+        "covered",
+        "out_of_scope",
+    ]
 
 
 def _device_noise_model() -> NoiseModel:

@@ -48,6 +48,12 @@ from .history import (
 from .model import QPUDigitalTwin, TwinSnapshot
 from .persistence import dump_twin, load_twin
 from .prediction import TwinPrediction
+from .region import (
+    TwinConnectedRegion,
+    TwinRegionCoverage,
+    TwinRegionCoverageStatus,
+    compose_connected_region,
+)
 from .series import (
     TwinValidationSeries,
     dump_validation_series,
@@ -68,6 +74,7 @@ __all__ = (
     "build_calibration_history",
     "build_validation_history",
     "compare_calibrations",
+    "compose_connected_region",
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_calibration_history",
@@ -99,6 +106,7 @@ __all__ = (
     "TwinCandidateSuiteEvaluation",
     "TwinCandidateTrial",
     "TwinCircuitSupport",
+    "TwinConnectedRegion",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
@@ -108,6 +116,8 @@ __all__ = (
     "TwinHardwareReport",
     "TwinPrediction",
     "TwinQubitCalibrationDrift",
+    "TwinRegionCoverage",
+    "TwinRegionCoverageStatus",
     "TwinSnapshot",
     "TwinSubmission",
     "TwinValidationReport",
