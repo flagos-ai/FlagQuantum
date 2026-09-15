@@ -18,7 +18,7 @@ support = fq.twin.TwinCircuitSupport(
     maximum_circuit_depth=8,
 )
 
-circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2).measure_all()
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
 report = support.evidence_report(twin, circuit)
 
 print(report.status)
