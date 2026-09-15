@@ -8,6 +8,10 @@ Twin owns snapshots, mapped models, predictions, and comparison reports.
 Noise owns channels, Simulation owns evolution, and Remote owns calibration
 adapters and task submission.
 
+`TwinCircuitSupport` narrows a statistical evidence envelope to the directed
+physical couplers and maximum circuit depth that were actually validated. It
+does not infer support merely because a coupler exists on the device.
+
 See the [QPU digital-twin guide](../../docs/guides/QPU_DIGITAL_TWIN.md) for the
 complete offline, Quafu validation, repetition, persistence, and interpretation
 workflows.

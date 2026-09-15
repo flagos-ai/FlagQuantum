@@ -18,6 +18,11 @@ from .candidate_suite import (
     load_candidate_suite,
     prepare_candidate_suite,
 )
+from .circuit_support import (
+    TwinCircuitSupport,
+    dump_circuit_support,
+    load_circuit_support,
+)
 from .drift import (
     TwinCalibrationDrift,
     TwinGateDurationDrift,
@@ -68,6 +73,7 @@ __all__ = (
     "dump_calibration_history",
     "dump_candidate_submission",
     "dump_candidate_suite",
+    "dump_circuit_support",
     "dump_evidence",
     "dump_submission",
     "dump_twin",
@@ -76,6 +82,7 @@ __all__ = (
     "load_calibration_history",
     "load_candidate_submission",
     "load_candidate_suite",
+    "load_circuit_support",
     "load_evidence",
     "load_submission",
     "load_twin",
@@ -91,6 +98,7 @@ __all__ = (
     "TwinCandidateSuite",
     "TwinCandidateSuiteEvaluation",
     "TwinCandidateTrial",
+    "TwinCircuitSupport",
     "TwinEvidenceEnvelope",
     "TwinEvidenceReport",
     "TwinEvidenceStatus",

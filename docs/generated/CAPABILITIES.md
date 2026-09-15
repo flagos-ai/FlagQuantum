@@ -79,6 +79,9 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
+| Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
+| Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
+| Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
 | Discover registered interoperability adapters | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Certify round-trip and fail-closed adapter behavior | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
@@ -402,6 +405,20 @@ Package trained circuits, export provider formats, and route them through deploy
 - **Start:** [quick example](../../examples/train_parameterized_circuit_then_deploy.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix.
+
+### Evidence-qualified QPU digital twins
+
+Predict calibration-conditioned measurement distributions and qualify them against identity-bound hardware evidence.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.twin`
+- **Runtime modes:** `offline_density_prediction`, `offline_evidence_assessment`, `explicit_provider_submission`
+- **Hardware:** `cpu`, `quafu_development_evidence`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../examples/twin_circuit_support.py)
+- **Documentation:** [guide](../../docs/guides/QPU_DIGITAL_TWIN.md)
+- **Known boundary:** Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, and topology- and depth-qualified evidence are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, cell composition, arbitrary-circuit generalization, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability.
 
 ### Interoperability adapter contract
 

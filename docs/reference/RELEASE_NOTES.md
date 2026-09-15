@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.TwinCircuitSupport` so an existing frozen evidence envelope can
+  be narrowed to prospectively validated directed physical couplers and circuit
+  depth. Offline support checks fail closed without an error bound for untested
+  interactions, reversed directions, excessive depth, or operations of arity
+  greater than two. Canonical persistence preserves the boundary without
+  changing the frozen evidence-envelope v1 schema. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added fixed Twin candidate circuit suites. Applications can freeze distinct
   circuit predictions for one incumbent and candidate, explicitly submit and
   checkpoint each existing single-task trial, then obtain a simultaneous

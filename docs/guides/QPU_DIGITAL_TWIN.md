@@ -563,6 +563,38 @@ python examples/remote/quafu_twin_candidate_suite.py evaluate
 
 ## Evidence statuses
 
+### Qualify evidence by physical topology and depth
+
+`TwinEvidenceEnvelope` records statistical evidence and its basic structural
+scope. Use `TwinCircuitSupport` when the validation also predeclared physical
+couplers and a circuit-depth limit:
+
+```python
+support = fq.twin.TwinCircuitSupport(
+    evidence=evidence,
+    directed_couplers=((20, 27), (27, 20), (27, 34), (34, 27)),
+    maximum_circuit_depth=8,
+)
+
+report = support.evidence_report(twin, circuit)
+if report.status == "out_of_scope":
+    print(report.reasons)
+
+fq.twin.dump_circuit_support(support, "twin-circuit-support.json")
+support = fq.twin.load_circuit_support("twin-circuit-support.json")
+```
+
+Couplers are directed because an executed two-qubit gate may not have equivalent
+evidence in the reverse direction. Single-qubit operations need no coupler.
+Operations on more than two wires are outside the first contract. Circuit depth
+is computed from instruction dependencies on logical wires, then the ordered
+Twin mapping translates every two-wire instruction to physical qubits.
+
+This object can only narrow the supplied evidence. It does not infer support
+from provider topology, compose independently validated cells, estimate a new
+bound, or claim arbitrary-circuit accuracy. The complete offline example is
+`examples/twin_circuit_support.py`.
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.
