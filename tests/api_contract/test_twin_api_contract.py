@@ -30,6 +30,9 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinValidationSeries"] == (
         "flagquantum.twin_validation_series.v1"
     )
+    assert contract["public_schema_defaults"]["TwinCircuitSupport"] == (
+        "flagquantum.twin_circuit_support.v1"
+    )
 
 
 def _device_noise_model() -> NoiseModel:

@@ -8,6 +8,15 @@ Twin owns snapshots, mapped models, predictions, and comparison reports.
 Noise owns channels, Simulation owns evolution, and Remote owns calibration
 adapters and task submission.
 
+`TwinCircuitSupport` narrows a statistical evidence envelope to the directed
+physical couplers and maximum circuit depth that were actually validated. It
+does not infer support merely because a coupler exists on the device.
+
+Twin predictions use the full computational-basis (Z-basis) output
+distribution. `evidence_report()` is offline and does not measure hardware;
+`TwinExperiment.prepare()` binds the corresponding all-qubit measurement when
+it emits OpenQASM for a prospective validation run.
+
 See the [QPU digital-twin guide](../../docs/guides/QPU_DIGITAL_TWIN.md) for the
 complete offline, Quafu validation, repetition, persistence, and interpretation
 workflows.
