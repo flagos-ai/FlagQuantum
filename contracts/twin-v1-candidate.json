@@ -139,7 +139,7 @@
     "TwinCandidateTrial.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinCandidateTrial'",
     "TwinCandidateTrial.validate_result": "(self, result: 'DeploymentResult', *, receipt: 'ProviderTaskHandle', circuit: 'Any', confidence_level: 'float' = 0.95) -> 'TwinCandidateEvaluation'",
     "TwinCircuitSupport.evidence_report": "(self, twin: 'QPUDigitalTwin', circuit: 'Any') -> 'TwinEvidenceReport'",
-    "TwinCircuitSupport.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinCircuitSupport'",
+    "TwinCircuitSupport.from_dict": "(payload: 'Mapping[str, Any]') -> \"'TwinCircuitSupport'\"",
     "TwinCircuitSupport.supports": "(self, circuit: 'Any') -> 'bool'",
     "TwinCircuitSupport.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinCircuitSupport.unsupported_reasons": "(self, circuit: 'Any') -> 'tuple[str, ...]'",
