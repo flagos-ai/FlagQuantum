@@ -584,6 +584,12 @@ fq.twin.dump_circuit_support(support, "twin-circuit-support.json")
 support = fq.twin.load_circuit_support("twin-circuit-support.json")
 ```
 
+`evidence_report()` predicts the full computational-basis (Z-basis) output
+distribution; it does not perform a live measurement. During prospective
+validation, `TwinExperiment.prepare()` emits OpenQASM that measures every
+mapped qubit in the same basis. Measurement is therefore bound in the hardware
+experiment rather than stored as a terminal operation on `Circuit`.
+
 Couplers are directed because an executed two-qubit gate may not have equivalent
 evidence in the reverse direction. Single-qubit operations need no coupler.
 Operations on more than two wires are outside the first contract. Circuit depth

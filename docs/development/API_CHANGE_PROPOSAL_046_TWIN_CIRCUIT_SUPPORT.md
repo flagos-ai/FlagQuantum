@@ -48,6 +48,8 @@ support = fq.twin.TwinCircuitSupport(
     maximum_circuit_depth=8,
 )
 
+# Twin reports predict the full computational-basis (Z-basis) distribution.
+# TwinExperiment.prepare() binds the corresponding all-qubit hardware readout.
 circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
 report = support.evidence_report(twin, circuit)
 
@@ -57,7 +59,11 @@ print(report.confidence_level)
 ```
 
 The Twin and evidence files are produced by the complete executable workflow in
-`examples/remote/quafu_twin_evidence.py`. This check is entirely offline.
+`examples/remote/quafu_twin_evidence.py`. Twin predictions and reports concern
+the full computational-basis (Z-basis) output distribution. The prospective
+hardware workflow binds the matching all-qubit measurement when
+`TwinExperiment.prepare()` emits validation OpenQASM. This support check is
+entirely offline and performs no live measurement or provider call.
 
 ## Interpretation
 

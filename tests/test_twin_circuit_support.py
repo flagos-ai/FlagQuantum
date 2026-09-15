@@ -69,6 +69,18 @@ def test_verified_circuit_inside_topology_keeps_evidence() -> None:
     assert support.supports(verified)
 
 
+def test_supported_report_predicts_full_computational_basis_distribution() -> None:
+    twin, verified, support = _fixture()
+
+    report = support.evidence_report(twin, verified)
+
+    assert report.prediction is not None
+    assert report.prediction.ideal_probabilities == pytest.approx(
+        (0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5)
+    )
+    assert len(report.prediction.twin_probabilities) == 2**verified.n_qubits
+
+
 def test_unverified_physical_coupler_fails_closed() -> None:
     twin, _, support = _fixture()
     circuit = fq.Circuit(3).cx(0, 2)

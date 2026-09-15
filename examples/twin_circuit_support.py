@@ -7,7 +7,6 @@ to that prospectively validated workload.
 
 import flagquantum as fq
 
-
 # In an application, load artifacts produced by a prospective validation run.
 twin = fq.twin.load_twin("qpu-twin.json")
 evidence = fq.twin.load_evidence("twin-evidence.json")
@@ -18,6 +17,9 @@ support = fq.twin.TwinCircuitSupport(
     maximum_circuit_depth=8,
 )
 
+# Twin reports predict the full computational-basis (Z-basis) distribution.
+# The prospective hardware workflow binds the matching all-qubit measurement
+# when TwinExperiment.prepare() emits the validation OpenQASM.
 circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
 report = support.evidence_report(twin, circuit)
 
