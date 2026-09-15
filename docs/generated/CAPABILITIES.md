@@ -79,9 +79,10 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
-| Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
-| Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
-| Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_circuit_support.py) |
+| Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_connected_region.py) |
+| Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_connected_region.py) |
+| Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_connected_region.py) |
+| Check explicit circuit mappings against connected validated cells | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/twin_connected_region.py) |
 | Discover registered interoperability adapters | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Certify round-trip and fail-closed adapter behavior | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
@@ -408,7 +409,7 @@ Package trained circuits, export provider formats, and route them through deploy
 
 ### Evidence-qualified QPU digital twins
 
-Predict calibration-conditioned measurement distributions and qualify them against identity-bound hardware evidence.
+Predict calibration-conditioned measurement distributions, qualify them against identity-bound hardware evidence, and compose connected structural coverage.
 
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.twin`
@@ -416,9 +417,9 @@ Predict calibration-conditioned measurement distributions and qualify them again
 - **Hardware:** `cpu`, `quafu_development_evidence`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
-- **Start:** [quick example](../../examples/twin_circuit_support.py)
+- **Start:** [quick example](../../examples/twin_connected_region.py)
 - **Documentation:** [guide](../../docs/guides/QPU_DIGITAL_TWIN.md)
-- **Known boundary:** Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, and topology- and depth-qualified evidence are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, cell composition, arbitrary-circuit generalization, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability.
+- **Known boundary:** Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, and connected structural cell composition are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region composition checks topology and conservative common limits only; it never combines local bounds into region accuracy. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-level statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability.
 
 ### Interoperability adapter contract
 

@@ -17,6 +17,11 @@ distribution. `evidence_report()` is offline and does not measure hardware;
 `TwinExperiment.prepare()` binds the corresponding all-qubit measurement when
 it emits OpenQASM for a prospective validation run.
 
+`compose_connected_region()` combines overlapping support cells from one QPU
+and calibration capture for structural circuit-mapping checks. It preserves
+directed edges and conservative limits, but never combines local statistical
+bounds into a region-level accuracy claim.
+
 See the [QPU digital-twin guide](../../docs/guides/QPU_DIGITAL_TWIN.md) for the
 complete offline, Quafu validation, repetition, persistence, and interpretation
 workflows.
