@@ -35,24 +35,11 @@ def discover_source_packages(root: Path) -> set[str]:
 def parse_coverage(path: Path) -> tuple[float, dict[str, float]]:
     root = ET.parse(path).getroot()
     global_rate = float(root.get("line-rate", "0")) * 100.0
-    totals: dict[str, list[int]] = {}
-    for cls in root.iter("class"):
-        filename = cls.get("filename", "")
-        if not filename:
-            continue
-        parts = Path(filename).parts
-        package = ".".join(parts[:-1]) if len(parts) > 1 else filename
-        lines = cls.find("lines")
-        line_els = lines.findall("line") if lines is not None else []
-        statements = len(line_els)
-        covered = sum(1 for line in line_els if int(line.get("hits", "0")) > 0)
-        bucket = totals.setdefault(package, [0, 0])
-        bucket[0] += statements
-        bucket[1] += covered
-    packages = {
-        package: 100.0 * covered / statements if statements else 100.0
-        for package, (statements, covered) in totals.items()
-    }
+    packages: dict[str, float] = {}
+    for pkg in root.iter("package"):
+        name = pkg.get("name", "")
+        if name:
+            packages[name.replace("/", ".")] = float(pkg.get("line-rate", "0")) * 100.0
     return global_rate, packages
 
 
