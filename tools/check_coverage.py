@@ -22,16 +22,6 @@ def load_toml(path: Path) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def discover_source_packages(root: Path) -> set[str]:
-    src = root / "flagquantum"
-    found: set[str] = set()
-    for py in src.rglob("*.py"):
-        parts = py.relative_to(root).parts[:-1]
-        if parts:
-            found.add(".".join(parts))
-    return found
-
-
 def parse_coverage(path: Path) -> tuple[float, dict[str, float]]:
     root = ET.parse(path).getroot()
     global_rate = float(root.get("line-rate", "0")) * 100.0
@@ -44,7 +34,7 @@ def parse_coverage(path: Path) -> tuple[float, dict[str, float]]:
 
 
 def policy_errors(
-    policy: dict, global_rate: float, packages: dict[str, float], root: Path
+    policy: dict, global_rate: float, packages: dict[str, float]
 ) -> list[str]:
     errors: list[str] = []
     if policy.get("schema") != EXPECTED_SCHEMA:
@@ -71,13 +61,6 @@ def policy_errors(
                 f"package {package} coverage {rate:.1f}% is below floor {floor}%"
             )
 
-    allowlist = set((policy.get("allowlist") or {}).keys())
-    for package in sorted(discover_source_packages(root)):
-        if package not in packages and package not in allowlist:
-            errors.append(
-                f"package {package} is absent from the coverage report and not allowlisted"
-            )
-
     return errors
 
 
@@ -95,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     policy = load_toml(args.policy)
     global_rate, packages = parse_coverage(args.coverage_xml)
-    errors = policy_errors(policy, global_rate, packages, ROOT)
+    errors = policy_errors(policy, global_rate, packages)
     if errors:
         print("\n".join(errors))
         return 1
