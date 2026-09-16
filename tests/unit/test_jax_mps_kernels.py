@@ -55,5 +55,5 @@ def test_jax_mps_split_pair_reconstructs_exact():
     ).astype(np.complex64)
 
     left, right = jax_mps_split_pair(jnp.asarray(theta), max_bond=None, cutoff=0.0)
-    reconstructed = np.einsum("lsm,msr->lsr", np.asarray(left), np.asarray(right))
+    reconstructed = np.einsum("lam,mbr->labr", np.asarray(left), np.asarray(right))
     assert np.allclose(reconstructed, theta, atol=1e-5)
