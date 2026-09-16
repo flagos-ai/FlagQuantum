@@ -313,4 +313,12 @@ def kernel_cache_summary() -> dict[str, int]:
     }
 
 
-__all__ = ["complex_einsum_pair", "kernel_cache_summary"]
+def clear_kernel_caches() -> None:
+    """Clear the specialized kernel and canonical-layout caches."""
+
+    _COMPILED_PAIR_CACHE.clear()
+    _COMPILE_FAILURES.clear()
+    _CANONICAL_LAYOUT_CACHE.clear()
+
+
+__all__ = ["clear_kernel_caches", "complex_einsum_pair", "kernel_cache_summary"]

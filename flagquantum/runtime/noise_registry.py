@@ -87,6 +87,15 @@ def _ensure_builtin_executors() -> None:
         _BUILTINS_READY = True
 
 
+def reset_noise_registry() -> None:
+    """Clear registered noise executors and reset the builtin-ready flag."""
+
+    global _BUILTINS_READY
+    with _LOCK:
+        _EXECUTORS.clear()
+        _BUILTINS_READY = False
+
+
 def resolve_noise_executor(plan: NoisyExecutionPlan) -> NoiseExecutor:
     """Resolve the executor selected by a structured noisy plan."""
 
@@ -115,5 +124,6 @@ __all__ = (
     "execute_noisy_plan",
     "noisy_density_matrix",
     "register_noise_executor",
+    "reset_noise_registry",
     "resolve_noise_executor",
 )
