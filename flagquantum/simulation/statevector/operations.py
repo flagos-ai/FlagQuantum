@@ -23,6 +23,14 @@ from ..numerics.complex_arithmetic import complex_mul
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
 ] = {}
+
+
+def clear_statevector_layout_cache() -> None:
+    """Clear the cached wire-layout computations for statevector gates."""
+
+    _STATEVECTOR_LAYOUT_CACHE.clear()
+
+
 _DIAGONAL_STATEVECTOR_GATES = frozenset(
     {"z", "s", "sdg", "t", "tdg", "rz", "p", "phase", "u1", "cz", "cphase", "rzz"}
 )

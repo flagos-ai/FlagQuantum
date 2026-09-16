@@ -1,0 +1,23 @@
+# Coverage policy enforced by tools/check_coverage.py.
+#
+# [global].min        — overall line-coverage floor (percentage).
+# [packages.<name>]   — optional per-package floor keyed by dotted module path
+#                       (e.g. "flagquantum.core"), enforced on top of the global
+#                       floor. Each entry sets `min`.
+# [allowlist.<name>]  — packages permitted to fall below the global floor. Every
+#                       entry carries `target` (the accepted percentage) and
+#                       `reason` so each exception stays review-visible and
+#                       cannot silently expand.
+
+schema = "flagquantum_coverage_policy_v1"
+
+[global]
+min = 55
+
+[allowlist."flagquantum.benchmarking"]
+target = 0
+reason = "CLI benchmark framework, excluded from runtime coverage via .coveragerc"
+
+[allowlist."flagquantum.simulation.triton_kernels"]
+target = 0
+reason = "GPU triton kernels, not runnable in the CPU CI lane"
