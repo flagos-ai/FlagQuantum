@@ -80,7 +80,9 @@ def policy_errors(
             continue
         rate = packages.get(package, 0.0)
         if rate < float(floor):
-            errors.append(f"package {package} coverage {rate:.1f}% is below floor {floor}%")
+            errors.append(
+                f"package {package} coverage {rate:.1f}% is below floor {floor}%"
+            )
 
     allowlist = set((policy.get("allowlist") or {}).keys())
     for package in sorted(discover_source_packages(root)):

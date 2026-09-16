@@ -46,7 +46,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.input.exists():
-        print(f"coverage.json not found at {args.input}; run pytest with --cov-report=json first")
+        print(
+            f"coverage.json not found at {args.input}; run pytest with --cov-report=json first"
+        )
         return 1
     data = json.loads(args.input.read_text(encoding="utf-8"))
     for key, statements, missing, percent in build_map(data, module=args.by_module):
