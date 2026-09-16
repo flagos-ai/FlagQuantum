@@ -13,7 +13,6 @@ os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 from collections.abc import Iterator  # noqa: E402
 
 import pytest  # noqa: E402
-import torch  # noqa: E402
 
 from flagquantum.testing.reset_caches import reset_caches  # noqa: E402
 
@@ -32,10 +31,3 @@ def _reset_quantum_caches() -> Iterator[None]:
     reset_caches()
     yield
     reset_caches()
-
-
-@pytest.fixture(autouse=True)
-def _seed_torch() -> None:
-    """Seed the global torch RNG so tests are reproducible by default."""
-
-    torch.manual_seed(0)
