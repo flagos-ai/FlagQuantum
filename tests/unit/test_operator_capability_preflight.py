@@ -9,6 +9,8 @@ from flagquantum.runtime.capabilities import (
     preflight_operator_profile,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _profile() -> OperatorProfile:
     return OperatorProfile(

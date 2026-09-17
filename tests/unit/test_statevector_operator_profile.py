@@ -17,6 +17,8 @@ from flagquantum.runtime.operator_probes import (
     probe_operator_profile,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("empty", ((), []))
 def test_operator_probe_loss_rejects_empty_outputs(empty: object) -> None:

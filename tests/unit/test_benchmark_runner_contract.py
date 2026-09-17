@@ -8,6 +8,8 @@ from flagquantum.benchmarking.contract import (
     write_json_atomic,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_runtime_metadata_is_json_safe(monkeypatch):
     monkeypatch.setenv("WORLD_SIZE", "4")

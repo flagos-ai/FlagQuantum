@@ -15,6 +15,8 @@ from flagquantum.runtime.executors.tensor_network.dynamic_reverse import (
     DistributedTNDynamicReverseSegment,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("manifest", [None, [], "invalid"])
 def test_checkpoint_rejects_non_object_manifest_collectively(

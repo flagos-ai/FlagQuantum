@@ -1,5 +1,6 @@
 """Tests for native FlagQuantum algorithm utilities."""
 
+import pytest
 import torch
 
 import flagquantum as fq
@@ -17,6 +18,8 @@ from flagquantum.algorithms import (
     vqe_loss,
     zz_chain_hamiltonian,
 )
+
+pytestmark = pytest.mark.integration
 
 
 def test_hamiltonian_expectation_on_bell_circuit_and_mps():

@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from flagquantum.core.ir import Instruction
@@ -8,6 +9,8 @@ from flagquantum.simulation.mps.compiled_layers import (
 )
 from flagquantum.simulation.mps.models import MPSConfig
 from flagquantum.simulation.mps.rank_local import apply_rank_local_mps_instruction
+
+pytestmark = pytest.mark.unit
 
 
 def _site(bit: int) -> torch.Tensor:

@@ -4,6 +4,8 @@ import pytest
 
 from benchmarks.statevector_capacity_report import build_report
 
+pytestmark = pytest.mark.benchmark_contract
+
 
 def _rank(rank: int, world: int, *, oom: bool) -> dict:
     workload = {"steps": 2, "n_wires": 31}

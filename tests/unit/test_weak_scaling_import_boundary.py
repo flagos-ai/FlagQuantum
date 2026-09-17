@@ -1,3 +1,8 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
+
 def test_weak_scaling_report_is_package_importable():
     from flagquantum.benchmarking import statevector_weak_scaling_report as report
 

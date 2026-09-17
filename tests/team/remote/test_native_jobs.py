@@ -17,6 +17,8 @@ from flagquantum.remote.compute._native_job import (
 )
 from flagquantum.remote.compute._workspace_executor import SCHEMA, VERSION
 
+pytestmark = pytest.mark.unit
+
 
 def test_inline_command_executes_circuit_and_decodes_result():
     ir = fq.Circuit(2).x(0).to_ir()

@@ -8,6 +8,8 @@ from flagquantum.core.numerics import (
 )
 from flagquantum.runtime.fallback import FallbackPolicy
 
+pytestmark = pytest.mark.unit
+
 
 def test_accuracy_requirement_round_trip_and_hash_are_stable() -> None:
     contract = AccuracyRequirementContract(

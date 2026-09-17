@@ -1,8 +1,11 @@
+import pytest
 import torch
 
 from flagquantum.runtime.executors.mps.compiled_training import (
     OwnerShardedParameterSynchronizer,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_owner_sharded_parameter_synchronizer_preserves_tensor_identity(monkeypatch):

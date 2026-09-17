@@ -6,6 +6,8 @@ import torch
 
 from flagquantum.runtime.executors.mps import transport
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("fail_work", [False, True])
 def test_overlap_joins_communication_after_callback(

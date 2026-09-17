@@ -5,7 +5,11 @@ from __future__ import annotations
 import runpy
 from pathlib import Path
 
+import pytest
+
 import flagquantum as fq
+
+pytestmark = pytest.mark.unit
 
 
 def test_quafu_bell_example_uses_complete_public_path(monkeypatch, capsys) -> None:

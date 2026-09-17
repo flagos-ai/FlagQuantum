@@ -14,6 +14,8 @@ from flagquantum.remote.qpu import (
     build_result_metadata,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {

@@ -1,4 +1,8 @@
+import pytest
+
 import flagquantum.benchmarking as runners
+
+pytestmark = pytest.mark.unit
 
 
 def test_runner_package_exposes_stable_registry_api():

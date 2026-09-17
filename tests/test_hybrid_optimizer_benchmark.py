@@ -1,11 +1,14 @@
 """Contract tests for the cost-aware classical/quantum optimizer benchmark."""
 
+import pytest
 import torch
 
 from benchmarks.hybrid_classical_quantum_optimizer import (
     effective_angles,
     run_experiment,
 )
+
+pytestmark = pytest.mark.integration
 
 
 def test_classical_layer_gates_scale_separate_quantum_layers():

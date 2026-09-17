@@ -6,6 +6,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {

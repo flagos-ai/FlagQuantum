@@ -1,9 +1,12 @@
+import pytest
 import torch
 
 from flagquantum.simulation.mps.low_rank import (
     fixed_rank_range_qr,
     fixed_rank_two_site_range_qr,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_fixed_rank_range_qr_is_deterministic_and_differentiable():

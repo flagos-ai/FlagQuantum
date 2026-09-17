@@ -4,6 +4,8 @@ from flagquantum.runtime.executors.tensor_network.distributed_optimizer import (
     plan_tn_parameter_owners,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_tn_parameter_owner_plan_is_balanced_and_complete():
     owners = plan_tn_parameter_owners(36, 16)

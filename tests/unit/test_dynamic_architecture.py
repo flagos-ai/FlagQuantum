@@ -1,10 +1,14 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime import dynamic
 from flagquantum.runtime.dynamic import circuit, deployment, execution, result, routing
 from flagquantum.runtime.dynamic.dialects import braket_iqm, openqasm3
+
+pytestmark = pytest.mark.unit
 
 
 def test_layered_dynamic_imports_preserve_public_builder_identity() -> None:

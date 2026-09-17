@@ -7,6 +7,8 @@ import pytest
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.services import preflight_execution
 
+pytestmark = pytest.mark.unit
+
 
 def _program() -> CircuitIR:
     return CircuitIR(n_wires=1, instructions=(Instruction("h", (0,)),))

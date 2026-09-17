@@ -17,6 +17,8 @@ from flagquantum.compute.flaggems import (
     validate_flaggems_ops,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class _FakeUseGems:
     calls: list[tuple[str, tuple[str, ...]]] = []

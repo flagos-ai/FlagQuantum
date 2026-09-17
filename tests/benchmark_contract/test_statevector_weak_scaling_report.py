@@ -4,6 +4,10 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.benchmark_contract
+
 SCRIPT = Path("flagquantum/benchmarking/statevector_weak_scaling_report.py")
 sys.path.insert(0, str(SCRIPT.parent.resolve()))
 SPEC = importlib.util.spec_from_file_location("statevector_weak_scaling_report", SCRIPT)

@@ -1,6 +1,9 @@
+import pytest
 import torch
 
 from flagquantum.runtime.executors.mps import transport as mps_transport
+
+pytestmark = pytest.mark.unit
 
 
 def test_packed_sender_reuses_payload_buffer_without_changing_values(monkeypatch):

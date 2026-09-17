@@ -22,6 +22,8 @@ from flagquantum.deployment import (
 from flagquantum.remote import validate_deployment_result
 from flagquantum.testing import InMemoryRemoteTarget
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.parametrize("result", (None, {"n_wires": 1, "instructions": ()}))
 def test_qcis_export_rejects_invalid_ir_adapter_result(result: object) -> None:

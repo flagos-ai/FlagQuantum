@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 
+import pytest
 import torch
 
 from flagquantum.runtime.executors.mps import metadata_transport
+
+pytestmark = pytest.mark.unit
 
 
 def test_all_gather_json_uses_variable_length_tensor_payloads(monkeypatch):

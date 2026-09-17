@@ -4,6 +4,8 @@ import pytest
 
 from benchmarks.statevector_multinode_recovery_report import build_report
 
+pytestmark = pytest.mark.benchmark_contract
+
 
 def _watchdogs() -> tuple[dict, dict]:
     return (

@@ -1,6 +1,10 @@
 import json
 
+import pytest
+
 from flagquantum.benchmarking.statevector_weak_scaling import main
+
+pytestmark = pytest.mark.unit
 
 
 def test_weak_scaling_adapter_emits_runner_contract(tmp_path, monkeypatch):

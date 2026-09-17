@@ -5,6 +5,8 @@ pytest.importorskip("triton")
 
 from flagquantum.simulation.triton_kernels.complex_bmm import fused_complex_bmm
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.parametrize("shape", [(2, 3, 4, 5), (16, 8, 2, 32), (4, 32, 32, 2)])

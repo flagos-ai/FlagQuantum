@@ -1,7 +1,10 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
 import torch
+
+pytestmark = pytest.mark.benchmark_contract
 
 SCRIPT = Path("benchmarks/statevector_strong_scaling.py")
 SPEC = importlib.util.spec_from_file_location("statevector_strong_scaling", SCRIPT)

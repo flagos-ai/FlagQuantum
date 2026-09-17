@@ -19,6 +19,8 @@ from flagquantum.simulation.tensor_network.entrypoints import (
 )
 from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
 
+pytestmark = pytest.mark.unit
+
 
 def _slicing() -> TensorNetworkSlicingPlan:
     circuit = fq.Circuit(5)

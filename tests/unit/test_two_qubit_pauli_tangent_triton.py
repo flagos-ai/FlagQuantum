@@ -8,6 +8,8 @@ from flagquantum.simulation.triton_kernels.two_qubit_pauli_tangent import (
     repeated_rxx_ryy_rzz_tangents,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def reference_tangents(state, angles):
     real = torch.autograd.functional.jacobian(

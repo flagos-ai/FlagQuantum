@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_readme_links_architecture_map():
     root = Path(__file__).parents[2]

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import pytest
+
 from benchmarks.internal.evidence.mps_factorization_workspace import (
     audit_factorization_workspace,
 )
+
+pytestmark = pytest.mark.benchmark_contract
 
 
 def _payload(*, selected_bytes: int = 100, available: int = 200):

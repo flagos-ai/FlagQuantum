@@ -11,6 +11,8 @@ from flagquantum.remote import (
     QuafuProvider,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class FakeTransport:
     def __init__(self):

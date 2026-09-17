@@ -4,6 +4,8 @@ import torch
 import flagquantum as fq
 from flagquantum.simulation import small_data_reuploading_z
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize(("n_qubits", "blocks"), ((2, 3), (3, 2), (4, 1)))
 def test_small_data_reuploading_matches_circuit_and_gradients(n_qubits, blocks):

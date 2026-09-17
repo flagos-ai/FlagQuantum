@@ -7,6 +7,8 @@ import pytest
 
 from tools.run_multinode_watchdog import run_jobs
 
+pytestmark = pytest.mark.unit
+
 
 def test_peer_failure_terminates_survivor_and_retains_diagnostics(
     tmp_path: Path,

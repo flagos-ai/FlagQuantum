@@ -19,6 +19,8 @@ from flagquantum.remote.qpu import (
 )
 from flagquantum.twin import TwinExperiment
 
+pytestmark = pytest.mark.integration
+
 SUBMITTED_QASM = """OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[2];

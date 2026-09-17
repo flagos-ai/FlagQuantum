@@ -11,6 +11,8 @@ from flagquantum.simulation.triton_kernels import (
     repeated_rx_rz_tangents,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _reference(state, rx_angles, rz_angles):
     output = state

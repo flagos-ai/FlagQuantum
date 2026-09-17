@@ -3,7 +3,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import torch
+
+pytestmark = pytest.mark.unit
 
 MODULE = (
     Path(__file__).parents[2]

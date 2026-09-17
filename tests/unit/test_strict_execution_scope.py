@@ -8,6 +8,8 @@ from flagquantum.runtime.routing import (
     StrictExecutionScope,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _route(category: str) -> RouteExplanation:
     return RouteExplanation(

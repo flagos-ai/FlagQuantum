@@ -55,6 +55,8 @@ from flagquantum.simulation.tensor_network.state import (
     tensor_network_expectation_ps,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def test_tensor_network_bell_state_matches_statevector():
     circuit = fq.Circuit(2)

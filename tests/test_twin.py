@@ -20,6 +20,8 @@ from flagquantum.twin import (
     TwinValidationSeries,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {

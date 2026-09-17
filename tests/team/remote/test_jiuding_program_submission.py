@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
 import torch
 
 import flagquantum as fq
@@ -18,6 +19,8 @@ from flagquantum.remote.compute._workspace_executor import (
     _encode_tensor,
 )
 from flagquantum.remote.compute.jiuding import JiudingClient
+
+pytestmark = pytest.mark.unit
 
 
 def _client() -> JiudingClient:

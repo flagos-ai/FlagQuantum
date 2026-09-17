@@ -8,6 +8,8 @@ import pytest
 import flagquantum as fq
 import flagquantum.runtime as fqr
 
+pytestmark = pytest.mark.unit
+
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
     "docs_source_of_truth", ROOT / "tools/docs_source_of_truth.py"

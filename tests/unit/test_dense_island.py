@@ -1,7 +1,10 @@
+import pytest
 import torch
 
 from flagquantum.simulation.mps.dense_island import DenseIslandPlan, DenseIslandState
 from flagquantum.simulation.statevector.operations import _apply_matrix
+
+pytestmark = pytest.mark.unit
 
 
 def test_equal_width_plan_and_zero_state():
