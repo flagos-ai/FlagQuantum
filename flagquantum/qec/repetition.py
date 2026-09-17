@@ -71,7 +71,9 @@ class _RepetitionFeedbackController:
             round_index = observation.decision_index
             events = tuple(
                 DetectionEvent(round_index, check_index)
-                for check_index, (before, after) in enumerate(zip(previous, bits))
+                for check_index, (before, after) in enumerate(
+                    zip(previous, bits, strict=True)
+                )
                 if before != after
             )
             syndrome_history.append(SyndromeRound(round_index, bits, events))
@@ -159,7 +161,9 @@ def _syndrome_rounds(
         bits = (int(values[2 * round_index]), int(values[2 * round_index + 1]))
         events = tuple(
             DetectionEvent(round_index, check_index)
-            for check_index, (before, after) in enumerate(zip(previous, bits))
+            for check_index, (before, after) in enumerate(
+                zip(previous, bits, strict=True)
+            )
             if before != after
         )
         records.append(SyndromeRound(round_index, bits, events))
@@ -256,7 +260,9 @@ def run_repetition_memory_experiment(
         raise RuntimeError("dynamic execution returned an unexpected shot count")
 
     shot_records = []
-    for shot_index, (classical, sample) in enumerate(zip(classical_rows, sample_rows)):
+    for shot_index, (classical, sample) in enumerate(
+        zip(classical_rows, sample_rows, strict=True)
+    ):
         syndrome_rounds = _syndrome_rounds(classical, rounds=rounds)
         if feedback_mode == "compiled_lookup":
             executed_feedback = tuple(

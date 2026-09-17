@@ -393,7 +393,7 @@ def _send_tensor_batch_p2p(
         raise ValueError("MPS tensor batch requires one device and dtype")
     max_ndim = max(value.ndim for value in values)
     descriptor_values = [len(values), max_ndim]
-    for sequence, value in zip(sequences, values):
+    for sequence, value in zip(sequences, values, strict=True):
         descriptor_values.extend((int(sequence), value.ndim, *value.shape))
         descriptor_values.extend((-1,) * (max_ndim - value.ndim))
     descriptor = torch.tensor(descriptor_values, dtype=torch.int64, device=device)

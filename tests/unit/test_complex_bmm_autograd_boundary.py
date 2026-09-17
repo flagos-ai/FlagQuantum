@@ -95,5 +95,5 @@ def test_bmm_autograd_wrappers_match_torch(
     torch.testing.assert_close(actual, expected)
     actual_grad = torch.autograd.grad(actual.abs().square().sum(), (left, right))
     expected_grad = torch.autograd.grad(expected.abs().square().sum(), (left, right))
-    for actual_value, expected_value in zip(actual_grad, expected_grad):
+    for actual_value, expected_value in zip(actual_grad, expected_grad, strict=True):
         torch.testing.assert_close(actual_value, expected_value)

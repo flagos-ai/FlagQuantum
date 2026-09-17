@@ -144,7 +144,9 @@ def main() -> None:
                 ),
                 "loss_max_abs_error": max(
                     abs(actual - expected)
-                    for actual, expected in zip(restarted_losses, reference.losses)
+                    for actual, expected in zip(
+                        restarted_losses, reference.losses, strict=True
+                    )
                 ),
                 "parameter_max_abs_error": float(
                     (latest_parameter - reference_parameter).detach().abs().max()

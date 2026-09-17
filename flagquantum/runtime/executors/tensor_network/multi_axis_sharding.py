@@ -347,7 +347,7 @@ def plan_multi_axis_tn_layout(
             remainder //= extent
         coordinates = tuple(reversed(coordinates_reversed))
         slices = [(0, extent) for extent in layout.shape]
-        for axis, coordinate in zip(axes, coordinates):
+        for axis, coordinate in zip(axes, coordinates, strict=True):
             slices[axis] = (coordinate, coordinate + 1)
         local_shape = tuple(stop - start for start, stop in slices)
         shards.append(
@@ -424,7 +424,7 @@ def partition_tn_tensor_by_rank_coordinates(
         remainder //= extent
     coordinates = tuple(reversed(reversed_coordinates))
     index: list[slice] = [slice(None)] * tensor.ndim
-    for label, extent, coordinate in zip(selected, mesh, coordinates):
+    for label, extent, coordinate in zip(selected, mesh, coordinates, strict=True):
         if label not in labels:
             continue
         axis = labels.index(label)

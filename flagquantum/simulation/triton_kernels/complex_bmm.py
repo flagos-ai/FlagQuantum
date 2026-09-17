@@ -264,7 +264,9 @@ def _launch_layout(
             raise ValueError("layout-aware fused BMM supports at most 8 axes per group")
         return tuple(
             (int(stride) << 32) | int(dimension)
-            for dimension, stride in reversed(tuple(zip(shape or (1,), strides)))
+            for dimension, stride in reversed(
+                tuple(zip(shape or (1,), strides, strict=True))
+            )
         )
 
     batch = prod(batch_shape) or 1

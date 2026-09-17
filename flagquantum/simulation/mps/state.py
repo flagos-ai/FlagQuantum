@@ -209,7 +209,7 @@ class MPSState(MPSPlanningMixin):
                 dtype=self.dtype,
                 device=self.device,
             )
-            for bit, tensor in zip(bits, self.tensors):
+            for bit, tensor in zip(bits, self.tensors, strict=True):
                 environment = torch.einsum(
                     "bl,blr->br",
                     environment,
@@ -785,7 +785,7 @@ class MPSState(MPSPlanningMixin):
         for row in samples:
             unique, counts = torch.unique(row, return_counts=True)
             batch_counts: dict[str | int, int] = {}
-            for key, count in zip(unique.tolist(), counts.tolist()):
+            for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 if format == "int":
                     out_key: str | int = int(key)
                 elif format == "bin":
@@ -1118,7 +1118,9 @@ class MPSState(MPSPlanningMixin):
                 right_dim=right_dim,
                 config=self.config,
             )
-            for wire, (left_out, right_out, split_info) in zip(wires, split):
+            for wire, (left_out, right_out, split_info) in zip(
+                wires, split, strict=True
+            ):
                 self.tensors[wire] = left_out
                 self.tensors[wire + 1] = right_out
                 self.orthogonality_center = wire + 1

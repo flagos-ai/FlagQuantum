@@ -48,7 +48,7 @@ def test_fused_mps_two_site_forward_and_backward(batched_gate: bool) -> None:
 
     torch.testing.assert_close(actual, reference, atol=3e-5, rtol=3e-5)
     for actual_gradient, reference_gradient in zip(
-        actual_gradients, reference_gradients
+        actual_gradients, reference_gradients, strict=True
     ):
         torch.testing.assert_close(
             actual_gradient, reference_gradient, atol=5e-5, rtol=5e-5

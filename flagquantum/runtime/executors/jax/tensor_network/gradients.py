@@ -85,7 +85,7 @@ def _jax_parameterized_tn_state_nodes(
         input_labels = tuple(current_labels[wire] for wire in wires)
         output_labels = tuple(range(next_label, next_label + len(wires)))
         next_label += len(wires)
-        for wire, label in zip(wires, output_labels):
+        for wire, label in zip(wires, output_labels, strict=True):
             current_labels[wire] = label
         nodes.append(
             JAXTensorNetworkNode(
@@ -379,7 +379,9 @@ def jax_sliced_tensor_network_value_and_grad(
                 name=str(name),
                 metadata=metadata,
             )
-            for tensor, (labels, name, metadata) in zip(node_tensors, specs)
+            for tensor, (labels, name, metadata) in zip(
+                node_tensors, specs, strict=True
+            )
         )
         _partials, reduced, _compute_execution, _collective_execution = (
             _jax_contract_tensor_slices_by_backend(

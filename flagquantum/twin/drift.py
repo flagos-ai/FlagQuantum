@@ -30,8 +30,13 @@ def _readout_distance(
     if reference is None or current is None:
         raise ValueError("readout calibration availability changed")
     return max(
-        0.5 * sum(abs(left - right) for left, right in zip(left_row, right_row))
-        for left_row, right_row in zip(reference.probabilities, current.probabilities)
+        0.5
+        * sum(
+            abs(left - right) for left, right in zip(left_row, right_row, strict=True)
+        )
+        for left_row, right_row in zip(
+            reference.probabilities, current.probabilities, strict=True
+        )
     )
 
 
@@ -359,6 +364,7 @@ def compare_calibrations(
         left.physical_qubits,
         reference_profile.qubits,
         current_profile.qubits,
+        strict=True,
     ):
         before_t1 = before.t1 * reference_scale
         after_t1 = after.t1 * current_scale

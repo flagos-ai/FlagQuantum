@@ -62,7 +62,7 @@ def main() -> None:
     torch.testing.assert_close(result.value, reference_value, atol=1e-10, rtol=1e-10)
     owners = plan_tn_parameter_owners(2, world_size)
     for index, (actual, expected) in enumerate(
-        zip(result.parameter_gradients, reference_gradients)
+        zip(result.parameter_gradients, reference_gradients, strict=True)
     ):
         if owners[index] == dist.get_rank():
             torch.testing.assert_close(actual, expected, atol=1e-9, rtol=1e-9)
@@ -75,7 +75,7 @@ def main() -> None:
         learning_rate=0.01,
     )
     for parameter, initial, gradient in zip(
-        (theta, phi), initial_parameters, reference_gradients
+        (theta, phi), initial_parameters, reference_gradients, strict=True
     ):
         torch.testing.assert_close(parameter, initial - 0.01 * gradient)
     gathered_parameters: list[tuple[torch.Tensor, ...] | None] = [None] * world_size

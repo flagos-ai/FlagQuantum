@@ -2359,7 +2359,7 @@ def test_jax_sliced_tensor_network_reverse_mode_matches_single_rank_sliced(monke
     sharded_grads = sharded.torch_node_gradients()
     single_grads = single_rank.torch_node_gradients()
     assert len(sharded_grads) == len(single_grads)
-    for left, right in zip(sharded_grads, single_grads):
+    for left, right in zip(sharded_grads, single_grads, strict=True):
         assert torch.allclose(left, right, atol=1e-5)
 
 

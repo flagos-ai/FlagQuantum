@@ -76,7 +76,7 @@ def _cuda_svd(
             ) from isolated_error
         _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
         _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
-        u, singular, vh = zip(*outputs)
+        u, singular, vh = zip(*outputs, strict=True)
         batch_shape = matrix.shape[:-2]
         return (
             torch.stack(u).reshape(*batch_shape, *u[0].shape),
@@ -152,7 +152,7 @@ def _split_pair_matrix(
 
     with record_function("flagquantum::mps::svd"):
         batched_u, batched_s, batched_vh = _cuda_svd(matrix, driver=config.svd_driver)
-    svds = tuple(zip(batched_u, batched_s, batched_vh))
+    svds = tuple(zip(batched_u, batched_s, batched_vh, strict=True))
     ranks = [_select_rank(s, config.max_bond, config.cutoff) for _, s, _ in svds]
     # A shared batch dimension must retain every sample's required subspace.
     rank = max(ranks)

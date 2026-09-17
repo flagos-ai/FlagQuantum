@@ -976,7 +976,7 @@ def _contract_nodes_sliced(
     compensation: torch.Tensor | None = None
     value_ranges = [range(dims[label]) for label in slicing.sliced_labels]
     for values in product(*value_ranges):
-        assignments = dict(zip(slicing.sliced_labels, values))
+        assignments = dict(zip(slicing.sliced_labels, values, strict=True))
         subnodes = _slice_nodes(nodes, assignments)
         if contraction_strategy == "beam":
             subtotal, _ = _contract_nodes_beam(
@@ -1028,7 +1028,9 @@ def _contract_nodes_with_slicing_plan(
     result: torch.Tensor | None = None
     compensation: torch.Tensor | None = None
     for values in assignments:
-        subnodes = _slice_nodes(source_nodes, dict(zip(slicing.sliced_labels, values)))
+        subnodes = _slice_nodes(
+            source_nodes, dict(zip(slicing.sliced_labels, values, strict=True))
+        )
         if slicing.contraction_path:
             subtotal = _execute_pair_steps(
                 subnodes, source_outputs, slicing.contraction_path

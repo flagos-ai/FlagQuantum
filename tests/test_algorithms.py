@@ -169,7 +169,7 @@ def test_run_adapt_vqe_selects_largest_exact_gradient_and_reduces_energy():
     def builder(operators, parameters):
         circuit = fq.Circuit(1, dtype=torch.complex128)
         circuit.h(0)
-        for operator, parameter in zip(operators, parameters):
+        for operator, parameter in zip(operators, parameters, strict=True):
             getattr(circuit, operator)(0, theta=parameter)
         return circuit
 
@@ -196,7 +196,7 @@ def test_run_adapt_vqe_accepts_tensor_network_energy_evaluator():
     def builder(operators, parameters):
         circuit = fq.Circuit(1, dtype=torch.complex128)
         circuit.h(0)
-        for operator, parameter in zip(operators, parameters):
+        for operator, parameter in zip(operators, parameters, strict=True):
             getattr(circuit, operator)(0, theta=parameter)
         return circuit
 
@@ -224,7 +224,7 @@ def test_run_adapt_vqe_accepts_exact_screening_function():
 
     def builder(operators, parameters):
         circuit = fq.Circuit(1, dtype=torch.complex128)
-        for (kind, wire), parameter in zip(operators, parameters):
+        for (kind, wire), parameter in zip(operators, parameters, strict=True):
             getattr(circuit, kind)(wire, theta=parameter)
         return circuit
 

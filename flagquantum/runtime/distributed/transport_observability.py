@@ -283,7 +283,7 @@ class FlagOSTransportObservabilityProfile:
         if len(self.runs) != len(TRANSPORT_WORLD_SIZES):
             return False
         try:
-            for run, world_size in zip(self.runs, TRANSPORT_WORLD_SIZES):
+            for run, world_size in zip(self.runs, TRANSPORT_WORLD_SIZES, strict=True):
                 _require(
                     run.get("schema") == TRANSPORT_RUN_SCHEMA, "invalid run schema"
                 )

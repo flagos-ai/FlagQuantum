@@ -165,6 +165,7 @@ def plan_multi_axis_tn_redistribution(
                 ) in zip(
                     source_shard.global_slices,
                     destination_shard.global_slices,
+                    strict=True,
                 )
             )
             if any(stop <= start for start, stop in slices):

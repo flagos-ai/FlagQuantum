@@ -198,7 +198,7 @@ class TensorNetworkState:
         for row in samples:
             unique, counts = torch.unique(row, return_counts=True)
             batch_counts: dict[str | int, int] = {}
-            for key, count in zip(unique.tolist(), counts.tolist()):
+            for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 if format == "int":
                     out_key: str | int = int(key)
                 elif format == "bin":

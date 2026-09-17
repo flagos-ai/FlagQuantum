@@ -124,7 +124,7 @@ def build_mps_reverse_backward(
                                 f"fused local MPS VJP failed at segment [{operation_ids}]: {error}"
                             ) from error
                     for input_index, (record, derivative) in enumerate(
-                        zip(segment, derivatives[: len(segment)])
+                        zip(segment, derivatives[: len(segment)], strict=True)
                     ):
                         adjoints[record.wires[0]] = finite(
                             derivative,
@@ -132,7 +132,7 @@ def build_mps_reverse_backward(
                             like=segment_inputs[input_index],
                         )
                     for parameter_index, derivative in zip(
-                        active_indices, derivatives[len(segment) :]
+                        active_indices, derivatives[len(segment) :], strict=True
                     ):
                         if derivative is not None:
                             accumulate(
@@ -187,7 +187,7 @@ def build_mps_reverse_backward(
                     saved_differentiable = tuple(
                         (output, output_adjoint)
                         for output, output_adjoint in zip(
-                            payload.factorization_outputs, output_adjoints
+                            payload.factorization_outputs, output_adjoints, strict=True
                         )
                         if output.requires_grad
                     )
@@ -266,7 +266,7 @@ def build_mps_reverse_backward(
                             shape=record.input_shapes[1],
                         )
                 for parameter_index, derivative in zip(
-                    record.parameter_indices, derivatives[len(inputs) :]
+                    record.parameter_indices, derivatives[len(inputs) :], strict=True
                 ):
                     if derivative is not None:
                         accumulate(parameter_index, derivative, record.operation_id)

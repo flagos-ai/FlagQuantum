@@ -51,7 +51,7 @@ def main() -> None:
             local_losses.append(float(train_step(local, local_optimizer)))
             sharded_losses.append(float(train_step(sharded, sharded_optimizer)))
         for (local_name, local_value), (sharded_name, sharded_value) in zip(
-            local.state_dict().items(), sharded.state_dict().items()
+            local.state_dict().items(), sharded.state_dict().items(), strict=True
         ):
             assert local_name == sharded_name
             if isinstance(local_value, torch.Tensor):

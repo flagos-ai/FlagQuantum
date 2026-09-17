@@ -14,7 +14,10 @@ _EVOLUTION_SCHEMA = "flagquantum.twin_evolution_history.v1"
 
 
 def _changes(values: Sequence[float]) -> tuple[float, ...]:
-    return tuple(current - previous for previous, current in zip(values, values[1:]))
+    return tuple(
+        current - previous
+        for previous, current in zip(values, values[1:], strict=False)
+    )
 
 
 def _optional_changes(
@@ -22,7 +25,7 @@ def _optional_changes(
 ) -> tuple[float | None, ...]:
     return tuple(
         None if previous is None or current is None else current - previous
-        for previous, current in zip(values, values[1:])
+        for previous, current in zip(values, values[1:], strict=False)
     )
 
 

@@ -57,7 +57,7 @@ def test_repeated_rx_rz_cpu_fallback_gradients_match_reference() -> None:
         gradient,
     )
 
-    for actual, reference in zip(actual_gradients, reference_gradients):
+    for actual, reference in zip(actual_gradients, reference_gradients, strict=True):
         torch.testing.assert_close(actual, reference)
 
 
@@ -131,7 +131,7 @@ def test_repeated_rx_rz_cuda_matches_reference(depth: int) -> None:
 
     torch.testing.assert_close(actual, reference, atol=5e-6, rtol=5e-6)
     for actual_gradient, reference_gradient in zip(
-        actual_gradients, reference_gradients
+        actual_gradients, reference_gradients, strict=True
     ):
         torch.testing.assert_close(
             actual_gradient, reference_gradient, atol=2e-4, rtol=2e-4

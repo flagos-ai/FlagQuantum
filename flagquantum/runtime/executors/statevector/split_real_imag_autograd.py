@@ -113,7 +113,7 @@ class _P5ParameterShiftExpectation(torch.autograd.Function):
     ) -> torch.Tensor:
         bindings: dict[str | Parameter, torch.Tensor] = {
             name: parameter.detach()
-            for name, parameter in zip(config.parameter_order, parameters)
+            for name, parameter in zip(config.parameter_order, parameters, strict=True)
         }
         result = execute_split_real_imag_device_double_single_expectation(
             config.circuit_or_ir,
@@ -138,7 +138,9 @@ class _P5ParameterShiftExpectation(torch.autograd.Function):
         config: _P5BridgeConfig = ctx.config
         bindings: dict[str | Parameter, torch.Tensor] = {
             name: parameter
-            for name, parameter in zip(config.parameter_order, ctx.saved_tensors)
+            for name, parameter in zip(
+                config.parameter_order, ctx.saved_tensors, strict=True
+            )
         }
         result = parameter_shift_split_real_imag_device_double_single_gradient(
             config.circuit_or_ir,

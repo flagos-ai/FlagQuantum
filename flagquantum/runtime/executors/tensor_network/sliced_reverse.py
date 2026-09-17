@@ -301,7 +301,7 @@ def execute_sliced_tn_explicit_reverse(
     if _task_assignments is None:
         value_ranges = [range(dims[label]) for label in slicing.sliced_labels]
         assignment_records = tuple(
-            tuple(zip(slicing.sliced_labels, values))
+            tuple(zip(slicing.sliced_labels, values, strict=True))
             for values in (product(*value_ranges) if value_ranges else ((),))
         )
     else:
@@ -440,6 +440,7 @@ def execute_sliced_tn_explicit_reverse(
                     and f"input:{index}" in explicit.input_cotangents
                 ),
                 node_cotangents,
+                strict=True,
             ):
                 source_node = source_nodes[node_index]
                 source_cotangent = torch.zeros_like(source_node.tensor)

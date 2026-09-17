@@ -57,18 +57,19 @@ def main() -> None:
     terms = tuple(_terms(state, slot) for slot, state in enumerate(states))
     sequential = tuple(
         mps_fused_z_zz_mse_and_adjoints(state, parse_mps_z_zz_terms(state, item))
-        for state, item in zip(states, terms)
+        for state, item in zip(states, terms, strict=True)
     )
     drained = []
     pipelined = site_sharded_z_zz_objective_pipeline(
         states, terms, max_pipeline_slots=3, on_window_drained=drained.append
     )
     value_error = max(
-        float(torch.abs(a[0] - b[0])) for a, b in zip(sequential, pipelined)
+        float(torch.abs(a[0] - b[0]))
+        for a, b in zip(sequential, pipelined, strict=True)
     )
     grad_error = max(
         float(torch.max(torch.abs(a[1][wire] - b[1][wire])))
-        for a, b in zip(sequential, pipelined)
+        for a, b in zip(sequential, pipelined, strict=True)
         for wire in a[1]
     )
     cancelled = site_sharded_z_zz_objective_pipeline(

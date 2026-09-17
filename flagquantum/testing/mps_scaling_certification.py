@@ -112,7 +112,9 @@ def require_mps_scaling(
         interval = run["confidence_interval_95_seconds"]
         if len(interval) != 2 or not all(
             _close(actual, expected)
-            for actual, expected in zip(interval, (mean - margin, mean + margin))
+            for actual, expected in zip(
+                interval, (mean - margin, mean + margin), strict=True
+            )
         ):
             _fail(f"confidence interval does not match retained samples: {key}")
         components = run.get("component_seconds", {})

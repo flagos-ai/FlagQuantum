@@ -268,7 +268,9 @@ def build_tensor_network_hamiltonian_expectation(
         matrix = torch.stack(
             tuple(
                 coefficient * product[0]
-                for coefficient, product in zip(coefficients, local_products)
+                for coefficient, product in zip(
+                    coefficients, local_products, strict=True
+                )
             )
         ).sum(dim=0)
         nodes.append(

@@ -505,7 +505,7 @@ def _normalize_pauli_ops(
         names = str(pauli).lower()
         if len(names) != len(wires):
             raise ValueError("Pauli string length must match its wires")
-        raw_ops = tuple(zip((int(wire) for wire in wires), names))
+        raw_ops = tuple(zip((int(wire) for wire in wires), names, strict=True))
     normalized = []
     seen = set()
     for wire, name in raw_ops:

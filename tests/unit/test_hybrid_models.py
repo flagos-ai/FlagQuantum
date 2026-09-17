@@ -108,7 +108,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         continued_loss = torch.nn.functional.mse_loss(candidate(INPUTS), TARGETS)
         continued_loss.backward()
         candidate_optimizer.step()
-    for expected, actual in zip(model.parameters(), restored.parameters()):
+    for expected, actual in zip(model.parameters(), restored.parameters(), strict=True):
         torch.testing.assert_close(actual, expected)
     assert (
         optimizer.state_dict()["state"].keys()
@@ -134,7 +134,7 @@ def test_classifier_deployment_binds_encoded_inputs_to_final_quantum_ir() -> Non
     torch.testing.assert_close(payload["bound_quantum_parameters"], expected_angles)
     assert payload["binding_requires_inputs"] is False
     assert len(payload["bound_ir"]) == 2
-    for ir, angles in zip(payload["bound_ir"], expected_angles):
+    for ir, angles in zip(payload["bound_ir"], expected_angles, strict=True):
         assert ir == fq.Circuit(2).ry(0, angles[0]).cx(0, 1).ry(1, angles[1]).to_ir()
         assert all(
             not value.requires_grad

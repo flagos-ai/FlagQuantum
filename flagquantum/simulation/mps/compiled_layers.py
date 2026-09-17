@@ -81,7 +81,7 @@ def apply_mps_one_site_bucket(
         return tuple(apply_ry_bucket(packed, matrices, compiled=compile_ry).unbind(0))
     return tuple(
         apply_one_mps_tensor(tensor, matrix)
-        for tensor, matrix in zip(tensors, matrices.unbind(0))
+        for tensor, matrix in zip(tensors, matrices.unbind(0), strict=True)
     )
 
 

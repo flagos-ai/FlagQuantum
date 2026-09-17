@@ -103,7 +103,7 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
         raise ValueError("artifacts require unique world sizes including world_size=1")
     if any(not item.get("correctness", {}).get("passed") for item in artifacts):
         raise ValueError("all source artifacts must pass correctness")
-    for item, world_size in zip(artifacts, worlds):
+    for item, world_size in zip(artifacts, worlds, strict=True):
         if item.get("schema_version") != SOURCE_SCHEMA:
             raise ValueError("all source artifacts require strong-scaling schema")
         if item.get("artifact_class") != "measured_development_run":

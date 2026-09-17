@@ -517,7 +517,7 @@ class CompiledTNProgram:
             bsz=self.bsz,
             nodes=tuple(
                 TensorNetworkNode(tensor, node.labels, node.name, node.metadata)
-                for tensor, node in zip(tensors, self.nodes)
+                for tensor, node in zip(tensors, self.nodes, strict=True)
             ),
             output_labels=self.output_labels,
             path=self.path,

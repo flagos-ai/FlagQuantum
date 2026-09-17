@@ -122,7 +122,7 @@ def _label_dims(nodes: Sequence[_Node]) -> dict[int, int]:
                 f"Tensor-network node {node.name!r} has {len(node.labels)} labels "
                 f"for {len(node.tensor.shape)} dimensions."
             )
-        for label, dim in zip(node.labels, node.tensor.shape):
+        for label, dim in zip(node.labels, node.tensor.shape, strict=True):
             dim = int(dim)
             if label in dims and dims[label] != dim:
                 raise ValueError(

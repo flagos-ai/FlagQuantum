@@ -50,7 +50,7 @@ def _with_real_shard_chain(dag):
     candidates = []
     for start in dag.operations:
         initial = values[start.output_value_id]
-        for label, extent in zip(initial.labels, initial.shape):
+        for label, extent in zip(initial.labels, initial.shape, strict=True):
             if extent < dag.world_size:
                 continue
             chain = [initial.value_id]

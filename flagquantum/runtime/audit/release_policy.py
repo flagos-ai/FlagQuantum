@@ -6,8 +6,6 @@ They are intentionally lightweight so runtime summaries, benchmark payloads,
 and tests can share the same checks.
 """
 
-# ruff: noqa: F401
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -16,19 +14,11 @@ from typing import Any
 try:
     from .vocabulary import (
         CLAIM_EVIDENCE_TYPES,
-        CLAIMABILITY_STATUSES,
-        EVIDENCE_BACKEND_FAMILIES,
         INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        MPS_BACKWARD_READINESS_STATUSES,
-        MPS_STATE_MODES,
-        MULTI_NODE_TRANSPORT_BACKENDS,
         RELEASE_CLAIM_EVIDENCE_TYPES,
         REPLICATED_DISTRIBUTION_SEMANTICS,
         SCALABLE_DISTRIBUTION_SEMANTICS,
         SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-        STATEVECTOR_STATE_MODES,
-        STATEVECTOR_TRAINING_CLAIMABILITY_STATUSES,
-        TRANSPORT_EVIDENCE_STATUSES,
     )
 except ImportError:  # legacy benchmark file-loader path
     from flagquantum.runtime.audit.vocabulary import (

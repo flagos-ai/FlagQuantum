@@ -38,7 +38,9 @@ def _chip_info(captured_at: str):
 def _prediction(base: TwinPrediction, probabilities: tuple[float, ...]):
     distance = 0.5 * sum(
         abs(ideal - predicted)
-        for ideal, predicted in zip(base.ideal_probabilities, probabilities)
+        for ideal, predicted in zip(
+            base.ideal_probabilities, probabilities, strict=True
+        )
     )
     return replace(
         base,

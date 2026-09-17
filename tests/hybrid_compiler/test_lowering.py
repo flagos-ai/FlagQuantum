@@ -124,7 +124,9 @@ def test_lowered_mixed_path_matches_hand_built_circuit_ir() -> None:
     assert tuple((item.name, item.wires) for item in bound.instructions) == tuple(
         (item.name, item.wires) for item in expected.instructions
     )
-    for actual, reference in zip(bound.instructions, expected.instructions):
+    for actual, reference in zip(
+        bound.instructions, expected.instructions, strict=True
+    ):
         if "theta" in reference.params:
             assert torch.equal(actual.params["theta"], reference.params["theta"])
     assert bound.observables == expected.observables

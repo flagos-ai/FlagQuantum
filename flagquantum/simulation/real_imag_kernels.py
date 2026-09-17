@@ -72,7 +72,7 @@ def _canonical_bmm_layout(
         return None
 
     def dimensions(tensor: torch.Tensor, labels: str) -> dict[str, int]:
-        return dict(zip(labels, tensor.shape))
+        return dict(zip(labels, tensor.shape, strict=True))
 
     left_dims = dimensions(left, left_labels)
     right_dims = dimensions(right, right_labels)

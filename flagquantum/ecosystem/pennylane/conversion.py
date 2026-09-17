@@ -205,7 +205,7 @@ def import_pennylane(
             Instruction(
                 opcode,
                 tuple(wires[wire] for wire in operation.wires),
-                params=dict(zip(schema.parameters, values)),
+                params=dict(zip(schema.parameters, values, strict=True)),
             )
         )
     report = _report("from_pennylane", str(qml.__version__), issues)

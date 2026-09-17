@@ -317,7 +317,7 @@ class DenseIslandState:
         energy = torch.zeros(self.batch_size, device=device, dtype=real_dtype)
         diagonals: list[list[torch.Tensor]] = []
         for island, ((start, stop), tensor) in enumerate(
-            zip(self.plan.intervals, self.tensors)
+            zip(self.plan.intervals, self.tensors, strict=True)
         ):
             width = stop - start
             local_diagonals = [

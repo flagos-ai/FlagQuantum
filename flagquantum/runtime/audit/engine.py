@@ -6,8 +6,6 @@ They are intentionally lightweight so runtime summaries, benchmark payloads,
 and tests can share the same checks.
 """
 
-# ruff: noqa: F401
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -49,15 +47,11 @@ try:
         CLAIMABILITY_STATUSES,
         EVIDENCE_BACKEND_FAMILIES,
         INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        MPS_BACKWARD_READINESS_STATUSES,
-        MPS_STATE_MODES,
         MULTI_NODE_TRANSPORT_BACKENDS,
         RELEASE_CLAIM_EVIDENCE_TYPES,
         REPLICATED_DISTRIBUTION_SEMANTICS,
         SCALABLE_DISTRIBUTION_SEMANTICS,
         SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-        STATEVECTOR_STATE_MODES,
-        STATEVECTOR_TRAINING_CLAIMABILITY_STATUSES,
         TRANSPORT_EVIDENCE_STATUSES,
     )
 except ImportError:  # legacy benchmark file-loader path
@@ -515,8 +509,6 @@ try:
         _communication_bytes_reported,
         _communication_evidence_reported,
         _communication_plan_has_statevector_route,
-        _first_nonempty_value,
-        _has_any,
         _has_nonempty,
         _has_topology_counts,
         _int_field,
@@ -524,10 +516,8 @@ try:
         _looks_like_local_simulation,
         _looks_like_preflight,
         _memory_plan_has_shard_and_buffer,
-        _nested_mapping,
         _normalized_communication_plan,
         _normalized_memory_plan,
-        _optimizer_step_evidence,
         _ownership_nonempty,
         _ownership_semantics,
         _rank_memory_reported,
@@ -550,8 +540,6 @@ except ImportError:  # legacy benchmark file-loader path
         _communication_bytes_reported,
         _communication_evidence_reported,
         _communication_plan_has_statevector_route,
-        _first_nonempty_value,
-        _has_any,
         _has_nonempty,
         _has_topology_counts,
         _int_field,
@@ -559,10 +547,8 @@ except ImportError:  # legacy benchmark file-loader path
         _looks_like_local_simulation,
         _looks_like_preflight,
         _memory_plan_has_shard_and_buffer,
-        _nested_mapping,
         _normalized_communication_plan,
         _normalized_memory_plan,
-        _optimizer_step_evidence,
         _ownership_nonempty,
         _ownership_semantics,
         _rank_memory_reported,

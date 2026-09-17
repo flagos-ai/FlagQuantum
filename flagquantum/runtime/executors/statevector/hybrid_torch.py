@@ -83,7 +83,9 @@ def _decode_template(
 def _bind_template(
     template: CircuitIR, names: Sequence[str], parameters: Sequence[torch.Tensor]
 ) -> CircuitIR:
-    bindings: dict[str | Parameter, torch.Tensor] = dict(zip(names, parameters))
+    bindings: dict[str | Parameter, torch.Tensor] = dict(
+        zip(names, parameters, strict=True)
+    )
     return replace(
         template,
         instructions=tuple(

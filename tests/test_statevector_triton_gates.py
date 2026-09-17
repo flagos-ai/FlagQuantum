@@ -80,7 +80,7 @@ def test_local_cx_segment_matches_reverse_source_permutation() -> None:
     controls = (3, 2)
     targets = (1, 0)
     source = torch.arange(16, device="cuda")
-    for control, target in reversed(tuple(zip(controls, targets))):
+    for control, target in reversed(tuple(zip(controls, targets, strict=True))):
         source ^= ((source >> control) & 1) << target
     expected = state[:, source]
 

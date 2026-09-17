@@ -120,5 +120,5 @@ def test_sliced_reverse_full_tape_estimate_is_deterministic():
         estimate_sliced_tn_full_tape_bytes(
             plan,
             slicing,
-            assignments=tuple(reversed(tuple(zip(labels, (0, 0))))),
+            assignments=tuple(reversed(tuple(zip(labels, (0, 0), strict=True)))),
         )

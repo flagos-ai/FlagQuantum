@@ -223,7 +223,7 @@ def _max_error(actual: Any, expected: Any) -> float:
     if len(actual_tensors) != len(expected_tensors):
         return float("inf")
     errors = []
-    for left, right in zip(actual_tensors, expected_tensors):
+    for left, right in zip(actual_tensors, expected_tensors, strict=True):
         if left.shape != right.shape:
             return float("inf")
         left_cpu = left.detach().cpu()
@@ -281,7 +281,9 @@ def _probe_requirement(
                 for leaf in actual_leaves
             ):
                 raise RuntimeError("gradient left the requested logical device")
-            for actual_leaf, expected_leaf in zip(actual_leaves, expected_leaves):
+            for actual_leaf, expected_leaf in zip(
+                actual_leaves, expected_leaves, strict=True
+            ):
                 assert actual_leaf.grad is not None
                 assert expected_leaf.grad is not None
                 gradient_error = _max_error(actual_leaf.grad, expected_leaf.grad)

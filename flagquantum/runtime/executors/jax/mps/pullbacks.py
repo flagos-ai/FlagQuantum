@@ -52,7 +52,7 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
     local_tensors: list[dict[str, Any]] = []
     ownership: list[dict[str, Any]] = []
     for rank, (theta, gate_kind) in enumerate(
-        zip(parameter_values, normalized_gate_kinds)
+        zip(parameter_values, normalized_gate_kinds, strict=True)
     ):
         theta_value = jnp.asarray(theta)
         gradient = jax_mps_owner_local_vjp(

@@ -462,7 +462,7 @@ class Circuit:
         for row in samples:
             unique, counts = torch.unique(row, return_counts=True)
             batch_counts: dict[str | int, int] = {}
-            for key, count in zip(unique.tolist(), counts.tolist()):
+            for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 if format == "int":
                     out_key: str | int = int(key)
                 elif format == "bin":
@@ -612,7 +612,11 @@ def _install_gate_method(name: str) -> None:
             raise TypeError(
                 f"{name} accepts {arity} wire(s) and {len(parameter_names)} parameter(s)"
             )
-        for parameter_name, value in zip(parameter_names, values):
+        # Positional values may cover only a prefix of the schema: the remaining
+        # parameters are allowed to arrive as keywords, as in `rx(0, theta=0.5)`.
+        # A short `values` is therefore expected here, and the missing names are
+        # caught by `IRValidationError` below rather than by `strict=True`.
+        for parameter_name, value in zip(parameter_names, values, strict=False):
             if parameter_name in kwargs:
                 raise TypeError(f"{name} got multiple values for {parameter_name!r}")
             kwargs[parameter_name] = value

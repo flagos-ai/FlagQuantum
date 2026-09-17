@@ -80,7 +80,7 @@ def mps_z_zz_local_scan(
         raise ValueError("MPS observable tensors and wires must have equal length")
     norm, previous_z, *channel_values = inputs
     channels = torch.stack(channel_values)
-    for wire, tensor in zip(wires, tensors):
+    for wire, tensor in zip(wires, tensors, strict=True):
         next_norm = environment_transfer(norm, tensor, z=False, compiled=compiled)
         next_z = environment_transfer(norm, tensor, z=True, compiled=compiled)
         channel_list = list(
@@ -118,7 +118,7 @@ def mps_heisenberg_local_scan(
     field_z, coupling_x, coupling_y, coupling_z = coefficients
     norm, open_x, open_y, open_z, energy = inputs
     operator_cache: dict[tuple[torch.device, torch.dtype], dict[str, torch.Tensor]] = {}
-    for wire, tensor in zip(wires, tensors):
+    for wire, tensor in zip(wires, tensors, strict=True):
         key = (tensor.device, tensor.dtype)
         operators = operator_cache.get(key)
         if operators is None:

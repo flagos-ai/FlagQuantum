@@ -199,7 +199,7 @@ def test_batched_factorization_matches_individual_pair_splits(max_bond) -> None:
         for matrix in matrices
     )
     for matrix, (left, right, info), (ref_left, ref_right, ref_info) in zip(
-        matrices, actual, expected
+        matrices, actual, expected, strict=True
     ):
         reconstructed = torch.einsum("blsm,bmtr->blstr", left, right).reshape(2, 4, 4)
         reference = torch.einsum("blsm,bmtr->blstr", ref_left, ref_right).reshape(

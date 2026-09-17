@@ -318,7 +318,7 @@ def _parameter_broadcast_buckets(
     if rank < 0 or rank >= world_size:
         raise ValueError("rank is outside world_size")
     grouped: dict[tuple[torch.dtype, torch.device], list[list[int]]] = {}
-    for index, (parameter, owner) in enumerate(zip(parameters, owners)):
+    for index, (parameter, owner) in enumerate(zip(parameters, owners, strict=True)):
         key = (parameter.dtype, parameter.device)
         if key not in grouped:
             grouped[key] = [[] for _ in range(world_size)]
@@ -432,7 +432,7 @@ def _sharded_lbfgs_direction(
     else:
         result = q
     for (step_delta, gradient_delta, inverse_curvature), alpha in zip(
-        history, reversed(alphas)
+        history, reversed(alphas), strict=True
     ):
         beta = inverse_curvature * _distributed_dot(gradient_delta, result)
         result = result + step_delta * (alpha - beta)

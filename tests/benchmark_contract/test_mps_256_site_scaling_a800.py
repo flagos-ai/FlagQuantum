@@ -28,7 +28,9 @@ def test_256_site_exact_matrix_crosses_the_sixteen_gpu_threshold():
         assert (
             max(
                 abs(actual - expected)
-                for actual, expected in zip(sharded["losses"], single["losses"])
+                for actual, expected in zip(
+                    sharded["losses"], single["losses"], strict=True
+                )
             )
             <= 2e-6
         )

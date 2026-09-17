@@ -64,7 +64,11 @@ def test_every_contract_operation_converts_in_both_directions() -> None:
                 fq.Instruction(
                     operation["flagquantum"],
                     wires,
-                    params=dict(zip(operation["flagquantum_parameters"], parameters)),
+                    params=dict(
+                        zip(
+                            operation["flagquantum_parameters"], parameters, strict=True
+                        )
+                    ),
                 ),
             ),
             shape=(1, 2**n_wires),

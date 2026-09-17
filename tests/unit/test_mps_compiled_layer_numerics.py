@@ -35,7 +35,7 @@ def test_compiled_one_site_bucket_matches_independent_rank_local_steps() -> None
         compiled=False,
     )
 
-    for instruction, tensor, output in zip(instructions, tensors, actual):
+    for instruction, tensor, output in zip(instructions, tensors, actual, strict=True):
         (expected,), split = apply_rank_local_mps_instruction(
             instruction,
             (tensor,),
@@ -61,7 +61,7 @@ def test_mixed_one_site_bucket_matches_independent_rank_local_steps() -> None:
         compile_ry=True,
     )
 
-    for instruction, tensor, output in zip(instructions, tensors, actual):
+    for instruction, tensor, output in zip(instructions, tensors, actual, strict=True):
         (expected,), _ = apply_rank_local_mps_instruction(
             instruction,
             (tensor,),
@@ -95,7 +95,9 @@ def test_compiled_two_site_bucket_matches_independent_rank_local_steps() -> None
         compiled=False,
     )
 
-    for instruction, left, right, output in zip(instructions, lefts, rights, actual):
+    for instruction, left, right, output in zip(
+        instructions, lefts, rights, actual, strict=True
+    ):
         expected_tensors, expected_info = apply_rank_local_mps_instruction(
             instruction,
             (left, right),

@@ -269,7 +269,7 @@ def mps_heisenberg_energy_and_adjoints(
                 input_grads = tuple(
                     torch.zeros_like(item) if gradient is None else gradient
                     for item, gradient in zip(
-                        local_inputs, derivatives[: len(local_inputs)]
+                        local_inputs, derivatives[: len(local_inputs)], strict=True
                     )
                 )
                 variable_grads = derivatives[len(local_inputs) :]
@@ -302,6 +302,7 @@ def mps_heisenberg_energy_and_adjoints(
             state.ownership[state.rank],
             state.local_tensors.values(),
             variable_grads,
+            strict=True,
         )
     }
     return value, adjoints

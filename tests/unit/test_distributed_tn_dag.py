@@ -315,7 +315,7 @@ def test_explicit_reverse_dag_matches_complex_autograd_input_cotangents():
     assert reverse.forward_dag_identity == dag.identity
     assert reverse.summary()["uses_generic_autograd_for_contractions"] is False
     assert explicit.nonfinite_cotangent_count == 0
-    for value_id, expected in zip(inputs, reference):
+    for value_id, expected in zip(inputs, reference, strict=True):
         if expected is None:
             assert value_id not in explicit.input_cotangents
         else:
@@ -377,7 +377,7 @@ def test_explicit_reverse_tensor_cotangents_chain_to_gate_parameters():
         grad_outputs=torch.ones_like(reference_value),
     )
 
-    for actual, expected in zip(explicit_parameters, reference_parameters):
+    for actual, expected in zip(explicit_parameters, reference_parameters, strict=True):
         assert actual is not None
         torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-6)
 
@@ -405,7 +405,9 @@ def test_sliced_explicit_reverse_matches_unsliced_all_parameter_gradients(
     reference_gradients = torch.autograd.grad(reference_value.real, (theta, phi))
 
     torch.testing.assert_close(result.value, reference_value, atol=1e-10, rtol=1e-10)
-    for actual, expected in zip(result.parameter_gradients, reference_gradients):
+    for actual, expected in zip(
+        result.parameter_gradients, reference_gradients, strict=True
+    ):
         assert actual is not None
         torch.testing.assert_close(actual, expected, atol=1e-9, rtol=1e-9)
     assert result.slice_count == slicing.n_slices
@@ -499,8 +501,7 @@ def test_sliced_checkpointed_reverse_matches_full_tape_gradients():
 
     torch.testing.assert_close(checkpointed.value, full.value)
     for actual, expected in zip(
-        checkpointed.parameter_gradients,
-        full.parameter_gradients,
+        checkpointed.parameter_gradients, full.parameter_gradients, strict=True
     ):
         assert actual is not None and expected is not None
         torch.testing.assert_close(actual, expected)
@@ -1175,7 +1176,7 @@ def test_distributed_tn_value_shards_cover_one_logical_intermediate():
     assert sharded.shards[-1].stop == sharded.shape[sharded.shard_axis]
     assert all(
         left.stop == right.start
-        for left, right in zip(sharded.shards, sharded.shards[1:])
+        for left, right in zip(sharded.shards, sharded.shards[1:], strict=False)
     )
     assert sum(shard.nbytes for shard in sharded.shards) == sharded.nbytes
     assert max(shard.nbytes for shard in sharded.shards) < sharded.nbytes

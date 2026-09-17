@@ -43,5 +43,5 @@ def all_gather_json(value: Any) -> tuple[Any, ...]:
     dist.all_gather(gathered_bytes, local_bytes)
     return tuple(
         json.loads(bytes(buffer[:length].cpu().tolist()).decode("utf-8"))
-        for buffer, length in zip(gathered_bytes, lengths)
+        for buffer, length in zip(gathered_bytes, lengths, strict=True)
     )

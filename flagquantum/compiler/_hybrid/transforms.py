@@ -121,7 +121,7 @@ class StructuredControlFlowSimplificationPass:
                     branch_bindings.update(
                         (argument.id, operand)
                         for argument, operand in zip(
-                            selected.arguments, operation.operands[1:]
+                            selected.arguments, operation.operands[1:], strict=False
                         )
                     )
                     selected_block = rewrite_block(selected, branch_bindings)
@@ -130,7 +130,7 @@ class StructuredControlFlowSimplificationPass:
                     substitutions.update(
                         (result.id, yielded)
                         for result, yielded in zip(
-                            operation.results, terminator.operands
+                            operation.results, terminator.operands, strict=True
                         )
                     )
                     continue
@@ -140,7 +140,7 @@ class StructuredControlFlowSimplificationPass:
                     substitutions.update(
                         (result.id, initial)
                         for result, initial in zip(
-                            operation.results, operation.operands[3:]
+                            operation.results, operation.operands[3:], strict=True
                         )
                     )
                     continue
@@ -268,7 +268,9 @@ class BoundedLoopUnrollPass:
                         body.arguments[0].id: induction,
                         **{
                             argument.id: value
-                            for argument, value in zip(body.arguments[1:], carried)
+                            for argument, value in zip(
+                                body.arguments[1:], carried, strict=False
+                            )
                         },
                     }
                     cloned = clone_inline_block(body, bindings, suffix=suffix)
@@ -277,7 +279,7 @@ class BoundedLoopUnrollPass:
                     carried = terminator.operands
                 substitutions.update(
                     (result.id, value)
-                    for result, value in zip(operation.results, carried)
+                    for result, value in zip(operation.results, carried, strict=True)
                 )
             return Block(block.arguments, tuple(rewritten))
 

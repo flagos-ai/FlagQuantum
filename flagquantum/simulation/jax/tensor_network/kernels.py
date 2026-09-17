@@ -45,7 +45,7 @@ def jax_tensor_network_nodes_from_circuit(
         input_labels = tuple(current_labels[wire] for wire in wires)
         output_labels = tuple(range(next_label, next_label + len(wires)))
         next_label += len(wires)
-        for wire, label in zip(wires, output_labels):
+        for wire, label in zip(wires, output_labels, strict=True):
             current_labels[wire] = label
         nodes.append((matrix, output_labels + input_labels))
     return nodes, current_labels, next_label
