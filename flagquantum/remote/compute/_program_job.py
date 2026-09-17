@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ...runtime.result import ExecutionResult
 
 PROGRAM_JOB_SCHEMA = "flagquantum.jiuding.program_job"
 PROGRAM_JOB_VERSION = "1.0"
@@ -111,7 +114,7 @@ def decode_program_result(
     *,
     requested_target: str,
     selected_target: str,
-) -> Any:
+) -> ExecutionResult:
     """Restore a normal ExecutionResult from the batch worker response."""
 
     from ._workspace_executor import SCHEMA, VERSION
