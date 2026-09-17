@@ -149,13 +149,13 @@ def _tensor_network_target(
             distributed_tensor_network_expectations,
         )
 
-        result = distributed_tensor_network_expectations(
+        expectations = distributed_tensor_network_expectations(
             circuit,
             observables,
             world_size=world_size,
             **dict(options),
         )
-        return result.values, result.summary()
+        return expectations.values, expectations.summary()
     raise ValueError("tensor_network target execution requires sparse output")
 
 

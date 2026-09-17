@@ -306,6 +306,7 @@ def _prepare_prefetched_reverse_two_site_layer(
 ) -> tuple[dict[int, _PreparedTwoSite], dict[int, _SavedFactorization]]:
     prepared: dict[int, _PreparedTwoSite] = {}
     saved: dict[int, _SavedFactorization] = {}
+    info: Mapping[str, Any] | None
     for index, instruction, left_wire in layer:
         left_owner = state.owner(left_wire)
         right_owner = state.owner(left_wire + 1)
@@ -643,16 +644,16 @@ def execute_torch_distributed_mps_reverse(
             and instruction.name in {"rxx", "ryy", "rzz"}
             and instruction_index not in reserved_rxx
         ):
-            layer = tuple(
+            two_site_layer = tuple(
                 (index, candidate, min(wires))
                 for index, candidate, wires in collect_compiled_mps_layer(
                     ir.instructions, instruction_index
                 )
             )
-            reserved_rxx.update(index for index, _, _ in layer)
+            reserved_rxx.update(index for index, _, _ in two_site_layer)
             selected_factorizations.update(
                 _reserve_reverse_two_site_layer(
-                    layer,
+                    two_site_layer,
                     state=state,
                     checkpoint_budget=checkpoint_budget,
                     global_shapes=global_shapes,
@@ -662,13 +663,13 @@ def execute_torch_distributed_mps_reverse(
                 )
             )
             layer_prefetch, layer_prefetched_indices = (
-                begin_reverse_layer_halo_prefetch(layer, state, global_shapes)
+                begin_reverse_layer_halo_prefetch(two_site_layer, state, global_shapes)
                 if prefetch_layer_halos
                 else (None, frozenset())
             )
             prefetched_rxx_indices.update(layer_prefetched_indices)
             prepared, saved = _prepare_local_reverse_two_site_layer(
-                layer,
+                two_site_layer,
                 state=state,
                 selected_factorizations=selected_factorizations,
                 bsz=bsz,
@@ -682,7 +683,7 @@ def execute_torch_distributed_mps_reverse(
             )
             if layer_prefetch is not None:
                 prepared, saved = _prepare_prefetched_reverse_two_site_layer(
-                    layer,
+                    two_site_layer,
                     layer_prefetch,
                     state=state,
                     selected_factorizations=selected_factorizations,
@@ -692,13 +693,13 @@ def execute_torch_distributed_mps_reverse(
                 )
                 precomputed_rxx.update(prepared)
                 precomputed_factorizations.update(saved)
-                metadata, metadata_broadcasts = _collect_reverse_layer_metadata(
-                    layer,
+                layer_metadata, metadata_broadcasts = _collect_reverse_layer_metadata(
+                    two_site_layer,
                     prepared,
                     state=state,
                     template=next(iter(local_tensors.values())),
                 )
-                precomputed_layer_metadata.update(metadata)
+                precomputed_layer_metadata.update(layer_metadata)
                 dynamic_metadata_broadcasts += metadata_broadcasts
                 layer_halo_message_count += layer_prefetch.message_count
                 layer_halo_payload_bytes += layer_prefetch.payload_bytes
