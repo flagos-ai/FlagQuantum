@@ -20,7 +20,7 @@
 # an aggregate that a well-covered directory can carry on its own.
 #
 # The floors were last set on 2026-09-17 at five points below the measured value,
-# which the coverage job reported as 81.6% globally, so an unrelated refactor has
+# which the coverage job reported as 81.7% globally, so an unrelated refactor has
 # room to move while a real regression fails. Raise a floor when the measured
 # coverage grows past it; a floor may not be lowered without replacing the
 # coverage it gave up.
@@ -149,7 +149,7 @@ min = 85
 min = 80
 
 [packages."simulation.jax.statevector"]
-min = 48
+min = 95
 
 [packages."simulation.jax.tensor_network"]
 min = 91
