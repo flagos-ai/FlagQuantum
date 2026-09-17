@@ -11,14 +11,19 @@
 #                       carry their own entry) relative to the measured source
 #                       root (`flagquantum/`), so it carries no `flagquantum.`
 #                       prefix and a misspelling fails closed rather than
-#                       clearing its own floor. Directories whose measured rate
-#                       is below 60 are left out: a floor below the global one
-#                       adds no protection.
+#                       clearing its own floor.
 #
-# The floors were last set on 2026-09-17 at five points below the measured value
-# for each directory, so an unrelated refactor has room to move while a real
-# regression fails. Raise a floor when the directory's measured coverage grows
-# past it; a floor may not be lowered without replacing the coverage it gave up.
+# Every measured directory at 60 or above carries a floor. Directories below 60
+# are deliberately left unfloored: their gaps stay visible as outstanding work
+# rather than being written into the policy as an accepted level. A directory
+# floor below the global floor still earns its place, because the global floor is
+# an aggregate that a well-covered directory can carry on its own.
+#
+# The floors were last set on 2026-09-17 at five points below the measured value,
+# which the coverage job reported as 80.8% globally, so an unrelated refactor has
+# room to move while a real regression fails. Raise a floor when the measured
+# coverage grows past it; a floor may not be lowered without replacing the
+# coverage it gave up.
 #
 # The `jax` subpackages are covered only while their tests stay selected by the
 # `jax` marker (see the coverage job's marker expression), so their floors also
@@ -27,10 +32,11 @@
 # holds for every entry: a test file that loses its marker, or is added without
 # one, leaves the measurement — `tests/unit/test_marker_seeding_policy.py`
 # rejects that, and these floors are the second line of defence.
+
 schema = "flagquantum_coverage_policy_v1"
 
 [global]
-min = 60
+min = 75
 
 [packages]
 
