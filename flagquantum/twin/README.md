@@ -383,10 +383,11 @@ print(f"Twin ↔ QPU: {restored_series.mean_twin_qpu_agreement:.2%}")
 print(f"Ideal SV ↔ QPU: {restored_series.mean_ideal_qpu_agreement:.2%}")
 ```
 
-The writer creates a canonical file, permits an idempotent save of the same
-series, and refuses to replace different or invalid content. The artifact is
-an offline summary rather than a signed provider receipt. FlagQuantum does not
-publish it or assign application access policy.
+The writer creates a canonical file with private mode-0600 permissions, permits
+an idempotent save of the same series, and refuses to replace different or
+invalid content. The artifact is an offline summary rather than a signed
+provider receipt. FlagQuantum does not publish it or assign application access
+policy.
 
 ## Inspect evidence for a prediction
 
@@ -422,8 +423,9 @@ print(report.tv_error_bound)
 print(report.confidence_level)
 ```
 
-`dump_evidence()` writes canonical JSON once. Repeating it with the same
-evidence is safe; it refuses to replace a different or invalid file.
+`dump_evidence()` writes canonical JSON once, with private mode-0600
+permissions. Repeating it with the same evidence is safe; it refuses to replace
+a different or invalid file.
 
 The loader accepts only the complete `flagquantum.twin_evidence_envelope.v1`
 schema and fails on missing or unknown fields. Research artifacts must first be

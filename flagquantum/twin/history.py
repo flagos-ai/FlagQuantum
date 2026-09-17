@@ -375,7 +375,7 @@ def dump_calibration_history(
         descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(encoded)
-    except FileExistsError:
+    except FileExistsError as exists_error:
         try:
             existing = load_calibration_history(destination)
         except ValueError as error:
@@ -387,7 +387,7 @@ def dump_calibration_history(
             raise ValueError(
                 "Refusing to replace different Twin calibration history at "
                 f"{destination}"
-            )
+            ) from exists_error
     except OSError as error:
         raise ValueError(
             f"Cannot write Twin calibration history to {destination}"

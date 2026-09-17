@@ -187,6 +187,7 @@ def test_validation_series_persistence_is_canonical_and_non_replacing(tmp_path):
     assert restored == series
     assert restored.identity == series.identity
     assert destination.read_bytes() == original
+    assert destination.stat().st_mode & 0o777 == 0o600
 
     different = experiment.validation_series((first,), circuit=circuit)
     with pytest.raises(ValueError, match="Refusing to replace different"):

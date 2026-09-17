@@ -48,6 +48,7 @@ def test_dump_evidence_writes_canonical_round_trip(tmp_path):
         json.dumps(_payload(), sort_keys=True, separators=(",", ":")) + "\n"
     )
     assert fq.twin.load_evidence(destination) == evidence
+    assert destination.stat().st_mode & 0o777 == 0o600
 
 
 def test_dump_evidence_is_idempotent_for_the_same_identity(tmp_path):

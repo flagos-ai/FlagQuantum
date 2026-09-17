@@ -398,7 +398,7 @@ def dump_candidate_suite(
         descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(encoded)
-    except FileExistsError:
+    except FileExistsError as exists_error:
         try:
             existing = load_candidate_suite(destination)
         except ValueError as error:
@@ -408,7 +408,7 @@ def dump_candidate_suite(
         if existing.identity != suite.identity:
             raise ValueError(
                 f"Refusing to replace different Twin candidate suite at {destination}"
-            )
+            ) from exists_error
     except OSError as error:
         raise ValueError(
             f"Cannot write Twin candidate suite to {destination}"
