@@ -243,3 +243,116 @@ def test_observable_layout_requires_a_dense_ordering() -> None:
 def test_observable_layout_requires_at_least_one_observable() -> None:
     with pytest.raises(ValueError, match="at least one observable"):
         ObservableLayout(())
+
+
+class _DistanceOnlyCode:
+    """A stand-in that declares a distance but no code interface."""
+
+    distance = 3
+
+
+class _ChecklessCode:
+    """A code that declares its wire layout but no checks."""
+
+    distance = 3
+    num_data_qubits = 3
+    num_ancilla_qubits = 2
+    data_wires = (0, 1, 2)
+    ancilla_wires = (3, 4)
+    checks: tuple[CodeCheck, ...] = ()
+    stabilizers: tuple[Pauli, ...] = ()
+    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+
+
+def _built_layout() -> MemoryCircuit:
+    """A valid three-round layout whose single detectors can be substituted."""
+
+    return build_memory_circuit(RepetitionCode(3), rounds=3)
+
+
+def _with_detector(
+    built: MemoryCircuit, position: int, parity: tuple[MeasurementRef, ...]
+) -> DetectorLayout:
+    substituted = list(built.detectors.detectors)
+    substituted[position] = Detector(index=position, parity=parity)
+    return DetectorLayout(tuple(substituted))
+
+
+def test_memory_circuit_rejects_a_non_code_object() -> None:
+    built = _built_layout()
+
+    with pytest.raises(TypeError, match="StabilizerCode"):
+        MemoryCircuit(
+            code=_DistanceOnlyCode(),  # type: ignore[arg-type]
+            rounds=built.rounds,
+            source=built.source,
+            detectors=built.detectors,
+            observables=built.observables,
+        )
+
+
+def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
+    built = _built_layout()
+
+    with pytest.raises(ValueError, match="declared ancilla wire"):
+        MemoryCircuit(
+            code=built.code,
+            rounds=built.rounds,
+            source=built.source,
+            detectors=_with_detector(built, 0, (MeasurementRef(0, 99),)),
+            observables=built.observables,
+        )
+
+
+def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_wire() -> None:
+    built = _built_layout()
+
+    with pytest.raises(ValueError, match="declared data wire"):
+        MemoryCircuit(
+            code=built.code,
+            rounds=built.rounds,
+            source=built.source,
+            detectors=_with_detector(built, 7, (MeasurementRef(None, 3),)),
+            observables=built.observables,
+        )
+
+
+def test_memory_circuit_rejects_a_syndrome_round_beyond_the_configuration() -> None:
+    built = _built_layout()
+
+    with pytest.raises(ValueError, match="inside the configured rounds"):
+        MemoryCircuit(
+            code=built.code,
+            rounds=built.rounds,
+            source=built.source,
+            detectors=_with_detector(built, 0, (MeasurementRef(9, 3),)),
+            observables=built.observables,
+        )
+
+
+def test_logical_observable_rejects_an_empty_readout() -> None:
+    with pytest.raises(ValueError, match="at least one measurement"):
+        LogicalObservable(index=0, pauli=Pauli(z_wires=(0,)), measurement_parity=())
+
+
+def test_logical_observable_rejects_a_round_indexed_readout() -> None:
+    with pytest.raises(ValueError, match="terminal"):
+        LogicalObservable(
+            index=0,
+            pauli=Pauli(z_wires=(0,)),
+            measurement_parity=(MeasurementRef(0, 0),),
+        )
+
+
+def test_logical_observable_rejects_a_readout_outside_the_operator_support() -> None:
+    with pytest.raises(ValueError, match="support"):
+        LogicalObservable(
+            index=0,
+            pauli=Pauli(z_wires=(0, 1)),
+            measurement_parity=(MeasurementRef(None, 0),),
+        )
+
+
+def test_builder_rejects_a_code_without_checks() -> None:
+    with pytest.raises(ValueError, match="at least one check"):
+        build_memory_circuit(_ChecklessCode(), rounds=1)

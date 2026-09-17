@@ -21,8 +21,10 @@ class MeasurementRef:
     """One measurement location, by round and wire.
 
     ``round_index`` is ``None`` for the terminal data readout that follows the
-    final syndrome round. The record is not ordered, because an optional round
-    index has no total order.
+    final syndrome round. That readout is not an explicit measurement in the
+    emitted program: it is the runtime's final sample of the wire, the same
+    convention the frozen repetition profile uses. The record is not ordered,
+    because an optional round index has no total order.
     """
 
     round_index: int | None
@@ -97,6 +99,24 @@ class LogicalObservable:
             raise ValueError("observable operator must not be the identity")
         if self.pauli.x_wires:
             raise ValueError("observable readout supports Z-type operators only")
+        if not self.measurement_parity:
+            raise ValueError("observable must reference at least one measurement")
+        if any(
+            not isinstance(reference, MeasurementRef)
+            for reference in self.measurement_parity
+        ):
+            raise TypeError("observable parity entries must be MeasurementRef records")
+        if any(
+            reference.round_index is not None for reference in self.measurement_parity
+        ):
+            raise ValueError(
+                "observable readout must reference terminal data readouts only"
+            )
+        wires = tuple(sorted(reference.wire for reference in self.measurement_parity))
+        if wires != self.pauli.support:
+            raise ValueError(
+                "observable readout must measure exactly the observable's support"
+            )
 
 
 @dataclass(frozen=True)
@@ -131,6 +151,8 @@ class MemoryCircuit:
             raise TypeError("memory rounds must be an integer")
         if self.rounds <= 0:
             raise ValueError("memory rounds must be positive")
+        if not isinstance(self.code, StabilizerCode):
+            raise TypeError("code must implement the StabilizerCode protocol")
         if not self.source.strip():
             raise ValueError("memory circuit source must not be empty")
         expected = (self.code.distance - 1) * (self.rounds + 1)
@@ -139,6 +161,30 @@ class MemoryCircuit:
                 "memory circuit detector count must match "
                 "(distance - 1) * (rounds + 1)"
             )
+        self._validate_layout()
+
+    def _validate_layout(self) -> None:
+        """Tie every layout reference to a wire and round this code declares."""
+
+        ancilla_wires = set(self.code.ancilla_wires)
+        data_wires = set(self.code.data_wires)
+        for detector in self.detectors.detectors:
+            for reference in detector.parity:
+                if reference.round_index is None:
+                    if reference.wire not in data_wires:
+                        raise ValueError(
+                            "detector terminal readout must reference a declared "
+                            "data wire"
+                        )
+                elif reference.round_index >= self.rounds:
+                    raise ValueError(
+                        "detector syndrome round must be inside the configured rounds"
+                    )
+                elif reference.wire not in ancilla_wires:
+                    raise ValueError(
+                        "detector syndrome measurement must reference a declared "
+                        "ancilla wire"
+                    )
 
 
 def _check_source(code: StabilizerCode) -> str:
@@ -199,6 +245,8 @@ def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
 
     if not isinstance(code, StabilizerCode):
         raise TypeError("code must implement the StabilizerCode protocol")
+    if not code.checks:
+        raise ValueError("memory experiment requires a code with at least one check")
     if isinstance(rounds, bool) or not isinstance(rounds, Integral):
         raise TypeError("rounds must be an integer")
     if rounds <= 0:
