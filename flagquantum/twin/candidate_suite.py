@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
@@ -14,6 +13,7 @@ from statistics import fmean
 from typing import Any
 
 from ..remote.qpu import DeploymentResult
+from ._atomic import write_once
 from .candidate import (
     TwinCandidateDecision,
     TwinCandidateEvaluation,
@@ -384,7 +384,6 @@ def dump_candidate_suite(
 
     if not isinstance(suite, TwinCandidateSuite):
         raise TypeError("suite must be a TwinCandidateSuite")
-    destination = Path(path)
     encoded = (
         json.dumps(
             suite.to_dict(),
@@ -394,25 +393,14 @@ def dump_candidate_suite(
         )
         + "\n"
     )
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing = load_candidate_suite(destination)
-        except ValueError as error:
-            raise ValueError(
-                f"Refusing to replace invalid Twin candidate suite at {destination}"
-            ) from error
-        if existing.identity != suite.identity:
-            raise ValueError(
-                f"Refusing to replace different Twin candidate suite at {destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(
-            f"Cannot write Twin candidate suite to {destination}"
-        ) from error
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin candidate suite",
+        matches=lambda destination: (
+            load_candidate_suite(destination).identity == suite.identity
+        ),
+    )
 
 
 __all__ = (
