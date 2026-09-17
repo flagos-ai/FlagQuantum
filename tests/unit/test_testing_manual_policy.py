@@ -57,23 +57,34 @@ def test_testing_manual_lists_current_commands():
         assert command in text
 
 
+def _registered_markers() -> list[str]:
+    """Read the marker names declared in pytest.ini's ``markers`` block."""
+    declarers = ("    ", "\t")
+    markers: list[str] = []
+    in_block = False
+    for line in _read("pytest.ini").splitlines():
+        if line.strip() == "markers =":
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        if not line.startswith(declarers) or ":" not in line:
+            if line.strip():
+                break
+            continue
+        markers.append(line.strip().split(":", 1)[0].strip())
+    return markers
+
+
 def test_testing_manual_documents_every_marker_with_proof_boundary():
     text = _read("docs/development/TESTING.md")
-    for marker in (
-        "smoke",
-        "unit",
-        "integration",
-        "distributed_cpu",
-        "distributed_accel",
-        "distributed_multinode",
-        "benchmark_contract",
-        "release_gate",
-        "scalability",
-        "gpu",
-        "distributed",
-        "slow",
-    ):
-        assert f"| `{marker}` |" in text
+    registered = _registered_markers()
+
+    assert "jax" in registered, "the guard should read the marker block"
+    for marker in registered:
+        assert (
+            f"| `{marker}` |" in text
+        ), f"TESTING.md does not document marker {marker}"
     assert "| Marker | Runtime Environment | Proves | Does Not Prove |" in text
     assert "Real benchmark performance or hardware behavior" in text
     assert "Release readiness or scalability on its own" in text
