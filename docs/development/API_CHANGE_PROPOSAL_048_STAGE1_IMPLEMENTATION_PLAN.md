@@ -1409,7 +1409,9 @@ If the detector-signature assertions fail, re-derive the expected pattern from t
 docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:local bash -lc "python -m pip install -e . --no-deps -q && python -m pytest tests/qec -q && black --check tests/qec/test_memory_circuit_execution.py && ruff check tests/qec/test_memory_circuit_execution.py"
 ```
 
-Expected: the whole `tests/qec` directory passes, including the 82 pre-existing tests.
+Expected: the whole `tests/qec` directory passes, including the pre-existing tests. (The
+directory held 181 tests before this file was added, 82 of them present before this plan
+began.)
 
 Every assertion in this file, every detector count, and both injected-error signatures were verified against real execution before this plan was written. If an assertion fails, the change under test has diverged from the plan — investigate rather than adjusting the expectation.
 
