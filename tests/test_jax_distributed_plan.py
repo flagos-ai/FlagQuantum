@@ -74,7 +74,11 @@ from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network_expectation,
 )
 
-pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
+pytestmark = [
+    pytest.mark.distributed,
+    pytest.mark.distributed_cpu,
+    pytest.mark.jax,
+]
 
 
 def _first_internal_tn_label(circuit):

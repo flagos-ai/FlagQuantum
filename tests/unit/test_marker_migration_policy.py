@@ -17,6 +17,32 @@ def test_agents_recommended_local_tests_are_integration_marked():
         assert "pytest.mark.integration" in text, path
 
 
+def test_files_run_by_the_jax_lane_carry_the_jax_marker():
+    """The jax lane must be selected by the jax marker, not by file name alone.
+
+    `tests/test_jax_distributed_plan.py` was listed in the `jax-optional` job but
+    only carried the distributed markers, so the coverage lane never selected
+    its 106 tests and the executor packages they exercise measured near zero.
+    This guards the files that job names; it is not a general "imports JAX
+    implies marked" detector, because most files that mention JAX do not need it.
+    """
+    workflow = _read(".github/workflows/ci.yml")
+    command = next(
+        line
+        for line in workflow.splitlines()
+        if "python -m pytest" in line and "tests/test_hybrid_jax.py" in line
+    )
+    named = [
+        token
+        for token in command.split()
+        if token.startswith("tests/") and token.endswith(".py")
+    ]
+
+    assert named, "the jax-optional job should name the files it runs"
+    for path in named:
+        assert "pytest.mark.jax" in _read(path), path
+
+
 def test_integration_files_do_not_claim_distributed_or_benchmark_tiers():
     forbidden_markers = (
         "pytest.mark.distributed",
