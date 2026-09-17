@@ -178,7 +178,9 @@ def test_composition_cancels_a_repeated_letter() -> None:
 
 
 def test_composition_of_x_and_z_on_one_wire_is_y() -> None:
-    assert Pauli(x_wires=(0,)) * Pauli(z_wires=(0,)) == Pauli(x_wires=(0,), z_wires=(0,))
+    assert Pauli(x_wires=(0,)) * Pauli(z_wires=(0,)) == Pauli(
+        x_wires=(0,), z_wires=(0,)
+    )
 
 
 def test_composition_is_commutative_and_associative() -> None:
@@ -1323,7 +1325,7 @@ def _observable_bits(memory: MemoryCircuit, sample: list[int]) -> tuple[int, ...
     )
 
 
-def test_distance_three_reproduces_the_frozen_circuit_instruction_for_instruction() -> None:
+def test_distance_three_matches_the_frozen_circuit_exactly() -> None:
     memory = build_memory_circuit(RepetitionCode(3), rounds=3)
 
     general = _lower(memory.source, checks=2, rounds=3).circuit
@@ -1372,7 +1374,7 @@ def test_one_injected_error_fires_exactly_the_round_zero_boundary_detector() -> 
         assert _observable_bits(memory, sample) == (1,)
 
 
-def test_injected_error_on_the_middle_wire_fires_detectors_zero_and_zero_plus_checks() -> None:
+def test_injected_error_on_the_middle_wire_fires_two_detectors() -> None:
     memory = build_memory_circuit(RepetitionCode(3), rounds=3)
     injected = _with_injected_x(memory.source, round_index=0, wire=1)
     lowered = _lower(injected, checks=2, rounds=3)
