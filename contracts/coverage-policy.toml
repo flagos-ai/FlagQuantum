@@ -5,59 +5,70 @@
 # floors for packages that are measured.
 #
 # [global].min        — overall line-coverage floor (percentage).
-# [packages.<name>]   — per-package floor, enforced on top of the global floor.
+# [packages.<name>]   — per-directory floor, enforced on top of the global floor.
 #                       The key is the package name as coverage.xml reports it,
-#                       which is relative to the measured source root
-#                       (`flagquantum/`), so it carries no `flagquantum.`
+#                       which is one directory's **own** files (subdirectories
+#                       carry their own entry) relative to the measured source
+#                       root (`flagquantum/`), so it carries no `flagquantum.`
 #                       prefix and a misspelling fails closed rather than
-#                       clearing its own floor.
+#                       clearing its own floor. Directories whose measured rate
+#                       is below 60 are left out: a floor below the global one
+#                       adds no protection.
 #
-# The per-package floors were set on 2026-09-17 at five points below the
-# measured value for each package, so an unrelated refactor has room to move
-# while a real regression fails. Raise a floor when the package's measured
-# coverage grows past it; a floor may not be lowered without replacing the
-# coverage it gave up.
+# The floors were last set on 2026-09-17 at five points below the measured value
+# for each directory, so an unrelated refactor has room to move while a real
+# regression fails. Raise a floor when the directory's measured coverage grows
+# past it; a floor may not be lowered without replacing the coverage it gave up.
 #
 # The `jax` subpackages are covered only while their tests stay selected by the
 # `jax` marker (see the coverage job's marker expression), so their floors also
 # guard the marker wiring itself: a test file that loses its marker drops the
-# package below its floor instead of quietly leaving the measurement.
-
+# package below its floor instead of quietly leaving the measurement. The same
+# holds for every entry: a test file that loses its marker, or is added without
+# one, leaves the measurement — `tests/unit/test_marker_seeding_policy.py`
+# rejects that, and these floors are the second line of defence.
 schema = "flagquantum_coverage_policy_v1"
 
 [global]
 min = 60
 
 [packages]
+
 [packages."."]
-min = 79
+min = 85
 
 [packages.algorithms]
-min = 64
+min = 71
 
 [packages.compiler]
 min = 85
 
+[packages."compiler._hybrid"]
+min = 82
+
 [packages.compute]
-min = 52
+min = 69
 
 [packages.core]
 min = 83
 
 [packages.deployment]
-min = 80
+min = 85
 
 [packages.drawer]
-min = 56
+min = 60
 
 [packages.ecosystem]
 min = 83
+
+[packages."ecosystem.extensions"]
+min = 82
 
 [packages.experimental]
 min = 91
 
 [packages.noise]
-min = 71
+min = 83
 
 [packages.observables]
 min = 86
@@ -66,10 +77,25 @@ min = 86
 min = 82
 
 [packages.remote]
-min = 19
+min = 81
+
+[packages."remote.compute"]
+min = 66
+
+[packages."remote.qpu"]
+min = 66
 
 [packages.runtime]
-min = 81
+min = 85
+
+[packages."runtime.audit"]
+min = 79
+
+[packages."runtime.distributed"]
+min = 78
+
+[packages."runtime.dynamic"]
+min = 79
 
 [packages."runtime.executors.jax"]
 min = 70
@@ -84,19 +110,28 @@ min = 64
 min = 79
 
 [packages."runtime.executors.mps"]
-min = 54
+min = 60
 
 [packages."runtime.executors.statevector"]
-min = 71
+min = 74
 
 [packages."runtime.executors.tensor_network"]
-min = 24
+min = 60
+
+[packages."runtime.observability"]
+min = 86
+
+[packages."runtime.planner"]
+min = 88
+
+[packages."runtime.trajectories"]
+min = 80
 
 [packages.services]
-min = 34
+min = 88
 
 [packages.simulation]
-min = 67
+min = 78
 
 [packages."simulation.jax"]
 min = 85
@@ -110,8 +145,20 @@ min = 48
 [packages."simulation.jax.tensor_network"]
 min = 91
 
+[packages."simulation.mps"]
+min = 81
+
+[packages."simulation.numerics"]
+min = 88
+
+[packages."simulation.statevector"]
+min = 86
+
+[packages."simulation.tensor_network"]
+min = 81
+
 [packages.testing]
 min = 62
 
 [packages.twin]
-min = 51
+min = 81
