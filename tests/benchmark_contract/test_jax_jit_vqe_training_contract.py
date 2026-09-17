@@ -9,7 +9,11 @@ import pytest
 
 # Loading the benchmark script imports JAX at module scope, so the file is
 # tagged `jax` like the other JAX-only suites and `benchmark_contract` like its
-# siblings in this directory.
+# siblings in this directory. Without JAX installed it skips rather than
+# collecting an import error.
+if importlib.util.find_spec("jax") is None:  # pragma: no cover
+    pytest.skip("jax is not installed", allow_module_level=True)
+
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.jax]
 
 

@@ -20,7 +20,7 @@
 # an aggregate that a well-covered directory can carry on its own.
 #
 # The floors were last set on 2026-09-17 at five points below the measured value,
-# which the coverage job reported as 80.8% globally, so an unrelated refactor has
+# which the coverage job reported as 81.6% globally, so an unrelated refactor has
 # room to move while a real regression fails. Raise a floor when the measured
 # coverage grows past it; a floor may not be lowered without replacing the
 # coverage it gave up.
@@ -29,14 +29,14 @@
 # `jax` marker (see the coverage job's marker expression), so their floors also
 # guard the marker wiring itself: a test file that loses its marker drops the
 # package below its floor instead of quietly leaving the measurement. The same
-# holds for every entry: a test file that loses its marker, or is added without
-# one, leaves the measurement — `tests/unit/test_marker_seeding_policy.py`
-# rejects that, and these floors are the second line of defence.
+# holds for every entry: a test that loses its marker, or is added without one,
+# leaves the measurement — `tests/unit/test_test_reachability_policy.py` rejects
+# that, and these floors are the second line of defence.
 
 schema = "flagquantum_coverage_policy_v1"
 
 [global]
-min = 75
+min = 76
 
 [packages]
 
@@ -44,7 +44,7 @@ min = 75
 min = 85
 
 [packages.algorithms]
-min = 71
+min = 83
 
 [packages.compiler]
 min = 85
@@ -86,10 +86,10 @@ min = 82
 min = 81
 
 [packages."remote.compute"]
-min = 66
+min = 67
 
 [packages."remote.qpu"]
-min = 66
+min = 78
 
 [packages.runtime]
 min = 85
@@ -101,7 +101,10 @@ min = 79
 min = 78
 
 [packages."runtime.dynamic"]
-min = 79
+min = 86
+
+[packages."runtime.dynamic.dialects"]
+min = 82
 
 [packages."runtime.executors.jax"]
 min = 70
@@ -116,7 +119,7 @@ min = 64
 min = 79
 
 [packages."runtime.executors.mps"]
-min = 60
+min = 61
 
 [packages."runtime.executors.statevector"]
 min = 74
@@ -131,7 +134,7 @@ min = 86
 min = 88
 
 [packages."runtime.trajectories"]
-min = 80
+min = 81
 
 [packages.services]
 min = 88
@@ -152,7 +155,7 @@ min = 48
 min = 91
 
 [packages."simulation.mps"]
-min = 81
+min = 84
 
 [packages."simulation.numerics"]
 min = 88

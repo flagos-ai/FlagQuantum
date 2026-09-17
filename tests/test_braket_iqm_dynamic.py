@@ -12,7 +12,7 @@ from flagquantum.runtime.dynamic import (
     export_dynamic_qasm3_for_backend,
 )
 
-pytestmark = pytest.mark.braket
+pytestmark = [pytest.mark.braket, pytest.mark.unit]
 
 
 def _iqm_backend(**overrides) -> CloudBackendProfile:

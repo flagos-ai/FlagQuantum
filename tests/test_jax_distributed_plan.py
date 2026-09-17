@@ -1,3 +1,5 @@
+import importlib.util
+
 import pytest
 import torch
 
@@ -78,6 +80,11 @@ pytestmark = [
     pytest.mark.distributed,
     pytest.mark.distributed_cpu,
     pytest.mark.jax,
+    # The suites here need JAX at runtime; without it they must skip like the
+    # rest of the optional-integration files rather than fail.
+    pytest.mark.skipif(
+        importlib.util.find_spec("jax") is None, reason="jax is not installed"
+    ),
 ]
 
 

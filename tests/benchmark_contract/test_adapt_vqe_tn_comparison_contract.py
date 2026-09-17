@@ -6,6 +6,16 @@ from types import ModuleType
 
 import pytest
 
+# The fixture loads a benchmark contract module that imports JAX, so the file
+# belongs to the `jax` suites too and skips rather than erroring when JAX is
+# absent.
+if importlib.util.find_spec("jax") is None:  # pragma: no cover
+    pytest.skip("jax is not installed", allow_module_level=True)
+
+# Each test also carries `benchmark_contract`; the module-level marker records
+# the JAX dependency the fixture reaches through the benchmark contract module.
+pytestmark = pytest.mark.jax
+
 
 @pytest.fixture(scope="module")
 def tn_contract() -> ModuleType:

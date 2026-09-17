@@ -29,6 +29,8 @@ from flagquantum.simulation.mps.models import (
     MPSTruncationRecord,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
     import flagquantum.simulation.mps.entrypoints as mps_entrypoints

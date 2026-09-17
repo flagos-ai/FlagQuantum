@@ -10,7 +10,7 @@ from flagquantum.runtime.executors.tensor_network.dynamic_checkpoint import (
     inspect_dynamic_tn_checkpoint,
 )
 
-pytestmark = [pytest.mark.distributed, pytest.mark.distributed_accel]
+pytestmark = [pytest.mark.distributed, pytest.mark.distributed_accel, pytest.mark.gpu]
 ROOT = Path(__file__).resolve().parents[2]
 
 
