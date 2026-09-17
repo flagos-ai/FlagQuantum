@@ -539,7 +539,7 @@ def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[st
             "extension protocol names must not enter the stable root: "
             + ", ".join(leaked)
         )
-    if extensions.SDK_API_VERSION != contract["protocol_semantics"]["sdk_api_version"]:
+    if contract["protocol_semantics"]["sdk_api_version"] != extensions.SDK_API_VERSION:
         errors.append("extension SDK API version differs from its approved contract")
     mappings = {
         extensions.ExtensionError: FlagQuantumError,

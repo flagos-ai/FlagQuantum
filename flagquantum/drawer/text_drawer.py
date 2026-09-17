@@ -4,7 +4,7 @@ Text mode circuit drawer
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Optional
 
 from .ir_adapter import to_drawable_circuit
 
@@ -13,17 +13,17 @@ from .ir_adapter import to_drawable_circuit
 class _CurrentTotals:
     """Accumulated circuit strings"""
 
-    finished_lines: List[str]  # Completed lines (used when wrapping)
-    wire_totals: List[str]  # Accumulated quantum wire strings
-    bit_totals: List[str]  # Accumulated classical bit strings
+    finished_lines: list[str]  # Completed lines (used when wrapping)
+    wire_totals: list[str]  # Accumulated quantum wire strings
+    bit_totals: list[str]  # Accumulated classical bit strings
 
 
 @dataclass
 class _Config:
     """Drawing configuration"""
 
-    wire_map: Dict[Any, int]  # Wire label -> display position
-    wire_order: List[Any]  # Wire order (top to bottom)
+    wire_map: dict[Any, int]  # Wire label -> display position
+    wire_order: list[Any]  # Wire order (top to bottom)
     num_op_layers: int  # Number of operation layers
     cur_layer: int = -1  # Current layer index
     decimals: Optional[int] = None  # Parameter precision
@@ -50,7 +50,7 @@ class TextDrawer:
     """
 
     # Gate name to symbol mapping
-    GATE_SYMBOLS = {
+    GATE_SYMBOLS: ClassVar[dict[str, str]] = {
         # Single-qubit gates
         "rx": "RX",
         "ry": "RY",
@@ -241,7 +241,7 @@ class TextDrawer:
         if isinstance(p, (int, float)):
             # Fixed decimal places, preserve trailing zeros
             return f"{p:.{self.decimals}f}"
-        elif p is not None:
+        if p is not None:
             return f"{p}"
         return ""
 
@@ -253,7 +253,7 @@ class TextDrawer:
             return f"─{symbol}({param_str})─"
         return f"─{symbol}─"
 
-    def _render_toffoli(self, wires: List[int]) -> list[tuple[int, str]]:
+    def _render_toffoli(self, wires: list[int]) -> list[tuple[int, str]]:
         """
         Render Toffoli (CCX) gate
 
@@ -289,7 +289,7 @@ class TextDrawer:
 
         return lines
 
-    def _render_cswap(self, wires: List[int]) -> list[tuple[int, str]]:
+    def _render_cswap(self, wires: list[int]) -> list[tuple[int, str]]:
         """
         Render Fredkin (CSWAP) gate
 
@@ -325,7 +325,7 @@ class TextDrawer:
 
         return lines
 
-    def _render_swap_gate(self, wires: List[int]) -> list[tuple[int, str]]:
+    def _render_swap_gate(self, wires: list[int]) -> list[tuple[int, str]]:
         """
         Render SWAP gate (avoid misleading: draw only ends, connectors in between)
 
@@ -450,7 +450,7 @@ class TextDrawer:
         return lines
 
     def _render_multi_gate(
-        self, name: str, wires: List[int], params: object
+        self, name: str, wires: list[int], params: object
     ) -> list[tuple[int, str]]:
         """
         Render multi-qubit gate (e.g., QFT)
@@ -563,11 +563,11 @@ class TextDrawer:
         # Default multi-qubit gate
         return self._render_multi_gate(name, valid_wires, params)
 
-    def _initialize_layer_str(self, config: _Config) -> List[str]:
+    def _initialize_layer_str(self, config: _Config) -> list[str]:
         """Initialize the string array for a new layer"""
         return [config.wire_filler] * config.n_wires
 
-    def _left_justify(self, layer_str: List[str], config: _Config) -> List[str]:
+    def _left_justify(self, layer_str: list[str], config: _Config) -> list[str]:
         """Pad all wires in this layer to the same length"""
         if not layer_str:
             return layer_str
@@ -580,7 +580,7 @@ class TextDrawer:
         return layer_str
 
     def _add_layer_str_to_totals(
-        self, totals: _CurrentTotals, layer_str: List[str], config: _Config
+        self, totals: _CurrentTotals, layer_str: list[str], config: _Config
     ) -> _CurrentTotals:
         """Merge the current layer into accumulated strings"""
         totals.wire_totals = [
@@ -648,7 +648,7 @@ class TextDrawer:
 
         return totals
 
-    def _initialize_wire_totals(self, config: _Config) -> List[str]:
+    def _initialize_wire_totals(self, config: _Config) -> list[str]:
         """Initialize wire_totals (include wire labels, optionally show initial state)"""
         if config.show_wire_labels:
             # Check whether to show initial state (can be controlled via attribute)

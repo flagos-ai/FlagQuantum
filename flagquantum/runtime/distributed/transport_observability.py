@@ -8,8 +8,9 @@ neither profiler names nor successful collectives identify FlagCX.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 TRANSPORT_PROFILE_SCHEMA = "flagquantum_flagos_transport_observability_f6_v1"
 TRANSPORT_RUN_SCHEMA = "flagquantum_flagos_transport_observability_run_v1"

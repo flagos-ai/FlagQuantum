@@ -13,9 +13,10 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
-from typing import Any, Iterable, Iterator, Mapping
+from typing import Any
 
 from .registry import get_platform_runtime
 
@@ -515,9 +516,7 @@ def plan_operator_replacements(
             runtime_replaceable.append(op)
         elif op in safe:
             catalog_safe.append(op)
-        elif op in experimental:
-            experimental_requested.append(op)
-        elif op in catalog:
+        elif op in experimental or op in catalog:
             experimental_requested.append(op)
         else:
             unavailable.append(op)

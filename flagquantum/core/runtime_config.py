@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass, replace
-from typing import Any, Iterator, Mapping
+from typing import Any
 
 RUNTIME_CONFIG_VERSION = "1.0"
 
@@ -60,8 +61,11 @@ class RuntimeConfig:
         return tuple(asdict(self).values())
 
 
+# `RuntimeConfig` is a frozen dataclass of strings and booleans, so one
+# instance shared between contexts has nothing a caller could mutate.
 _CURRENT_CONFIG: ContextVar[RuntimeConfig] = ContextVar(
-    "flagquantum_runtime_config", default=RuntimeConfig()
+    "flagquantum_runtime_config",
+    default=RuntimeConfig(),  # noqa: B039
 )
 
 

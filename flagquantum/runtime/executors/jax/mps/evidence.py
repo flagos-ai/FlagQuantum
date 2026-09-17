@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ..common import communication_tier as _communication_tier
 from ..release_policy import (

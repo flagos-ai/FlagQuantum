@@ -102,9 +102,11 @@ def test_external_framework_names_are_not_part_of_owned_ir_type_annotations() ->
         for path in paths:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
-                if isinstance(node, ast.AnnAssign):
-                    annotation = ast.unparse(node.annotation).lower()
-                elif isinstance(node, ast.arg) and node.annotation is not None:
+                if (
+                    isinstance(node, ast.AnnAssign)
+                    or isinstance(node, ast.arg)
+                    and node.annotation is not None
+                ):
                     annotation = ast.unparse(node.annotation).lower()
                 elif (
                     isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))

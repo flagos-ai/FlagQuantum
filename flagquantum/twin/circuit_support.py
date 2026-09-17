@@ -5,10 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from .evidence import TwinEvidenceEnvelope, TwinEvidenceReport

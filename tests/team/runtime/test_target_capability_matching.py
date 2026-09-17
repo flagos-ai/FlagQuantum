@@ -103,7 +103,8 @@ def _require(
 
 def _requirements(
     *items: CapabilityRequirement,
-    authorizations: FallbackAuthorizations = FallbackAuthorizations(),
+    # `FallbackAuthorizations` is a frozen dataclass of booleans.
+    authorizations: FallbackAuthorizations = FallbackAuthorizations(),  # noqa: B008
 ) -> RequirementSet:
     return RequirementSet(
         requirements=items,

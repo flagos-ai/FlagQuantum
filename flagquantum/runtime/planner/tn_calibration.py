@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from math import ceil
 from pathlib import Path
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, cast
 
 TN_WORKING_SET_CALIBRATION_VERSION = "flagquantum.tn_working_set_calibration.v1"
 

@@ -19,10 +19,11 @@ import subprocess
 import sys
 import time
 import uuid
+from collections.abc import Iterator, Sequence
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Sequence
+from typing import TYPE_CHECKING, Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener

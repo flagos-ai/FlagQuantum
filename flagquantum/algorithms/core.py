@@ -8,10 +8,11 @@ optimization, or graph packages.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 from time import perf_counter
-from typing import Callable, Iterable, Mapping, Protocol, Sequence
+from typing import Protocol
 
 import torch
 

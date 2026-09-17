@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from math import log2
-from typing import Any, Sequence
+from typing import Any
 
 from ....compiler import schedule_layers
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from os import PathLike
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .model import QPUDigitalTwin
 from .series import TwinValidationSeries

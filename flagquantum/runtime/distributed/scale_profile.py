@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 FLAGOS_SCALE_WORLD_SIZES = (2, 4, 8)
 FLAGOS_SCALE_DTYPES = ("complex64", "complex128")

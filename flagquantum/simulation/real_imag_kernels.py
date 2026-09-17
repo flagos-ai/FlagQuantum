@@ -240,7 +240,7 @@ def _compiled_real_imag_einsum(
                 ),
             ):
                 pair = kernel(*args)
-        except Exception:  # noqa: BLE001 - optional compiler must be recoverable.
+        except Exception:
             _COMPILED_PAIR_CACHE.pop(key, None)
             _COMPILE_FAILURES.add(key)
             pair = _real_imag_eager(equation, *args)

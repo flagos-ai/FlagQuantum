@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
-from typing import Any, ClassVar, Literal, Mapping, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 CONTRACT_VERSION = "1.0"
 DistributionSemantics = Literal[

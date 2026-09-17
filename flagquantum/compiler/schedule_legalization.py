@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..errors import CompilationError

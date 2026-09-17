@@ -5,8 +5,9 @@ from __future__ import annotations
 import math
 import statistics
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from typing import Literal, Sequence
+from typing import Literal
 
 PERFORMANCE_SCHEMA_VERSION = "flagquantum_performance_v1"
 BenchmarkLayer = Literal[
@@ -329,7 +330,9 @@ def evaluate_performance(
     current: PerformanceRecord,
     *,
     baseline: PerformanceRecord | None = None,
-    thresholds: PerformanceThresholds = PerformanceThresholds(),
+    # `PerformanceThresholds` is a frozen dataclass of floats, so the single
+    # instance built at import time is equivalent to a module-level constant.
+    thresholds: PerformanceThresholds = PerformanceThresholds(),  # noqa: B008
 ) -> PerformanceGateResult:
     errors, warnings = _current_record_issues(current, thresholds)
     if baseline is not None:

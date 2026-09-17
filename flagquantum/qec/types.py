@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Integral
-from typing import Sequence
 
 
 def _binary_tuple(values: Sequence[int], *, owner: str) -> tuple[int, ...]:

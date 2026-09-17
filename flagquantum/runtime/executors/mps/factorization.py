@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from threading import Lock
-from typing import Callable, Sequence
 
 import torch
 from torch.profiler import record_function

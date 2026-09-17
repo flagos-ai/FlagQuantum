@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 
 def env_int(name: str, default: int = 0) -> int:

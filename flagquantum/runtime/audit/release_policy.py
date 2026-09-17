@@ -10,7 +10,8 @@ and tests can share the same checks.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 try:
     from .vocabulary import (

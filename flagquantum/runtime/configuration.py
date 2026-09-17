@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from ..core.runtime_config import get_runtime_config, runtime_config, set_runtime_config
 from .backend_registry import (

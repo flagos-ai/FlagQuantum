@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from importlib import import_module
 from numbers import Number
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 import torch
 

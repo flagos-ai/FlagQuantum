@@ -6,10 +6,11 @@ import hashlib
 import math
 import os
 import time
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from numbers import Real
-from typing import Any, Iterable, Mapping, Sequence, TypedDict
+from typing import Any, TypedDict
 
 import torch
 import torch.distributed as dist

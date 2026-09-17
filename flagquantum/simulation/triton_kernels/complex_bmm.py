@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from math import prod
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import torch
 import triton
@@ -99,7 +100,7 @@ def _complex_layout_bmm_kernel(
     right_columns = _flattened_offset(columns, right_column_strides)
     real = tl.zeros((block_m, block_n), dtype=tl.float32)
     imag = tl.zeros((block_m, block_n), dtype=tl.float32)
-    for block_offset in range(0, tl.cdiv(k_size, block_k)):
+    for block_offset in range(tl.cdiv(k_size, block_k)):
         indices = block_offset * block_k + reduction
         left_reduction = _flattened_offset(indices, left_reduction_strides)
         right_reduction = _flattened_offset(indices, right_reduction_strides)
@@ -151,7 +152,7 @@ def _complex_bmm_kernel(
     right_base = batch * right_batch_stride
     real = tl.zeros((block_m, block_n), dtype=tl.float32)
     imag = tl.zeros((block_m, block_n), dtype=tl.float32)
-    for offset in range(0, tl.cdiv(k_size, block_k)):
+    for offset in range(tl.cdiv(k_size, block_k)):
         indices = offset * block_k + reduction
         left_offsets = (
             left_base

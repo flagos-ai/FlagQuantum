@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from numbers import Real
-from typing import Iterable, Sequence
 
 from ..core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..core.ir import MeasurementNode

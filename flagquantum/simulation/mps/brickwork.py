@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from functools import lru_cache
-from typing import Callable, Sequence
 
 import torch
 import torch.nn.functional as functional

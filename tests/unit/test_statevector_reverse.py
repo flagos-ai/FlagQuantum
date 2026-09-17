@@ -191,7 +191,7 @@ def test_synchronous_gradient_reduction_has_no_overlap_evidence(monkeypatch):
     def fake_all_reduce(tensor, **kwargs):
         calls.append(kwargs["async_op"])
         tensor.mul_(2)
-        return None
+        return
 
     monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
     gradients = [torch.tensor(1.0), torch.tensor(2.0)]

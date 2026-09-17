@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 CAPACITY_PROFILE_SCHEMA = "flagquantum_flagos_statevector_capacity_f5_v1"
 CAPACITY_RUN_SCHEMA = "flagquantum_flagos_statevector_capacity_run_v1"

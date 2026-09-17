@@ -10,9 +10,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import Field, asdict, dataclass, fields
 from enum import Enum
-from typing import Any, ClassVar, Mapping
+from typing import Any, ClassVar
 
 NUMERICAL_CONTRACT_VERSION = "1.0"
 

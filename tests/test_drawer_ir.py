@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import pytest
 
 import flagquantum as fq
@@ -32,6 +34,8 @@ def test_circuit_draw_uses_unified_drawer():
 def test_drawer_keeps_legacy_qdev_compatibility():
     class LegacyDevice:
         n_wires = 1
-        op_history = [{"name_or_mat": "h", "wires": [0], "params": []}]
+        op_history: ClassVar[list[dict[str, object]]] = [
+            {"name_or_mat": "h", "wires": [0], "params": []}
+        ]
 
     assert "H" in draw(LegacyDevice())

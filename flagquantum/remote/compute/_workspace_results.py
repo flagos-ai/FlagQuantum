@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Any, Mapping
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import torch

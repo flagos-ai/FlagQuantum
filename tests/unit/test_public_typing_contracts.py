@@ -87,9 +87,8 @@ def test_mutable_and_frozen_probes_produce_identical_snapshots() -> None:
 
 def test_execution_scope_propagates_the_original_exception() -> None:
     error = RuntimeError("sentinel execution failure")
-    with pytest.raises(RuntimeError) as caught:
-        with StrictExecutionScope():
-            raise error
+    with pytest.raises(RuntimeError) as caught, StrictExecutionScope():
+        raise error
     assert caught.value is error
 
 

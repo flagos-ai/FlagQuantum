@@ -1,6 +1,7 @@
 """Dependency-free normalization helpers for audit payload validation."""
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 
 def _has_any(payload: Mapping[str, Any], keys: tuple[str, ...]) -> bool:

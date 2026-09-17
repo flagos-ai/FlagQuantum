@@ -6,8 +6,9 @@ import hashlib
 import json
 import math
 import statistics
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 
 class MPSScalingCertificationError(ValueError):

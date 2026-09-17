@@ -20,7 +20,8 @@ declared:
 
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol, Sequence, overload
+from collections.abc import Callable, Sequence
+from typing import Any, Protocol, overload
 
 import triton
 

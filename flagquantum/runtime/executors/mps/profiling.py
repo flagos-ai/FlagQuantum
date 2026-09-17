@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import defaultdict
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 MPS_PROFILE_SCHEMA = "flagquantum.site_sharded_mps_profile.v1"
 MPS_PROFILE_PHASES = (

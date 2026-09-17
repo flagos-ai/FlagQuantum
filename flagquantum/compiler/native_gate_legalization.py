@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Any, Mapping
+from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema

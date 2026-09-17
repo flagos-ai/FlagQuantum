@@ -5,12 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import combinations
 from os import PathLike
 from pathlib import Path
 from statistics import fmean
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ..core.ir import ensure_circuit_ir
 from ._statistics import finite_shot_tv_radius, total_variation

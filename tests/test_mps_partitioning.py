@@ -38,7 +38,7 @@ def test_cost_aware_mps_ownership_is_contiguous_and_reduces_peak_proxy():
 
     costs = mps_factorization_site_costs(bonds)
     balanced_peak = max(sum(costs[wire] for wire in shard) for shard in ownership)
-    equal = (range(0, 2), range(2, 5), range(5, 7), range(7, 10))
+    equal = (range(2), range(2, 5), range(5, 7), range(7, 10))
     equal_peak = max(sum(costs[wire] for wire in shard) for shard in equal)
     assert balanced_peak < equal_peak
 

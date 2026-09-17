@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, replace
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 

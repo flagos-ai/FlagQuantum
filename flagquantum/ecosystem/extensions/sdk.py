@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from importlib import metadata
 from types import MappingProxyType
-from typing import Any, Iterator, Mapping, Protocol, Sequence, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from ...core.ir import CircuitIR
 from ...errors import CapabilityError, ExecutionError, FlagQuantumError
@@ -357,8 +358,11 @@ def compile_with_extension(
         handle.close()
 
 
+# `ExtensionRegistry` is a frozen dataclass whose `__post_init__` wraps its
+# entries in `MappingProxyType`, so the shared default is not mutable.
 _REGISTRY: ContextVar[ExtensionRegistry] = ContextVar(
-    "flagquantum_extension_registry", default=ExtensionRegistry()
+    "flagquantum_extension_registry",
+    default=ExtensionRegistry(),  # noqa: B039
 )
 
 

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, Mapping, Protocol, Sequence
+from typing import Protocol
 
 import torch
 

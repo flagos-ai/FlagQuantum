@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from typing import Any, Mapping
+from typing import Any
 
 from .....core.ir import CircuitIR
 from .....simulation.jax.statevector.kernels import jax_initial_statevector_shard

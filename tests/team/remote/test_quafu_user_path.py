@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import runpy
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -16,8 +17,8 @@ def test_quafu_bell_example_uses_complete_public_path(monkeypatch, capsys) -> No
     captured = {}
 
     class Result:
-        provenance = {"task_id": "task-17"}
-        counts = [{"00": 513, "11": 511}]
+        provenance: ClassVar[dict[str, str]] = {"task_id": "task-17"}
+        counts: ClassVar[list[dict[str, int]]] = [{"00": 513, "11": 511}]
 
     def run(program, **options):
         captured.update(program=program, options=options)

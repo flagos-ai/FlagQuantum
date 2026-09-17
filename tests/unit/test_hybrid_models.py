@@ -187,11 +187,13 @@ def test_energy_model_preserves_quantum_forward_hooks_and_gradients() -> None:
 
 def test_energy_model_rejects_non_tensor_quantum_output() -> None:
     model = VariationalEnergyModel()
-    with model.quantum.register_forward_hook(
-        lambda module, inputs, output: {"value": output}
+    with (
+        model.quantum.register_forward_hook(
+            lambda module, inputs, output: {"value": output}
+        ),
+        pytest.raises(TypeError, match="quantum energy layer must return"),
     ):
-        with pytest.raises(TypeError, match="quantum energy layer must return"):
-            model()
+        model()
 
 
 def test_classifier_policy_switch_does_not_change_model_class() -> None:

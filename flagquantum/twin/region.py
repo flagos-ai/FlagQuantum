@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from ..core.ir import ensure_circuit_ir
 from .circuit_support import TwinCircuitSupport, _circuit_depth

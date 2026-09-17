@@ -6,7 +6,7 @@ import datetime
 import math
 import os
 import time
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import torch
 import torch.distributed as dist

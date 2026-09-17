@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, fields
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from .options import ExecutionOptions
 

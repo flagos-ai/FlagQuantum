@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..planning_core import JAXDistributedQuantumPlan

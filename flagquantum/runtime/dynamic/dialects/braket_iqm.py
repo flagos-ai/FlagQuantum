@@ -1,7 +1,8 @@
 """Amazon Braket IQM dynamic dialect implementation."""
 
 import math
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import torch
 

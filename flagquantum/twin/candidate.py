@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 from ..core.ir import ensure_circuit_ir
 from ..remote.qpu import DeploymentResult, ProviderTaskHandle

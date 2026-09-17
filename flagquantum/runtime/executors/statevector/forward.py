@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import math
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from itertools import combinations
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 import torch.distributed as dist

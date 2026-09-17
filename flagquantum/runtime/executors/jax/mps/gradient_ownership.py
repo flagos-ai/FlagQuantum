@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 from .....simulation.jax.mps.kernels import jax_sharded_mps_z_sum
 from ..runtime_environment import (

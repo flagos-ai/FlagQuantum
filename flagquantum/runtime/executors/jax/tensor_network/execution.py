@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import _jax_nodes_from_torch_nodes

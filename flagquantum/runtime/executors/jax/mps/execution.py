@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from .....simulation.jax.mps.batched import (
     jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,

@@ -9,9 +9,10 @@ import math
 import os
 import random
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, TypedDict
+from typing import Any, TypedDict
 
 import torch
 

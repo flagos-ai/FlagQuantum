@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema, canonical_opcode

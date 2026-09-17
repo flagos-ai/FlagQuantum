@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from math import ceil, isfinite, log, sqrt
-from typing import Any, Mapping
+from typing import Any
 
 from ...compiler import lower_noise_model
 from ...core.ir import ensure_circuit_ir

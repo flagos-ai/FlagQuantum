@@ -55,7 +55,7 @@ def main() -> None:
         wires = (1, circuit.n_wires - 2)
         result = execute_torch_distributed_mps_reverse(
             circuit,
-            observable={wire: "z" for wire in wires},
+            observable=dict.fromkeys(wires, "z"),
             max_bond=32,
             device=device,
             reverse_delay_seconds=0.01,
@@ -100,7 +100,7 @@ def main() -> None:
         approximate_circuit = workload(world, approximate_theta)
         approximate = execute_torch_distributed_mps_reverse(
             approximate_circuit,
-            observable={wire: "z" for wire in wires},
+            observable=dict.fromkeys(wires, "z"),
             max_bond=1,
             device=device,
             gradient_policy="approximate",
