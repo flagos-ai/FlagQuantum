@@ -483,7 +483,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             response = self._executor_request(
                 health, port=port, timeout=min(timeout, 5)
             )
-        except (RuntimeError, TimeoutError):
+        except (RuntimeError, TimeoutError) as connection_error:
             self._reset_workspace_connection()
             chip_type, model = self._resolve_compute_target(target)
             device = "cuda:0" if chip_type == "gpu" else "cpu"
@@ -514,7 +514,9 @@ class JiudingClient(_ProgramSubmissionMixin):
                 check=False,
             )
             if started.returncode:
-                raise RuntimeError("Failed to start Jiuding workspace executor")
+                raise RuntimeError(
+                    "Failed to start Jiuding workspace executor"
+                ) from connection_error
             deadline = time.monotonic() + timeout
             while True:
                 try:

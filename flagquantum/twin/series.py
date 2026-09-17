@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import combinations
@@ -476,9 +477,10 @@ def dump_validation_series(
         + "\n"
     )
     try:
-        with destination.open("x", encoding="utf-8") as stream:
+        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(encoded)
-    except FileExistsError:
+    except FileExistsError as exists_error:
         try:
             existing = load_validation_series(destination)
         except ValueError as error:
@@ -490,7 +492,7 @@ def dump_validation_series(
             raise ValueError(
                 "Refusing to replace different Twin validation series at "
                 f"{destination}"
-            )
+            ) from exists_error
     except OSError as error:
         raise ValueError(
             f"Cannot write Twin validation series to {destination}"

@@ -156,6 +156,10 @@ select = [
     # of a silent short result; `strict=False` records that the truncation is
     # intended, as in the adjacent-pair idiom `zip(x, x[1:])`.
     "B905",
+    # Every `raise` inside an `except` clause names the cause it is re-raising,
+    # so a refusal or a wrap keeps the condition that produced it. Without the
+    # cause, a wrapped failure reads as if it were raised on the happy path.
+    "B904",
     # Defect classes: mutable state shared between instances, and a default or
     # class body that evaluates a call once at import instead of once per use.
     "B008",

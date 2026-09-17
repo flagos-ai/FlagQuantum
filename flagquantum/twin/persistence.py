@@ -138,7 +138,7 @@ def dump_twin(twin: QPUDigitalTwin, path: str | PathLike[str]) -> None:
         descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(encoded)
-    except FileExistsError:
+    except FileExistsError as exists_error:
         try:
             existing_payload = _to_dict(load_twin(destination))
         except ValueError as error:
@@ -148,7 +148,7 @@ def dump_twin(twin: QPUDigitalTwin, path: str | PathLike[str]) -> None:
         if _identity(existing_payload) != _identity(payload):
             raise ValueError(
                 f"Refusing to replace different QPU digital Twin at {destination}"
-            )
+            ) from exists_error
     except OSError as error:
         raise ValueError(f"Cannot write QPU digital Twin to {destination}") from error
 

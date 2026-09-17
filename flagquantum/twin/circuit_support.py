@@ -245,7 +245,7 @@ def dump_circuit_support(
         descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             stream.write(encoded)
-    except FileExistsError:
+    except FileExistsError as exists_error:
         try:
             existing = load_circuit_support(destination)
         except ValueError as error:
@@ -255,7 +255,7 @@ def dump_circuit_support(
         if existing.identity != support.identity:
             raise ValueError(
                 f"Refusing to replace different Twin circuit support at {destination}"
-            )
+            ) from exists_error
     except OSError as error:
         raise ValueError(
             f"Cannot write Twin circuit support to {destination}"
