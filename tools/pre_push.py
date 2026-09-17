@@ -52,50 +52,31 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
-            "strict typed trainable module",
+            "strict type check of the whole package",
+            # Target 3.12 because numpy's bundled stubs use PEP 695 ``type``
+            # statements, which mypy only parses at 3.12. A developer
+            # environment installs numpy through the jax extra, so leaving the
+            # target at pyproject's 3.10 fails before any file is checked.
             (
                 mypy,
                 "--strict",
+                "--python-version",
+                "3.12",
                 "--ignore-missing-imports",
-                "--follow-imports",
-                "silent",
-                "flagquantum/runtime/module.py",
-                "flagquantum/runtime/training.py",
+                "flagquantum",
             ),
         ),
         Check(
-            "strict typed execution mainline",
+            "strict type check of the CI tooling",
             (
                 mypy,
                 "--strict",
+                "--python-version",
+                "3.12",
                 "--ignore-missing-imports",
                 "--follow-imports",
-                "silent",
-                "flagquantum/runtime/execution_plan.py",
-                "flagquantum/runtime/execution_plan_contract.py",
-                "flagquantum/runtime/execution.py",
-                "flagquantum/runtime/distributed/protocols.py",
-                "flagquantum/runtime/backend_registry.py",
-                "flagquantum/deployment",
-            ),
-        ),
-        Check(
-            "strict typed interoperability contract",
-            (
-                mypy,
-                "--strict",
-                "--ignore-missing-imports",
-                "--follow-imports",
-                "silent",
-                "flagquantum/ecosystem/contracts.py",
-                "flagquantum/ecosystem/conformance.py",
-                "flagquantum/ecosystem/registry.py",
-                "flagquantum/ecosystem/pennylane/adapter.py",
-                "flagquantum/ecosystem/pennylane/conformance.py",
-                "flagquantum/ecosystem/pennylane/models.py",
-                "flagquantum/ecosystem/qiskit/adapter.py",
-                "flagquantum/ecosystem/qiskit/conformance.py",
-                "flagquantum/ecosystem/qiskit/models.py",
+                "skip",
+                "tools/ci_tier.py",
             ),
         ),
         Check(

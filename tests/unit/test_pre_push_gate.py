@@ -59,11 +59,9 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
     ) in commands
     assert any(
-        check.name == "strict typed interoperability contract"
-        and "flagquantum/ecosystem/contracts.py" in check.command
-        and "flagquantum/ecosystem/conformance.py" in check.command
-        and "flagquantum/ecosystem/qiskit/conformance.py" in check.command
-        and "flagquantum/ecosystem/pennylane/adapter.py" in check.command
+        check.name == "strict type check of the whole package"
+        and check.command[-1] == "flagquantum"
+        and "--strict" in check.command
         for check in checks("python")
     )
     for tier in ("pr-default", "pr-runtime", "pr-distributed"):

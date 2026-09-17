@@ -22,47 +22,18 @@ jobs:
         run: ruff check flagquantum tests tools
       - name: Black production and test surface
         run: black --check flagquantum tests tools
-      - name: Typed foundation subset
+      - name: Strict type check of the whole package
+        # Target 3.12 because numpy's bundled stubs use PEP 695 ``type``
+        # statements, which mypy only parses at 3.12. The 3.10 and 3.11
+        # interpreters are enforced by the cpu-core matrix, not here.
         run: >-
-          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
-          flagquantum/version.py flagquantum/core/ir.py
-          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
-          flagquantum/runtime/execution_plan_contract.py
+          mypy --strict --python-version 3.12 --ignore-missing-imports
+          flagquantum
+      - name: Strict type check of the CI tooling
+        run: >-
+          mypy --strict --python-version 3.12 --ignore-missing-imports
+          --follow-imports skip
           tools/ci_tier.py
-      - name: Strict typed runtime contracts
-        run: >-
-          mypy --strict --no-site-packages --follow-imports skip
-          flagquantum/core/contracts.py flagquantum/runtime/records.py
-          flagquantum/runtime/audit/contracts.py
-          flagquantum/runtime/executors/statevector/checkpointing.py
-          flagquantum/runtime/executors/statevector/gradient_reduction.py
-      - name: Strict typed trainable module
-        run: >-
-          mypy --strict --ignore-missing-imports
-          --follow-imports silent
-          flagquantum/runtime/module.py flagquantum/runtime/training.py
-      - name: Strict typed execution mainline
-        run: >-
-          mypy --strict --ignore-missing-imports
-          --follow-imports silent
-          flagquantum/runtime/execution_plan.py
-          flagquantum/runtime/execution_plan_contract.py
-          flagquantum/runtime/execution.py
-          flagquantum/runtime/distributed/protocols.py
-          flagquantum/runtime/backend_registry.py
-          flagquantum/deployment
-      - name: Strict typed interoperability contract
-        run: >-
-          mypy --strict --ignore-missing-imports
-          --follow-imports silent
-          flagquantum/ecosystem/contracts.py flagquantum/ecosystem/conformance.py
-          flagquantum/ecosystem/registry.py
-          flagquantum/ecosystem/pennylane/adapter.py
-          flagquantum/ecosystem/pennylane/conformance.py
-          flagquantum/ecosystem/pennylane/models.py
-          flagquantum/ecosystem/qiskit/adapter.py
-          flagquantum/ecosystem/qiskit/conformance.py
-          flagquantum/ecosystem/qiskit/models.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
