@@ -90,7 +90,15 @@ python -m pytest tests/benchmark_contract -q
 | `scalability` | Release-grade evidence path, usually scheduled or manual. | A specific promoted payload may support a capacity-scaling claim when it passes the release gate. | Generic distributed readiness for all backends or future workloads. |
 | `gpu` | CUDA, vendor, or accelerator device. | Device-specific execution for the covered test. | Distributed semantics unless paired with distributed markers. |
 | `distributed` | Umbrella marker for distributed planning, runtime, or evidence tests. | The test touches distributed behavior in some form. | Which environment is required; use `distributed_cpu`, `distributed_accel`, or `distributed_multinode` for CI policy. |
+| `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
+| `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
+| `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes. | The IR-only contract and complex128 QuantumScript semantics. | Hardware submission, or that PennyLane is a core dependency. |
+| `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
+
+`jax` is the only optional-integration marker named by the coverage job; the
+qiskit and pennylane suites run in their own jobs so the core matrix never
+installs them, and the braket suite needs no extra.
 
 ## Test Tiers
 
