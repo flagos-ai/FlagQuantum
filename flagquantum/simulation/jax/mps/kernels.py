@@ -232,7 +232,11 @@ def jax_mps_apply_adjacent_chain_scan(
                 run_end += 1
         if run_end - wire > 1:
 
-            def step(left_tensor: Any, right_tensor: Any) -> tuple[Any, Any]:
+            def step(
+                left_tensor: Any,
+                right_tensor: Any,
+                current_spec: Any = current_spec,
+            ) -> tuple[Any, Any]:
                 next_left, next_right = apply_one(
                     left_tensor, right_tensor, current_spec
                 )
@@ -621,12 +625,14 @@ def jax_mps_zz_z_chain_expectation_padded_scan(
             float(coefficient) != 0.0 for coefficient in coefficients
         ):
             local_values = jax.vmap(
-                lambda tensor, left_env, right_env: jax_mps_single_pauli_with_envs(
-                    tensor,
-                    left_env,
-                    right_env,
-                    pauli,
-                    matmul_precision,
+                lambda tensor, left_env, right_env, pauli=pauli: (
+                    jax_mps_single_pauli_with_envs(
+                        tensor,
+                        left_env,
+                        right_env,
+                        pauli,
+                        matmul_precision,
+                    )
                 )
             )(stacked, left_envs[:-1], right_envs[1:])
             total = total + jnp.sum(coefficient_array * local_values)

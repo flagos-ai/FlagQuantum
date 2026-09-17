@@ -273,7 +273,9 @@ def optimize_hybrid(
             step_evaluations = 0
             if isinstance(optimizer, torch.optim.LBFGS):
 
-                def closure() -> torch.Tensor:
+                def closure(
+                    optimizer: torch.optim.LBFGS = optimizer,
+                ) -> torch.Tensor:
                     nonlocal evaluations, step_evaluations
                     optimizer.zero_grad(set_to_none=True)
                     loss = _checked_scalar(objective(groups))

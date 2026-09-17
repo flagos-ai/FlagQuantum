@@ -153,9 +153,13 @@ def schedule_circuit_dependencies(
 
         dependency_kinds: dict[int, set[str]] = {}
 
-        def add_dependency(predecessor: int | None, kind: str) -> None:
+        def add_dependency(
+            predecessor: int | None,
+            kind: str,
+            kinds: dict[int, set[str]] = dependency_kinds,
+        ) -> None:
             if predecessor is not None:
-                dependency_kinds.setdefault(predecessor, set()).add(kind)
+                kinds.setdefault(predecessor, set()).add(kind)
 
         for wire in instruction.wires:
             add_dependency(last_by_wire.get(wire), "wire")

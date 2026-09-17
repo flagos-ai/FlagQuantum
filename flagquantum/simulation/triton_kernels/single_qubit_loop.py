@@ -377,7 +377,12 @@ def repeated_rx_rz_tangents(
                 rz = rz_angles.detach().clone().requires_grad_(family == "rz")
                 selected = rx if family == "rx" else rz
 
-                def selected_output(value: torch.Tensor) -> torch.Tensor:
+                def selected_output(
+                    value: torch.Tensor,
+                    family: str = family,
+                    rx: torch.Tensor = rx,
+                    rz: torch.Tensor = rz,
+                ) -> torch.Tensor:
                     return repeated_rx_rz(
                         state,
                         value if family == "rx" else rx,

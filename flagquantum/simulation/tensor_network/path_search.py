@@ -796,9 +796,12 @@ def _contract_nodes_quality_reconfigured(
         replacement_local = _tree_from_steps(subnodes, exact_steps)
         ordered_leaves = tuple(sorted(leaves))
 
-        def remap(tree: _TemporaryContractionTree) -> _TemporaryContractionTree:
+        def remap(
+            tree: _TemporaryContractionTree,
+            global_leaves: tuple[int, ...] = ordered_leaves,
+        ) -> _TemporaryContractionTree:
             if tree.leaf_index is not None:
-                global_index = ordered_leaves[tree.leaf_index]
+                global_index = global_leaves[tree.leaf_index]
                 return _TemporaryContractionTree(
                     leaves=frozenset((global_index,)),
                     leaf_index=global_index,
