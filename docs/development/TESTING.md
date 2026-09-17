@@ -44,7 +44,7 @@ for `benchmarks/results/scalability/`.
 | Daily development or any issue baseline | `python tools/ci_tier.py pr-default` | Fast smoke/unit health for imports, minimal circuits, autograd, pure planner/audit helpers. | Runtime integration, distributed behavior, performance, or release readiness. |
 | Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
 | Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
-| Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`. | Multi-node transport or release scalability by itself. |
+| Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
 | Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Multi-node/rank-placement candidates selected by `distributed_multinode`. | Release claims unless produced payloads also pass release validation. |
 | Release candidate or promoted benchmark claim | `python tools/ci_tier.py release` | Full non-performance-benchmark pytest plus benchmark root audit and scalability release scan. | Claims outside the audited payload. |
 
@@ -60,6 +60,7 @@ python -m pytest -m "distributed_cpu" -q
 python -m pytest -m "distributed_cpu or release_gate or benchmark_contract" -q
 python -m pytest -m "benchmark_contract or release_gate" -q
 python -m pytest -m "distributed_accel and gpu" -q
+python -m pytest -m "triton and gpu" -q
 python -m pytest -m "distributed_multinode" -q
 python -m pytest --markers
 ```
@@ -95,33 +96,45 @@ fails if a file is added without one.
 | `gpu` | CUDA, vendor, or accelerator device. | Device-specific execution for the covered test. | Distributed semantics unless paired with distributed markers. |
 | `distributed` | Umbrella marker for distributed planning, runtime, or evidence tests. | The test touches distributed behavior in some form. | Which environment is required; use `distributed_cpu`, `distributed_accel`, or `distributed_multinode` for CI policy. |
 | `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
+| `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
 | `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract and complex128 QuantumScript semantics. | Hardware submission, or that PennyLane is a core dependency. |
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax` and `pennylane` because its marker expression
-selects their suites, and installs neither `qiskit` nor `braket`: the braket
-tests need no extra, and Qiskit's native libraries cannot be loaded in that
-process at all. `qiskit/_accelerate.abi3.so` raises `ImportError: cannot
-allocate memory in static TLS block` once the rest of the test tree has been
-imported, and importing it first only moves the failure to
+selects their suites, and installs neither `qiskit` nor `triton`: the braket
+tests need no extra, and the other two cannot be measured there. Qiskit's native
+libraries cannot be loaded in that process at all — `qiskit/_accelerate.abi3.so`
+raises `ImportError: cannot allocate memory in static TLS block` once the rest of
+the test tree has been imported, and importing it first only moves the failure to
 `qiskit_aer.libs/libgomp-*.so`. pytest reports that as a collection error, which
-aborts the lane outright, so the expression excludes the marker and the
-`qiskit-optional` job remains the lane that runs those tests.
+aborts the lane outright. The Triton kernels are omitted from measurement in
+`.coveragerc`, so installing the extra there would buy no coverage. The
+expression excludes both markers, and the `qiskit-optional` and
+`triton-optional` jobs remain the lanes that run those tests.
 
-That exclusion reaches the tests that probe Qiskit inside the test body. Three
-files gate the whole module on `importorskip`, which fires during import and
+Excluding a marker reaches the tests that probe the package inside the test
+body. Files that gate the whole module on `importorskip` call it during import,
 before the marker filter, so each still records one module-level skip naming its
-cause. A self-describing skip costs nothing; the failure worth guarding against
-is a whole package measuring far below what its suite covers because every one
-of its tests skipped, which is what `pennylane` was doing at 43.4%.
+cause. A self-describing skip costs nothing. The failure worth guarding against
+is a suite that skips everywhere and leaves its package measuring far below what
+it covers, which is what `pennylane` was doing at 43.4%.
 
-The install line and the marker expression are two halves of one job and are
-maintained separately, so a missing extra is swallowed as a skip.
-`tests/unit/test_coverage_lane_dependency_policy.py` checks them against each
-other: add an extra to the install line, or take its marker out of the
-expression, but do not let the skip absorb the difference.
+Because a missing extra is swallowed as a skip, the two halves of every job —
+the install line and the marker expression — are checked against each other by
+`tests/unit/test_lane_dependency_policy.py`. It holds two invariants. The
+coverage job must install what it selects, or its measurement is a lie. And
+every optional integration some test probes must be installed by *some* lane
+that selects that test, or the test can never run anywhere — which is how the
+six Triton files sat in no lane at all while carrying `unit`. Add an extra to an
+install line, or take its marker out of a selector; do not let the skip absorb
+the difference.
+
+What counts as an optional integration comes from `dependency-policy.toml`, so
+the check cannot drift from the policy. A test that skips for want of a device
+or an unset environment variable is outside it: no install line can fix that.
+So is a probe for a package no extra declares.
 
 ## Test Tiers
 
@@ -204,6 +217,7 @@ Use this tier only on an explicit accelerator runner.
 python tools/ci_tier.py gpu-scheduled
 # direct:
 python -m pytest -m "distributed_accel and gpu" -q
+python -m pytest -m "triton and gpu" -q
 ```
 
 A local CPU run may select these tests and skip them; that is wiring validation,
@@ -308,7 +322,7 @@ never execution proof.
 | PR runtime/API/planner | Pull requests that touch runtime, API, planner, compiler, or integration boundaries. | `python tools/ci_tier.py pr-runtime` | Only when selected for that blast radius. | Seeded `integration` runtime/API files; not distributed or scalability evidence. |
 | PR distributed/audit/benchmark | Pull requests that touch distributed planning/runtime metadata, audit, benchmark JSON, or release gates. | `python tools/ci_tier.py pr-distributed` | Only for distributed/audit/benchmark changes. | CPU distributed semantics plus benchmark contract and release-gate validation; not capacity evidence. |
 | Nightly CPU | Scheduled nightly CPU-safe validation or explicit maintainer request. | `python tools/ci_tier.py nightly` | No | Broad non-benchmark, non-accelerator, non-multinode health. |
-| GPU scheduled | Scheduled/manual job on an explicit accelerator runner. | `python tools/ci_tier.py gpu-scheduled` | No | Accelerator-backed behavior for selected tests; not multi-node or release evidence by itself. |
+| GPU scheduled | Scheduled/manual job on an explicit accelerator runner. | `python tools/ci_tier.py gpu-scheduled` | No | Accelerator-backed behavior for selected tests, including the Triton kernels that need a device; not multi-node or release evidence by itself. |
 | Multi-node scheduled/manual | Scheduled/manual torchrun or cluster job with explicit rank placement. | `python tools/ci_tier.py multinode-scheduled` | No | Multi-node transport candidates for the configured cluster; release claims still require audit payloads. |
 | Release | Release candidate validation before promoting benchmark payloads or publishing release notes. | `python tools/ci_tier.py release` | Release only | Full non-performance-benchmark pytest coverage plus benchmark audit and scalability release scan. |
 

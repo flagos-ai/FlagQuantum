@@ -11,7 +11,7 @@ from flagquantum.simulation.triton_kernels import (
     repeated_rx_rz_tangents,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.triton]
 
 
 def _reference(state, rx_angles, rz_angles):
@@ -95,6 +95,7 @@ def test_repeated_rx_rz_cpu_tangents_match_jacobian() -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
 @pytest.mark.parametrize("depth", [1, 4, 16])
 def test_repeated_rx_rz_cuda_tangents_match_cpu_reference(depth: int) -> None:
     torch.manual_seed(13)
@@ -107,6 +108,7 @@ def test_repeated_rx_rz_cuda_tangents_match_cpu_reference(depth: int) -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
 @pytest.mark.parametrize("depth", [1, 4, 16, 64])
 def test_repeated_rx_rz_cuda_matches_reference(depth: int) -> None:
     torch.manual_seed(5)
@@ -139,6 +141,7 @@ def test_repeated_rx_rz_cuda_matches_reference(depth: int) -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
 def test_circuit_ir_rx_rz_fusion_matches_eager_state_and_vqe_gradients(
     monkeypatch,
 ) -> None:
