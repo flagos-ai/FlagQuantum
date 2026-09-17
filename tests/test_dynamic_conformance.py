@@ -6,6 +6,8 @@ import flagquantum.ecosystem.qiskit as fqq
 import flagquantum.runtime.dynamic.conformance as fqdc
 from flagquantum.dynamic import DynamicCircuit
 
+pytestmark = pytest.mark.integration
+
 
 def test_local_dynamic_conformance_vectors_pass() -> None:
     result = fqdc.run_dynamic_conformance()

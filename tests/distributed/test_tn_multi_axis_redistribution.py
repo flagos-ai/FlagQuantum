@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = [pytest.mark.distributed, pytest.mark.distributed_accel]
+pytestmark = [pytest.mark.distributed, pytest.mark.distributed_accel, pytest.mark.gpu]
 ROOT = Path(__file__).resolve().parents[2]
 
 

@@ -12,6 +12,8 @@ from flagquantum.algorithms import Hamiltonian, pauli_term, vqe_loss
 from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybrid
 from flagquantum.core.runtime_config import runtime_config
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.unit
 @pytest.mark.parametrize("method", ["rotosolve", "lbfgs"])

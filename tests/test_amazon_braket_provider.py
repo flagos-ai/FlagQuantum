@@ -7,7 +7,7 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.remote import AmazonBraketProvider, braket_backend_profile
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
 
-pytestmark = pytest.mark.braket
+pytestmark = [pytest.mark.braket, pytest.mark.unit]
 
 
 class FakeBraketTask:
