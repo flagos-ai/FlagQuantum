@@ -21,8 +21,11 @@ try:
     _has_mpl = True
 except ImportError:
     _has_mpl = False
-    draw_mpl = None  # type: ignore
-    MPLDrawer = None  # type: ignore
+    draw_mpl = None  # type: ignore[assignment]
+    # `mypy` reports `misc` when this file is checked on its own and
+    # `assignment` when the package is checked as a whole, so both codes are
+    # listed and neither check sees an unused suppression.
+    MPLDrawer = None  # type: ignore[assignment, misc]
 
 
 def draw(
