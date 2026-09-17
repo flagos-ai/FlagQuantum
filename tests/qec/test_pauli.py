@@ -104,6 +104,8 @@ def test_booleans_are_not_wire_indices() -> None:
         (Pauli(x_wires=(0, 1)), Pauli(z_wires=(0, 1)), True),
         (Pauli(x_wires=(0,), z_wires=(0,)), Pauli(z_wires=(0,)), False),
         (Pauli(), Pauli(x_wires=(5,), z_wires=(5,)), True),
+        (Pauli(x_wires=(0,)), Pauli(x_wires=(0,)), True),
+        (Pauli(z_wires=(0, 1)), Pauli(x_wires=(1,), z_wires=(0,)), False),
     ),
 )
 def test_commutes_with_uses_the_symplectic_product(
