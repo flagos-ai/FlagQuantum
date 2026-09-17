@@ -128,3 +128,57 @@ def test_injected_error_on_the_middle_wire_fires_two_detectors() -> None:
     ):
         assert _detector_bits(memory, classical, sample) == (1, 1, 0, 0, 0, 0, 0, 0)
         assert _observable_bits(memory, sample) == (1,)
+
+
+def test_injected_error_in_the_final_round_fires_only_the_final_boundary() -> None:
+    memory = build_memory_circuit(RepetitionCode(3), rounds=3)
+    injected = _with_injected_x(memory.source, round_index=2, wire=0)
+    lowered = _lower(injected, checks=2, rounds=3)
+    execution = execute_hybrid_dynamic_session(lowered.circuit, shots=4, seed=0)
+
+    for classical, sample in zip(
+        execution.classical_bits.tolist(), execution.samples.tolist(), strict=True
+    ):
+        assert _detector_bits(memory, classical, sample) == (0, 0, 0, 0, 1, 0, 0, 0)
+        assert _observable_bits(memory, sample) == (1,)
+
+
+def test_injected_error_in_the_middle_round_fires_its_own_boundary_detector() -> None:
+    memory = build_memory_circuit(RepetitionCode(3), rounds=3)
+    injected = _with_injected_x(memory.source, round_index=1, wire=0)
+    lowered = _lower(injected, checks=2, rounds=3)
+    execution = execute_hybrid_dynamic_session(lowered.circuit, shots=4, seed=0)
+
+    for classical, sample in zip(
+        execution.classical_bits.tolist(), execution.samples.tolist(), strict=True
+    ):
+        assert _detector_bits(memory, classical, sample) == (0, 0, 1, 0, 0, 0, 0, 0)
+        assert _observable_bits(memory, sample) == (1,)
+
+
+def test_smallest_code_and_single_round_lower_and_execute() -> None:
+    memory = build_memory_circuit(RepetitionCode(2), rounds=1)
+    lowered = _lower(memory.source, checks=1, rounds=1)
+    assert lowered.circuit.n_wires == 3
+
+    execution = execute_hybrid_dynamic_session(lowered.circuit, shots=4, seed=0)
+    assert execution.samples.shape == (4, 3)
+
+    for classical, sample in zip(
+        execution.classical_bits.tolist(), execution.samples.tolist(), strict=True
+    ):
+        assert _detector_bits(memory, classical, sample) == (0, 0)
+        assert _observable_bits(memory, sample) == (0,)
+
+
+def test_smallest_code_reports_an_injected_error() -> None:
+    memory = build_memory_circuit(RepetitionCode(2), rounds=1)
+    injected = _with_injected_x(memory.source, round_index=0, wire=0)
+    lowered = _lower(injected, checks=1, rounds=1)
+    execution = execute_hybrid_dynamic_session(lowered.circuit, shots=4, seed=0)
+
+    for classical, sample in zip(
+        execution.classical_bits.tolist(), execution.samples.tolist(), strict=True
+    ):
+        assert _detector_bits(memory, classical, sample) == (1, 0)
+        assert _observable_bits(memory, sample) == (1,)
