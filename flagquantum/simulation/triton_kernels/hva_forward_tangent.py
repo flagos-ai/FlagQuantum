@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
 import triton
 import triton.language as tl
 
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
-@triton.jit
+
+@jit
 def _insert_zero_bit(values: tl.tensor, position: tl.constexpr) -> tl.tensor:
     lower_mask: tl.constexpr = (1 << position) - 1
     return (values & lower_mask) | ((values & ~lower_mask) << 1)
 
 
-@triton.jit
+@jit
 def _two_qubit_forward_tangent_kernel(
     augmented_in: tl.tensor,
     augmented_out: tl.tensor,
@@ -97,7 +104,7 @@ def _two_qubit_forward_tangent_kernel(
     tl.store(augmented_out + 2 * (offset + index3) + 1, ni3, mask=mask)
 
 
-@triton.jit
+@jit
 def _rz_forward_tangent_kernel(
     augmented_in: tl.tensor,
     augmented_out: tl.tensor,

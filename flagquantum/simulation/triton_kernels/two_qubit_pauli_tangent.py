@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
 
 class _TensorJacobian(Protocol):
@@ -19,7 +24,7 @@ class _TensorJacobian(Protocol):
     ) -> object: ...
 
 
-@triton.jit
+@jit
 def _rxx_ryy_rzz_tangent_kernel(
     state_parts: tl.tensor,
     angles: tl.tensor,

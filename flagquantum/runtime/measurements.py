@@ -435,6 +435,22 @@ def _execute_shot_measurement(
     }
 
 
+def _expectation_method(
+    target: Any, name: str, description: str
+) -> Callable[..., torch.Tensor]:
+    """Return one of a target's expectation methods, or fail as a capability error.
+
+    The expectation surface is duck-typed, so the attribute arrives through
+    ``getattr``. Keeping the ``callable`` check means an attribute that exists
+    but cannot be called is reported here rather than raised as a ``TypeError``
+    at the call site.
+    """
+    method: Callable[..., torch.Tensor] | None = getattr(target, name, None)
+    if not callable(method):
+        raise CapabilityError(f"{type(target).__name__} does not support {description}")
+    return method
+
+
 def _execute_analytic_measurement(
     output: Any,
     measurement_target: Callable[[], Any],
@@ -445,28 +461,19 @@ def _execute_analytic_measurement(
     noise_model: Any | None,
 ) -> torch.Tensor:
     if kind == "expectation_identity":
-        target = measurement_target()
-        method = getattr(target, "expectation_ps", None)
-        if not callable(method):
-            raise CapabilityError(
-                f"{type(target).__name__} does not support expectations"
-            )
+        method = _expectation_method(
+            measurement_target(), "expectation_ps", "expectations"
+        )
         return torch.ones_like(method(z=(0,)))
     if kind == "expectation_z":
-        target = measurement_target()
-        method = getattr(target, "expectation_z", None)
-        if not callable(method):
-            raise CapabilityError(
-                f"{type(target).__name__} does not support Z expectations"
-            )
+        method = _expectation_method(
+            measurement_target(), "expectation_z", "Z expectations"
+        )
         return method(wires)
     if kind == "expectation_ps":
-        target = measurement_target()
-        method = getattr(target, "expectation_ps", None)
-        if not callable(method):
-            raise CapabilityError(
-                f"{type(target).__name__} does not support Pauli expectations"
-            )
+        method = _expectation_method(
+            measurement_target(), "expectation_ps", "Pauli expectations"
+        )
         axes = _pauli_axes(metadata)
         if not any(axes.values()):
             axes["z"] = wires

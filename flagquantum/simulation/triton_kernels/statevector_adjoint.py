@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
 import triton
 import triton.language as tl
 
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
-@triton.jit(do_not_specialize=["bit_position"])
+
+@jit(do_not_specialize=["bit_position"])
 def _complex64_local_1q_vjp_adjoint_kernel(
     before_parts: tl.tensor,
     adjoint_parts: tl.tensor,
@@ -252,7 +259,7 @@ def fused_complex64_local_1q_reversible_vjp(
     return partial_gradients.sum()
 
 
-@triton.jit(do_not_specialize=["rank_basis"])
+@jit(do_not_specialize=["rank_basis"])
 def _complex64_sharded_1q_vjp_adjoint_kernel(
     local_before_parts: tl.tensor,
     remote_before_parts: tl.tensor,

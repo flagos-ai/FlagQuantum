@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from ..noise import ReadoutError
 from .model import QPUDigitalTwin
 
 _QUBIT_SCHEMA = "flagquantum.twin_qubit_calibration_drift.v1"
@@ -21,7 +22,9 @@ def _relative_delta(reference: float, current: float) -> float | None:
     return (current - reference) / reference
 
 
-def _readout_distance(reference: Any, current: Any) -> float | None:
+def _readout_distance(
+    reference: ReadoutError | None, current: ReadoutError | None
+) -> float | None:
     if reference is None and current is None:
         return None
     if reference is None or current is None:

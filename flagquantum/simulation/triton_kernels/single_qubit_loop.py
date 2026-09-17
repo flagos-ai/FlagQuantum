@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
 
 class _LoopContext(Protocol):
@@ -36,7 +41,7 @@ def _tensor_jacobian(
     return result
 
 
-@triton.jit
+@jit
 def _rx_rz_loop_kernel(
     state_parts: tl.tensor,
     rx_angles: tl.tensor,
@@ -76,7 +81,7 @@ def _rx_rz_loop_kernel(
     tl.store(output_parts + 2 * (base + 1) + 1, imag1, mask=mask)
 
 
-@triton.jit
+@jit
 def _rx_rz_loop_tangent_kernel(
     state_parts: tl.tensor,
     rx_angles: tl.tensor,
@@ -168,7 +173,7 @@ def _rx_rz_loop_tangent_kernel(
     )
 
 
-@triton.jit
+@jit
 def _rx_rz_loop_backward_kernel(
     output_parts: tl.tensor,
     gradient_parts: tl.tensor,

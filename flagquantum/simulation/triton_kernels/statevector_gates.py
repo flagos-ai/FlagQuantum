@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
 
 class _GateContext(Protocol):
@@ -22,7 +27,7 @@ class _MatrixGateContext(_GateContext, Protocol):
     wire: int
 
 
-@triton.jit(do_not_specialize=["bit_position"])
+@jit(do_not_specialize=["bit_position"])
 def _complex64_local_1q_kernel(
     state_parts: tl.tensor,
     matrix_parts: tl.tensor,
@@ -123,7 +128,7 @@ def apply_complex64_local_1q(
     return output
 
 
-@triton.jit(do_not_specialize=["bit_position", "exchanged_bit_value"])
+@jit(do_not_specialize=["bit_position", "exchanged_bit_value"])
 def _complex64_transpose_1q_kernel(
     state_parts: tl.tensor,
     received_parts: tl.tensor,
@@ -226,7 +231,7 @@ def apply_complex64_transpose_1q_inplace(
     return state
 
 
-@triton.jit(do_not_specialize=["bit_position", "compressed_start"])
+@jit(do_not_specialize=["bit_position", "compressed_start"])
 def _complex64_control_one_pack_kernel(
     state_parts: tl.tensor,
     packed_parts: tl.tensor,
@@ -256,7 +261,7 @@ def _complex64_control_one_pack_kernel(
     tl.store(packed_parts + 2 * linear + 1, imag, mask=mask)
 
 
-@triton.jit(do_not_specialize=["bit_position", "compressed_start"])
+@jit(do_not_specialize=["bit_position", "compressed_start"])
 def _complex64_control_one_unpack_kernel(
     packed_parts: tl.tensor,
     output_parts: tl.tensor,
@@ -365,7 +370,7 @@ def unpack_complex64_control_one(
     )
 
 
-@triton.jit(do_not_specialize=["control_bit_position", "target_bit_position"])
+@jit(do_not_specialize=["control_bit_position", "target_bit_position"])
 def _complex64_local_cx_kernel(
     state_parts: tl.tensor,
     pair_count: tl.tensor,
@@ -435,7 +440,7 @@ def apply_complex64_local_cx_inplace(
     return state
 
 
-@triton.jit
+@jit
 def _complex64_local_cx_segment_kernel(
     state_parts: tl.tensor,
     output_parts: tl.tensor,
@@ -509,7 +514,7 @@ def apply_complex64_local_cx_segment(
     return output
 
 
-@triton.jit
+@jit
 def _single_qubit_matrix_kernel(
     state_parts: tl.tensor,
     matrix_parts: tl.tensor,
@@ -552,7 +557,7 @@ def _single_qubit_matrix_kernel(
     tl.store(output_parts + 2 * one + 1, out1i, mask=valid)
 
 
-@triton.jit
+@jit
 def _single_qubit_matrix_backward_kernel(
     state_parts: tl.tensor,
     gradient_parts: tl.tensor,
@@ -609,7 +614,7 @@ def _single_qubit_matrix_backward_kernel(
     tl.atomic_add(partial_parts + partial + 7, tl.sum(g1i * x1r - g1r * x1i))
 
 
-@triton.jit
+@jit
 def _cx_sequence_kernel(
     state_parts: tl.tensor,
     output_parts: tl.tensor,
@@ -640,7 +645,7 @@ def _cx_sequence_kernel(
     tl.store(output_parts + 2 * offsets + 1, imag, mask=valid)
 
 
-@triton.jit
+@jit
 def _ry_rz_pair_kernel(
     state_parts: tl.tensor,
     ry_angles: tl.tensor,
