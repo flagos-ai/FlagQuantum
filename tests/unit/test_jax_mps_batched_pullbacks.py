@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 
-import numpy as np
 import pytest
 
 pytestmark = [
@@ -18,6 +17,7 @@ pytestmark = [
 
 def test_jax_mps_apply_one_batched_matches_einsum():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.mps.batched import jax_mps_apply_one_batched
 
@@ -38,6 +38,7 @@ def test_jax_mps_apply_one_batched_matches_einsum():
 
 def test_jax_mps_split_pair_batched_reconstructs():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.mps.batched import jax_mps_split_pair_batched
 
@@ -63,6 +64,7 @@ def test_jax_mps_split_pair_batched_reconstructs():
 def test_jax_mps_owner_local_vjp_matches_grad():
     import jax
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.mps.pullbacks import jax_mps_owner_local_vjp
 
@@ -82,14 +84,15 @@ def test_jax_mps_owner_local_vjp_matches_grad():
 def test_jax_mps_canonicalization_pullback_matches_grad():
     import jax
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.mps.pullbacks import (
         jax_mps_canonicalization_pullback,
     )
 
     parameter = jnp.asarray(0.5, dtype=jnp.float64)
-    _q, _r, _sv, canonical_grad, truncation_grad = (
-        jax_mps_canonicalization_pullback(parameter, include_rank_one_truncation=True)
+    _q, _r, _sv, canonical_grad, truncation_grad = jax_mps_canonicalization_pullback(
+        parameter, include_rank_one_truncation=True
     )
 
     weights = jnp.asarray(((1.0, -0.3), (0.2, 0.7)), dtype=jnp.float64)
@@ -105,5 +108,7 @@ def test_jax_mps_canonicalization_pullback_matches_grad():
         return jnp.sum(weights * jnp.matmul(q_factor, r_factor))
 
     expected = jax.grad(canonicalized_score)(parameter)
-    assert np.isclose(float(np.asarray(canonical_grad)), float(np.asarray(expected)), atol=1e-6)
+    assert np.isclose(
+        float(np.asarray(canonical_grad)), float(np.asarray(expected)), atol=1e-6
+    )
     assert truncation_grad is not None

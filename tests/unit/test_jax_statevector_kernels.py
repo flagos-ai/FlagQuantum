@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 
-import numpy as np
 import pytest
 
 pytestmark = [
@@ -26,6 +25,7 @@ def _pack_bits(index: int, n_wires: int, wires: tuple[int, ...]) -> int:
 
 def test_jax_basis_indices_for_wires_matches_reference():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_basis_indices_for_wires,
@@ -59,6 +59,7 @@ def test_jax_rank_mask_for_touched_delta_matches_reference():
 
 def test_jax_apply_matrix_to_batched_local_state_matches_einsum():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_apply_matrix_to_batched_local_state,
@@ -96,6 +97,7 @@ def test_jax_apply_matrix_to_batched_local_state_matches_einsum():
 
 def test_jax_sharded_statevector_rank_loss_matches_reference():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_sharded_statevector_rank_loss,

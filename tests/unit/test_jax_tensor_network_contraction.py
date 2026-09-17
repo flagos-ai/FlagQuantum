@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 
-import numpy as np
 import pytest
 
 pytestmark = [
@@ -18,6 +17,7 @@ pytestmark = [
 
 def test_contract_nodes_greedy_matches_einsum():
     import jax.numpy as jnp
+    import numpy as np
 
     from flagquantum.simulation.jax.tensor_network.contraction import (
         contract_nodes_greedy,
