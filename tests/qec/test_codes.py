@@ -136,3 +136,44 @@ def test_check_rejects_a_negative_index() -> None:
             ancilla_wire=2,
             cnot_wires=((0, 2), (1, 2)),
         )
+
+
+@pytest.mark.parametrize(
+    "stabilizer",
+    (
+        Pauli(z_wires=(5, 6)),
+        Pauli(z_wires=(0,)),
+        Pauli(z_wires=(0, 1, 2)),
+        Pauli(),
+    ),
+)
+def test_check_rejects_a_stabilizer_that_disagrees_with_the_cnot_controls(
+    stabilizer: Pauli,
+) -> None:
+    with pytest.raises(ValueError, match="support"):
+        CodeCheck(
+            index=0,
+            stabilizer=stabilizer,
+            ancilla_wire=2,
+            cnot_wires=((0, 2), (1, 2)),
+        )
+
+
+def test_check_rejects_a_duplicated_cnot_schedule() -> None:
+    with pytest.raises(ValueError, match="support"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(z_wires=(0,)),
+            ancilla_wire=2,
+            cnot_wires=((0, 2), (0, 2)),
+        )
+
+
+def test_check_rejects_an_identity_stabilizer_with_cnots() -> None:
+    with pytest.raises(ValueError, match="support"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(),
+            ancilla_wire=2,
+            cnot_wires=((0, 2), (1, 2)),
+        )

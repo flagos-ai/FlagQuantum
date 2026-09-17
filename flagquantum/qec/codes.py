@@ -44,6 +44,9 @@ class CodeCheck:
             raise ValueError("check CNOTs must control data wires, not the ancilla")
         if any(target != self.ancilla_wire for _, target in self.cnot_wires):
             raise ValueError("check CNOTs must target the declared ancilla")
+        controls = tuple(sorted(control for control, _ in self.cnot_wires))
+        if controls != self.stabilizer.support:
+            raise ValueError("check CNOT controls must match the stabilizer support")
 
 
 @runtime_checkable
