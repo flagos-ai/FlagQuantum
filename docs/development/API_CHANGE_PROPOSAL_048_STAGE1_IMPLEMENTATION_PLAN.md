@@ -1548,6 +1548,14 @@ the frozen profile's arithmetic.
 The layer declares codes and detectors only. It does not build a detector error
 model, decode, sample evidence, or make any threshold, logical-suppression,
 real-time, or fault-tolerance claim.
+
+One representational boundary is explicit. `CodeCheck` requires every CNOT to
+control a data wire and target the check's ancilla, so it can describe only
+Z-type checks measured with a Z-basis ancilla. An X-type check couples the
+ancilla the other way and is not representable here, even though the `Pauli`
+record and the check's `stabilizer` field are basis-agnostic. This matches the
+repetition code, which detects bit flips; a code family needing X-type checks
+requires this record to grow before it can be described.
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
