@@ -15,9 +15,12 @@ from flagquantum.runtime.executors.jax.kernel import JAXQuantumKernel, QuantumTo
 from flagquantum.runtime.executors.jax.mps import lowering as mps_lowering
 from flagquantum.simulation.jax.mps import kernels as jax_mps
 
-pytestmark = pytest.mark.skipif(
-    importlib.util.find_spec("jax") is None, reason="jax is not installed"
-)
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.skipif(
+        importlib.util.find_spec("jax") is None, reason="jax is not installed"
+    ),
+]
 
 
 def test_jax_quantum_kernel_torch_autograd_matches_statevector():

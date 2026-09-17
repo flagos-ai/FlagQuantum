@@ -12,7 +12,7 @@
 schema = "flagquantum_coverage_policy_v1"
 
 [global]
-min = 55
+min = 60
 
 [allowlist."flagquantum.benchmarking"]
 target = 0
