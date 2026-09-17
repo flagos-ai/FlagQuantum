@@ -175,7 +175,7 @@ def _broadcast_parameters(
 ) -> int:
     if not dist.is_initialized() or dist.get_world_size() == 1:
         return 0
-    for parameter, owner in zip(parameters, owners):
+    for parameter, owner in zip(parameters, owners, strict=True):
         dist.broadcast(parameter.data, src=owner)
     return len(parameters)
 

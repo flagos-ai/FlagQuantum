@@ -221,7 +221,9 @@ def _topology(module: torch.nn.Module) -> dict[str, Any]:
 
 def _workload_signature(ir: Any) -> str:
     payload = ir.to_dict()
-    for source, encoded_instruction in zip(ir.instructions, payload["instructions"]):
+    for source, encoded_instruction in zip(
+        ir.instructions, payload["instructions"], strict=True
+    ):
         for name, value in source.params.items():
             if not isinstance(value, torch.Tensor) or not value.requires_grad:
                 continue

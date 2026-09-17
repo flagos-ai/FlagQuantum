@@ -50,7 +50,7 @@ class DistributedTNSliceTaskPlan:
         if self.node_count != self.world_size // self.local_world_size:
             raise ValueError("TN slice task plan node count is inconsistent")
         expected_assignments = tuple(
-            tuple(zip(self.slicing_labels, values))
+            tuple(zip(self.slicing_labels, values, strict=True))
             for values in (
                 product(*(range(size) for size in self.slice_shape))
                 if self.slice_shape
@@ -134,7 +134,7 @@ def plan_distributed_tn_slice_tasks(
     if world_size % local_world_size:
         raise ValueError("world_size must be divisible by local_world_size")
     assignments = tuple(
-        tuple(zip(slicing.sliced_labels, values))
+        tuple(zip(slicing.sliced_labels, values, strict=True))
         for values in (
             product(*(range(size) for size in slicing.slice_shape))
             if slicing.slice_shape

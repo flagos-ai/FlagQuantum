@@ -53,7 +53,7 @@ def rank_ownership(
                 amplitude_end=end,
                 owned_amplitudes=end - start,
             )
-            for item, (start, end) in zip(placement, ranges)
+            for item, (start, end) in zip(placement, ranges, strict=True)
         )
     if state == "mps" and ("sharded" in mode or mode == "distributed_mps"):
         ranges = rank_ranges(n_wires, world_size)
@@ -64,7 +64,7 @@ def rank_ownership(
                 wire_end=end,
                 owned_wires=tuple(range(start, end)),
             )
-            for item, (start, end) in zip(placement, ranges)
+            for item, (start, end) in zip(placement, ranges, strict=True)
         )
     if state == "tensor_network" and ("tensor_network" in mode or mode.endswith("_tn")):
         ranges = rank_ranges(max(world_size, n_wires), world_size)
@@ -75,7 +75,7 @@ def rank_ownership(
                 slice_end=end,
                 owned_slice_count=end - start,
             )
-            for item, (start, end) in zip(placement, ranges)
+            for item, (start, end) in zip(placement, ranges, strict=True)
         )
     return tuple(dict(item, replica="full_workload") for item in placement)
 

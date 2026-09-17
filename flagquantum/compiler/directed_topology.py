@@ -240,7 +240,7 @@ def route_to_directed_topology(
             path = coupling_map.shortest_path(
                 logical_to_physical[misplaced_logical], misplaced_logical
             )
-            edges = tuple(zip(path, path[1:]))
+            edges = tuple(zip(path, path[1:], strict=False))
             for left, right in (*edges, *reversed(edges[:-1])):
                 swap(left, right, source, source_index, "final_restore")
 

@@ -45,7 +45,7 @@ def test_reverse_pair_bucket_uses_projected_truncated_gradient() -> None:
     )
 
     assert len(outputs) == 2
-    for pair, (pair_leaf, left, right, info) in zip(pairs, outputs):
+    for pair, (pair_leaf, left, right, info) in zip(pairs, outputs, strict=True):
         retained_u = left.reshape(1, 4, 1)
         expected_right = torch.matmul(
             torch.conj(retained_u).transpose(-2, -1), pair

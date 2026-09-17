@@ -57,7 +57,7 @@ def test_multi_step_training_matches_ordinary_local_torch_optimizer(optimizer):
         circuit, steps=4, optimizer=optimizer, lr=0.03
     )
     assert result.losses == pytest.approx(expected_losses, abs=3e-5)
-    for actual, expected in zip(parameters, reference_parameters):
+    for actual, expected in zip(parameters, reference_parameters, strict=True):
         assert float(actual.detach()) == pytest.approx(
             float(expected.detach()), abs=3e-5
         )
@@ -161,7 +161,9 @@ def test_checkpoint_resume_matches_uninterrupted_seeded_run(tmp_path: Path):
     assert partial.completed_steps == 2
     assert continuation.start_step == 2
     assert continuation.losses == pytest.approx(full.losses[2:], abs=3e-5)
-    for actual, expected in zip(resumed_parameters, uninterrupted_parameters):
+    for actual, expected in zip(
+        resumed_parameters, uninterrupted_parameters, strict=True
+    ):
         assert float(actual.detach()) == pytest.approx(
             float(expected.detach()), abs=3e-5
         )

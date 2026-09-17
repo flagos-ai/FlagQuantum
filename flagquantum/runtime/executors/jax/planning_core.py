@@ -87,7 +87,7 @@ def _jax_global_indices_by_rank_for_plan(plan: Any) -> Any:
             indices = []
             for basis in range(int(plan.total_amplitudes)):
                 owned = True
-                for coord, wire in zip(coords, sharded_wires):
+                for coord, wire in zip(coords, sharded_wires, strict=True):
                     bit = (basis >> (int(plan.n_wires) - int(wire) - 1)) & 1
                     if int(bit) != int(coord):
                         owned = False

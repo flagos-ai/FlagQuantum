@@ -585,7 +585,9 @@ class TextDrawer:
         """Merge the current layer into accumulated strings"""
         totals.wire_totals = [
             config.wire_filler.join([t, s])
-            for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
+            for t, s in zip(
+                totals.wire_totals, layer_str[: config.n_wires], strict=True
+            )
         ]
 
         return totals

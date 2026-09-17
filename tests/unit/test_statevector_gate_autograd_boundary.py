@@ -70,7 +70,7 @@ def test_matrix_wrapper_preserves_state_and_matrix_gradients(
     torch.testing.assert_close(actual, expected)
     actual_grad = torch.autograd.grad(actual.abs().square().sum(), (state, matrix))
     expected_grad = torch.autograd.grad(expected.abs().square().sum(), (state, matrix))
-    for actual_value, expected_value in zip(actual_grad, expected_grad):
+    for actual_value, expected_value in zip(actual_grad, expected_grad, strict=True):
         torch.testing.assert_close(actual_value, expected_value)
 
 
@@ -78,7 +78,7 @@ def _cx_launch(
     state: torch.Tensor, controls: torch.Tensor, targets: torch.Tensor, n_wires: int
 ) -> torch.Tensor:
     indices = torch.arange(1 << n_wires)
-    for control, target in zip(controls, targets):
+    for control, target in zip(controls, targets, strict=True):
         source = torch.where(
             indices.bitwise_and(control) != 0, indices ^ target, indices
         )

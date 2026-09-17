@@ -252,7 +252,7 @@ def _run_case(
     value_error = abs(float(probe.value.detach().cpu()) - probe_losses[0])
     gradient_error = max(
         abs(actual - expected)
-        for actual, expected in zip(actual_gradients, reference_gradients)
+        for actual, expected in zip(actual_gradients, reference_gradients, strict=True)
     )
     rank_error = _rank_consistency(torch, actual_gradients, context)
     parameter_error = 0.0
@@ -276,13 +276,15 @@ def _run_case(
         summary = result.summary()
         loss_error = max(
             abs(actual - expected)
-            for actual, expected in zip(result.losses, reference_losses)
+            for actual, expected in zip(result.losses, reference_losses, strict=True)
         )
         value_error = max(value_error, loss_error)
         actual_parameters = tuple(float(item.detach().cpu()) for item in parameters)
         parameter_error = max(
             abs(actual - expected)
-            for actual, expected in zip(actual_parameters, reference_parameters)
+            for actual, expected in zip(
+                actual_parameters, reference_parameters, strict=True
+            )
         )
         rank_error = max(
             rank_error, _rank_consistency(torch, actual_parameters, context)

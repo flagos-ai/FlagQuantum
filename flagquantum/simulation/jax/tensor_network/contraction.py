@@ -17,7 +17,7 @@ from .models import JAXTensorNetworkNode
 def _label_dimensions(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:
     dimensions: dict[int, int] = {}
     for node in nodes:
-        for label, dimension in zip(node.labels, node.tensor.shape):
+        for label, dimension in zip(node.labels, node.tensor.shape, strict=True):
             label = int(label)
             dimension = int(dimension)
             if label in dimensions and dimensions[label] != dimension:

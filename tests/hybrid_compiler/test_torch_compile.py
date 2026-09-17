@@ -72,7 +72,11 @@ def test_functional_op_matches_existing_adjoint_and_preserves_source_views() -> 
     ]
     expected_circuit = lowered.circuit_template
     expected_bindings = dict(
-        zip((name for name, _ in lowered.ordered_bindings), expected_parameters)
+        zip(
+            (name for name, _ in lowered.ordered_bindings),
+            expected_parameters,
+            strict=True,
+        )
     )
     expected_circuit = replace(
         expected_circuit,
@@ -156,10 +160,12 @@ def test_torch_compile_fullgraph_forward_and_backward_match_eager() -> None:
     )
 
     torch.testing.assert_close(compiled_value, eager_value)
-    for actual, expected in zip(compiled_gradients, eager_gradients):
+    for actual, expected in zip(compiled_gradients, eager_gradients, strict=True):
         torch.testing.assert_close(actual, expected)
     torch.testing.assert_close(repeated_value, repeated_eager_value)
-    for actual, expected in zip(repeated_gradients, repeated_eager_gradients):
+    for actual, expected in zip(
+        repeated_gradients, repeated_eager_gradients, strict=True
+    ):
         torch.testing.assert_close(actual, expected)
 
 

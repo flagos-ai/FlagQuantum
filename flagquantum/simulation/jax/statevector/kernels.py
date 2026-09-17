@@ -350,7 +350,9 @@ def jax_sharded_statevector_loss(
         if observable_wires is None
         else tuple(int(wire) for wire in observable_wires)
     )
-    for amplitudes, global_indices in zip(amplitudes_by_shard, global_indices_by_shard):
+    for amplitudes, global_indices in zip(
+        amplitudes_by_shard, global_indices_by_shard, strict=True
+    ):
         probabilities = jnp.abs(amplitudes) ** 2
         for wire in wires:
             bit = (global_indices >> (int(n_wires) - 1 - int(wire))) & 1

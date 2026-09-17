@@ -282,7 +282,7 @@ def _prepare_local_reverse_two_site_layer(
                 batched_truncated_split=batched_truncation,
             )
             for (index, _, wire), factorization, left, right in zip(
-                chunk, factorizations, left_inputs, right_inputs
+                chunk, factorizations, left_inputs, right_inputs, strict=True
             ):
                 pair_leaf, after_left, after_right, info = factorization
                 detached_left = after_left.detach()
@@ -921,7 +921,7 @@ def execute_torch_distributed_mps_reverse(
             else "svd"
         )
         for wire, output_shape in zip(
-            (left_wire, left_wire + 1), metadata["output_shapes"]
+            (left_wire, left_wire + 1), metadata["output_shapes"], strict=True
         ):
             batch, left_bond, physical, right_bond = output_shape
             global_shapes[wire] = (batch, left_bond, physical, right_bond)
@@ -1007,7 +1007,7 @@ def execute_torch_distributed_mps_reverse(
         )
         metadata["split_info"]["method"] = "qr"
         for wire, output_shape in zip(
-            (left_wire, left_wire + 1), metadata["output_shapes"]
+            (left_wire, left_wire + 1), metadata["output_shapes"], strict=True
         ):
             batch, left_bond, physical, right_bond = output_shape
             global_shapes[wire] = (batch, left_bond, physical, right_bond)

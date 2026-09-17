@@ -52,7 +52,9 @@ class DistributedTNReverseDAG:
         expected = tuple(reversed(forward.operations))
         if len(self.records) != len(expected):
             raise ValueError("reverse TN DAG operation count mismatch")
-        for sequence, (record, operation) in enumerate(zip(self.records, expected)):
+        for sequence, (record, operation) in enumerate(
+            zip(self.records, expected, strict=True)
+        ):
             if record.sequence != sequence:
                 raise ValueError("reverse TN DAG sequence is not contiguous")
             if record.forward_operation_id != operation.operation_id:

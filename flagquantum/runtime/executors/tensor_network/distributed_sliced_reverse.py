@@ -150,7 +150,9 @@ def execute_distributed_sliced_tn_explicit_reverse(
 
     gradients = tuple(
         torch.zeros_like(parameter) if gradient is None else gradient
-        for parameter, gradient in zip(parameters, local.parameter_gradients)
+        for parameter, gradient in zip(
+            parameters, local.parameter_gradients, strict=True
+        )
     )
     value = local.value.clone()
     if value.is_cuda:
@@ -181,7 +183,9 @@ def execute_distributed_sliced_tn_explicit_reverse(
             dtype=reference.dtype,
             device=reference.device,
         )
-        for index, (gradient, owner) in enumerate(zip(gradients, gradient_owners)):
+        for index, (gradient, owner) in enumerate(
+            zip(gradients, gradient_owners, strict=True)
+        ):
             start = owner * chunk_size + offsets[index]
             packed[start : start + gradient.numel()].copy_(gradient.reshape(-1))
         # One packed all-reduce is supported consistently by both the NCCL
@@ -189,7 +193,9 @@ def execute_distributed_sliced_tn_explicit_reverse(
         # are materialized back into gradient tensors below.
         dist.all_reduce(packed, op=dist.ReduceOp.SUM, group=process_group)
         owned_chunk = packed[rank * chunk_size : (rank + 1) * chunk_size]
-        for index, (gradient, owner) in enumerate(zip(gradients, gradient_owners)):
+        for index, (gradient, owner) in enumerate(
+            zip(gradients, gradient_owners, strict=True)
+        ):
             if owner == rank:
                 start = offsets[index]
                 gradient.copy_(

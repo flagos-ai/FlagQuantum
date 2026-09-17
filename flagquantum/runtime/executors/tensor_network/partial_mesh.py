@@ -146,10 +146,10 @@ class DistributedTNMeshGroupCache:
                 for coordinate in range(self.mesh_shape[axis]):
                     candidate = [0] * len(self.mesh_shape)
                     candidate[axis] = coordinate
-                    for index, value in zip(fixed_axes, fixed):
+                    for index, value in zip(fixed_axes, fixed, strict=True):
                         candidate[index] = value
                     candidate_rank = 0
-                    for value, extent in zip(candidate, self.mesh_shape):
+                    for value, extent in zip(candidate, self.mesh_shape, strict=True):
                         candidate_rank = candidate_rank * extent + value
                     members.append(candidate_rank)
                 self._groups[(axis, tuple(fixed))] = dist.new_group(ranks=members)
@@ -204,7 +204,7 @@ def plan_partial_mesh_tn_layout(
         raise ValueError("partial TN mesh metadata is inconsistent")
     if any(extent <= 1 for extent in shape):
         raise ValueError("partial TN mesh extents must exceed one")
-    for label, extent in zip(labels, shape):
+    for label, extent in zip(labels, shape, strict=True):
         if label in value.labels:
             axis = value.labels.index(label)
             if value.shape[axis] != extent:
@@ -213,7 +213,7 @@ def plan_partial_mesh_tn_layout(
     replicated = tuple(label for label in labels if label not in value.labels)
     local_shape = tuple(
         1 if label in partitioned else extent
-        for label, extent in zip(value.labels, value.shape)
+        for label, extent in zip(value.labels, value.shape, strict=True)
     )
     divisor = prod(shape[labels.index(label)] for label in partitioned)
     replication = prod(shape[labels.index(label)] for label in replicated)
@@ -254,7 +254,7 @@ def partition_tn_tensor_for_partial_mesh(
         raise ValueError("partial TN mesh logical tensor shape mismatch")
     coordinates = _rank_coordinates(rank, layout.mesh_shape)
     index = [slice(None)] * tensor.ndim
-    for label, coordinate in zip(layout.mesh_labels, coordinates):
+    for label, coordinate in zip(layout.mesh_labels, coordinates, strict=True):
         if label in layout.labels:
             index[layout.labels.index(label)] = slice(coordinate, coordinate + 1)
     local = tensor[tuple(index)]
@@ -288,7 +288,7 @@ def plan_partial_mesh_tn_redistribution(
         for source_slice, source_rank in canonical.items():
             intersection = tuple(
                 (max(a, c), min(b, d))
-                for (a, b), (c, d) in zip(source_slice, destination_slices)
+                for (a, b), (c, d) in zip(source_slice, destination_slices, strict=True)
             )
             if any(stop <= start for start, stop in intersection):
                 continue
@@ -471,7 +471,7 @@ def execute_partial_mesh_reverse_pair(
         or group_cache.closed
     ):
         raise ValueError("partial mesh reverse group cache mismatches the mesh")
-    for tensor, layout in zip((output_cotangent, left, right), layouts):
+    for tensor, layout in zip((output_cotangent, left, right), layouts, strict=True):
         if tuple(tensor.shape) != layout.local_shape:
             raise ValueError("partial mesh reverse local tensor shape mismatch")
     left_cotangent = einsum_pair_by_labels(
@@ -610,7 +610,7 @@ def _partial_mesh_global_slices(
 ) -> tuple[tuple[int, int], ...]:
     coordinates = _rank_coordinates(rank, layout.mesh_shape)
     slices = [(0, extent) for extent in layout.logical_shape]
-    for label, coordinate in zip(layout.mesh_labels, coordinates):
+    for label, coordinate in zip(layout.mesh_labels, coordinates, strict=True):
         if label in layout.labels:
             axis = layout.labels.index(label)
             slices[axis] = (coordinate, coordinate + 1)
@@ -634,10 +634,10 @@ def _mesh_axis_group(
         for coordinate in range(mesh_shape[axis]):
             candidate = [0] * len(mesh_shape)
             candidate[axis] = coordinate
-            for index, value in zip(fixed_axes, fixed):
+            for index, value in zip(fixed_axes, fixed, strict=True):
                 candidate[index] = value
             candidate_rank = 0
-            for value, extent in zip(candidate, mesh_shape):
+            for value, extent in zip(candidate, mesh_shape, strict=True):
                 candidate_rank = candidate_rank * extent + value
             members.append(candidate_rank)
         group = dist.new_group(ranks=members)

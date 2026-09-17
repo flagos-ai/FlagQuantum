@@ -173,4 +173,6 @@ def test_seeded_adjoint_optimization_decreases_objective() -> None:
             data.grad = None
 
     assert losses[-1] < losses[0]
-    assert all(after < before for before, after in zip(losses, losses[1:]))
+    assert all(
+        after < before for before, after in zip(losses, losses[1:], strict=False)
+    )

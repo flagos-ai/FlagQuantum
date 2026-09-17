@@ -58,5 +58,5 @@ def test_two_site_autograd_matches_direct_contraction(
     expected_grad = torch.autograd.grad(
         expected.abs().square().sum(), (left, gate, right)
     )
-    for actual_value, expected_value in zip(actual_grad, expected_grad):
+    for actual_value, expected_value in zip(actual_grad, expected_grad, strict=True):
         torch.testing.assert_close(actual_value, expected_value)

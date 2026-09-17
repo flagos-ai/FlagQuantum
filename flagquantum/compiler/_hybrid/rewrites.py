@@ -95,7 +95,7 @@ def clone_inline_block(
             arguments = tuple(fresh_value(value, suffix) for value in nested.arguments)
             substitutions.update(
                 (original.id, fresh)
-                for original, fresh in zip(nested.arguments, arguments)
+                for original, fresh in zip(nested.arguments, arguments, strict=True)
             )
         else:
             arguments = ()
@@ -108,7 +108,7 @@ def clone_inline_block(
             results = tuple(fresh_value(value, suffix) for value in operation.results)
             substitutions.update(
                 (original.id, fresh)
-                for original, fresh in zip(operation.results, results)
+                for original, fresh in zip(operation.results, results, strict=True)
             )
             regions = tuple(
                 Region(

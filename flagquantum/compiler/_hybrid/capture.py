@@ -142,7 +142,7 @@ class _Capture:
             )
 
         block_arguments = []
-        for argument, value_type in zip(arguments, input_types):
+        for argument, value_type in zip(arguments, input_types, strict=True):
             value = self.new_value(value_type)
             self.environment[argument.arg] = value
             block_arguments.append(value)
@@ -522,7 +522,7 @@ class _Capture:
                 location=self.location(statement),
             )
         )
-        self.environment.update(zip(carried_names, results[:-1]))
+        self.environment.update(zip(carried_names, results[:-1], strict=False))
         self.effect = results[-1]
 
     def capture_branch_region(
@@ -544,7 +544,7 @@ class _Capture:
         block_effect = self.new_value(QUANTUM_EFFECT, scope=scope)
         self.scope = scope
         self.environment = dict(saved_environment)
-        self.environment.update(zip(carried_names, block_carried))
+        self.environment.update(zip(carried_names, block_carried, strict=True))
         self.operations = []
         self.effect = block_effect
         try:
@@ -562,7 +562,9 @@ class _Capture:
                     carried_input.type,
                     self.environment.get(name),
                 )
-                for name, carried_input in zip(carried_names, carried_inputs)
+                for name, carried_input in zip(
+                    carried_names, carried_inputs, strict=True
+                )
             )
             output_effect = self.require_effect(location_node)
             self.operations.append(
@@ -634,7 +636,7 @@ class _Capture:
         saved_effect = self.effect
         self.scope = loop_scope
         self.environment = dict(saved_environment)
-        self.environment.update(zip(carried_names, block_carried))
+        self.environment.update(zip(carried_names, block_carried, strict=True))
         self.operations = []
         self.effect = block_effect
         try:
@@ -652,7 +654,9 @@ class _Capture:
                     carried_input.type,
                     self.environment.get(name),
                 )
-                for name, carried_input in zip(carried_names, carried_inputs)
+                for name, carried_input in zip(
+                    carried_names, carried_inputs, strict=True
+                )
             )
             output_effect = self.require_effect(statement)
             self.operations.append(
@@ -688,7 +692,7 @@ class _Capture:
                 location=self.location(statement),
             )
         )
-        self.environment.update(zip(carried_names, results[:-1]))
+        self.environment.update(zip(carried_names, results[:-1], strict=False))
         self.effect = results[-1]
 
     def loop_carried_names(

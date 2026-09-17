@@ -52,7 +52,9 @@ def _normalize_pauli(
         wire_tuple = _as_wire_tuple(wires)
         if len(pauli) != len(wire_tuple):
             raise ValueError("Pauli string length must match wires length.")
-        items = tuple((wire, name.lower()) for wire, name in zip(wire_tuple, pauli))
+        items = tuple(
+            (wire, name.lower()) for wire, name in zip(wire_tuple, pauli, strict=True)
+        )
 
     normalized = []
     seen = set()
@@ -410,7 +412,7 @@ def qaoa_circuit(
     for wire in range(n_wires):
         circuit.gate("h", wire)
 
-    for gamma, beta in zip(gamma_values, beta_values):
+    for gamma, beta in zip(gamma_values, beta_values, strict=True):
         for edge in edge_tuple:
             if len(edge) == 2:
                 src, dst = edge
@@ -699,7 +701,7 @@ def run_adapt_vqe(
         optimization_seconds = perf_counter() - optimization_started
         energy_after = float(energy(tuple(selected_operators), parameters).detach())
         full_gradients = [0.0] * len(pool)
-        for pool_index, gradient in zip(available, gradients):
+        for pool_index, gradient in zip(available, gradients, strict=True):
             full_gradients[pool_index] = gradient
         records.append(
             AdaptVQEIteration(

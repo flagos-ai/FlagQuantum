@@ -61,7 +61,7 @@ def _rank_global_indices(
         coordinates = plan.topology.rank_coordinates[int(rank)]
         sharded_coordinates = {
             int(wire): int(coord)
-            for coord, wire in zip(coordinates, plan.sharded_wires)
+            for coord, wire in zip(coordinates, plan.sharded_wires, strict=True)
         }
         local_bit = 0
         for wire in range(plan.n_wires - 1, -1, -1):
@@ -341,7 +341,7 @@ def simulate_distributed_statevector_local(
     distributed_gate_count = 0
     simulated_comm_count = 0
     simulated_comm_bytes = 0
-    for instruction, gate_plan in zip(ir.instructions, plan.gate_plans):
+    for instruction, gate_plan in zip(ir.instructions, plan.gate_plans, strict=True):
         matrix = _instruction_matrix(instruction, device=resolved_device, dtype=dtype)
         if gate_plan.communication == "local":
             shards = tuple(

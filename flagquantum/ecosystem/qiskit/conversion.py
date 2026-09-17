@@ -319,7 +319,9 @@ def import_qiskit(circuit: Any, *, allow_lossy: bool = False) -> QiskitImportRes
         if any(value is None for value in converted):
             continue
         instructions.append(
-            Instruction(name, wires, params=dict(zip(schema.parameters, converted)))
+            Instruction(
+                name, wires, params=dict(zip(schema.parameters, converted, strict=True))
+            )
         )
 
     global_phase: float | None

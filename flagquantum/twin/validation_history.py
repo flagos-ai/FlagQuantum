@@ -81,7 +81,7 @@ class TwinValidationHistory:
         if any(not isinstance(item, TwinValidationSeries) for item in series):
             raise TypeError("validation history requires TwinValidationSeries records")
         parsed = tuple(datetime.fromisoformat(value) for value in timestamps)
-        if any(right <= left for left, right in zip(parsed, parsed[1:])):
+        if any(right <= left for left, right in zip(parsed, parsed[1:], strict=False)):
             raise ValueError(
                 "Twin snapshots must have strictly increasing captured_at values"
             )

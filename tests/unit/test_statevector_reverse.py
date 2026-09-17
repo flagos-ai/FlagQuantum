@@ -466,7 +466,7 @@ def test_reversible_adjoint_matches_dense_autograd_on_all_active_wires():
     result.backward()
 
     torch.testing.assert_close(result.value, dense.squeeze(), atol=2e-5, rtol=2e-5)
-    for parameter, reference in zip(parameters, expected):
+    for parameter, reference in zip(parameters, expected, strict=True):
         torch.testing.assert_close(parameter.grad, reference, atol=3e-5, rtol=3e-5)
     assert result.summary()["saved_forward_state_reused"] is True
 

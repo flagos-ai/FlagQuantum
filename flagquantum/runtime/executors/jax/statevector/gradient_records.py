@@ -344,6 +344,7 @@ class JAXShardedStatevectorParameterGradientResult:
                         for wire, bit in zip(
                             self.plan.sharded_wires,
                             self.plan.topology.rank_coordinates[int(shard.rank)],
+                            strict=True,
                         )
                     ),
                 }

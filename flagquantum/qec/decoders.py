@@ -89,7 +89,9 @@ class RepetitionTemporalDecoder:
         for record in history:
             expected_events = tuple(
                 index
-                for index, (before, after) in enumerate(zip(previous_bits, record.bits))
+                for index, (before, after) in enumerate(
+                    zip(previous_bits, record.bits, strict=True)
+                )
                 if before != after
             )
             actual_events = tuple(

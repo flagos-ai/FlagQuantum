@@ -28,7 +28,9 @@ def test_exact_work_density_matrix_proves_speedup_without_release_promotion():
         assert (
             max(
                 abs(actual - expected)
-                for actual, expected in zip(sharded["losses"], single["losses"])
+                for actual, expected in zip(
+                    sharded["losses"], single["losses"], strict=True
+                )
             )
             <= 2e-6
         )

@@ -110,7 +110,7 @@ def run_jax_sharded_statevector(
     distributed_gate_count = 0
     simulated_comm_count = 0
     simulated_comm_bytes = 0
-    for instruction, gate_plan in zip(ir.instructions, plan.gate_plans):
+    for instruction, gate_plan in zip(ir.instructions, plan.gate_plans, strict=True):
         matrix, diagonal = _gate_matrix_as_jax(
             instruction, torch_dtype=torch_dtype, jax_dtype=jax_dtype
         )
@@ -154,7 +154,9 @@ def _jax_parameterized_statevector_shards(
     distributed_gate_count = 0
     simulated_comm_count = 0
     simulated_comm_bytes = 0
-    for instruction, gate_plan in zip(circuit.to_ir().instructions, plan.gate_plans):
+    for instruction, gate_plan in zip(
+        circuit.to_ir().instructions, plan.gate_plans, strict=True
+    ):
         matrix, diagonal = _parameterized_gate_matrix_as_jax(
             instruction, complex_bytes=complex_bytes
         )

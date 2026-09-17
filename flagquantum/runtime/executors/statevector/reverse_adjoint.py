@@ -1000,7 +1000,7 @@ def _explicit_sharded_adjoint(
                         ).to(dtype=parameter.dtype)
                 derivatives.append(local_derivative)
                 del derivative_state, derivative_matrix
-        for parameter_index, gradient in zip(active, derivatives):
+        for parameter_index, gradient in zip(active, derivatives, strict=True):
             accumulate_parameter_gradient(parameter_index, gradient)
         if fused_adjoint is not None:
             previous_adjoint = adjoint

@@ -20,7 +20,7 @@ def test_chi32_alone_does_not_justify_cross_node_over_parallelization():
     assert (
         max(
             abs(actual - expected)
-            for actual, expected in zip(sixteen["losses"], eight["losses"])
+            for actual, expected in zip(sixteen["losses"], eight["losses"], strict=True)
         )
         <= 2e-6
     )

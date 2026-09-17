@@ -97,7 +97,7 @@ def begin_reverse_layer_halo_prefetch(
     payload_bytes = sum(value.numel() * value.element_size() for value in buffers)
     intra_node_payload_bytes = sum(
         value.numel() * value.element_size()
-        for value, peer in zip(buffers, peers)
+        for value, peer in zip(buffers, peers, strict=True)
         if state.rank // local_world_size == peer // local_world_size
     )
     return (

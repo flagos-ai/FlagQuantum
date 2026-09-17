@@ -77,7 +77,7 @@ def test_pipeline_preserves_slot_values_and_gradients(
     terms = [(({0: "z"}, 0.1 * slot), ({0: "z", 1: "z"}, -0.2)) for slot in range(3)]
     expected = [
         objectives.mps_multi_observable_mse_and_adjoints(state, slot_terms)
-        for state, slot_terms in zip(states, terms)
+        for state, slot_terms in zip(states, terms, strict=True)
     ]
     drained = []
     actual = objectives.site_sharded_z_zz_objective_pipeline(
@@ -85,7 +85,9 @@ def test_pipeline_preserves_slot_values_and_gradients(
     )
     assert drained == [2, 3]
     assert len(actual) == len(expected)
-    for (loss, adjoints), (expected_loss, expected_adjoints) in zip(actual, expected):
+    for (loss, adjoints), (expected_loss, expected_adjoints) in zip(
+        actual, expected, strict=True
+    ):
         torch.testing.assert_close(loss, expected_loss)
         assert adjoints.keys() == expected_adjoints.keys()
         for wire, gradient in adjoints.items():

@@ -111,7 +111,7 @@ def _input_descriptor(value: Any, declared: IRType) -> dict[str, Any]:
             )
         if len(shape) != len(expected_shape) or any(
             expected is not None and actual != expected
-            for actual, expected in zip(shape, expected_shape)
+            for actual, expected in zip(shape, expected_shape, strict=True)
         ):
             raise SpecializationError(
                 "input.shape",
@@ -173,7 +173,8 @@ def _input_descriptor(value: Any, declared: IRType) -> dict[str, Any]:
 
 def _input_signature(values: Sequence[Any], types: Sequence[IRType]) -> str:
     descriptors = [
-        _input_descriptor(value, declared) for value, declared in zip(values, types)
+        _input_descriptor(value, declared)
+        for value, declared in zip(values, types, strict=True)
     ]
     encoded = json.dumps(descriptors, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -214,7 +215,7 @@ class _Specializer:
         environment = dict(outer)
         environment.update(
             (reference.id, runtime)
-            for reference, runtime in zip(block.arguments, arguments)
+            for reference, runtime in zip(block.arguments, arguments, strict=True)
         )
         for operation in block.operations:
             operands = tuple(
@@ -231,7 +232,7 @@ class _Specializer:
                 )
             environment.update(
                 (reference.id, runtime)
-                for reference, runtime in zip(operation.results, results)
+                for reference, runtime in zip(operation.results, results, strict=True)
             )
         raise SpecializationError(
             "block.terminator", "verified block did not terminate"

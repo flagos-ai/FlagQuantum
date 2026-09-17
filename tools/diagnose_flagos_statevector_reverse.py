@@ -202,7 +202,7 @@ def _reverse_case(
     )
     gradient_errors = tuple(
         abs(float(actual.detach().cpu()) - float(expected.detach()))
-        for actual, expected in zip(actual_gradients, expected_gradients)
+        for actual, expected in zip(actual_gradients, expected_gradients, strict=True)
     )
     tolerance = 6e-5 if dtype_name == "complex64" else 3e-10
     summary = result.summary()

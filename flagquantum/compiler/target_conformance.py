@@ -166,7 +166,9 @@ def _parse_qasm_instruction(line: str, *, n_wires: int, index: int) -> Instructi
         raise TargetConformanceError(
             f"OpenQASM body line {index} has the wrong parameter count"
         )
-    return Instruction(opcode, wires, params=dict(zip(parameter_names, values)))
+    return Instruction(
+        opcode, wires, params=dict(zip(parameter_names, values, strict=True))
+    )
 
 
 def _parse_openqasm(

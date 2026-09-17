@@ -100,7 +100,9 @@ def main() -> None:
                 resume=True,
                 rematerialization_interval=2,
             )
-            for actual, expected in zip(resumed_parameters, uninterrupted_parameters):
+            for actual, expected in zip(
+                resumed_parameters, uninterrupted_parameters, strict=True
+            ):
                 torch.testing.assert_close(actual, expected, atol=3e-5, rtol=3e-5)
             torch.testing.assert_close(
                 torch.tensor(resumed.losses),
@@ -156,7 +158,9 @@ def main() -> None:
                 resume=True,
                 rematerialization_interval=2,
             )
-            for actual, expected in zip(resumed_parameters, uninterrupted_parameters):
+            for actual, expected in zip(
+                resumed_parameters, uninterrupted_parameters, strict=True
+            ):
                 torch.testing.assert_close(actual, expected, atol=3e-5, rtol=3e-5)
             torch.testing.assert_close(
                 torch.tensor(resumed.losses),

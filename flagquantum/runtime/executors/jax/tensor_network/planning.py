@@ -24,7 +24,7 @@ def _tn_tasks(
         tasks.append(
             (
                 task_index % max(1, int(world_size)),
-                tuple(zip(labels, tuple(int(value) for value in values))),
+                tuple(zip(labels, tuple(int(value) for value in values), strict=True)),
             )
         )
     return tuple(tasks)

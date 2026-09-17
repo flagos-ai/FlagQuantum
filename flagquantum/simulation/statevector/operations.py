@@ -241,7 +241,9 @@ def _fuse_gate_sequences(
                             layout=positioned_steps[0][1].layout,
                             dependency_reordered=any(
                                 right != left + 1
-                                for left, right in zip(positions, positions[1:])
+                                for left, right in zip(
+                                    positions, positions[1:], strict=False
+                                )
                             ),
                         )
                     )

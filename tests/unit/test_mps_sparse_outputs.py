@@ -20,7 +20,7 @@ def test_mps_rejects_parameterized_fixed_gate_before_state_mutation(
             state.apply_swap(0)
         else:
             state.expectation_z(0)
-    for actual, expected in zip(state.tensors, before):
+    for actual, expected in zip(state.tensors, before, strict=True):
         torch.testing.assert_close(actual, expected)
     assert state.local_swap_count == 0
 
@@ -33,7 +33,7 @@ def test_mps_rejects_channel_without_kraus_operators_before_mutation() -> None:
     with pytest.raises(ValueError, match="require Kraus operators"):
         state.apply_instruction(instruction)
 
-    for actual, expected in zip(state.tensors, before):
+    for actual, expected in zip(state.tensors, before, strict=True):
         torch.testing.assert_close(actual, expected)
 
 

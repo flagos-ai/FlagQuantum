@@ -795,7 +795,7 @@ def test_measurement_negation_and_conjunction_control_gate(
     second = result.classical_bits[:, 1]
     expected = first * (1 - second)
 
-    assert set(zip(first.tolist(), second.tolist())) == {
+    assert set(zip(first.tolist(), second.tolist(), strict=True)) == {
         (0, 0),
         (0, 1),
         (1, 0),

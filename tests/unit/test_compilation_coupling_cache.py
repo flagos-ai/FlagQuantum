@@ -91,7 +91,7 @@ def test_concurrent_path_queries_are_safe_and_bounded() -> None:
 
     assert all(
         path[0] == start and path[-1] == goal
-        for path, (start, goal) in zip(paths, workload)
+        for path, (start, goal) in zip(paths, workload, strict=True)
     )
     info = coupling.path_cache_info()
     assert info["size"] <= info["capacity"] == 16

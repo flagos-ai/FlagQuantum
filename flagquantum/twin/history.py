@@ -202,7 +202,7 @@ class TwinCalibrationHistory:
         ):
             raise TypeError("calibration history requires TwinCalibrationDrift records")
         parsed = tuple(datetime.fromisoformat(value) for value in timestamps)
-        if any(right <= left for left, right in zip(parsed, parsed[1:])):
+        if any(right <= left for left, right in zip(parsed, parsed[1:], strict=False)):
             raise ValueError(
                 "Twin snapshots must have strictly increasing captured_at values"
             )
@@ -280,7 +280,7 @@ def build_calibration_history(
         raise ValueError("Twin snapshot identities must be unique")
     captured_at = tuple(twin.snapshot.captured_at for twin in ordered)
     parsed = tuple(datetime.fromisoformat(value) for value in captured_at)
-    if any(right <= left for left, right in zip(parsed, parsed[1:])):
+    if any(right <= left for left, right in zip(parsed, parsed[1:], strict=False)):
         raise ValueError(
             "Twin snapshots must have strictly increasing captured_at values"
         )
@@ -288,7 +288,7 @@ def build_calibration_history(
     baseline = tuple(compare_calibrations(ordered[0], twin) for twin in ordered[1:])
     intervals = tuple(
         compare_calibrations(reference, current)
-        for reference, current in zip(ordered, ordered[1:])
+        for reference, current in zip(ordered, ordered[1:], strict=False)
     )
     snapshot = ordered[0].snapshot
     return TwinCalibrationHistory(

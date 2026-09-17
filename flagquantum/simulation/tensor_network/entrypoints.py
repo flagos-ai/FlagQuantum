@@ -132,7 +132,9 @@ def _amplitude_projection(
     bits = _normalize_bitstring(bitstring, plan.n_wires)
     reference = plan.nodes[0].tensor
     nodes = list(plan.nodes)
-    for wire, (label, bit) in enumerate(zip(plan.output_labels[1:], bits)):
+    for wire, (label, bit) in enumerate(
+        zip(plan.output_labels[1:], bits, strict=False)
+    ):
         projector = torch.zeros(2, dtype=reference.dtype, device=reference.device)
         projector[bit] = 1
         nodes.append(

@@ -191,7 +191,7 @@ def mps_site_sharded_z_zz_scan(
                 input_grads = tuple(
                     torch.zeros_like(value) if grad is None else grad
                     for value, grad in zip(
-                        local_inputs, derivatives[: len(local_inputs)]
+                        local_inputs, derivatives[: len(local_inputs)], strict=True
                     )
                 )
                 variable_grads = derivatives[len(local_inputs) :]
@@ -216,7 +216,10 @@ def mps_site_sharded_z_zz_scan(
     adjoints = {
         wire: torch.zeros_like(tensor) if grad is None else grad.detach()
         for wire, tensor, grad in zip(
-            state.ownership[state.rank], state.local_tensors.values(), variable_grads
+            state.ownership[state.rank],
+            state.local_tensors.values(),
+            variable_grads,
+            strict=True,
         )
     }
     return SiteShardedZZScanResult(
@@ -264,7 +267,7 @@ def site_sharded_z_zz_objective_pipeline(
     ):
         raise ValueError("pipeline states must share rank ownership and wire count")
     parsed_slots = []
-    for state, slot_terms in zip(states, terms):
+    for state, slot_terms in zip(states, terms, strict=True):
         parsed = parse_mps_z_zz_terms(state, slot_terms)
         if parsed is None:
             raise ValueError("pipeline supports only Z and adjacent-ZZ MSE terms")
@@ -281,7 +284,9 @@ def site_sharded_z_zz_objective_pipeline(
         window_states = states[window_start : window_start + max_pipeline_slots]
         window_parsed = parsed_slots[window_start : window_start + max_pipeline_slots]
         local_graphs = []
-        for offset, (state, parsed) in enumerate(zip(window_states, window_parsed)):
+        for offset, (state, parsed) in enumerate(
+            zip(window_states, window_parsed, strict=True)
+        ):
             slot = window_start + offset
             reference = next(iter(state.local_tensors.values()))
             targets = torch.stack([target for _, target in parsed], dim=-1)
@@ -361,7 +366,7 @@ def site_sharded_z_zz_objective_pipeline(
                 )
             input_grads = tuple(
                 torch.zeros_like(value) if grad is None else grad
-                for value, grad in zip(inputs, derivatives[: len(inputs)])
+                for value, grad in zip(inputs, derivatives[: len(inputs)], strict=True)
             )
             if state.rank > 0:
                 send_reverse_tensor(
@@ -378,6 +383,7 @@ def site_sharded_z_zz_objective_pipeline(
                         state.ownership[state.rank],
                         state.local_tensors.values(),
                         variable_grads,
+                        strict=True,
                     )
                 }
             )

@@ -123,7 +123,7 @@ def build_local_tensor_network(
             )
             next_label += len(instruction.wires)
             labels = (batch_label,) + output_labels + input_labels
-        for wire, label in zip(instruction.wires, output_labels):
+        for wire, label in zip(instruction.wires, output_labels, strict=True):
             current_labels[wire] = label
         dynamic_tensors.append(tensor)
         if active_structure is None:

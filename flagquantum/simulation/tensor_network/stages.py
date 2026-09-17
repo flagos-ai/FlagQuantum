@@ -263,8 +263,8 @@ def compile_contraction_stages(
         right = active[right_idx]
         level = max(left[3], right[3]) + 1
         equation = pair_equation(left[1], right[1], outputs)
-        dimensions = dict(zip(right[1], right[2]))
-        dimensions.update(zip(left[1], left[2]))
+        dimensions = dict(zip(right[1], right[2], strict=True))
+        dimensions.update(zip(left[1], left[2], strict=True))
         output_shape = tuple(dimensions[label] for label in outputs)
         levels.setdefault(level, []).append(
             (left[0], right[0], next_id, equation, left[2], right[2], outputs)

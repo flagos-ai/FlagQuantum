@@ -72,7 +72,7 @@ def _packed_owner_layout(
 
     used = [0] * world_size
     offsets: list[int] = []
-    for tensor, owner in zip(tensors, owners):
+    for tensor, owner in zip(tensors, owners, strict=True):
         offsets.append(used[owner])
         used[owner] += int(tensor.numel())
     return max(used), tuple(offsets)
@@ -121,7 +121,9 @@ def execute_rank_owned_tn_sgd_step(
         for owner in range(world_size)
     )
 
-    for index, (parameter, gradient) in enumerate(zip(parameters, gradients)):
+    for index, (parameter, gradient) in enumerate(
+        zip(parameters, gradients, strict=True)
+    ):
         if parameter.shape != gradient.shape:
             raise ValueError(f"gradient shape mismatch for parameter {index}")
         if parameter.device != gradient.device:
@@ -164,7 +166,9 @@ def execute_rank_owned_tn_sgd_step(
             device=reference.device,
         )
         dist.all_gather_single(gathered, local_chunk, group=process_group)
-        for index, (parameter, owner) in enumerate(zip(parameters, owners)):
+        for index, (parameter, owner) in enumerate(
+            zip(parameters, owners, strict=True)
+        ):
             start = owner * chunk_size + offsets[index]
             parameter.copy_(
                 gathered[start : start + parameter.numel()].view_as(parameter)

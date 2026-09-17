@@ -84,7 +84,7 @@ class DistributedTNAdjointLayoutPlan:
                 raise ValueError("adjoint mesh inheritance is inconsistent")
             expected_shape = tuple(
                 1 if label in expected_shards else extent
-                for label, extent in zip(logical.labels, logical.shape)
+                for label, extent in zip(logical.labels, logical.shape, strict=True)
             )
             divisor = prod(
                 self.mesh_shape[self.mesh_labels.index(label)]
@@ -156,7 +156,7 @@ def plan_tn_adjoint_layouts(
         replicated = tuple(label for label in labels if label not in value.labels)
         local_shape = tuple(
             1 if label in active else extent
-            for label, extent in zip(value.labels, value.shape)
+            for label, extent in zip(value.labels, value.shape, strict=True)
         )
         divisor = prod(mesh[labels.index(label)] for label in active)
         layouts.append(

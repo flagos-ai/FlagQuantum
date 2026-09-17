@@ -151,6 +151,11 @@ select = [
     "SIM114",
     "SIM117",
     "SIM300",
+    # Every `zip` states whether it pairs sequences of equal length or truncates
+    # the longer one. `strict=True` turns a length mismatch into an error instead
+    # of a silent short result; `strict=False` records that the truncation is
+    # intended, as in the adjacent-pair idiom `zip(x, x[1:])`.
+    "B905",
     # Defect classes: mutable state shared between instances, and a default or
     # class body that evaluates a call once at import instead of once per use.
     "B008",

@@ -68,7 +68,7 @@ def test_adam_lbfgs_matches_analytic_single_parameter_training(tmp_path: Path) -
         "lbfgs",
     ]
     assert result.losses == pytest.approx(expected_losses, abs=1e-9)
-    for step, expected_gradient in zip(result.steps, expected_gradients):
+    for step, expected_gradient in zip(result.steps, expected_gradients, strict=True):
         assert len(step.parameter_gradients) == 1
         index, gradient = step.parameter_gradients[0]
         assert index == 0

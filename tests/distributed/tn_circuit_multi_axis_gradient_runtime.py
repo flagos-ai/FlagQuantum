@@ -145,7 +145,7 @@ def main() -> None:
             continue
         alternatives = tuple(
             label
-            for label, extent in zip(layout.labels, layout.shape)
+            for label, extent in zip(layout.labels, layout.shape, strict=True)
             if label not in shard_labels and extent == 2
         )
         if len(alternatives) >= mesh_rank:
@@ -208,7 +208,7 @@ def main() -> None:
         )
         alternative_labels = []
         for layout in record_layouts:
-            for label, extent in zip(layout.labels, layout.shape):
+            for label, extent in zip(layout.labels, layout.shape, strict=True):
                 if (
                     label not in shard_labels
                     and extent == 2

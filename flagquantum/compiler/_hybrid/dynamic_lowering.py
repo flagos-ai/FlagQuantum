@@ -126,7 +126,7 @@ class _DynamicLowerer:
         environment = dict(outer)
         environment.update(
             (reference.id, runtime)
-            for reference, runtime in zip(block.arguments, arguments)
+            for reference, runtime in zip(block.arguments, arguments, strict=True)
         )
         for operation in block.operations:
             operands = tuple(
@@ -145,7 +145,7 @@ class _DynamicLowerer:
                 )
             environment.update(
                 (reference.id, runtime)
-                for reference, runtime in zip(operation.results, results)
+                for reference, runtime in zip(operation.results, results, strict=True)
             )
         raise SpecializationError(
             "block.terminator", "verified block did not terminate"
@@ -341,7 +341,9 @@ class _DynamicLowerer:
                     operation,
                     ((then_conditions, then_value), (else_conditions, else_value)),
                 )
-                for then_value, else_value in zip(then_result[:-1], else_result[:-1])
+                for then_value, else_value in zip(
+                    then_result[:-1], else_result[:-1], strict=False
+                )
             )
             return (*merged, _EFFECT)
         if name == "scf.for":

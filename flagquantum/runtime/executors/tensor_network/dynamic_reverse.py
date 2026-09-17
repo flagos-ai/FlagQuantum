@@ -433,6 +433,7 @@ def execute_dynamic_tn_reverse_segment(
             record.input_value_ids,
             (pair.left_cotangent, pair.right_cotangent),
             operand_layouts,
+            strict=True,
         ):
             contribution_counts[value_id] += 1
             if contribution_counts[value_id] > expected[value_id]:
@@ -563,7 +564,7 @@ def execute_dynamic_tn_parameter_pullback(
     )
     materialized = tuple(
         torch.zeros_like(parameter) if gradient is None else gradient
-        for parameter, gradient in zip(parameter_tuple, gradients)
+        for parameter, gradient in zip(parameter_tuple, gradients, strict=True)
     )
     for gradient in materialized:
         torch.distributed.all_reduce(gradient, op=torch.distributed.ReduceOp.SUM)

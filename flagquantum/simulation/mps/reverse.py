@@ -75,7 +75,7 @@ def factor_mps_reverse_pair_bucket(
         config=config,
     )
     outputs = []
-    for pair, (batched_left, _, raw_info) in zip(pair_matrices, splits):
+    for pair, (batched_left, _, raw_info) in zip(pair_matrices, splits, strict=True):
         after_left = batched_left.detach()
         retained_rank = int(after_left.shape[-1])
         retained_u = after_left.reshape(int(pair.shape[0]), left_dim * 2, retained_rank)
@@ -111,7 +111,7 @@ def project_mps_adjoint(
     projected = torch.zeros_like(target)
     slices = tuple(
         slice(0, min(int(source), int(destination)))
-        for source, destination in zip(value.shape, target.shape)
+        for source, destination in zip(value.shape, target.shape, strict=True)
     )
     projected[slices] = value[slices]
     return projected
@@ -129,7 +129,7 @@ def mps_vjp(
         raise ValueError("MPS outputs and output adjoints must have equal arity")
     differentiable = tuple(
         (output, project_mps_adjoint(adjoint, output))
-        for output, adjoint in zip(outputs, output_adjoints)
+        for output, adjoint in zip(outputs, output_adjoints, strict=True)
         if output.requires_grad
     )
     if not differentiable:
