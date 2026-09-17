@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
 
 class _TwoSiteContext(Protocol):
@@ -16,7 +21,7 @@ class _TwoSiteContext(Protocol):
     def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
 
 
-@triton.jit
+@jit
 def _two_site_forward_kernel(
     left_parts: tl.tensor,
     gate_parts: tl.tensor,
@@ -94,7 +99,7 @@ def _two_site_forward_kernel(
     tl.store(output_parts + 2 * output_offset + 1, imag, mask=mask)
 
 
-@triton.jit
+@jit
 def _two_site_range_kernel(
     left_parts: tl.tensor,
     gate_parts: tl.tensor,

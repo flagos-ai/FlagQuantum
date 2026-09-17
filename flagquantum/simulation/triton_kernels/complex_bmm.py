@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from math import prod
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 import torch
 import triton
 import triton.language as tl
+
+if TYPE_CHECKING:
+    from ._jit import jit
+else:
+    from triton import jit
 
 
 class _BMMContext(Protocol):
@@ -23,7 +28,7 @@ class _LayoutBMMContext(_BMMContext, Protocol):
     shapes: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]]
 
 
-@triton.jit
+@jit
 def _flattened_offset(
     index: tl.tensor,
     packed_layout: tl.constexpr,
@@ -64,7 +69,7 @@ def _flattened_offset(
     return offset
 
 
-@triton.jit
+@jit
 def _complex_layout_bmm_kernel(
     left_parts: tl.tensor,
     right_parts: tl.tensor,
@@ -118,7 +123,7 @@ def _complex_layout_bmm_kernel(
     tl.store(output_parts + 2 * output_offsets + 1, imag, mask=output_mask)
 
 
-@triton.jit
+@jit
 def _complex_bmm_kernel(
     left_parts: tl.tensor,
     right_parts: tl.tensor,
