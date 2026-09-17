@@ -123,3 +123,63 @@ def test_jax_sharded_statevector_rank_loss_matches_reference():
         bit = (idx >> (n_wires - 1 - observable_wire)) & 1
         expected += float(amplitudes[0, idx] ** 2) * (1.0 - 2.0 * bit)
     assert np.isclose(float(np.asarray(got)), expected, atol=1e-5)
+
+
+def test_jax_rank_loss_state_norm_sums_probabilities():
+    import jax.numpy as jnp
+    import numpy as np
+
+    from flagquantum.simulation.jax.statevector.kernels import (
+        jax_sharded_statevector_rank_loss,
+    )
+
+    amplitudes = jnp.asarray([[0.5, 0.5j, -0.25, 0.75]], dtype=jnp.complex64)
+
+    got = jax_sharded_statevector_rank_loss(
+        amplitudes,
+        jnp.arange(4),
+        n_wires=2,
+        observable="state_norm",
+        observable_wires=None,
+    )
+
+    expected = float(np.sum(np.abs(np.asarray(amplitudes)) ** 2))
+    assert np.isclose(float(np.asarray(got)), expected, atol=1e-6)
+
+
+def test_jax_apply_matrix_to_batched_local_state_accepts_a_batched_matrix():
+    import jax.numpy as jnp
+    import numpy as np
+
+    from flagquantum.simulation.jax.statevector.kernels import (
+        jax_apply_matrix_to_batched_local_state,
+    )
+
+    rng = np.random.default_rng(21)
+    state = rng.standard_normal((2, 4)).astype(np.float32)
+    # A batched matrix shares the state's batch axis.
+    matrices = rng.standard_normal((2, 2, 2)).astype(np.float32)
+
+    got = jax_apply_matrix_to_batched_local_state(
+        jnp.asarray(state), jnp.asarray(matrices), (0,), n_local_wires=2
+    )
+
+    expected = np.einsum("bij,bjk->bik", matrices, state.reshape(2, 2, 2))
+    assert np.asarray(got).shape == (2, 4)
+    assert np.allclose(np.asarray(got).reshape(2, 2, 2), expected, atol=1e-5)
+
+
+def test_jax_apply_matrix_to_batched_local_state_rejects_a_wrong_shape():
+    import jax.numpy as jnp
+
+    from flagquantum.simulation.jax.statevector.kernels import (
+        jax_apply_matrix_to_batched_local_state,
+    )
+
+    with pytest.raises(ValueError, match=r"requires matrix shape \(4, 4\)"):
+        jax_apply_matrix_to_batched_local_state(
+            jnp.ones((1, 4), dtype=jnp.float32),
+            jnp.eye(2, dtype=jnp.float32),
+            (0, 1),
+            n_local_wires=2,
+        )
