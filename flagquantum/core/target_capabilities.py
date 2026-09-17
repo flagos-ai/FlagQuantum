@@ -12,10 +12,11 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Iterable, Iterator, Mapping, TypeVar
+from typing import Any, TypeVar
 
 TARGET_CAPABILITIES_SCHEMA_VERSION = "1.0"
 

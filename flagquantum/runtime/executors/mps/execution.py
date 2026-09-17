@@ -10,7 +10,8 @@ across rank-local shards instead of replicating the full circuit per rank.
 from __future__ import annotations
 
 import json
-from typing import Any, Mapping, Sequence, TypedDict
+from collections.abc import Mapping, Sequence
+from typing import Any, TypedDict
 
 import torch
 import torch.distributed as dist

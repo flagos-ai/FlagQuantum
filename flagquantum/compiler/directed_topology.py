@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
-from typing import Any, Iterable
+from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 

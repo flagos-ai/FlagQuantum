@@ -18,8 +18,9 @@ import socket
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from flagquantum.runtime.distributed import init_torch_distributed
 
@@ -390,7 +391,7 @@ def run(*, timeout_seconds: float) -> Any:
                         torch, operation, device=context.device
                     )
                     failure = None
-                except Exception as exc:  # noqa: BLE001 - evidence must retain failures
+                except Exception as exc:
                     error = elapsed = 0.0
                     payload_bytes = 0
                     device_type = context.device.type

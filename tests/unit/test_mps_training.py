@@ -40,7 +40,7 @@ pytestmark = pytest.mark.unit
 
 def test_initial_state_contract_hashes_reused_tensor_once(monkeypatch):
     tensor = torch.ones((1, 4, 2, 4), dtype=torch.complex64)
-    initial = {wire: tensor for wire in range(10)}
+    initial = dict.fromkeys(range(10), tensor)
     ownership = (tuple(range(10)),)
     calls = 0
     original_bytes = ctypes.string_at

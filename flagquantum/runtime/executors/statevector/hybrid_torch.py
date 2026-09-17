@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import replace
-from typing import Protocol, Sequence
+from typing import Protocol
 
 import torch
 

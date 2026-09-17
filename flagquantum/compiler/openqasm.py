@@ -125,7 +125,7 @@ def _instruction_lines(instruction: Instruction, *, version: float) -> list[str]
         return [_gate("p", instruction.wires, parameters)]
     if version == 3.0 and opcode == "u2":
         phi, lbd = (_format_number(instruction.params[name]) for name in ("phi", "lbd"))
-        return [_gate("U", instruction.wires, f"({repr(math.pi / 2)}, {phi}, {lbd})")]
+        return [_gate("U", instruction.wires, f"({math.pi / 2!r}, {phi}, {lbd})")]
     if version == 3.0 and opcode == "u3":
         return [_gate("U", instruction.wires, parameters)]
     if opcode == "phase":

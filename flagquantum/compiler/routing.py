@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from threading import Lock
-from typing import Any, Iterable
+from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 

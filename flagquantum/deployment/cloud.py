@@ -9,9 +9,10 @@ Circuit and IR objects.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from numbers import Integral
-from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 import torch
 

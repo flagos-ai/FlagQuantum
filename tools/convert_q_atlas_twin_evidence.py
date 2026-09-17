@@ -7,8 +7,9 @@ import argparse
 import hashlib
 import json
 import os
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from flagquantum.twin import TwinEvidenceEnvelope
 

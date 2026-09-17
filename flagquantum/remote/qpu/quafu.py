@@ -6,8 +6,8 @@ import hashlib
 import os
 import re
 import time
-from collections.abc import Sequence
-from typing import Any, Mapping
+from collections.abc import Mapping, Sequence
+from typing import Any
 from urllib import parse
 
 from ...deployment.cloud import (

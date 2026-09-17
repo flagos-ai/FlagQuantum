@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from ..noise import NoiseModel
 from .model import QPUDigitalTwin, TwinSnapshot

@@ -12,8 +12,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from flagquantum.runtime.distributed import (
     destroy_torch_distributed,

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from .....simulation.jax.tensor_network.contraction import (
     contract_assigned_slices as _jax_contract_assigned_tensor_slices,

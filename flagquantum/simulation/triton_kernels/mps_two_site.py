@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Protocol
 
 import torch
 import triton
@@ -45,8 +46,8 @@ def _two_site_forward_kernel(
     right_index = columns % right_dim
     real = tl.zeros((block_rows, block_columns), dtype=tl.float32)
     imag = tl.zeros((block_rows, block_columns), dtype=tl.float32)
-    for middle in range(0, bond_dim):
-        for left_physical in range(0, 2):
+    for middle in range(bond_dim):
+        for left_physical in range(2):
             left_offset = (
                 (batch * left_dim + left_index) * 2 + left_physical
             ) * bond_dim + middle
@@ -56,7 +57,7 @@ def _two_site_forward_kernel(
             left_imag = tl.load(
                 left_parts + 2 * left_offset + 1, mask=row_mask, other=0.0
             )[:, None]
-            for right_physical in range(0, 2):
+            for right_physical in range(2):
                 right_offset = (
                     (batch * bond_dim + middle) * 2 + right_physical
                 ) * right_dim + right_index
@@ -123,8 +124,8 @@ def _two_site_range_kernel(
     output_left_physical = rows % 2
     real = tl.zeros((block_rows, block_rank), dtype=tl.float32)
     imag = tl.zeros((block_rows, block_rank), dtype=tl.float32)
-    for middle in range(0, bond_dim):
-        for left_physical in range(0, 2):
+    for middle in range(bond_dim):
+        for left_physical in range(2):
             left_offset = (
                 (batch * left_dim + left_index) * 2 + left_physical
             ) * bond_dim + middle
@@ -134,14 +135,14 @@ def _two_site_range_kernel(
             li = tl.load(left_parts + 2 * left_offset + 1, mask=row_mask, other=0.0)[
                 :, None
             ]
-            for right_physical in range(0, 2):
-                for right_index in range(0, right_dim):
+            for right_physical in range(2):
+                for right_index in range(right_dim):
                     right_offset = (
                         (batch * bond_dim + middle) * 2 + right_physical
                     ) * right_dim + right_index
                     rr = tl.load(right_parts + 2 * right_offset)
                     ri = tl.load(right_parts + 2 * right_offset + 1)
-                    for output_right_physical in range(0, 2):
+                    for output_right_physical in range(2):
                         projection_offset = (
                             output_right_physical * right_dim + right_index
                         ) * rank + ranks

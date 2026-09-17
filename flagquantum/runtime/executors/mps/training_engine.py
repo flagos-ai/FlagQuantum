@@ -8,10 +8,11 @@ import json
 import math
 import os
 import time
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 import torch
 import torch.distributed as dist

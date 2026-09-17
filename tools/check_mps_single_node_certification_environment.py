@@ -7,8 +7,9 @@ import argparse
 import json
 import os
 import subprocess
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_WORLD_SIZES = (1, 2, 4, 8)

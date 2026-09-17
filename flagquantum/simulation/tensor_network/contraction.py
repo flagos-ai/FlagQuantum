@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from itertools import product
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 import torch
 
@@ -130,7 +131,7 @@ def _cost_for_sliced_labels(
     contraction_strategy: str = "greedy",
     beam_width: int = 8,
 ) -> dict[str, int]:
-    subnodes = _slice_nodes(nodes, {label: 0 for label in labels})
+    subnodes = _slice_nodes(nodes, dict.fromkeys(labels, 0))
     dims = _label_dims(subnodes)
     output_size = _product(dims[label] for label in output_labels)
     if contraction_strategy == "beam":
@@ -270,7 +271,7 @@ def _reslice_external_slicing_plan(
         nodes, output_labels = _canonicalize_unit_extent_nodes(nodes, output_labels)
     dims = _label_dims(nodes)
     selected = list(slicing.sliced_labels)
-    initial_subnodes = _slice_nodes(nodes, {label: 0 for label in selected})
+    initial_subnodes = _slice_nodes(nodes, dict.fromkeys(selected, 0))
     dynamic_path = _dynamic_path_from_pair_steps(
         initial_subnodes,
         slicing.contraction_path,
@@ -285,7 +286,7 @@ def _reslice_external_slicing_plan(
         ) = None
         for label in candidates:
             trial_labels = selected + [label]
-            subnodes = _slice_nodes(nodes, {item: 0 for item in trial_labels})
+            subnodes = _slice_nodes(nodes, dict.fromkeys(trial_labels, 0))
             trial_steps = _pair_steps_from_dynamic_path(
                 subnodes,
                 output_labels,
@@ -406,7 +407,7 @@ def _cotengra_slicing_plan(
     )
     slice_shape = tuple(dims[label] for label in sliced_labels)
     n_slices = _product(slice_shape) if slice_shape else 1
-    subnodes = _slice_nodes(nodes, {label: 0 for label in sliced_labels})
+    subnodes = _slice_nodes(nodes, dict.fromkeys(sliced_labels, 0))
     steps = _pair_steps_from_dynamic_path(
         subnodes,
         output_labels,
@@ -715,7 +716,7 @@ def _parallel_slice_labels(
         selected.append(chosen)
         candidates.remove(chosen)
         n_slices *= dims[chosen]
-        subnodes = _slice_nodes(nodes, {label: 0 for label in selected})
+        subnodes = _slice_nodes(nodes, dict.fromkeys(selected, 0))
         current_steps = _linearize_contraction_tree(
             contraction_tree,
             subnodes,
@@ -725,7 +726,7 @@ def _parallel_slice_labels(
         raise ValueError(
             f"cannot create {target_slices} parallel slices from internal TN edges"
         )
-    final_nodes = _slice_nodes(nodes, {label: 0 for label in selected})
+    final_nodes = _slice_nodes(nodes, dict.fromkeys(selected, 0))
     _QUALITY_MULTISTART_PATH_CACHE[
         _quality_multistart_cache_key(final_nodes, output_labels)
     ] = current_steps
@@ -748,7 +749,7 @@ def _auto_slice_labels_from_peak(
     final_nodes: tuple[TensorNetworkNode, ...] = tuple(nodes)
     final_steps = baseline_steps
     for _ in range(max_sliced_labels + 1):
-        subnodes = _slice_nodes(nodes, {label: 0 for label in selected})
+        subnodes = _slice_nodes(nodes, dict.fromkeys(selected, 0))
         steps = _linearize_contraction_tree(
             contraction_tree,
             subnodes,
@@ -819,7 +820,7 @@ def _auto_slice_labels_from_peak(
             break
         _, chosen = best
         selected.append(chosen)
-        final_nodes = _slice_nodes(nodes, {label: 0 for label in selected})
+        final_nodes = _slice_nodes(nodes, dict.fromkeys(selected, 0))
         final_steps = _linearize_contraction_tree(
             contraction_tree,
             final_nodes,

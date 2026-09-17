@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..noise import NoiseModel

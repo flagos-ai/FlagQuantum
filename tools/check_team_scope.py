@@ -9,8 +9,9 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 try:
     import tomllib

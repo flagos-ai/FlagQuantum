@@ -7,8 +7,9 @@ slice-output reduction owned by :mod:`execution`.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 import torch
 import torch.distributed as dist

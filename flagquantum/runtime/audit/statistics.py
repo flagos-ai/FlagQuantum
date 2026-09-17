@@ -1,6 +1,7 @@
 """Canonical payload attachment helpers for distributed audit results."""
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 
 def attach_distributed_evidence_contract(payload: Mapping[str, Any]) -> dict[str, Any]:

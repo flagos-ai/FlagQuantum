@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import torch
 

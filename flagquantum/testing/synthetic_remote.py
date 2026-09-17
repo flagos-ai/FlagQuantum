@@ -13,11 +13,12 @@ the Core matcher fails closed when that fact is required.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from math import isfinite
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from flagquantum.core.target_capabilities import (
     AUTHORITATIVE_STATIC_DECLARATION_ALLOWED,

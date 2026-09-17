@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from itertools import product
 from math import prod
-from typing import Sequence
 
 import torch
 

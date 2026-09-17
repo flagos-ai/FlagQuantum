@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import time
 from collections import OrderedDict
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Iterable, Mapping, Sequence
+from typing import Any
 
 import torch
 from torch.profiler import record_function

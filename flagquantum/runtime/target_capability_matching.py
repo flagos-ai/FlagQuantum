@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Iterable
 
 import flagquantum.core.target_capabilities as _core
 from flagquantum.core.target_capabilities import (

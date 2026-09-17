@@ -125,7 +125,72 @@ target-version = ["py310", "py311", "py312"]
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W"]
+# Families are selected rule by rule rather than wholesale. A family gains
+# members when ruff is upgraded, and a gate that widens without a reviewer
+# seeing it is worse than one that stays put. Every entry below is either fully
+# mechanical (`ruff --fix` alone reaches zero) or a defect class this change
+# fixed by hand.
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    # Move the deprecated `typing` aliases to `collections.abc`.
+    "UP035",
+    # Remove parentheses that do not group anything.
+    "UP034",
+    # Declarations and suppressions that stopped doing anything.
+    "RUF010",
+    "RUF100",
+    # Comprehension, idiom, and dead-branch cleanups.
+    "C420",
+    "PIE808",
+    "RET501",
+    "RET505",
+    "SIM114",
+    "SIM117",
+    "SIM300",
+    # Defect classes: mutable state shared between instances, and a default or
+    # class body that evaluates a call once at import instead of once per use.
+    "B008",
+    "B039",
+    "RUF009",
+    "RUF012",
+]
+# E501 stays ignored: the formatter owns line width, and the remaining long
+# lines are URLs and contract strings that carry no useful break points.
+#
+# Five rules that look like good candidates stay off, because each rewrites
+# text this repository pins and would spend a contract change on cosmetics.
+#
+# RUF022 sorts `__all__`, and `__all__` order is pinned: the API migration
+# records compare it element by element (`test_public_api_candidate.py`,
+# `test_interop_protocol_candidate.py`), so sorting one namespace reads as a
+# namespace change.
+#
+# RUF036 sorts `None` to the end of a union, and RUF009-adjacent union order
+# appears in public signatures, which `tools/public_api_snapshot.py` pins as
+# text. Reordering them turns a style fix into an "authorized API signature
+# changed" entry that a reviewer has to wave through.
+#
+# UP006, UP037, and UP045 rewrite annotation source text. Every module here
+# imports `from __future__ import annotations`, so the annotation *string* is
+# the source text, and the pinned signature records compare that string.
+# Removing a pair of quotes from `-> "TwinCircuitSupport"` is invisible at
+# runtime and a diff in the record.
+#
+# B009 and B010 rewrite `getattr(owner, "policy")` and
+# `setattr(owner, "precision", ...)`. This codebase writes those on purpose, to
+# mark an attribute the stubs do not carry: `torch.flagos` is registered at
+# import, `torch.linalg.LinAlgError` has no typed export, and `nn.Module`
+# resolves an undeclared attribute to `Tensor | Module` through its own
+# `__getattr__`. Rewriting them removes the marker and, now that the whole
+# package is checked under `--strict`, fails the type gate at four of them.
+#
+# The rules are right in general and wrong for these conventions, so the
+# conventions win. Each stays available to a change that edits the pinned text
+# for a real reason.
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]

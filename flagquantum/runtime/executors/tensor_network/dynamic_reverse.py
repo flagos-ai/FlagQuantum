@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from math import prod
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
 import torch
 
@@ -309,7 +310,7 @@ def execute_dynamic_tn_reverse_segment(
     )
     forward_cache: dict[str, torch.Tensor] = {}
     forward_layouts = {}
-    remaining = {value_id: 0 for value_id in required_forward_ids}
+    remaining = dict.fromkeys(required_forward_ids, 0)
     for record in active_records:
         for value_id in record.input_value_ids:
             remaining[value_id] += 1

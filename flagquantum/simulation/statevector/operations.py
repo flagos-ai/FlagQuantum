@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Number
-from typing import Sequence, TypeAlias
+from typing import TypeAlias
 
 import torch
 

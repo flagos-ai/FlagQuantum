@@ -7,8 +7,9 @@ stable FlagQuantum APIs and are deliberately not wrapped here.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass(frozen=True)

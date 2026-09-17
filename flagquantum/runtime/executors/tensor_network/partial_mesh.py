@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, replace
 from itertools import product
 from math import prod
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 import torch.distributed as dist

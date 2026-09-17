@@ -6,8 +6,9 @@ import hashlib
 import json
 import os
 import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 import torch
 import torch.distributed as dist

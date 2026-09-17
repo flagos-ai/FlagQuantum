@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import ClassVar
 
 import pytest
 import torch
@@ -52,7 +53,7 @@ def test_openqasm3_uses_standard_u_gate_spelling() -> None:
     qasm = emit_openqasm(circuit, version=3.0)
 
     assert "p(0.1) q[0];" in qasm
-    assert f"U({repr(math.pi / 2)}, 0.2, 0.3) q[1];" in qasm
+    assert f"U({math.pi / 2!r}, 0.2, 0.3) q[1];" in qasm
     assert "U(0.4, 0.5, 0.6) q[2];" in qasm
 
 
@@ -110,7 +111,7 @@ def test_emit_openqasm_requires_bound_finite_parameters() -> None:
 def test_emit_openqasm_rejects_old_device_inputs_and_invalid_versions() -> None:
     class RecordedDevice:
         n_wires = 1
-        op_history: list[object] = []
+        op_history: ClassVar[list[object]] = []
 
     with pytest.raises(TypeError, match="CircuitIR"):
         emit_openqasm(RecordedDevice())

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import torch
 

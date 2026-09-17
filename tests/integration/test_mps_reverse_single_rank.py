@@ -76,7 +76,7 @@ def _dense_z(circuit: fq.Circuit, wires: tuple[int, ...]) -> torch.Tensor:
 
 
 def _observable() -> dict[int, str]:
-    return {wire: "z" for wire in OBSERVABLE_WIRES}
+    return dict.fromkeys(OBSERVABLE_WIRES, "z")
 
 
 def test_reverse_gradient_matches_dense_statevector_autograd(

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import replace
 from math import isclose
-from typing import Any, Iterable
+from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config

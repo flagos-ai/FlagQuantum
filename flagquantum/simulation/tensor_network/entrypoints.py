@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import torch
 
-from .contraction import (  # noqa: E402
+from .contraction import (
     _build_slicing_plan,
     _contract_nodes_sliced,
 )
-from .local import (  # noqa: E402
+from .local import (
     build_local_tensor_network,
     ensure_local_tensor_network_plan,
     run_local_tensor_network,
 )
-from .models import (  # noqa: E402
+from .models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
 )
-from .observables import (  # noqa: E402
+from .observables import (
     build_tensor_network_expectation as _build_tensor_network_expectation,
 )
 from .observables import (
@@ -36,7 +37,7 @@ from .observables import (
     tensor_network_expectations as _tensor_network_expectations,
 )
 from .path_search import _contract_nodes_greedy
-from .state import (  # noqa: E402
+from .state import (
     TensorNetworkState,
 )
 

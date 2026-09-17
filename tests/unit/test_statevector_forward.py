@@ -197,7 +197,7 @@ def test_every_declared_unitary_operator_executes_in_arbitrary_sequence():
     for schema in OPERATOR_SCHEMAS.values():
         if not schema.unitary:
             continue
-        params = {name: 0.17 for name in schema.parameters}
+        params = dict.fromkeys(schema.parameters, 0.17)
         circuit.gate(schema.opcode, tuple(range(schema.arity)), **params)
     result = execute_torch_distributed_statevector(circuit)
     assert torch.allclose(result.shard_state.amplitudes, circuit.state(), atol=1e-5)

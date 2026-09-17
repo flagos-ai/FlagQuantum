@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Protocol
 
 import torch
 import triton
@@ -61,7 +62,7 @@ def _rx_rz_loop_kernel(
     imag0 = tl.load(state_parts + 2 * base + 1, mask=mask, other=0.0)
     real1 = tl.load(state_parts + 2 * (base + 1), mask=mask, other=0.0)
     imag1 = tl.load(state_parts + 2 * (base + 1) + 1, mask=mask, other=0.0)
-    for layer in range(0, depth):
+    for layer in range(depth):
         angle_offset = batch * angle_batch_stride + layer
         half_rx = 0.5 * tl.load(rx_angles + angle_offset)
         sin_rx, cos_rx = tl.sin(half_rx), tl.cos(half_rx)
@@ -112,7 +113,7 @@ def _rx_rz_loop_tangent_kernel(
     tangent_imag1 = tl.zeros((block_pairs,), tl.float32)
     target_layer = parameter // 2
     target_is_rz = parameter % 2
-    for layer in range(0, depth):
+    for layer in range(depth):
         angle_offset = batch * angle_batch_stride + layer
         half_rx = 0.5 * tl.load(rx_angles + angle_offset)
         sin_rx, cos_rx = tl.sin(half_rx), tl.cos(half_rx)
@@ -200,7 +201,7 @@ def _rx_rz_loop_backward_kernel(
     grad_imag0 = tl.load(gradient_parts + 2 * base + 1, mask=mask, other=0.0)
     grad_real1 = tl.load(gradient_parts + 2 * (base + 1), mask=mask, other=0.0)
     grad_imag1 = tl.load(gradient_parts + 2 * (base + 1) + 1, mask=mask, other=0.0)
-    for reverse_layer in range(0, depth):
+    for reverse_layer in range(depth):
         layer = depth - reverse_layer - 1
         angle_offset = batch * angle_batch_stride + layer
         rz_contribution = 0.5 * (

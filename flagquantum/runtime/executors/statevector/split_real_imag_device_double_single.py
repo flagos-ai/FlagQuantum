@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any
 
 import torch
 

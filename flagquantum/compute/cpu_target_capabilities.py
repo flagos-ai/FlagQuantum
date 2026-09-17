@@ -11,9 +11,10 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import torch
 

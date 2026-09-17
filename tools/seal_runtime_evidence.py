@@ -7,9 +7,9 @@ import argparse
 import json
 import os
 import subprocess
+from collections.abc import Sequence
 from importlib import import_module
 from pathlib import Path
-from typing import Sequence
 
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
@@ -20,11 +20,9 @@ from flagquantum.runtime.observability.evidence import (
 )
 
 environment_errors = import_module(
-    (
-        "tools.check_release_evidence_environment"
-        if __package__
-        else "check_release_evidence_environment"
-    )
+    "tools.check_release_evidence_environment"
+    if __package__
+    else "check_release_evidence_environment"
 ).environment_errors
 
 

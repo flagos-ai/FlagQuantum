@@ -212,7 +212,8 @@ def _remote_snapshot(
 
 def _requirements(
     *,
-    authorizations: FallbackAuthorizations = FallbackAuthorizations(),
+    # `FallbackAuthorizations` is a frozen dataclass of booleans.
+    authorizations: FallbackAuthorizations = FallbackAuthorizations(),  # noqa: B008
 ) -> RequirementSet:
     return RequirementSet(
         requirements=(

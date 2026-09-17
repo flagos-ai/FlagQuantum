@@ -9,10 +9,11 @@ PyTorch integrations without depending on scientific helper packages.
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 import torch
 

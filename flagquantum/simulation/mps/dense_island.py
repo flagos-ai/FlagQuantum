@@ -5,8 +5,8 @@ Gates spanning adjacent islands are applied through immediate merge and split.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import torch
 
@@ -233,9 +233,10 @@ class DenseIslandState:
         self.tensors[left_index] = left_out
         self.tensors[left_index + 1] = right_out
         self.split_count += 1
-        if method == "retained_subspace_adjoint":
-            self.gradient_method = method
-        elif self.gradient_method != "retained_subspace_adjoint":
+        if (
+            method == "retained_subspace_adjoint"
+            or self.gradient_method != "retained_subspace_adjoint"
+        ):
             self.gradient_method = method
         if discarded_weight > 0:
             self.truncation_errors.append(discarded_weight)

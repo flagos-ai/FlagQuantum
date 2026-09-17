@@ -13,11 +13,20 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
-from typing import Any, Iterable, Iterator, Mapping
+from typing import Any
 
 from .registry import get_platform_runtime
+
+# A probe answers "can this optional backend be used here?" and reports
+# "no" rather than raising. `SystemExit` belongs on that side: an accelerator
+# library that refuses to load on unsupported hardware raises it to end the
+# process, and a probe should record that as unavailability. Everything else
+# outside `Exception` -- above all `KeyboardInterrupt` -- belongs to the
+# caller, so an interrupted probe stops instead of reporting a broken backend.
+_BACKEND_PROBE_FAILURES: tuple[type[BaseException], ...] = (Exception, SystemExit)
 
 FLAGGEMS_SAFE_OPS: tuple[str, ...] = (
     "abs",
@@ -265,7 +274,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
 def _import_flag_gems() -> tuple[Any | None, BaseException | None]:
     try:
         return importlib.import_module("flag_gems"), None
-    except BaseException as exc:  # pragma: no cover - depends on optional runtime.
+    except _BACKEND_PROBE_FAILURES as exc:  # pragma: no cover - optional runtime.
         return None, exc
 
 
@@ -290,7 +299,7 @@ def _extract_flaggems_catalog_keys(module: Any) -> tuple[str, ...]:
     if not collected and hasattr(module, "all_registered_keys"):
         try:
             collected.extend(str(item) for item in module.all_registered_keys())
-        except BaseException:
+        except _BACKEND_PROBE_FAILURES:
             pass
     return tuple(sorted(dict.fromkeys(item for item in collected if item)))
 
@@ -300,7 +309,7 @@ def _active_flaggems_registered_keys(module: Any) -> tuple[str, ...]:
         return ()
     try:
         return tuple(str(item) for item in module.all_registered_keys())
-    except BaseException:
+    except _BACKEND_PROBE_FAILURES:
         return ()
 
 
@@ -363,7 +372,7 @@ def _probe_flaggems_in_subprocess(
             available=False,
             reason=f"FlagGems import probe timed out after {timeout_seconds:.1f}s.",
         )
-    except BaseException as exc:  # pragma: no cover - platform dependent.
+    except _BACKEND_PROBE_FAILURES as exc:  # pragma: no cover - platform dependent.
         return OperatorBackendAvailability(
             name="flaggems",
             available=False,
@@ -507,9 +516,7 @@ def plan_operator_replacements(
             runtime_replaceable.append(op)
         elif op in safe:
             catalog_safe.append(op)
-        elif op in experimental:
-            experimental_requested.append(op)
-        elif op in catalog:
+        elif op in experimental or op in catalog:
             experimental_requested.append(op)
         else:
             unavailable.append(op)
@@ -834,7 +841,7 @@ def validate_flaggems_ops(
             ):
                 _run_flaggems_op_smoke(op, device=device, dtype=dtype)
             passed.append(op)
-        except BaseException as exc:  # pragma: no cover - hardware dependent.
+        except _BACKEND_PROBE_FAILURES as exc:  # pragma: no cover - hardware only.
             failed[op] = f"{type(exc).__name__}: {exc}"
     return OperatorValidationResult(
         backend="flaggems",

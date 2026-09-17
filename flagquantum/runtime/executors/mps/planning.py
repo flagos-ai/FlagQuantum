@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from ....core.ir import Instruction
 from .distributed_state import DistributedBoundarySync, DistributedShardPlan

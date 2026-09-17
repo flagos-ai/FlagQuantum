@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 import torch
 
@@ -47,7 +48,9 @@ class ExecutionResult:
     samples: torch.Tensor | None = None
     measurements: tuple[MeasurementResult, ...] = ()
     plan: ExecutionPlan | RuntimePlanContract | MPSProductionPlan | None = None
-    accuracy: AccuracyContract = AccuracyContract()
+    # `AccuracyContract` is a frozen dataclass, so one instance shared by every
+    # result is equivalent to a module-level constant.
+    accuracy: AccuracyContract = AccuracyContract()  # noqa: RUF009
     metrics: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)
     runtime: Mapping[str, Any] = field(default_factory=dict)

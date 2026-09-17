@@ -13,8 +13,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from flagquantum.runtime.distributed import (
     destroy_torch_distributed,
@@ -233,7 +234,7 @@ def _observe(
         with torch.profiler.profile(activities=activities) as profiler:
             actual, expected = operation()
             _synchronize(torch)
-    except Exception as exc:  # noqa: BLE001 - the artifact retains profiler failure
+    except Exception as exc:
         profiler_error = f"{type(exc).__name__}: {exc}"
         raise RuntimeError(
             f"profiler failed for {primitive}/{dtype_name}: {profiler_error}"

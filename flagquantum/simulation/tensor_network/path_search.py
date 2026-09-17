@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from math import prod
-from typing import Any, Literal, Mapping, Sequence, SupportsInt, overload
+from typing import Any, Literal, SupportsInt, overload
 
 import torch
 
@@ -48,7 +48,8 @@ class _DryRunTensor:
 
     shape: tuple[int, ...]
     dtype: torch.dtype
-    device: torch.device = torch.device("meta")
+    # `torch.device` is immutable, and the frozen dataclass never rebinds it.
+    device: torch.device = torch.device("meta")  # noqa: RUF009
     is_cuda: bool = False
 
     def numel(self) -> int:

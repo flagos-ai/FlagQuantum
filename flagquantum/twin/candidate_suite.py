@@ -6,11 +6,12 @@ import hashlib
 import json
 import math
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from statistics import fmean
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ..remote.qpu import DeploymentResult
 from .candidate import (

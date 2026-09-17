@@ -70,27 +70,27 @@ repos:
         entry: black --check
         language: system
         files: ^(flagquantum|tests|tools)/.*\.py$
-      - id: mypy-foundation
-        name: mypy typed foundation subset
+      - id: mypy-package
+        name: strict type check of the whole package
+        # Target 3.12 because numpy's bundled stubs use PEP 695 `type`
+        # statements, which mypy only parses at 3.12. A developer environment
+        # installs numpy through the jax extra, so the pyproject target of 3.10
+        # fails before checking a file. Same commands as the CI quality job.
         entry: >-
-          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
-          flagquantum/version.py flagquantum/core/ir.py
-          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
-          flagquantum/runtime/execution_plan_contract.py
+          mypy --strict --python-version 3.12 --ignore-missing-imports
+          flagquantum
+        language: system
+        pass_filenames: false
+        files: ^flagquantum/.*\.py$
+      - id: mypy-ci-tooling
+        name: strict type check of the CI tooling
+        entry: >-
+          mypy --strict --python-version 3.12 --ignore-missing-imports
+          --follow-imports skip
           tools/ci_tier.py
         language: system
         pass_filenames: false
-      - id: mypy-runtime-contracts
-        name: mypy strict runtime contracts
-        entry: >-
-          mypy --strict --no-site-packages --follow-imports skip
-          flagquantum/core/contracts.py flagquantum/runtime/records.py
-          flagquantum/runtime/audit/contracts.py
-          flagquantum/runtime/executors/statevector/checkpointing.py
-          flagquantum/runtime/executors/statevector/gradient_reduction.py
-        language: system
-        pass_filenames: false
-        files: ^(flagquantum|tools)/.*\.py$
+        files: ^tools/.*\.py$
       - id: pre-push-ci
         name: FlagQuantum CPU pre-push gate
         entry: python tools/pre_push.py

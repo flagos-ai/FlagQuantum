@@ -6,8 +6,9 @@ thin public facade and owns cache containers and mutation-time invalidation.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from numbers import Number
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import torch
 

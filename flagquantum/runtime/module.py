@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import inspect
 import os
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch.utils.hooks import RemovableHandle
@@ -84,7 +85,7 @@ class Module(torch.nn.Module):
         if parameters is not None and n_parameters is not None:
             raise ValidationError("pass either n_parameters or parameters, not both")
         if isinstance(circuit, Circuit) and parameters is None:
-            parameters = {name: () for name in circuit.parameter_names}
+            parameters = dict.fromkeys(circuit.parameter_names, ())
         if parameters is None and n_parameters is None:
             raise ValidationError(
                 "Module requires n_parameters, named parameters, or a "

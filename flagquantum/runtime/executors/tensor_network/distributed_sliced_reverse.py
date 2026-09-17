@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 import torch.distributed as dist

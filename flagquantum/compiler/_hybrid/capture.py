@@ -5,8 +5,9 @@ from __future__ import annotations
 import ast
 import inspect
 import textwrap
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, NoReturn, Sequence
+from typing import Any, NoReturn
 
 from .model import (
     BOOL,

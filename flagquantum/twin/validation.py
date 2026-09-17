@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 _VALIDATION_SCHEMA = "flagquantum.twin_validation_report.v1"
 

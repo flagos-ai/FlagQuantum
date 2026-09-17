@@ -11,8 +11,8 @@ import os
 import platform
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 
 def _output(command: Sequence[str]) -> str:

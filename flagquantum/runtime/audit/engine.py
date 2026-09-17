@@ -10,8 +10,9 @@ and tests can share the same checks.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from importlib import import_module
-from typing import Any, Mapping
+from typing import Any
 
 
 def _claim_evidence_type(payload: Mapping[str, Any]) -> str:
@@ -485,7 +486,7 @@ def __getattr__(name: str) -> Any:
 
 # Canonical schema contracts; retained here as identity-compatible aliases.
 try:
-    from .errors import DistributedScalabilityError  # noqa: E402,F401
+    from .errors import DistributedScalabilityError
 except ImportError:  # legacy benchmark file-loader path
     from flagquantum.runtime.audit.errors import (
         DistributedScalabilityError,
@@ -498,7 +499,7 @@ try:
         DistributedTransportEvidence,
         MPSBackwardReadinessGate,
         StatevectorTrainingClaimabilityGate,
-    )  # noqa: E402,F401
+    )
 except ImportError:  # legacy benchmark file-loader path
     from flagquantum.runtime.audit.schema import (
         DistributedEvidenceContract,

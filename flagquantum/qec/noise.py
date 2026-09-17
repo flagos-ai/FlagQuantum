@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass
 from numbers import Real
-from typing import Iterable
 
 from ..noise import NoiseModel, ReadoutError, bit_flip_channel
 from .repetition import run_repetition_memory_experiment

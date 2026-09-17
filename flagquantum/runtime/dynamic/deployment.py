@@ -1,7 +1,8 @@
 """Dynamic compatibility, packaging, and submission implementation."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from ...deployment.cloud import DeploymentPackage
 from ...deployment.routing_evidence import (

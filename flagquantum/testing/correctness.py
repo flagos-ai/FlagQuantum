@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import platform
 import random
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from typing import Any, Callable
+from typing import Any
 
 from flagquantum.compiler.openqasm import emit_openqasm
 from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
@@ -108,7 +109,7 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
     import flagquantum.simulation.tensor_network as fqtn
 
     schema = OPERATOR_SCHEMAS[case.operator]
-    params = {name: 0.23 for name in schema.parameters}
+    params = dict.fromkeys(schema.parameters, 0.23)
     instruction = Instruction(
         name=case.operator,
         wires=tuple(range(schema.arity)),

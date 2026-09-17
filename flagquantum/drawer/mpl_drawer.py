@@ -3,7 +3,7 @@ Matplotlib mode circuit drawer
 """
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -24,7 +24,7 @@ class MPLDrawer:
     _pad = 0.1
     _boxstyle = f"round, pad={_pad}"
 
-    GATE_COLORS = {
+    GATE_COLORS: ClassVar[dict[str, str]] = {
         "single": "#7B9EC2",  # Fixed single-qubit gates (X, Y, Z, H, S, T, etc.) - blue
         "param": "#E15759",  # Parameterized gates (RX, RY, RZ, U1, U2, U3, etc.) - red
         "multi": "#F28E2B",  # Multi-qubit gates (QFT, Toffoli, etc.) - orange
@@ -38,7 +38,7 @@ class MPLDrawer:
         "ising": "#FFB6C1",  # RXX/RYY/RZZ - light pink
     }
 
-    GATE_SYMBOLS = {
+    GATE_SYMBOLS: ClassVar[dict[str, str]] = {
         # Single-qubit gates
         "rx": "RX",
         "ry": "RY",

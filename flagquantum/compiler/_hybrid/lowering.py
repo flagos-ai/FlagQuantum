@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 from collections import OrderedDict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ...core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from ...core.parameters import Parameter, bind_parameter_value

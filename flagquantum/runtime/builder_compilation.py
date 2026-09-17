@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
-from typing import Any, Mapping
+from typing import Any
 
 import torch
 

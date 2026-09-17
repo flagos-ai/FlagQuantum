@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -155,9 +155,7 @@ def gate_info(name: str) -> GateInfo:
         aliases=schema.aliases,
         n_wires=schema.arity,
         parameters=schema.parameters,
-        parameter_shapes=MappingProxyType(
-            {parameter: () for parameter in schema.parameters}
-        ),
+        parameter_shapes=MappingProxyType(dict.fromkeys(schema.parameters, ())),
         differentiable=schema.differentiable,
         semantic_kind=schema.semantic_kind,
     )

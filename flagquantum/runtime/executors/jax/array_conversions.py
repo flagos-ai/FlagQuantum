@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ....simulation.jax.statevector.kernels import (
     jax_basis_indices_for_wires as _jax_basis_indices_for_wires,

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from ..errors import CompilationError
 from .openqasm import emit_openqasm

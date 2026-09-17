@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from importlib import resources
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 CAPABILITY_EVIDENCE_VERSION = "1.0"
 _PASSED_PROBE_SOURCES = frozenset({"runtime_probe", "hardware_ci"})

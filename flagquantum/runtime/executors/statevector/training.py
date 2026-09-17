@@ -8,13 +8,13 @@ import resource
 import signal
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import timedelta
 from pathlib import Path
 from types import FrameType
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import torch
 import torch.distributed as dist

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import ClassVar
 
 import pytest
 import torch
@@ -21,7 +22,9 @@ pytestmark = pytest.mark.integration
 
 
 class _FakeUseGems:
-    calls: list[tuple[str, tuple[str, ...]]] = []
+    # Deliberately class-level: the fake records every entry and exit across
+    # instances, and the install helper clears it between tests.
+    calls: ClassVar[list[tuple[str, tuple[str, ...]]]] = []
 
     def __init__(
         self, *, include=None, exclude=None, record=False, once=False, path=None

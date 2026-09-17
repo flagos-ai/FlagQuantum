@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, cast
+from collections.abc import Mapping
+from typing import Any, cast
 
 
 def _normalize_counts(counts: Mapping[str, Any]) -> dict[str, int]:
