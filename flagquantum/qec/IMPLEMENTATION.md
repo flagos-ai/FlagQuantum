@@ -76,10 +76,18 @@ state, plus one detector per check comparing the final syndrome round against th
 terminal data readout. That grammar is `len(checks) * (rounds + 1)` detectors, and
 for a distance-`d` repetition code, whose `len(checks)` is `d - 1`, it equals
 `(d - 1) * (rounds + 1)`. Logical failure is the parity of a declared logical
-observable. The detector count and every detector and observable reference are
-validated against the code's declared checks, wires, logical observables, and the
-configured round count, so a hand-built layout cannot silently disagree with the
-code it is paired with.
+observable.
+
+The detector count is validated against the code's declared checks and the
+configured round count, and every reference is validated against the code's
+declared wires: a detector's terminal readouts must name declared data wires and
+its syndrome measurements must name declared ancilla wires inside the configured
+rounds, and an observable's readout must name declared data wires and match the
+code's declared logical operators. The validation is membership-based. It does not
+check that a detector names the *same* check in each round, that a terminal
+detector's data wires are the support of the check it belongs to, or that the
+`source` text is the program those layouts describe, so a hand-built layout can
+still be semantically wrong while satisfying every check.
 
 This layer is additive. The frozen repetition types, the two decoder protocols,
 three reference decoders, and both existing workflows keep their current

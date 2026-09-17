@@ -283,6 +283,62 @@ real hardware has that threshold, and no fault-tolerance claim follows.
 Real-time decoding, hardware feedback, surface codes, correlated and non-Pauli
 noise, and LDPC codes remain out of scope.
 
+## Stage 1 landed state and known debt
+
+Stage 1 is implemented on branch `feat/qec-stage1-code-records`. The layer exists
+as `flagquantum/qec/{pauli,codes,circuit}.py`, publishes eleven names from
+`flagquantum.qec`, documents its boundary in `flagquantum/qec/IMPLEMENTATION.md`,
+and is covered by `tests/qec`, which grew from 82 tests to 201.
+
+This section exists because a later stage must not build on the following
+limitations without knowing they are there. The items below were found during
+review, judged minor, and deliberately not fixed in Stage 1.
+
+**Constraints a later stage will hit:**
+
+- `CodeCheck` can describe only Z-type checks. Every CNOT must control a data wire
+  and target the check's ancilla, so only a Z-basis ancilla measurement is
+  reachable, and a stabilizer with an X component is rejected by validation. A
+  code family needing X-type checks requires this record to grow first.
+- A detector's parity is validated for wire and round *membership* only. Nothing
+  checks that a detector names the same check across rounds, that a terminal
+  detector's data wires are the support of the check it belongs to, or that the
+  `source` text is the program the layouts describe. A hand-built layout can
+  therefore be semantically wrong while passing every validator.
+- `CodeCheck.index` is not consumed by the library. The emitted measurement order
+  and the detector stride key on tuple position, so a code may declare indices that
+  disagree with position with no error. The DEM must key on position, not on
+  `index`.
+- The `StabilizerCode` protocol is enforced by `isinstance` only, which for a
+  `runtime_checkable` protocol tests attribute presence. Nothing cross-checks
+  `num_data_qubits`, `num_ancilla_qubits`, or `stabilizers` against
+  `data_wires`, `ancilla_wires`, or `checks`, and `stabilizers` is fully derivable
+  from `checks`.
+- `runtime_checkable` protocols with property-only members raise on `issubclass()`
+  before Python 3.12, while `pyproject.toml` declares `>=3.10,<3.13`. Only
+  `isinstance` is used today, which is safe on all supported versions.
+
+**Smaller items, safe to carry:**
+
+- `Pauli.from_label` skips wire validation on its identity path, and `from_text`
+  accepts leading zeros and Unicode digits and reports a duplicated term as a
+  field-ordering error. `to_text`'s exact format is pinned only by round-trip
+  tests. No library consumer uses these yet; the DEM is the first likely one.
+- `Detector.index` and `LogicalObservable.index` accept non-integers (including
+  `bool`) while `MeasurementRef`, `MemoryCircuit.rounds`, and `RepetitionCode`
+  apply `Integral` guards. `MemoryCircuit.source` is validated only for
+  non-emptiness.
+- `build_memory_circuit` rejects a code whose declared logical leaves its declared
+  `data_wires`, reporting it as an observable-readout error. That is code-level
+  incoherence rather than a builder defect, and it has no test.
+- The observable-count validator has no test: removing it leaves the whole suite
+  green.
+- `checks` and `stabilizers` rebuild and re-validate their tuples on every
+  attribute access.
+- `flagquantum/qec/README.md` is the user-facing entry point and still lists only
+  `repetition.py`, `decoders.py`, `noise.py`, and `types.py`. Stage 5 owns the QEC
+  documentation sweep that will bring it up to date.
+
 ## Compatibility
 
 The change is additive. The seven pinned names, `repetition_code_memory`
