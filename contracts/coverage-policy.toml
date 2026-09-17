@@ -17,6 +17,11 @@
 # while a real regression fails. Raise a floor when the package's measured
 # coverage grows past it; a floor may not be lowered without replacing the
 # coverage it gave up.
+#
+# The `jax` subpackages are covered only while their tests stay selected by the
+# `jax` marker (see the coverage job's marker expression), so their floors also
+# guard the marker wiring itself: a test file that loses its marker drops the
+# package below its floor instead of quietly leaving the measurement.
 
 schema = "flagquantum_coverage_policy_v1"
 
@@ -67,7 +72,16 @@ min = 19
 min = 81
 
 [packages."runtime.executors.jax"]
-min = 57
+min = 70
+
+[packages."runtime.executors.jax.mps"]
+min = 81
+
+[packages."runtime.executors.jax.statevector"]
+min = 64
+
+[packages."runtime.executors.jax.tensor_network"]
+min = 79
 
 [packages."runtime.executors.mps"]
 min = 54
@@ -83,6 +97,18 @@ min = 34
 
 [packages.simulation]
 min = 67
+
+[packages."simulation.jax"]
+min = 85
+
+[packages."simulation.jax.mps"]
+min = 80
+
+[packages."simulation.jax.statevector"]
+min = 48
+
+[packages."simulation.jax.tensor_network"]
+min = 91
 
 [packages.testing]
 min = 62

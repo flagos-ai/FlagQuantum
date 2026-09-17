@@ -5,6 +5,13 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
+# Loading the benchmark script imports JAX at module scope, so the file is
+# tagged `jax` like the other JAX-only suites and `benchmark_contract` like its
+# siblings in this directory.
+pytestmark = [pytest.mark.benchmark_contract, pytest.mark.jax]
+
 
 def _module():
     path = Path(__file__).parents[2] / "benchmarks" / "jax_jit_vqe_training.py"
