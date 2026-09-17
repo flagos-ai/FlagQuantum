@@ -2,12 +2,18 @@
 
 Backend routing and CPU fallbacks remain in :mod:`flagquantum.simulation`;
 this package owns CUDA kernel implementations and their launch wrappers.
+
+Each kernel is loaded only when it is requested, so importing this package
+never imports Triton. The names are re-exported under ``TYPE_CHECKING`` so a
+checker sees each launch wrapper's real signature instead of ``Any``; that
+block is never executed, and the module-level ``__getattr__`` below still
+performs the lazy load at runtime.
 """
 
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 _EXPORT_MODULES = {
     "fused_complex_bmm": "complex_bmm",
@@ -21,6 +27,18 @@ _EXPORT_MODULES = {
     "single_qubit_matrix": "statevector_gates",
     "repeated_rxx_ryy_rzz_tangents": "two_qubit_pauli_tangent",
 }
+
+if TYPE_CHECKING:
+    from .complex_bmm import fused_complex_bmm, fused_complex_layout_bmm
+    from .hva_forward_tangent import heisenberg_hva_forward_tangents
+    from .mps_two_site import fused_mps_two_site
+    from .single_qubit_loop import repeated_rx_rz, repeated_rx_rz_tangents
+    from .statevector_gates import (
+        cx_sequence,
+        ry_rz_pair,
+        single_qubit_matrix,
+    )
+    from .two_qubit_pauli_tangent import repeated_rxx_ryy_rzz_tangents
 
 
 def __getattr__(name: str) -> Any:
