@@ -1,23 +1,91 @@
 # Coverage policy enforced by tools/check_coverage.py.
 #
+# Modules excluded from measurement entirely (optional-dependency kernels and
+# the benchmark CLI) are omitted in .coveragerc instead; this file only carries
+# floors for packages that are measured.
+#
 # [global].min        — overall line-coverage floor (percentage).
-# [packages.<name>]   — optional per-package floor keyed by dotted module path
-#                       (e.g. "flagquantum.core"), enforced on top of the global
-#                       floor. Each entry sets `min`.
-# [allowlist.<name>]  — packages permitted to fall below the global floor. Every
-#                       entry carries `target` (the accepted percentage) and
-#                       `reason` so each exception stays review-visible and
-#                       cannot silently expand.
+# [packages.<name>]   — per-package floor, enforced on top of the global floor.
+#                       The key is the package name as coverage.xml reports it,
+#                       which is relative to the measured source root
+#                       (`flagquantum/`), so it carries no `flagquantum.`
+#                       prefix and a misspelling fails closed rather than
+#                       clearing its own floor.
+#
+# The per-package floors were set on 2026-09-17 at five points below the
+# measured value for each package, so an unrelated refactor has room to move
+# while a real regression fails. Raise a floor when the package's measured
+# coverage grows past it; a floor may not be lowered without replacing the
+# coverage it gave up.
 
 schema = "flagquantum_coverage_policy_v1"
 
 [global]
 min = 60
 
-[allowlist."flagquantum.benchmarking"]
-target = 0
-reason = "CLI benchmark framework, excluded from runtime coverage via .coveragerc"
+[packages]
+[packages."."]
+min = 79
 
-[allowlist."flagquantum.simulation.triton_kernels"]
-target = 0
-reason = "GPU triton kernels, not runnable in the CPU CI lane"
+[packages.algorithms]
+min = 64
+
+[packages.compiler]
+min = 85
+
+[packages.compute]
+min = 52
+
+[packages.core]
+min = 83
+
+[packages.deployment]
+min = 80
+
+[packages.drawer]
+min = 56
+
+[packages.ecosystem]
+min = 83
+
+[packages.experimental]
+min = 91
+
+[packages.noise]
+min = 71
+
+[packages.observables]
+min = 86
+
+[packages.qec]
+min = 82
+
+[packages.remote]
+min = 19
+
+[packages.runtime]
+min = 81
+
+[packages."runtime.executors.jax"]
+min = 57
+
+[packages."runtime.executors.mps"]
+min = 54
+
+[packages."runtime.executors.statevector"]
+min = 71
+
+[packages."runtime.executors.tensor_network"]
+min = 24
+
+[packages.services]
+min = 34
+
+[packages.simulation]
+min = 67
+
+[packages.testing]
+min = 62
+
+[packages.twin]
+min = 51
