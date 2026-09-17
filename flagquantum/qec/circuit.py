@@ -155,16 +155,15 @@ class MemoryCircuit:
             raise TypeError("code must implement the StabilizerCode protocol")
         if not self.source.strip():
             raise ValueError("memory circuit source must not be empty")
-        expected = (self.code.distance - 1) * (self.rounds + 1)
+        expected = len(self.code.checks) * (self.rounds + 1)
         if len(self.detectors) != expected:
             raise ValueError(
-                "memory circuit detector count must match "
-                "(distance - 1) * (rounds + 1)"
+                "memory circuit detector count must match len(checks) * (rounds + 1)"
             )
         self._validate_layout()
 
     def _validate_layout(self) -> None:
-        """Tie every layout reference to a wire and round this code declares."""
+        """Tie every detector and observable reference to what this code declares."""
 
         ancilla_wires = set(self.code.ancilla_wires)
         data_wires = set(self.code.data_wires)
@@ -184,6 +183,22 @@ class MemoryCircuit:
                     raise ValueError(
                         "detector syndrome measurement must reference a declared "
                         "ancilla wire"
+                    )
+        logical_observables = self.code.logical_observables
+        if len(self.observables) != len(logical_observables):
+            raise ValueError(
+                "observable layout must declare one observable per code logical"
+            )
+        for observable in self.observables.observables:
+            if observable.pauli != logical_observables[observable.index]:
+                raise ValueError(
+                    "observable operator must match the code's declared logical "
+                    "observable"
+                )
+            for reference in observable.measurement_parity:
+                if reference.wire not in data_wires:
+                    raise ValueError(
+                        "observable readout must reference a declared data wire"
                     )
 
 
@@ -236,9 +251,9 @@ def _observable_layout(code: StabilizerCode) -> ObservableLayout:
 def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
     """Build a code's memory-experiment source and its detection layouts.
 
-    Detector ``r * (distance - 1) + c`` compares check ``c`` in round ``r`` with
+    Detector ``r * len(checks) + c`` compares check ``c`` in round ``r`` with
     the same check in round ``r - 1``, where round ``-1`` is the known all-zero
-    prior state. The last ``distance - 1`` detectors compare the final syndrome
+    prior state. The last ``len(checks)`` detectors compare the final syndrome
     round with the terminal data readout. The source itself is a bounded hybrid
     compiler program; this function neither lowers nor executes it.
     """

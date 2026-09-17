@@ -33,6 +33,8 @@ class CodeCheck:
             raise ValueError("check index must be non-negative")
         if not isinstance(self.stabilizer, Pauli):
             raise TypeError("check stabilizer must be a Pauli operator")
+        if self.stabilizer.x_wires:
+            raise ValueError("check stabilizer must be Z-type")
         if self.ancilla_wire < 0:
             raise ValueError("check ancilla wire must be non-negative")
         if not self.cnot_wires:

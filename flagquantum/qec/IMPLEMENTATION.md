@@ -69,12 +69,17 @@ and a round count into circuit source plus a detector layout and an observable
 layout.
 
 Detector semantics are fixed. A detector is a measurement parity that is
-deterministic in the noiseless circuit. A `rounds`-round distance-`d` memory
-experiment declares `(d - 1) * (rounds + 1)` detectors: one per check per round
-comparing that round against its predecessor, where the first round is compared
-against the known all-zero prior state, plus one per check comparing the final
-syndrome round against the terminal data readout. Logical failure is the parity
-of a declared logical observable.
+deterministic in the noiseless circuit. A `rounds`-round memory experiment
+declares one detector per check per round, comparing that round against its
+predecessor, where the first round is compared against the known all-zero prior
+state, plus one detector per check comparing the final syndrome round against the
+terminal data readout. That grammar is `len(checks) * (rounds + 1)` detectors, and
+for a distance-`d` repetition code, whose `len(checks)` is `d - 1`, it equals
+`(d - 1) * (rounds + 1)`. Logical failure is the parity of a declared logical
+observable. The detector count and every detector and observable reference are
+validated against the code's declared checks, wires, logical observables, and the
+configured round count, so a hand-built layout cannot silently disagree with the
+code it is paired with.
 
 This layer is additive. The frozen repetition types, the two decoder protocols,
 three reference decoders, and both existing workflows keep their current
@@ -94,9 +99,10 @@ The layer declares codes and detectors only. It does not build a detector error
 model, decode, sample evidence, or make any threshold, logical-suppression,
 real-time, or fault-tolerance claim.
 
-One representational boundary is explicit. `CodeCheck` requires every CNOT to
-control a data wire and target the check's ancilla, so it can describe only
-Z-type checks measured with a Z-basis ancilla. An X-type check couples the
+One representational boundary is explicit and enforced. `CodeCheck` requires every
+CNOT to control a data wire and target the check's ancilla, so it describes only
+Z-type checks measured with a Z-basis ancilla; an X-type stabilizer is rejected by
+validation with "check stabilizer must be Z-type". An X-type check couples the
 ancilla the other way and is not representable here, even though the `Pauli`
 record and the check's `stabilizer` field are basis-agnostic. This matches the
 repetition code, which detects bit flips; a code family needing X-type checks

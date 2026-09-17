@@ -39,6 +39,38 @@ class _TwoQubitParityCode:
     logical_observables = (Pauli(z_wires=(0, 1)),)
 
 
+class _ThreeCheckParityCode:
+    """A code with more checks than ``distance - 1``, to pin the count formula."""
+
+    distance = 3
+    num_data_qubits = 3
+    num_ancilla_qubits = 3
+    data_wires = (0, 1, 2)
+    ancilla_wires = (3, 4, 5)
+    checks = (
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(z_wires=(0, 1)),
+            ancilla_wire=3,
+            cnot_wires=((0, 3), (1, 3)),
+        ),
+        CodeCheck(
+            index=1,
+            stabilizer=Pauli(z_wires=(1, 2)),
+            ancilla_wire=4,
+            cnot_wires=((1, 4), (2, 4)),
+        ),
+        CodeCheck(
+            index=2,
+            stabilizer=Pauli(z_wires=(0, 2)),
+            ancilla_wire=5,
+            cnot_wires=((0, 5), (2, 5)),
+        ),
+    )
+    stabilizers = (Pauli(z_wires=(0, 1)), Pauli(z_wires=(1, 2)), Pauli(z_wires=(0, 2)))
+    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+
+
 def test_detector_count_matches_the_stated_formula() -> None:
     for distance, rounds in ((3, 3), (2, 1), (5, 5), (7, 7)):
         built = build_memory_circuit(RepetitionCode(distance), rounds=rounds)
@@ -113,6 +145,22 @@ def test_builder_accepts_a_second_code_without_repetition_assumptions() -> None:
     assert len(built.detectors) == 2
     assert "qp.CNOT(wires=[0, 2])" in built.source
     assert "qp.CNOT(wires=[1, 2])" in built.source
+
+
+@pytest.mark.parametrize("rounds", (1, 2, 3))
+def test_builder_counts_detectors_from_the_declared_checks(rounds: int) -> None:
+    built = build_memory_circuit(_ThreeCheckParityCode(), rounds=rounds)
+
+    assert len(built.detectors) == 3 * (rounds + 1)
+
+
+def test_builder_accepts_a_code_with_more_checks_than_distance_minus_one() -> None:
+    built = build_memory_circuit(_ThreeCheckParityCode(), rounds=2)
+
+    assert built.code.distance == 3
+    assert len(built.code.checks) == 3
+    assert "qp.CNOT(wires=[0, 5])" in built.source
+    assert "qp.measure(wires=5)" in built.source
 
 
 def test_builder_rounds_the_round_count_onto_the_record() -> None:
@@ -264,6 +312,26 @@ class _ChecklessCode:
     logical_observables = (Pauli(z_wires=(0, 1, 2)),)
 
 
+class _RogueLogicalCode:
+    """A code whose declared logical observable leaves its declared data wires.
+
+    ``LogicalObservable`` already requires its readout to measure exactly the
+    operator's support, so for a coherent code the readout-wire guard in
+    ``MemoryCircuit`` agrees with that check. This stand-in reaches the guard
+    through a hand-built pair, where the layout is internally consistent and only
+    the code pairing is incoherent.
+    """
+
+    distance = 3
+    num_data_qubits = 3
+    num_ancilla_qubits = 2
+    data_wires = (0, 1, 2)
+    ancilla_wires = (3, 4)
+    checks = RepetitionCode(3).checks
+    stabilizers = RepetitionCode(3).stabilizers
+    logical_observables = (Pauli(z_wires=(0, 1, 99)),)
+
+
 def _built_layout() -> MemoryCircuit:
     """A valid three-round layout whose single detectors can be substituted."""
 
@@ -356,6 +424,48 @@ def test_logical_observable_rejects_a_readout_outside_the_operator_support() -> 
 def test_builder_rejects_a_code_without_checks() -> None:
     with pytest.raises(ValueError, match="at least one check"):
         build_memory_circuit(_ChecklessCode(), rounds=1)
+
+
+def test_memory_circuit_rejects_an_observable_that_disagrees_with_the_code() -> None:
+    built = build_memory_circuit(RepetitionCode(3), rounds=3)
+    (observable,) = built.observables.observables
+    incoherent = LogicalObservable(
+        index=0,
+        pauli=Pauli(z_wires=(99,)),
+        measurement_parity=(MeasurementRef(None, 99),),
+    )
+
+    with pytest.raises(ValueError, match="declared logical observable"):
+        MemoryCircuit(
+            code=built.code,
+            rounds=built.rounds,
+            source=built.source,
+            detectors=built.detectors,
+            observables=ObservableLayout((incoherent,)),
+        )
+    assert observable.pauli == Pauli(z_wires=(0, 1, 2))
+
+
+def test_memory_circuit_rejects_an_observable_readout_on_an_undeclared_wire() -> None:
+    built = build_memory_circuit(RepetitionCode(3), rounds=3)
+    incoherent = LogicalObservable(
+        index=0,
+        pauli=Pauli(z_wires=(0, 1, 99)),
+        measurement_parity=(
+            MeasurementRef(None, 0),
+            MeasurementRef(None, 1),
+            MeasurementRef(None, 99),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="declared data wire"):
+        MemoryCircuit(
+            code=_RogueLogicalCode(),
+            rounds=built.rounds,
+            source=built.source,
+            detectors=built.detectors,
+            observables=ObservableLayout((incoherent,)),
+        )
 
 
 def test_public_namespace_publishes_the_code_independent_layer() -> None:

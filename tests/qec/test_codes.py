@@ -179,6 +179,16 @@ def test_check_rejects_an_identity_stabilizer_with_cnots() -> None:
         )
 
 
+def test_check_rejects_an_x_type_stabilizer() -> None:
+    with pytest.raises(ValueError, match="Z-type"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(x_wires=(0, 1)),
+            ancilla_wire=2,
+            cnot_wires=((0, 2), (1, 2)),
+        )
+
+
 def test_public_namespace_publishes_the_code_records() -> None:
     import flagquantum.qec as qec
 
