@@ -19,19 +19,29 @@
 # floor below the global floor still earns its place, because the global floor is
 # an aggregate that a well-covered directory can carry on its own.
 #
+# `ecosystem.qiskit` is the one exception to that reading. At 31.6% it is not
+# outstanding work: the coverage job excludes the `qiskit` marker because
+# Qiskit's native libraries cannot be loaded in that process at all (see the
+# note in `docs/development/TESTING.md`), so the measurement only ever sees the
+# module import and a floor here would be measuring the exclusion, not the code.
+# Its tests run in full in the `qiskit-optional` job, which does not measure
+# coverage.
+#
 # The floors were last set on 2026-09-17 at five points below the measured value,
-# which the coverage job reported as 81.7% globally, so an unrelated refactor has
+# which the coverage job reported as 81.9% globally, so an unrelated refactor has
 # room to move while a real regression fails. Raise a floor when the measured
 # coverage grows past it; a floor may not be lowered without replacing the
 # coverage it gave up.
 #
-# The `jax` subpackages are covered only while their tests stay selected by the
-# `jax` marker (see the coverage job's marker expression), so their floors also
-# guard the marker wiring itself: a test file that loses its marker drops the
-# package below its floor instead of quietly leaving the measurement. The same
-# holds for every entry: a test that loses its marker, or is added without one,
-# leaves the measurement — `tests/unit/test_test_reachability_policy.py` rejects
-# that, and these floors are the second line of defence.
+# The `jax` and `pennylane` subpackages are covered only while their tests stay
+# selected by the coverage job (see its install line and marker expression), so
+# their floors also guard that wiring: a test file that loses its marker, or an
+# extra dropped from the install line, lets every one of its tests skip and drops
+# the package below its floor instead of quietly leaving the measurement. The
+# same holds for every entry: a test that loses its marker, or is added without
+# one, leaves the measurement — `tests/unit/test_test_reachability_policy.py`
+# rejects that, `tests/unit/test_coverage_lane_dependency_policy.py` rejects the
+# install-line half, and these floors are the second line of defence.
 
 schema = "flagquantum_coverage_policy_v1"
 
@@ -69,6 +79,9 @@ min = 83
 
 [packages."ecosystem.extensions"]
 min = 82
+
+[packages."ecosystem.pennylane"]
+min = 85
 
 [packages.experimental]
 min = 91

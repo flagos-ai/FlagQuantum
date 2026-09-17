@@ -95,14 +95,33 @@ fails if a file is added without one.
 | `gpu` | CUDA, vendor, or accelerator device. | Device-specific execution for the covered test. | Distributed semantics unless paired with distributed markers. |
 | `distributed` | Umbrella marker for distributed planning, runtime, or evidence tests. | The test touches distributed behavior in some form. | Which environment is required; use `distributed_cpu`, `distributed_accel`, or `distributed_multinode` for CI policy. |
 | `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
-| `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
-| `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes. | The IR-only contract and complex128 QuantumScript semantics. | Hardware submission, or that PennyLane is a core dependency. |
+| `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
+| `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract and complex128 QuantumScript semantics. | Hardware submission, or that PennyLane is a core dependency. |
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
-`jax` is the only optional-integration marker named by the coverage job; the
-qiskit and pennylane suites run in their own jobs so the core matrix never
-installs them, and the braket suite needs no extra.
+The coverage job installs `jax` and `pennylane` because its marker expression
+selects their suites, and installs neither `qiskit` nor `braket`: the braket
+tests need no extra, and Qiskit's native libraries cannot be loaded in that
+process at all. `qiskit/_accelerate.abi3.so` raises `ImportError: cannot
+allocate memory in static TLS block` once the rest of the test tree has been
+imported, and importing it first only moves the failure to
+`qiskit_aer.libs/libgomp-*.so`. pytest reports that as a collection error, which
+aborts the lane outright, so the expression excludes the marker and the
+`qiskit-optional` job remains the lane that runs those tests.
+
+That exclusion reaches the tests that probe Qiskit inside the test body. Three
+files gate the whole module on `importorskip`, which fires during import and
+before the marker filter, so each still records one module-level skip naming its
+cause. A self-describing skip costs nothing; the failure worth guarding against
+is a whole package measuring far below what its suite covers because every one
+of its tests skipped, which is what `pennylane` was doing at 43.4%.
+
+The install line and the marker expression are two halves of one job and are
+maintained separately, so a missing extra is swallowed as a skip.
+`tests/unit/test_coverage_lane_dependency_policy.py` checks them against each
+other: add an extra to the install line, or take its marker out of the
+expression, but do not let the skip absorb the difference.
 
 ## Test Tiers
 
