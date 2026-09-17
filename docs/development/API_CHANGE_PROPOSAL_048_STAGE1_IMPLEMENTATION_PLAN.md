@@ -1600,7 +1600,7 @@ Expected: every command exits 0 with no error list. `docs_source_of_truth` and `
 docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:viz bash -lc "python -m pip install -e . --no-deps -q && python -m pytest -m 'smoke or unit or integration or jax' --cov=flagquantum --cov-report=xml -q && python tools/check_coverage.py"
 ```
 
-Expected: the global floor is 75 and `packages.qec` has a floor of 82. Report the measured global rate and the measured `qec` rate verbatim in the task summary. If `packages.qec` falls below 82, add tests to the new modules rather than lowering the floor. This run is long; if it does not finish within the command timeout, report that it did not finish and give the per-file numbers from `python -m pytest tests/qec --cov=flagquantum.qec --cov-report=term-missing -q` instead, clearly labeled as a partial measurement.
+Expected: the global floor is 76 and `packages.qec` has a floor of 82. Report the measured global rate and the measured `qec` rate verbatim in the task summary. If `packages.qec` falls below 82, add tests to the new modules rather than lowering the floor. This run is long; if it does not finish within the command timeout, report that it did not finish and give the per-file numbers from `python -m pytest tests/qec --cov=flagquantum.qec --cov-report=term-missing -q` instead, clearly labeled as a partial measurement.
 
 - [ ] **Step 3: Confirm the frozen surface is untouched**
 
