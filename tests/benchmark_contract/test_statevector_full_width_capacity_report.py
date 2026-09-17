@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.benchmark_contract
+
 SCRIPT = Path("benchmarks/statevector_full_width_capacity_report.py")
 SPEC = importlib.util.spec_from_file_location(
     "statevector_full_width_capacity_report", SCRIPT

@@ -4,6 +4,8 @@ from typing import Any
 
 import pytest
 
+pytestmark = pytest.mark.benchmark_contract
+
 SCRIPT = Path("flagquantum/benchmarking/statevector_scaling_report.py")
 SPEC = importlib.util.spec_from_file_location("statevector_scaling_report", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
+
 import flagquantum as fq
 from tools.docs_source_of_truth import capability_api_is_available
+
+pytestmark = pytest.mark.unit
 
 
 def test_experimental_capability_api_must_be_importable_and_scoped() -> None:

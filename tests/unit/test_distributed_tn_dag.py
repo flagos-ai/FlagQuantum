@@ -93,6 +93,8 @@ from flagquantum.simulation.tensor_network.entrypoints import (
 )
 from flagquantum.simulation.tensor_network.models import TensorNetworkContractionPlan
 
+pytestmark = pytest.mark.unit
+
 
 def _plan() -> TensorNetworkContractionPlan:
     circuit = fq.Circuit(4)

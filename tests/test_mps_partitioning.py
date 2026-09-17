@@ -9,6 +9,8 @@ from flagquantum.runtime.executors.mps.state import (
     validate_mps_ownership,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def test_communication_aware_ownership_avoids_hot_cuts_with_bounded_load():
     bonds = (1, *([64] * 63), 1)

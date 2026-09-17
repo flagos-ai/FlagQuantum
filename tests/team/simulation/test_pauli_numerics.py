@@ -10,6 +10,8 @@ from flagquantum.simulation.pauli import (
     pauli_product_statevector_expectation,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_pauli_product_matches_for_statevector_density_and_dense_operator() -> None:
     state = torch.tensor(

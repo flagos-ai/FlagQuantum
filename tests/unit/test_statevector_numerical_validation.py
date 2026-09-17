@@ -12,6 +12,8 @@ from flagquantum.core.numerics import (
 )
 from flagquantum.runtime.numerical_validation import certify_statevector_local_p0
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("dtype", ["complex64", "complex128"])
 def test_default_statevector_contracts_match_native_dtype(dtype: str) -> None:

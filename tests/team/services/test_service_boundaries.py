@@ -5,6 +5,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 ROOT = Path(__file__).resolve().parents[3]
 SERVICE_PATHS = (ROOT / "flagquantum" / "services" / "preflight.py",)
 

@@ -1,5 +1,6 @@
 """Focused contracts for application-level preflight workflows."""
 
+import pytest
 import torch
 
 import flagquantum as fq
@@ -10,6 +11,8 @@ from flagquantum.services import (
     preflight_deployment,
     preflight_execution,
 )
+
+pytestmark = pytest.mark.integration
 
 
 def test_execution_preflight_is_machine_readable() -> None:

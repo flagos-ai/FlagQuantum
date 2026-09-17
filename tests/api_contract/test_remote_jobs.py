@@ -10,6 +10,8 @@ from flagquantum.errors import CapabilityError, ExecutionError
 from flagquantum.remote import jobs
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
+pytestmark = pytest.mark.unit
+
 
 class Transport:
     def __init__(self):

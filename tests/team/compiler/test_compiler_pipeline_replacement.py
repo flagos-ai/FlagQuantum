@@ -9,6 +9,8 @@ import flagquantum as fq
 import flagquantum.runtime.planner as runtime_planner
 from flagquantum.core.ir import CircuitIR, ensure_circuit_ir
 
+pytestmark = pytest.mark.unit
+
 
 def test_runtime_accepts_a_replacement_compiler_without_consumer_changes(
     monkeypatch: pytest.MonkeyPatch,

@@ -15,6 +15,8 @@ from flagquantum.simulation.mps.static import (
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
+pytestmark = pytest.mark.unit
+
 
 def test_static_bond_profile_and_zero_state():
     program = StaticMPSProgram.compile(8, 16)

@@ -9,6 +9,8 @@ from flagquantum.runtime.executors.mps.factorization import (
     MPSFactorizationMemoryError,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_factorization_workspace_pool_reuses_released_shape():
     pool = FactorizationWorkspacePool(maximum_bytes=1024)

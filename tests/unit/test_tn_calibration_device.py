@@ -13,6 +13,8 @@ from flagquantum.simulation.tensor_network.models import (
     TensorNetworkSlicingPlan,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize("calibrated", (False, True))
 @pytest.mark.parametrize("device_available", (False, True))

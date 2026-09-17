@@ -8,6 +8,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.integration
+
 
 def _payload() -> dict[str, object]:
     return {

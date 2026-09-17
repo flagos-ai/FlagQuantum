@@ -77,6 +77,10 @@ python -m pytest tests/benchmark_contract -q
 
 ## Marker Reference
 
+Every test file carries at least one of the markers below, so a marker-selection
+command selects the whole file set it names; `tests/unit/test_marker_seeding_policy.py`
+fails if a file is added without one.
+
 | Marker | Runtime Environment | Proves | Does Not Prove |
 | --- | --- | --- | --- |
 | `smoke` | Fast local CPU; no subprocess, GPU, or benchmark run. | Importability, minimal `fq.Circuit`, expectation, and autograd health. | Planner completeness, distributed semantics, performance, or release readiness. |

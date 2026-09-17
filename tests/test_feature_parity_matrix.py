@@ -2,6 +2,10 @@
 
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_feature_parity_matrix_indexes_authoritative_capability_sources():
     root = Path(__file__).resolve().parents[1]

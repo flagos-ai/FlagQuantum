@@ -7,6 +7,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.twin import TwinEvidenceEnvelope
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {

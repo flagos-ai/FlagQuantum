@@ -1,4 +1,8 @@
+import pytest
+
 from flagquantum.benchmarking.statevector_local import SCHEMA, run_benchmark
+
+pytestmark = pytest.mark.benchmark_contract
 
 
 def test_local_statevector_performance_payload_is_correct_and_fail_closed():

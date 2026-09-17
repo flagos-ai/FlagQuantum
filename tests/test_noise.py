@@ -45,6 +45,8 @@ from flagquantum.simulation.density_matrix import (
     expectation_z_density,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def test_batched_statevector_trajectory_is_batch_size_invariant():
     circuit = fq.Circuit(2).h(0).cx(0, 1)

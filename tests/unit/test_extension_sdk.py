@@ -26,6 +26,8 @@ from flagquantum.ecosystem.extensions.conformance import (
     run_provider_conformance,
 )
 
+pytestmark = pytest.mark.unit
+
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "examples/extensions/reference_extensions.py"
 SPEC = importlib.util.spec_from_file_location("reference_extensions", REFERENCE_PATH)

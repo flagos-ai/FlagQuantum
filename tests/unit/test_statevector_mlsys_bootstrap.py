@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from benchmarks.statevector_mlsys_bootstrap import (
     bootstrap_median,
     bootstrap_ratio,
     build_report,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_bootstrap_median_and_ratio_are_deterministic() -> None:

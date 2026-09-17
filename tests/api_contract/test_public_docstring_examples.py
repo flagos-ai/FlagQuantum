@@ -2,7 +2,11 @@
 
 import doctest
 
+import pytest
+
 import flagquantum as fq
+
+pytestmark = pytest.mark.unit
 
 
 def test_primary_public_docstring_examples() -> None:

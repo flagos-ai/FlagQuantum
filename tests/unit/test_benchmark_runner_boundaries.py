@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 ROOT = Path(__file__).parents[2]
 RUNNERS = ROOT / "benchmarks" / "runners"
 

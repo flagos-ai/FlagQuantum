@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples" / "single_machine_quantum_ai"
 

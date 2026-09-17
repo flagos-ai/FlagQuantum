@@ -15,6 +15,8 @@ from benchmarks.runners.tn.tn_gap_common import (
     write_workload,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _result(backend: str, identity: str, *, status: str = "completed") -> dict:
     return {

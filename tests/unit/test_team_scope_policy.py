@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from tools.check_team_scope import load_policy, owner_for, policy_errors, scope_errors
+
+pytestmark = pytest.mark.unit
 
 
 def test_team_ownership_policy_is_valid_and_complete() -> None:

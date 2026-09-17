@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 TIERED_MARKERS = {
     "smoke",
     "unit",

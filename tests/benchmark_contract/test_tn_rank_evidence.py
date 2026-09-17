@@ -1,5 +1,9 @@
+import pytest
+
 from benchmarks.runners.tn.tn_sliced_reverse_nccl import _audit_evidence_fields
 from flagquantum.runtime.audit import audit_distributed_scalability
+
+pytestmark = pytest.mark.benchmark_contract
 
 
 def _rank(rank: int) -> dict[str, object]:

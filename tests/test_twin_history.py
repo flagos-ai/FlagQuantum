@@ -8,6 +8,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.integration
+
 
 def _twin(*, captured_at: str, t1: float, backend: str = "Shenglian"):
     chip_info = {

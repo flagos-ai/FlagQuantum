@@ -1,5 +1,9 @@
+import pytest
+
 import flagquantum as fq
 from flagquantum.drawer import draw
+
+pytestmark = pytest.mark.integration
 
 
 def test_draw_accepts_native_circuit_and_ir():

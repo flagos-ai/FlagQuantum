@@ -5,6 +5,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.remote import DeploymentResult, ProviderTaskHandle
 
+pytestmark = pytest.mark.unit
+
 
 def test_fq_compile_uses_builtin_compiler_by_default():
     source = fq.Circuit(2).h(0).cx(0, 1)

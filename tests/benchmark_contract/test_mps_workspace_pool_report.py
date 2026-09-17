@@ -1,7 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from benchmarks.audit_results import audit_paths
+
+pytestmark = pytest.mark.benchmark_contract
 
 REPORT = Path(
     "benchmarks/results/smoke/release_candidates/" "mps_workspace_pool/summary.json"

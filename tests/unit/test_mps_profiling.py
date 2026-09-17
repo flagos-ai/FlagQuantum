@@ -12,6 +12,8 @@ from flagquantum.runtime.executors.mps.profiling import (
 from flagquantum.simulation.mps.factorization import _split_pair_matrix
 from flagquantum.simulation.mps.models import MPSConfig
 
+pytestmark = pytest.mark.unit
+
 
 def _rank(rank, forward, reverse, optimizer, total):
     return {

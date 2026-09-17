@@ -8,6 +8,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
+pytestmark = pytest.mark.unit
+
 
 class Transport:
     def __init__(self):

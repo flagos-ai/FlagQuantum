@@ -9,6 +9,8 @@ import torch
 import flagquantum as fq
 from flagquantum.testing import InMemoryRemoteTarget
 
+pytestmark = pytest.mark.unit
+
 
 class _QuafuTestTarget(InMemoryRemoteTarget):
     provider = "quafu"

@@ -8,6 +8,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info(*, captured_at: str = "2026-08-14 10:30:00"):
     return {

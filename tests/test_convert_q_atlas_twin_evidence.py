@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 def _module():
     path = Path(__file__).parents[1] / "tools/convert_q_atlas_twin_evidence.py"

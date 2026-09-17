@@ -1,4 +1,8 @@
+import pytest
+
 from flagquantum.benchmarking.environment_probe import build_payload
+
+pytestmark = pytest.mark.unit
 
 
 def test_environment_probe_has_runner_schema(monkeypatch):

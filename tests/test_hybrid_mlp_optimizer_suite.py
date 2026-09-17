@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from benchmarks.hybrid_mlp_quantum_optimizer_suite import (
@@ -6,6 +7,8 @@ from benchmarks.hybrid_mlp_quantum_optimizer_suite import (
     parameter_features,
     run_method,
 )
+
+pytestmark = pytest.mark.integration
 
 
 def test_mlp_conditioner_starts_as_identity_and_aligns_with_hva():

@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from flagquantum.core._artifacts import ArtifactKind, ProgramArtifact
 from flagquantum.core.ir import CircuitIR, Instruction
+
+pytestmark = pytest.mark.unit
 
 
 def test_architecture_contract_declares_independent_domains() -> None:

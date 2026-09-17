@@ -5,6 +5,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.remote import quafu_noise_model_from_chip_info
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {

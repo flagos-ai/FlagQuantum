@@ -1,4 +1,8 @@
+import pytest
+
 from benchmarks.statevector_single_node_training import _classify_capacity_outcome
+
+pytestmark = pytest.mark.benchmark_contract
 
 
 def test_expected_oom_is_explicit_capacity_failure() -> None:

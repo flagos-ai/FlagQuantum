@@ -1,7 +1,11 @@
 import json
 from copy import deepcopy
 
+import pytest
+
 from benchmarks.statevector_gate2_report import build_report
+
+pytestmark = pytest.mark.unit
 
 
 def test_gate2_report_passes_only_matched_isolated_evidence(tmp_path):

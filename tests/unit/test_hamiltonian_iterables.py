@@ -1,8 +1,11 @@
 """Hamiltonian construction accepts one-shot wire iterables without losing order."""
 
+import pytest
 import torch
 
 from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
+
+pytestmark = pytest.mark.unit
 
 
 def test_hamiltonian_term_consumes_wire_generator_once() -> None:

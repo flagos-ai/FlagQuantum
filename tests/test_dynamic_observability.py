@@ -7,6 +7,8 @@ import flagquantum as fq
 from benchmarks.dynamic_trajectory import run_benchmark
 from flagquantum.dynamic import DynamicCircuit
 
+pytestmark = pytest.mark.integration
+
 
 def _feedback_circuit(*, bsz: int = 1) -> DynamicCircuit:
     circuit = DynamicCircuit(2, bsz=bsz)

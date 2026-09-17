@@ -5,6 +5,8 @@ import torch
 
 from flagquantum.noise import CorrelatedReadoutError, NoiseModel, ReadoutError
 
+pytestmark = pytest.mark.unit
+
 
 def test_restored_correlated_readout_rejects_inconsistent_wire_count() -> None:
     probabilities = tuple(tuple(row) for row in torch.eye(4).tolist())

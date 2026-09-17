@@ -10,6 +10,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.integration
+
 _CIRCUIT_IDENTITY = fq.Circuit(2).h(0).cx(0, 1).to_ir().content_hash
 
 

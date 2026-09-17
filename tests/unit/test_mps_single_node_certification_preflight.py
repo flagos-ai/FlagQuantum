@@ -1,8 +1,12 @@
+import pytest
+
 from tools.check_mps_single_node_certification_environment import (
     build_payload,
     certification_commands,
     readiness_errors,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_mps_certification_preflight_accepts_complete_environment() -> None:

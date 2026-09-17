@@ -1,8 +1,12 @@
+import pytest
+
 from benchmarks.statevector_exchange_overlap import (
     SCHEMA,
     _paired_improvement,
     validate_overlap_payload,
 )
+
+pytestmark = pytest.mark.benchmark_contract
 
 
 def _payload():

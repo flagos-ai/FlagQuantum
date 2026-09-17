@@ -9,6 +9,8 @@ import pytest
 from flagquantum.benchmarking import registry
 from flagquantum.benchmarking.registry import describe, names, register, resolve
 
+pytestmark = pytest.mark.unit
+
 ROOT = Path(__file__).parents[2]
 
 

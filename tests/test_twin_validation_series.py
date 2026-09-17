@@ -15,6 +15,8 @@ from flagquantum.remote.qpu import (
 )
 from flagquantum.twin import TwinExperiment, TwinValidationSeries
 
+pytestmark = pytest.mark.integration
+
 
 def _chip_info():
     return {
