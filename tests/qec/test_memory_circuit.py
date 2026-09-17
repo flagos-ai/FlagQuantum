@@ -356,3 +356,25 @@ def test_logical_observable_rejects_a_readout_outside_the_operator_support() -> 
 def test_builder_rejects_a_code_without_checks() -> None:
     with pytest.raises(ValueError, match="at least one check"):
         build_memory_circuit(_ChecklessCode(), rounds=1)
+
+
+def test_public_namespace_publishes_the_code_independent_layer() -> None:
+    import flagquantum.qec as qec
+
+    expected = (
+        "CodeCheck",
+        "Detector",
+        "DetectorLayout",
+        "LogicalObservable",
+        "MeasurementRef",
+        "MemoryCircuit",
+        "ObservableLayout",
+        "Pauli",
+        "RepetitionCode",
+        "StabilizerCode",
+        "build_memory_circuit",
+    )
+    missing = [name for name in expected if not hasattr(qec, name)]
+    assert not missing, f"flagquantum.qec is missing {missing}"
+    for name in expected:
+        assert name in qec.__all__, f"{name} is not in flagquantum.qec.__all__"

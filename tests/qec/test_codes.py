@@ -177,3 +177,13 @@ def test_check_rejects_an_identity_stabilizer_with_cnots() -> None:
             ancilla_wire=2,
             cnot_wires=((0, 2), (1, 2)),
         )
+
+
+def test_public_namespace_publishes_the_code_records() -> None:
+    import flagquantum.qec as qec
+
+    expected = ("CodeCheck", "Pauli", "RepetitionCode", "StabilizerCode")
+    missing = [name for name in expected if not hasattr(qec, name)]
+    assert not missing, f"flagquantum.qec is missing {missing}"
+    for name in expected:
+        assert name in qec.__all__, f"{name} is not in flagquantum.qec.__all__"
