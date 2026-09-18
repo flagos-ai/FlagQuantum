@@ -21,9 +21,11 @@ that merging identical signatures yields the right marginals.
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from numbers import Integral, Real
+
+import torch
 
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
@@ -132,6 +134,56 @@ class DetectorErrorModel:
                     raise ValueError(
                         f"observable index {index} is outside the model shape"
                     )
+
+    def detector_error_matrix(self) -> torch.Tensor:
+        """Return the ``(num_detectors, num_errors)`` parity matrix.
+
+        Entry ``[d, e]`` is one when error ``e`` flips detector ``d``. The
+        orientation matches the stim ecosystem's detector error matrix.
+        """
+
+        matrix = torch.zeros((self.num_detectors, self.num_errors), dtype=torch.int8)
+        for column, error in enumerate(self.errors):
+            for index in error.detectors:
+                matrix[index, column] = 1
+        return matrix
+
+    def observables_flips_matrix(self) -> torch.Tensor:
+        """Return the ``(num_observables, num_errors)`` parity matrix.
+
+        Entry ``[o, e]`` is one when error ``e`` flips observable ``o``.
+        """
+
+        matrix = torch.zeros((self.num_observables, self.num_errors), dtype=torch.int8)
+        for column, error in enumerate(self.errors):
+            for index in error.observables:
+                matrix[index, column] = 1
+        return matrix
+
+    def _marginal_rates(
+        self, count: int, select: Callable[[DemError], tuple[int, ...]]
+    ) -> torch.Tensor:
+        rates = torch.zeros((count,), dtype=torch.float64)
+        if count == 0:
+            return rates
+        complements = torch.ones((count,), dtype=torch.float64)
+        for error in self.errors:
+            factor = 1.0 - 2.0 * error.probability
+            for index in select(error):
+                complements[index] *= factor
+        return (1.0 - complements) / 2.0
+
+    def detector_rates(self) -> torch.Tensor:
+        """Return the exact marginal flip probability of every detector."""
+
+        return self._marginal_rates(self.num_detectors, lambda error: error.detectors)
+
+    def observable_rates(self) -> torch.Tensor:
+        """Return the exact marginal flip probability of every observable."""
+
+        return self._marginal_rates(
+            self.num_observables, lambda error: error.observables
+        )
 
     @property
     def num_errors(self) -> int:
