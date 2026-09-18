@@ -165,6 +165,7 @@ class DetectorErrorModel:
     ) -> torch.Tensor:
         rates = torch.zeros((count,), dtype=torch.float64)
         if count == 0:
+            # Reachable only for ``num_observables == 0``; detectors are never zero.
             return rates
         complements = torch.ones((count,), dtype=torch.float64)
         for error in self.errors:

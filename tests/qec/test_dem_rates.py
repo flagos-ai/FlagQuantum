@@ -17,27 +17,37 @@ def _model(*errors: DemError, detectors: int = 4, observables: int = 1):
 
 
 def test_detector_matrix_orientation_and_values() -> None:
+    """Row is the detector, column the error, for every index in the model.
+
+    Detector index 2 exceeds the column count, so an implementation that wrote
+    ``matrix[column, index]`` would raise ``IndexError`` rather than happen to
+    land on the same cells.
+    """
+
     model = _model(
-        DemError(probability=0.1, detectors=(0, 1), observables=(0,)),
+        DemError(probability=0.1, detectors=(0, 2), observables=(0,)),
         DemError(probability=0.2, detectors=(1,), observables=()),
         detectors=3,
     )
     matrix = model.detector_error_matrix()
     assert matrix.shape == (3, 2)
     assert matrix.dtype == torch.int8
-    assert matrix.tolist() == [[1, 0], [1, 1], [0, 0]]
+    assert matrix.tolist() == [[1, 0], [0, 1], [1, 0]]
 
 
 def test_observable_matrix_orientation_and_values() -> None:
+    """Row is the observable, column the error, for every index in the model."""
+
     model = _model(
-        DemError(probability=0.1, detectors=(0,), observables=(0,)),
+        DemError(probability=0.1, detectors=(0,), observables=(2,)),
         DemError(probability=0.2, detectors=(1,), observables=()),
         detectors=3,
+        observables=3,
     )
     matrix = model.observables_flips_matrix()
-    assert matrix.shape == (1, 2)
+    assert matrix.shape == (3, 2)
     assert matrix.dtype == torch.int8
-    assert matrix.tolist() == [[1, 0]]
+    assert matrix.tolist() == [[0, 0], [0, 0], [1, 0]]
 
 
 def test_empty_model_has_empty_matrices() -> None:
@@ -122,8 +132,25 @@ def test_observable_rate_ignores_detector_only_errors() -> None:
     assert model.observable_rates().tolist() == pytest.approx([0.2])
 
 
+def test_observable_index_selects_its_own_row_and_rate() -> None:
+    """Each observable index is addressed on its own, not merely "some" one.
+
+    With two logical observables an implementation that collapsed the axis to
+    index zero would put both entries and both rates in slot zero.
+    """
+
+    model = _model(
+        DemError(probability=0.1, detectors=(0,), observables=(0,)),
+        DemError(probability=0.2, detectors=(0,), observables=(1,)),
+        detectors=1,
+        observables=2,
+    )
+    assert model.observables_flips_matrix().tolist() == [[1, 0], [0, 1]]
+    assert model.observable_rates().tolist() == pytest.approx([0.1, 0.2])
+
+
 def test_observable_rates_are_empty_without_observables() -> None:
-    """A model may declare no observable, and the empty early return is typed."""
+    """An observable-free model returns a typed empty tensor."""
 
     model = _model(
         DemError(probability=0.1, detectors=(0,), observables=()),
@@ -133,3 +160,4 @@ def test_observable_rates_are_empty_without_observables() -> None:
     rates = model.observable_rates()
     assert rates.shape == (0,)
     assert rates.dtype == torch.float64
+    assert model.observables_flips_matrix().shape == (0, 1)
