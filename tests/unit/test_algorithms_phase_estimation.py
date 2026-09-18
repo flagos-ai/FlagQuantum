@@ -59,7 +59,9 @@ def _estimate(phase: float, n_counting_wires: int) -> float:
     spec = PhaseEstimationSpec(n_counting_wires=n_counting_wires, n_evaluation_wires=1)
     generator = torch.Generator().manual_seed(20260918)
     counts = circuit.counts(64, generator=generator, format="bin")[0]
-    return spec.phase_from_counts(counts)
+    # ``counts`` is keyed by ``str | int`` because the format is chosen at call time; the
+    # bit-string form is the one this spec reads, so narrow it here rather than at the call.
+    return spec.phase_from_counts({str(key): value for key, value in counts.items()})
 
 
 def test_the_fake_satisfies_the_protocol() -> None:
@@ -162,6 +164,28 @@ def test_append_phase_estimation_rejects_a_permuted_counting_register() -> None:
             evaluation_wires=[3],
         )
     assert _estimate(0.125, 3) == pytest.approx(0.125)
+
+
+def test_a_counting_register_that_is_not_the_leading_block_is_refused() -> None:
+    """The readout reads the register's first bits, so counting must start at wire 0."""
+    with pytest.raises(ValueError):
+        append_phase_estimation(
+            Circuit(3),
+            unitary=_PhaseGate(0.25),
+            counting_wires=[1, 2],
+            evaluation_wires=[0],
+        )
+
+
+def test_an_empty_counting_register_is_refused() -> None:
+    """A counting register with no wires has no resolution to offer."""
+    with pytest.raises(ValueError):
+        append_phase_estimation(
+            Circuit(1),
+            unitary=_PhaseGate(0.25),
+            counting_wires=[],
+            evaluation_wires=[0],
+        )
 
 
 def test_phase_estimation_circuit_rejects_zero_counting_wires() -> None:

@@ -64,7 +64,11 @@ class PhaseEstimationSpec:
 
     @property
     def success_probability(self) -> float:
-        """The baseline probability that the counting register reads the nearest phase."""
+        """The baseline lower bound on reading the nearest phase, ``4/pi**2``.
+
+        The bound is over every phase the circuit may be asked to resolve, not the value
+        for any one instance.
+        """
         return 4 / math.pi**2
 
     def phase_from_counts(self, counts: Mapping[str, int]) -> float:
@@ -110,27 +114,30 @@ def append_phase_estimation(
 
     The counting wires carry the uniform superposition and take the controlled powers of
     ``unitary``; the evaluation wires carry the operator's eigenstate, which the caller
-    prepares. The counting wires come first in the register, so they are its most
-    significant bits.
+    prepares. The counting wires must be the register's leading block, starting at wire 0,
+    so that they are both its most significant bits and the bits the readout reads first.
 
     Args:
         circuit: The circuit to extend.
         unitary: The operator whose eigenphase is estimated.
-        counting_wires: The wires of the counting register, most significant first.
+        counting_wires: The wires of the counting register, ``0`` upward in significance
+            order.
         evaluation_wires: The wires the operator acts on.
 
     Raises:
-        ValueError: If ``counting_wires`` repeats a wire or is not in increasing order,
-            if ``evaluation_wires`` does not carry ``unitary.n_wires`` wires, or if the
-            two registers share a wire.
+        ValueError: If ``counting_wires`` is empty, repeats a wire, or is not the leading
+            block ``0..len(counting_wires)-1``; if ``evaluation_wires`` does not carry
+            ``unitary.n_wires`` wires; or if the two registers share a wire.
     """
     counting = list(counting_wires)
     evaluation = list(evaluation_wires)
+    if not counting:
+        raise ValueError("the counting register needs at least one wire, got 0")
     if len(set(counting)) != len(counting):
         raise ValueError("counting wires must be distinct")
-    if counting != sorted(counting):
+    if counting != list(range(len(counting))):
         raise ValueError(
-            "counting wires must be in increasing order of significance; "
+            "counting wires must be the leading block of the register, starting at wire 0; "
             f"got {counting!r}"
         )
     if len(evaluation) != unitary.n_wires:
