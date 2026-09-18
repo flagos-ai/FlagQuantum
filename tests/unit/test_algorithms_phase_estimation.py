@@ -152,6 +152,18 @@ def test_append_phase_estimation_validates_its_wires() -> None:
         )
 
 
+def test_append_phase_estimation_rejects_a_permuted_counting_register() -> None:
+    """A non-ascending order would read the phase against reversed significance."""
+    with pytest.raises(ValueError):
+        append_phase_estimation(
+            Circuit(4),
+            unitary=_PhaseGate(0.125),
+            counting_wires=[2, 1, 0],
+            evaluation_wires=[3],
+        )
+    assert _estimate(0.125, 3) == pytest.approx(0.125)
+
+
 def test_phase_estimation_circuit_rejects_zero_counting_wires() -> None:
     """A counting register with no wires has no resolution to offer."""
     with pytest.raises(ValueError):

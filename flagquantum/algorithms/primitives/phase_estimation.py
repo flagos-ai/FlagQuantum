@@ -120,13 +120,19 @@ def append_phase_estimation(
         evaluation_wires: The wires the operator acts on.
 
     Raises:
-        ValueError: If ``counting_wires`` repeats a wire, if ``evaluation_wires`` does not
-            carry ``unitary.n_wires`` wires, or if the two registers share a wire.
+        ValueError: If ``counting_wires`` repeats a wire or is not in increasing order,
+            if ``evaluation_wires`` does not carry ``unitary.n_wires`` wires, or if the
+            two registers share a wire.
     """
     counting = list(counting_wires)
     evaluation = list(evaluation_wires)
     if len(set(counting)) != len(counting):
         raise ValueError("counting wires must be distinct")
+    if counting != sorted(counting):
+        raise ValueError(
+            "counting wires must be in increasing order of significance; "
+            f"got {counting!r}"
+        )
     if len(evaluation) != unitary.n_wires:
         raise ValueError(
             f"the operator acts on {unitary.n_wires} wires, "
