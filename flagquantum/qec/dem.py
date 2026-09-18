@@ -90,12 +90,24 @@ class DemError:
             )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class DemSample:
-    """Sampled detector and observable flips from a detector error model."""
+    """Sampled detector and observable flips from a detector error model.
+
+    Equality compares the tensors by content, and instances are deliberately
+    unhashable: the generated comparison would ask ``bool()`` of a tensor and
+    the generated hash would not agree with a content comparison.
+    """
 
     detectors: torch.Tensor
     observables: torch.Tensor
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DemSample):
+            return NotImplemented
+        return torch.equal(self.detectors, other.detectors) and torch.equal(
+            self.observables, other.observables
+        )
 
     @property
     def shots(self) -> int:

@@ -59,6 +59,29 @@ def test_different_seeds_differ() -> None:
     )
 
 
+def test_samples_compare_by_tensor_content() -> None:
+    """Two samples with the same content are equal, and the record is unhashable.
+
+    The comparison has to be by value: an equality that fell through to
+    ``bool(tensor)`` would raise ``RuntimeError`` on any multi-element field
+    instead of answering, and a hash that disagreed with equality would be
+    worse than no hash at all.
+    """
+
+    model = _model(
+        DemError(probability=0.5, detectors=(0,), observables=(0,)), detectors=2
+    )
+    first = model.dem_sampling(shots=32, seed=5)
+    same = model.dem_sampling(shots=32, seed=5)
+    other = model.dem_sampling(shots=32, seed=6)
+    assert first == same
+    assert not (first == other)
+    assert first != other
+    assert (first == "not a sample") is False
+    with pytest.raises(TypeError, match="unhashable type"):
+        hash(first)
+
+
 def test_an_error_free_model_never_flips() -> None:
     model = DetectorErrorModel(num_detectors=3, num_observables=1, errors=())
     sample = model.dem_sampling(shots=8, seed=0)
@@ -124,3 +147,38 @@ def test_bool_shots_are_rejected() -> None:
     )
     with pytest.raises(TypeError, match="shots must be a positive integer"):
         model.dem_sampling(shots=True, seed=0)
+
+
+def test_shots_must_be_keyword_only() -> None:
+    """``shots`` is keyword-only, so a positional call does not reach the guard."""
+
+    model = _model(
+        DemError(probability=0.1, detectors=(0,), observables=()), detectors=1
+    )
+    with pytest.raises(TypeError, match="positional argument"):
+        model.dem_sampling(8)
+
+
+@pytest.mark.parametrize("seed", [True, 1.5])
+def test_seed_must_be_an_integer_or_none(seed: object) -> None:
+    """A ``bool`` seed is a rejected seed here, not a value of one."""
+
+    model = _model(
+        DemError(probability=0.1, detectors=(0,), observables=()), detectors=1
+    )
+    with pytest.raises(TypeError, match="seed must be an integer or None"):
+        model.dem_sampling(shots=4, seed=seed)
+
+
+def test_a_model_without_observables_samples_an_empty_column() -> None:
+    """``num_observables == 0`` yields a ``(shots, 0)`` column, not a 1-wide one."""
+
+    model = _model(
+        DemError(probability=1.0, detectors=(0, 1)), detectors=2, observables=0
+    )
+    sample = model.dem_sampling(shots=8, seed=0)
+    assert sample.detectors.shape == (8, 2)
+    assert sample.observables.shape == (8, 0)
+    assert sample.observables.dtype == torch.int8
+    assert sample.shots == 8
+    assert int(sample.detectors.sum()) == 16
