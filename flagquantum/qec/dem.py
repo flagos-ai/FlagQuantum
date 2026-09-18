@@ -99,6 +99,8 @@ def _parse_error_line(line: str) -> DemError:
             observables.append(observable)
         else:
             raise ValueError(f"error targets must be D or L indices, not {token!r}")
+    # ``DemError`` re-checks this in its own constructor; refusing here as well
+    # fails at the parse site, where the offending line is still in hand.
     if not detectors and not observables:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
@@ -417,6 +419,15 @@ class DetectorErrorModel:
         error mentions would accept a text that had lost its trailing detectors,
         so a text without a ``detector`` declaration is refused by the
         constructor instead.
+
+        This reader handles the format :meth:`to_stim_text` emits and
+        hand-written text in the same style, not stim text in general. The
+        declarations must be complete and consecutive from zero, ``#`` comments
+        are not accepted, and the shape comes only from the declarations, which
+        real stim does not fully state: it emits ``shift_detectors`` and no
+        ``logical_observable`` line, so both are refused here. What
+        :meth:`to_stim_text` writes is valid stim, but this method does not read
+        everything stim writes.
         """
 
         num_detectors, num_observables, errors = _parse_stim_text(text)

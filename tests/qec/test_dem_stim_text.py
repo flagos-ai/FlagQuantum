@@ -77,13 +77,44 @@ def test_parses_coordinate_declarations() -> None:
 
 
 def test_rejects_an_unsupported_instruction() -> None:
-    with pytest.raises(ValueError, match="shift_detectors"):
+    with pytest.raises(ValueError, match=r"shift_detectors is not supported"):
         DetectorErrorModel.from_stim_text("shift_detectors 1\n")
 
 
 def test_rejects_a_repeat_block() -> None:
-    with pytest.raises(ValueError, match="repeat"):
+    with pytest.raises(ValueError, match=r"repeat blocks are not supported"):
         DetectorErrorModel.from_stim_text("repeat 2 {\n error(0.1) D0\n}\n")
+
+
+@pytest.mark.parametrize(
+    ("text", "refusal"),
+    [
+        ("error 0.1\n", r"must state its probability in parentheses"),
+        ("error(0.1 D0\n", r"must close its probability in parentheses"),
+        ("error(abc) D0\n", r"must state a numeric probability"),
+    ],
+)
+def test_rejects_a_malformed_error_line(text: str, refusal: str) -> None:
+    """Each guard has its own refusal, so none may fall through to another."""
+
+    with pytest.raises(ValueError, match=refusal):
+        DetectorErrorModel.from_stim_text(text)
+
+
+@pytest.mark.parametrize(
+    ("text", "refusal"),
+    [
+        ("detector(1, 2 D0\n", r"coordinates must close in parentheses"),
+        ("detector X0\n", r"must name a D index"),
+        ("detector 0\n", r"must name a D index"),
+        ("detector D0 D1\n", r"exactly one D index"),
+    ],
+)
+def test_rejects_a_malformed_detector_declaration(text: str, refusal: str) -> None:
+    """Each guard names its own fault, so none may fall through to another."""
+
+    with pytest.raises(ValueError, match=refusal):
+        DetectorErrorModel.from_stim_text(text)
 
 
 def test_rejects_an_error_with_no_effect() -> None:
