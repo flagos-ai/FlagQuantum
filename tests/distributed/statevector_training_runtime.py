@@ -76,10 +76,29 @@ def mode_inner_budget_seconds(mode: str) -> float:
     return _MODE_INNER_BUDGET_SECONDS[mode]
 
 
-def build(device: torch.device):
+def build(device: torch.device, *, world_size: int = 1):
+    """Build the training circuit for a given rank count.
+
+    The circuit has to leave at least one wire rank-local. The sharded layout
+    spends `log2(world_size)` wires on the rank address, so a three-wire
+    circuit cannot be planned at eight ranks at all:
+    `plan_persistent_statevector_layout` refuses it with "world_size must leave
+    at least one local statevector wire", and the eight-GPU leg of the
+    scheduled lane failed there every time it ran. The gate sequence needs
+    three wires of its own -- `rxx(0, 2, ...)` spans them -- so three is the
+    floor and the rank bits are added on top of it.
+
+    Below eight ranks this returns the circuit it always did, so the lanes that
+    already run it keep the state they were measured with.
+    """
+
+    rank_bits = max(1, int(world_size)).bit_length() - 1
+    n_wires = max(3, rank_bits + 1)
     theta = torch.tensor(0.43, device=device, requires_grad=True)
     phi = torch.tensor(-0.21, device=device, requires_grad=True)
-    circuit = fq.Circuit(3, device=device).ry(0, theta).rxx(0, 2, phi).rz(1, theta)
+    circuit = (
+        fq.Circuit(n_wires, device=device).ry(0, theta).rxx(0, 2, phi).rz(1, theta)
+    )
     return circuit, (theta, phi)
 
 
@@ -130,7 +149,7 @@ def main() -> None:
             time.sleep(LAUNCHER_KILL_WAIT_SECONDS)
             raise AssertionError("elastic launcher did not terminate surviving rank")
         if args.mode == "crash_after_checkpoint":
-            partial_circuit, _ = build(device)
+            partial_circuit, _ = build(device, world_size=dist.get_world_size())
             partial = fqxd.train_distributed_statevector(
                 partial_circuit,
                 steps=args.steps // 2,
@@ -144,11 +163,15 @@ def main() -> None:
             time.sleep(LAUNCHER_KILL_WAIT_SECONDS)
             raise AssertionError("watchdog did not terminate surviving rank")
         if args.mode == "resume":
-            uninterrupted, uninterrupted_parameters = build(device)
+            uninterrupted, uninterrupted_parameters = build(
+                device, world_size=dist.get_world_size()
+            )
             full = fqxd.train_distributed_statevector(
                 uninterrupted, steps=args.steps, optimizer="adam", lr=0.02
             )
-            resumed_circuit, resumed_parameters = build(device)
+            resumed_circuit, resumed_parameters = build(
+                device, world_size=dist.get_world_size()
+            )
             resumed = fqxd.train_distributed_statevector(
                 resumed_circuit,
                 steps=args.steps,
@@ -180,7 +203,7 @@ def main() -> None:
                 "reference_tail_losses": list(full.losses[args.steps // 2 :]),
             }
         elif args.mode != "train":
-            circuit, _ = build(device)
+            circuit, _ = build(device, world_size=dist.get_world_size())
             try:
                 fqxd.train_distributed_statevector(
                     circuit,
@@ -198,11 +221,13 @@ def main() -> None:
             else:
                 raise AssertionError("injected failure did not fail closed")
         else:
-            uninterrupted, uninterrupted_parameters = build(device)
+            uninterrupted, uninterrupted_parameters = build(
+                device, world_size=dist.get_world_size()
+            )
             full = fqxd.train_distributed_statevector(
                 uninterrupted, steps=args.steps, optimizer="adam", lr=0.02
             )
-            partial_circuit, _ = build(device)
+            partial_circuit, _ = build(device, world_size=dist.get_world_size())
             partial = fqxd.train_distributed_statevector(
                 partial_circuit,
                 steps=args.steps // 2,
@@ -210,7 +235,9 @@ def main() -> None:
                 lr=0.02,
                 checkpoint_dir=args.checkpoint_dir,
             )
-            resumed_circuit, resumed_parameters = build(device)
+            resumed_circuit, resumed_parameters = build(
+                device, world_size=dist.get_world_size()
+            )
             resumed = fqxd.train_distributed_statevector(
                 resumed_circuit,
                 steps=args.steps,

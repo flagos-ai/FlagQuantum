@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.dense_island import (  # noqa: E402
+from flagquantum.simulation.mps.dense_island import (  # noqa: E402
     DenseIslandPlan,
     DenseIslandState,
 )

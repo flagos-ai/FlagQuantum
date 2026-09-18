@@ -12,11 +12,16 @@ from flagquantum.runtime.executors.statevector.forward import (
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
     _triton_local_cx_segment_enabled,
+    _vectorized_pair_exchange_gate,
     _wait_for_exchange,
     communication_aware_wire_layout,
 )
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
+)
+from flagquantum.runtime.executors.statevector.models import (
+    StatevectorShard,
+    StatevectorShardState,
 )
 
 pytestmark = pytest.mark.unit
@@ -318,3 +323,150 @@ def test_single_rank_communication_aware_result_declares_basis_order():
     )
     assert result.logical_to_physical_wires == (0, 1, 2)
     assert result.summary()["amplitude_basis_order"] == "canonical_logical"
+
+
+class _FakeCollective:
+    """A request that reports the wait the executor is required to perform."""
+
+    def __init__(self):
+        self.wait_calls = 0
+        self.block_current_stream_calls = 0
+
+    def wait(self):
+        self.wait_calls += 1
+
+    def block_current_stream(self):
+        self.block_current_stream_calls += 1
+
+
+def _pair_exchange_plan(world_size: int, local_amplitudes: int) -> SimpleNamespace:
+    """Enough of a plan for the pair-exchange path, and nothing else."""
+
+    shard = StatevectorShard(
+        rank=0,
+        world_size=world_size,
+        amplitude_start=0,
+        amplitude_end=local_amplitudes,
+        local_amplitudes=local_amplitudes,
+        local_state_bytes=local_amplitudes * 8,
+    )
+    return SimpleNamespace(
+        sharded_wires=(3,),
+        world_size=world_size,
+        shards=(shard,),
+        n_wires=4,
+        rank_address_bits=1,
+    )
+
+
+def _pair_exchange_state(plan: SimpleNamespace, amplitudes: torch.Tensor):
+    return StatevectorShardState(
+        rank=0,
+        shard=plan.shards[0],
+        amplitudes=amplitudes,
+        global_indices=torch.empty(0, dtype=torch.long),
+    )
+
+
+# The peak the pair-exchange path reports is an exact sum of four live buffers:
+# the rank-local output buffer, the chunk when it does not alias the input, the
+# exchange buffer, and the numeric temporaries of one combine. Which exchange
+# buffer it is depends on the path, and that is the only difference between the
+# two cases below -- so the two constants are asserted where they are true
+# rather than at a call site that runs at several rank counts.
+#
+# These exist because the harness that runs on the accelerator could only assert
+# a bound that holds everywhere, and a bound that holds everywhere does not
+# notice a dropped term. Here the accounting is driven directly, one chunk at a
+# time, so the identity is exact.
+@pytest.mark.parametrize("with_workspace", [False, True])
+def test_two_rank_pair_exchange_counts_both_ranks_gathered_blocks(
+    monkeypatch, with_workspace: bool
+):
+    plan = _pair_exchange_plan(world_size=2, local_amplitudes=8)
+    amplitudes = torch.zeros((1, 8), dtype=torch.complex64)
+    per_rank = plan.shards[0].local_state_bytes
+    requests = []
+    workspace = StatevectorExchangeWorkspace() if with_workspace else None
+
+    def all_gather(gathered, local, *, group=None, async_op=False):
+        rows = local.shape[0]
+        gathered[:rows] = local
+        gathered[rows:] = local
+        request = _FakeCollective()
+        requests.append(request)
+        return request
+
+    # `all_gather_single` is preferred when the build provides it, so patching
+    # that name is what pins which collective the path takes.
+    monkeypatch.setattr(
+        torch.distributed, "all_gather_single", all_gather, raising=False
+    )
+
+    _, _, _, peak = _vectorized_pair_exchange_gate(
+        _pair_exchange_state(plan, amplitudes),
+        torch.eye(2, dtype=torch.complex64),
+        3,
+        plan=plan,
+        chunk_amplitudes=8,
+        process_group=None,
+        workspace=workspace,
+        pipeline=False,
+    )
+
+    assert requests and requests[0].wait_calls == 1
+    # output 1x + gathered 2x + numeric 3x
+    assert peak == 6 * per_rank
+    assert peak > per_rank
+    if workspace is not None:
+        # Both ranks' blocks are held at once. A workspace sized for one block
+        # would make the peak smaller, and the peak is what a capacity report
+        # reads.
+        assert workspace.reserved_bytes == 2 * per_rank
+
+
+@pytest.mark.parametrize("with_workspace", [False, True])
+def test_peer_to_peer_pair_exchange_counts_one_peer_buffer(
+    monkeypatch, with_workspace: bool
+):
+    plan = _pair_exchange_plan(world_size=4, local_amplitudes=4)
+    amplitudes = torch.zeros((1, 4), dtype=torch.complex64)
+    per_rank = plan.shards[0].local_state_bytes
+    requests = []
+    workspace = StatevectorExchangeWorkspace() if with_workspace else None
+
+    class _FakeP2POp:
+        def __init__(self, operation, tensor, peer, group=None, tag=0):
+            self.operation = operation
+            self.tensor = tensor
+            self.peer = peer
+            self.tag = tag
+
+    def batch_isend_irecv(operations):
+        sent, received = operations
+        received.tensor.copy_(sent.tensor)
+        request = _FakeCollective()
+        requests.append(request)
+        return [request]
+
+    monkeypatch.setattr(torch.distributed, "P2POp", _FakeP2POp)
+    monkeypatch.setattr(torch.distributed, "batch_isend_irecv", batch_isend_irecv)
+
+    _, _, _, peak = _vectorized_pair_exchange_gate(
+        _pair_exchange_state(plan, amplitudes),
+        torch.eye(2, dtype=torch.complex64),
+        3,
+        plan=plan,
+        chunk_amplitudes=4,
+        process_group=None,
+        workspace=workspace,
+        pipeline=False,
+    )
+
+    assert requests and requests[0].wait_calls == 1
+    # output 1x + one peer buffer 1x + numeric 3x. The gathered path above is
+    # one buffer larger, which is the whole of the difference between 6x and 5x.
+    assert peak == 5 * per_rank
+    assert peak > per_rank
+    if workspace is not None:
+        assert workspace.reserved_bytes == per_rank
