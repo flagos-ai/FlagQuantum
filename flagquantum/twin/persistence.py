@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
 from typing import Any
 
 from ..noise import NoiseModel
+from ._atomic import write_once
 from .model import QPUDigitalTwin, TwinSnapshot
 
 _TWIN_SCHEMA = "flagquantum.qpu_digital_twin.v1"
@@ -132,25 +132,15 @@ def dump_twin(twin: QPUDigitalTwin, path: str | PathLike[str]) -> None:
     """Write one private Twin file once; never replace a different model."""
 
     payload = _to_dict(twin)
-    destination = Path(path)
     encoded = _canonical(payload) + "\n"
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing_payload = _to_dict(load_twin(destination))
-        except ValueError as error:
-            raise ValueError(
-                f"Refusing to replace invalid QPU digital Twin at {destination}"
-            ) from error
-        if _identity(existing_payload) != _identity(payload):
-            raise ValueError(
-                f"Refusing to replace different QPU digital Twin at {destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(f"Cannot write QPU digital Twin to {destination}") from error
+    write_once(
+        Path(path),
+        encoded,
+        label="QPU digital Twin",
+        matches=lambda destination: (
+            _identity(_to_dict(load_twin(destination))) == _identity(payload)
+        ),
+    )
 
 
 __all__ = ("dump_twin", "load_twin")

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from os import PathLike
@@ -13,6 +12,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ..remote.qpu import DeploymentResult, ProviderTaskHandle, build_result_metadata
+from ._atomic import write_once
 from .experiment import TwinExperiment, TwinHardwareReport
 from .prediction import TwinPrediction
 
@@ -311,7 +311,6 @@ def dump_submission(
 
     if not isinstance(submission, TwinSubmission):
         raise TypeError("submission must be a TwinSubmission")
-    destination = Path(path)
     encoded = (
         json.dumps(
             submission.to_dict(),
@@ -321,23 +320,14 @@ def dump_submission(
         )
         + "\n"
     )
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing = load_submission(destination)
-        except ValueError as error:
-            raise ValueError(
-                f"Refusing to replace invalid Twin submission at {destination}"
-            ) from error
-        if existing.identity != submission.identity:
-            raise ValueError(
-                f"Refusing to replace different Twin submission at {destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(f"Cannot write Twin submission to {destination}") from error
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin submission",
+        matches=lambda destination: (
+            load_submission(destination).identity == submission.identity
+        ),
+    )
 
 
 __all__ = ("TwinSubmission", "dump_submission", "load_submission")

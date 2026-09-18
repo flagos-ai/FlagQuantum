@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
@@ -13,6 +12,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from ..core.ir import CircuitIR
+from ._atomic import write_once
 from .prediction import TwinPrediction
 
 _ENVELOPE_SCHEMA = "flagquantum.twin_evidence_envelope.v1"
@@ -237,7 +237,6 @@ def dump_evidence(
 
     if not isinstance(evidence, TwinEvidenceEnvelope):
         raise TypeError("evidence must be a TwinEvidenceEnvelope")
-    destination = Path(path)
     encoded = (
         json.dumps(
             evidence.to_dict(),
@@ -247,23 +246,14 @@ def dump_evidence(
         )
         + "\n"
     )
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing = load_evidence(destination)
-        except ValueError as error:
-            raise ValueError(
-                f"Refusing to replace invalid Twin evidence at {destination}"
-            ) from error
-        if existing.identity != evidence.identity:
-            raise ValueError(
-                f"Refusing to replace different Twin evidence at {destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(f"Cannot write Twin evidence to {destination}") from error
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin evidence",
+        matches=lambda destination: (
+            load_evidence(destination).identity == evidence.identity
+        ),
+    )
 
 
 @dataclass(frozen=True)

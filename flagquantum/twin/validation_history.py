@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +10,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
+from ._atomic import write_once
 from .model import QPUDigitalTwin
 from .series import TwinValidationSeries
 
@@ -326,29 +326,16 @@ def dump_validation_history(
 
     if not isinstance(history, TwinValidationHistory):
         raise TypeError("history must be a TwinValidationHistory")
-    destination = Path(path)
     encoded = _canonical(history.to_dict()) + "\n"
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing = load_validation_history(destination)
-        except ValueError as error:
-            raise ValueError(
-                "Refusing to replace invalid Twin validation history at "
-                f"{destination}"
-            ) from error
-        if _canonical(existing.to_dict()) != _canonical(history.to_dict()):
-            raise ValueError(
-                "Refusing to replace different Twin validation history at "
-                f"{destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(
-            f"Cannot write Twin validation history to {destination}"
-        ) from error
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin validation history",
+        matches=lambda destination: (
+            _canonical(load_validation_history(destination).to_dict())
+            == _canonical(history.to_dict())
+        ),
+    )
 
 
 __all__ = (

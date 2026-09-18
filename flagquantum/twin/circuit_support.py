@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from os import PathLike
@@ -12,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
+from ._atomic import write_once
 from .evidence import TwinEvidenceEnvelope, TwinEvidenceReport
 
 if TYPE_CHECKING:
@@ -231,7 +231,6 @@ def dump_circuit_support(
 
     if not isinstance(support, TwinCircuitSupport):
         raise TypeError("support must be a TwinCircuitSupport")
-    destination = Path(path)
     encoded = (
         json.dumps(
             support.to_dict(),
@@ -241,25 +240,14 @@ def dump_circuit_support(
         )
         + "\n"
     )
-    try:
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-    except FileExistsError as exists_error:
-        try:
-            existing = load_circuit_support(destination)
-        except ValueError as error:
-            raise ValueError(
-                f"Refusing to replace invalid Twin circuit support at {destination}"
-            ) from error
-        if existing.identity != support.identity:
-            raise ValueError(
-                f"Refusing to replace different Twin circuit support at {destination}"
-            ) from exists_error
-    except OSError as error:
-        raise ValueError(
-            f"Cannot write Twin circuit support to {destination}"
-        ) from error
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin circuit support",
+        matches=lambda destination: (
+            load_circuit_support(destination).identity == support.identity
+        ),
+    )
 
 
 __all__ = (
