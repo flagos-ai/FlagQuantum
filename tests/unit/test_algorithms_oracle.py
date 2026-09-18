@@ -238,7 +238,12 @@ def test_phase_oracle_on_a_superposition() -> None:
     after = circuit.state().reshape(-1)
     for index in range(2**n_wires):
         expected = -before[index] if index == 2 else before[index]
-        assert after[index] == pytest.approx(complex(expected), abs=1e-6), index
+        # ``complex(...)`` on both sides: ``pytest.approx`` only understands a tensor
+        # when numpy is importable, and this repository does not declare numpy, so a
+        # bare tensor operand compares with ``==`` and never equals an ``approx``.
+        assert complex(after[index]) == pytest.approx(
+            complex(expected), abs=1e-6
+        ), index
 
 
 def test_phase_oracle_refuses_more_than_three_wires() -> None:
