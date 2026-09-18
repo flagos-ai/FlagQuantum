@@ -884,7 +884,11 @@ def _explicit_sharded_adjoint(
                         "gate parameters"
                     )
 
-                def matrix_for_parameter(value: torch.Tensor) -> torch.Tensor:
+                def matrix_for_parameter(
+                    value: torch.Tensor,
+                    parameter_index: int = parameter_index,
+                    instruction_position: int = index,
+                ) -> torch.Tensor:
                     values = list(base_parameters)
                     values[parameter_index] = value
                     current_bound = _bind_parameters(ir, slots, values)
@@ -893,7 +897,7 @@ def _explicit_sharded_adjoint(
                     )
                     with runtime_config(precision):
                         return _instruction_matrix(
-                            current_bound.instructions[index],
+                            current_bound.instructions[instruction_position],
                             device=device,
                             dtype=dtype,
                         )

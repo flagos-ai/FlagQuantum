@@ -160,6 +160,11 @@ select = [
     # so a refusal or a wrap keeps the condition that produced it. Without the
     # cause, a wrapped failure reads as if it were raised on the happy path.
     "B904",
+    # A function defined inside a loop reads its loop variables when it runs,
+    # not when it is defined, so a nested function that outlives its iteration
+    # silently reads the last value the loop left behind. Binding the variable
+    # as a parameter freezes it to the iteration that created the function.
+    "B023",
     # Defect classes: mutable state shared between instances, and a default or
     # class body that evaluates a call once at import instead of once per use.
     "B008",

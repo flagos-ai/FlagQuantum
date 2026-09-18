@@ -87,7 +87,7 @@ def test_every_contract_operation_converts_in_both_directions() -> None:
             qiskit_state,
             rtol=0.0,
             atol=1e-10,
-            msg=lambda message: (
+            msg=lambda message, operation=operation: (
                 f"statevector mismatch for {operation['flagquantum']}: {message}"
             ),
         )

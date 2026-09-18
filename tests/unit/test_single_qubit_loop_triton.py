@@ -71,7 +71,7 @@ def test_repeated_rx_rz_cpu_tangents_match_jacobian() -> None:
     for layer in range(3):
         for family, parameter in (("rx", rx), ("rz", rz)):
 
-            def selected_output(value):
+            def selected_output(value, family=family, rx=rx, rz=rz):
                 return _reference(
                     state,
                     value if family == "rx" else rx,
