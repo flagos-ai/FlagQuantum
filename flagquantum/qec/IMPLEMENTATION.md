@@ -103,9 +103,93 @@ linear logical observable, so general-layer failure counts are not claimed to
 equal frozen-profile failure counts at `distance=3`. This layer does not change
 the frozen profile's arithmetic.
 
-The layer declares codes and detectors only. It does not build a detector error
-model, decode, sample evidence, or make any threshold, logical-suppression,
-real-time, or fault-tolerance claim.
+The layer declares codes, detectors, and detector error models. It does not
+decode, and it makes no threshold, logical-suppression, real-time, or
+fault-tolerance claim.
+
+`dem.py` adds a detector error model over that layer, and `PhenomenologicalNoise`
+in `noise.py` is the noise record it consumes. A `DemError` is one independent
+physical error mechanism, named by the detectors and the logical observables it
+flips; `DetectorErrorModel` is a set of them over a fixed detector and observable
+count, with its parity matrices, its exact marginal rates, seeded sampling, and
+stim text interchange. `from_memory_circuit` builds the model of a memory circuit
+under a `PhenomenologicalNoise`: one mechanism per data wire per round, and one
+per check measurement per round, minus the locations whose probability is zero,
+with the mechanisms that flip the same detectors and observables merged. The
+model is exact for Pauli noise in the reference gate set.
+
+Construction is exact and does not sample. Each mechanism's signature comes from
+one forced execution: the single error is injected into the circuit source, the
+source is lowered and executed twice, and the two shots must agree before the
+signature is read off the detector and observable layouts. That two-shot
+determinism assertion is both the fail-closed check for a mechanism that is not a
+Pauli mechanism in the reference gate set and the evidence that the signature is
+not sampled. The model is defined for Pauli noise only: a non-Pauli channel is
+refused with a stated reason rather than approximated.
+
+The model is built on the memory circuit without in-circuit feedback, because it
+describes the noise-to-detection mapping that a decoder inverts. The frozen
+profile's `compiled_lookup` mode bakes immediate reference feedback into the
+frozen profile's own private source rather than a `MemoryCircuit`, and the
+forced-error engine drives `MemoryCircuit` sources, so mechanical limits leave
+that compiled-feedback path unmodelled.
+
+The detector-rate evidence is a cross-check, not an independent derivation.
+Phenomenological noise is the primary evidence: the model's exact marginal rates
+are compared at distance three and distance five against rates sampled from an
+injected-shot circuit simulator. The comparison shares the injection helper with
+construction, so it does not independently re-derive the signatures; what it
+tests is that mechanisms compose by XOR in the simulator and that merging
+identical signatures yields the right marginals. The one genuinely independent
+check available — parsing the emitted text with the real `stim` package — was
+run at developer time and is not a committed test, because `stim` is not a
+dependency of this repository.
+
+The stim interchange is partial: this reader accepts a subset of stim output, and
+which subset is fixed by what the text declares rather than by whether stim
+produced it. `to_stim_text()` emits valid stim text, verified against stim
+1.16.0. `from_stim_text()` reads the format `to_stim_text()` emits and
+hand-written text in that style, not arbitrary stim output: the declarations must
+be complete and consecutive from zero, `#` comments are not accepted, and the
+model shape comes from the declarations alone. `shift_detectors` is refused
+outright.
+
+In the developer-time sweep -- 96 detector error models from repetition-code and
+rotated-surface-code memory circuits, distances three and five, one to three
+rounds, noisy and noise-free, with and without flattening the circuit first --
+`shift_detectors` accounted for 32 refusals and the undeclared observable index
+for the other 32. All 48 that carried an error were refused, and the 32 accepted
+carried none.
+
+A second sweep of 240 single-error circuits -- one `X_ERROR` on each data wire,
+the same two families, distances and rounds -- refused 170 of them: 160 by the
+`shift_detectors` rule and 10 because an error index fell outside the declared
+shape. The 70 that satisfied both conditions were all accepted, and 32 of those
+carried an error. So the conditions are two, and both are needed: of the 210 of
+those circuits whose errors avoided the observable, the 140 whose rounds repeat
+were refused anyway. Both sweeps were also checked for `repeat` blocks -- none of
+the 336 texts contained one, so no refusal above came from that rule.
+
+Where the rates were checked against stim rather than restated: the 32 accepted
+DEMs that carry an error match stim's own compiled sampler to within 0.36
+standard deviations over 20000 shots. On the edited route -- strip the observable
+instruction from a noisy circuit and the flattened text is accepted, errors and
+all -- the agreement is 2.61 standard deviations over the same shot count.
+
+Not covered by either sweep: decomposed or approximately-disjoint errors, gauge
+detectors, repeat blocks, colour codes, distances above five, and hand-written
+text.
+
+`DemSample` carries tensors and defines content equality, and it is deliberately
+unhashable: it must not be used as a set member or a dict key.
+
+The scope refusals hold here as they do for the rest of the layer. No threshold
+claim, no logical-suppression claim, and no real-time or hardware-feedback claim
+follows from a detector error model or from any rate it reports. A rate the model
+samples is a DEM-sampled rate, and it is labelled as one wherever it is reported.
+
+`README.md` is deliberately not updated for the detector error model: the Stage 5
+documentation sweep owns it.
 
 One representational boundary is explicit and enforced. `CodeCheck` requires every
 CNOT to control a data wire and target the check's ancilla, so it describes only

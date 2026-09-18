@@ -64,6 +64,30 @@ class RepetitionNoiseProfile:
         return model
 
 
+@dataclass(frozen=True)
+class PhenomenologicalNoise:
+    """Independent data and measurement flips at fixed circuit locations.
+
+    ``data_flip`` applies to every data wire at the start of every syndrome
+    round, before that round's parity-check CNOTs. ``measurement_flip`` applies
+    to every syndrome measurement of every check in every round. Both are
+    independent per location per round.
+
+    This is a description of noise locations, not a ``NoiseModel``. The
+    round-boundary data location has no equivalent in the executor's
+    instruction-ordered noise grammar, so no ``to_noise_model`` is offered and
+    the DEM's detector-rate cross-check drives this record through forced
+    injection instead.
+    """
+
+    data_flip: float = 0.0
+    measurement_flip: float = 0.0
+
+    def __post_init__(self) -> None:
+        for name in ("data_flip", "measurement_flip"):
+            object.__setattr__(self, name, _probability(getattr(self, name), name=name))
+
+
 def run_repetition_memory_noise_sweep(
     probabilities: Iterable[float],
     *,
@@ -111,6 +135,7 @@ def run_repetition_memory_noise_sweep(
 
 
 __all__ = (
+    "PhenomenologicalNoise",
     "RepetitionNoiseProfile",
     "run_repetition_memory_noise_sweep",
 )
