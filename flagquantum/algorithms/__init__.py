@@ -1,6 +1,7 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
 from . import core as core
+from . import qubo as qubo
 from .core import (
     AdaptVQEIteration,
     AdaptVQEResult,
@@ -52,6 +53,7 @@ __all__ = [
     "pauli_term",
     "qaoa_circuit",
     "qaoa_loss",
+    "qubo",
     "run_hybrid_vqe",
     "run_layerwise_vqe",
     "run_vqe",
