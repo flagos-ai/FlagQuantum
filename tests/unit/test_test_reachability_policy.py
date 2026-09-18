@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.ci_tier import CI_TIERS
+
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[2]
 #   triton-optional       triton
 #   qiskit-optional       qiskit
 #   pennylane-optional    pennylane
+#   cpu-core (launched)   distributed_launch (under `torchrun`, not a bare pytest)
 #   multinode-scheduled   distributed_multinode
 #
 # `braket` has no lane of its own; those tests are reachable because they also
@@ -46,6 +49,7 @@ LANE_SELECTORS = frozenset(
         "unit",
         "integration",
         "distributed_cpu",
+        "distributed_launch",
         "distributed_multinode",
         "benchmark_contract",
         "release_gate",
@@ -173,3 +177,55 @@ def test_lane_selectors_are_registered_markers() -> None:
 
     for selector in LANE_SELECTORS | ACCEL_LANE:
         assert selector in registered, f"{selector} is not declared in pytest.ini"
+
+
+# A selector says a lane selects a test; it says nothing about whether the lane
+# can run it. `distributed_launch` names tests that only execute when a launcher
+# starts them with more than one rank, so a lane that selects them with a bare
+# `pytest` records a skip for every one of them and reports success having
+# executed nothing. That is what `multinode-scheduled` did with the ten tests
+# that used to carry `distributed_multinode`.
+LAUNCH_SELECTOR = "distributed_launch"
+
+
+# Every command, from ci.yml and from the tier definitions, that selects tests.
+def _lane_commands() -> list[str]:
+    commands: list[str] = []
+    for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        text = path.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("run:") and "pytest" in stripped:
+                commands.append(stripped)
+    for tier in CI_TIERS.values():
+        commands.extend(" ".join(command) for command in tier.commands)
+    return commands
+
+
+def test_a_launch_selected_test_is_started_by_a_launcher() -> None:
+    selecting = [command for command in _lane_commands() if LAUNCH_SELECTOR in command]
+    assert selecting, (
+        f"no lane command selects {LAUNCH_SELECTOR}, so the tests carrying it "
+        "never run"
+    )
+    offenders = [command for command in selecting if "torchrun" not in command]
+    assert not offenders, (
+        f"a command that selects {LAUNCH_SELECTOR} must launch the ranks it "
+        "needs, or every test it selects is skipped:\n" + "\n".join(offenders)
+    )
+
+
+def test_the_launcher_scan_reads_both_places_a_lane_can_live() -> None:
+    # The invariant above only fails closed on a scan that returns nothing; a
+    # scan that quietly stopped reading one of its two sources would still see
+    # the other and report nothing. Workflow commands come through with their
+    # `run:` key attached and tier commands do not, so requiring one of each
+    # pins that both sources contributed.
+    commands = _lane_commands()
+
+    assert any(
+        command.startswith("run:") for command in commands
+    ), "no command came from a workflow file: " + repr(commands[:5])
+    assert any(
+        not command.startswith("run:") for command in commands
+    ), "no command came from a tier definition: " + repr(commands[:5])

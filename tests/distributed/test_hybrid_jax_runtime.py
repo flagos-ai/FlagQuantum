@@ -13,7 +13,7 @@ from flagquantum.runtime.executors.jax import compile_quantum_kernel
 pytestmark = [
     pytest.mark.distributed,
     pytest.mark.distributed_cpu,
-    pytest.mark.distributed_multinode,
+    pytest.mark.distributed_launch,
     pytest.mark.skipif(
         "RANK" not in os.environ,
         reason="requires torchrun with distributed RANK/WORLD_SIZE environment",

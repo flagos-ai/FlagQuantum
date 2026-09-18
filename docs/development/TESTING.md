@@ -75,6 +75,7 @@ python -m pytest -m "benchmark_contract or release_gate" -q
 python -m pytest -m "distributed_accel and gpu" -q
 python -m pytest -m "triton and gpu" -q
 python -m pytest -m "distributed_multinode" -q
+torchrun --standalone --nproc-per-node=2 -m pytest -m "distributed_launch" -q
 python -m pytest --markers
 ```
 
@@ -103,6 +104,7 @@ so the check is per test rather than per file.
 | `unit` | Fast local CPU pure logic. | IR, planner, audit, metadata, helper, and schema logic in isolation. | Runtime integration, process-group behavior, accelerator execution, or benchmark truth. |
 | `integration` | Local single-process developer environment. | Cross-module API/runtime behavior without cluster setup. | Multi-process transport, GPU execution, or scalability claims. |
 | `distributed_cpu` | CPU/local distributed simulators, planner/audit checks, or torch distributed semantics that do not require real accelerator capacity. | Rank ownership metadata, sharding intent, fail-closed gates, and development-production semantic parity where applicable. | Real multi-GPU capacity expansion, production transport performance, or release-grade scalability evidence. |
+| `distributed_launch` | One host with a launcher: `torchrun --standalone --nproc-per-node=N`. | Rank-placement and collective semantics for a distributed mode, reachable on CPU. | Real multi-GPU or multi-node capacity. A bare `pytest` selects these and executes none of them. |
 | `distributed_accel` | Explicit accelerator or multi-GPU environment. | Hardware-backed distributed behavior for the covered path. | Multi-node transport unless also marked `distributed_multinode`; release claim unless audit evidence passes. |
 | `distributed_multinode` | Explicit multi-node cluster or scheduled/manual transport job. | Node/rank placement and multi-node transport behavior for the covered path. | Release-grade claim unless benchmark payload and release gate pass. |
 | `benchmark_contract` | Fast local pytest over benchmark JSON and audit helpers. | Payload shape, required fields, result hygiene, scanner contract, and non-release payload rejection. | Real benchmark performance or hardware behavior. |
@@ -304,8 +306,20 @@ skipping quietly.
 Use this tier only in a scheduled/manual torchrun or cluster environment with
 explicit rank placement.
 
-For a minimal two-node CUDA correctness check, launch one rank per node with
-the same rendezvous address and run `tools/probe_cuda_multinode_statevector.py`.
+Two different things are called multi-node work here, and only one needs a
+cluster:
+
+- **Launched single-host tests.** `tests/distributed/test_runtime_modes.py`,
+  `test_hybrid_jax_runtime.py`, and `test_statevector_correctness.py` carry
+  `distributed_launch`. They skip unless a launcher starts them, and they need
+  one host, not two. The `cpu-core` job runs them with
+  `torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q`.
+  **A bare `python -m pytest -m distributed_launch -q` selects them and executes
+  none of them**, which is what this section asked for until 2026-09-18, and
+  which let ten tests report skips while every lane stayed green.
+- **Real two-node transport.** For a minimal two-node CUDA correctness check,
+  launch one rank per node with the same rendezvous address and run
+  `tools/probe_cuda_multinode_statevector.py`.
 The probe retains one statevector shard per rank during execution, materializes
 the tiny five-wire state only for validation, and records the selected NCCL
 route from a rank-zero debug log. Its output is correctness and communication

@@ -10,7 +10,7 @@ from flagquantum.runtime.execution import run_advanced
 pytestmark = [
     pytest.mark.distributed,
     pytest.mark.distributed_cpu,
-    pytest.mark.distributed_multinode,
+    pytest.mark.distributed_launch,
     pytest.mark.skipif(
         "RANK" not in os.environ,
         reason="requires torchrun with distributed RANK/WORLD_SIZE environment",
@@ -147,13 +147,19 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
         world_size=world_size,
         distributed_executor="torch",
         device=device,
-        max_intermediate_size=8,
+        # The complete four-qubit output itself is 16 elements, so a budget
+        # of 8 cannot be satisfied by slicing the contraction at all. The
+        # script this file mirrors has carried 16 since it was written.
+        max_intermediate_size=16,
     )
     local = run_advanced(
         circuit,
         mode="tensor_network",
         device=device,
-        max_intermediate_size=8,
+        # The complete four-qubit output itself is 16 elements, so a budget
+        # of 8 cannot be satisfied by slicing the contraction at all. The
+        # script this file mirrors has carried 16 since it was written.
+        max_intermediate_size=16,
     )
 
     max_error = _precision_assert(
@@ -164,34 +170,90 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
     assert summary["state_mode"] == "distributed_tensor_network"
     assert summary["world_size"] == world_size
     assert summary["rank"] == _rank()
-    assert summary["slice_tasks"] == len(distributed.tasks)
+    # The slice list lives on the native result; the wrapper's summary reports
+    # a count of it, and comparing the two is what makes the summary
+    # trustworthy.
+    assert summary["slice_tasks"] == len(distributed.native().tasks)
     assert set(summary["tasks_by_rank"]) == set(range(world_size))
     assert max_error <= 1e-6
 
 
-def test_distributed_statevector_torchrun_gradient_precision_alignment():
+def test_distributed_statevector_torchrun_partitions_the_state_and_reports_its_plan():
+    """Check the sharded statevector path where this runtime lets it be checked.
+
+    This test used to compare a distributed gradient against a local one. It
+    cannot: `full_state` on the production executor raises
+    `FullStateMaterializationError` by design, because a distributed result is
+    rank-local, and the shard-to-global index mapping is not published either —
+    `global_indices` comes back empty and `amplitude_start` reports a contiguous
+    range that the amplitudes do not follow. Comparing amplitudes would mean
+    pinning an unpublished layout into a test.
+
+    What is checkable is what the sibling script `statevector_correctness.py`
+    checks, plus one thing it does not: that the ranks partition the state.
+    """
+
     world_size = _world_size()
     device = _device()
 
-    distributed_loss, distributed_grad = _loss_and_grad(
-        "distributed_statevector",
-        device=device,
+    distributed = run_advanced(
+        _reference_circuit(),
+        mode="distributed_statevector",
         world_size=world_size,
-        aggregate_grad=True,
+        device=device,
     )
-    reference_loss, reference_grad = _loss_and_grad(
-        "statevector",
-        device=device,
-        world_size=world_size,
+    summary = distributed.summary()
+    native = distributed.native()
+
+    assert summary["executor"] == "pytorch_native_distributed_statevector_v1"
+    assert summary["distribution_semantics"] == "sharded_across_ranks"
+
+    plan = native.plan
+    report = plan.summary()
+    assert report["world_size"] == world_size
+    # Both ranks are on one host, so the plan must not claim the sharding spans
+    # nodes and must not let that be read as a scalability claim.
+    assert report["node_count"] == 1
+    assert report["rank_address_bits"] > 0
+    assert report["sharded_wires"] == (3,)
+    assert report["release_gate_allowed"] is False
+    assert report["scalability_claim_allowed"] is False
+    assert len(report["rank_shards"]) == world_size
+    # Every rank owns a non-empty shard, and the shards tile the whole state.
+    assert min(shard["local_amplitudes"] for shard in report["rank_shards"]) > 0
+    assert sum(shard["local_amplitudes"] for shard in report["rank_shards"]) == (
+        plan.total_amplitudes
     )
 
-    _gradient_precision_assert(
-        distributed_loss,
-        distributed_grad,
-        reference_loss,
-        reference_grad,
-        atol=1e-5,
+    # The plan's dry run covers every event it traced and processes work on
+    # every rank.
+    dry_run = plan.execute_dry_run()
+    assert dry_run.valid, dry_run.errors
+    dry_run_report = dry_run.summary()
+    assert dry_run_report["trace_event_count"] > 0
+    assert dry_run_report["rank_count"] == world_size
+    assert dry_run_report["total_local_bytes_processed"] > 0
+
+    # The ranks together carry a normalized state, to the precision a rank-local
+    # check can reach without materializing the whole thing on one rank.
+    local_norm_squared = float(
+        torch.linalg.vector_norm(native.shard_state.amplitudes.to(torch.complex128))
+        .square()
+        .item()
     )
+    total = torch.tensor(local_norm_squared, dtype=torch.float64)
+    dist.all_reduce(total, op=dist.ReduceOp.SUM)
+    reference_norm_squared = float(
+        torch.linalg.vector_norm(
+            _reference_circuit().state().reshape(-1).to(torch.complex128)
+        )
+        .square()
+        .item()
+    )
+    assert float(total) == pytest.approx(reference_norm_squared, abs=1e-5)
+    # No rank may hold the entire state, which is the property the executor
+    # refuses to give up and the reason a local comparison is unavailable.
+    assert native.shard_state.amplitudes.numel() < _reference_circuit().state().numel()
 
 
 def test_distributed_tensor_network_torchrun_gradient_precision_alignment():
@@ -204,13 +266,19 @@ def test_distributed_tensor_network_torchrun_gradient_precision_alignment():
         world_size=world_size,
         distributed_executor="torch",
         aggregate_grad=True,
-        max_intermediate_size=8,
+        # The complete four-qubit output itself is 16 elements, so a budget
+        # of 8 cannot be satisfied by slicing the contraction at all. The
+        # script this file mirrors has carried 16 since it was written.
+        max_intermediate_size=16,
     )
     reference_loss, reference_grad = _loss_and_grad(
         "tensor_network",
         device=device,
         world_size=world_size,
-        max_intermediate_size=8,
+        # The complete four-qubit output itself is 16 elements, so a budget
+        # of 8 cannot be satisfied by slicing the contraction at all. The
+        # script this file mirrors has carried 16 since it was written.
+        max_intermediate_size=16,
     )
 
     _gradient_precision_assert(
@@ -238,8 +306,13 @@ def test_distributed_mps_torchrun_precision_alignment():
     )
     local = run_advanced(circuit, mode="mps", device=device, max_bond=8)
 
+    # `sharded_state`, `local_shard_tensors`, and the MPS state are properties of
+    # the native distributed result. `ExecutionResult` carries neither, and its
+    # `to_statevector` cannot unwrap this one, so reaching for them directly on
+    # the wrapper fails in two different ways.
+    native = distributed.native()
     max_error = _precision_assert(
-        distributed.to_statevector(), local.to_statevector(), atol=1e-6
+        native.sharded_state.to_statevector(), local.to_statevector(), atol=1e-6
     )
     summary = distributed.summary()
     assert summary["executor"] == "torch_distributed"
@@ -248,8 +321,8 @@ def test_distributed_mps_torchrun_precision_alignment():
     assert summary["rank"] == _rank()
     assert summary["storage"] == "sharded"
     assert summary["mps_execution"] == "site_sharded_sync"
-    assert distributed.local_shard_tensors
-    assert distributed.sharded_state is not None
+    assert native.local_shard_tensors
+    assert native.sharded_state is not None
     assert max_error <= 1e-6
 
 
