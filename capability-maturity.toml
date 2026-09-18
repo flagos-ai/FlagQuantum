@@ -582,3 +582,20 @@ level = "experimental"
 owner = "Algorithms maintainers"
 limitations = "A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior."
 focused_tests = "tests/unit/test_algorithms_qubo.py"
+
+[capabilities.algorithms_state_preparation]
+title = "Quantum state preparation"
+summary = "Prepare a uniform or arbitrary quantum state from a classical amplitude vector using uniformly controlled rotations."
+category = "simulation_and_training"
+user_goals = ["Prepare a uniform superposition", "Prepare a state matching a given amplitude vector", "Cross-check a prepared state against the target amplitudes"]
+public_apis = ["flagquantum.algorithms.primitives"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Demonstration scale. Computing the rotation angles requires a classical pass over all 2**n amplitudes and a 2**n by 2**n linear solve, so the input is already exponential in size: this unit shows that a state can be prepared efficiently given its amplitudes, not that preparing a state is cheaper than its classical description. It makes no advantage, performance, convergence, or hardware claim, and is not selected by the default runtime. The preparation is exact only to the working precision of the solve."
+focused_tests = "tests/unit/test_algorithms_state_preparation.py"

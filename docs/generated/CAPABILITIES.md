@@ -104,6 +104,9 @@ This catalog is generated from the machine-validated
 | Convert a QUBO problem into a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Recover the QUBO form from a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Evaluate a QUBO objective on a candidate assignment | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Prepare a uniform superposition | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Prepare a state matching a given amplitude vector | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Cross-check a prepared state against the target amplitudes | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -333,6 +336,20 @@ Express a quadratic unconstrained binary optimization problem as an Ising Hamilt
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior.
+
+### Quantum state preparation
+
+Prepare a uniform or arbitrary quantum state from a classical amplitude vector using uniformly controlled rotations.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.primitives`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** Demonstration scale. Computing the rotation angles requires a classical pass over all 2**n amplitudes and a 2**n by 2**n linear solve, so the input is already exponential in size: this unit shows that a state can be prepared efficiently given its amplitudes, not that preparing a state is cheaper than its classical description. It makes no advantage, performance, convergence, or hardware claim, and is not selected by the default runtime. The preparation is exact only to the working precision of the solve.
 
 
 ## Distributed execution

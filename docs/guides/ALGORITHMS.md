@@ -17,7 +17,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `qubo.py` — QUBO ↔ Ising mapping | Available. Converts a quadratic unconstrained binary optimization problem into an Ising Hamiltonian for the existing variational workflows, and reads the QUBO form back. | Boros & Hammer 2002; Barahona 1982; Lucas 2014 | **None.** A polynomial classical transformation. |
 | `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; no algorithm unit consumes it yet. | — | None. It is a subroutine. |
 | `primitives/phase_estimation.py` — phase estimation | Not yet available. | — | — |
-| `primitives/state_preparation.py` — state preparation | Not yet available. | — | — |
+| `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Not yet available. | — | — |
 | `grover.py` — Grover search | Not yet available. | — | — |
 | `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
@@ -38,6 +38,9 @@ modules need it, and it does not by itself change what a caller can run.
   quantum Fourier transform, phase estimation, oracle synthesis, and state
   preparation are subroutines. They do not have an advantage premise to state:
   their cost is paid by whatever algorithm calls them.
+- **State preparation specifically rests on the inverse of a speedup claim.** It
+  is the one primitive in the index whose classical input is as large as its
+  quantum output: see the section below.
 - **Grover search and amplitude estimation are query/oracle-model results.**
   Their advantage premise is a cheap oracle — and, for amplitude estimation, a
   cheap state-preparation operator as well. A gate-level implementation pays
@@ -98,6 +101,48 @@ without a new execution path. The constant is carried as one identity term and
 recovered as `QuboProblem.offset`, so the two forms of the same problem agree on
 every assignment.
 
+## State preparation
+
+`primitives/state_preparation.py` prepares a quantum state from a classical
+amplitude vector. `uniform_state` is the Hadamard case; `arbitrary_state` builds
+the state whose amplitudes are the normalised argument, and
+`append_arbitrary_state` composes the same preparation onto a circuit that is
+already carrying gates.
+
+**The caveat is the point of the section.** Computing the rotation angles
+requires a classical pass over all `2**n` amplitudes *and* a `2**n` by `2**n`
+linear solve, so **the input is already exponential in size**. The unit shows
+that a state can be prepared efficiently *given* its amplitudes. It does not
+show that preparing a state is cheaper than the classical description of one,
+and nothing here should be read as such a claim. The preparation is exact only
+to the working precision of that solve.
+
+```python
+import torch
+
+from flagquantum.algorithms.primitives import arbitrary_state, uniform_state
+
+uniform = uniform_state(2).state().reshape(-1)
+print([round(abs(complex(a)), 6) for a in uniform])
+# [0.5, 0.5, 0.5, 0.5]  -- every amplitude has magnitude 1/sqrt(2**n)
+
+amplitudes = torch.tensor([0.5, 0.5j, -0.5, 0.5], dtype=torch.complex64)
+target = amplitudes / amplitudes.norm()
+state = arbitrary_state(amplitudes, wires=[0, 1]).state().reshape(-1)
+print(round(float(torch.abs(torch.vdot(target, state)) ** 2), 6))
+# 1.0  -- fidelity with the target, to float32 precision
+
+# The joint solve fixes the relative phases and leaves one global phase free, so
+# the amplitudes agree with the target up to that single overall phase:
+print([round(complex(a).real, 6) for a in state])
+# [0.191342, 0.46194, -0.191342, 0.191342]
+print([round(complex(a).imag, 6) for a in state])
+# [-0.46194, 0.191342, 0.46194, -0.46194]
+```
+
+Wires are ordered most significant first, so `state[k]` is the amplitude of the
+basis state whose bits read wire `0` to wire `n-1` from left to right.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -109,6 +154,11 @@ every assignment.
   is NP-hard, which is why the mapping is interesting to a solver at all.
 - Lucas, "Ising formulations of many NP problems", *Frontiers in Physics* **2**,
   5 (2014), arXiv:1302.5843 — problem-level formulations, including MaxCut.
+- Möttönen, Vartiainen, Bergholm & Salomaa, "Transformation of quantum states
+  using uniformly controlled rotations", *Quantum Information and Computation*
+  **5**, 467 (2005), arXiv:quant-ph/0407010 — the uniformly controlled rotation
+  ladder and the analytical formula for its angles, which
+  `primitives/state_preparation.py` uses.
 
 ## Scope
 
