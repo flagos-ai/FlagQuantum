@@ -599,3 +599,20 @@ level = "experimental"
 owner = "Algorithms maintainers"
 limitations = "Demonstration scale. Computing the rotation angles requires a classical pass over all 2**n amplitudes and a 2**n by 2**n linear solve, so the input is already exponential in size: this unit shows that a state can be prepared efficiently given its amplitudes, not that preparing a state is cheaper than its classical description. It makes no advantage, performance, convergence, or hardware claim, and is not selected by the default runtime. The preparation is exact only to the working precision of the solve."
 focused_tests = "tests/unit/test_algorithms_state_preparation.py"
+
+[capabilities.algorithms_oracle_blocks]
+title = "Oracle building blocks"
+summary = "Multi-controlled X and a reversible bit-string comparator: the reversible classical logic the oracle units are built from."
+category = "simulation_and_training"
+user_goals = ["Flip a target qubit only when every control is set", "Mark the states where one bit string is greater than another", "Compose reversible classical logic into a circuit"]
+public_apis = ["flagquantum.algorithms.primitives"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Reversible classical logic of O(n) Toffoli-style cost with no advantage premise of its own. A multi-controlled X above two controls needs len(controls) - 2 caller-supplied ancillas, each of which must be in |0> on entry: measured, a dirty ancilla makes the target silently wrong on a large fraction of inputs (8 of 16 at three controls, 32 of 96 at four) while never corrupting the ancilla itself, so the failure is invisible from the ancilla. The comparator restores every wire it is given except the target. The comparator's published record is semi-verified: its venue is not indexed by Crossref, DBLP or INSPIRE, so its volume and page numbers are reported by citing works rather than index-confirmed. It makes no advantage, performance, or hardware claim."
+focused_tests = "tests/unit/test_algorithms_oracle.py"
