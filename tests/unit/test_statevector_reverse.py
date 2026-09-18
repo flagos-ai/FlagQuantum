@@ -21,7 +21,7 @@ from flagquantum.runtime.executors.statevector.reverse import (
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
-from flagquantum.runtime.executors.statevector.reverse_adjoint import (
+from flagquantum.runtime.executors.statevector.reverse_adjoint_sweep import (
     _compact_reverse_global_indices,
 )
 
@@ -31,10 +31,10 @@ pytestmark = pytest.mark.unit
 def test_generic_matrix_jvp_matches_rotation_gradient(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.runtime.executors.statevector import reverse_adjoint
+    from flagquantum.runtime.executors.statevector import reverse_adjoint_sweep
 
     monkeypatch.setattr(
-        reverse_adjoint, "_analytic_rotation_derivative", lambda *args: None
+        reverse_adjoint_sweep, "_analytic_rotation_derivative", lambda *args: None
     )
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta)
@@ -48,10 +48,10 @@ def test_generic_matrix_jvp_matches_rotation_gradient(
 def test_generic_matrix_jvp_rejects_invalid_derivative(
     monkeypatch: pytest.MonkeyPatch, jvp_result: object
 ) -> None:
-    from flagquantum.runtime.executors.statevector import reverse_adjoint
+    from flagquantum.runtime.executors.statevector import reverse_adjoint_sweep
 
     monkeypatch.setattr(
-        reverse_adjoint, "_analytic_rotation_derivative", lambda *args: None
+        reverse_adjoint_sweep, "_analytic_rotation_derivative", lambda *args: None
     )
     monkeypatch.setattr(
         torch.autograd.functional, "jvp", lambda *args, **kwargs: jvp_result
@@ -345,11 +345,11 @@ def test_checkpoint_policy_is_versioned_and_fail_closed():
 def test_rematerialization_skips_reversible_cx_optimization(
     monkeypatch: pytest.MonkeyPatch, strategy: str
 ) -> None:
-    from flagquantum.runtime.executors.statevector import reverse_adjoint
+    from flagquantum.runtime.executors.statevector import reverse_adjoint_sweep
 
-    monkeypatch.setattr(reverse_adjoint, "triton_available", lambda: True)
+    monkeypatch.setattr(reverse_adjoint_sweep, "triton_available", lambda: True)
     monkeypatch.setattr(
-        reverse_adjoint, "_triton_local_cx_segment_enabled", lambda ir: True
+        reverse_adjoint_sweep, "_triton_local_cx_segment_enabled", lambda ir: True
     )
     monkeypatch.setenv("FQ_STATEVECTOR_PERSISTENT_INPLACE_LOCAL", "1")
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)

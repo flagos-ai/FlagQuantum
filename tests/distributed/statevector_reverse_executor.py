@@ -97,6 +97,12 @@ def main() -> None:
         if args.persistent_layout:
             assert summary["analytic_rotation_derivative_count"] > 0
             assert summary["fused_parameter_adjoint_count"] > 0
+            # The two above already prove the accelerated VJP path ran. They do
+            # not prove the layout swaps were replayed, and a backward that
+            # silently skipped them would still return the right gradients from
+            # the wrong states on a circuit this small. This pins that branch:
+            # making `persistent_plan.swaps` empty fails here.
+            assert summary["persistent_layout_swap_count"] > 0
         assert all(
             item["owner_rank"] is None for item in summary["parameter_ownership"]
         )
