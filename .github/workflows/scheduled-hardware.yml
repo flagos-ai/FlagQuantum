@@ -13,6 +13,18 @@ on:
 jobs:
   gpu-scheduled:
     runs-on: [self-hosted, linux, gpu]
+    # Every accelerator job here measures a device that the others also measure,
+    # and the repository registers its runners onto shared hosts. Nothing
+    # ordered these jobs against each other, so a single-GPU benchmark could
+    # take its latency samples while the scaling sweep held eight devices on the
+    # same host. That is how a threshold the code passes gets reported as a
+    # regression. One group serializes them, and every accelerator job in every
+    # workflow joins it.
+    concurrency:
+      group: flagquantum-accelerator
+      # `queue: max` keeps every waiting lane. The default keeps one and drops
+      # it when another arrives, which would silently report nothing.
+      queue: max
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +38,7 @@ jobs:
           set -o pipefail
           python tools/run_with_watchdog.py --phase gpu-tier --stall-seconds 240 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-gpu-tier -- python tools/ci_tier.py gpu-scheduled 2>&1 | tee hardware-run/gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase jax-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-jax-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend jax --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/jax-performance.json
-          python tools/evaluate_performance_artifact.py hardware-run/jax-performance.json
+          python tools/evaluate_performance_artifact.py --write hardware-run/jax-performance.json
       - name: Record run context
         if: always()
         run: |
@@ -40,9 +52,20 @@ jobs:
   local-scale-scheduled:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    concurrency:
+      group: flagquantum-accelerator
+      # `queue: max` keeps every waiting lane. The default keeps one and drops
+      # it when another arrives, which would silently report nothing.
+      queue: max
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      # The 4-device and 8-device legs ask one host for twelve devices between
+      # them. Both runners carry `flagquantum-local`, so the two legs can land
+      # on the same host and measure each other; `max-parallel: 1` makes them
+      # take turns instead. `fail-fast` stays false so the second leg still
+      # reports after the first one fails.
+      max-parallel: 1
       matrix:
         gpu-count: [4, 8]
     steps:
@@ -63,7 +86,7 @@ jobs:
             python tools/run_with_watchdog.py --phase scale-mps-stability --stall-seconds 300 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-mps-stability -- torchrun --standalone --nproc-per-node=8 benchmarks/mps_stability.py --optimizer sgd --steps 100 --restart-steps 10 --max-bond 16 --output hardware-run/mps-stability-8.json 2>&1 | tee hardware-run/mps-stability-8.log
           fi
           python tools/run_with_watchdog.py --phase scale-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-benchmark-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/performance-${{ matrix.gpu-count }}.json
-          python tools/evaluate_performance_artifact.py hardware-run/performance-${{ matrix.gpu-count }}.json
+          python tools/evaluate_performance_artifact.py --write hardware-run/performance-${{ matrix.gpu-count }}.json
       - if: always()
         run: >-
           python tools/hardware_run_manifest.py
@@ -83,6 +106,11 @@ jobs:
   crossover-scheduled:
     needs: local-scale-scheduled
     runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    concurrency:
+      group: flagquantum-accelerator
+      # `queue: max` keeps every waiting lane. The default keeps one and drops
+      # it when another arrives, which would silently report nothing.
+      queue: max
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

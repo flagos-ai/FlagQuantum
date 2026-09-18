@@ -6,6 +6,12 @@ on:
 jobs:
   statevector-local-p0:
     runs-on: [self-hosted, linux, gpu, flagos-cuda-reference]
+    # This job holds device 0, which the local gate benchmarks and the scheduled
+    # lane sweeps, so it joins the same group. The label it waits on may name a
+    # host none of those lanes use, in which case the group costs it nothing.
+    concurrency:
+      group: flagquantum-accelerator
+      queue: max
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}

@@ -29,6 +29,61 @@ def _gpu_inventory() -> tuple[str, ...]:
     )
 
 
+# Three files carry a copy of this literal because every tool in this repository
+# is a self-contained script, and a script under `tools/` cannot name a sibling
+# module. `tests/unit/test_hardware_lane_policy.py` holds the copies to each
+# other, because a query and its parser that drift apart answer with nothing
+# rather than with an error, and nothing is what an idle host answers too.
+DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
+
+
+def _device_state() -> str:
+    """Record what the host's devices hold, as the raw answer to `DEVICE_QUERY`.
+
+    The reading of this answer lives in `tools/evaluate_performance_artifact.py`,
+    where it is unit-tested and where the gate that consumes it lives. This
+    function only captures, so that the evidence survives any later change to
+    how it is interpreted.
+    """
+
+    try:
+        completed = subprocess.run(
+            (
+                "nvidia-smi",
+                f"--query-gpu={DEVICE_QUERY}",
+                "--format=csv,noheader,nounits",
+            ),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        # No driver, a refused query, and a hung query all mean the same thing
+        # to the reader: no evidence was obtained. An empty answer says that.
+        return ""
+    return completed.stdout
+
+
+def _devices_used(world_size: int) -> list[int] | None:
+    """The device indices this run occupies, or None when they are not knowable.
+
+    `CUDA_VISIBLE_DEVICES` answers exactly when the workflow narrowed the run to
+    a device list. `torchrun` instead hands out `LOCAL_RANK` while leaving every
+    device visible, so a distributed run falls back to the first `world_size`
+    indices. An answer in another form, such as device UUIDs, is left as None
+    rather than guessed at, which asks the wider question instead.
+    """
+
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
+    if visible:
+        entries = [entry.strip() for entry in visible.split(",") if entry.strip()]
+        if all(entry.isdigit() for entry in entries):
+            return [int(entry) for entry in entries]
+        return None
+    return list(range(world_size))
+
+
 def _commit() -> str:
     source_commit = os.environ.get("FLAGQUANTUM_SOURCE_COMMIT")
     if source_commit is not None:
@@ -390,6 +445,9 @@ def main() -> int:
     parser.add_argument("--inner-loops", type=int, default=50)
     parser.add_argument("--global-elements", type=int, default=1 << 20)
     args = parser.parse_args()
+    # Sampled before the first allocation, so anything the answer already shows
+    # on a device this run will use belongs to someone else.
+    device_state_before = _device_state()
     if args.mode == "local-gpu":
         record = (
             _measure_jax_local(args.warmup, args.repetitions, args.inner_loops)
@@ -418,6 +476,11 @@ def main() -> int:
         payload = {
             **record.summary(),
             **extra,
+            "measurement_environment": {
+                "sampled_before": device_state_before,
+                "sampled_after": _device_state(),
+                "devices_used": _devices_used(record.world_size),
+            },
             "artifact_class": "development_run",
             "benchmark_evidence_class": "non_release_performance_baseline",
             "non_release_evidence": True,
