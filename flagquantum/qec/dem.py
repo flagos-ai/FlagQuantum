@@ -432,11 +432,22 @@ class DetectorErrorModel:
         This reader handles the format :meth:`to_stim_text` emits and
         hand-written text in the same style, not stim text in general. The
         declarations must be complete and consecutive from zero, ``#`` comments
-        are not accepted, and the shape comes only from the declarations, which
-        real stim does not fully state: it emits ``shift_detectors`` and no
-        ``logical_observable`` line, so both are refused here. What
-        :meth:`to_stim_text` writes is valid stim, but this method does not read
-        everything stim writes.
+        are not accepted, and the shape comes only from the declarations.
+
+        Real stim does not state the shape this reader requires, so its
+        untouched output does not parse: ``shift_detectors`` is refused outright,
+        and a noisy stim detector error model names an observable index that stim
+        never declares, which the declarations-only rule refuses in turn. In a
+        developer-time sweep of stim 1.16.0 output -- repetition-code and
+        rotated-surface-code memory circuits, distances three and five, one to
+        three rounds, noisy and noise-free, with and without flattening the
+        circuit first -- every untouched detector error model was refused, and
+        every model this reader accepted carried no error. A stim detector error
+        model does parse when its text states its shape in full: strip the
+        observable instruction from the circuit and the flattened text is
+        accepted, with detector rates that match stim's own compiled sampler.
+        What :meth:`to_stim_text` writes is valid stim, but this method does not
+        read everything stim writes.
         """
 
         num_detectors, num_observables, errors = _parse_stim_text(text)
@@ -619,8 +630,14 @@ def _mechanisms(
     twice. Its second copy would be the same physical location as the first
     with the same signature, so merging them states one location's rate as two
     independent flips, ``p * (1 - p) + p * (1 - p)``, instead of ``p`` — a wrong
-    model with no signal. No check duplicates reach this point: a repeated
-    check ancilla is refused by the injection engine's anchor.
+    model with no signal. A code whose checks share an ancilla wire is refused
+    for the same reason: both checks record their syndrome bit at one position
+    in the classical register, so the later check's position overwrites the
+    earlier one's and each round's detectors read that one bit for both. The
+    injection engine refuses that shape too, but only where it injects — its
+    anchor is the measurement line, so a model built from data flips alone never
+    reaches it — which is why the refusal is stated here, before any mechanism
+    is enumerated.
     """
 
     data_wires = circuit.code.data_wires
@@ -628,6 +645,16 @@ def _mechanisms(
         raise ValueError(
             "the code declares a repeated data wire, so a mechanism at that "
             "location would be enumerated twice and merged with itself"
+        )
+    ancilla_wires = [check.ancilla_wire for check in circuit.code.checks]
+    if len(set(ancilla_wires)) != len(ancilla_wires):
+        repeated = sorted(
+            wire for wire in set(ancilla_wires) if ancilla_wires.count(wire) > 1
+        )
+        raise ValueError(
+            f"the code declares a repeated check ancilla wire ({repeated[0]}): "
+            "two checks record one syndrome bit, so the model would read the "
+            "same bit for both"
         )
     mechanisms: list[_Mechanism] = []
     if noise.data_flip:

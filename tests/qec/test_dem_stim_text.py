@@ -122,9 +122,18 @@ def test_rejects_an_error_with_no_effect() -> None:
         DetectorErrorModel.from_stim_text("error(0.1)\n")
 
 
-def test_rejects_a_probability_outside_the_unit_interval() -> None:
-    with pytest.raises(ValueError):
-        DetectorErrorModel.from_stim_text("error(1.5) D0\n")
+@pytest.mark.parametrize("probability", ["1.5", "-0.1"])
+def test_rejects_a_probability_outside_the_unit_interval(probability: str) -> None:
+    """The probability is the only thing this text can be refused for.
+
+    A text that declares no detector is refused by the model's "at least one
+    detector" rule whatever the probability is, so it would pass with the range
+    check deleted. Declaring the detector the error names leaves the range check
+    as the sole possible ``ValueError``, on both sides of the interval.
+    """
+
+    with pytest.raises(ValueError, match="must be between zero and one"):
+        DetectorErrorModel.from_stim_text(f"error({probability}) D0\ndetector D0\n")
 
 
 def test_rejects_a_malformed_target() -> None:

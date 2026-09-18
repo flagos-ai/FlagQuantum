@@ -145,18 +145,27 @@ check available — parsing the emitted text with the real `stim` package — wa
 run at developer time and is not a committed test, because `stim` is not a
 dependency of this repository.
 
-The stim interchange is one-directional in practice. `to_stim_text()` emits valid
-stim text, verified against stim 1.16.0. `from_stim_text()` reads the format that
-`to_stim_text()` emits and hand-written text in that style, not arbitrary stim
-output: it requires declarations that are complete and consecutive from zero, it
-refuses `#` comments, and it takes the model shape from the declarations alone.
-What makes the interchange one-directional is that refusal, and it holds whichever
-construct comes first: `shift_detectors` is refused outright. The stim detector
-error models measured at developer time — repetition-code and surface-code
-memory circuits — all carry `shift_detectors`, and the noisy ones carry no
-`logical_observable` line (a noise-free one does emit it, and is refused by the
-`shift_detectors` rule just the same), so `from_stim_text(str(real_stim_dem))`
-raises.
+The stim interchange is one-directional in practice, and that is a measured
+statement about a finite sweep, not a theorem about stim. `to_stim_text()` emits
+valid stim text, verified against stim 1.16.0. `from_stim_text()` reads the
+format `to_stim_text()` emits and hand-written text in that style, not arbitrary
+stim output: the declarations must be complete and consecutive from zero, `#`
+comments are not accepted, and the model shape comes from the declarations
+alone. `shift_detectors` is refused outright.
+
+In the developer-time sweep -- repetition-code and rotated-surface-code memory
+circuits, distances three and five, one to three rounds, noisy and noise-free,
+with and without flattening the circuit first -- every untouched DEM was
+refused, and it is worth naming why each was: a DEM built from a circuit whose
+rounds repeat carries `shift_detectors`, and a noisy DEM names an observable
+index stim never declares. Every DEM this reader accepted was checked against
+stim's own compiled sampler and agreed in shape and in every detector rate. Two
+of the accepted texts were real stim output carrying errors, and both needed the
+observable instruction stripped from the circuit first -- so the boundary is
+what the text declares, not whether stim produced it, and this reader is not a
+general stim reader. Not covered by the sweep: decomposed or
+approximately-disjoint errors, gauge detectors, repeat blocks, colour codes,
+distances above five, and hand-written text.
 
 `DemSample` carries tensors and defines content equality, and it is deliberately
 unhashable: it must not be used as a set member or a dict key.

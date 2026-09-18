@@ -121,7 +121,8 @@ _COLLIDING_SHOTS = 1000
 # Detector 0 of that circuit is flipped by four mechanisms of equal probability:
 # three data flips of round 0, merged by parity to 0.4375, and the round's
 # measurement flip at 0.25, combined with it to 0.46875. A plain-sum merge puts
-# the same four at 0.75 and 0.25 and states detector 0 as ``_SUM_MERGE_RATE``;
+# the same four at 0.75 and 0.25 and states detector 0 as
+# ``_SUM_MERGE_DETECTOR_ZERO_RATE``;
 # the sample itself sits on the parity value (457/1000 measured), so the two
 # rules are 0.15625 apart — a gap the 4-sigma band (0.0612 at the sum rule's
 # rate) fits inside twice over. The sum rule's value is a literal because no

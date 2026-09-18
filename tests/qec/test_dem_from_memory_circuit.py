@@ -17,6 +17,7 @@ from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.dem import (
     DetectorErrorModel,
     _forced_signature,
+    _inject_data_flip,
     _inject_measurement_flip,
     _Mechanism,
     _mechanisms,
@@ -420,6 +421,43 @@ def test_a_detector_naming_an_unowned_ancilla_fails_closed() -> None:
         )
 
 
+def test_a_terminal_detector_is_read_off_the_layout_not_the_check_support() -> None:
+    """A terminal detector reads the data wires the layout names, nothing else.
+
+    ``MemoryCircuit`` requires a terminal reference to name a declared data
+    wire, never a wire the owning check touches, so a layout whose terminal
+    detector reads a wire its check does not touch is representable by hand.
+    The two readings agree on every circuit ``build_memory_circuit`` emits,
+    because the terminal parity it generates *is* the check's support there, so
+    only a hand-built layout can tell them apart — which is what this does.
+    """
+
+    base = build_memory_circuit(_TwoObservableCode(), rounds=2)
+    detectors = list(base.detectors.detectors)
+    terminal = len(detectors) - len(base.code.checks)
+    # The generated first terminal detector reads its own check's support (0, 1).
+    assert detectors[terminal].parity == (
+        MeasurementRef(1, 3),
+        MeasurementRef(None, 0),
+        MeasurementRef(None, 1),
+    )
+    # Check 0 touches wires 0 and 1 and never wire 2, and this layout reads wire
+    # 2 anyway. Wire 2 is a declared data wire, so the circuit is still legal.
+    detectors[terminal] = Detector(
+        index=terminal, parity=(MeasurementRef(1, 3), MeasurementRef(None, 2))
+    )
+    circuit = replace(base, detectors=DetectorLayout(tuple(detectors)))
+
+    # A last-round flip on wire 2 moves check 1's round-1 syndrome, which is
+    # detector 3, and — through this layout's terminal reference — detector 4.
+    # Read off check 0's support instead, detector 4 stays put and the signature
+    # is (3,), so the two readings are distinguishable here.
+    signature = _forced_signature(
+        circuit, _inject_data_flip(circuit, round_index=1, wire=2)
+    )
+    assert signature == ((3, 4), (0,))
+
+
 def test_a_source_that_does_not_match_its_layout_fails_closed() -> None:
     """An injector refusal reaches the caller unchanged, not swallowed."""
 
@@ -489,6 +527,60 @@ def test_duplicate_data_wires_are_refused() -> None:
 
     built = build_memory_circuit(_RepeatedDataWireCode(), rounds=2)
     with pytest.raises(ValueError, match="repeated data wire"):
+        DetectorErrorModel.from_memory_circuit(
+            built, noise=PhenomenologicalNoise(data_flip=0.05)
+        )
+
+
+@dataclass(frozen=True)
+class _RepeatedAncillaCode(_TwoObservableCode):
+    """A code whose two checks measure one shared ancilla wire.
+
+    Nothing in Stage 1 requires two checks to own distinct ancillas: a code
+    declares the wires it uses, and ``CodeCheck`` ties each check's CNOTs to its
+    own ancilla, which a second check may name as well. The emitted loop then
+    measures wire 3 twice per round, so both checks' syndrome bits land at one
+    position in the classical register.
+    """
+
+    @property
+    def num_ancilla_qubits(self) -> int:
+        return 1
+
+    @property
+    def ancilla_wires(self) -> tuple[int, ...]:
+        return (3,)
+
+    @property
+    def checks(self) -> tuple[CodeCheck, ...]:
+        return (
+            CodeCheck(
+                index=0,
+                stabilizer=Pauli(z_wires=(0, 1)),
+                ancilla_wire=3,
+                cnot_wires=((0, 3), (1, 3)),
+            ),
+            CodeCheck(
+                index=1,
+                stabilizer=Pauli(z_wires=(1, 2)),
+                ancilla_wire=3,
+                cnot_wires=((1, 3), (2, 3)),
+            ),
+        )
+
+
+def test_repeated_check_ancilla_wires_are_refused() -> None:
+    """Two checks on one ancilla fail closed before a mechanism is enumerated.
+
+    The shape is representable and its program builds, and a data flip never
+    reaches the injection engine's measurement anchor, so without this guard the
+    model builds: both checks' detectors would read the one classical bit at the
+    shared position, and a mechanism that flips nothing as misread would be
+    dropped rather than refused.
+    """
+
+    built = build_memory_circuit(_RepeatedAncillaCode(), rounds=2)
+    with pytest.raises(ValueError, match="repeated check ancilla wire"):
         DetectorErrorModel.from_memory_circuit(
             built, noise=PhenomenologicalNoise(data_flip=0.05)
         )
