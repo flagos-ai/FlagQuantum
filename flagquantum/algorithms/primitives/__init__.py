@@ -10,4 +10,7 @@ is not a general-purpose quantum toolkit.
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from .qft import append_qft as append_qft
+from .qft import qft as qft
+
+__all__ = ["append_qft", "qft"]

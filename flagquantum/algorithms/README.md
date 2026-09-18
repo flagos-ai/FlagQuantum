@@ -17,6 +17,8 @@ external-framework objects or a second execution path.
   workflows.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
 - `__init__.py`: the intentionally small public algorithms surface.
+- `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
+  algorithm modules need them.
 
 Staged optimization owns contiguous copies of input parameter groups. This
 lets Rotosolve update coordinates in place and LBFGS flatten gradients even
