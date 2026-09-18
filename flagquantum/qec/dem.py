@@ -27,6 +27,10 @@ from numbers import Integral, Real
 
 import torch
 
+from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
+from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
+from .circuit import MeasurementRef, MemoryCircuit
+
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
 
@@ -468,6 +472,175 @@ class DetectorErrorModel:
         """Number of independent error mechanisms in the model."""
 
         return len(self.errors)
+
+
+# The forced-error engine drives the memory circuit one mechanism at a time. It
+# injects a single physical error into the bounded hybrid-compiler program the
+# circuit carries, executes the result, and reads the detector and observable
+# flips off the Stage 1 layouts. Nothing here is public: a mechanism is a
+# physical location, and the model above is what a caller is given.
+
+_ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"
+_FLIP_INDENT = "        "
+
+
+def _checked_round(circuit: MemoryCircuit, round_index: int, *, label: str) -> int:
+    """Return ``round_index`` once it names a round this circuit configures."""
+
+    if isinstance(round_index, bool) or not isinstance(round_index, Integral):
+        raise TypeError(f"{label} must be an integer")
+    if round_index not in range(circuit.rounds):
+        raise ValueError(
+            f"{label} {round_index} is outside the configured rounds "
+            f"0..{circuit.rounds - 1}"
+        )
+    return int(round_index)
+
+
+def _checked_wire(wires: tuple[int, ...], wire: int, *, label: str) -> int:
+    """Return ``wire`` once the code declares it."""
+
+    if isinstance(wire, bool) or not isinstance(wire, Integral):
+        raise TypeError(f"{label} must be an integer")
+    if wire not in wires:
+        raise ValueError(f"{label} {wire} is not declared by the code")
+    return int(wire)
+
+
+def _single_anchor(source: str, anchor: str, *, label: str) -> int:
+    """Return the offset of ``anchor``, refusing a source that repeats or lacks it.
+
+    An anchor that occurs twice cannot say which occurrence the mechanism
+    belongs to, so it is refused rather than resolved to the first one.
+    """
+
+    occurrences = source.count(anchor)
+    if occurrences != 1:
+        raise ValueError(
+            f"{label} must occur exactly once in the source, found {occurrences}"
+        )
+    return source.index(anchor)
+
+
+def _forced_flip(round_index: int, wire: int) -> str:
+    """Return the guarded single-qubit ``X`` that forces one error."""
+
+    return (
+        f"{_FLIP_INDENT}if round_index == {round_index}:\n"
+        f"{_FLIP_INDENT}    qp.X(wires={wire})\n"
+    )
+
+
+def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) -> str:
+    """Return ``circuit``'s source with one ``X`` forced on a data wire.
+
+    The flip is guarded by ``if round_index == <round_index>:`` and inserted at
+    the start of that round, before any of the round's CNOTs, so the error opens
+    the frame the round's detectors compare against.
+    """
+
+    checked_round = _checked_round(circuit, round_index, label="data-flip round")
+    checked_wire = _checked_wire(circuit.code.data_wires, wire, label="data-flip wire")
+    offset = _single_anchor(
+        circuit.source, _ROUND_LOOP_ANCHOR, label="the round loop anchor"
+    )
+    end = offset + len(_ROUND_LOOP_ANCHOR)
+    return (
+        f"{circuit.source[:end]}"
+        f"{_forced_flip(checked_round, checked_wire)}"
+        f"{circuit.source[end:]}"
+    )
+
+
+def _inject_measurement_flip(
+    circuit: MemoryCircuit, *, round_index: int, ancilla_wire: int
+) -> str:
+    """Return ``circuit``'s source with one check measurement forced to flip.
+
+    The flip is an ``X`` on the ancilla immediately before the check measures
+    it, guarded by ``if round_index == <round_index>:``. A check's ancilla wire
+    is unique to it, so the anchor names exactly one check; a source where that
+    line is missing or repeated is refused rather than injected into the wrong
+    check.
+    """
+
+    checked_round = _checked_round(circuit, round_index, label="measurement-flip round")
+    checked_wire = _checked_wire(
+        circuit.code.ancilla_wires, ancilla_wire, label="measurement-flip ancilla"
+    )
+    offset = _single_anchor(
+        circuit.source,
+        f"{_FLIP_INDENT}last = qp.measure(wires={checked_wire})\n",
+        label="the check measurement anchor",
+    )
+    return (
+        f"{circuit.source[:offset]}"
+        f"{_forced_flip(checked_round, checked_wire)}"
+        f"{circuit.source[offset:]}"
+    )
+
+
+def _forced_signature(
+    circuit: MemoryCircuit, source: str
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return the detectors and observables that ``source``'s forced error flips.
+
+    The source is lowered and executed twice, and both shots must agree: a
+    mechanism whose outcome depends on the trajectory is not a Pauli mechanism
+    in the reference gate set, so it is refused instead of contributing a
+    signature. The surviving shot is read through the layouts, never off the raw
+    register: a detector XORs the measurements its parity names, and an
+    observable XORs the terminal samples over the support of its Pauli.
+
+    A syndrome measurement is read at ``round_index * len(checks) +
+    position_in_checks``, where the position is the check's index in the code's
+    ``checks`` tuple. That is the order the emitted loop measures in, which is
+    what the classical register records; ``CodeCheck.index`` is a label the code
+    chooses and need not be that order.
+    """
+
+    program = capture_source(source, (INDEX,))
+    lowered = lower_dynamic_program(
+        program,
+        (circuit.rounds,),
+        max_dynamic_measurements=circuit.rounds * len(circuit.code.checks),
+    )
+    execution = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=2, seed=0, strategy="trajectory"
+    )
+    classical: list[list[int]] = execution.classical_bits.tolist()
+    samples: list[list[int]] = execution.samples.tolist()
+    if classical[0] != classical[1] or samples[0] != samples[1]:
+        raise ValueError(
+            "the forced error is not deterministic across trajectories, so it is "
+            "not a Pauli mechanism in the reference gate set"
+        )
+    classical_row = classical[0]
+    sample_row = samples[0]
+    positions = {
+        check.ancilla_wire: position
+        for position, check in enumerate(circuit.code.checks)
+    }
+    checks = len(circuit.code.checks)
+
+    def measurement_bit(reference: MeasurementRef) -> int:
+        """Return the recorded bit one layout reference names."""
+
+        if reference.round_index is None:
+            return sample_row[reference.wire]
+        return classical_row[reference.round_index * checks + positions[reference.wire]]
+
+    detectors = tuple(
+        detector.index
+        for detector in circuit.detectors.detectors
+        if sum(measurement_bit(reference) for reference in detector.parity) % 2 == 1
+    )
+    observables = tuple(
+        observable.index
+        for observable in circuit.observables.observables
+        if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
+    )
+    return detectors, observables
 
 
 __all__ = ("DemError", "DemSample", "DetectorErrorModel")
