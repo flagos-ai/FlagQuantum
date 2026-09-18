@@ -701,10 +701,12 @@ Expected: `AttributeError: 'DetectorErrorModel' object has no attribute 'detecto
 
 - [ ] **Step 3: Implement the matrices and rates**
 
-Add to `flagquantum/qec/dem.py`, importing torch at the top beside the other imports:
+Two imports join the module top: `torch`, beside the other third-party imports, and `Callable`, added to the existing `collections.abc` line — the `_marginal_rates` signature below annotates a selector with it, and `from __future__ import annotations` does not excuse a name that pyflakes and mypy both resolve:
 
 ```python
 import torch
+
+from collections.abc import Callable, Iterable
 ```
 
 and appending these methods to `DetectorErrorModel`, above `num_errors`:
@@ -1382,6 +1384,8 @@ from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from .circuit import MeasurementRef, MemoryCircuit
 ```
+
+`MeasurementRef` is imported because the local helper that reads one reference must annotate its parameter with it — `mypy --strict` needs a real type to reach `.round_index`, and `from __future__ import annotations` stringifies the annotation without freeing the name from `F401`. If you inline that read instead of writing a helper, drop `MeasurementRef` from the import rather than leaving it unused.
 
 Helpers to implement, matching the Interfaces block above. Three details that are easy to get wrong:
 
