@@ -72,7 +72,7 @@ def arbitrary_state(
     Args:
         amplitudes: The amplitude vector, one-dimensional, of power-of-two length at least
             two, and not the zero vector. Any norm is accepted; the vector is normalised here.
-        wires: The wires to prepare, least significant register order; defaults to
+        wires: The wires to prepare, most significant first; defaults to
             ``range(n)`` with ``n = log2(len(amplitudes))``.
 
     Returns:
@@ -104,7 +104,7 @@ def append_arbitrary_state(
     Args:
         circuit: The circuit to extend.
         amplitudes: The amplitude vector, validated as in :func:`arbitrary_state`.
-        wires: The wires to prepare, least significant register order.
+        wires: The wires to prepare, most significant first.
 
     Raises:
         ValueError: If ``amplitudes`` or ``wires`` fail the validation described in

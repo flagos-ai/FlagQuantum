@@ -15,8 +15,8 @@ tested, and reproducible still does not carry an advantage of its own.
 | Unit | What it does | Citation | Advantage premise |
 | --- | --- | --- | --- |
 | `qubo.py` — QUBO ↔ Ising mapping | Available. Converts a quadratic unconstrained binary optimization problem into an Ising Hamiltonian for the existing variational workflows, and reads the QUBO form back. | Boros & Hammer 2002; Barahona 1982; Lucas 2014 | **None.** A polynomial classical transformation. |
-| `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; no algorithm unit consumes it yet. | — | None. It is a subroutine. |
-| `primitives/phase_estimation.py` — phase estimation | Not yet available. | — | — |
+| `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; phase estimation consumes it. | — | None. It is a subroutine. |
+| `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Not yet available. | — | — |
 | `grover.py` — Grover search | Not yet available. | — | — |
@@ -34,10 +34,10 @@ modules need it, and it does not by itself change what a caller can run.
   produces no speedup of its own: any advantage a caller observes belongs to the
   solver that consumes the Hamiltonian, not to this mapping. The module says so
   in its own docstring, and the capability entry repeats it as its boundary.
-- **The primitives this mapping will be joined by carry none either.** The
-  quantum Fourier transform, phase estimation, oracle synthesis, and state
-  preparation are subroutines. They do not have an advantage premise to state:
-  their cost is paid by whatever algorithm calls them.
+- **The other primitives carry none either.** The quantum Fourier transform,
+  phase estimation, and state preparation have shipped as subroutines, and
+  oracle synthesis will join them as one more. They do not have an advantage
+  premise to state: their cost is paid by whatever algorithm calls them.
 - **State preparation specifically rests on the inverse of a speedup claim.** It
   is the one primitive in the index whose classical input is as large as its
   quantum output: see the section below.
@@ -159,6 +159,12 @@ basis state whose bits read wire `0` to wire `n-1` from left to right.
   **5**, 467 (2005), arXiv:quant-ph/0407010 — the uniformly controlled rotation
   ladder and the analytical formula for its angles, which
   `primitives/state_preparation.py` uses.
+- Kitaev's phase estimation, with the concrete reference Brassard, Høyer, Mosca
+  & Tapp, "Quantum Amplitude Amplification and Estimation", *AMS Contemporary
+  Mathematics* **305**, 53–74 (2002), DOI 10.1090/conm/305/05215,
+  arXiv:quant-ph/0005055 — the controlled powers of the unitary and the inverse
+  Fourier transform on the counting register that
+  `primitives/phase_estimation.py` builds.
 
 ## Scope
 

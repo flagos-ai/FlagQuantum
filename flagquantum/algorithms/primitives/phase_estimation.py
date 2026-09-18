@@ -4,6 +4,10 @@ The counting register is prepared in a uniform superposition, the unitary is app
 controlled powers whose exponents are the counting bits, and the inverse Fourier transform on
 the counting register turns the accumulated phase into a readable integer.
 
+The construction is Kitaev's phase estimation, in the form recorded by Brassard, Høyer, Mosca,
+and Tapp, "Quantum Amplitude Amplification and Estimation", *AMS Contemporary Mathematics*
+**305**, 53–74 (2002), DOI 10.1090/conm/305/05215, arXiv:quant-ph/0005055.
+
 The resolution the circuit achieves is a property of the circuit, not evidence of a
 performance advantage, and the cost of preparing the operator's eigenstate is not counted here.
 """
