@@ -108,11 +108,14 @@ class QuboProblem:
 def _constant_wire(n_variables: int) -> int:
     """Return the wire that carries the constant term.
 
-    A constant term has no operator, so it contributes nothing to the Hamiltonian's wire
-    count on any wire. It is placed on the register's last wire so that the term also
-    records the register width: for a problem with no coefficients the constant term is
-    all a Hamiltonian carries, and the declared wire is then the only record of how many
-    variables the problem had.
+    A constant term has no operator, so it contributes nothing to a Hamiltonian's wire
+    count on any wire: ``HamiltonianTerm.max_wire`` is ``-1`` for an identity-only term, so
+    a Hamiltonian whose only term is this constant reports ``n_wires == 0`` however wide
+    the problem was. The wire is still placed on the register's last wire, which is where
+    the width survives: ``ising_to_qubo`` reads a term's declared wires rather than the
+    Hamiltonian's count, so it recovers ``n_variables`` from this wire. A caller who asks
+    the Hamiltonian for its wire count instead gets nothing back, and has to carry the
+    problem's width itself.
 
     Args:
         n_variables: The number of binary variables.

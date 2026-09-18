@@ -31,7 +31,7 @@ __all__ = [
 ]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class PhaseEstimationSpec:
     """The resolution a phase-estimation circuit achieves.
 
@@ -78,35 +78,44 @@ class PhaseEstimationSpec:
         return 4 / math.pi**2
 
     def phase_from_counts(self, counts: Mapping[str, int]) -> float:
-        """Return the most frequent count read as a phase in ``[0, 1)``.
+        """Return the most frequent counting outcome read as a phase in ``[0, 1)``.
 
         The keys are the full register as a big-endian bit string, so the counting register
-        is the first ``n_counting_wires`` characters.
+        is the first ``n_counting_wires`` characters. Every key's count is accumulated onto
+        those leading bits and the mode of that folded distribution is what is read: taking
+        the most frequent full-register key instead would follow the evaluation register
+        wherever it is correlated with the counting register, and return a silently wrong
+        phase rather than an error. What the readout still assumes is the key layout only:
+        one character per wire, with the counting register's bits leading. The evaluation
+        register's bits are otherwise read nowhere.
 
         Args:
             counts: Sample counts keyed by the full register's bit string.
 
         Returns:
-            The most frequent counting value divided by ``2**n_counting_wires``.
+            The most frequent value of the leading ``n_counting_wires`` bits, divided by
+            ``2**n_counting_wires``.
 
         Raises:
-            ValueError: If ``counts`` is empty, or if the most frequent key does not carry
-                one bit per register wire.
+            ValueError: If ``counts`` is empty, or if a key does not carry one bit per
+                register wire.
         """
         if not counts:
             raise ValueError("counts must not be empty")
-        most_frequent = max(counts, key=counts.__getitem__)
         expected = self.n_counting_wires + self.n_evaluation_wires
-        if len(most_frequent) != expected:
-            raise ValueError(
-                f"count key {most_frequent!r} has {len(most_frequent)} bits, "
-                f"expected {expected} for this register"
-            )
+        folded: dict[str, int] = {}
+        for key, count in counts.items():
+            if len(key) != expected:
+                raise ValueError(
+                    f"count key {key!r} has {len(key)} bits, "
+                    f"expected {expected} for this register"
+                )
+            counting_key = key[: self.n_counting_wires]
+            folded[counting_key] = folded.get(counting_key, 0) + count
+        most_frequent = max(folded, key=folded.__getitem__)
         # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
         # negative exponent yields a float, and an ``Any`` return fails the type gate.
-        return (
-            int(most_frequent[: self.n_counting_wires], 2) / 2.0**self.n_counting_wires
-        )
+        return int(most_frequent, 2) / 2.0**self.n_counting_wires
 
 
 def append_phase_estimation(

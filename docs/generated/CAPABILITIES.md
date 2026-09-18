@@ -354,7 +354,7 @@ Express a quadratic unconstrained binary optimization problem as an Ising Hamilt
 Prepare a uniform or arbitrary quantum state from a classical amplitude vector using uniformly controlled rotations.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.algorithms.primitives`
+- **Public API:** `flagquantum.algorithms.primitives.state_preparation`
 - **Runtime modes:** `local_statevector`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
@@ -368,21 +368,21 @@ Prepare a uniform or arbitrary quantum state from a classical amplitude vector u
 Multi-controlled X and a reversible bit-string comparator: the reversible classical logic the oracle units are built from.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.algorithms.primitives`
+- **Public API:** `flagquantum.algorithms.primitives.oracle.append_multi_controlled_x`, `flagquantum.algorithms.primitives.oracle.append_comparator`
 - **Runtime modes:** `local_statevector`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
-- **Known boundary:** Reversible classical logic of O(n) Toffoli-style cost with no advantage premise of its own. A multi-controlled X above two controls needs len(controls) - 2 caller-supplied ancillas, each of which must be in |0> on entry: measured, a dirty ancilla makes the target silently wrong on a large fraction of inputs (8 of 16 at three controls, 32 of 96 at four) while never corrupting the ancilla itself, so the failure is invisible from the ancilla. The comparator restores every wire it is given except the target. The comparator's published record is semi-verified: its venue is not indexed by Crossref, DBLP or INSPIRE, so its volume and page numbers are reported by citing works rather than index-confirmed. It makes no advantage, performance, or hardware claim.
+- **Known boundary:** Reversible classical logic of O(n) Toffoli-style cost with no advantage premise of its own. A multi-controlled X above two controls needs len(controls) - 2 caller-supplied ancillas, each of which must be in |0> on entry: measured, a dirty ancilla makes the target silently wrong on a large fraction of inputs (8 of 16 at three controls, 32 of 96 at four) while never corrupting the ancilla itself, so the failure is invisible from the ancilla. The comparator restores every wire it is given except the target; its len(lhs) + 1 equality flags and its scratch wire must all be in |0> on entry too, and a dirty equality[0] makes the target silently wrong on a large fraction of the operand patterns (6 of 16 at two bits) before the ladder restores the flag. The comparator's published record is semi-verified: its venue is not indexed by Crossref, DBLP or INSPIRE, so its volume and page numbers are reported by citing works rather than index-confirmed. It makes no advantage, performance, or hardware claim.
 
 ### Truth-table oracle synthesis
 
 Turn a classical predicate into a phase oracle or a bit oracle by enumerating its truth table.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.algorithms.primitives`
+- **Public API:** `flagquantum.algorithms.primitives.oracle.marked_states`, `flagquantum.algorithms.primitives.oracle.phase_oracle`, `flagquantum.algorithms.primitives.oracle.append_phase_oracle`, `flagquantum.algorithms.primitives.oracle.bit_oracle`, `flagquantum.algorithms.primitives.oracle.append_bit_oracle`
 - **Runtime modes:** `local_statevector`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`

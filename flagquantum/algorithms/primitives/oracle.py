@@ -112,10 +112,15 @@ def append_multi_controlled_x(
     spare: list[int] = []
     if ancillas is None:
         if needed:
+            # One ladder wire per control above the two a native gate takes, and this
+            # branch is only reached when there is at least one, so only a single-wire
+            # ladder takes the singular noun.
+            ancilla_word = "ancilla" if needed == 1 else "ancillas"
+            free_word = "wire" if needed == 1 else "wires"
             raise ValueError(
                 f"a multi-controlled X with {len(ordered)} controls needs {needed} "
-                f"ancillas, each starting in |0>, and none were given; pass "
-                f"ancillas=[...] with {needed} free wire(s)"
+                f"{ancilla_word}, each starting in |0>, and none were given; pass "
+                f"ancillas=[...] with {needed} free {free_word}"
             )
     else:
         spare = list(ancillas)
@@ -145,6 +150,10 @@ def append_comparator(
     the prefix-equality ladder and the scratch wire are uncomputed, so the primitive
     composes into a larger oracle instead of leaving ``n`` wires holding intermediate
     flags.
+
+    **All ``len(lhs) + 1`` equality flags and the scratch wire must be in ``|0>`` on
+    entry**: a dirty ``equality[0]`` makes the target silently wrong, and the ladder
+    restores the flag, so nothing is raised.
 
     The construction first builds a ladder of prefix-equality flags, with ``equality[i]``
     holding "the first ``i`` bits of the two operands are equal"; ``equality[0]`` is driven
@@ -243,11 +252,14 @@ def phase_oracle(predicate: Predicate, n_wires: int) -> Circuit:
     """
     _validate_register_width(n_wires)
     if n_wires > _PHASE_ORACLE_WIRE_LIMIT:
+        # This branch is only reached above the cap, so at least one ancilla is needed;
+        # four wires is the only width that takes the singular noun.
+        ancilla_word = "ancilla" if n_wires == 4 else "ancillas"
         raise ValueError(
             f"a standalone phase oracle is capped at {_PHASE_ORACLE_WIRE_LIMIT} wires, got "
             f"{n_wires}: its multi-controlled Z is a multi-controlled X with {n_wires - 1} "
             f"controls, and a multi-controlled X above two controls needs "
-            f"len(controls) - 2 = {n_wires - 3} ancillas in |0>, which a circuit of "
+            f"len(controls) - 2 = {n_wires - 3} {ancilla_word} in |0>, which a circuit of "
             f"exactly {n_wires} wires has no free wire for. Use append_phase_oracle to "
             f"append the oracle to a circuit whose register and ancillas the caller lays "
             f"out, or bit_oracle, which allocates its own ladder ancillas."
@@ -538,9 +550,11 @@ def _validate_comparator(
             not one wider than an operand, or if a wire repeats.
     """
     if len(left) != len(right):
+        left_word = "wire" if len(left) == 1 else "wires"
+        right_word = "wire" if len(right) == 1 else "wires"
         raise ValueError(
-            f"the operands must be as wide as each other, got {len(left)} left wires "
-            f"and {len(right)} right wires"
+            f"the operands must be as wide as each other, got {len(left)} left "
+            f"{left_word} and {len(right)} right {right_word}"
         )
     if not left:
         raise ValueError(
@@ -621,9 +635,9 @@ def _validate_ladder_ancillas(
     if len(ancillas) != needed:
         raise ValueError(
             f"a {caller} folds its ladder onto max(0, n_wires - {free_at}) wires -- "
-            f"{needed} of them for this register -- and was given {len(ancillas)}; each "
-            "ladder wire folds one control above the widest natively supported one and "
-            "must be in |0> on entry"
+            f"{needed} of them for this register -- and was given {len(ancillas)}; the "
+            "ladder wires hold successive prefix conjunctions of the controls above the "
+            "two a native gate takes, and each must be in |0> on entry"
         )
     occupied = list(register) + list(ancillas)
     if len(set(occupied)) != len(occupied):
