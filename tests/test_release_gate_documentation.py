@@ -34,7 +34,11 @@ def test_testing_policy_documents_marker_boundaries():
     assert "does not prove real multi-GPU or multi-node capacity expansion" in text
     assert "must not be used as release-grade scalability evidence" in text
     assert "Do not treat an empty marker selection as verification" in text
-    assert "Current Runnable Commands" in text
+    # The manual used to carry a `## Current Runnable Commands` heading with
+    # nothing under it, immediately followed by `## Quick Start`. This assertion
+    # pinned the empty heading; it now pins the section that actually lists the
+    # commands a reader can run.
+    assert "## Quick Start" in text
     assert 'python -m pytest -m "smoke or unit" -q' in text
     assert "Planned Marker Commands" in text
     assert 'python -m pytest -m "distributed_cpu" -q' in text

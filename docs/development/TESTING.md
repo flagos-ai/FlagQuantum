@@ -35,8 +35,6 @@ passes `flagquantum.runtime.audit.release_policy.require_distributed_scalability
 and the benchmark audit commands
 for `benchmarks/results/scalability/`.
 
-## Current Runnable Commands
-
 ## Quick Start
 
 | Situation | Command | What It Proves | What It Does Not Prove |
@@ -78,9 +76,11 @@ python -m pytest tests/benchmark_contract -q
 
 ## Marker Reference
 
-Every test file carries at least one of the markers below, so a marker-selection
-command selects the whole file set it names; `tests/unit/test_marker_seeding_policy.py`
-fails if a file is added without one.
+Every test function carries a marker some lane selects, so a marker-selection
+command selects the whole set it names; `tests/unit/test_test_reachability_policy.py`
+walks each file's syntax tree and fails on a test no lane can reach. An earlier
+file-level guard was too weak — one marked test rescued fifty unmarked ones —
+so the check is per test rather than per file.
 
 | Marker | Runtime Environment | Proves | Does Not Prove |
 | --- | --- | --- | --- |
@@ -160,7 +160,7 @@ The checked-in configuration installs `pre-commit` and `pre-push`. Before a
 push leaves the machine, the push gate runs:
 
 - all normal pre-commit quality and source-of-truth checks;
-- the strict typed trainable-module and execution-mainline checks;
+- the strict type check of the whole package, and of the CI tooling;
 - capability maturity, required-check policy, and lazy-import validation;
 - `pr-default`, `pr-runtime`, and `pr-distributed`.
 
@@ -296,35 +296,47 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` maps this policy to five primary CPU jobs:
+The checked-in `ci.yml` defines eleven jobs:
 
-- `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, plus
+- `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
+  strict type check of the whole package and of the CI tooling, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
-  capability-maturity, repository-hygiene checks, and
-  the currently enforced typed-foundation subset;
+  capability-maturity, and repository-hygiene checks;
 - `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
   only, including proof that importing and differentiating a native circuit
   does not import JAX;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
+- `triton-optional`: the `cuda` extra and the Triton kernels that run without a
+  device; the ones that launch a kernel belong to the accelerator tier;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance
   on the certified Qiskit 2.0.x and 2.5.x lanes, isolated from the core
   environment;
 - `pennylane-optional`: the IR-only contract and complex128 QuantumScript
   semantics against the minimum 0.44.1 and latest 0.45.1 supported lanes;
-- Double-Single primitives run in the ordinary CPU unit/integration tiers;
-  the same conformance is marked `distributed_accel and gpu` for the scheduled
-  CUDA runner, without turning that result into vendor certification;
-- split real/imag statevector P0 runs in the ordinary CPU unit/integration
-  tiers; its CUDA and Torch-FL `flagos:0` tests are GPU-marked portability
-  evidence and do not certify a domestic accelerator or provider-internal route;
+- `dependency-bounds`: the oldest supported Python and Torch line beside the
+  newest, so a declared lower bound is exercised rather than assumed;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
-  commit/environment/checksum manifest.
+  commit/environment/checksum manifest;
+- `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
+  release-contract checks — run separately from the core matrix;
+- `coverage`: the maintained package measured under the marker expression above,
+  with the floors in `contracts/coverage-policy.toml` enforced by
+  `tools/check_coverage.py`;
+- `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
 
-`distributed-cpu` runs semantic and release-contract checks separately from the
-core matrix. `scheduled-hardware.yml` is the explicit self-hosted GPU and manual
-multi-node entrypoint. A skipped hardware test remains wiring information only,
-never execution proof.
+Two further items are not jobs but placement rules for tests that run inside the
+CPU tiers: Double-Single primitives run in the ordinary CPU unit/integration
+tiers, with the same conformance marked `distributed_accel and gpu` for the
+scheduled CUDA runner, without turning that result into vendor certification;
+and split real/imag statevector P0 runs in the ordinary CPU unit/integration
+tiers, with its CUDA and Torch-FL `flagos:0` tests GPU-marked portability
+evidence that does not certify a domestic accelerator or provider-internal
+route.
+
+`scheduled-hardware.yml` is the explicit self-hosted GPU and manual multi-node
+entrypoint. A skipped hardware test remains wiring information only, never
+execution proof.
 
 | CI Tier | Trigger Condition | Command | Blocks Ordinary PRs | Proof Boundary |
 | --- | --- | --- | --- | --- |
@@ -352,12 +364,11 @@ never execution proof.
 
 ## Agent Workflow
 
-`AGENTS.md` is the concise agent-facing workflow for this tiered policy.
-
-`AGENTS.md` is the concise agent-facing workflow. It should stay consistent with
-this manual: start from `python tools/ci_tier.py pr-default`, then expand by
-blast radius. Focused file-list commands are still useful for review-sized
-checks, but tier commands are the official vocabulary.
+`AGENTS.md` is the concise agent-facing workflow for this tiered policy. It
+should stay consistent with this manual: start from
+`python tools/ci_tier.py pr-default`, then expand by blast radius. Focused
+file-list commands are still useful for review-sized checks, but tier commands
+are the official vocabulary.
 
 ## Non-Negotiable Release Boundary
 
@@ -367,11 +378,20 @@ multi-node evidence plus benchmark audit and release payload validation.
 CPU distributed tests are not scalability evidence and must not be used as release-grade scalability evidence.
 ### Local GPU gates
 
-`.github/workflows/local-gpu.yml` is path-filtered to distributed/runtime
-changes. Its one-GPU behavior job and two-GPU correctness/autograd job run on
-the `flagquantum-local` self-hosted runner. The two-GPU job is the required
-hardware gate for distributed-runtime changes when that runner is available;
-CPU tests cannot substitute for it.
+`.github/workflows/local-gpu.yml` is `workflow_dispatch`-only: it has no path
+filter and no schedule, so it runs when someone starts it. Its one-GPU behavior
+job and two-GPU correctness/autograd job both require the `flagquantum-local`
+self-hosted label. As of 2026-09-18 no runner carries that label — the
+repository has zero registered self-hosted runners and the organization list is
+not readable without `admin:org` — so every run of those two jobs has queued and
+been cancelled at GitHub's 24-hour limit rather than executed. The same label
+gates `local-scale-scheduled` and `crossover-scheduled` in
+`scheduled-hardware.yml`.
+
+That makes the two-GPU job the required hardware gate for distributed-runtime
+changes only if the label is provisioned. Until it is, a distributed-runtime
+change cannot obtain the evidence this section describes, and the run history
+says so; nothing in the repository can substitute CPU tests for it.
 
 Four- and eight-GPU jobs live in `scheduled-hardware.yml`. They are scheduled
 or manually dispatched and do not block unrelated documentation or CPU-only
@@ -379,9 +399,18 @@ changes. Hardware manifests and raw logs are uploaded even on failure; skips
 must carry a reason and are not evidence of success.
 ## Coverage gate
 
-CI measures the maintained package with the seeded smoke, unit, and integration
-tiers. The CPU maintained-runtime floor is 55%, below the measured 56%
-baseline. The floor must only move upward. Benchmark tooling and GPU-only
-Triton kernels are owned by their dedicated benchmark and hardware gates;
-backend-independent runtime, accelerator orchestration, and multi-node control
-paths remain visible in the XML report.
+CI measures the maintained package with the seeded smoke, unit, integration, and
+JAX tiers, excluding the `qiskit` and `triton` markers for the reasons given
+above. `contracts/coverage-policy.toml` is the authority: it sets a global
+floor and a per-directory floor for every package, and `tools/check_coverage.py`
+enforces both against the XML report. Floors only move upward; raising one is
+part of the change that earns it.
+
+The global floor is 76%. Per-directory floors sit above it where a directory is
+well covered, so a directory that regresses is caught even while the aggregate
+still passes. The current measurement is reported by the `coverage` job rather
+than restated here: it moves whenever a test is added, and a number in prose has
+nothing keeping it true. Benchmark tooling and GPU-only Triton kernels are owned
+by their dedicated benchmark and hardware gates; backend-independent runtime,
+accelerator orchestration, and multi-node control paths remain visible in the
+XML report.
