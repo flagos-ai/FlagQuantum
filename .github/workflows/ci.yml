@@ -6,9 +6,37 @@ on:
   pull_request:
     branches: [main]
 
+# flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
+# jobs, and this workflow's matrix asks for 16 at once. Two constraints bound
+# this repository's share of it.
+#
+# The block below cancels a superseded run of the same branch, so a push that
+# lands while an earlier one is still running does not queue a second full
+# matrix behind it. `github.ref` is the pull request's merge ref for a pull
+# request and the branch for a push, which is the granularity wanted here.
+#
+# Every job below then joins one of eight named buckets -- `cpucore-3.1x`,
+# `coverage`, `distributed`, and `light-a`/`b`/`c` -- chosen to keep the run's
+# wall time where it was: the three required cpu-core checks are ~10 minutes
+# each and get a bucket each rather than sharing one, and the twelve jobs under
+# ~3 minutes are spread across three. A concurrency group admits one job at a
+# time, so the eight bucket names are the repository's ceiling of eight
+# concurrent GitHub-hosted runners.
+#
+# `queue: max` is what makes a bucket a cap instead of a drop: the default
+# keeps only the newest waiting job and cancels the ones behind it, which would
+# report nothing at all for the job that was dropped.
+concurrency:
+  group: flagquantum-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-a
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -99,6 +127,10 @@ jobs:
 
   cpu-core:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-cpucore-${{ matrix.python-version }}
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +162,10 @@ jobs:
 
   jax-optional:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-a
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -142,6 +178,10 @@ jobs:
 
   triton-optional:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-b
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -155,6 +195,10 @@ jobs:
 
   qiskit-optional:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-b
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -185,6 +229,10 @@ jobs:
 
   pennylane-optional:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-b
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -211,6 +259,10 @@ jobs:
 
   dependency-bounds:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-c
+      queue: max
     strategy:
       matrix:
         include:
@@ -230,6 +282,10 @@ jobs:
 
   package:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-a
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -271,6 +327,10 @@ jobs:
 
   distributed-cpu:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-distributed
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -282,6 +342,10 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-coverage
+      queue: max
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -305,6 +369,10 @@ jobs:
 
   supply-chain:
     runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-light-c
+      queue: max
     permissions:
       contents: read
     steps:

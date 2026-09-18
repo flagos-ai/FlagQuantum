@@ -6,9 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+# Same two constraints as CI: cancel a superseded run of the same branch, and
+# hold the job to one of the buckets that bound this repository's share of the
+# organisation's GitHub-hosted pool. See the capacity note in ci.yml.
+concurrency:
+  group: flagquantum-precommit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-light-c
+      queue: max
 
     steps:
       - uses: actions/checkout@v5

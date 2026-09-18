@@ -25,6 +25,10 @@ jobs:
   publish:
     strategy:
       fail-fast: false
+      # Four container builds land on one push to main. Two at a time keeps
+      # the pair of them inside the organisation's GitHub-hosted pool
+      # without serializing a multi-arch build behind a single-arch one.
+      max-parallel: 2
       matrix:
         include:
           - variant: cpu
