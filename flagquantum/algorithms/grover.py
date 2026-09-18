@@ -261,6 +261,11 @@ def _append_diffusion(circuit: Circuit, wires: list[int]) -> None:
         circuit.gate("h", wire)
 
 
+# Mirrors ``primitives/oracle.py``'s ``_append_multi_controlled_z`` without its ladder
+# ancillas: Grover's register is the whole circuit, so this form stops at three wires and
+# never needs one. Keep the two in step; promote it to a shared primitive if a second
+# algorithm module ever needs a multi-controlled Z, since one consumer does not earn a
+# public name.
 def _append_multi_controlled_z(circuit: Circuit, wires: list[int]) -> None:
     """Append a Z on the all-ones pattern of ``wires``.
 
@@ -284,6 +289,10 @@ def _append_multi_controlled_z(circuit: Circuit, wires: list[int]) -> None:
     circuit.gate("h", target)
 
 
+# Mirrors ``primitives/oracle.py``'s ``_validate_register_width``, which holds the same
+# one-wire minimum for a truth table's register; only the message's wording differs. Keep
+# the two in step, and share it the same way as the multi-controlled Z above: when a second
+# algorithm module needs it, not before.
 def _validate_register_width(n_wires: int) -> None:
     """Check the width of a search's evaluation register.
 
@@ -312,11 +321,15 @@ def _validate_search_width(n_wires: int) -> None:
     """
     _validate_register_width(n_wires)
     if n_wires > _GROVER_WIRE_LIMIT:
+        # One ladder wire per control above two, and above this bound there is always at
+        # least one of them, so only a single-wire ladder takes the singular noun.
+        needed = n_wires - 3
+        ladder = "ancilla" if needed == 1 else "ancillas"
         raise ValueError(
             f"a Grover search is bounded at {_GROVER_WIRE_LIMIT} evaluation wires, got "
             f"n_wires={n_wires}: the diffusion operator's multi-controlled Z is a "
             f"multi-controlled X with {n_wires - 1} controls, which needs "
-            f"len(controls) - 2 = {n_wires - 3} ancillas in |0>, and this circuit is the "
+            f"len(controls) - 2 = {needed} {ladder} in |0>, and this circuit is the "
             f"register, so it has no free wire for them. Use append_phase_oracle to append "
             "the oracle to a circuit whose register and ancillas the caller lays out."
         )
