@@ -135,6 +135,7 @@ def run_repetition_memory_noise_sweep(
 
 
 __all__ = (
+    "PhenomenologicalNoise",
     "RepetitionNoiseProfile",
     "run_repetition_memory_noise_sweep",
 )
