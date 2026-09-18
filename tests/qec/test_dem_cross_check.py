@@ -1,9 +1,9 @@
 """Cross-check the detector error model against the circuit simulator.
 
 The model's rates are compared here against what the real hybrid-compiler
-program does, not against a second statement of the same arithmetic. Two
-comparisons run, both deterministic: a fixed seed draws every sample, and the
-pair sweep takes no sample at all.
+program does, not against a second statement of the same arithmetic. Four tests
+run, all deterministic: a fixed seed draws every sample, and the pair sweep
+takes no sample at all.
 
 1. ``test_mechanism_pairs_compose_by_xor`` forces every *pair* of the fifteen
    mechanisms a distance-three circuit has into one program, executes it, and
@@ -12,15 +12,17 @@ pair sweep takes no sample at all.
    (``C(15, 2) = 105`` executions), so no statistic and no flakiness enter, and
    it is the stage's strongest structural evidence: XOR composition is the
    assumption ``_merge_mechanisms`` rests on.
-2. ``test_sampled_detector_and_observable_rates_agree`` draws an independent
-   Bernoulli per mechanism per shot, injects the fired set, executes, and
-   compares the empirical detector and observable rates against
-   ``detector_rates()`` and ``observable_rates()`` at ``d = 3`` and ``d = 5``.
-   ``test_merged_mechanisms_agree_with_sampled_rates`` runs the same comparison
+2. ``test_sampled_detector_and_observable_rates_agree`` (two tests, one per
+   distance) draws an independent Bernoulli per mechanism per shot, injects the
+   fired set, executes, and compares the empirical detector and observable rates
+   against ``detector_rates()`` and ``observable_rates()`` at ``d = 3`` and
+   ``d = 5``.
+3. ``test_merged_mechanisms_agree_with_sampled_rates`` runs the same comparison
    on a code whose mechanisms collide, which is the only construction here that
-   puts the merge arithmetic in front of the simulator: on the repetition code
+   puts the merge arithmetic in front of the simulator. On the repetition code
    every mechanism has its own signature (measured at ``d = 3`` and ``d = 5``),
-   so merging and discarding never fire there.
+   so its merge accumulation never has a previous entry to combine with, and a
+   model that merged wrongly would still agree with the sample.
 
 What this file does and does not prove
 --------------------------------------
@@ -41,7 +43,21 @@ model from. A signature that engine computes wrongly is therefore wrong on both
 sides of the comparison, and this file cannot see it. What this file does read
 for itself is the *combined* result, through its own layout reader, so an engine
 that read the layouts differently for one mechanism than for several would fail
-the XOR assertion rather than agree with itself.
+the XOR assertion rather than agree with itself. That the pair comparison uses
+this file's reader rather than the engine's is a design property of the
+committed code and is pinned by no assertion: replacing it with
+``_forced_signature`` is invisible here.
+
+Three more limits, so this file is not cited for more than it tests. The pair
+comparison asserts equality of two canonical tuples, so it is blind to signature
+*ordering* and to any permutation that preserves the set; the positional-stride
+requirement is pinned by Task 7's witness, not here. Dropping the observable
+half of that comparison would survive, because the sampled comparisons and Task
+6's tables cover it. And ``_measured_flips`` reads what the engine's own reader
+would refuse to read: it has no two-trajectory determinism guard and no stated
+failure for a detector naming an ancilla no check owns, so it is total only on
+the validated codes this file builds. Nothing here exercises the empty-signature
+*discard* path either; ``test_dem_from_memory_circuit.py`` owns it.
 
 The one genuinely independent check available — parsing the emitted stim text
 with the real ``stim`` package — was run at developer time in Task 5 and is not
@@ -86,9 +102,10 @@ _SEED = 0
 # errors of the modelled rate. Four covers a per-detector miss probability of
 # about 6e-5, so a single wrong mechanism is located rather than averaged away,
 # while a correct model is not failed by its own sample. The collision case
-# below is what this number protects: a plain-sum merge moves its modelled
-# detector rate by about 2.5 bands, so a tolerance of 12 sigmas or more would
-# accept that wrong rule, and no other assertion in the file would notice.
+# below is what this number protects, and its separation assertion bounds the
+# number against the measured gap between the two merge rules, so the rule
+# cannot be laundered by widening this constant: it holds only while the band at
+# the sum rule's rate stays below half that gap.
 _RATE_TOLERANCE_SIGMAS = 4.0
 
 # Noise and shot budgets. The measured per-shot cost is about 9 ms at ``d = 3``
@@ -99,6 +116,20 @@ _COLLIDING_NOISE_PROBABILITY = 0.25
 _DISTANCE_THREE_SHOTS = 1000
 _DISTANCE_FIVE_SHOTS = 500
 _COLLIDING_SHOTS = 1000
+
+# The collision case's separation, measured on the container at noise 0.25.
+# Detector 0 of that circuit is flipped by four mechanisms of equal probability:
+# three data flips of round 0, merged by parity to 0.4375, and the round's
+# measurement flip at 0.25, combined with it to 0.46875. A plain-sum merge puts
+# the same four at 0.75 and 0.25 and states detector 0 as ``_SUM_MERGE_RATE``;
+# the sample itself sits on the parity value (457/1000 measured), so the two
+# rules are 0.15625 apart — a gap the 4-sigma band (0.0612 at the sum rule's
+# rate) fits inside twice over. The sum rule's value is a literal because no
+# model in this file states it; the parity value is read off the model and
+# asserted against the number above, so a merge change cannot leave a stale
+# constant.
+_PARITY_MERGE_DETECTOR_ZERO_RATE = 0.46875
+_SUM_MERGE_DETECTOR_ZERO_RATE = 0.625
 
 
 def _injected_source(memory: MemoryCircuit, fired: Sequence[_Mechanism]) -> str:
@@ -189,11 +220,12 @@ def _rate_tolerance(predicted: float, *, shots: int) -> float:
     """Return the band a sampled rate may sit in, in binomial standard errors.
 
     ``_RATE_TOLERANCE_SIGMAS`` standard errors of a binomial rate estimated from
-    ``shots`` draws. A detector the model says never fires would give a
-    zero-width band, which is the unfalsifiable-check shape, so the rate that
-    enters the formula is floored at one success in the budget: the smallest
-    rate such a sample can resolve at all. No ceiling is needed, because these
-    noise records predict no rate near one.
+    ``shots`` draws. The rate that enters the formula is floored at one success
+    in the budget, which is the smallest rate such a sample can resolve at all.
+    The floor is an over-strict choice rather than a lax one — it only ever
+    widens the band — and nothing in this file reaches it: the lowest rate any
+    of the three sampled models predicts is 0.05, well above 1/500, so removing
+    the floor changes no verdict here.
     """
 
     rate = max(predicted, 1.0 / shots)
@@ -332,6 +364,13 @@ class _SharedSupportCode:
     signature and the model must merge them into a single mechanism. The
     repetition code gives every mechanism its own signature, so this is the
     construction that lets the merge rule reach the simulator at all.
+
+    The check declares ``index=7`` rather than ``0``: nothing in the circuit or
+    model path reads ``CodeCheck.index``, and ``RepetitionCode`` builds checks
+    whose ``index`` equals their position, so this is the only code here where a
+    positional reader and an index-keyed one differ. A reader keyed on ``index``
+    then addresses a bit past the end of the classical register instead of
+    happening to read the right one.
     """
 
     distance: int = 3
@@ -356,7 +395,7 @@ class _SharedSupportCode:
     def checks(self) -> tuple[CodeCheck, ...]:
         return (
             CodeCheck(
-                index=0,
+                index=7,
                 stabilizer=Pauli(z_wires=(0, 1, 2)),
                 ancilla_wire=3,
                 cnot_wires=((0, 3), (1, 3), (2, 3)),
@@ -376,10 +415,10 @@ def test_merged_mechanisms_agree_with_sampled_rates() -> None:
     """Three colliding mechanisms merge by parity, and the sample says so.
 
     The noise is raised for this case so the two candidate rules separate far
-    beyond the tolerance band: three 0.25 flips merge to 0.46875 by parity and
-    to 0.75 by a plain sum, which moves a modelled detector rate by twice the
-    band. A model that added the probabilities would fail here and nowhere else
-    in this file.
+    beyond the tolerance band: the three 0.25 data flips of one round merge to
+    0.4375 by parity and to 0.75 by a plain sum, which moves detector 0's
+    modelled rate from 0.46875 to 0.625. A model that added the probabilities
+    would fail here and nowhere else in this file.
     """
 
     memory = build_memory_circuit(_SharedSupportCode(), rounds=2)
@@ -406,4 +445,22 @@ def test_merged_mechanisms_agree_with_sampled_rates() -> None:
         model.observable_rates(),
         shots=_COLLIDING_SHOTS,
         label="observable",
+    )
+
+    # The comparison above is only evidence about the merge rule while the
+    # tolerance stays narrow enough not to accept the other rule, and no other
+    # assertion in this file constrains that constant. These two state the
+    # separation directly: the model's own detector-0 rate is the parity value,
+    # the sample is nearer to that than to the sum rule's, and the band at the
+    # sum rule's rate is less than half the gap between the two. Both numbers
+    # are measured: the sample sits 0.168 from the sum rule's 0.625, so with the
+    # rate comparison alone the plain-sum model is caught for any constant below
+    # about 10.97, and this band bound tightens that to about 5.10 — the shipped
+    # 4 is inside both.
+    modelled = float(model.detector_rates()[0])
+    assert modelled == pytest.approx(_PARITY_MERGE_DETECTOR_ZERO_RATE)
+    sampled = detector_counts[0] / _COLLIDING_SHOTS
+    assert abs(sampled - modelled) < abs(sampled - _SUM_MERGE_DETECTOR_ZERO_RATE)
+    assert _rate_tolerance(_SUM_MERGE_DETECTOR_ZERO_RATE, shots=_COLLIDING_SHOTS) < (
+        0.5 * (_SUM_MERGE_DETECTOR_ZERO_RATE - _PARITY_MERGE_DETECTOR_ZERO_RATE)
     )
