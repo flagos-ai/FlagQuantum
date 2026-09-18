@@ -125,22 +125,26 @@ it covers, which is what `pennylane` was doing at 43.4%.
 
 Because a missing extra is swallowed as a skip, the two halves of every job —
 the install line and the marker expression — are checked against each other by
-`tests/unit/test_lane_dependency_policy.py`. It holds three invariants. The
+`tests/unit/test_lane_dependency_policy.py`. It holds four invariants. The
 coverage job must install what it selects, or its measurement is a lie. Every
 optional integration some test probes must be installed by *some* lane that
 selects that test. And a test that waits on a device must be within reach of a
 lane that has one — the six Triton files sat in no lane at all while carrying
 `unit`, and six more tests in `tests/unit/test_real_imag_kernels.py` carried a
 CUDA guard without the `gpu` marker, so the CPU lanes selected and skipped them
-while the accelerator lane never selected them at all. Add an extra to an
-install line, or a marker to a selector; do not let the skip absorb the
-difference.
+while the accelerator lane never selected them at all. The fourth closes the
+hole the second leaves: a probe for a package the policy declares nowhere is not
+"no lane installs this" but "no lane can be wired to install it", so the answer
+has to be recorded in `dependency-policy.toml` rather than implied by silence.
+Add an extra to an install line, or a marker to a selector; do not let the skip
+absorb the difference.
 
 What counts as an optional integration comes from `dependency-policy.toml`, so
 the check cannot drift from the policy. A test that skips for an unset
 environment variable is outside it: no install line sets one, and no lane is
-configured to. So is a probe for a package no extra declares, where the fix is a
-dependency decision rather than a lane wiring one.
+configured to. A probe for a package the policy declares nowhere is not outside
+it — that is the case the fourth invariant reports, because no lane can be wired
+to install what nothing declares.
 
 ## Test Tiers
 
