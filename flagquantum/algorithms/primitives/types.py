@@ -3,6 +3,10 @@
 The protocols describe operators by the gates they append, so a caller can supply any object
 that can emit its own gates. Nothing here defines circuit semantics, and no protocol requires
 an object from an external framework.
+
+``Predicate`` is how a marked-state search is described: a decidable property of a bit
+string, read one register value at a time, so the callable is handed the bit string's
+integer value and never a sequence of bits.
 """
 
 from __future__ import annotations
@@ -13,7 +17,6 @@ from typing import Protocol, runtime_checkable
 from ...circuit import Circuit
 
 Predicate = Callable[[int], bool]
-"""A decidable property of a bit string, given as the bit string's integer value."""
 
 
 @runtime_checkable
