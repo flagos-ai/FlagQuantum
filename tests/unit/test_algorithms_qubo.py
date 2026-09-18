@@ -146,6 +146,18 @@ def test_a_pair_survives_when_its_endpoint_weight_cancels() -> None:
         )
 
 
+def test_a_nonzero_offset_survives_the_round_trip() -> None:
+    """The offset is part of the objective, so the forward map must carry it."""
+    problem = QuboProblem(
+        n_variables=2, linear={0: 1.0}, quadratic={(0, 1): 2.0}, offset=5.0
+    )
+    recovered = ising_to_qubo(qubo_to_ising(problem))
+    for assignment in _assignments(2):
+        assert qubo_energy(recovered, assignment) == pytest.approx(
+            qubo_energy(problem, assignment)
+        )
+
+
 def test_max_cut_matches_a_brute_force_optimum() -> None:
     """The MaxCut QUBO optimum equals the exhaustive maximum over all cuts."""
     problem = max_cut_qubo(((0, 1), (1, 2), (2, 0)), n_nodes=3)

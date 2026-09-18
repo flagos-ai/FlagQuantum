@@ -126,8 +126,12 @@ def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
         pair_totals[first] = pair_totals.get(first, 0.0) + coefficient
         pair_totals[second] = pair_totals.get(second, 0.0) + coefficient
 
+    # The problem's offset is part of the objective ``qubo_energy`` evaluates, so it
+    # belongs in the constant alongside the terms the substitution itself produces.
     constant = (
-        sum(problem.linear.values()) / 2.0 + sum(problem.quadratic.values()) / 4.0
+        problem.offset
+        + sum(problem.linear.values()) / 2.0
+        + sum(problem.quadratic.values()) / 4.0
     )
     # Every variable in the register needs its single-wire term, including one that only
     # ever appears as a pair endpoint: a pair expands to
