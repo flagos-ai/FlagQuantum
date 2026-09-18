@@ -105,6 +105,8 @@ def test_canonical_bmm_preserves_view_when_layout_allows_it() -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 @pytest.mark.parametrize(
     ("equation", "left_shape", "right_shape"),
     [
@@ -144,6 +146,8 @@ def test_canonical_cuda_lowering_forward_and_backward_matches_einsum(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 def test_memory_pressure_keeps_canonical_fused_bmm(monkeypatch) -> None:
     calls = 0
     original = triton_bmm_runtime.fused_complex_layout_bmm
@@ -165,6 +169,8 @@ def test_memory_pressure_keeps_canonical_fused_bmm(monkeypatch) -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 def test_fused_layout_route_does_not_materialize_canonical_inputs(
     monkeypatch,
 ) -> None:
@@ -208,6 +214,8 @@ def test_fused_layout_route_does_not_materialize_canonical_inputs(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 def test_large_nonview_inference_uses_layout_fused_bmm(monkeypatch) -> None:
     calls = 0
     original = triton_bmm_runtime.fused_complex_layout_bmm
@@ -229,6 +237,8 @@ def test_large_nonview_inference_uses_layout_fused_bmm(monkeypatch) -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 def test_small_training_contraction_prefers_native_einsum(monkeypatch) -> None:
     calls = 0
 
@@ -252,6 +262,8 @@ def test_small_training_contraction_prefers_native_einsum(monkeypatch) -> None:
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
+@pytest.mark.triton
 def test_small_inference_contraction_prefers_native_einsum(monkeypatch) -> None:
     calls = 0
 
