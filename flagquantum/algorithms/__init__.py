@@ -1,6 +1,7 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
 from . import core as core
+from . import grover as grover
 from . import qubo as qubo
 from .core import (
     AdaptVQEIteration,
@@ -44,6 +45,7 @@ __all__ = [
     "OptimizationRecord",
     "OptimizationStage",
     "VQEResult",
+    "grover",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",
     "heisenberg_chain_hamiltonian",
