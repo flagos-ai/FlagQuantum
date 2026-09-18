@@ -34,6 +34,104 @@ from .validation_helpers import (
     _unique,
 )
 
+# The gate's check names, blocker codes and messages. All three are keyed by
+# the same names and all three close over nothing, so they live here rather
+# than inside the function that happens to read them together.
+
+_FORBIDDEN_FALLBACKS: dict[str, str] = {
+    "replicated_mps_autograd": "mps_replicated_autograd_not_claimable",
+    "full_local_mps_state_view": "mps_full_local_state_view_not_claimable",
+    "full_local_mps_replay": "mps_full_local_mps_replay_not_claimable",
+    "statevector_fallback": "mps_statevector_fallback_not_claimable",
+}
+
+_MPS_BACKWARD_BLOCKER_CODES: dict[str, str] = {
+    "shared_evidence_contract_v1": "mps_shared_evidence_contract_v1_required",
+    "mps_path": "phase5_mps_state_mode_required",
+    "forward_distribution_sharded": "mps_forward_distribution_not_sharded",
+    "backward_distribution_sharded": "mps_backward_distribution_not_sharded",
+    "site_shard_ownership_reported": "mps_backward_site_shard_ownership_incomplete",
+    "bond_shard_ownership_reported": "mps_backward_bond_shard_ownership_incomplete",
+    "parameter_gradient_ownership_reported": "mps_parameter_gradient_ownership_incomplete",
+    "boundary_gradient_ownership_reported": "mps_boundary_gradient_ownership_incomplete",
+    "boundary_adjoint_exchange_reported": "mps_boundary_gradient_exchange_pending",
+    "boundary_gradient_routes_reported": "mps_boundary_gradient_routes_incomplete",
+    "canonicalization_backward_strategy_reported": "mps_canonicalization_backward_strategy_pending",
+    "truncation_gradient_metadata_reported": "mps_truncation_gradient_metadata_incomplete",
+    "backward_memory_plan_reported": "mps_backward_memory_plan_incomplete",
+    "backward_communication_plan_reported": "mps_backward_communication_plan_incomplete",
+    "optimizer_parameter_ownership_sharded": "mps_parameter_ownership_semantics_not_measured",
+    "optimizer_gradient_ownership_sharded": "mps_gradient_ownership_semantics_not_measured",
+    "optimizer_update_sharded": "mps_optimizer_update_semantics_not_measured",
+    "optimizer_update_ownership_sharded": "mps_optimizer_update_ownership_semantics_not_measured",
+    "optimizer_parameter_ownership_reported": "mps_optimizer_parameter_ownership_incomplete",
+    "optimizer_gradient_ownership_reported": "mps_optimizer_gradient_ownership_incomplete",
+    "optimizer_update_ownership_reported": "mps_optimizer_update_ownership_incomplete",
+    "optimizer_ownership_aligned": "mps_optimizer_ownership_not_aligned",
+    "optimizer_training_steps_executed": "mps_optimizer_training_step_not_executed",
+    "fallback_semantics_reported": "mps_fallback_semantics_unknown",
+    "not_local_simulation": "mps_local_simulation_not_claimable",
+    "production_backward_execution_reported": "mps_production_backward_execution_not_measured",
+    "production_memory_evidence_reported": "mps_production_backward_memory_not_measured",
+    "production_communication_evidence_reported": "mps_production_backward_communication_not_executed",
+}
+
+_MPS_BACKWARD_MESSAGES: dict[str, str] = {
+    "shared_evidence_contract_v1": "MPS backward readiness gate requires distributed_evidence_contract_v1",
+    "mps_path": "MPS backward readiness gate requires state_mode or mode to identify an MPS path",
+    "forward_distribution_sharded": "MPS backward readiness gate requires sharded forward distribution semantics",
+    "backward_distribution_sharded": "MPS backward readiness gate requires mps_backward_distribution_semantics='sharded_across_ranks'",
+    "site_shard_ownership_reported": "MPS backward readiness gate requires site shard ownership",
+    "bond_shard_ownership_reported": "MPS backward readiness gate requires bond shard ownership",
+    "parameter_gradient_ownership_reported": "MPS backward readiness gate requires parameter-gradient ownership",
+    "boundary_gradient_ownership_reported": "MPS backward readiness gate requires boundary-gradient ownership",
+    "boundary_adjoint_exchange_reported": "MPS backward readiness gate requires a boundary-adjoint exchange plan",
+    "boundary_gradient_routes_reported": "MPS backward readiness gate requires boundary-gradient routes",
+    "canonicalization_backward_strategy_reported": "MPS backward readiness gate requires a canonicalization backward strategy",
+    "truncation_gradient_metadata_reported": "MPS backward readiness gate requires truncation-gradient metadata",
+    "backward_memory_plan_reported": "MPS backward readiness gate requires per-rank backward memory evidence",
+    "backward_communication_plan_reported": "MPS backward readiness gate requires a backward communication plan",
+    "optimizer_parameter_ownership_sharded": "MPS backward readiness gate requires sharded parameter ownership semantics",
+    "optimizer_gradient_ownership_sharded": "MPS backward readiness gate requires sharded gradient ownership semantics",
+    "optimizer_update_sharded": "MPS backward readiness gate requires sharded optimizer-update semantics",
+    "optimizer_update_ownership_sharded": "MPS backward readiness gate requires sharded optimizer-update ownership semantics",
+    "optimizer_parameter_ownership_reported": "MPS backward readiness gate requires optimizer parameter ownership",
+    "optimizer_gradient_ownership_reported": "MPS backward readiness gate requires optimizer gradient ownership",
+    "optimizer_update_ownership_reported": "MPS backward readiness gate requires optimizer-update ownership and writeback routes",
+    "optimizer_ownership_aligned": "MPS backward readiness gate requires parameter, gradient, and update owners to align",
+    "optimizer_training_steps_executed": "MPS backward readiness gate requires training_step_count > 0",
+    "fallback_semantics_reported": "MPS backward readiness gate requires explicit fallback semantics",
+    "no_forbidden_fallback": "MPS backward readiness gate rejects replicated autograd, full local replay, and statevector fallback",
+    "not_local_simulation": "MPS backward readiness gate rejects local simulation as production evidence",
+    "production_backward_execution_reported": "MPS backward readiness gate requires executed production backward evidence",
+    "input_blockers_empty": "MPS backward readiness gate requires blockers to be empty for production claims",
+}
+
+# The two readiness levels, as the check names each one requires.
+
+_CONTROL_PLANE_CHECKS: tuple[str, ...] = (
+    "shared_evidence_contract_v1",
+    "mps_path",
+    "forward_distribution_sharded",
+    "site_shard_ownership_reported",
+    "bond_shard_ownership_reported",
+    "fallback_semantics_reported",
+    "no_forbidden_fallback",
+    "not_local_simulation",
+)
+
+_BACKWARD_PREFLIGHT_CHECKS: tuple[str, ...] = (
+    "backward_distribution_sharded",
+    "parameter_gradient_ownership_reported",
+    "boundary_gradient_ownership_reported",
+    "boundary_adjoint_exchange_reported",
+    "boundary_gradient_routes_reported",
+    "canonicalization_backward_strategy_reported",
+    "truncation_gradient_metadata_reported",
+    "backward_memory_plan_reported",
+    "backward_communication_plan_reported",
+)
+
 
 def _mps_mode_allowed(payload: Mapping[str, Any]) -> bool:
     state_mode = payload.get("state_mode", payload.get("mode"))
@@ -251,13 +349,11 @@ def _mps_optimizer_ownership_checks(
     }
 
 
-def evaluate_mps_backward_readiness(
+def _mps_backward_distribution_semantics(
     payload: Mapping[str, Any],
-) -> MPSBackwardReadinessGate:
-    """Evaluate MPS backward readiness without bypassing release audit."""
+) -> tuple[str, str, str, str]:
+    """Resolve the four distribution semantics the gate compares."""
 
-    contract = evaluate_distributed_evidence_contract(payload)
-    input_blockers = contract.blockers
     distribution_semantics = _semantics(payload, "distribution_semantics")
     intended_semantics = _semantics(
         payload,
@@ -278,6 +374,121 @@ def evaluate_mps_backward_readiness(
             _semantics(payload, "gradient_distribution_semantics"),
         ),
     )
+
+    return (
+        distribution_semantics,
+        intended_semantics,
+        forward_semantics,
+        backward_semantics,
+    )
+
+
+def _mps_backward_fallback_facts(
+    payload: Mapping[str, Any],
+) -> tuple[Any, str, tuple[str, ...]]:
+    """Read the declared fallback semantics and the forbidden ones in it."""
+
+    fallback_semantics = payload.get("fallback_semantics", "unknown")
+    fallback_values = (
+        tuple(str(key) for key in fallback_semantics)
+        if isinstance(fallback_semantics, Mapping)
+        else _unique(fallback_semantics)
+    )
+    fallback_text = " ".join(fallback_values).lower()
+    active_fallback_blockers = tuple(
+        blocker
+        for token, blocker in _FORBIDDEN_FALLBACKS.items()
+        if token in fallback_text
+    )
+
+    return fallback_semantics, fallback_text, active_fallback_blockers
+
+
+def _mps_backward_execution_facts(
+    payload: Mapping[str, Any],
+    contract: Any,
+) -> tuple[str, bool]:
+    """Read the backward execution label and whether it is production evidence."""
+
+    backward_execution = str(payload.get("backward_execution", "unknown")).lower()
+    production_backward_execution = bool(
+        contract.claim_evidence_type
+        in {"production_runtime", *RELEASE_CLAIM_EVIDENCE_TYPES}
+        and backward_execution
+        and not any(
+            token in backward_execution
+            for token in (
+                "unknown",
+                "pending",
+                "local_simulated",
+                "planned",
+                "not_executed",
+            )
+        )
+    )
+
+    return backward_execution, production_backward_execution
+
+
+def _mps_backward_memory_evidence(
+    backward_memory_plan: Any,
+) -> tuple[str, bool]:
+    """Read the backward memory plan status and whether it is evidence."""
+
+    memory_status = (
+        str(backward_memory_plan.get("status", "")).lower()
+        if isinstance(backward_memory_plan, Mapping)
+        else ""
+    )
+    production_memory_evidence = memory_status in {
+        "measured",
+        "production_measured",
+        "executed",
+    }
+
+    return memory_status, production_memory_evidence
+
+
+def _mps_backward_communication_evidence(
+    backward_communication_plan: Any,
+) -> tuple[str, bool]:
+    """Read the backward communication plan status and whether it is evidence."""
+
+    communication_status = (
+        str(backward_communication_plan.get("status", "")).lower()
+        if isinstance(backward_communication_plan, Mapping)
+        else ""
+    )
+    production_communication_evidence = bool(
+        communication_status
+        in {
+            "executed",
+            "production_executed",
+            "multi_node_production_transport",
+        }
+        and isinstance(backward_communication_plan, Mapping)
+        and all(
+            str(edge.get("execution_status", "")).lower() == "executed"
+            for edge in backward_communication_plan.get("boundary_edges", ())
+            if isinstance(edge, Mapping)
+        )
+    )
+
+    return communication_status, production_communication_evidence
+
+
+def evaluate_mps_backward_readiness(
+    payload: Mapping[str, Any],
+) -> MPSBackwardReadinessGate:
+    """Evaluate MPS backward readiness without bypassing release audit."""
+    contract = evaluate_distributed_evidence_contract(payload)
+    input_blockers = contract.blockers
+    (
+        distribution_semantics,
+        intended_semantics,
+        forward_semantics,
+        backward_semantics,
+    ) = _mps_backward_distribution_semantics(payload)
     site_ownership = payload.get("site_shard_ownership")
     bond_ownership = payload.get("bond_shard_ownership")
     parameter_gradient_ownership = payload.get("parameter_gradient_ownership")
@@ -301,69 +512,21 @@ def evaluate_mps_backward_readiness(
         payload,
         world_size=int(payload.get("world_size", 0) or 0),
     )
-    fallback_semantics = payload.get("fallback_semantics", "unknown")
-    fallback_values = (
-        tuple(str(key) for key in fallback_semantics)
-        if isinstance(fallback_semantics, Mapping)
-        else _unique(fallback_semantics)
+    (
+        fallback_semantics,
+        fallback_text,
+        active_fallback_blockers,
+    ) = _mps_backward_fallback_facts(payload)
+    backward_execution, production_backward_execution = _mps_backward_execution_facts(
+        payload, contract
     )
-    fallback_text = " ".join(fallback_values).lower()
-    forbidden_fallbacks = {
-        "replicated_mps_autograd": "mps_replicated_autograd_not_claimable",
-        "full_local_mps_state_view": "mps_full_local_state_view_not_claimable",
-        "full_local_mps_replay": "mps_full_local_mps_replay_not_claimable",
-        "statevector_fallback": "mps_statevector_fallback_not_claimable",
-    }
-    active_fallback_blockers = tuple(
-        blocker
-        for token, blocker in forbidden_fallbacks.items()
-        if token in fallback_text
+    memory_status, production_memory_evidence = _mps_backward_memory_evidence(
+        backward_memory_plan
     )
-    backward_execution = str(payload.get("backward_execution", "unknown")).lower()
-    production_backward_execution = bool(
-        contract.claim_evidence_type
-        in {"production_runtime", *RELEASE_CLAIM_EVIDENCE_TYPES}
-        and backward_execution
-        and not any(
-            token in backward_execution
-            for token in (
-                "unknown",
-                "pending",
-                "local_simulated",
-                "planned",
-                "not_executed",
-            )
-        )
-    )
-    memory_status = (
-        str(backward_memory_plan.get("status", "")).lower()
-        if isinstance(backward_memory_plan, Mapping)
-        else ""
-    )
-    communication_status = (
-        str(backward_communication_plan.get("status", "")).lower()
-        if isinstance(backward_communication_plan, Mapping)
-        else ""
-    )
-    production_memory_evidence = memory_status in {
-        "measured",
-        "production_measured",
-        "executed",
-    }
-    production_communication_evidence = bool(
-        communication_status
-        in {
-            "executed",
-            "production_executed",
-            "multi_node_production_transport",
-        }
-        and isinstance(backward_communication_plan, Mapping)
-        and all(
-            str(edge.get("execution_status", "")).lower() == "executed"
-            for edge in backward_communication_plan.get("boundary_edges", ())
-            if isinstance(edge, Mapping)
-        )
-    )
+    (
+        communication_status,
+        production_communication_evidence,
+    ) = _mps_backward_communication_evidence(backward_communication_plan)
 
     checks = {
         "shared_evidence_contract_v1": contract.contract_version
@@ -421,99 +584,18 @@ def evaluate_mps_backward_readiness(
         "input_blockers_empty": not input_blockers,
         "shared_release_contract_claimable": contract.claimable_production_training,
     }
-    blocker_codes = {
-        "shared_evidence_contract_v1": "mps_shared_evidence_contract_v1_required",
-        "mps_path": "phase5_mps_state_mode_required",
-        "forward_distribution_sharded": "mps_forward_distribution_not_sharded",
-        "backward_distribution_sharded": "mps_backward_distribution_not_sharded",
-        "site_shard_ownership_reported": "mps_backward_site_shard_ownership_incomplete",
-        "bond_shard_ownership_reported": "mps_backward_bond_shard_ownership_incomplete",
-        "parameter_gradient_ownership_reported": "mps_parameter_gradient_ownership_incomplete",
-        "boundary_gradient_ownership_reported": "mps_boundary_gradient_ownership_incomplete",
-        "boundary_adjoint_exchange_reported": "mps_boundary_gradient_exchange_pending",
-        "boundary_gradient_routes_reported": "mps_boundary_gradient_routes_incomplete",
-        "canonicalization_backward_strategy_reported": "mps_canonicalization_backward_strategy_pending",
-        "truncation_gradient_metadata_reported": "mps_truncation_gradient_metadata_incomplete",
-        "backward_memory_plan_reported": "mps_backward_memory_plan_incomplete",
-        "backward_communication_plan_reported": "mps_backward_communication_plan_incomplete",
-        "optimizer_parameter_ownership_sharded": "mps_parameter_ownership_semantics_not_measured",
-        "optimizer_gradient_ownership_sharded": "mps_gradient_ownership_semantics_not_measured",
-        "optimizer_update_sharded": "mps_optimizer_update_semantics_not_measured",
-        "optimizer_update_ownership_sharded": "mps_optimizer_update_ownership_semantics_not_measured",
-        "optimizer_parameter_ownership_reported": "mps_optimizer_parameter_ownership_incomplete",
-        "optimizer_gradient_ownership_reported": "mps_optimizer_gradient_ownership_incomplete",
-        "optimizer_update_ownership_reported": "mps_optimizer_update_ownership_incomplete",
-        "optimizer_ownership_aligned": "mps_optimizer_ownership_not_aligned",
-        "optimizer_training_steps_executed": "mps_optimizer_training_step_not_executed",
-        "fallback_semantics_reported": "mps_fallback_semantics_unknown",
-        "not_local_simulation": "mps_local_simulation_not_claimable",
-        "production_backward_execution_reported": "mps_production_backward_execution_not_measured",
-        "production_memory_evidence_reported": "mps_production_backward_memory_not_measured",
-        "production_communication_evidence_reported": "mps_production_backward_communication_not_executed",
-    }
     generated_blockers = tuple(
-        code for check, code in blocker_codes.items() if not checks[check]
+        code for check, code in _MPS_BACKWARD_BLOCKER_CODES.items() if not checks[check]
     )
     blockers = tuple(
         dict.fromkeys((*input_blockers, *active_fallback_blockers, *generated_blockers))
     )
-    messages = {
-        "shared_evidence_contract_v1": "MPS backward readiness gate requires distributed_evidence_contract_v1",
-        "mps_path": "MPS backward readiness gate requires state_mode or mode to identify an MPS path",
-        "forward_distribution_sharded": "MPS backward readiness gate requires sharded forward distribution semantics",
-        "backward_distribution_sharded": "MPS backward readiness gate requires mps_backward_distribution_semantics='sharded_across_ranks'",
-        "site_shard_ownership_reported": "MPS backward readiness gate requires site shard ownership",
-        "bond_shard_ownership_reported": "MPS backward readiness gate requires bond shard ownership",
-        "parameter_gradient_ownership_reported": "MPS backward readiness gate requires parameter-gradient ownership",
-        "boundary_gradient_ownership_reported": "MPS backward readiness gate requires boundary-gradient ownership",
-        "boundary_adjoint_exchange_reported": "MPS backward readiness gate requires a boundary-adjoint exchange plan",
-        "boundary_gradient_routes_reported": "MPS backward readiness gate requires boundary-gradient routes",
-        "canonicalization_backward_strategy_reported": "MPS backward readiness gate requires a canonicalization backward strategy",
-        "truncation_gradient_metadata_reported": "MPS backward readiness gate requires truncation-gradient metadata",
-        "backward_memory_plan_reported": "MPS backward readiness gate requires per-rank backward memory evidence",
-        "backward_communication_plan_reported": "MPS backward readiness gate requires a backward communication plan",
-        "optimizer_parameter_ownership_sharded": "MPS backward readiness gate requires sharded parameter ownership semantics",
-        "optimizer_gradient_ownership_sharded": "MPS backward readiness gate requires sharded gradient ownership semantics",
-        "optimizer_update_sharded": "MPS backward readiness gate requires sharded optimizer-update semantics",
-        "optimizer_update_ownership_sharded": "MPS backward readiness gate requires sharded optimizer-update ownership semantics",
-        "optimizer_parameter_ownership_reported": "MPS backward readiness gate requires optimizer parameter ownership",
-        "optimizer_gradient_ownership_reported": "MPS backward readiness gate requires optimizer gradient ownership",
-        "optimizer_update_ownership_reported": "MPS backward readiness gate requires optimizer-update ownership and writeback routes",
-        "optimizer_ownership_aligned": "MPS backward readiness gate requires parameter, gradient, and update owners to align",
-        "optimizer_training_steps_executed": "MPS backward readiness gate requires training_step_count > 0",
-        "fallback_semantics_reported": "MPS backward readiness gate requires explicit fallback semantics",
-        "no_forbidden_fallback": "MPS backward readiness gate rejects replicated autograd, full local replay, and statevector fallback",
-        "not_local_simulation": "MPS backward readiness gate rejects local simulation as production evidence",
-        "production_backward_execution_reported": "MPS backward readiness gate requires executed production backward evidence",
-        "input_blockers_empty": "MPS backward readiness gate requires blockers to be empty for production claims",
-    }
-    errors = tuple(message for key, message in messages.items() if not checks[key])
-    control_plane_ready = all(
-        checks[key]
-        for key in (
-            "shared_evidence_contract_v1",
-            "mps_path",
-            "forward_distribution_sharded",
-            "site_shard_ownership_reported",
-            "bond_shard_ownership_reported",
-            "fallback_semantics_reported",
-            "no_forbidden_fallback",
-            "not_local_simulation",
-        )
+    errors = tuple(
+        message for key, message in _MPS_BACKWARD_MESSAGES.items() if not checks[key]
     )
+    control_plane_ready = all(checks[key] for key in _CONTROL_PLANE_CHECKS)
     backward_preflight_ready = control_plane_ready and all(
-        checks[key]
-        for key in (
-            "backward_distribution_sharded",
-            "parameter_gradient_ownership_reported",
-            "boundary_gradient_ownership_reported",
-            "boundary_adjoint_exchange_reported",
-            "boundary_gradient_routes_reported",
-            "canonicalization_backward_strategy_reported",
-            "truncation_gradient_metadata_reported",
-            "backward_memory_plan_reported",
-            "backward_communication_plan_reported",
-        )
+        checks[key] for key in _BACKWARD_PREFLIGHT_CHECKS
     )
     production_training_claimable = bool(
         backward_preflight_ready
