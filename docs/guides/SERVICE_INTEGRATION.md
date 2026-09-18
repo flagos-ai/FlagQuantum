@@ -48,3 +48,23 @@ if report.approved_for_submission:
 Protocol adapters may serialize `report.to_dict()`. Authentication, approval,
 tenant state, job persistence, and paid-resource submission remain responsibilities
 of the consuming application, not FlagQuantum Services.
+
+## A worked MCP adapter
+
+[`FlagQuantum/mcp-servers`](https://github.com/FlagQuantum/mcp-servers) is an
+MCP server that follows the boundary described above. It is a separate package
+with its own release cycle, it is not imported by this repository, and it adds no
+dependency here. It decodes its own requests, validates them against this API's
+own rules before calling it, and reaches only the stable surface — no private
+path, no reimplemented domain logic.
+
+It also stops where an edge adapter must stop: it plans execution but never runs
+a circuit, holds no credentials, and does not submit to a provider. That is the
+same split [LONG_HORIZON_ARCHITECTURE.md](../architecture/LONG_HORIZON_ARCHITECTURE.md)
+draws in Section 7.3 for `LLM / IDE / MCP Host -> thin adapter -> public API`,
+and its migration ledger names the exit condition as *no production MCP transport
+dependency in this repository* — which is why an adapter of this kind belongs
+outside the repository rather than in it.
+
+Read it as one worked example of the shape, not as an endorsement of a particular
+protocol or a required component.
