@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...mps.models import MpsSplitInfo, MpsSplitMethod
+
 
 def jax_mps_apply_one_batched(tensor: Any, matrix: Any) -> Any:
     import jax.numpy as jnp
@@ -46,7 +48,7 @@ def jax_mps_split_pair_batched(
     right_dim: int,
     max_bond: int | None,
     cutoff: float,
-) -> tuple[Any, Any, dict[str, Any]]:
+) -> tuple[Any, Any, MpsSplitInfo]:
     import jax.numpy as jnp
 
     bsz = int(matrix.shape[0])
@@ -65,7 +67,7 @@ def jax_mps_split_pair_batched(
                 (bsz, int(left_dim), 2, rank),
             )
             right = matrix.reshape(bsz, rank, 2, int(right_dim))
-            method = "identity_left_gauge"
+            method: MpsSplitMethod = "identity_left_gauge"
         else:
             rank = cols
             left = matrix.reshape(bsz, int(left_dim), 2, rank)
@@ -110,7 +112,7 @@ def jax_mps_apply_two_batched(
     max_bond: int | None,
     cutoff: float,
     reverse: bool = False,
-) -> tuple[Any, Any, dict[str, Any]]:
+) -> tuple[Any, Any, MpsSplitInfo]:
     import jax.numpy as jnp
 
     matrix = jnp.asarray(matrix, dtype=left.dtype)

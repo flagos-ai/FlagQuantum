@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from torch.profiler import record_function
 
-from .models import MPSConfig
+from .models import MPSConfig, MpsSplitInfo
 
 _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
@@ -121,7 +121,7 @@ def _split_pair_matrix(
     left_dim: int,
     right_dim: int,
     config: MPSConfig,
-) -> tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]]:
+) -> tuple[torch.Tensor, torch.Tensor, MpsSplitInfo]:
     """Split a two-site MPS matrix with an AD-friendly exact path."""
 
     full_rank = min(int(matrix.shape[-2]), int(matrix.shape[-1]))
@@ -185,23 +185,21 @@ def _split_pair_matrix(
             vh = vh[:rank, :]
             left_parts.append(u.reshape(left_dim, 2, rank))
             right_parts.append((s[:, None] * vh).reshape(rank, 2, right_dim))
+    info: MpsSplitInfo = {
+        "method": "svd",
+        "rank": int(rank),
+        "original_rank": original_rank,
+        "discarded_weight": float(step_error),
+        "gradient_method": (
+            "projected_stop_subspace" if matrix.requires_grad else "none"
+        ),
+    }
+    if singular_value_gap is not None:
+        info["singular_value_gap"] = float(singular_value_gap)
     return (
         torch.stack(left_parts, dim=0),
         torch.stack(right_parts, dim=0),
-        {
-            "method": "svd",
-            "rank": int(rank),
-            "original_rank": original_rank,
-            "discarded_weight": float(step_error),
-            "gradient_method": (
-                "projected_stop_subspace" if matrix.requires_grad else "none"
-            ),
-            **(
-                {"singular_value_gap": float(singular_value_gap)}
-                if singular_value_gap is not None
-                else {}
-            ),
-        },
+        info,
     )
 
 
@@ -212,7 +210,7 @@ def _split_pair_matrix_bucket(
     right_dim: int,
     config: MPSConfig,
     svd_driver: str | None = None,
-) -> tuple[tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]], ...]:
+) -> tuple[tuple[torch.Tensor, torch.Tensor, MpsSplitInfo], ...]:
     """Split independent equal-shape pairs with one batched QR/SVD launch.
 
     The leading dimension identifies independent brickwork bonds and the next
@@ -270,7 +268,7 @@ def _split_pair_matrix_bucket(
             matrices,
             driver=(svd_driver or config.svd_driver),
         )
-    outputs = []
+    outputs: list[tuple[torch.Tensor, torch.Tensor, MpsSplitInfo]] = []
     for item in range(int(matrices.shape[0])):
         item_ranks = [
             _select_rank(s[item, batch], config.max_bond, config.cutoff)
@@ -298,26 +296,18 @@ def _split_pair_matrix_bucket(
                 matrices.shape[1], rank, 2, right_dim
             )
         left = retained_u.reshape(matrices.shape[1], left_dim, 2, rank)
-        outputs.append(
-            (
-                left,
-                right,
-                {
-                    "method": "svd",
-                    "rank": int(rank),
-                    "original_rank": int(s.shape[-1]),
-                    "discarded_weight": float(step_error),
-                    "gradient_method": (
-                        "projected_stop_subspace" if matrices.requires_grad else "none"
-                    ),
-                    **(
-                        {"singular_value_gap": float(singular_value_gap.detach().cpu())}
-                        if singular_value_gap is not None
-                        else {}
-                    ),
-                },
-            )
-        )
+        info: MpsSplitInfo = {
+            "method": "svd",
+            "rank": int(rank),
+            "original_rank": int(s.shape[-1]),
+            "discarded_weight": float(step_error),
+            "gradient_method": (
+                "projected_stop_subspace" if matrices.requires_grad else "none"
+            ),
+        }
+        if singular_value_gap is not None:
+            info["singular_value_gap"] = float(singular_value_gap.detach().cpu())
+        outputs.append((left, right, info))
     return tuple(outputs)
 
 
@@ -327,7 +317,7 @@ def _split_pair_matrix_exact_autograd(
     left_dim: int,
     right_dim: int,
     full_rank: int,
-) -> tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]]:
+) -> tuple[torch.Tensor, torch.Tensor, MpsSplitInfo]:
     bsz = int(matrix.shape[0])
     rows = int(matrix.shape[-2])
     cols = int(matrix.shape[-1])
