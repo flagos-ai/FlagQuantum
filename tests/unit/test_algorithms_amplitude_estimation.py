@@ -185,3 +185,33 @@ def test_run_amplitude_estimation_is_reproducible() -> None:
         _RyOperator(0.7), n_counting_wires=3, shots=1024, seed=11
     )
     assert first.estimate == second.estimate
+
+
+def test_the_likelihood_model_matches_the_circuit_it_estimates_from() -> None:
+    """Exact counts read off the circuit pin the model's shape, not only its range.
+
+    This is the only test that constrains the likelihood itself. A plausible variant whose
+    numerator is ``sin²(M t - pi y / M)`` in place of ``sin²(M t - pi y)`` still returns a
+    value in ``[0, 1]`` for every input and passes every other test in this file, while
+    disagreeing with the circuit's distribution by a wide margin. Feeding the circuit's own
+    exact distribution back through the estimator keeps the model out of the expected value:
+    the tolerance is half a grid step, a property of the grid rather than of the code, and at
+    this width and angle the correct model clears it by 0.036 where that variant misses by
+    0.036. The keys span every wire, so the estimator's own marginalisation runs too.
+    """
+    n_counting_wires = 4
+    operator = _RyOperator(1.4)
+    circuit = amplitude_estimation_circuit(operator, n_counting_wires=n_counting_wires)
+    probabilities = circuit.state().reshape(-1).abs() ** 2
+    width = n_counting_wires + operator.n_wires
+    counts = {
+        format(index, f"0{width}b"): max(1, round(float(mass) * 10**6))
+        for index, mass in enumerate(probabilities)
+    }
+    estimate = maximum_likelihood_estimate(counts, n_counting_wires, operator.n_wires)
+    bound = amplitude_resolution(n_counting_wires) / 2
+    assert abs(estimate - operator.true_amplitude) <= bound, (
+        estimate,
+        operator.true_amplitude,
+        bound,
+    )
