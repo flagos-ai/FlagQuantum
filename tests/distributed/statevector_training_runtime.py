@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import inspect
 import json
 import os
 import time
@@ -15,7 +16,64 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.executors.statevector.training import DistributedTrainingError
+from flagquantum.runtime.executors.statevector.training import (
+    DistributedTrainingError,
+    train_distributed_statevector,
+)
+
+# `--mode timeout` stalls a control barrier and reports the resulting timeout, so
+# it needs a deadline short enough to keep the case quick. Every other mode must
+# not inherit that deadline. `timeout_seconds` is one value inside the library,
+# and the library derives three separate things from it: the progress-stall
+# watchdog, the per-operation deadline around backward, collective, and
+# optimizer steps, and the whole-run budget. Handing the deliberate value to
+# modes that are not testing a timeout puts a two-second deadline on ordinary
+# work, and a loaded host then reports an unintended timeout at the wrong
+# operation instead of the failure under test.
+DELIBERATE_TIMEOUT_SECONDS = 2.0
+ORDINARY_TIMEOUT_SECONDS = 60.0
+# The process group's own watchdog. Ordinary work here is sub-second, so this
+# only has to outlast a stalled machine rather than a slow operation, and it
+# matches the value the MPS fault runtimes already use.
+COLLECTIVE_TIMEOUT_SECONDS = 30.0
+# Modes that never return on their own: one rank leaves or stalls and the rank
+# that remains waits for the elastic launcher to terminate the job, raising an
+# assertion about the launcher if this many seconds pass first. That assertion
+# is the boundedness claim, so this is how long it needs before it can speak.
+LAUNCHER_KILL_WAIT_SECONDS = 60.0
+# The library's own default for a training run, read rather than restated so the
+# budget below cannot drift away from it.
+LIBRARY_DEFAULT_TIMEOUT_SECONDS = float(
+    inspect.signature(train_distributed_statevector)
+    .parameters["timeout_seconds"]
+    .default
+)
+# The longest each mode may legitimately take, in the terms the mode's own body
+# is written in: a training call's budget, plus the launcher wait for the modes
+# that end by leaving a rank for the elastic agent to terminate. Listed one mode
+# at a time so that adding a mode without deciding its budget fails loudly below
+# rather than inheriting a silent guess.
+_MODE_INNER_BUDGET_SECONDS = {
+    "train": ORDINARY_TIMEOUT_SECONDS,
+    "fault": ORDINARY_TIMEOUT_SECONDS,
+    "timeout": DELIBERATE_TIMEOUT_SECONDS,
+    "crash": LAUNCHER_KILL_WAIT_SECONDS,
+    "crash_after_checkpoint": (
+        LIBRARY_DEFAULT_TIMEOUT_SECONDS + LAUNCHER_KILL_WAIT_SECONDS
+    ),
+    "resume": 2 * LIBRARY_DEFAULT_TIMEOUT_SECONDS,
+}
+
+
+def mode_inner_budget_seconds(mode: str) -> float:
+    """Return the longest a single ``--mode <mode>`` run may consume.
+
+    A wrapper deadline below this replaces whatever the run asserts from the
+    inside -- a launcher that failed to terminate a lost job, an operation that
+    outran its budget -- with the wrapper's own timeout, which names neither.
+    """
+
+    return _MODE_INNER_BUDGET_SECONDS[mode]
 
 
 def build(device: torch.device):
@@ -55,7 +113,7 @@ def main() -> None:
     if world > 1:
         init_kwargs = {
             "backend": args.backend,
-            "timeout": timedelta(seconds=5),
+            "timeout": timedelta(seconds=COLLECTIVE_TIMEOUT_SECONDS),
         }
         if args.backend == "nccl":
             init_kwargs["device_id"] = device
@@ -69,7 +127,7 @@ def main() -> None:
             if rank == 1:
                 # Model abrupt worker loss; torchrun/elastic owns peer cleanup.
                 os._exit(137)
-            time.sleep(60.0)
+            time.sleep(LAUNCHER_KILL_WAIT_SECONDS)
             raise AssertionError("elastic launcher did not terminate surviving rank")
         if args.mode == "crash_after_checkpoint":
             partial_circuit, _ = build(device)
@@ -83,7 +141,7 @@ def main() -> None:
             assert partial.completed_steps == args.steps // 2
             if rank == 1:
                 os._exit(137)
-            time.sleep(60.0)
+            time.sleep(LAUNCHER_KILL_WAIT_SECONDS)
             raise AssertionError("watchdog did not terminate surviving rank")
         if args.mode == "resume":
             uninterrupted, uninterrupted_parameters = build(device)
@@ -129,7 +187,11 @@ def main() -> None:
                     steps=2,
                     fault_rank=1 if args.mode == "fault" else None,
                     inject_collective_timeout=args.mode == "timeout",
-                    timeout_seconds=2.0,
+                    timeout_seconds=(
+                        DELIBERATE_TIMEOUT_SECONDS
+                        if args.mode == "timeout"
+                        else ORDINARY_TIMEOUT_SECONDS
+                    ),
                 )
             except DistributedTrainingError as exc:
                 payload = {"error": exc.to_dict()}
