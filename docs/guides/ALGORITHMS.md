@@ -350,6 +350,6 @@ quantum-advantage claim, and none of them certifies solver behavior,
 convergence, or hardware behavior. A unit is admitted to the index with the
 tests that exercise it and the boundary that limits it: the units classified in
 `capability-maturity.toml` record both there, and the two rows without an entry
-— the Fourier transform and phase estimation — carry their boundary in the index
-table above and their tests in `tests/unit/test_algorithms_qft.py` and
+— the Fourier transform and phase estimation — carry their advantage premise in
+the index table above and their tests in `tests/unit/test_algorithms_qft.py` and
 `tests/unit/test_algorithms_phase_estimation.py`.

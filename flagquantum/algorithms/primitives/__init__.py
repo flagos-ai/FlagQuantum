@@ -4,8 +4,9 @@ Primitives build :class:`~flagquantum.circuit.Circuit` objects from other circui
 classical data. They do not define circuit or operator semantics, select a runtime, or
 introduce an execution path of their own.
 
-A primitive is admitted here when more than one algorithm module needs it, or when it is a
-public unit callers use directly; this package is not a general-purpose quantum toolkit.
+A primitive is admitted here when more than one algorithm module needs it, or is expected
+to need it and the expectation is confirmed, or when it is a public unit callers use
+directly; this package is not a general-purpose quantum toolkit.
 """
 
 from __future__ import annotations

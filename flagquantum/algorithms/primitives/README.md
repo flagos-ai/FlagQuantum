@@ -11,7 +11,8 @@ with no consumer inside `flagquantum/` at all, and the Fourier transform on the
 expectation ground, admitted with one consumer, phase estimation, and confirmed
 when amplitude estimation landed. This package is not a general-purpose quantum
 toolkit, and a construction only one workflow uses stays in that workflow's
-module until a second one needs it.
+module until admitting it is justified, whether by a second consumer arriving or
+by a grounded expectation of one.
 
 ## Where to start
 
