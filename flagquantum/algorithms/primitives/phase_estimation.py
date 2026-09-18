@@ -37,6 +37,24 @@ class PhaseEstimationSpec:
     n_counting_wires: int
     n_evaluation_wires: int
 
+    def __post_init__(self) -> None:
+        """Reject a register width that cannot resolve a phase.
+
+        Raises:
+            ValueError: If ``n_counting_wires`` is not positive, or ``n_evaluation_wires``
+                is negative.
+        """
+        if self.n_counting_wires < 1:
+            raise ValueError(
+                "the counting register needs at least one wire, "
+                f"got {self.n_counting_wires}"
+            )
+        if self.n_evaluation_wires < 0:
+            raise ValueError(
+                "the evaluation register cannot have a negative width, "
+                f"got {self.n_evaluation_wires}"
+            )
+
     @property
     def precision(self) -> float:
         """The phase resolution in radians, ``2*pi / 2**n_counting_wires``."""
@@ -62,11 +80,18 @@ class PhaseEstimationSpec:
             The most frequent counting value divided by ``2**n_counting_wires``.
 
         Raises:
-            ValueError: If ``counts`` is empty.
+            ValueError: If ``counts`` is empty, or if the most frequent key does not carry
+                one bit per register wire.
         """
         if not counts:
             raise ValueError("counts must not be empty")
         most_frequent = max(counts, key=counts.__getitem__)
+        expected = self.n_counting_wires + self.n_evaluation_wires
+        if len(most_frequent) != expected:
+            raise ValueError(
+                f"count key {most_frequent!r} has {len(most_frequent)} bits, "
+                f"expected {expected} for this register"
+            )
         # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
         # negative exponent yields a float, and an ``Any`` return fails the type gate.
         return (

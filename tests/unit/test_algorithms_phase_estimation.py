@@ -112,6 +112,29 @@ def test_phase_from_counts_rejects_an_empty_mapping() -> None:
         spec.phase_from_counts({})
 
 
+def test_phase_from_counts_rejects_a_key_of_the_wrong_width() -> None:
+    """A short key would be read as a phase it does not represent."""
+    spec = PhaseEstimationSpec(n_counting_wires=3, n_evaluation_wires=1)
+    with pytest.raises(ValueError):
+        spec.phase_from_counts({"01": 5})
+    with pytest.raises(ValueError):
+        spec.phase_from_counts({"01011": 5})
+
+
+def test_phase_from_counts_reads_a_well_formed_key() -> None:
+    """The full register, big-endian, gives the counting value over the resolution."""
+    spec = PhaseEstimationSpec(n_counting_wires=3, n_evaluation_wires=1)
+    assert spec.phase_from_counts({"0101": 5}) == pytest.approx(2 / 8)
+
+
+def test_the_spec_rejects_a_register_that_cannot_resolve_a_phase() -> None:
+    """A counting register with no wires has no resolution to offer."""
+    with pytest.raises(ValueError):
+        PhaseEstimationSpec(n_counting_wires=0, n_evaluation_wires=1)
+    with pytest.raises(ValueError):
+        PhaseEstimationSpec(n_counting_wires=3, n_evaluation_wires=-1)
+
+
 def test_append_phase_estimation_validates_its_wires() -> None:
     """Repeated counting wires, a wire-count mismatch, and an overlap are all refused."""
     unitary = _PhaseGate(0.25)
