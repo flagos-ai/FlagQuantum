@@ -30,6 +30,21 @@ holding memory without useful work. It must preserve diagnostics, terminate the
 stale job, and verify process-group/child cleanup. Explicit compile and
 checkpoint budgets prevent false positives during bounded legitimate work.
 
+Those budgets are the claim, and the harness that runs a fault script under
+`torchrun` has a deadline of its own. That deadline must outlast the budget it
+wraps: below it, the harness reports `subprocess.TimeoutExpired`, which names
+neither the operation that stalled nor the launcher that failed to act, and on a
+shared runner that is what a busy host produces. `--mode timeout` is the only
+mode that asks for a short budget; every other mode must not inherit one.
+`tests/unit/test_runtime_harness_deadlines.py` pins the ordering, and
+`tests/distributed/statevector_training_runtime.py` lists each mode's budget.
+
+A deadline cannot be made tight enough to assert anything on a shared machine,
+so it is not asked to. Two ranks starting, importing torch, and building a
+process group measured about 8s idle and about 38s with the host oversubscribed
+five to one; the allowance is sized from that measurement, and a hang, being
+unbounded, is still caught.
+
 Release-grade scalability evidence requires a promoted benchmark payload that
 passes `flagquantum.runtime.audit.release_policy.require_distributed_scalability(...)`
 and the benchmark audit commands
@@ -175,6 +190,13 @@ python tools/pre_push.py --dry-run
 The gate stops at the first failure. It is CPU-safe and does not claim to
 replace the remote Python-version matrix, clean distribution installs,
 supply-chain checks, or accelerator jobs.
+
+The lazy-import step budgets the *fastest* of its samples, not the mean or the
+median. Every sample passes through CPython interpreter startup, which measured
+88% of the wall clock on an idle host and moves with machine load rather than
+with anything this repository does; the floor is the part of the distribution
+that stays attributable to the code. A dependency-policy leak exits `2` with the
+loaded modules on stderr, so it cannot be read as a slow import.
 
 ### Daily Development
 
