@@ -192,6 +192,14 @@ def test_a_boolean_key_is_refused() -> None:
         QuboProblem(n_variables=2, linear={}, quadratic={(False, 1): 4.0})
 
 
+def test_a_non_integer_variable_count_is_refused() -> None:
+    """A width the register cannot range over is not a width."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2.5, linear={1: 1.0}, quadratic={})
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=True, linear={}, quadratic={})
+
+
 def test_valid_problems_still_construct() -> None:
     """The validation must not reject anything the class documents as valid."""
     QuboProblem(n_variables=1, linear={0: 1.0}, quadratic={})

@@ -61,18 +61,23 @@ class QuboProblem:
     offset: float = 0.0
 
     def __post_init__(self) -> None:
-        """Reject a problem whose keys are not indices into its own register.
+        """Reject a problem whose register is not a usable width, or whose keys miss it.
 
-        The register-shaped maps and the declared-key maps must agree, so a key outside
-        ``range(n_variables)`` is refused here rather than surfaced later as a wrong
-        objective value or an incidental ``IndexError``.
+        The register ``range(n_variables)`` and the declared-key maps are two index sets
+        that must agree, so a width the register cannot range over, or a key outside that
+        range, is refused here rather than surfaced later as a wrong objective value, an
+        incidental ``IndexError``, or a ``TypeError``.
 
         Raises:
-            ValueError: If ``n_variables`` is not positive, if a key is not an integer
-                index in ``range(n_variables)``, or if a pair key is not ordered with the
-                lower index first.
+            ValueError: If ``n_variables`` is not a positive integer, if a key is not an
+                integer index in ``range(n_variables)``, or if a pair key is not ordered
+                with the lower index first.
         """
 
+        if isinstance(self.n_variables, bool) or not isinstance(self.n_variables, int):
+            raise ValueError(
+                f"n_variables must be an integer, got {self.n_variables!r}"
+            )
         if self.n_variables < 1:
             raise ValueError(f"n_variables must be positive, got {self.n_variables}")
         for index in self.linear:
