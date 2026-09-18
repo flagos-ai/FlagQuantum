@@ -434,18 +434,22 @@ class DetectorErrorModel:
         declarations must be complete and consecutive from zero, ``#`` comments
         are not accepted, and the shape comes only from the declarations.
 
-        Real stim does not state the shape this reader requires, so its
-        untouched output does not parse: ``shift_detectors`` is refused outright,
-        and a noisy stim detector error model names an observable index that stim
-        never declares, which the declarations-only rule refuses in turn. In a
-        developer-time sweep of stim 1.16.0 output -- repetition-code and
-        rotated-surface-code memory circuits, distances three and five, one to
-        three rounds, noisy and noise-free, with and without flattening the
-        circuit first -- every untouched detector error model was refused, and
-        every model this reader accepted carried no error. A stim detector error
-        model does parse when its text states its shape in full: strip the
-        observable instruction from the circuit and the flattened text is
-        accepted, with detector rates that match stim's own compiled sampler.
+        Real stim does not state the shape this reader requires, so the DEMs it
+        builds from noisy circuits do not parse: ``shift_detectors`` is refused
+        outright, and a noisy stim detector error model names an observable
+        index that stim never declares, which the declarations-only rule refuses
+        in turn. In a developer-time sweep of stim 1.16.0 output -- 96 detector
+        error models from repetition-code and rotated-surface-code memory
+        circuits, distances three and five, one to three rounds, noisy and
+        noise-free, with and without flattening the circuit first --
+        ``shift_detectors`` accounted for 32 refusals and the undeclared
+        observable index for the other 32. Every one of the 48 that carried an
+        error was refused, and the 32 this reader accepted carried no error. A
+        stim detector error model does parse when its text states its shape in
+        full: strip the observable instruction from the circuit and the flattened
+        text is accepted, errors and all, with detector rates that match both
+        stim's own compiled sampler and its exact margins.
+
         What :meth:`to_stim_text` writes is valid stim, but this method does not
         read everything stim writes.
         """

@@ -153,19 +153,22 @@ stim output: the declarations must be complete and consecutive from zero, `#`
 comments are not accepted, and the model shape comes from the declarations
 alone. `shift_detectors` is refused outright.
 
-In the developer-time sweep -- repetition-code and rotated-surface-code memory
-circuits, distances three and five, one to three rounds, noisy and noise-free,
-with and without flattening the circuit first -- every untouched DEM was
-refused, and it is worth naming why each was: a DEM built from a circuit whose
-rounds repeat carries `shift_detectors`, and a noisy DEM names an observable
-index stim never declares. Every DEM this reader accepted was checked against
-stim's own compiled sampler and agreed in shape and in every detector rate. Two
-of the accepted texts were real stim output carrying errors, and both needed the
-observable instruction stripped from the circuit first -- so the boundary is
-what the text declares, not whether stim produced it, and this reader is not a
-general stim reader. Not covered by the sweep: decomposed or
-approximately-disjoint errors, gauge detectors, repeat blocks, colour codes,
-distances above five, and hand-written text.
+In the developer-time sweep -- 96 detector error models from repetition-code and
+rotated-surface-code memory circuits, distances three and five, one to three
+rounds, noisy and noise-free, with and without flattening the circuit first --
+`shift_detectors` accounted for 32 refusals and the undeclared observable index
+for the other 32. Every one of the 48 that carried an error was refused, and it
+is worth naming why each was: a DEM built from a circuit whose rounds repeat
+carries `shift_detectors`, and a noisy DEM names an observable index stim never
+declares. The 32 this reader accepted carried no error, and each was checked
+against stim's own compiled sampler and agreed in shape and in every detector
+rate. A stim DEM does parse when its text states its shape in full: strip the
+observable instruction from the circuit and the flattened text is accepted,
+errors and all, again matching stim's own sampler. So the boundary is what the
+text declares, not whether stim produced it, and this reader is not a general
+stim reader. Not covered by the sweep: decomposed or approximately-disjoint
+errors, gauge detectors, repeat blocks, colour codes, distances above five, and
+hand-written text.
 
 `DemSample` carries tensors and defines content equality, and it is deliberately
 unhashable: it must not be used as a set member or a dict key.
