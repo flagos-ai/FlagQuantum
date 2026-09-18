@@ -16,16 +16,18 @@ tested, and reproducible still does not carry an advantage of its own.
 | --- | --- | --- | --- |
 | `qubo.py` — QUBO ↔ Ising mapping | Available. Converts a quadratic unconstrained binary optimization problem into an Ising Hamiltonian for the existing variational workflows, and reads the QUBO form back. | Boros & Hammer 2002; Barahona 1982; Lucas 2014 | **None.** A polynomial classical transformation. |
 | `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; phase estimation consumes it. | — | None. It is a subroutine. |
-| `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
+| `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev 1995; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Not yet available. | — | — |
 | `grover.py` — Grover search | Not yet available. | — | — |
 | `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
 
 Rows marked "not yet available" are placeholders for later units of this
-programme; they carry no content yet. The primitive row is listed separately
-because a shared primitive is admitted here only when at least two algorithm
-modules need it, and it does not by itself change what a caller can run.
+programme; they carry no content yet. The primitive rows are listed separately
+because the package admits a shared primitive only when more than one algorithm
+module is expected to need it: the Fourier transform has one consumer today,
+phase estimation, and gains a second when amplitude estimation lands. A
+primitive does not by itself change what a caller can run.
 
 ## Advantage premises
 
@@ -159,12 +161,13 @@ basis state whose bits read wire `0` to wire `n-1` from left to right.
   **5**, 467 (2005), arXiv:quant-ph/0407010 — the uniformly controlled rotation
   ladder and the analytical formula for its angles, which
   `primitives/state_preparation.py` uses.
-- Kitaev's phase estimation, with the concrete reference Brassard, Høyer, Mosca
-  & Tapp, "Quantum Amplitude Amplification and Estimation", *AMS Contemporary
-  Mathematics* **305**, 53–74 (2002), DOI 10.1090/conm/305/05215,
-  arXiv:quant-ph/0005055 — the controlled powers of the unitary and the inverse
-  Fourier transform on the counting register that
-  `primitives/phase_estimation.py` builds.
+- Phase estimation is attributed to A. Yu. Kitaev, "Quantum measurements and the
+  Abelian Stabilizer Problem", arXiv:quant-ph/9511026 (1995), a preprint. The
+  circuit form built by `primitives/phase_estimation.py` is the one recorded by
+  Brassard, Høyer, Mosca & Tapp, "Quantum Amplitude Amplification and
+  Estimation", *AMS Contemporary Mathematics* **305**, 53–74 (2002),
+  DOI 10.1090/conm/305/05215, arXiv:quant-ph/0005055 — the controlled powers of
+  the unitary and the inverse Fourier transform on the counting register.
 
 ## Scope
 
