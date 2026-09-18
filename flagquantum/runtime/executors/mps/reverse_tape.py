@@ -469,8 +469,26 @@ class ReverseTapeBuilder:
     def record(self, instruction_index: int, instruction: Instruction) -> None:
         """Replay one instruction forward and append the entry it needs."""
 
-        info: Mapping[str, Any] | None
-        metadata: _ReverseRecordMetadata | None
+        self._capture_compiled_layer(instruction_index, instruction)
+        wires = tuple(int(wire) for wire in instruction.wires)
+        if len(wires) not in {1, 2} or (
+            len(wires) == 2 and abs(wires[0] - wires[1]) != 1
+        ):
+            raise NonlocalMPSCompilationError(
+                f"instruction {instruction_index}:{instruction.name} requires MPS routing"
+            )
+        if len(wires) == 1:
+            self._record_one_site(instruction_index, instruction, wires)
+            return
+        self._record_two_site(instruction_index, instruction, wires)
+
+    def _capture_compiled_layer(
+        self,
+        instruction_index: int,
+        instruction: Instruction,
+    ) -> None:
+        """Precompute the compiled site layer this instruction begins, if any."""
+
         if (
             self.compile_site_kernels
             and instruction.name == "ry"
@@ -561,13 +579,15 @@ class ReverseTapeBuilder:
                     layer_prefetch.inter_node_payload_bytes
                 )
                 self.prefetched_rxx_halos.update(layer_prefetch.received)
-        wires = tuple(int(wire) for wire in instruction.wires)
-        if len(wires) not in {1, 2} or (
-            len(wires) == 2 and abs(wires[0] - wires[1]) != 1
-        ):
-            raise NonlocalMPSCompilationError(
-                f"instruction {instruction_index}:{instruction.name} requires MPS routing"
-            )
+
+    def _record_one_site(
+        self,
+        instruction_index: int,
+        instruction: Instruction,
+        wires: tuple[int, ...],
+    ) -> None:
+        """Record one rank-local one-site gate."""
+
         if len(wires) == 1:
             owner = self.state.owner(wires[0])
             shape = self.global_shapes[wires[0]]
@@ -611,6 +631,16 @@ class ReverseTapeBuilder:
             )
             return
 
+    def _record_two_site(
+        self,
+        instruction_index: int,
+        instruction: Instruction,
+        wires: tuple[int, ...],
+    ) -> None:
+        """Record one nearest-neighbour two-site gate and its metadata."""
+
+        info: Mapping[str, Any] | None
+        metadata: _ReverseRecordMetadata | None
         left_wire = min(wires)
         left_owner, right_owner = self.state.owner(left_wire), self.state.owner(
             left_wire + 1
