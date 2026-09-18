@@ -29,7 +29,8 @@ live in `simulation/mps/canonicalization.py`.
 - Change canonicalization sweep ownership or transport in `canonicalization.py`;
   change its tensor math in `simulation/mps/canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
-  `forward.py`; change reverse lifecycle in `reverse.py` or
+  `forward.py`; change reverse lifecycle in `reverse.py`, the per-instruction
+  tape entries and final sweep it delegates to `reverse_tape.py`, or
   `reverse_replay.py`. Their local instruction buckets call
   `simulation/mps/compiled_layers.py` rather than owning tensor contraction.
 - Change reverse pair factorization, truncated-subspace projection, rank-local
