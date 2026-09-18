@@ -106,11 +106,12 @@ def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
     """Return the Ising Hamiltonian whose objective matches the QUBO objective.
 
     Substituting ``x_i = (1 + s_i) / 2`` makes each variable a Pauli Z on its own wire.
-    Each declared linear coefficient contributes ``c_i / 2`` to its single-wire term, plus
-    a quarter of every pair weight that touches the variable; each declared pair
-    contributes ``q_ij / 4`` to a two-wire term. A constant is always emitted as one
-    identity term, so the result is a valid Hamiltonian for every problem, including one
-    that declares no coefficients at all.
+    Every variable in the register contributes ``c_i / 2 + (1/4) * (sum of the pair weights
+    that touch it)`` to its single-wire term, where ``c_i`` is its linear coefficient and
+    is zero when the variable declares none; each declared pair contributes ``q_ij / 4`` to
+    a two-wire term. A constant is always emitted as one identity term, so the result is a
+    valid Hamiltonian for every problem, including one that declares no coefficients at
+    all.
 
     Args:
         problem: The problem to convert.
@@ -128,9 +129,12 @@ def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
     constant = (
         sum(problem.linear.values()) / 2.0 + sum(problem.quadratic.values()) / 4.0
     )
+    # Every variable in the register needs its single-wire term, including one that only
+    # ever appears as a pair endpoint: a pair expands to
+    # ``q_ij/4 * Z_i Z_j - q_ij/4 * Z_i - q_ij/4 * Z_j + q_ij/4``.
     weights = {
-        index: coefficient / 2.0 + pair_totals.get(index, 0.0) / 4.0
-        for index, coefficient in problem.linear.items()
+        index: problem.linear.get(index, 0.0) / 2.0 + pair_totals.get(index, 0.0) / 4.0
+        for index in range(problem.n_variables)
     }
 
     terms = [

@@ -49,7 +49,7 @@ def test_round_trip_preserves_energy_on_every_assignment() -> None:
     problem = QuboProblem(
         n_variables=3,
         linear={0: -1.0, 1: 0.5, 2: 2.0},
-        quadratic={(0, 1): 3.0, (1, 2): -1.5},
+        quadratic={(0, 1): 3.0, (1, 2): -1.5, (0, 2): -0.75},
     )
     recovered = ising_to_qubo(qubo_to_ising(problem))
     assert recovered.n_variables == problem.n_variables
@@ -82,14 +82,30 @@ def test_round_trip_is_exact_for_a_hamiltonian_that_is_not_a_qubo() -> None:
         assert qubo_energy(recovered, assignment) == pytest.approx(ising_value(spins))
 
 
-def test_ising_has_one_term_per_coefficient_plus_the_constant() -> None:
-    """A linear term becomes Z, a quadratic one ZZ, and the constant an identity term."""
+def test_every_variable_carries_its_own_term() -> None:
+    """A variable named only by a pair still gets the Z term the substitution requires."""
     problem = QuboProblem(n_variables=2, linear={0: 1.0}, quadratic={(0, 1): 2.0})
     hamiltonian = qubo_to_ising(problem)
     kinds = sorted(term.pauli for term in hamiltonian.terms)
-    assert kinds == ["I", "Z", "ZZ"]
+    assert kinds == ["I", "Z", "Z", "ZZ"]
     constant = next(term for term in hamiltonian.terms if term.pauli == "I")
     assert float(constant.coefficient) == pytest.approx(1.0)
+    weights = {
+        term.wires[0]: float(term.coefficient)
+        for term in hamiltonian.terms
+        if term.pauli == "Z"
+    }
+    assert weights == {0: pytest.approx(1.0), 1: pytest.approx(0.5)}
+
+
+def test_a_variable_declared_only_in_a_pair_round_trips() -> None:
+    """The decisive case: x1 appears in no linear coefficient, so x0 alone drives it."""
+    problem = QuboProblem(n_variables=2, linear={0: 1.0}, quadratic={(0, 1): 2.0})
+    recovered = ising_to_qubo(qubo_to_ising(problem))
+    for assignment in _assignments(2):
+        assert qubo_energy(recovered, assignment) == pytest.approx(
+            qubo_energy(problem, assignment)
+        )
 
 
 def test_a_problem_with_no_coefficients_still_maps() -> None:
