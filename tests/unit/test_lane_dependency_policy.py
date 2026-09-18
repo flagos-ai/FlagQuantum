@@ -15,20 +15,26 @@ here:
   them. Seventeen tests executed in no lane at all. They now carry a `triton`
   marker: `triton-optional` runs the four that need no device, and the
   accelerator tier runs the thirteen that do.
+- Six more tests in `tests/unit/test_real_imag_kernels.py` were guarded by
+  `skipif(not torch.cuda.is_available())` without a `gpu` mark. The CPU lanes
+  selected and skipped them; the accelerator lane selects `gpu`, so it never
+  saw them. They now carry `gpu` and `triton`.
 
-The two invariants below cover the two halves. The first is narrower and
-stronger: a lane whose job is to measure must run what it selects, or its
-measurement is a lie. The second is broader and weaker: every optional
-integration a test asks for must be installed by *some* lane that selects that
-test and, when the test is marked for hardware, has the hardware.
+Three invariants cover the three axes. The first is narrower and stronger: a lane
+whose job is to measure must run what it selects, or its measurement is a lie.
+The second: every optional integration a test asks for must be installed by
+*some* lane that selects that test. The third: a test that waits on a device must
+be within reach of a lane that has one, because no install line can supply it.
 
-Scope: both reason about optional-integration extras, which a lane can install.
+Scope: all three reason about what a lane can be configured to provide. A test
+that skips for an unset environment variable is outside them: no install line
+fixes it, and no lane sets it -- those are opt-in evidence runs. So is a probe
+for a package no extra declares, where the fix is a dependency decision rather
+than a lane wiring one; `tests/test_tensor_network.py` has one, for `cotengra`.
+
 What a lane runs is read from the `-m` expressions in the workflows and from the
 `tools/ci_tier.py` tiers they invoke, so a job whose selection lives in a tier is
-seen too. A test that skips for an unset environment variable is outside both:
-no install line can fix it, and no lane is configured to set it. So is a probe
-for a package no extra declares -- the fix there is a dependency decision, not a
-lane wiring one -- and `tests/test_tensor_network.py` has one, for `cotengra`.
+seen too.
 """
 
 from __future__ import annotations
@@ -402,15 +408,62 @@ def _decorator_probes(node: ast.AST) -> set[str]:
     return found
 
 
+def _guards_on_cuda(decorator: ast.AST) -> bool:
+    """Whether this decorator's argument asks about a CUDA device.
+
+    The test is the attribute chain, not a bare name: in
+    `torch.cuda.is_available()` the word `cuda` is an attribute of an attribute,
+    so searching for a Name called `cuda` finds nothing.
+    """
+    return any(
+        isinstance(child, ast.Attribute)
+        and child.attr in {"is_available", "device_count"}
+        and isinstance(child.value, ast.Attribute)
+        and child.value.attr == "cuda"
+        for child in ast.walk(decorator)
+    )
+
+
+def _requires_device(node: ast.AST) -> bool:
+    """Whether this test waits on a CUDA device before it can run.
+
+    Two spellings count. A `skipif` decorator on a CUDA check is the declarative
+    one. The other is a `pytest.skip` in the body next to a CUDA check, which is
+    the same statement written as control flow -- it is read coarsely, as "this
+    test mentions the device and can skip", because telling the two apart would
+    mean evaluating the guard.
+
+    A test that calls a helper which itself skips on the device is a third shape
+    and this misses it; `tests/test_statevector_triton_gates.py` is the one
+    instance, and it carries the marks regardless.
+    """
+    if any(
+        isinstance(decorator, ast.Call)
+        and isinstance(decorator.func, ast.Attribute)
+        and decorator.func.attr == "skipif"
+        and _guards_on_cuda(decorator)
+        for decorator in getattr(node, "decorator_list", [])
+    ):
+        return True
+
+    skips = any(
+        isinstance(child, ast.Call)
+        and isinstance(child.func, ast.Attribute)
+        and child.func.attr == "skip"
+        for child in ast.walk(node)
+    )
+    return skips and _guards_on_cuda(node)
+
+
 def _is_test(node: ast.AST) -> bool:
     return isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (
         node.name.startswith("test_")
     )
 
 
-def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str]]]:
-    """(name, line, marks, probes) for every test defined in the file."""
-    found: list[tuple[str, int, set[str], set[str]]] = []
+def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str], bool]]:
+    """(name, line, marks, probes, device) for every test defined in the file."""
+    found: list[tuple[str, int, set[str], set[str], bool]] = []
     for node in tree.body:
         if _is_test(node):
             found.append(
@@ -419,6 +472,7 @@ def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str]]]:
                     node.lineno,
                     _decorator_marks(node),
                     _calls_named(node, IMPORTORSKIP) | _decorator_probes(node),
+                    _requires_device(node),
                 )
             )
         elif isinstance(node, ast.ClassDef):
@@ -434,28 +488,40 @@ def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str]]]:
                             class_probes
                             | _calls_named(child, IMPORTORSKIP)
                             | _decorator_probes(child),
+                            _requires_device(child),
                         )
                     )
     return found
 
 
-def _audit() -> list[tuple[str, str, int, set[str], set[str]]]:
-    """(relative path, test name, line, marks, probes) for every test in the tree."""
-    rows: list[tuple[str, str, int, set[str], set[str]]] = []
+class Row(NamedTuple):
+    """One test, and everything the invariants below need to judge it."""
+
+    path: str
+    name: str
+    line: int
+    marks: set[str]
+    probes: set[str]
+    requires_device: bool
+
+
+def _audit() -> list[Row]:
+    rows: list[Row] = []
     for path in sorted((ROOT / "tests").rglob("test_*.py")):
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(path))
         relative = path.relative_to(ROOT).as_posix()
         module_marks = _module_marks(tree)
         module_probes = _module_probes(tree)
-        for name, line, marks, probes in _tests(tree):
+        for name, line, marks, probes, requires_device in _tests(tree):
             rows.append(
-                (
-                    relative,
-                    name,
-                    line,
-                    module_marks | marks,
-                    module_probes | probes,
+                Row(
+                    path=relative,
+                    name=name,
+                    line=line,
+                    marks=module_marks | marks,
+                    probes=module_probes | probes,
+                    requires_device=requires_device,
                 )
             )
     return rows
@@ -475,11 +541,13 @@ def test_the_coverage_job_installs_every_integration_it_selects() -> None:
     )
 
     offenders: list[str] = []
-    for path, name, line, marks, probes in _audit():
-        if not coverage.selects(marks, path):
+    for row in _audit():
+        if not coverage.selects(row.marks, row.path):
             continue
-        if unmet := _unmet(probes, coverage.extras):
-            offenders.append(f"{path}:{line} {name} (needs {','.join(unmet)})")
+        if unmet := _unmet(row.probes, coverage.extras):
+            offenders.append(
+                f"{row.path}:{row.line} {row.name} (needs {','.join(unmet)})"
+            )
 
     assert not offenders, (
         "the coverage lane selects these tests, but the coverage job does not "
@@ -493,23 +561,53 @@ def test_every_integration_a_test_probes_is_installed_by_a_lane_that_runs_it() -
     jobs = lanes()
 
     orphans: list[str] = []
-    for path, name, line, marks, probes in _audit():
-        for integration in sorted(probes):
+    for row in _audit():
+        for integration in sorted(row.probes):
             providers = extras_for(integration)
             if not providers:
                 continue
             runnable = any(
-                providers & job.extras and job.runs(marks, path) for job in jobs
+                providers & job.extras and job.runs(row.marks, row.path) for job in jobs
             )
             if not runnable:
                 orphans.append(
-                    f"{path}:{line} {name} probes {integration} "
+                    f"{row.path}:{row.line} {row.name} probes {integration} "
                     "with no lane that installs it and selects this test"
                 )
 
     assert not orphans, (
         "these tests ask for an optional integration that no lane both installs "
         "and selects, so they skip everywhere and never execute: " + "; ".join(orphans)
+    )
+
+
+def test_a_test_that_waits_on_a_device_is_within_reach_of_one() -> None:
+    """Hardware is the third axis a lane can fail to provide.
+
+    A test that skips on `not torch.cuda.is_available()` cannot be rescued by any
+    install line. It needs a lane whose runner has the device, and the only lane
+    like that selects `gpu`. Six tests in `tests/unit/test_real_imag_kernels.py`
+    carried the guard without the marker, so every CPU lane selected them and
+    skipped them while the accelerator lane never selected them at all.
+    """
+    jobs = lanes()
+    accelerators = [job for job in jobs if job.device]
+
+    assert accelerators, "no job in any workflow runs on a device runner"
+
+    orphans: list[str] = []
+    for row in _audit():
+        if not row.requires_device:
+            continue
+        if any(job.runs(row.marks, row.path) for job in accelerators):
+            continue
+        orphans.append(
+            f"{row.path}:{row.line} {row.name} (marks={','.join(sorted(row.marks))})"
+        )
+
+    assert not orphans, (
+        "these tests skip on a device check, but no lane that has a device "
+        "selects them, so they skip in every lane there is: " + "; ".join(orphans)
     )
 
 
@@ -556,7 +654,48 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     assert accelerator.expressions == ("distributed_accel and gpu", "triton and gpu")
     assert not accelerator.selects({"gpu"}, "tests/unrelated.py")
     assert accelerator.selects({"gpu", "distributed_accel"}, "tests/unrelated.py")
-    assert not by_name["coverage"].device
+    assert not coverage.device
+
+
+def test_the_device_guard_detector_recognizes_the_guard() -> None:
+    """The device invariant is only as good as this predicate.
+
+    It was written once with a search for a `Name` called `cuda`, which finds
+    nothing: in `torch.cuda.is_available()` the word is an attribute of an
+    attribute. The predicate returned False for every test, and the invariant
+    above passed with the marks removed from the six tests it exists to protect.
+    Both known spellings are pinned here so that cannot recur silently.
+    """
+    source = "\n".join(
+        (
+            "import pytest, torch",
+            "",
+            "@pytest.mark.skipif(not torch.cuda.is_available(), reason='x')",
+            "def test_availability(): pass",
+            "",
+            "@pytest.mark.skipif(torch.cuda.device_count() < 2, reason='x')",
+            "def test_device_count(): pass",
+            "",
+            "def test_body_form():",
+            "    if not torch.cuda.is_available():",
+            "        pytest.skip('cuda')",
+            "",
+            "@pytest.mark.skipif(sys.platform == 'win32', reason='x')",
+            "def test_platform(): pass",
+            "",
+            "def test_mentions_cuda_without_skipping():",
+            "    return torch.cuda.is_available()",
+            "",
+        )
+    )
+    tree = ast.parse(source)
+    tests = {node.name: node for node in tree.body if _is_test(node)}
+
+    assert _requires_device(tests["test_availability"])
+    assert _requires_device(tests["test_device_count"])
+    assert _requires_device(tests["test_body_form"])
+    assert not _requires_device(tests["test_platform"])
+    assert not _requires_device(tests["test_mentions_cuda_without_skipping"])
 
 
 def test_every_alias_names_a_distribution_the_policy_declares() -> None:

@@ -93,7 +93,7 @@ fails if a file is added without one.
 | `benchmark_contract` | Fast local pytest over benchmark JSON and audit helpers. | Payload shape, required fields, result hygiene, scanner contract, and non-release payload rejection. | Real benchmark performance or hardware behavior. |
 | `release_gate` | Fast local pytest over release validators and promoted payloads. | Fail-closed release validation behavior and accepted release payload contract. | That unmeasured paths are scalable; it only validates provided evidence. |
 | `scalability` | Release-grade evidence path, usually scheduled or manual. | A specific promoted payload may support a capacity-scaling claim when it passes the release gate. | Generic distributed readiness for all backends or future workloads. |
-| `gpu` | CUDA, vendor, or accelerator device. | Device-specific execution for the covered test. | Distributed semantics unless paired with distributed markers. |
+| `gpu` | CUDA, vendor, or accelerator device. | Device-specific execution for the covered test. A test that skips on `torch.cuda.is_available()` needs this marker to reach a runner that has a device; without it the CPU lanes select and skip it and the accelerator lane never sees it. | Distributed semantics unless paired with distributed markers. |
 | `distributed` | Umbrella marker for distributed planning, runtime, or evidence tests. | The test touches distributed behavior in some form. | Which environment is required; use `distributed_cpu`, `distributed_accel`, or `distributed_multinode` for CI policy. |
 | `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
 | `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
@@ -123,18 +123,22 @@ it covers, which is what `pennylane` was doing at 43.4%.
 
 Because a missing extra is swallowed as a skip, the two halves of every job —
 the install line and the marker expression — are checked against each other by
-`tests/unit/test_lane_dependency_policy.py`. It holds two invariants. The
-coverage job must install what it selects, or its measurement is a lie. And
-every optional integration some test probes must be installed by *some* lane
-that selects that test, or the test can never run anywhere — which is how the
-six Triton files sat in no lane at all while carrying `unit`. Add an extra to an
-install line, or take its marker out of a selector; do not let the skip absorb
-the difference.
+`tests/unit/test_lane_dependency_policy.py`. It holds three invariants. The
+coverage job must install what it selects, or its measurement is a lie. Every
+optional integration some test probes must be installed by *some* lane that
+selects that test. And a test that waits on a device must be within reach of a
+lane that has one — the six Triton files sat in no lane at all while carrying
+`unit`, and six more tests in `tests/unit/test_real_imag_kernels.py` carried a
+CUDA guard without the `gpu` marker, so the CPU lanes selected and skipped them
+while the accelerator lane never selected them at all. Add an extra to an
+install line, or a marker to a selector; do not let the skip absorb the
+difference.
 
 What counts as an optional integration comes from `dependency-policy.toml`, so
-the check cannot drift from the policy. A test that skips for want of a device
-or an unset environment variable is outside it: no install line can fix that.
-So is a probe for a package no extra declares.
+the check cannot drift from the policy. A test that skips for an unset
+environment variable is outside it: no install line sets one, and no lane is
+configured to. So is a probe for a package no extra declares, where the fix is a
+dependency decision rather than a lane wiring one.
 
 ## Test Tiers
 
