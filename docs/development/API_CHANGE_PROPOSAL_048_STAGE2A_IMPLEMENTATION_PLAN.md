@@ -1439,7 +1439,7 @@ import pytest
 
 from flagquantum.qec.circuit import build_memory_circuit
 from flagquantum.qec.codes import CodeCheck, RepetitionCode
-from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem import DetectorErrorModel, _forced_signature, _mechanisms
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
 
@@ -1566,10 +1566,14 @@ def test_signatures_key_on_check_position_not_on_declared_index() -> None:
     """A measurement flip is read at the check's *positional* classical bit.
 
     The classical register strides by tuple position, so a model keyed on
-    ``CodeCheck.index`` would read the wrong bit and produce a different set.
+    ``CodeCheck.index`` reads the wrong bit. This test asserts the *mapping*
+    from mechanism to signature, not the set of signatures: under this code the
+    two keys differ by a transposition, so a set comparison is preserved by the
+    wrong implementation and would pass.
     """
 
-    built = build_memory_circuit(_IndexSwappedCode(), rounds=2)
+    code = _IndexSwappedCode()
+    built = build_memory_circuit(code, rounds=2)
     model = DetectorErrorModel.from_memory_circuit(
         built, noise=PhenomenologicalNoise(measurement_flip=0.05)
     )
@@ -1577,6 +1581,21 @@ def test_signatures_key_on_check_position_not_on_declared_index() -> None:
     assert model.num_errors == 4
     signatures = {error.detectors for error in model.errors}
     assert signatures == {(0, 2), (1, 3), (2, 4), (3, 5)}
+
+    # The positional stride: a round-``r`` measurement flip on the check at
+    # position ``p`` moves detectors ``r * 2 + p`` and ``(r + 1) * 2 + p``.
+    # Check position 0 is ancilla 3 (whose declared ``index`` is 1) and position
+    # 1 is ancilla 4 (declared ``index`` 0), so a model keyed on ``index``
+    # transposes exactly these two expectations and survives the set assertion
+    # above.
+    observed = {
+        (record.round_index, record.wire): _forced_signature(built, source)
+        for record, source in _mechanisms(built, PhenomenologicalNoise(measurement_flip=0.05))
+    }
+    assert observed[(0, 3)] == ((0, 2), ())
+    assert observed[(0, 4)] == ((1, 3), ())
+    assert observed[(1, 3)] == ((2, 4), ())
+    assert observed[(1, 4)] == ((3, 5), ())
 
 
 @dataclass(frozen=True)
@@ -1786,6 +1805,8 @@ Add to `flagquantum/qec/dem.py`:
 - `_mechanisms(circuit, noise) -> tuple[tuple[float, str], ...]` yielding each `(probability, injected_source)` pair, skipping zero probabilities.
 - `DetectorErrorModel._merge_mechanisms(entries, *, num_detectors, num_observables) -> DetectorErrorModel` where each entry is `(probability, detectors, observables)`; signature-keyed accumulation plus the XOR merge, discarding empty signatures.
 - `DetectorErrorModel.from_memory_circuit` wiring them together: enumerate, force each signature, merge, and return. It must validate that `circuit` is a `MemoryCircuit` and `noise` is a `PhenomenologicalNoise`, and it must surface the injection engine's `ValueError` unchanged when the source does not have the expected shape, so a hand-built `MemoryCircuit` whose source does not match its layouts fails closed with a stated reason rather than producing a wrong model.
+
+  One refusal the engine does **not** currently raise cleanly, found in Task 6's review: `_forced_signature` indexes a dict built from `enumerate(circuit.code.checks)` by the ancilla wire a detector names, so a hand-built layout naming an ancilla that no check owns raises `KeyError` rather than a stated `ValueError`. It is unreachable through `build_memory_circuit`, whose detector references are generated from `check.ancilla_wire`. Either add a guard there so the failure is stated, or record it in the module docstring as a hand-built-input limit — but do not let it surface as a bare `KeyError` from a function whose whole contract is failing closed with a reason.
 
 - [ ] **Step 4: Run the test and confirm it passes**
 
