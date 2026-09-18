@@ -149,9 +149,14 @@ The stim interchange is one-directional in practice. `to_stim_text()` emits vali
 stim text, verified against stim 1.16.0. `from_stim_text()` reads the format that
 `to_stim_text()` emits and hand-written text in that style, not arbitrary stim
 output: it requires declarations that are complete and consecutive from zero, it
-refuses `#` comments, and it derives the model shape from the declarations alone.
-Real stim emits `shift_detectors` and no `logical_observable` line at all, so
-`from_stim_text(str(real_stim_dem))` raises.
+refuses `#` comments, and it takes the model shape from the declarations alone.
+What makes the interchange one-directional is that refusal, and it holds whichever
+construct comes first: `shift_detectors` is refused outright. The stim detector
+error models measured at developer time — repetition-code and surface-code
+memory circuits — all carry `shift_detectors`, and the noisy ones carry no
+`logical_observable` line (a noise-free one does emit it, and is refused by the
+`shift_detectors` rule just the same), so `from_stim_text(str(real_stim_dem))`
+raises.
 
 `DemSample` carries tensors and defines content equality, and it is deliberately
 unhashable: it must not be used as a set member or a dict key.
