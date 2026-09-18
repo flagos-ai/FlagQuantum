@@ -102,9 +102,11 @@ fails if a file is added without one.
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
-The coverage job installs `jax` and `pennylane` because its marker expression
-selects their suites, and installs neither `qiskit` nor `triton`: the braket
-tests need no extra, and the other two cannot be measured there. Qiskit's native
+The coverage job installs `jax`, `pennylane`, and `cotengra` because its marker
+expression selects their suites, and installs neither `qiskit` nor `triton`: the
+braket tests need no extra, and the other two cannot be measured there.
+`cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
+not add to the static-TLS budget that rules Qiskit out. Qiskit's native
 libraries cannot be loaded in that process at all — `qiskit/_accelerate.abi3.so`
 raises `ImportError: cannot allocate memory in static TLS block` once the rest of
 the test tree has been imported, and importing it first only moves the failure to
