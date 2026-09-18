@@ -3,7 +3,7 @@
 The workflows select tests by marker and install dependencies separately. A test
 that calls `pytest.importorskip` records a skip when its package is missing, and
 pytest reports a skip the same way it reports a pass. So a lane can select a test
-it cannot run and still come up green. Two failures of that shape were found
+it cannot run and still come up green. Four failures of that shape were found
 here:
 
 - `flagquantum/ecosystem/pennylane` measured 43.4%. The coverage job selected its
@@ -19,18 +19,25 @@ here:
   `skipif(not torch.cuda.is_available())` without a `gpu` mark. The CPU lanes
   selected and skipped them; the accelerator lane selects `gpu`, so it never
   saw them. They now carry `gpu` and `triton`.
+- `tests/test_tensor_network.py` probed `cotengra`, and no extra declared it. The
+  external planning backend under test is a real optional integration, so the
+  answer was to declare it rather than to drop the test: `cotengra` is an extra
+  and the coverage job installs it.
 
-Three invariants cover the three axes. The first is narrower and stronger: a lane
-whose job is to measure must run what it selects, or its measurement is a lie.
-The second: every optional integration a test asks for must be installed by
-*some* lane that selects that test. The third: a test that waits on a device must
-be within reach of a lane that has one, because no install line can supply it.
+Four invariants. The first is narrower and stronger: a lane whose job is to
+measure must run what it selects, or its measurement is a lie. The second: every
+optional integration a test asks for must be installed by *some* lane that
+selects that test. The third: a test that waits on a device must be within reach
+of a lane that has one, because no install line can supply it. The fourth closes
+the hole the second leaves: a probe for a package the policy mentions nowhere is
+not "no lane installs it" but "no lane can be wired to install it", so the answer
+has to be recorded in the policy instead of implied by silence.
 
-Scope: all three reason about what a lane can be configured to provide. A test
-that skips for an unset environment variable is outside them: no install line
-fixes it, and no lane sets it -- those are opt-in evidence runs. So is a probe
-for a package no extra declares, where the fix is a dependency decision rather
-than a lane wiring one; `tests/test_tensor_network.py` has one, for `cotengra`.
+Scope: the first three reason about what a lane can be configured to provide. A
+test that skips for an unset environment variable is outside them: no install
+line fixes it, and no lane sets it -- those are opt-in evidence runs. The fourth
+is about the policy rather than the lanes, which is what made the `cotengra`
+probe above invisible to the second.
 
 What a lane runs is read from the `-m` expressions in the workflows and from the
 `tools/ci_tier.py` tiers they invoke, so a job whose selection lives in a tier is
@@ -127,6 +134,27 @@ def extras_for(name: str) -> frozenset[str]:
     if normalized in CORE:
         return frozenset()
     return PROVIDERS.get(normalized, frozenset())
+
+
+# The project's own top-level package. A test that probes it is asking whether an
+# optional module of this repository imports, which is not a dependency question.
+INTERNAL = "flagquantum"
+
+
+def _placed(name: str) -> bool:
+    """Whether the policy places this probe: core, an extra, or the project itself.
+
+    `extras_for` cannot answer this: it returns an empty set both for a package
+    nothing declares and for a core distribution, and the two want opposite
+    verdicts. A probe is read at its top level, so `torch.distributed` is core
+    and `flagquantum.core.circuit` is the project's own module rather than a
+    distribution called `flagquantum-core-circuit`.
+    """
+    root = name.split(".")[0]
+    if root == INTERNAL:
+        return True
+    normalized = distribution_name(IMPORT_ALIASES.get(root, root))
+    return normalized in CORE or normalized in PROVIDERS
 
 
 class Job(NamedTuple):
@@ -579,6 +607,50 @@ def test_every_integration_a_test_probes_is_installed_by_a_lane_that_runs_it() -
         "these tests ask for an optional integration that no lane both installs "
         "and selects, so they skip everywhere and never execute: " + "; ".join(orphans)
     )
+
+
+def test_every_package_a_test_probes_is_declared_by_the_policy() -> None:
+    """The gap invariant two cannot see: a package nothing declares.
+
+    Invariant two asks whether some lane installs what a test asks for, but it
+    reads `extras_for`, which is empty when the policy mentions the package
+    nowhere at all -- so it skips exactly the probes it cannot resolve. The
+    answer to "no lane installs this" has to be a decision recorded in the
+    policy: declare the extra, or drop the probe. Left unsaid it is a skip in
+    every lane there is, which reads the same as a pass.
+    """
+    offenders: list[str] = []
+    for row in _audit():
+        for probe in sorted(row.probes):
+            if _placed(probe):
+                continue
+            offenders.append(f"{row.path}:{row.line} {row.name} probes {probe}")
+
+    assert not offenders, (
+        "these tests ask for a package no extra and no core dependency declares, "
+        "so they skip in every lane and no lane can be wired to fix it: "
+        + "; ".join(offenders)
+    )
+
+
+def test_the_declared_probe_predicate_separates_omission_from_core() -> None:
+    """`_placed` has to give the two empty-`extras_for` cases opposite answers.
+
+    The predicate is the whole check, and it reads like `extras_for`, so a
+    change that collapses the two would leave the invariant above passing while
+    it stopped looking at anything. The undeclared name is deliberately one no
+    policy will ever place: `cotengra` itself was the real instance, and pinning
+    the behaviour to it would make this test pass by being fixed rather than by
+    staying correct.
+    """
+    assert _placed("a-package-no-extra-declares") is False
+    assert _placed("matplotlib") is True  # declared by `viz`
+    assert _placed("cotengra") is True  # declared by `cotengra`
+    assert _placed("torch") is True  # core
+    assert _placed("torch.distributed") is True  # core, read at its top level
+    assert _placed("flagquantum") is True  # the project itself
+    assert _placed("flagquantum.core.circuit") is True  # a module of the project
+    assert _placed("qiskit_aer") is True  # normalized to `qiskit-aer`
 
 
 def test_a_test_that_waits_on_a_device_is_within_reach_of_one() -> None:
