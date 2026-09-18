@@ -15,7 +15,8 @@ checkpoint, or evidence objects as public API.
   semantics, including rank-local state and index handling.
 - `forward.py`: communication-aware forward primitives, workspace handling,
   and gate-dispatch orchestration.
-- `forward_executor.py`: the authoritative distributed forward execution loop.
+- `forward_executor.py`: the public distributed forward entry point.
+- `forward_sweep.py`: the per-instruction dispatch sweep that entry point runs.
 - `layout.py`: logical-to-physical wire layout and swap scheduling.
 - `checkpointing.py`: checkpoint policy and checkpoint selection.
 - `reverse.py`: the public reverse-mode boundary, validation, and evidence.
@@ -128,7 +129,7 @@ Start with the smallest authoritative file:
 | --- | --- |
 | Topology, sharding, memory, or communication plan | `planning.py` |
 | Rank-local indexing or local CPU reference execution | `local_execution.py` |
-| Distributed forward loop | `forward_executor.py` |
+| Distributed forward loop | `forward_executor.py`, `forward_sweep.py` |
 | Forward communication primitive or workspace | `forward.py` |
 | Wire placement or swap scheduling | `layout.py` |
 | Checkpoint or reverse-mode policy and result | `checkpointing.py`, `reverse.py` |
