@@ -24,20 +24,23 @@ here:
   answer was to declare it rather than to drop the test: `cotengra` is an extra
   and the coverage job installs it.
 
-Four invariants. The first is narrower and stronger: a lane whose job is to
+Five invariants. The first is narrower and stronger: a lane whose job is to
 measure must run what it selects, or its measurement is a lie. The second: every
 optional integration a test asks for must be installed by *some* lane that
 selects that test. The third: a test that waits on a device must be within reach
 of a lane that has one, because no install line can supply it. The fourth closes
 the hole the second leaves: a probe for a package the policy mentions nowhere is
 not "no lane installs it" but "no lane can be wired to install it", so the answer
-has to be recorded in the policy instead of implied by silence.
+has to be recorded in the policy instead of implied by silence. The fifth applies
+that reasoning to the other thing no lane can supply: a test that skips unless an
+environment variable is set is opt-in by design, and the variable is the only way
+in, so the testing manual's opt-in table is where it has to be named.
 
-Scope: the first three reason about what a lane can be configured to provide. A
-test that skips for an unset environment variable is outside them: no install
-line fixes it, and no lane sets it -- those are opt-in evidence runs. The fourth
-is about the policy rather than the lanes, which is what made the `cotengra`
-probe above invisible to the second.
+Scope: the first three reason about what a lane can be configured to provide,
+and the fourth and fifth about what no lane can provide at all. A value only a
+person can supply is not a gap in the wiring; leaving it unrecorded is. The
+fourth is about the policy rather than the lanes, which is what made the
+`cotengra` probe above invisible to the second.
 
 What a lane runs is read from the `-m` expressions in the workflows and from the
 `tools/ci_tier.py` tiers they invoke, so a job whose selection lives in a tier is
@@ -62,6 +65,8 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
 CI_WORKFLOW = "ci.yml"
 POLICY = ROOT / "dependency-policy.toml"
+# Where an opt-in device run is recorded, since no lane can supply its variable.
+MANUAL = ROOT / "docs/development/TESTING.md"
 
 # The policy names distributions, the tests probe import names, and the two
 # usually agree once both are normalized. These are the places they do not: a
@@ -483,15 +488,68 @@ def _requires_device(node: ast.AST) -> bool:
     return skips and _guards_on_cuda(node)
 
 
+def _calls_skip(node: ast.AST) -> bool:
+    """Whether this node calls `pytest.skip`."""
+    return any(
+        isinstance(child, ast.Call)
+        and isinstance(child.func, ast.Attribute)
+        and child.func.attr == "skip"
+        for child in ast.walk(node)
+    )
+
+
+def _environment_reads(node: ast.AST) -> set[str]:
+    """The environment variable names this node reads.
+
+    Three spellings, all of which appear in this tree: `os.environ.get("X")`,
+    `os.environ["X"]`, and `os.getenv("X")`. The last one is what an earlier
+    grep for `environ` missed.
+    """
+    found: set[str] = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            target = child.func
+            if isinstance(target, ast.Attribute) and target.attr in {"get", "getenv"}:
+                base = target.value
+                reads_environ = (
+                    isinstance(base, ast.Attribute) and base.attr == "environ"
+                ) or (isinstance(base, ast.Name) and base.id in {"os", "environ"})
+                if reads_environ and child.args:
+                    key = child.args[0]
+                    if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                        found.add(key.value)
+        elif isinstance(child, ast.Subscript):
+            base = child.value
+            if isinstance(base, ast.Attribute) and base.attr == "environ":
+                key = child.slice
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    found.add(key.value)
+    return found
+
+
+def _environment_condition(node: ast.AST) -> frozenset[str]:
+    """Environment variables a test must be given before it will run.
+
+    A read is a gate only when the same test can skip. `FQ_TEST_CHECKPOINT` and
+    `LOCAL_RANK` are read by tests that always run, and those are configuration
+    rather than opt-in -- reporting them would bury the real ones.
+    """
+    if not _calls_skip(node):
+        return frozenset()
+    return frozenset(_environment_reads(node))
+
+
 def _is_test(node: ast.AST) -> bool:
     return isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (
         node.name.startswith("test_")
     )
 
 
-def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str], bool]]:
-    """(name, line, marks, probes, device) for every test defined in the file."""
-    found: list[tuple[str, int, set[str], set[str], bool]] = []
+def _tests(
+    tree: ast.Module,
+) -> list[tuple[str, int, set[str], set[str], bool, frozenset[str]]]:
+    """(name, line, marks, probes, device, environment) for every test in the file."""
+    found: list[tuple[str, int, set[str], set[str], bool, frozenset[str]]] = []
     for node in tree.body:
         if _is_test(node):
             found.append(
@@ -501,6 +559,7 @@ def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str], bool]]:
                     _decorator_marks(node),
                     _calls_named(node, IMPORTORSKIP) | _decorator_probes(node),
                     _requires_device(node),
+                    _environment_condition(node),
                 )
             )
         elif isinstance(node, ast.ClassDef):
@@ -517,6 +576,7 @@ def _tests(tree: ast.Module) -> list[tuple[str, int, set[str], set[str], bool]]:
                             | _calls_named(child, IMPORTORSKIP)
                             | _decorator_probes(child),
                             _requires_device(child),
+                            _environment_condition(child),
                         )
                     )
     return found
@@ -531,6 +591,7 @@ class Row(NamedTuple):
     marks: set[str]
     probes: set[str]
     requires_device: bool
+    environment: frozenset[str]
 
 
 def _audit() -> list[Row]:
@@ -541,7 +602,7 @@ def _audit() -> list[Row]:
         relative = path.relative_to(ROOT).as_posix()
         module_marks = _module_marks(tree)
         module_probes = _module_probes(tree)
-        for name, line, marks, probes, requires_device in _tests(tree):
+        for name, line, marks, probes, requires_device, environment in _tests(tree):
             rows.append(
                 Row(
                     path=relative,
@@ -550,6 +611,7 @@ def _audit() -> list[Row]:
                     marks=module_marks | marks,
                     probes=module_probes | probes,
                     requires_device=requires_device,
+                    environment=environment,
                 )
             )
     return rows
@@ -681,6 +743,68 @@ def test_a_test_that_waits_on_a_device_is_within_reach_of_one() -> None:
         "these tests skip on a device check, but no lane that has a device "
         "selects them, so they skip in every lane there is: " + "; ".join(orphans)
     )
+
+
+def test_a_test_that_waits_on_an_environment_variable_is_named_in_the_manual() -> None:
+    """No lane can set the variable a device run needs, so the manual must name it.
+
+    The same reasoning as the two invariants above, applied to the one input a
+    lane cannot supply at all. A test that skips unless `VAR` is set is skipped
+    in every lane by construction, which reads exactly like a pass, so the only
+    place its existence survives is a document someone reads. Nine of the
+    thirteen in this tree were named nowhere when this check was written; four
+    were named only in a reference page that describes the tool rather than the
+    test.
+    """
+    manual = MANUAL.read_text(encoding="utf-8")
+
+    orphans: list[str] = []
+    for row in _audit():
+        for variable in sorted(row.environment):
+            if variable not in manual:
+                orphans.append(f"{row.path}:{row.line} {row.name} (needs {variable})")
+
+    assert not orphans, (
+        "these tests skip unless an environment variable is set, and no lane sets "
+        "one, so a reader who is not told the variable cannot run them at all: "
+        + "; ".join(orphans)
+    )
+
+
+def test_the_environment_condition_separates_a_gate_from_configuration() -> None:
+    """A read only counts when the same test can skip, and all three spellings count.
+
+    Without the first half this reports `FQ_TEST_CHECKPOINT` and `LOCAL_RANK`,
+    which tests read to configure themselves and never gate on, and the real
+    entries drown. Without the second it misses the one test that calls
+    `os.getenv` instead of `os.environ.get`.
+    """
+    source = (
+        "import os\n"
+        "import pytest\n"
+        "def test_gate():\n"
+        "    if os.environ.get('A') is None:\n"
+        "        pytest.skip('set A')\n"
+        "def test_gate_by_subscript():\n"
+        "    if not os.environ['B']:\n"
+        "        pytest.skip('set B')\n"
+        "def test_gate_by_getenv():\n"
+        "    if os.getenv('C') is None:\n"
+        "        pytest.skip('set C')\n"
+        "def test_configuration_only():\n"
+        "    root = os.environ['D']\n"
+        "    assert root\n"
+        "def test_reading_without_skipping():\n"
+        "    assert os.environ.get('E', 'default')\n"
+    )
+    tree = ast.parse(source)
+    found = {name: environment for name, _, _, _, _, environment in _tests(tree)}
+
+    assert found["test_gate"] == frozenset({"A"})
+    assert found["test_gate_by_subscript"] == frozenset({"B"})
+    assert found["test_gate_by_getenv"] == frozenset({"C"})
+    assert found["test_configuration_only"] == frozenset()
+    assert found["test_reading_without_skipping"] == frozenset()
 
 
 def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:

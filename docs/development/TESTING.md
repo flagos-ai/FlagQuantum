@@ -125,7 +125,7 @@ it covers, which is what `pennylane` was doing at 43.4%.
 
 Because a missing extra is swallowed as a skip, the two halves of every job —
 the install line and the marker expression — are checked against each other by
-`tests/unit/test_lane_dependency_policy.py`. It holds four invariants. The
+`tests/unit/test_lane_dependency_policy.py`. It holds five invariants. The
 coverage job must install what it selects, or its measurement is a lie. Every
 optional integration some test probes must be installed by *some* lane that
 selects that test. And a test that waits on a device must be within reach of a
@@ -136,15 +136,16 @@ while the accelerator lane never selected them at all. The fourth closes the
 hole the second leaves: a probe for a package the policy declares nowhere is not
 "no lane installs this" but "no lane can be wired to install it", so the answer
 has to be recorded in `dependency-policy.toml` rather than implied by silence.
+The fifth applies the same reasoning to the variable that gates an opt-in device
+run: no lane sets one, so the table under "Opt-In Device Runs" is where it has to
+be recorded.
 Add an extra to an install line, or a marker to a selector; do not let the skip
 absorb the difference.
 
 What counts as an optional integration comes from `dependency-policy.toml`, so
-the check cannot drift from the policy. A test that skips for an unset
-environment variable is outside it: no install line sets one, and no lane is
-configured to. A probe for a package the policy declares nowhere is not outside
-it — that is the case the fourth invariant reports, because no lane can be wired
-to install what nothing declares.
+the check cannot drift from the policy. A probe for a package the policy declares
+nowhere is not outside it — that is the case the fourth invariant reports,
+because no lane can be wired to install what nothing declares.
 
 ## Test Tiers
 
@@ -243,6 +244,38 @@ development artifact (`claim_evidence_type="development_smoke"` and
 fail-closed: the boundary probe is not the full MPS backward executor, does not
 execute the production optimizer, does not prove capacity expansion, and is
 single-node evidence only. A skipped test produces no accelerator evidence.
+
+### Opt-In Device Runs
+
+These tests are skipped unless an environment variable is set, and no lane sets
+one. That is deliberate for a hardware route a CI runner cannot represent, but
+it means the variable is the only way in: without it the test skips in every
+lane, and a skip reads the same as a pass. Set the variable on a host that has
+the device and run the file directly.
+
+| Variable | Test | What it runs |
+| --- | --- | --- |
+| `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
+| `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validate_flagos_cuda_reference.py` |
+| `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validate_flagos_distributed_conformance.py` |
+| `FLAGQUANTUM_TEST_FLAGOS_TRANSPORT` | `tests/test_flagos_transport_observability.py` | `tools/observe_flagos_transport.py` |
+| `FLAGQUANTUM_TEST_SPLIT_DEVICE_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_device_double_single_flagos.py` | `tools/validate_split_real_imag_device_double_single_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_CUDA` | `tests/test_split_real_imag_double_single_conformance.py` | the P3 double-single conformance on `cuda:0`; its CPU sibling needs no variable |
+| `FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_double_single_flagos.py` | `tools/validate_split_real_imag_double_single_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_FLAGOS` | `tests/test_split_real_imag_flagos.py` | `tools/validate_split_real_imag_flagos.py` |
+| `FLAGQUANTUM_TEST_P5_OPTIMIZER_DEVICE` | `tests/test_split_real_imag_optimizer_accelerator.py` | `tools/validate_split_real_imag_optimizer_accelerator.py --device <value>`, where the value is `cuda:0` or `flagos:0` |
+| `FLAGQUANTUM_TEST_SPLIT_PRECISION_CUDA` | `tests/test_split_real_imag_precision_conformance.py` | the P2 precision conformance on `cuda:0`; its CPU sibling needs no variable |
+| `FLAGQUANTUM_TEST_SPLIT_PRECISION_FLAGOS` | `tests/test_split_real_imag_precision_flagos.py` | `tools/validate_split_real_imag_precision_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_CUDA` | `tests/test_split_real_imag_training_conformance.py` | the P1 training conformance on `cuda:0`; its CPU sibling needs no variable |
+| `FLAGQUANTUM_TEST_SPLIT_TRAINING_FLAGOS` | `tests/test_split_real_imag_training_flagos.py` | `tools/validate_split_real_imag_training_flagos.py` |
+
+Most of these set the variable to `1`; the two that take a value say so above.
+Each entry asserts the JSON the tool prints, including its fail-closed claims,
+so the wrapper is where a tool that started overclaiming gets caught.
+
+`tests/unit/test_lane_dependency_policy.py` fails if a test gates itself on a
+variable this table does not name, so a new opt-in run shows up here rather than
+skipping quietly.
 
 ### Multi-Node Work
 
