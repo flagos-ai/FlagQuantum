@@ -23,12 +23,13 @@ tested, and reproducible still does not carry an advantage of its own.
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 
 The primitive rows are listed separately because the package admits a primitive
-on one of two grounds: when more than one algorithm module needs it — the
-Fourier transform shipped with one consumer, phase estimation, and gained its
-second when amplitude estimation landed — or when it is a public unit callers
-use directly, which is how state preparation was admitted, with no consumer
-inside `flagquantum/` at all. A primitive does not by itself change what a
-caller can run.
+on one of two grounds: when more than one algorithm module needs it, or is
+expected to need it and the expectation is later confirmed — the Fourier
+transform shipped with one consumer, phase estimation, and was admitted on the
+expectation of a second, which amplitude estimation's arrival confirmed — or
+when it is a public unit callers use directly, which is how state preparation
+was admitted, with no consumer inside `flagquantum/` at all. A primitive does
+not by itself change what a caller can run.
 
 ## Advantage premises
 
@@ -346,6 +347,9 @@ capability entry repeats the boundary.
 Everything here is a demonstration-scale, teaching-oriented construction. No
 unit in this guide makes a performance claim, a capacity claim, or a
 quantum-advantage claim, and none of them certifies solver behavior,
-convergence, or hardware behavior. A unit is admitted to the index only with the
-tests that exercise it and the boundary that limits it, both recorded in
-`capability-maturity.toml`.
+convergence, or hardware behavior. A unit is admitted to the index with the
+tests that exercise it and the boundary that limits it: the units classified in
+`capability-maturity.toml` record both there, and the two rows without an entry
+— the Fourier transform and phase estimation — carry their boundary in the index
+table above and their tests in `tests/unit/test_algorithms_qft.py` and
+`tests/unit/test_algorithms_phase_estimation.py`.

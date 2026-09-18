@@ -129,6 +129,19 @@ def test_phase_from_counts_reads_a_well_formed_key() -> None:
     assert spec.phase_from_counts({"0101": 5}) == pytest.approx(2 / 8)
 
 
+def test_phase_from_counts_folds_correlated_evaluation_keys() -> None:
+    """Correlated evaluation bits must not decide which counting value wins.
+
+    The most frequent full-register key is ``"1001"``, so reading the register whole
+    would take the counting bits from it and report ``1/2``. Folded onto the two
+    counting bits, ``"01"`` carries 4 + 4 = 8 samples against ``"10"``'s 7, and the
+    phase read is ``1/4``.
+    """
+    spec = PhaseEstimationSpec(n_counting_wires=2, n_evaluation_wires=2)
+    counts = {"0100": 4, "0111": 4, "1001": 7}
+    assert spec.phase_from_counts(counts) == pytest.approx(1 / 4)
+
+
 def test_the_spec_rejects_a_register_that_cannot_resolve_a_phase() -> None:
     """A counting register with no wires has no resolution to offer."""
     with pytest.raises(ValueError):

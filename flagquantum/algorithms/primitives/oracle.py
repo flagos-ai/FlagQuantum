@@ -125,9 +125,12 @@ def append_multi_controlled_x(
     else:
         spare = list(ancillas)
         if len(spare) != needed:
+            # A count of zero is what one or two controls need, and it takes the plural
+            # noun; only the single-wire ladder takes the singular.
+            ancilla_word = "ancilla" if needed == 1 else "ancillas"
             raise ValueError(
                 f"a multi-controlled X with {len(ordered)} controls needs {needed} "
-                f"ancillas, got {len(spare)}"
+                f"{ancilla_word}, got {len(spare)}"
             )
         _validate_ancillas(spare, ordered, target)
     _append_ladder(circuit, ordered, target, spare)

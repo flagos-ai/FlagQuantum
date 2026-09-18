@@ -4,12 +4,14 @@ Reusable quantum primitives that the algorithm modules share. This layer owns
 the quantum Fourier transform, phase estimation, state preparation, and oracle
 synthesis, and all four of them ship today.
 
-A primitive is admitted here when more than one algorithm module needs it, or
-when it is a public unit callers use directly: state preparation shipped on the
-second ground, with no consumer inside `flagquantum/` at all, and the Fourier
-transform shipped with one, phase estimation. This package is not a
-general-purpose quantum toolkit, and a construction only one workflow uses stays
-in that workflow's module until a second one needs it.
+A primitive is admitted here when more than one algorithm module needs it or is
+expected to need it and the expectation is confirmed, or when it is a public
+unit callers use directly: state preparation shipped on the public-unit ground,
+with no consumer inside `flagquantum/` at all, and the Fourier transform on the
+expectation ground, admitted with one consumer, phase estimation, and confirmed
+when amplitude estimation landed. This package is not a general-purpose quantum
+toolkit, and a construction only one workflow uses stays in that workflow's
+module until a second one needs it.
 
 ## Where to start
 
