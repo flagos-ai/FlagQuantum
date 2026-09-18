@@ -7,7 +7,7 @@ from collections.abc import Sequence
 import torch
 
 from .factorization import _split_pair_matrix, _split_pair_matrix_bucket
-from .models import MPSConfig
+from .models import MPSConfig, MpsSplitInfo
 
 
 def factor_mps_reverse_pair(
@@ -20,7 +20,7 @@ def factor_mps_reverse_pair(
     torch.Tensor,
     torch.Tensor,
     torch.Tensor,
-    dict[str, float | int | str],
+    MpsSplitInfo,
 ]:
     """Create the differentiable pair leaf and its MPS factorization."""
 
@@ -32,7 +32,7 @@ def factor_mps_reverse_pair(
             right_dim=right_dim,
             config=config,
         )
-    return pair_leaf, left, right, dict(info)
+    return pair_leaf, left, right, info.copy()
 
 
 def factor_mps_reverse_pair_bucket(
@@ -47,7 +47,7 @@ def factor_mps_reverse_pair_bucket(
         torch.Tensor,
         torch.Tensor,
         torch.Tensor,
-        dict[str, float | int | str],
+        MpsSplitInfo,
     ],
     ...,
 ]:
@@ -74,7 +74,7 @@ def factor_mps_reverse_pair_bucket(
         right_dim=right_dim,
         config=config,
     )
-    outputs = []
+    outputs: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, MpsSplitInfo]] = []
     for pair, (batched_left, _, raw_info) in zip(pair_matrices, splits, strict=True):
         after_left = batched_left.detach()
         retained_rank = int(after_left.shape[-1])
@@ -84,14 +84,11 @@ def factor_mps_reverse_pair_bucket(
             after_right = torch.matmul(
                 torch.conj(retained_u).transpose(-2, -1), pair_leaf
             ).reshape(int(pair.shape[0]), retained_rank, 2, right_dim)
-        outputs.append(
-            (
-                pair_leaf,
-                after_left,
-                after_right,
-                {**raw_info, "gradient_method": "projected_stop_subspace"},
-            )
-        )
+        info: MpsSplitInfo = {
+            **raw_info,
+            "gradient_method": "projected_stop_subspace",
+        }
+        outputs.append((pair_leaf, after_left, after_right, info))
     return tuple(outputs)
 
 

@@ -13,6 +13,7 @@ from ....simulation.mps.compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     apply_compiled_mps_two_site_bucket,
 )
+from ....simulation.mps.models import MpsSplitInfo
 from ....simulation.mps.rank_local import (
     instruction_matrix_for_mps as _instruction_matrix_for_mps,
 )
@@ -27,8 +28,7 @@ from .factorization import (
 from .state import RankOwnedMPSState
 
 _PreparedMPSOutput = (
-    tuple[torch.Tensor]
-    | tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]]
+    tuple[torch.Tensor] | tuple[torch.Tensor, torch.Tensor, MpsSplitInfo]
 )
 _MPSLayerItem = tuple[int, Instruction, tuple[int, ...]]
 

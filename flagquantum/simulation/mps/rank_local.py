@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from typing import Any
+from collections.abc import Sequence
 
 import torch
 from torch.profiler import record_function
@@ -11,7 +10,7 @@ from torch.profiler import record_function
 from ...core.ir import Instruction
 from ..gate_matrix import gate_matrix
 from .factorization import _split_pair_matrix
-from .models import MPSConfig
+from .models import MPSConfig, MpsSplitInfo
 
 
 def instruction_matrix_for_mps(
@@ -40,7 +39,7 @@ def apply_two_mps_tensors_with_info(
     config: MPSConfig,
     *,
     reverse: bool = False,
-) -> tuple[torch.Tensor, torch.Tensor, Mapping[str, Any]]:
+) -> tuple[torch.Tensor, torch.Tensor, MpsSplitInfo]:
     with record_function("flagquantum::mps::two_site_split"):
         matrix = matrix.to(device=left.device, dtype=left.dtype)
         theta = torch.einsum("blsm,bmtr->blstr", left, right)
@@ -90,7 +89,7 @@ def apply_rank_local_mps_instruction(
     bsz: int,
     device: torch.device | str,
     dtype: torch.dtype,
-) -> tuple[tuple[torch.Tensor, ...], Mapping[str, Any] | None]:
+) -> tuple[tuple[torch.Tensor, ...], MpsSplitInfo | None]:
     """Apply one already-routed instruction to its rank-local site tensors."""
 
     if len(tensors) != len(instruction.wires):

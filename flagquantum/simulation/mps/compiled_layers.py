@@ -8,7 +8,7 @@ import torch
 
 from ...core.ir import Instruction
 from .factorization import _split_pair_matrix, _split_pair_matrix_bucket
-from .models import MPSConfig
+from .models import MPSConfig, MpsSplitInfo
 from .rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
 from .site_kernels import apply_ry_bucket, apply_two_site_gate_contraction_bucket
 
@@ -128,7 +128,7 @@ def apply_compiled_mps_two_site_bucket(
     isolate_factorizations: bool,
     svd_driver: str | None,
     compiled: bool = True,
-) -> tuple[tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]], ...]:
+) -> tuple[tuple[torch.Tensor, torch.Tensor, MpsSplitInfo], ...]:
     """Contract and factorize one equal-shape bucket of two-site instructions."""
 
     pairs = contract_mps_two_site_bucket(

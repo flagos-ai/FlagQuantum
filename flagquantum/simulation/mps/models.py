@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from dataclasses import dataclass
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import torch
 
@@ -16,6 +16,29 @@ _MPS_SCHEDULE_CACHE_LOCK = Lock()
 _MPS_INSTRUCTION_SCHEDULE_CACHE: OrderedDict[
     tuple[Any, ...], tuple[tuple[int, ...], ...]
 ] = OrderedDict()
+
+# The record the pair-split primitives return alongside the two factors. Every
+# producer fills the four core keys; the SVD path adds the two that describe how
+# it approximated, and only when it actually truncated, so they are optional.
+MpsSplitMethod = Literal[
+    "qr",
+    "svd",
+    "exact_autograd",
+    "identity_left_gauge",
+    "identity_right_gauge",
+]
+
+
+class _MpsSplitInfoCore(TypedDict):
+    method: MpsSplitMethod
+    rank: int
+    original_rank: int
+    discarded_weight: float
+
+
+class MpsSplitInfo(_MpsSplitInfoCore, total=False):
+    gradient_method: Literal["projected_stop_subspace", "none"]
+    singular_value_gap: float
 
 
 @dataclass(frozen=True)
