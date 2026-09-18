@@ -91,6 +91,20 @@ class DemError:
 
 
 @dataclass(frozen=True)
+class DemSample:
+    """Sampled detector and observable flips from a detector error model."""
+
+    detectors: torch.Tensor
+    observables: torch.Tensor
+
+    @property
+    def shots(self) -> int:
+        """Number of sampled shots."""
+
+        return int(self.detectors.shape[0])
+
+
+@dataclass(frozen=True)
 class DetectorErrorModel:
     """A detector error model over a fixed number of detectors and observables."""
 
@@ -186,6 +200,47 @@ class DetectorErrorModel:
             self.num_observables, lambda error: error.observables
         )
 
+    def dem_sampling(self, *, shots: int, seed: int | None = None) -> DemSample:
+        """Sample ``shots`` shots by XORing the signatures that fired.
+
+        Every mechanism is drawn independently per shot with its own
+        probability. This is the model's own arithmetic, not the circuit
+        simulator; the circuit-simulator comparison lives in the tests.
+        """
+
+        if isinstance(shots, bool) or not isinstance(shots, Integral):
+            raise TypeError("shots must be a positive integer")
+        if shots <= 0:
+            raise ValueError("shots must be a positive integer")
+        if seed is not None and (
+            isinstance(seed, bool) or not isinstance(seed, Integral)
+        ):
+            raise TypeError("seed must be an integer or None")
+
+        generator = torch.Generator()
+        if seed is not None:
+            generator.manual_seed(int(seed))
+
+        detector_bits = torch.zeros((shots, self.num_detectors), dtype=torch.int8)
+        observable_bits = torch.zeros((shots, self.num_observables), dtype=torch.int8)
+        if not self.errors:
+            return DemSample(detectors=detector_bits, observables=observable_bits)
+
+        probabilities = torch.tensor(
+            [error.probability for error in self.errors], dtype=torch.float64
+        )
+        fired = torch.rand(
+            (shots, self.num_errors), generator=generator, dtype=torch.float64
+        )
+        fired = fired < probabilities
+        for column, error in enumerate(self.errors):
+            active = fired[:, column]
+            for index in error.detectors:
+                detector_bits[:, index] ^= active.to(torch.int8)
+            for index in error.observables:
+                observable_bits[:, index] ^= active.to(torch.int8)
+        return DemSample(detectors=detector_bits, observables=observable_bits)
+
     @property
     def num_errors(self) -> int:
         """Number of independent error mechanisms in the model."""
@@ -193,4 +248,4 @@ class DetectorErrorModel:
         return len(self.errors)
 
 
-__all__ = ("DemError", "DetectorErrorModel")
+__all__ = ("DemError", "DemSample", "DetectorErrorModel")
