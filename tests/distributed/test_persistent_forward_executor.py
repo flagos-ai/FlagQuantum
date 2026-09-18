@@ -45,13 +45,21 @@ def _run_two_ranks(*script_args: str, timeout: int) -> subprocess.CompletedProce
 def _rank_summaries(
     completed: subprocess.CompletedProcess[str],
 ) -> list[dict[str, Any]]:
-    """One parsed summary per rank, so both are checked and not just counted."""
+    """One parsed summary per rank, so both are checked and not just counted.
 
-    return [
-        json.loads(line)
-        for line in completed.stdout.splitlines()
-        if line.startswith("{")
-    ]
+    Each rank writes its own line, but `print` emits the text and the newline in
+    two writes, so two ranks can interleave as `{...}{...}` with nothing between
+    them. The decoder is driven over the stream rather than over lines.
+    """
+
+    decoder = json.JSONDecoder()
+    summaries: list[dict[str, Any]] = []
+    index = completed.stdout.find("{")
+    while index != -1:
+        summary, end = decoder.raw_decode(completed.stdout, index)
+        summaries.append(summary)
+        index = completed.stdout.find("{", end)
+    return summaries
 
 
 @pytest.mark.distributed_cpu
