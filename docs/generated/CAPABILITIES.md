@@ -101,6 +101,9 @@ This catalog is generated from the machine-validated
 | Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Register custom framework behavior | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Install an external circuit compiler | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
+| Convert a QUBO problem into a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Recover the QUBO form from a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Evaluate a QUBO objective on a candidate assignment | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -316,6 +319,20 @@ Run a bounded three-data-qubit memory experiment with timed errors or circuit-lo
 - **Start:** [quick example](../../flagquantum/qec/README.md)
 - **Documentation:** [guide](../../flagquantum/qec/README.md)
 - **Known boundary:** A synchronous local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules, replaceable per-round trajectory decoding with physical-X or Pauli-frame-X actions, and a two-round temporal rule that rejects an isolated readout excursion. Confirmable data errors require a following round; terminal-round onsets remain unconfirmed. The circuit-location stochastic profile contains independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Feedback traces separate true and observed bits, actions, and frame evolution. Sweeps report finite-shot observations only, not logical suppression or thresholds. The temporal rule is not maximum-likelihood decoding and repeated readout faults may mimic data errors. Batched decoder feedback, general channels/codes, correlated or timing noise, hard-real-time/provider control, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The feedback records are private subinterfaces and the namespace is not exported from the stable package root.
+
+### QUBO to Ising mapping
+
+Express a quadratic unconstrained binary optimization problem as an Ising Hamiltonian for the existing variational workflows.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.qubo`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior.
 
 
 ## Distributed execution

@@ -565,3 +565,20 @@ level = "experimental"
 owner = "extension maintainers"
 limitations = "The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported."
 focused_tests = "tests/unit/test_extension_sdk.py"
+
+[capabilities.algorithms_qubo_mapping]
+title = "QUBO to Ising mapping"
+summary = "Express a quadratic unconstrained binary optimization problem as an Ising Hamiltonian for the existing variational workflows."
+category = "simulation_and_training"
+user_goals = ["Convert a QUBO problem into a Hamiltonian", "Recover the QUBO form from a Hamiltonian", "Evaluate a QUBO objective on a candidate assignment"]
+public_apis = ["flagquantum.algorithms.qubo"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior."
+focused_tests = "tests/unit/test_algorithms_qubo.py"
