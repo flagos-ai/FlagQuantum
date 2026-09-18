@@ -107,6 +107,9 @@ This catalog is generated from the machine-validated
 | Prepare a uniform superposition | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Prepare a state matching a given amplitude vector | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Cross-check a prepared state against the target amplitudes | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Flip a target qubit only when every control is set | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Mark the states where one bit string is greater than another | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Compose reversible classical logic into a circuit | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -350,6 +353,20 @@ Prepare a uniform or arbitrary quantum state from a classical amplitude vector u
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** Demonstration scale. Computing the rotation angles requires a classical pass over all 2**n amplitudes and a 2**n by 2**n linear solve, so the input is already exponential in size: this unit shows that a state can be prepared efficiently given its amplitudes, not that preparing a state is cheaper than its classical description. It makes no advantage, performance, convergence, or hardware claim, and is not selected by the default runtime. The preparation is exact only to the working precision of the solve.
+
+### Oracle building blocks
+
+Multi-controlled X and a reversible bit-string comparator: the reversible classical logic the oracle units are built from.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.primitives`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** Reversible classical logic of O(n) Toffoli-style cost with no advantage premise of its own. A multi-controlled X above two controls needs len(controls) - 2 caller-supplied ancillas, each of which must be in |0> on entry: measured, a dirty ancilla makes the target silently wrong on a large fraction of inputs (8 of 16 at three controls, 32 of 96 at four) while never corrupting the ancilla itself, so the failure is invisible from the ancilla. The comparator restores every wire it is given except the target. The comparator's published record is semi-verified: its venue is not indexed by Crossref, DBLP or INSPIRE, so its volume and page numbers are reported by citing works rather than index-confirmed. It makes no advantage, performance, or hardware claim.
 
 
 ## Distributed execution

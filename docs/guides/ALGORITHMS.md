@@ -18,7 +18,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; phase estimation consumes it. | — | None. It is a subroutine. |
 | `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev 1995; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
-| `primitives/oracle.py` — oracle synthesis | Not yet available. | — | — |
+| `primitives/oracle.py` — oracle building blocks | Available. Multi-controlled X and a reversible bit-string comparator, the reversible logic the oracle units are built from. Truth-table oracle synthesis on top of them is not yet available. | Oliveira & Ramos 2007 (record not index-confirmed) | **None.** Reversible classical logic, `O(n)` Toffoli-style. |
 | `grover.py` — Grover search | Not yet available. | — | — |
 | `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
 
@@ -145,6 +145,63 @@ print([round(complex(a).imag, 6) for a in state])
 Wires are ordered most significant first, so `state[k]` is the amplitude of the
 basis state whose bits read wire `0` to wire `n-1` from left to right.
 
+## Oracle building blocks
+
+`primitives/oracle.py` holds the two pieces of reversible classical logic the
+oracle units are composed from. `append_multi_controlled_x` flips one target
+wire exactly on the operand pattern that sets every control; one control is a
+`cx` and two are a `ccx`, and three or more are built as an ancilla ladder,
+because the circuit layer has no native gate above two controls.
+`append_comparator` XORs one target wire with the truth value of `lhs > rhs`
+for two equally wide bit strings read most significant first. On `n` bits the
+comparator occupies `2n` operand wires, one target, `n + 1` prefix-equality
+flags, and one scratch wire, so `3n + 3` in all. Neither unit makes an
+advantage claim: both are reversible classical logic of `O(n)` Toffoli-style
+cost, and the classical predicate they compute is the cost they pay.
+
+**The ancilla precondition is load-bearing.** Above two controls the caller
+must supply `len(controls) - 2` ancillas, and each one must be in `|0>` on
+entry. Measured with a dirty ancilla, the target comes out wrong on a large
+fraction of the operand patterns — 8 of 16 at three controls, 32 of 96 at four
+— and nothing is raised. The ancilla's own value is left unchanged by the
+ladder, so the fault cannot be seen from the ancilla either. A circuit builder
+cannot read a wire's starting value, so meeting the precondition is the
+caller's to do.
+
+**The comparator exits clean.** Every wire it is given comes back to the value
+it entered with, except the target, which is XORed with `[lhs > rhs]`. The
+prefix-equality ladder and the scratch wire are uncomputed, so the comparator
+composes into a larger circuit instead of leaving `n` wires holding
+intermediate flags. Its internal three-control X is
+`append_multi_controlled_x` with the scratch wire as the ladder's ancilla,
+which is the same `|0>`-on-entry requirement one level down.
+
+```python
+from flagquantum.algorithms.primitives import append_comparator, append_multi_controlled_x
+from flagquantum.circuit import Circuit
+
+# Three controls need an ancilla, and it must enter in |0>:
+circuit = Circuit(5)
+for wire in (0, 1, 2):
+    circuit.gate("x", wire)
+append_multi_controlled_x(circuit, [0, 1, 2], 3, ancillas=[4])
+print(format(circuit.state().reshape(-1).abs().pow(2).argmax().item(), "05b"))
+# 11110  -- the target (wire 3) flipped and the ancilla (wire 4) came back to |0>
+
+# The comparator XORs its target with [lhs > rhs] and restores every other wire:
+circuit = Circuit(9)
+for wire in (0, 3):  # lhs = 10, rhs = 01
+    circuit.gate("x", wire)
+append_comparator(
+    circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
+)
+print(format(circuit.state().reshape(-1).abs().pow(2).argmax().item(), "09b"))
+# 100110000  -- lhs, rhs and the comparison bit, with the flags and scratch back at 0
+```
+
+Truth-table oracle synthesis on top of these blocks, and the Grover search that
+consumes it, are not available yet; the index above reserves their rows.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -168,6 +225,17 @@ basis state whose bits read wire `0` to wire `n-1` from left to right.
   Estimation", *AMS Contemporary Mathematics* **305**, 53–74 (2002),
   DOI 10.1090/conm/305/05215, arXiv:quant-ph/0005055 — the controlled powers of
   the unitary and the inverse Fourier transform on the counting register.
+- The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
+  string comparator: circuits and applications", *Quantum Computers and
+  Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**
+  Its venue is not indexed by Crossref, DBLP, or INSPIRE, so the volume and
+  page numbers are reported by citing works rather than confirmed against an
+  index. A fully verified adjacent record by the same group is D. S. Oliveira,
+  P. B. M. de Sousa & R. V. Ramos, 2006 International Telecommunications
+  Symposium, DOI 10.1109/ITS.2006.4433341.
+- Multi-controlled X is standard reversible logic and is cited to no paper here,
+  matching the record kept for it: the ancilla ladder it is built as is a
+  textbook construction, and the index above carries no citation for it.
 
 ## Scope
 
