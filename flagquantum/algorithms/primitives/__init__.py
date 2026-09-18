@@ -12,5 +12,14 @@ from __future__ import annotations
 
 from .qft import append_qft as append_qft
 from .qft import qft as qft
+from .types import ControlledUnitary as ControlledUnitary
+from .types import Predicate as Predicate
+from .types import StatePreparationOperator as StatePreparationOperator
 
-__all__ = ["append_qft", "qft"]
+__all__ = [
+    "ControlledUnitary",
+    "Predicate",
+    "StatePreparationOperator",
+    "append_qft",
+    "qft",
+]
