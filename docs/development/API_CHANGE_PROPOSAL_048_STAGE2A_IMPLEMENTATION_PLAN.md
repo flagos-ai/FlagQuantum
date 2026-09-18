@@ -1575,6 +1575,174 @@ def test_signatures_key_on_check_position_not_on_declared_index() -> None:
     assert signatures == {(0, 2), (1, 3), (2, 4), (3, 5)}
 
 
+@dataclass(frozen=True)
+class _ThreeCheckCode:
+    """A code whose check count is not ``distance - 1``.
+
+    Stage 1's whole-branch review found the detector count tied to ``distance``
+    rather than to the declared checks, and found that every test code was shaped
+    like ``RepetitionCode``, so six independent edits could leave 194 tests green.
+    This code keeps that hole closed for the model: three checks against a
+    declared distance of three, so anything keyed on ``distance - 1`` enumerates
+    two checks where the program performs three and reads the wrong classical
+    bits.
+
+    Wire 0 sits in checks 0 and 2, wire 1 in checks 0 and 1, wire 2 in checks 1
+    and 2 — a triangle, so a data flip never touches two adjacent checks the way
+    it does in a repetition code.
+    """
+
+    distance: int = 3
+
+    @property
+    def num_data_qubits(self) -> int:
+        return 3
+
+    @property
+    def num_ancilla_qubits(self) -> int:
+        return 3
+
+    @property
+    def data_wires(self) -> tuple[int, ...]:
+        return (0, 1, 2)
+
+    @property
+    def ancilla_wires(self) -> tuple[int, ...]:
+        return (3, 4, 5)
+
+    @property
+    def checks(self) -> tuple[CodeCheck, ...]:
+        return (
+            CodeCheck(
+                index=0,
+                stabilizer=Pauli(z_wires=(0, 1)),
+                ancilla_wire=3,
+                cnot_wires=((0, 3), (1, 3)),
+            ),
+            CodeCheck(
+                index=1,
+                stabilizer=Pauli(z_wires=(1, 2)),
+                ancilla_wire=4,
+                cnot_wires=((1, 4), (2, 4)),
+            ),
+            CodeCheck(
+                index=2,
+                stabilizer=Pauli(z_wires=(0, 2)),
+                ancilla_wire=5,
+                cnot_wires=((0, 5), (2, 5)),
+            ),
+        )
+
+    @property
+    def stabilizers(self) -> tuple[Pauli, ...]:
+        return tuple(check.stabilizer for check in self.checks)
+
+    @property
+    def logical_observables(self) -> tuple[Pauli, ...]:
+        return (Pauli(z_wires=(0, 1, 2)),)
+
+
+@dataclass(frozen=True)
+class _TwoObservableCode:
+    """A code declaring two logical observables.
+
+    Nothing in Stage 1 checks that a declared observable is a genuine logical
+    operator, so a second Z-type operator on a data wire is representable. The
+    point of the test is that no code path hardcodes a single observable.
+    """
+
+    distance: int = 3
+
+    @property
+    def num_data_qubits(self) -> int:
+        return 3
+
+    @property
+    def num_ancilla_qubits(self) -> int:
+        return 2
+
+    @property
+    def data_wires(self) -> tuple[int, ...]:
+        return (0, 1, 2)
+
+    @property
+    def ancilla_wires(self) -> tuple[int, ...]:
+        return (3, 4)
+
+    @property
+    def checks(self) -> tuple[CodeCheck, ...]:
+        return (
+            CodeCheck(
+                index=0,
+                stabilizer=Pauli(z_wires=(0, 1)),
+                ancilla_wire=3,
+                cnot_wires=((0, 3), (1, 3)),
+            ),
+            CodeCheck(
+                index=1,
+                stabilizer=Pauli(z_wires=(1, 2)),
+                ancilla_wire=4,
+                cnot_wires=((1, 4), (2, 4)),
+            ),
+        )
+
+    @property
+    def stabilizers(self) -> tuple[Pauli, ...]:
+        return tuple(check.stabilizer for check in self.checks)
+
+    @property
+    def logical_observables(self) -> tuple[Pauli, ...]:
+        return (Pauli(z_wires=(0, 1, 2)), Pauli(z_wires=(0,)))
+
+
+def test_check_count_drives_the_mechanism_count_not_distance() -> None:
+    """Three checks and a declared distance of three must give 3 * (rounds + 1) detectors."""
+
+    built = build_memory_circuit(_ThreeCheckCode(), rounds=2)
+    model = DetectorErrorModel.from_memory_circuit(
+        built, noise=PhenomenologicalNoise(measurement_flip=0.05)
+    )
+    assert model.num_detectors == 9
+    assert model.num_errors == 6
+    signatures = [error.detectors for error in model.errors]
+    assert len(set(signatures)) == len(signatures)
+
+
+def test_data_flips_alone_flip_the_declared_observable_for_any_code() -> None:
+    built = build_memory_circuit(_ThreeCheckCode(), rounds=2)
+    model = DetectorErrorModel.from_memory_circuit(
+        built, noise=PhenomenologicalNoise(data_flip=0.05)
+    )
+    assert model.num_errors == 6
+    assert all(error.observables == (0,) for error in model.errors)
+
+
+def test_two_declared_observables_are_both_modelled() -> None:
+    """One model per noise class, so no assertion depends on a merged probability."""
+
+    built = build_memory_circuit(_TwoObservableCode(), rounds=2)
+    model = DetectorErrorModel.from_memory_circuit(
+        built, noise=PhenomenologicalNoise(data_flip=0.05)
+    )
+    assert model.num_observables == 2
+    assert model.observable_rates().shape == (2,)
+    assert model.num_errors == 6
+    # observable 0 spans every data wire, so any data flip moves it
+    assert all(0 in error.observables for error in model.errors)
+    # observable 1 spans wire 0 alone, so only some data flips move it
+    assert any(1 in error.observables for error in model.errors)
+    assert any(1 not in error.observables for error in model.errors)
+
+
+def test_measurement_flips_never_move_a_declared_observable() -> None:
+    built = build_memory_circuit(_TwoObservableCode(), rounds=2)
+    model = DetectorErrorModel.from_memory_circuit(
+        built, noise=PhenomenologicalNoise(measurement_flip=0.05)
+    )
+    assert model.num_observables == 2
+    assert all(error.observables == () for error in model.errors)
+
+
 def test_merging_combines_identical_signatures() -> None:
     """Two mechanisms with one signature merge by XOR probability."""
 
@@ -1664,7 +1832,17 @@ Expected: pass, in roughly 30 seconds. Confirm the timing so the `pr-runtime` bu
 
 - [ ] **Step 3: Prove the check can fail**
 
-Break the model deliberately — for example, make `_merge_mechanisms` add probabilities instead of combining them by parity — confirm the sampled-rate check fails, then restore. A comparison that cannot fail is not evidence. Record the observed failure in the commit message.
+A comparison that cannot fail is not evidence, and "a check that reports nothing" is indistinguishable from "a check that found nothing" in the output — the failure mode the testing-depth line spent ten stages treating. So: break the model deliberately, watch the check go red, then revert with git rather than by hand.
+
+Edit `_merge_mechanisms` so that the merged probability is the plain sum instead of the parity combination, then run only the cross-check file and capture the failure:
+
+```bash
+python -m pytest tests/qec/test_dem_cross_check.py -q 2>&1 | tail -20
+git checkout -- flagquantum/qec/dem.py
+python -m pytest tests/qec/test_dem_cross_check.py -q 2>&1 | tail -5
+```
+
+The revert is `git checkout --`, not a hand re-edit: a hand re-edit is how a deliberate break survives into a commit. Record the observed failure message and the restored green run in the commit message.
 
 - [ ] **Step 4: Commit**
 
@@ -1781,4 +1959,21 @@ git commit -m "docs: publish the detector error model and describe its boundary"
 
 **Known debt this stage must not walk past**, from the proposal's "Stage 1 landed state and known debt": the DEM keys on check tuple position, never `CodeCheck.index` (Tasks 6 and 7, with a purpose-built index-swapped code); the layouts are validated for membership only and not for semantics, so the forced execution is the authority on the signature rather than the layout's intent (Task 6); only Z-type checks are representable, which the repetition code and the 2a test codes all satisfy; `Pauli.from_text`'s format is pinned only by round-trip tests and the DEM is its first library consumer, so Task 5's stim text uses its own parser rather than reaching for `Pauli.from_text`; and the observable-count validator still has no test, which Stage 1 recorded and left — do not fix it here.
 
+**Why the private helpers stay private.** `_inject_data_flip`, `_inject_measurement_flip`, `_forced_signature`, and `_merge_mechanisms` keep their leading underscore and are imported directly by the tests. Making them public would mean publishing them from `flagquantum.qec`, which the proposal does not authorize for Stage 2a, and which would freeze the injection mechanism as API before Stage 3's decoder has shown what it actually needs. Testing a module-private function from `tests/` has precedent in this repository (`_memory_source`), no gate objects to it, and the failure mode it accepts — a later refactor moves a helper and the tests fail loudly — is the outcome we want. The one thing that must not happen is a second injection implementation appearing in the test tree: Task 8's cross-check reuses these helpers precisely so there is exactly one.
+
 **Every task ends in a commit and a green gate.** Task 1's duration is minutes; Tasks 6, 7, and 8 lower and execute and are marked `integration`, so they run in `pr-runtime` and in the `coverage` job, and the 2a budget for the whole cross-check file is about 30 seconds.
+
+## Whole-branch review
+
+Stage 1 ran six per-task reviews and a whole-branch review, and **all three real bugs were found only by the whole-branch pass**. The root cause recorded in the proposal is worth quoting as the brief for this stage's final review: every test code was shaped like `RepetitionCode`, so six individually reasonable edits could leave the suite green.
+
+The final review must therefore hunt specifically for **"assumes the repetition shape" bugs**, and must not accept "the tests pass" as an answer. Read `flagquantum/qec/dem.py` and ask, for each place that reads a count or an index:
+
+- Does anything assume `len(code.checks) == code.distance - 1`? (`_ThreeCheckCode` in Task 7 exists to catch this.)
+- Does anything assume exactly one logical observable? (`_TwoObservableCode` exists to catch this.)
+- Does anything assume exactly one observable per check, or that a check's support is two adjacent wires?
+- Does anything read `CodeCheck.index` instead of the check's position in `code.checks`? (`_IndexSwappedCode` exists to catch this.)
+- Does anything assume the terminal detector's data wires are the check's support, rather than reading them off the layout?
+- Does any parity computation deduplicate or sum instead of XOR?
+
+Then apply the Stage 1 lesson one level up: **mutate each of those guards and confirm the suite goes red.** A test that stays green when its subject is broken is not coverage. The two named codes in Task 7 are only worth having if removing them from the file makes something fail — verify that by deleting each one and re-running, then restoring with `git checkout -- tests/qec/test_dem_from_memory_circuit.py`.
