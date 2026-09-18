@@ -71,7 +71,8 @@ def append_multi_controlled_x(
         ValueError: If ``controls`` is empty, repeats a wire, or holds ``target``; if three
             or more controls are given without ``ancillas``; if the ancilla count is not
             ``len(controls) - 2``; or if an ancilla repeats a wire or is also a control or
-            the target.
+            the target. A non-empty ``ancillas`` alongside one or two controls is refused,
+            because that form consumes no ancilla, while an empty one is accepted.
     """
     ordered = list(controls)
     _validate_controls(ordered, target)

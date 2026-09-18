@@ -36,7 +36,11 @@ def test_multi_controlled_x_flips_only_the_saturated_pattern() -> None:
             if (pattern >> (2 - position)) & 1:
                 circuit.gate("x", wire)
         append_multi_controlled_x(circuit, [0, 1], 2)
-        assert _wire(circuit, 3, 2) == int(pattern == 0b110), pattern
+        # The gate XORs its target, so a target that enters as |1> leaves as |0> on the
+        # saturated pattern. Asserting the XOR rather than a constant is what makes this
+        # detect a gate that resets the target instead of flipping it.
+        saturated = int(pattern & 0b110 == 0b110)
+        assert _wire(circuit, 3, 2) == ((pattern & 0b1) ^ saturated), pattern
         assert _wire(circuit, 3, 0) == (pattern >> 2) & 1, pattern
         assert _wire(circuit, 3, 1) == (pattern >> 1) & 1, pattern
 
