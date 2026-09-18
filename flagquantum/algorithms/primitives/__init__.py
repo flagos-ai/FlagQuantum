@@ -10,6 +10,8 @@ is not a general-purpose quantum toolkit.
 
 from __future__ import annotations
 
+from .oracle import append_comparator as append_comparator
+from .oracle import append_multi_controlled_x as append_multi_controlled_x
 from .phase_estimation import PhaseEstimationSpec as PhaseEstimationSpec
 from .phase_estimation import append_phase_estimation as append_phase_estimation
 from .phase_estimation import phase_estimation_circuit as phase_estimation_circuit
@@ -28,6 +30,8 @@ __all__ = [
     "Predicate",
     "StatePreparationOperator",
     "append_arbitrary_state",
+    "append_comparator",
+    "append_multi_controlled_x",
     "append_phase_estimation",
     "append_qft",
     "arbitrary_state",
