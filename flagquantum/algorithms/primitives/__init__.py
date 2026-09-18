@@ -10,7 +10,22 @@ is not a general-purpose quantum toolkit.
 
 from __future__ import annotations
 
+from .phase_estimation import PhaseEstimationSpec as PhaseEstimationSpec
+from .phase_estimation import append_phase_estimation as append_phase_estimation
+from .phase_estimation import phase_estimation_circuit as phase_estimation_circuit
 from .qft import append_qft as append_qft
 from .qft import qft as qft
+from .types import ControlledUnitary as ControlledUnitary
+from .types import Predicate as Predicate
+from .types import StatePreparationOperator as StatePreparationOperator
 
-__all__ = ["append_qft", "qft"]
+__all__ = [
+    "ControlledUnitary",
+    "PhaseEstimationSpec",
+    "Predicate",
+    "StatePreparationOperator",
+    "append_phase_estimation",
+    "append_qft",
+    "phase_estimation_circuit",
+    "qft",
+]
