@@ -53,6 +53,11 @@ min = 76
 [packages."."]
 min = 85
 
+# A new directory whose every line the matrix-level tests above exercise. The floor starts
+# where the first PR measured it and may only be raised from here.
+[packages."algorithms.primitives"]
+min = 90
+
 [packages.algorithms]
 min = 83
 
