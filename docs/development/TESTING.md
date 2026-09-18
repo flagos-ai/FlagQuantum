@@ -450,6 +450,22 @@ the four- and eight-device matrix legs take turns instead of both landing on one
 host. A lane that waits stays queued: the default keeps one waiting lane and
 drops it when another arrives, which reports nothing at all for the one dropped.
 
+**A pull request must not be able to reach a self-hosted runner.** The runners
+are root shells on hosts that other people share, and one of them serves a
+public repository, which is the combination GitHub's own guidance warns about.
+No workflow a pull request can trigger asks for a self-hosted runner today —
+`ci.yml`, `cd.yml`, and `publish-dev-container.yml` all run on GitHub-hosted
+runners, and the three that need a device are `workflow_dispatch` or `schedule`.
+
+That was a property of how the files happened to be written rather than anything
+the repository enforced, and there is no runner group to enforce it: a runner
+group is an organization-level feature, while both runners here are registered
+at the repository level. `tests/unit/test_hardware_lane_policy.py` therefore
+holds the rule directly, by failing when a `pull_request`, `pull_request_target`,
+or `workflow_run` triggered workflow names a self-hosted runner. `workflow_run`
+counts because it fires in response to a workflow a pull request did trigger, so
+it reaches whatever runner it asks for.
+
 Serializing our own lanes does not make a host private. A benchmark records the
 device state it found before its first allocation, and
 `tools/evaluate_performance_artifact.py --write` reads that record into a
