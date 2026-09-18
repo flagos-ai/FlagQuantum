@@ -199,9 +199,13 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
         pair_totals[first] = pair_totals.get(first, 0.0) + coefficient
         pair_totals[second] = pair_totals.get(second, 0.0) + coefficient
 
+    # The recovered linear coefficient is defined for every variable in the register, not
+    # only for wires that happen to carry a single-wire term: a wire whose weight is
+    # exactly zero emits no term, and a wire that is only ever a pair endpoint emits none
+    # either. Both still have a linear coefficient of ``-2 * (sum of its pair weights)``.
     linear = {
-        index: 2.0 * weight - 2.0 * pair_totals.get(index, 0.0)
-        for index, weight in linear_weights.items()
+        index: 2.0 * linear_weights.get(index, 0.0) - 2.0 * pair_totals.get(index, 0.0)
+        for index in set(linear_weights) | set(pair_totals)
     }
     recovered = {pair: 4.0 * coefficient for pair, coefficient in quadratic.items()}
     offset = constant - sum(linear_weights.values()) + sum(quadratic.values())

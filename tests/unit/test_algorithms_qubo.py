@@ -124,6 +124,28 @@ def test_ising_to_qubo_rejects_a_non_z_term() -> None:
         ising_to_qubo(Hamiltonian([pauli_term(1.0, "X", (0,))]))
 
 
+def test_a_bare_pair_hamiltonian_recovers_both_induced_linear_terms() -> None:
+    """A pair contributes a single-wire Z to each endpoint, even with no Z term emitted."""
+    from flagquantum.algorithms.core import Hamiltonian, pauli_term
+
+    recovered = ising_to_qubo(Hamiltonian([pauli_term(2.0, "ZZ", (0, 1))]))
+    assert recovered.linear == {0: pytest.approx(-4.0), 1: pytest.approx(-4.0)}
+    assert recovered.quadratic == {(0, 1): pytest.approx(8.0)}
+    assert recovered.offset == pytest.approx(2.0)
+
+
+def test_a_pair_survives_when_its_endpoint_weight_cancels() -> None:
+    """x1's linear coefficient is nonzero while its single-wire weight is exactly zero."""
+    problem = QuboProblem(
+        n_variables=2, linear={0: 1.0, 1: -1.0}, quadratic={(0, 1): 2.0}
+    )
+    recovered = ising_to_qubo(qubo_to_ising(problem))
+    for assignment in _assignments(2):
+        assert qubo_energy(recovered, assignment) == pytest.approx(
+            qubo_energy(problem, assignment)
+        )
+
+
 def test_max_cut_matches_a_brute_force_optimum() -> None:
     """The MaxCut QUBO optimum equals the exhaustive maximum over all cuts."""
     problem = max_cut_qubo(((0, 1), (1, 2), (2, 0)), n_nodes=3)
