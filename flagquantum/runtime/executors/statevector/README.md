@@ -13,7 +13,7 @@ public use stays centered on `fq.Circuit`, `fq.plan`, and `fq.run`.
 | Change | Entry point |
 | --- | --- |
 | Shard and communication plans | [planning.py](planning.py) |
-| Forward execution | [forward_executor.py](forward_executor.py), [forward.py](forward.py) |
+| Forward execution | [forward_executor.py](forward_executor.py), [forward_sweep.py](forward_sweep.py), [forward.py](forward.py) |
 | Wire placement | [layout.py](layout.py) |
 | Adjoint replay | [reverse.py](reverse.py), [reverse_adjoint.py](reverse_adjoint.py), [reverse_adjoint_sweep.py](reverse_adjoint_sweep.py), [reverse_adjoint_kernels.py](reverse_adjoint_kernels.py) |
 | Checkpoints | [checkpointing.py](checkpointing.py) |
