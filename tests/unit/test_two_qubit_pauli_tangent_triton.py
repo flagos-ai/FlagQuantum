@@ -8,7 +8,7 @@ from flagquantum.simulation.triton_kernels.two_qubit_pauli_tangent import (
     repeated_rxx_ryy_rzz_tangents,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.triton]
 
 
 def reference_tangents(state, angles):
@@ -38,6 +38,7 @@ def test_two_qubit_pauli_tangent_cpu_fallback_matches_reference():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+@pytest.mark.gpu
 @pytest.mark.parametrize("depth", [1, 4, 12])
 def test_two_qubit_pauli_tangent_cuda_matches_reference(depth):
     torch.manual_seed(7)

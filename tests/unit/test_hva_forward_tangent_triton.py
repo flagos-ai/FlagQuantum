@@ -6,7 +6,7 @@ pytest.importorskip("triton")
 import flagquantum.algorithms as fqa
 from flagquantum.simulation.triton_kernels import heisenberg_hva_forward_tangents
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")

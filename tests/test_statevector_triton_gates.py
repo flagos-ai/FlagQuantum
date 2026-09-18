@@ -3,7 +3,7 @@ import torch
 
 import flagquantum as fq
 
-pytestmark = [pytest.mark.gpu, pytest.mark.integration]
+pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 
 
 def _require_cuda() -> None:

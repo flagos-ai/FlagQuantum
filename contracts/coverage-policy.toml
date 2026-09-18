@@ -40,7 +40,7 @@
 # the package below its floor instead of quietly leaving the measurement. The
 # same holds for every entry: a test that loses its marker, or is added without
 # one, leaves the measurement — `tests/unit/test_test_reachability_policy.py`
-# rejects that, `tests/unit/test_coverage_lane_dependency_policy.py` rejects the
+# rejects that, `tests/unit/test_lane_dependency_policy.py` rejects the
 # install-line half, and these floors are the second line of defence.
 
 schema = "flagquantum_coverage_policy_v1"

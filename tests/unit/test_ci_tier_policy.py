@@ -58,6 +58,7 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
     assert CI_TIERS["multinode-scheduled"].blocks_default_pr is False
     assert CI_TIERS["gpu-scheduled"].command_lines() == (
         "python -m pytest -m distributed_accel and gpu -q",
+        "python -m pytest -m triton and gpu -q",
     )
     assert CI_TIERS["multinode-scheduled"].command_lines() == (
         "python -m pytest -m distributed_multinode -q",

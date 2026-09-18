@@ -30,8 +30,9 @@ ROOT = Path(__file__).resolve().parents[2]
 #   pr-default            smoke, unit
 #   pr-runtime            integration
 #   pr-distributed        distributed_cpu; benchmark_contract or release_gate
-#   coverage              smoke, unit, integration, jax
+#   coverage              smoke, unit, integration, jax (not qiskit, not triton)
 #   jax-optional          jax
+#   triton-optional       triton
 #   qiskit-optional       qiskit
 #   pennylane-optional    pennylane
 #   multinode-scheduled   distributed_multinode
@@ -49,6 +50,7 @@ LANE_SELECTORS = frozenset(
         "benchmark_contract",
         "release_gate",
         "jax",
+        "triton",
         "qiskit",
         "pennylane",
         "braket",

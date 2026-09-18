@@ -95,10 +95,11 @@ CI_TIERS: dict[str, CITier] = {
     "gpu-scheduled": CITier(
         name="gpu-scheduled",
         trigger="Scheduled or manual job on an explicit accelerator runner.",
-        proves="Tests marked for accelerator-backed distributed behavior on the configured hardware.",
+        proves="Tests marked for accelerator-backed distributed behavior, and the device-bound Triton kernels, on the configured hardware.",
         does_not_prove="Multi-node transport or release scalability without benchmark audit evidence.",
         commands=(
             ("{python}", "-m", "pytest", "-m", "distributed_accel and gpu", "-q"),
+            ("{python}", "-m", "pytest", "-m", "triton and gpu", "-q"),
         ),
     ),
     "multinode-scheduled": CITier(

@@ -8,7 +8,7 @@ from flagquantum.simulation.triton_kernels.mps_two_site import (
     fused_mps_two_site,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")

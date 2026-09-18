@@ -17,6 +17,8 @@ from flagquantum.simulation.triton_kernels.statevector_gates import (
 
 pytestmark = [
     pytest.mark.unit,
+    pytest.mark.triton,
+    pytest.mark.gpu,
     pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required"),
 ]
 
