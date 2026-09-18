@@ -102,9 +102,11 @@ fails if a file is added without one.
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
-The coverage job installs `jax` and `pennylane` because its marker expression
-selects their suites, and installs neither `qiskit` nor `triton`: the braket
-tests need no extra, and the other two cannot be measured there. Qiskit's native
+The coverage job installs `jax`, `pennylane`, and `cotengra` because its marker
+expression selects their suites, and installs neither `qiskit` nor `triton`: the
+braket tests need no extra, and the other two cannot be measured there.
+`cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
+not add to the static-TLS budget that rules Qiskit out. Qiskit's native
 libraries cannot be loaded in that process at all — `qiskit/_accelerate.abi3.so`
 raises `ImportError: cannot allocate memory in static TLS block` once the rest of
 the test tree has been imported, and importing it first only moves the failure to
@@ -123,22 +125,26 @@ it covers, which is what `pennylane` was doing at 43.4%.
 
 Because a missing extra is swallowed as a skip, the two halves of every job —
 the install line and the marker expression — are checked against each other by
-`tests/unit/test_lane_dependency_policy.py`. It holds three invariants. The
+`tests/unit/test_lane_dependency_policy.py`. It holds four invariants. The
 coverage job must install what it selects, or its measurement is a lie. Every
 optional integration some test probes must be installed by *some* lane that
 selects that test. And a test that waits on a device must be within reach of a
 lane that has one — the six Triton files sat in no lane at all while carrying
 `unit`, and six more tests in `tests/unit/test_real_imag_kernels.py` carried a
 CUDA guard without the `gpu` marker, so the CPU lanes selected and skipped them
-while the accelerator lane never selected them at all. Add an extra to an
-install line, or a marker to a selector; do not let the skip absorb the
-difference.
+while the accelerator lane never selected them at all. The fourth closes the
+hole the second leaves: a probe for a package the policy declares nowhere is not
+"no lane installs this" but "no lane can be wired to install it", so the answer
+has to be recorded in `dependency-policy.toml` rather than implied by silence.
+Add an extra to an install line, or a marker to a selector; do not let the skip
+absorb the difference.
 
 What counts as an optional integration comes from `dependency-policy.toml`, so
 the check cannot drift from the policy. A test that skips for an unset
 environment variable is outside it: no install line sets one, and no lane is
-configured to. So is a probe for a package no extra declares, where the fix is a
-dependency decision rather than a lane wiring one.
+configured to. A probe for a package the policy declares nowhere is not outside
+it — that is the case the fourth invariant reports, because no lane can be wired
+to install what nothing declares.
 
 ## Test Tiers
 
