@@ -12,10 +12,8 @@ import pytest
 
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.executors.mps.errors import MPSReverseContractError
-from flagquantum.runtime.executors.mps.reverse import (
-    _static_exact_qr_record,
-    _validate_reverse_request,
-)
+from flagquantum.runtime.executors.mps.reverse import _validate_reverse_request
+from flagquantum.runtime.executors.mps.reverse_tape import _static_exact_qr_record
 
 pytestmark = pytest.mark.unit
 

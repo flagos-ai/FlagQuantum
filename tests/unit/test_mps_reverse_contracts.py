@@ -12,9 +12,6 @@ from flagquantum.runtime.executors.mps.records import (
     MPSReverseTape,
     MPSReverseTapeRecord,
 )
-from flagquantum.runtime.executors.mps.reverse import (
-    _static_exact_qr_record,
-)
 from flagquantum.runtime.executors.mps.reverse_planning import (
     cached_mps_reverse_segments,
     clear_mps_reverse_segment_cache,
@@ -23,6 +20,7 @@ from flagquantum.runtime.executors.mps.reverse_planning import (
     plan_mps_reverse_segments,
     validate_mps_svd_gaps,
 )
+from flagquantum.runtime.executors.mps.reverse_tape import _static_exact_qr_record
 from flagquantum.runtime.executors.mps.reverse_transport import (
     all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
