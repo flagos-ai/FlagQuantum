@@ -861,10 +861,26 @@ def test_a_certain_error_always_flips() -> None:
 
 
 def test_a_shared_error_flips_both_detectors_together() -> None:
-    """One mechanism that flips two detectors flips them together."""
+    """One mechanism that flips two detectors flips them together.
+
+    This is the test that kills per-detector sampling, and no other test in the
+    file can: with a single mechanism at 0.5 both columns have marginal 0.5, so
+    the rate comparisons are blind to it and only the *joint* equality
+    distinguishes the two designs. The ``0 < sum < 256`` bound matters too — the
+    equality alone is satisfied by an all-zero sample.
+
+    Do not "improve" this by adding a second mechanism on ``(0,)`` alone. For A
+    on ``(0,)`` at 0.5 and B on ``(0, 1)`` at 0.2, ``P(D0 = 1 | D1 = 1) =
+    P(A = 0) = 0.5 = P(D0 = 1)``, so the two columns become independent and
+    ``torch.equal`` is an *invalid* assertion for that model — the correct
+    implementation would fail it. (The probabilities matter: at A = 0.2 and
+    B = 0.5 the columns are *not* independent, so that pair would pass. Check
+    the arithmetic before reusing this construction.)
+    """
 
     model = _model(DemError(probability=0.5, detectors=(0, 1), observables=()), detectors=2)
     sample = model.dem_sampling(shots=256, seed=3)
+    assert 0 < int(sample.detectors.sum()) < 256
     assert torch.equal(sample.detectors[:, 0], sample.detectors[:, 1])
 
 
@@ -902,7 +918,13 @@ def test_bool_shots_are_rejected() -> None:
 python -m pytest tests/qec/test_dem_sampling.py -q
 ```
 
-Expected: `ImportError: cannot import name 'DemSample'`.
+Expected: `AttributeError: 'DetectorErrorModel' object has no attribute 'dem_sampling'`. (The test file imports only `DemError, DetectorErrorModel`, so `DemSample` is never named at import time; the failure surfaces on the first call.)
+
+Two traps in this task, found during execution:
+
+**The seed-test rationale is the reverse of what it looks like.** On torch 2.13 a freshly constructed `torch.Generator()` is deterministically seeded, so an implementation that ignores `seed` and keeps a fresh generator produces *identical* output on two seeded calls — passing `test_sampling_is_reproducible_for_a_seed` **vacuously**. `test_different_seeds_differ` is the test that catches it. Verify by measuring, not by reasoning: two fresh generators agree; two generators both seeded 7 agree; seed 1 vs seed 2 differ. The reproducibility test therefore needs a seeded-vs-**unseeded** comparison, which is the only local property showing the seed was read.
+
+**`DemSample` must not be a plain `@dataclass(frozen=True)`.** Its fields are tensors, so the generated `__eq__` falls through to elementwise `==` and `bool()` on a multi-element tensor (`RuntimeError: Boolean value of Tensor with more than one element is ambiguous`), and the generated `__hash__` is id-based and contradicts it. Use `eq=False` plus an explicit `__eq__` built on `torch.equal`, returning `NotImplemented` for foreign types. The class then becomes unhashable, which is the honest answer for a tensor-bearing record — say so in the docstring.
 
 - [ ] **Step 3: Implement the sampler**
 
@@ -1373,7 +1395,7 @@ def test_injection_rejects_an_undeclared_wire() -> None:
 python -m pytest tests/qec/test_dem_signatures.py -q
 ```
 
-Expected: `ImportError: cannot import name '_forced_signature'`.
+Expected: `ImportError: cannot import name '_mechanisms'`. (The test file imports `_mechanisms` at module scope, so the failure is an import error, not the `AttributeError` a call-site failure would give.)
 
 - [ ] **Step 3: Implement the engine**
 
@@ -1859,6 +1881,8 @@ Expected: pass, in roughly 30 seconds. Confirm the timing so the `pr-runtime` bu
 
 A comparison that cannot fail is not evidence, and "a check that reports nothing" is indistinguishable from "a check that found nothing" in the output — the failure mode the testing-depth line spent ten stages treating. So: break the model deliberately, watch the check go red, then revert with git rather than by hand.
 
+**A trap this step originally walked into, and the fix.** The two required checks cannot exercise the merge rule at all: the repetition code has **no colliding signatures** at `d = 3` (15/15) or `d = 5` (45/45), because every data mechanism's signature carries the observable and every measurement mechanism's does not, and the detector sets are distinct within each class. So `_merge_mechanisms`' accumulation branch only ever takes its first-insert path, and editing the merge rule to a plain sum is a **no-op for both checks** — the prescribed break leaves them green. The task must therefore add a test-local code whose mechanisms genuinely collide. One that works: a single check spanning all data wires, `rounds=2`, both noise probabilities 0.25 — 8 mechanisms merging to 4 errors, giving modelled detector 0 a parity rate of **0.46875** against a plain-sum rate of **0.625**, a gap of 0.15625. A *two-way* collision is not enough: parity 0.4375 against sum 0.5 moves the rate by only about a quarter of a 4σ band and the break passes.
+
 Edit `_merge_mechanisms` so that the merged probability is the plain sum instead of the parity combination, then run only the cross-check file and capture the failure:
 
 ```bash
@@ -1867,7 +1891,7 @@ git checkout -- flagquantum/qec/dem.py
 python -m pytest tests/qec/test_dem_cross_check.py -q 2>&1 | tail -5
 ```
 
-The revert is `git checkout --`, not a hand re-edit: a hand re-edit is how a deliberate break survives into a commit. Record the observed failure message and the restored green run in the commit message.
+The revert is `git checkout --` and must be run **locally**: the container has no `.git`, so the same command inside `remote.sh` dies with `git: command not found`. The revert is not a hand re-edit either — a hand re-edit is how a deliberate break survives into a commit. Record the observed failure message and the restored green run in the commit message.
 
 - [ ] **Step 4: Commit**
 
@@ -1952,19 +1976,23 @@ Add the imports and `__all__` entries to `flagquantum/qec/__init__.py`, keeping 
 
 - [ ] **Step 4: Run the full QEC suite and every repository gate**
 
+Run each command **separately** — do not join them with `&&`. Joining suppresses every later gate whenever an earlier one fails, and in this container three tests fail for a reason unrelated to this change (the image has no `git`, so `tracked_files`/`_commit_sha` raise `FileNotFoundError`), which would silently skip the coverage gate entirely. A gate that skips itself is the exact failure shape this plan keeps correcting.
+
 ```bash
 python -m pytest tests/qec -q
 black --check flagquantum tests
 ruff check flagquantum tests
 mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 python tools/check_architecture.py
-python tools/check_repository_language.py
-python -m pytest -m "(smoke or unit or integration) and not qiskit and not triton" -q \
+python tools/check_repository_language.py flagquantum/qec tests/qec
+python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not triton" -q \
   --cov=flagquantum --cov-report=xml
 python tools/check_coverage.py
 ```
 
-Expected: `tests/qec` passes with the Stage 1 count plus the new tests; the gates are clean; `[global] min = 76` and `[packages.qec] min = 82` both hold. If `packages.qec` is close to its floor, add unit tests for the uncovered branches rather than lowering the floor.
+The marker expression must match the one CI's coverage job uses (`.github/workflows/ci.yml`), which includes **`or jax`**. Dropping it deselects the jax-marked tests and makes nine package floors fail on a clean container — a failure that looks like a coverage regression and is really a wrong selector. `tools/check_repository_language.py` also needs explicit paths here, because the container has no `.git` for it to enumerate the tree from.
+
+Expected: `tests/qec` passes with the Stage 1 count plus the new tests; the gates are clean; `[global] min = 76` and `[packages.qec] min = 82` both hold. In this image `ecosystem.pennylane` will also fail its floor, because `pennylane` is absent from the container — that is the known image artifact, not this change. If `packages.qec` is close to its floor, add unit tests for the uncovered branches rather than lowering the floor.
 
 - [ ] **Step 5: Commit**
 
