@@ -15,6 +15,9 @@ from .phase_estimation import append_phase_estimation as append_phase_estimation
 from .phase_estimation import phase_estimation_circuit as phase_estimation_circuit
 from .qft import append_qft as append_qft
 from .qft import qft as qft
+from .state_preparation import append_arbitrary_state as append_arbitrary_state
+from .state_preparation import arbitrary_state as arbitrary_state
+from .state_preparation import uniform_state as uniform_state
 from .types import ControlledUnitary as ControlledUnitary
 from .types import Predicate as Predicate
 from .types import StatePreparationOperator as StatePreparationOperator
@@ -24,8 +27,11 @@ __all__ = [
     "PhaseEstimationSpec",
     "Predicate",
     "StatePreparationOperator",
+    "append_arbitrary_state",
     "append_phase_estimation",
     "append_qft",
+    "arbitrary_state",
     "phase_estimation_circuit",
     "qft",
+    "uniform_state",
 ]
