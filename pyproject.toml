@@ -30,6 +30,11 @@ dev = [
     "build>=1.2.0",
     "pre-commit>=3.7.0",
     "tomli>=2.0; python_version < '3.11'",
+    # The lane-policy tests read `.github/workflows/*.yml` as documents rather
+    # than as text, so that a job's runner labels and its concurrency block are
+    # compared as structure. `pre-commit` also pulls PyYAML in, but a test that
+    # imports a library should say so itself.
+    "pyyaml>=6.0",
 ]
 
 jax = [
@@ -92,6 +97,7 @@ all = [
      "build>=1.2.0",
      "pre-commit>=3.7.0",
      "tomli>=2.0; python_version < '3.11'",
+     "pyyaml>=6.0",
      "matplotlib>=3.5.0",
      "jax>=0.10,<0.11",
      "datasets>=2.20.0",

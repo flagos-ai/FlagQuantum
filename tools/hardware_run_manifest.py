@@ -32,6 +32,41 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+# Three files carry a copy of this literal because every tool in this repository
+# is a self-contained script, and a script under `tools/` cannot name a sibling
+# module. `tests/unit/test_hardware_lane_policy.py` holds the copies to each
+# other, because a query and its parser that drift apart answer with nothing
+# rather than with an error, and nothing is what an idle host answers too.
+DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
+
+
+def _device_state() -> str:
+    """Record what the host's devices hold, as the raw answer to `DEVICE_QUERY`.
+
+    This manifest is written after the lane's steps have finished, so the answer
+    describes the host as the lane left it. The reading that decides whether a
+    run was contended is taken from the benchmark's own pre-run sample instead;
+    this one is here so that a lane with no benchmark artifact still records
+    what it was running on.
+    """
+
+    try:
+        completed = subprocess.run(
+            (
+                "nvidia-smi",
+                f"--query-gpu={DEVICE_QUERY}",
+                "--format=csv,noheader,nounits",
+            ),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return completed.stdout
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -100,6 +135,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         ),
         "topology": _output(("nvidia-smi", "topo", "-m")),
+        "device_state_after_run": _device_state(),
         "logs": logs,
     }
     visible_devices = tuple(

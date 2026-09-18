@@ -436,22 +436,48 @@ CPU distributed tests are not scalability evidence and must not be used as relea
 `.github/workflows/local-gpu.yml` is `workflow_dispatch`-only: it has no path
 filter and no schedule, so it runs when someone starts it. Its one-GPU behavior
 job and two-GPU correctness/autograd job both require the `flagquantum-local`
-self-hosted label. As of 2026-09-18 no runner carries that label — the
-repository has zero registered self-hosted runners and the organization list is
-not readable without `admin:org` — so every run of those two jobs has queued and
-been cancelled at GitHub's 24-hour limit rather than executed. The same label
-gates `local-scale-scheduled` and `crossover-scheduled` in
-`scheduled-hardware.yml`.
+self-hosted label, together with `local-scale-scheduled` and
+`crossover-scheduled` in `scheduled-hardware.yml`. Two runners carry that label
+as of 2026-09-18, one on `jp-a800-171` and one on `jp-a800-172`; confirm with
+`gh api repos/flagos-ai/FlagQuantum/actions/runners`, because a statement about
+what is registered is only true of the moment it was written.
 
-That makes the two-GPU job the required hardware gate for distributed-runtime
-changes only if the label is provisioned. Until it is, a distributed-runtime
-change cannot obtain the evidence this section describes, and the run history
-says so; nothing in the repository can substitute CPU tests for it.
+Both hosts are shared with other people's workloads, and a runner label says
+`gpu` rather than how many devices its host has. Every job that requests a
+device therefore joins one `flagquantum-accelerator` concurrency group with
+`queue: max`, so that no two accelerator jobs measure the same host at once and
+the four- and eight-device matrix legs take turns instead of both landing on one
+host. A lane that waits stays queued: the default keeps one waiting lane and
+drops it when another arrives, which reports nothing at all for the one dropped.
 
-Four- and eight-GPU jobs live in `scheduled-hardware.yml`. They are scheduled
-or manually dispatched and do not block unrelated documentation or CPU-only
-changes. Hardware manifests and raw logs are uploaded even on failure; skips
-must carry a reason and are not evidence of success.
+Serializing our own lanes does not make a host private. A benchmark records the
+device state it found before its first allocation, and
+`tools/evaluate_performance_artifact.py --write` reads that record into a
+`measurement_validity` block:
+
+- `clean` — every device the run used held at most `foreign_memory_floor_mib`
+  MiB, which is consistent with an idle device.
+- `contended` — another process held more than that, on a device this run used.
+- `unavailable` — the state was never read, or could not be interpreted. This
+  is deliberately not `clean`: a run that did not look has not shown that its
+  devices were free.
+
+The verdict is recorded rather than folded into the performance gate. Contention
+inflates latency variance, and the gate reports that as
+`latency_variance_exceeds_threshold`, the same error a real regression produces.
+Letting contention turn the gate red would make a busy neighbour look like a code
+regression, so the gate keeps judging the numbers while this block says whether
+the numbers were taken somewhere that allows believing them. A `contended`
+verdict does not by itself invalidate correctness evidence, which contention
+does not touch.
+
+Four- and eight-GPU jobs live in `scheduled-hardware.yml`. They are scheduled or
+manually dispatched and do not block unrelated documentation or CPU-only
+changes. The scheduled entry point is `cron: "17 3 * * 1"`, which is 03:17 UTC
+on Monday. Hardware manifests and raw logs are uploaded even on failure; skips
+must carry a reason and are not evidence of success, and neither is an artifact
+whose `measurement_validity` is not `clean` evidence of performance.
+
 ## Coverage gate
 
 CI measures the maintained package with the seeded smoke, unit, integration, and
