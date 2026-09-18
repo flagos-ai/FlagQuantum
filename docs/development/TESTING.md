@@ -317,6 +317,13 @@ cluster:
   **A bare `python -m pytest -m distributed_launch -q` selects them and executes
   none of them**, which is what this section asked for until 2026-09-18, and
   which let ten tests report skips while every lane stayed green.
+  That lane is the PyTorch-only environment, which does not install NumPy, so a
+  launched test may not use a Python object collective: `all_gather_object` and
+  its siblings move their payload through `Tensor.numpy()`, and the first real
+  execution of this lane failed on exactly that. `tests/distributed/conftest.py`
+  turns the rule into a failure instead of a surprise, and
+  `flagquantum.runtime.executors.mps.metadata_transport.all_gather_json` is the
+  tensor-native gather to reach for.
 - **Real two-node transport.** For a minimal two-node CUDA correctness check,
   launch one rank per node with the same rendezvous address and run
   `tools/probe_cuda_multinode_statevector.py`.

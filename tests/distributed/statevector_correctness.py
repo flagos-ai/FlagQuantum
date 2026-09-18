@@ -25,6 +25,9 @@ from flagquantum.runtime.distributed import (  # noqa: E402
     destroy_torch_distributed,
     init_torch_distributed,
 )
+from flagquantum.runtime.executors.mps.metadata_transport import (  # noqa: E402
+    all_gather_json,
+)
 from flagquantum.runtime.executors.statevector import (  # noqa: E402
     plan_distributed_statevector,
 )
@@ -64,15 +67,23 @@ def parse_args() -> argparse.Namespace:
 
 
 def _gather_summaries(summary: dict, world_size: int) -> list[dict]:
+    """Collect every rank's summary without a Python object collective.
+
+    `all_gather_object` routes its payload through `Tensor.numpy()`, so it needs
+    NumPy. Nothing in this project depends on NumPy: the PyTorch-only lane
+    installs `.[dev]` and NumPy only arrives with the JAX extra, so this
+    harness raised `RuntimeError: Numpy is not available` the first time a
+    launcher ran it. `all_gather_json` is the runtime's own pickle-free,
+    NumPy-free metadata gather, already the transport of record across the MPS
+    executor, so the harness uses it too.
+    """
     if (
         world_size <= 1
         or not torch.distributed.is_available()
         or not torch.distributed.is_initialized()
     ):
         return [summary]
-    gathered: list[dict | None] = [None for _ in range(world_size)]
-    torch.distributed.all_gather_object(gathered, summary)
-    return [item for item in gathered if item is not None]
+    return [item for item in all_gather_json(summary)]
 
 
 def _log(rank: int, message: str, *, enabled: bool) -> None:
