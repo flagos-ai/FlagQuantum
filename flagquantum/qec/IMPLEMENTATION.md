@@ -58,3 +58,60 @@ independent readout confusion. No general Kraus/correlated/timing-noise,
 maximum-likelihood or general measurement-error-tolerant decoder,
 logical-error-suppression, threshold, fault-tolerance, realtime-hardware, or
 performance claim follows from the workflow.
+
+## Code-independent records
+
+`pauli.py`, `codes.py`, and `circuit.py` add a code-independent layer beside the
+frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wire
+indices; a `StabilizerCode` is a value that declares its distance, wire layout,
+checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
+and a round count into circuit source plus a detector layout and an observable
+layout.
+
+Detector semantics are fixed. A detector is a measurement parity that is
+deterministic in the noiseless circuit. A `rounds`-round memory experiment
+declares one detector per check per round, comparing that round against its
+predecessor, where the first round is compared against the known all-zero prior
+state, plus one detector per check comparing the final syndrome round against the
+terminal data readout. That grammar is `len(checks) * (rounds + 1)` detectors, and
+for a distance-`d` repetition code, whose `len(checks)` is `d - 1`, it equals
+`(d - 1) * (rounds + 1)`. Logical failure is the parity of a declared logical
+observable.
+
+The detector count is validated against the code's declared checks and the
+configured round count, and every reference is validated against the code's
+declared wires: a detector's terminal readouts must name declared data wires and
+its syndrome measurements must name declared ancilla wires inside the configured
+rounds, and an observable's readout must name declared data wires and match the
+code's declared logical operators. The validation is membership-based. It does not
+check that a detector names the *same* check in each round, that a terminal
+detector's data wires are the support of the check it belongs to, or that the
+`source` text is the program those layouts describe, so a hand-built layout can
+still be semantically wrong while satisfying every check.
+
+This layer is additive. The frozen repetition types, the two decoder protocols,
+three reference decoders, and both existing workflows keep their current
+signatures and behavior, and the seven names pinned by
+`contracts/hybrid-compilation-private-v0-candidate.json` are unchanged. The
+`RepetitionCode` at `distance=3` reproduces the frozen circuit instruction for
+instruction, which is asserted by
+`tests/qec/test_memory_circuit_execution.py`.
+
+The frozen profile defines logical failure as the majority of its three
+frame-corrected data bits. That is a profile-specific decision rule rather than a
+linear logical observable, so general-layer failure counts are not claimed to
+equal frozen-profile failure counts at `distance=3`. This layer does not change
+the frozen profile's arithmetic.
+
+The layer declares codes and detectors only. It does not build a detector error
+model, decode, sample evidence, or make any threshold, logical-suppression,
+real-time, or fault-tolerance claim.
+
+One representational boundary is explicit and enforced. `CodeCheck` requires every
+CNOT to control a data wire and target the check's ancilla, so it describes only
+Z-type checks measured with a Z-basis ancilla; an X-type stabilizer is rejected by
+validation with "check stabilizer must be Z-type". An X-type check couples the
+ancilla the other way and is not representable here, even though the `Pauli`
+record and the check's `stabilizer` field are basis-agnostic. This matches the
+repetition code, which detects bit flips; a code family needing X-type checks
+requires this record to grow before it can be described.
