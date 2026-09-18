@@ -29,6 +29,18 @@ __all__ = [
 _IDENTITY_WIRE = 0
 
 
+def _is_index(value: object, n_variables: int) -> bool:
+    """Return whether ``value`` is an index into a register of ``n_variables``.
+
+    ``bool`` is an ``int`` in Python and ``True`` equals ``1``, so a boolean key would be
+    read as the index it equals; it is rejected explicitly rather than accepted as one.
+    """
+
+    if isinstance(value, bool) or not isinstance(value, int):
+        return False
+    return 0 <= value < n_variables
+
+
 @dataclass(frozen=True)
 class QuboProblem:
     """A binary objective ``offset + sum_i c_i x_i + sum_{i<j} q_ij x_i x_j``.
@@ -47,6 +59,45 @@ class QuboProblem:
     linear: Mapping[int, float]
     quadratic: Mapping[tuple[int, int], float]
     offset: float = 0.0
+
+    def __post_init__(self) -> None:
+        """Reject a problem whose keys are not indices into its own register.
+
+        The register-shaped maps and the declared-key maps must agree, so a key outside
+        ``range(n_variables)`` is refused here rather than surfaced later as a wrong
+        objective value or an incidental ``IndexError``.
+
+        Raises:
+            ValueError: If ``n_variables`` is not positive, if a key is not an integer
+                index in ``range(n_variables)``, or if a pair key is not ordered with the
+                lower index first.
+        """
+
+        if self.n_variables < 1:
+            raise ValueError(f"n_variables must be positive, got {self.n_variables}")
+        for index in self.linear:
+            if not _is_index(index, self.n_variables):
+                raise ValueError(
+                    f"linear key {index!r} is not a variable index in "
+                    f"range({self.n_variables})"
+                )
+        for pair in self.quadratic:
+            if not isinstance(pair, tuple) or len(pair) != 2:
+                raise ValueError(
+                    f"quadratic key {pair!r} is not a pair of variable indices"
+                )
+            first, second = pair
+            if not _is_index(first, self.n_variables) or not _is_index(
+                second, self.n_variables
+            ):
+                raise ValueError(
+                    f"quadratic key {pair!r} is not a pair of variable indices in "
+                    f"range({self.n_variables})"
+                )
+            if not first < second:
+                raise ValueError(
+                    f"quadratic key {pair!r} must be ordered with the lower index first"
+                )
 
 
 def _constant_wire(n_variables: int) -> int:

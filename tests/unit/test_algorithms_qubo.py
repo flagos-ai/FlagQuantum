@@ -158,6 +158,46 @@ def test_a_nonzero_offset_survives_the_round_trip() -> None:
         )
 
 
+def test_a_non_positive_variable_count_is_refused() -> None:
+    """A register with no variables has no assignment to evaluate."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=0, linear={}, quadratic={})
+
+
+def test_a_negative_key_is_refused() -> None:
+    """A negative index reads the assignment backwards instead of failing."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={-1: 3.0}, quadratic={})
+
+
+def test_an_out_of_register_key_is_refused() -> None:
+    """A key past the register is not a variable."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={0: 1.0, 5: 2.0}, quadratic={})
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={}, quadratic={(0, 3): 4.0})
+
+
+def test_an_ill_ordered_pair_is_refused() -> None:
+    """The constructor documents the lower index first."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={}, quadratic={(1, 0): 4.0})
+
+
+def test_a_boolean_key_is_refused() -> None:
+    """bool is an int, so True would be read as the index 1."""
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={True: 1.0}, quadratic={})
+    with pytest.raises(ValueError):
+        QuboProblem(n_variables=2, linear={}, quadratic={(False, 1): 4.0})
+
+
+def test_valid_problems_still_construct() -> None:
+    """The validation must not reject anything the class documents as valid."""
+    QuboProblem(n_variables=1, linear={0: 1.0}, quadratic={})
+    QuboProblem(n_variables=3, linear={}, quadratic={(0, 2): 1.0})
+
+
 def test_max_cut_matches_a_brute_force_optimum() -> None:
     """The MaxCut QUBO optimum equals the exhaustive maximum over all cuts."""
     problem = max_cut_qubo(((0, 1), (1, 2), (2, 0)), n_nodes=3)
