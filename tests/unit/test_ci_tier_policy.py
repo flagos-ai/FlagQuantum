@@ -60,8 +60,14 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
         "python -m pytest -m distributed_accel and gpu -q",
         "python -m pytest -m triton and gpu -q",
     )
+    # This tier used to select `distributed_multinode`, which no test carries:
+    # the seven tests that did carry it need a launcher rather than a second
+    # node and were renamed to `distributed_launch`. Selecting an empty marker
+    # reports success having executed nothing, so the tier drives the two-node
+    # lane directly instead.
     assert CI_TIERS["multinode-scheduled"].command_lines() == (
-        "python -m pytest -m distributed_multinode -q",
+        "python tools/multinode_launch_plan.py --run --staging "
+        "/nfs/fq-multinode-tier --report-directory hardware-run",
     )
 
 

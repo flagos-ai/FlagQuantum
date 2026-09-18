@@ -259,7 +259,19 @@ A multi-node scalability result must still satisfy the repository contracts:
 - `world_size`, `local_world_size`, `node_count`, rank ownership, memory, and
   communication evidence are recorded;
 - blockers and `scalability_claim_allowed` are reported fail-closed;
-- the `distributed_multinode` tier and benchmark/release audits pass.
+- the two-node lane in `.github/workflows/scheduled-hardware.yml` passes, and
+  the benchmark/release audits pass.
+
+On the launch host, one command runs the whole lane:
+
+```bash
+python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-run
+```
+
+It refuses to start on nine preflight questions, stages the tree onto a
+filesystem both nodes mount, and supervises both ranks as one unit with
+`tools/run_multinode_watchdog.py`. It stages nowhere but a directory named
+`fq-multinode*`, because it copies into it with `--delete`.
 
 Replicated per-rank execution can be used as a transport smoke test, but it
 must not be reported as capacity scaling.

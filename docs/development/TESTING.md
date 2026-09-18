@@ -58,7 +58,7 @@ for `benchmarks/results/scalability/`.
 | Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
 | Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
 | Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
-| Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Multi-node/rank-placement candidates selected by `distributed_multinode`. | Release claims unless produced payloads also pass release validation. |
+| Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | One workload partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
 | Release candidate or promoted benchmark claim | `python tools/ci_tier.py release` | Full non-performance-benchmark pytest plus benchmark root audit and scalability release scan. | Claims outside the audited payload. |
 
 Equivalent direct marker commands are available when a focused local run is
@@ -106,7 +106,7 @@ so the check is per test rather than per file.
 | `distributed_cpu` | CPU/local distributed simulators, planner/audit checks, or torch distributed semantics that do not require real accelerator capacity. | Rank ownership metadata, sharding intent, fail-closed gates, and development-production semantic parity where applicable. | Real multi-GPU capacity expansion, production transport performance, or release-grade scalability evidence. |
 | `distributed_launch` | One host with a launcher: `torchrun --standalone --nproc-per-node=N`. | Rank-placement and collective semantics for a distributed mode, reachable on CPU. | Real multi-GPU or multi-node capacity. A bare `pytest` selects these and executes none of them. |
 | `distributed_accel` | Explicit accelerator or multi-GPU environment. | Hardware-backed distributed behavior for the covered path. | Multi-node transport unless also marked `distributed_multinode`; release claim unless audit evidence passes. |
-| `distributed_multinode` | Explicit multi-node cluster or scheduled/manual transport job. | Node/rank placement and multi-node transport behavior for the covered path. | Release-grade claim unless benchmark payload and release gate pass. |
+| `distributed_multinode` | Multi-node cluster, or a scheduled/manual job with explicit rank placement. | Node/rank placement and multi-node transport behavior for the covered path. | Release-grade claim unless benchmark payload and release gate pass. |
 | `benchmark_contract` | Fast local pytest over benchmark JSON and audit helpers. | Payload shape, required fields, result hygiene, scanner contract, and non-release payload rejection. | Real benchmark performance or hardware behavior. |
 | `release_gate` | Fast local pytest over release validators and promoted payloads. | Fail-closed release validation behavior and accepted release payload contract. | That unmeasured paths are scalable; it only validates provided evidence. |
 | `scalability` | Release-grade evidence path, usually scheduled or manual. | A specific promoted payload may support a capacity-scaling claim when it passes the release gate. | Generic distributed readiness for all backends or future workloads. |
@@ -303,11 +303,11 @@ skipping quietly.
 
 ### Multi-Node Work
 
-Use this tier only in a scheduled/manual torchrun or cluster environment with
-explicit rank placement.
+Use this tier only on the launch host, which is the node that can reach its
+peer over ssh; the pair holds a device on each of two shared hosts.
 
 Two different things are called multi-node work here, and only one needs a
-cluster:
+second node:
 
 - **Launched single-host tests.** `tests/distributed/test_runtime_modes.py`,
   `test_hybrid_jax_runtime.py`, and `test_statevector_correctness.py` carry
@@ -324,19 +324,40 @@ cluster:
   turns the rule into a failure instead of a surprise, and
   `flagquantum.runtime.executors.mps.metadata_transport.all_gather_json` is the
   tensor-native gather to reach for.
-- **Real two-node transport.** For a minimal two-node CUDA correctness check,
-  launch one rank per node with the same rendezvous address and run
-  `tools/probe_cuda_multinode_statevector.py`.
-The probe retains one statevector shard per rank during execution, materializes
-the tiny five-wire state only for validation, and records the selected NCCL
-route from a rank-zero debug log. Its output is correctness and communication
-evidence only; it is not a scalability or release claim.
+- **Real two-node transport.** One rank per node, the same rendezvous address,
+  and `tools/probe_cuda_multinode_statevector.py` on both.
+  The probe retains one statevector shard per rank during execution, materializes
+  the tiny five-wire state only for validation, and records the selected NCCL
+  route from a rank-zero debug log. Its output is correctness and communication
+  evidence only; it is not a scalability or release claim.
+
+`tools/multinode_launch_plan.py --run` drives that pair, and the `multinode` job
+in `.github/workflows/scheduled-hardware.yml` is one call to it. It runs manual
+dispatch only, on the runner label that only the launch host carries, because
+SSH reaches the peer from there and not the other way round.
+
+It stages the tree onto a filesystem both nodes mount, so the two ranks cannot
+disagree about which revision they are evidence about, and it runs them through
+`tools/run_multinode_watchdog.py`, so a launcher that dies on one node does not
+leave the other waiting for a rendezvous that never arrives. Before any of that
+it refuses to launch on nine questions that a timeout would otherwise answer,
+among them whether this host is the launch host, whether the peer has the
+device and the interface, and whether the rendezvous port is free. The
+rendezvous port is chosen rather than assumed: the hosts are shared, and a
+preflight against the fixed 29500 refused a real launch because a neighbour
+already held it.
 
 ```bash
 python tools/ci_tier.py multinode-scheduled
-# direct:
-python -m pytest -m "distributed_multinode" -q
+# what that tier runs, on the launch host:
+python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --report-directory hardware-run
 ```
+
+No test carries `distributed_multinode`. The seven that did need a launcher
+rather than a second node and were renamed to `distributed_launch`; the marker
+stays declared because the two-node evidence comes from the probe above rather
+than from pytest. This tier used to run `pytest -m distributed_multinode`, which
+selected nothing and reported success having executed nothing.
 
 Multi-node tests must not become release claims unless their benchmark payloads
 also pass the release gate.
@@ -421,7 +442,7 @@ execution proof.
 | PR distributed/audit/benchmark | Pull requests that touch distributed planning/runtime metadata, audit, benchmark JSON, or release gates. | `python tools/ci_tier.py pr-distributed` | Only for distributed/audit/benchmark changes. | CPU distributed semantics plus benchmark contract and release-gate validation; not capacity evidence. |
 | Nightly CPU | Scheduled nightly CPU-safe validation or explicit maintainer request. | `python tools/ci_tier.py nightly` | No | Broad non-benchmark, non-accelerator, non-multinode health. |
 | GPU scheduled | Scheduled/manual job on an explicit accelerator runner. | `python tools/ci_tier.py gpu-scheduled` | No | Accelerator-backed behavior for selected tests, including the Triton kernels that need a device; not multi-node or release evidence by itself. |
-| Multi-node scheduled/manual | Scheduled/manual torchrun or cluster job with explicit rank placement. | `python tools/ci_tier.py multinode-scheduled` | No | Multi-node transport candidates for the configured cluster; release claims still require audit payloads. |
+| Multi-node scheduled/manual | Manual dispatch on the launch host, which is the node that can reach its peer over ssh. | `python tools/ci_tier.py multinode-scheduled` | No | One workload partitioned across two nodes on one revision; release claims still require audit payloads. |
 | Release | Release candidate validation before promoting benchmark payloads or publishing release notes. | `python tools/ci_tier.py release` | Release only | Full non-performance-benchmark pytest coverage plus benchmark audit and scalability release scan. |
 
 ## Path Classification Mapping

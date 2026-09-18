@@ -132,10 +132,47 @@ jobs:
           path: hardware-run/
 
   multinode:
+    # Manual only. The pair holds a device on each of two shared hosts for the
+    # length of the run, and a schedule would take them whether or not anyone
+    # is watching the result.
     if: github.event_name == 'workflow_dispatch' && inputs.run_multinode
-    runs-on: [self-hosted, linux, multinode]
-    timeout-minutes: 60
+    # Only the launch host carries `multinode`. SSH reaches the peer from there
+    # and not the other way round, so a job that lands on the peer cannot start
+    # the pair at all; `--preflight` is what notices if that label ever moves.
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, multinode]
+    # The launch host's device is one the other accelerator lanes also measure,
+    # so this job joins the group they join.
+    concurrency:
+      group: flagquantum-accelerator
+      # `queue: max` keeps every waiting lane. The default keeps one and drops
+      # it when another arrives, which would silently report nothing.
+      queue: max
+    timeout-minutes: 25
+    env:
+      # A tree both nodes mount, so the two ranks cannot disagree about which
+      # revision they are evidence about. `--run` copies into it with
+      # `--delete`, so the name has to be one this lane owns.
+      STAGING: /nfs/fq-multinode-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
-      - run: python -m pip install -e '.[dev,jax]'
-      - run: python tools/run_with_watchdog.py --phase multinode-tier --stall-seconds 300 --timeout-seconds 2400 --diagnostics hardware-run/watchdog-multinode-tier -- python tools/ci_tier.py multinode-scheduled
+        with:
+          sparse-checkout: |
+            flagquantum
+            tools
+          sparse-checkout-cone-mode: false
+      - name: Run one workload across two nodes, supervised as one unit
+        run: |
+          mkdir -p hardware-run
+          python tools/multinode_launch_plan.py --run \
+            --staging "$STAGING" \
+            --source . \
+            --source-revision "${{ github.sha }}" \
+            --report-directory hardware-run
+      - name: Withdraw the shared staging tree
+        if: always()
+        run: rm -rf "$STAGING" "$STAGING-out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multinode-${{ github.sha }}
+          path: hardware-run/
