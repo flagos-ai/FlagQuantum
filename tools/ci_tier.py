@@ -104,10 +104,20 @@ CI_TIERS: dict[str, CITier] = {
     ),
     "multinode-scheduled": CITier(
         name="multinode-scheduled",
-        trigger="Scheduled or manual torchrun/cluster job with explicit rank placement.",
-        proves="Selected multi-node transport candidates for the configured cluster.",
-        does_not_prove="Release scalability unless the produced payload also passes the release gate.",
-        commands=(("{python}", "-m", "pytest", "-m", "distributed_multinode", "-q"),),
+        trigger="Manual dispatch on the launch host, which is the node that can reach its peer over ssh; not scheduled, because the pair holds a device on each host.",
+        proves="One workload partitioned across two nodes on one revision, with the NCCL route it took read back from the debug log.",
+        does_not_prove="Release scalability: the probe reports release_gate_allowed and scalability_claim_allowed false, and the audit that could promote it runs separately.",
+        commands=(
+            (
+                "{python}",
+                "tools/multinode_launch_plan.py",
+                "--run",
+                "--staging",
+                "/nfs/fq-multinode-tier",
+                "--report-directory",
+                "hardware-run",
+            ),
+        ),
     ),
     "release": CITier(
         name="release",

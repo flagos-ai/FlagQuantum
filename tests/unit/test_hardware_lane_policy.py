@@ -31,7 +31,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # against each other and not merely against themselves.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
 
-# The three files that ask a host for its device state. They cannot share the
+# The files that ask a host for its device state. They cannot share the
 # constant: every tool here is a self-contained script, and a script under
 # `tools/` cannot import a sibling module. The copies therefore have to be held
 # to each other by test instead, because a query and a parser that drift apart
@@ -41,10 +41,11 @@ DEVICE_QUERY_SOURCES = (
     ROOT / "benchmarks" / "continuous_performance.py",
     ROOT / "tools" / "evaluate_performance_artifact.py",
     ROOT / "tools" / "hardware_run_manifest.py",
+    ROOT / "tools" / "multinode_launch_plan.py",
 )
 
 # Without `nounits` the answer reads `4 MiB` where the parser expects `4`, so
-# the flag and the parser are one decision recorded in three places.
+# the flag and the parser are one decision recorded in every copy.
 UNITLESS_FORMAT = "--format=csv,noheader,nounits"
 
 # Every event that lets a contributor's own code reach a workflow: a fork or a
@@ -138,6 +139,7 @@ def test_the_scan_finds_the_accelerator_jobs_it_is_meant_to_police() -> None:
         "scheduled-hardware.yml:crossover-scheduled",
         "scheduled-hardware.yml:gpu-scheduled",
         "scheduled-hardware.yml:local-scale-scheduled",
+        "scheduled-hardware.yml:multinode",
     } <= found
 
 
@@ -200,12 +202,13 @@ def _device_query(path: Path) -> str:
     raise AssertionError(f"{path}: no module-level DEVICE_QUERY")
 
 
-def test_the_three_device_query_copies_agree() -> None:
+def test_the_device_query_copies_agree() -> None:
     queries = {
         path.relative_to(ROOT).as_posix(): _device_query(path)
         for path in DEVICE_QUERY_SOURCES
     }
 
+    assert len(queries) >= 3, queries
     assert len(set(queries.values())) == 1, queries
 
 

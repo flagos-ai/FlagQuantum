@@ -84,12 +84,21 @@ def run_jobs(
             for job in jobs:
                 cleanup = job.get("cleanup_command")
                 if cleanup:
+                    name = str(job["name"])
+                    # Captured rather than inherited: a cleanup command that
+                    # prints would otherwise land on this process's stdout,
+                    # which is where the summary goes, and a caller parsing it
+                    # would find a report and a stray line in the same stream.
                     completed = subprocess.run(
                         [str(item) for item in cleanup],
                         timeout=termination_grace_seconds,
                         check=False,
+                        capture_output=True,
                     )
-                    cleanup_results[str(job["name"])] = int(completed.returncode)
+                    cleanup_results[name] = int(completed.returncode)
+                    (output_dir / f"{name}.cleanup.log").write_bytes(
+                        completed.stdout + completed.stderr
+                    )
     finally:
         for process in processes.values():
             _terminate(process, termination_grace_seconds)
@@ -120,6 +129,11 @@ def run_jobs(
         "cleanup_results": cleanup_results,
         "cleanup_verified": cleanup_verified,
         "cleanup_failures": cleanup_failures,
+        # The evidence a cleanup ran, not only its exit code: what is being
+        # killed lives on another node, where this process cannot see it.
+        "cleanup_logs": {
+            name: str(output_dir / f"{name}.cleanup.log") for name in cleanup_results
+        },
         "jobs": [
             {
                 "name": name,
