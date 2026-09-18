@@ -50,6 +50,47 @@ class ControlledUnitary(Protocol):
 
 
 @runtime_checkable
+class AmplitudeOperator(Protocol):
+    """The unitaries amplitude estimation needs, in the controlled forms it needs them.
+
+    Amplitude estimation applies the controlled Grover operator
+    ``Q = -A (I - 2|0><0|) A^dagger S_chi``, so it must be able to apply ``A``, its adjoint,
+    the marking operator, and the reflection about the zero state -- each under the control
+    of one wire. A state-preparation unitary that cannot be applied under control cannot be
+    used here, and this protocol does not pretend otherwise.
+    """
+
+    @property
+    def n_wires(self) -> int:
+        """The number of wires the evaluation register carries."""
+        ...
+
+    def apply_plain(self, circuit: Circuit, wires: Sequence[int]) -> None:
+        """Append ``A`` to ``circuit``, the preparation of the callers' own register."""
+        ...
+
+    def apply_a(self, circuit: Circuit, control: int, wires: Sequence[int]) -> None:
+        """Append ``A`` controlled on ``control``."""
+        ...
+
+    def apply_a_dagger(
+        self, circuit: Circuit, control: int, wires: Sequence[int]
+    ) -> None:
+        """Append the adjoint of ``A``, controlled on ``control``."""
+        ...
+
+    def apply_mark(self, circuit: Circuit, control: int, wires: Sequence[int]) -> None:
+        """Append the marking operator ``S_chi`` controlled on ``control``."""
+        ...
+
+    def apply_zero_reflection(
+        self, circuit: Circuit, control: int, wires: Sequence[int]
+    ) -> None:
+        """Append ``I - 2|0><0|`` on ``wires``, controlled on ``control``."""
+        ...
+
+
+@runtime_checkable
 class StatePreparationOperator(Protocol):
     """A state-preparation unitary paired with the subspace whose amplitude is estimated."""
 
