@@ -14,11 +14,13 @@ import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
 from flagquantum.runtime.executors.mps.execution import (
-    _recv_tensor_batch_p2p,
     _recv_tensor_p2p,
+    _send_tensor_p2p,
+)
+from flagquantum.runtime.executors.mps.transport import (
+    _recv_tensor_batch_p2p,
     _run_batched_p2p_with_overlap,
     _send_tensor_batch_p2p,
-    _send_tensor_p2p,
     mps_p2p_stats,
     reset_mps_p2p_stats,
     warmup_mps_neighbor_communicators,
