@@ -57,7 +57,7 @@ These were settled with the user before this plan was written. They are decision
 
 **4. Every forced execution carries a determinism assertion.** Each mechanism is executed with `shots=2` and the two trajectories must agree bit for bit. That is simultaneously the evidence that the signature is exact rather than sampled, and a fail-closed guard against a non-Pauli or feedback-bearing program slipping through.
 
-**5. Mechanisms that share a signature are merged; mechanisms with an empty signature are discarded and counted.** Merged probability is `p1 * (1 - p2) + p2 * (1 - p1)`. A mechanism that flips no detector and no observable has no effect on the model and must not appear as a `DemError`; the count of discarded mechanisms is retained so "no mechanism is missing or duplicated" stays assertable.
+**5. Mechanisms that share a signature are merged; mechanisms with an empty signature are discarded and not counted.** Merged probability is `p1 * (1 - p2) + p2 * (1 - p1)`. A mechanism that flips no detector and no observable has no effect on the model and must not appear as a `DemError`, so the merge loop skips it. The count of discarded mechanisms is **not** retained: the model has no field for it, and "no mechanism is missing or duplicated" is assertable without one, from `num_errors` and from direct calls to `_merge_mechanisms`. (Corrected at the whole-branch review: an earlier draft of this decision said the count is retained, which the shipped code does not do and the proposal does not require.)
 
 **6. Parity matrices and samples are `torch.int8`.** `detector_error_matrix()` has shape `(num_detectors, num_errors)` and `observables_flips_matrix()` has shape `(num_observables, num_errors)`, matching stim's orientation. `dem_sampling()` returns a `DemSample` record whose tensors have shape `(shots, num_detectors)` and `(shots, num_observables)`.
 
@@ -604,15 +604,18 @@ def test_detector_matrix_orientation_and_values() -> None:
 
 
 def test_observable_matrix_orientation_and_values() -> None:
+    """Row is the observable, column the error, for every index in the model."""
+
     model = _model(
-        DemError(probability=0.1, detectors=(0,), observables=(0,)),
+        DemError(probability=0.1, detectors=(0,), observables=(2,)),
         DemError(probability=0.2, detectors=(1,), observables=()),
         detectors=3,
+        observables=3,
     )
     matrix = model.observables_flips_matrix()
-    assert matrix.shape == (1, 2)
+    assert matrix.shape == (3, 2)
     assert matrix.dtype == torch.int8
-    assert matrix.tolist() == [[1, 0]]
+    assert matrix.tolist() == [[0, 0], [0, 0], [1, 0]]
 
 
 def test_empty_model_has_empty_matrices() -> None:
