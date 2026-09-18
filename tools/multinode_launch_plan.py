@@ -615,6 +615,57 @@ def output_check(*, output_directory: str | Path) -> Check:
     return Check("output_directory_is_writable", True, str(path))
 
 
+IMPORT_PROBE = ("-c", "import flagquantum, sys; sys.stdout.write(flagquantum.__file__)")
+
+
+def import_check(
+    *,
+    node: str,
+    staging: str,
+    python: str,
+    peer_host: str | None = None,
+    timeout: float = 120.0,
+    run: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]] = _run,
+) -> Check:
+    """Each rank has to import the staged tree, and not some other copy.
+
+    Staging one tree for both nodes is only worth anything if both nodes import
+    it. The runner's environment has `flagquantum` installed editable against
+    the runner's own workspace, so an interpreter can resolve the package to a
+    checkout this lane never staged -- and the artifact would then record a
+    revision that neither rank ran.
+
+    Measured rather than assumed: `PYTHONPATH` wins over that editable install
+    here, because the finder it installs is appended to `sys.meta_path` behind
+    the default path finder. That is a property of how setuptools wrote the
+    install, not a promise, so the lane asks both nodes instead of trusting it.
+    """
+    remote: list[str] = [
+        python,
+        *IMPORT_PROBE,
+    ]
+    environment = _env_prefix({"PYTHONPATH": staging})
+    command = (
+        [*environment, *remote]
+        if peer_host is None
+        else ssh_argv(peer_host, [*environment, *remote])
+    )
+    try:
+        completed = run(command, timeout)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return Check(
+            f"{node}_imports_the_staged_tree", False, f"{type(error).__name__}: {error}"
+        )
+    resolved = _first_line(completed.stdout)
+    inside = bool(resolved) and Path(resolved).is_relative_to(Path(staging))
+    detail = (
+        f"{resolved or 'no output'}"
+        if inside
+        else f"resolved outside {staging}: {resolved or completed.stderr.strip()!r}"
+    )
+    return Check(f"{node}_imports_the_staged_tree", inside, detail)
+
+
 def cleanup(*, node_rank: int, pattern: str = LAUNCHER_PATTERN) -> dict[str, Any]:
     """End anything still named `pattern`. Reports; does not assert."""
     completed = _run(["pkill", "-f", pattern], 30.0)
@@ -735,6 +786,13 @@ def _governed_run(args: argparse.Namespace) -> int:
     after_staging = [
         output_check(output_directory=output_directory),
         staging_check(peer_host=args.peer_host, staging=str(staging)),
+        import_check(node="launch_host", staging=str(staging), python=args.python),
+        import_check(
+            node="peer",
+            staging=str(staging),
+            python=args.python,
+            peer_host=args.peer_host,
+        ),
     ]
     _report_checks(after_staging)
     if not all(check.ok for check in after_staging):

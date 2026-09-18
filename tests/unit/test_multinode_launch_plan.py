@@ -419,6 +419,51 @@ def test_the_staging_check_does_not_ask_a_peer_about_a_path_never_staged(
     assert "was not staged" in check.detail
 
 
+def test_the_import_check_accepts_a_tree_inside_the_staging_directory() -> None:
+    def run(argv, timeout):
+        return subprocess.CompletedProcess(
+            list(argv), 0, f"{STAGING}/flagquantum/__init__.py", ""
+        )
+
+    check = plan.import_check(node="peer", staging=STAGING, python=PYTHON, run=run)
+
+    assert check.ok
+    assert check.name == "peer_imports_the_staged_tree"
+    # The environment is what makes it true, so the check has to set it on
+    # whichever side of ssh it runs.
+    assert check.detail.startswith(STAGING)
+
+
+def test_the_import_check_refuses_the_runners_own_checkout() -> None:
+    """The failure this exists for: an editable install shadowing the staging.
+
+    The runner's environment has `flagquantum` installed editable against its
+    own workspace, so an interpreter can import a revision this lane never
+    staged -- and the artifact would then record a revision neither rank ran.
+    """
+
+    def run(argv, timeout):
+        return subprocess.CompletedProcess(
+            list(argv), 0, "/runner/_work/FlagQuantum/flagquantum/__init__.py", ""
+        )
+
+    check = plan.import_check(
+        node="launch_host", staging=STAGING, python=PYTHON, run=run
+    )
+
+    assert not check.ok
+    assert "resolved outside" in check.detail
+
+
+def test_the_import_check_fails_closed_when_the_interpreter_says_nothing() -> None:
+    def run(argv, timeout):
+        return subprocess.CompletedProcess(list(argv), 1, "", "ModuleNotFoundError")
+
+    check = plan.import_check(node="peer", staging=STAGING, python=PYTHON, run=run)
+
+    assert not check.ok
+
+
 def test_the_output_check_refuses_a_directory_it_cannot_write(tmp_path: Path) -> None:
     blocker = tmp_path / "a-file"
     blocker.write_text("not a directory", encoding="utf-8")
