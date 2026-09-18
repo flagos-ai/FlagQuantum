@@ -60,6 +60,161 @@ def _normalized_indices(values: Iterable[int], *, name: str) -> tuple[int, ...]:
     return tuple(sorted(set(indices)))
 
 
+def _target_index(token: str, prefix: str) -> int | None:
+    """Return the index a stim target names, or ``None`` if it names nothing.
+
+    A target is a one-letter prefix followed by ASCII digits, so a token such
+    as ``X0`` or ``D`` is a malformed target rather than a crash inside
+    ``int``, which accepts the digits of other scripts.
+    """
+
+    digits = token[len(prefix) :]
+    if token.startswith(prefix) and digits.isascii() and digits.isdigit():
+        return int(digits)
+    return None
+
+
+def _parse_error_line(line: str) -> DemError:
+    """Parse one ``error(<p>) <targets...>`` line."""
+
+    body = line[len("error") :]
+    if not body.startswith("("):
+        raise ValueError("an error line must state its probability in parentheses")
+    body = body[1:]
+    closing = body.find(")")
+    if closing < 0:
+        raise ValueError("an error line must close its probability in parentheses")
+    try:
+        probability = float(body[:closing])
+    except ValueError as error:
+        raise ValueError("an error line must state a numeric probability") from error
+    detectors: list[int] = []
+    observables: list[int] = []
+    for token in body[closing + 1 :].split():
+        detector = _target_index(token, _DETECTOR_PREFIX)
+        observable = _target_index(token, _OBSERVABLE_PREFIX)
+        if detector is not None:
+            detectors.append(detector)
+        elif observable is not None:
+            observables.append(observable)
+        else:
+            raise ValueError(f"error targets must be D or L indices, not {token!r}")
+    if not detectors and not observables:
+        raise ValueError(
+            "an error mechanism must flip at least one detector or observable"
+        )
+    return DemError(
+        probability=probability,
+        detectors=tuple(detectors),
+        observables=tuple(observables),
+    )
+
+
+def _parse_declaration_line(
+    line: str, *, instruction: str, prefix: str, coordinates: bool
+) -> int:
+    """Parse one ``detector [<coordinates>] D<i>`` declaration into ``i``.
+
+    Coordinates carry geometry the model does not represent, so a detector
+    declaration accepts them and discards them: the declared index is the
+    target, never the coordinate. A logical-observable declaration takes no
+    coordinates, which is the form the format itself accepts.
+    """
+
+    remainder = line[len(instruction) :]
+    if coordinates and remainder.startswith("("):
+        closing = remainder.find(")")
+        if closing < 0:
+            raise ValueError(f"{instruction} coordinates must close in parentheses")
+        remainder = remainder[closing + 1 :]
+    tokens = remainder.split()
+    if len(tokens) != 1:
+        raise ValueError(
+            f"a {instruction} declaration must name exactly one {prefix} index"
+        )
+    index = _target_index(tokens[0], prefix)
+    if index is None:
+        raise ValueError(
+            f"a {instruction} declaration must name a {prefix} index, "
+            f"not {tokens[0]!r}"
+        )
+    return index
+
+
+def _declared_count(declared: set[int], *, name: str, prefix: str) -> int:
+    """Return how many indices the text declared, refusing a hole.
+
+    The count may only come from the declarations, so a text that declares
+    ``D1`` without ``D0`` is malformed rather than a one-detector model that
+    happens to call its detector one.
+    """
+
+    count = len(declared)
+    if declared != set(range(count)):
+        raise ValueError(f"{name} declarations must be consecutive from {prefix}0")
+    return count
+
+
+def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
+    """Parse stim text into a model shape and its error mechanisms.
+
+    Only the instructions this model represents are accepted; every other
+    construct is refused with a stated reason, so a text that carries
+    information the model cannot hold fails closed instead of losing it.
+    """
+
+    declared_detectors: set[int] = set()
+    declared_observables: set[int] = set()
+    errors: list[DemError] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # The keyword is what precedes the first parenthesis, so the
+        # coordinates of ``detector(1, 2) D0`` belong to the body.
+        head = stripped.split("(", 1)[0].split()
+        keyword = head[0] if head else ""
+        if keyword == "error":
+            errors.append(_parse_error_line(stripped))
+        elif keyword == "detector":
+            declared_detectors.add(
+                _parse_declaration_line(
+                    stripped,
+                    instruction="detector",
+                    prefix=_DETECTOR_PREFIX,
+                    coordinates=True,
+                )
+            )
+        elif keyword == "logical_observable":
+            declared_observables.add(
+                _parse_declaration_line(
+                    stripped,
+                    instruction="logical_observable",
+                    prefix=_OBSERVABLE_PREFIX,
+                    coordinates=False,
+                )
+            )
+        elif keyword == "repeat":
+            raise ValueError(
+                "repeat blocks are not supported: expand the block into the "
+                "instructions it repeats"
+            )
+        elif keyword == "shift_detectors":
+            raise ValueError(
+                "shift_detectors is not supported: every detector index in the "
+                "text must be absolute"
+            )
+        else:
+            raise ValueError(f"unsupported stim instruction {stripped!r}")
+    num_detectors = _declared_count(
+        declared_detectors, name="detector", prefix=_DETECTOR_PREFIX
+    )
+    num_observables = _declared_count(
+        declared_observables, name="logical_observable", prefix=_OBSERVABLE_PREFIX
+    )
+    return num_detectors, num_observables, tuple(errors)
+
+
 @dataclass(frozen=True)
 class DemError:
     """One independent error mechanism and the signature it flips."""
@@ -252,6 +407,50 @@ class DetectorErrorModel:
             for index in error.observables:
                 observable_bits[:, index] ^= active.to(torch.int8)
         return DemSample(detectors=detector_bits, observables=observable_bits)
+
+    @classmethod
+    def from_stim_text(cls, text: str) -> DetectorErrorModel:
+        """Build a model from stim's text representation of a detector error model.
+
+        The shape comes from the ``detector`` and ``logical_observable``
+        declarations and from nowhere else. Reading it off the largest index an
+        error mentions would accept a text that had lost its trailing detectors,
+        so a text without a ``detector`` declaration is refused by the
+        constructor instead.
+        """
+
+        num_detectors, num_observables, errors = _parse_stim_text(text)
+        return cls(
+            num_detectors=num_detectors,
+            num_observables=num_observables,
+            errors=errors,
+        )
+
+    def to_stim_text(self) -> str:
+        """Render the model as stim text.
+
+        One ``error(...)`` line per mechanism, with its detectors ascending and
+        then its observables ascending, and the probability written with
+        ``repr`` so the value survives the round trip. The declaration lines
+        follow, one per detector and one per observable, so a model whose
+        trailing detectors no error touches keeps its shape through a round
+        trip. Every line, including the last, ends with a newline.
+        """
+
+        lines: list[str] = []
+        for error in self.errors:
+            targets = [f"{_DETECTOR_PREFIX}{index}" for index in error.detectors] + [
+                f"{_OBSERVABLE_PREFIX}{index}" for index in error.observables
+            ]
+            lines.append(f"error({error.probability!r}) {' '.join(targets)}")
+        lines.extend(
+            f"detector {_DETECTOR_PREFIX}{index}" for index in range(self.num_detectors)
+        )
+        lines.extend(
+            f"logical_observable {_OBSERVABLE_PREFIX}{index}"
+            for index in range(self.num_observables)
+        )
+        return "".join(f"{line}\n" for line in lines)
 
     @property
     def num_errors(self) -> int:
