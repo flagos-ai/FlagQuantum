@@ -18,7 +18,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/qft.py` — quantum Fourier transform | Available as a shared primitive; phase estimation consumes it. | — | None. It is a subroutine. |
 | `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev 1995; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
-| `primitives/oracle.py` — oracle building blocks | Available. Multi-controlled X and a reversible bit-string comparator, the reversible logic the oracle units are built from. Truth-table oracle synthesis on top of them is not yet available. | Oliveira & Ramos 2007 (record not index-confirmed) | **None.** Reversible classical logic, `O(n)` Toffoli-style. |
+| `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
 | `grover.py` — Grover search | Not yet available. | — | — |
 | `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
 
@@ -37,9 +37,9 @@ primitive does not by itself change what a caller can run.
   solver that consumes the Hamiltonian, not to this mapping. The module says so
   in its own docstring, and the capability entry repeats it as its boundary.
 - **The other primitives carry none either.** The quantum Fourier transform,
-  phase estimation, and state preparation have shipped as subroutines, and
-  oracle synthesis will join them as one more. They do not have an advantage
-  premise to state: their cost is paid by whatever algorithm calls them.
+  phase estimation, state preparation, and oracle synthesis have all shipped as
+  subroutines. They do not have an advantage premise to state: their cost is
+  paid by whatever algorithm calls them.
 - **State preparation specifically rests on the inverse of a speedup claim.** It
   is the one primitive in the index whose classical input is as large as its
   quantum output: see the section below.
@@ -199,8 +199,28 @@ print(format(circuit.state().reshape(-1).abs().pow(2).argmax().item(), "09b"))
 # 100110000  -- lhs, rhs and the comparison bit, with the flags and scratch back at 0
 ```
 
-Truth-table oracle synthesis on top of these blocks, and the Grover search that
-consumes it, are not available yet; the index above reserves their rows.
+**Truth-table synthesis sits on top of those blocks.** `marked_states` lists the
+inputs a predicate marks; `phase_oracle` and `bit_oracle` build a standalone
+circuit for one, and `append_phase_oracle` / `append_bit_oracle` append the same
+construction to a circuit the caller already has. Each marked input is mapped
+onto the all-ones pattern with `x` gates, acted on by the multi-controlled X
+above, and mapped back, so the phase oracle multiplies exactly the marked
+amplitudes by `-1`, and the bit oracle carries the predicate's value onto an
+output wire by XOR and restores every wire it allocated.
+
+**The cost is exponential and no advantage follows.** Synthesis enumerates all
+`2**n` inputs of the predicate classically, so a gate-level oracle written this
+way is as expensive as the classical search it is meant to replace; whatever a
+query-model algorithm saves on queries, it pays again here, which is why the
+index row claims nothing. `phase_oracle` is also capped at three wires: its
+multi-controlled Z is a multi-controlled X with `n - 1` controls, and a
+standalone circuit of exactly `n` wires has no wire to spare for the `n - 3`
+ladder ancillas a wider one needs, so above three wires the caller supplies the
+register and the ancillas through the append form. `bit_oracle` has no such cap,
+because it allocates its own ladder ancillas and restores them.
+
+Grover search, which consumes these oracles, is not available yet; the index
+above reserves its row.
 
 ## Sources
 

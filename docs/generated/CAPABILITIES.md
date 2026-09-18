@@ -110,6 +110,9 @@ This catalog is generated from the machine-validated
 | Flip a target qubit only when every control is set | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Mark the states where one bit string is greater than another | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Compose reversible classical logic into a circuit | Oracle building blocks | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Mark the states satisfying a predicate with a phase | Truth-table oracle synthesis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Write a predicate's value onto an output qubit | Truth-table oracle synthesis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| List the states a predicate marks | Truth-table oracle synthesis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -367,6 +370,20 @@ Multi-controlled X and a reversible bit-string comparator: the reversible classi
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** Reversible classical logic of O(n) Toffoli-style cost with no advantage premise of its own. A multi-controlled X above two controls needs len(controls) - 2 caller-supplied ancillas, each of which must be in |0> on entry: measured, a dirty ancilla makes the target silently wrong on a large fraction of inputs (8 of 16 at three controls, 32 of 96 at four) while never corrupting the ancilla itself, so the failure is invisible from the ancilla. The comparator restores every wire it is given except the target. The comparator's published record is semi-verified: its venue is not indexed by Crossref, DBLP or INSPIRE, so its volume and page numbers are reported by citing works rather than index-confirmed. It makes no advantage, performance, or hardware claim.
+
+### Truth-table oracle synthesis
+
+Turn a classical predicate into a phase oracle or a bit oracle by enumerating its truth table.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.primitives`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** Synthesis enumerates all 2**n inputs of the truth table classically, so it carries no advantage of its own at any scale beyond demonstration and its cost is exponential in the register width. Only a truth table is accepted: there is no boolean-expression parser and no other predicate form. A phase oracle is capped at three wires, because a multi-controlled Z above that needs ladder ancillas a standalone circuit does not have; the in-place append form takes them from the caller. The bit oracle's output is XORed rather than assigned, and it restores every wire it allocates. No performance, convergence, or hardware claim is made.
 
 
 ## Distributed execution
