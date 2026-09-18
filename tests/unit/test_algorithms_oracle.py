@@ -3,8 +3,13 @@ from __future__ import annotations
 import pytest
 
 from flagquantum.algorithms.primitives.oracle import (
+    append_bit_oracle,
     append_comparator,
     append_multi_controlled_x,
+    append_phase_oracle,
+    bit_oracle,
+    marked_states,
+    phase_oracle,
 )
 from flagquantum.circuit import Circuit
 
@@ -184,3 +189,115 @@ def test_comparator_refuses_overlapping_wires() -> None:
         append_comparator(
             Circuit(8), lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=3
         )
+
+
+def test_marked_states_enumerates_the_predicate() -> None:
+    """The marked set is exactly the satisfying assignment, in ascending order."""
+    assert marked_states(lambda value: value in (3, 5), 3) == (3, 5)
+    assert marked_states(lambda value: False, 2) == ()
+    assert marked_states(lambda value: True, 2) == (0, 1, 2, 3)
+
+
+def test_marked_states_rejects_a_non_positive_wire_count() -> None:
+    """An empty register has no states to mark."""
+    with pytest.raises(ValueError):
+        marked_states(lambda value: True, 0)
+
+
+def test_phase_oracle_flips_the_sign_of_marked_states_only() -> None:
+    """Applied to each basis state, the sign is negated on exactly the marked set.
+
+    Reading the amplitude at the prepared index is the decisive check here: a phase oracle
+    that does nothing, or that flips every state, both fail it.
+    """
+    for n_wires in (1, 2, 3):
+
+        def predicate(value: int, n: int = n_wires) -> bool:
+            return value in (1, 2**n - 1)
+
+        marked = set(marked_states(predicate, n_wires))
+        for basis in range(2**n_wires):
+            circuit = Circuit(n_wires)
+            for position in range(n_wires):
+                if (basis >> (n_wires - 1 - position)) & 1:
+                    circuit.gate("x", position)
+            append_phase_oracle(circuit, predicate, list(range(n_wires)))
+            amplitude = complex(circuit.state().reshape(-1)[basis])
+            expected = -1.0 if basis in marked else 1.0
+            assert amplitude == pytest.approx(expected, abs=1e-5), (n_wires, basis)
+
+
+def test_phase_oracle_on_a_superposition() -> None:
+    """In a uniform superposition only the marked amplitude is negated."""
+    n_wires = 2
+    circuit = Circuit(n_wires)
+    for wire in range(n_wires):
+        circuit.gate("h", wire)
+    before = circuit.state().reshape(-1).clone()
+    append_phase_oracle(circuit, lambda value: value == 2, list(range(n_wires)))
+    after = circuit.state().reshape(-1)
+    for index in range(2**n_wires):
+        expected = -before[index] if index == 2 else before[index]
+        assert after[index] == pytest.approx(complex(expected), abs=1e-6), index
+
+
+def test_phase_oracle_refuses_more_than_three_wires() -> None:
+    """A four-wire phase oracle has no wire to spare for the multi-controlled X's ancilla."""
+    with pytest.raises(ValueError):
+        phase_oracle(lambda value: value == 1, 4)
+
+
+def test_bit_oracle_wire_budget() -> None:
+    """The output wire plus one ladder ancilla per control above two."""
+    for n_wires, expected in ((1, 2), (2, 3), (3, 5), (4, 7)):
+        assert (
+            bit_oracle(lambda value: value == 0, n_wires).n_qubits == expected
+        ), n_wires
+
+
+def test_bit_oracle_xors_the_predicate_onto_the_output() -> None:
+    """The output carries the predicate value, and every ladder ancilla returns to zero."""
+    for n_wires in (1, 2, 3):
+        n_ancillas = max(0, n_wires - 2)
+
+        def predicate(value: int, n: int = n_wires) -> bool:
+            return value == 2**n - 1
+
+        for value in range(2**n_wires):
+            circuit = Circuit(n_wires + 1 + n_ancillas)
+            for position in range(n_wires):
+                if (value >> (n_wires - 1 - position)) & 1:
+                    circuit.gate("x", position)
+            append_bit_oracle(
+                circuit,
+                predicate,
+                list(range(n_wires)),
+                target=n_wires,
+                ancillas=list(range(n_wires + 1, n_wires + 1 + n_ancillas)),
+            )
+            probabilities = circuit.state().reshape(-1).abs() ** 2
+            assert float(probabilities.max().item()) == pytest.approx(
+                1.0, abs=1e-6
+            ), value
+            index = int(probabilities.argmax().item())
+            expected = (value << (n_ancillas + 1)) | (
+                int(predicate(value)) << n_ancillas
+            )
+            assert index == expected, (n_wires, value)
+
+
+def test_bit_oracle_is_its_own_inverse() -> None:
+    """Applying the oracle twice leaves the output where it started."""
+    n_wires = 2
+    circuit = Circuit(n_wires + 1)
+    circuit.gate("x", 0)
+    append_bit_oracle(
+        circuit, lambda value: value == 2, list(range(n_wires)), target=n_wires
+    )
+    once = int((circuit.state().reshape(-1).abs() ** 2).argmax().item())
+    append_bit_oracle(
+        circuit, lambda value: value == 2, list(range(n_wires)), target=n_wires
+    )
+    twice = int((circuit.state().reshape(-1).abs() ** 2).argmax().item())
+    assert once != twice
+    assert twice == (1 << (n_wires + 1 - 1 - 0))
