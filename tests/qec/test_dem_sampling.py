@@ -90,6 +90,41 @@ def test_an_error_free_model_never_flips() -> None:
     assert int(sample.observables.sum()) == 0
 
 
+def test_samples_that_differ_only_in_their_observables_are_not_equal() -> None:
+    """Equality reads the observable column, not only the detector column.
+
+    A model whose only mechanism flips the observable leaves every sample's
+    detector column all-zero, so two different draws differ in ``observables``
+    alone. ``test_samples_compare_by_tensor_content`` cannot show this: its
+    model flips detector and observable together, so an equality that dropped
+    the observables conjunct answers the same for every sample it builds.
+    """
+
+    model = _model(
+        DemError(probability=0.5, observables=(0,)), detectors=2, observables=1
+    )
+    first = model.dem_sampling(shots=32, seed=5)
+    other = model.dem_sampling(shots=32, seed=6)
+    assert torch.equal(first.detectors, other.detectors)
+    assert not torch.equal(first.observables, other.observables)
+    assert not (first == other)
+    assert first != other
+
+
+def test_samples_that_differ_only_in_their_detectors_are_not_equal() -> None:
+    """The mirror case: an equality that read only ``observables`` also fails here."""
+
+    model = _model(
+        DemError(probability=0.5, detectors=(0,), observables=()), detectors=2
+    )
+    first = model.dem_sampling(shots=32, seed=5)
+    other = model.dem_sampling(shots=32, seed=6)
+    assert not torch.equal(first.detectors, other.detectors)
+    assert torch.equal(first.observables, other.observables)
+    assert not (first == other)
+    assert first != other
+
+
 def test_a_certain_error_always_flips() -> None:
     model = _model(
         DemError(probability=1.0, detectors=(0,), observables=(0,)), detectors=2
