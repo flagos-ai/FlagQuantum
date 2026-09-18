@@ -17,7 +17,12 @@ from .decoders import (
     RepetitionTemporalDecoder,
     StreamingDecoder,
 )
-from .noise import RepetitionNoiseProfile, run_repetition_memory_noise_sweep
+from .dem import DemError, DemSample, DetectorErrorModel
+from .noise import (
+    PhenomenologicalNoise,
+    RepetitionNoiseProfile,
+    run_repetition_memory_noise_sweep,
+)
 from .pauli import Pauli
 from .repetition import run_repetition_memory_experiment
 from .types import (
@@ -38,8 +43,11 @@ __all__ = (
     "Correction",
     "DecodeResult",
     "Decoder",
+    "DemError",
+    "DemSample",
     "DetectionEvent",
     "Detector",
+    "DetectorErrorModel",
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
@@ -50,6 +58,7 @@ __all__ = (
     "ObservableLayout",
     "Pauli",
     "PauliFrame",
+    "PhenomenologicalNoise",
     "RepetitionCode",
     "RepetitionNoiseProfile",
     "RepetitionLookupDecoder",
