@@ -4,7 +4,10 @@ A detector error model names every independent physical error mechanism by the
 detectors and logical observables it flips. Construction is exact and does not
 sample: the reference gate set is Clifford and every configured channel is a
 Pauli channel, so forcing one mechanism through the circuit yields a
-deterministic signature.
+deterministic signature. ``DetectorErrorModel.from_memory_circuit`` builds a
+model that way: it enumerates the noise locations a ``PhenomenologicalNoise``
+record configures, drops the ones that flip nothing at all, and merges the ones
+that flip the same detectors and observables.
 
 The model is defined for Pauli noise only. It is built on the memory circuit
 *without* in-circuit feedback, because the model describes the physical
@@ -30,6 +33,7 @@ import torch
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from .circuit import MeasurementRef, MemoryCircuit
+from .noise import PhenomenologicalNoise
 
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
@@ -441,6 +445,90 @@ class DetectorErrorModel:
             errors=errors,
         )
 
+    @classmethod
+    def _merge_mechanisms(
+        cls,
+        entries: Iterable[tuple[float, tuple[int, ...], tuple[int, ...]]],
+        *,
+        num_detectors: int,
+        num_observables: int,
+    ) -> DetectorErrorModel:
+        """Merge ``(probability, detectors, observables)`` entries into a model.
+
+        Two mechanisms that flip the same detectors and the same observables are
+        one mechanism to a decoder, which sees only their combined parity, so
+        their probabilities combine by ``p1 * (1 - p2) + p2 * (1 - p1)``. An
+        entry whose signature is empty flips nothing at all and is dropped here;
+        the count of those is not part of the model, whose shape comes from the
+        caller's counts and from nowhere else.
+        """
+
+        accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
+        discarded = 0
+        for probability, detectors, observables in entries:
+            signature = (
+                _normalized_indices(detectors, name="mechanism detectors"),
+                _normalized_indices(observables, name="mechanism observables"),
+            )
+            if not signature[0] and not signature[1]:
+                discarded += 1
+                continue
+            previous = accumulated.get(signature)
+            accumulated[signature] = (
+                probability
+                if previous is None
+                else previous * (1.0 - probability) + probability * (1.0 - previous)
+            )
+        errors = tuple(
+            DemError(probability=value, detectors=key[0], observables=key[1])
+            for key, value in accumulated.items()
+        )
+        return cls(
+            num_detectors=num_detectors,
+            num_observables=num_observables,
+            errors=errors,
+        )
+
+    @classmethod
+    def from_memory_circuit(
+        cls, circuit: MemoryCircuit, *, noise: PhenomenologicalNoise
+    ) -> DetectorErrorModel:
+        """Build the exact model of every noise location a memory circuit has.
+
+        Each location :func:`_mechanisms` enumerates is forced through the
+        circuit on its own and its signature read off the layouts, so the model
+        is derived from the program rather than asserted about it. The refusals
+        of the injection engine reach the caller unchanged: a hand-built circuit
+        whose source does not match its layouts fails closed with a stated
+        reason instead of building a model that misdescribes it.
+        """
+
+        if not isinstance(circuit, MemoryCircuit):
+            raise TypeError("circuit must be a MemoryCircuit")
+        if not isinstance(noise, PhenomenologicalNoise):
+            raise TypeError("noise must be a PhenomenologicalNoise")
+        entries: list[tuple[float, tuple[int, ...], tuple[int, ...]]] = []
+        for mechanism in _mechanisms(circuit, noise):
+            if mechanism.kind == "data":
+                source = _inject_data_flip(
+                    circuit,
+                    round_index=mechanism.round_index,
+                    wire=mechanism.wire,
+                )
+            else:
+                source = _inject_measurement_flip(
+                    circuit,
+                    round_index=mechanism.round_index,
+                    ancilla_wire=mechanism.wire,
+                )
+            detectors, observables = _forced_signature(circuit, source)
+            entries.append((mechanism.probability, detectors, observables))
+        return cls._merge_mechanisms(
+            entries,
+            num_detectors=len(circuit.detectors),
+            num_observables=len(circuit.observables),
+        )
+
     def to_stim_text(self) -> str:
         """Render the model as stim text.
 
@@ -482,6 +570,63 @@ class DetectorErrorModel:
 
 _ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"
 _FLIP_INDENT = "        "
+
+
+@dataclass(frozen=True)
+class _Mechanism:
+    """One physical noise location, by kind, round, and wire.
+
+    The record carries the coordinates the matching injector needs rather than a
+    rendered source. A caller that fires a set of mechanisms at once has to
+    re-inject them into the one program it executes, and it cannot rebuild a
+    source from a string alone; carrying coordinates also keeps injection in
+    exactly one place. ``kind`` is ``"data"`` for a flip on a data wire, where
+    ``wire`` is that data wire, and ``"measurement"`` for a flip on a check's
+    syndrome measurement, where ``wire`` is that check's ancilla.
+    """
+
+    kind: str
+    round_index: int
+    wire: int
+    probability: float
+
+
+def _mechanisms(
+    circuit: MemoryCircuit, noise: PhenomenologicalNoise
+) -> tuple[_Mechanism, ...]:
+    """Return every noise location a probability makes possible, in order.
+
+    Data flips come first — one per round per data wire — and measurement flips
+    second, one per round per check. Both loops walk the code's own tuples in
+    order, which is the order the emitted program measures in. A location whose
+    probability is zero cannot flip anything, so it is not enumerated at all: a
+    caller that counts mechanisms then counts exactly what can happen.
+    """
+
+    mechanisms: list[_Mechanism] = []
+    if noise.data_flip:
+        for round_index in range(circuit.rounds):
+            for wire in circuit.code.data_wires:
+                mechanisms.append(
+                    _Mechanism(
+                        kind="data",
+                        round_index=round_index,
+                        wire=wire,
+                        probability=noise.data_flip,
+                    )
+                )
+    if noise.measurement_flip:
+        for round_index in range(circuit.rounds):
+            for check in circuit.code.checks:
+                mechanisms.append(
+                    _Mechanism(
+                        kind="measurement",
+                        round_index=round_index,
+                        wire=check.ancilla_wire,
+                        probability=noise.measurement_flip,
+                    )
+                )
+    return tuple(mechanisms)
 
 
 def _checked_round(circuit: MemoryCircuit, round_index: int, *, label: str) -> int:
@@ -624,11 +769,24 @@ def _forced_signature(
     checks = len(circuit.code.checks)
 
     def measurement_bit(reference: MeasurementRef) -> int:
-        """Return the recorded bit one layout reference names."""
+        """Return the recorded bit one layout reference names.
+
+        A syndrome reference is read at the position of the check that owns its
+        ancilla, so an ancilla no check owns has no recorded bit to read. A
+        layout may name one — ``MemoryCircuit`` ties the reference to the code's
+        declared ancilla wires, not to its checks — so the lookup states the
+        failure instead of raising a bare ``KeyError``.
+        """
 
         if reference.round_index is None:
             return sample_row[reference.wire]
-        return classical_row[reference.round_index * checks + positions[reference.wire]]
+        position = positions.get(reference.wire)
+        if position is None:
+            raise ValueError(
+                f"detector syndrome measurement names ancilla wire "
+                f"{reference.wire}, which no check owns"
+            )
+        return classical_row[reference.round_index * checks + position]
 
     detectors = tuple(
         detector.index
