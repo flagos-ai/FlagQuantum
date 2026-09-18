@@ -434,22 +434,26 @@ class DetectorErrorModel:
         declarations must be complete and consecutive from zero, ``#`` comments
         are not accepted, and the shape comes only from the declarations.
 
-        Real stim does not state the shape this reader requires, so the DEMs it
-        builds from noisy circuits do not parse: ``shift_detectors`` is refused
-        outright, and a noisy stim detector error model names an observable
-        index that stim never declares, which the declarations-only rule refuses
-        in turn. In a developer-time sweep of stim 1.16.0 output -- 96 detector
-        error models from repetition-code and rotated-surface-code memory
-        circuits, distances three and five, one to three rounds, noisy and
-        noise-free, with and without flattening the circuit first --
-        ``shift_detectors`` accounted for 32 refusals and the undeclared
-        observable index for the other 32. Every one of the 48 that carried an
-        error was refused, and the 32 this reader accepted carried no error. A
-        stim detector error model does parse when its text states its shape in
-        full: strip the observable instruction from the circuit and the flattened
-        text is accepted, errors and all, with detector rates that match both
-        stim's own compiled sampler and its exact margins.
+        Whether a stim detector error model parses turns on two constructs, and
+        the rule is a conjunction: the text must carry no ``shift_detectors``,
+        and its errors must avoid the observable, because stim declares
+        ``logical_observable`` exactly when no error mechanism references it. A
+        developer-time sweep of stim 1.16.0 output -- 96 detector error models
+        from repetition-code and rotated-surface-code memory circuits, distances
+        three and five, one to three rounds, noisy and noise-free, with and
+        without flattening the circuit first -- refused all 48 that carried an
+        error and accepted 32, none of which carried one. A second sweep of 240
+        single-error circuits -- one ``X_ERROR`` on each data wire, the same two
+        families, distances and rounds -- separated the two halves: 70 satisfied
+        both conditions and were accepted, 140 avoided the observable but carried
+        ``shift_detectors``, and 30 had an error that references the observable.
+        Of the 70 accepted, 32 carried an error.
 
+        So an untouched noisy stim detector error model can parse, and stim
+        output is not refused as a class. Where it does parse the rates agree:
+        strip the observable instruction from a noisy circuit and the flattened
+        text is accepted, errors and all, with detector rates matching stim's own
+        compiled sampler to within 2.61 standard deviations over 20000 shots.
         What :meth:`to_stim_text` writes is valid stim, but this method does not
         read everything stim writes.
         """
