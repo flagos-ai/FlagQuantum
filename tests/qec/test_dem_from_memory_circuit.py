@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 
 import pytest
 
+from flagquantum.qec import dem as dem_module
 from flagquantum.qec.circuit import (
     Detector,
     DetectorLayout,
@@ -17,6 +18,7 @@ from flagquantum.qec.dem import (
     DetectorErrorModel,
     _forced_signature,
     _inject_measurement_flip,
+    _Mechanism,
     _mechanisms,
 )
 from flagquantum.qec.noise import PhenomenologicalNoise
@@ -436,10 +438,60 @@ def test_a_circuit_must_be_a_memory_circuit() -> None:
         )
 
 
+def test_an_unknown_mechanism_kind_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A kind that is neither flip is refused, not read as a measurement flip.
+
+    The record's wire is a declared ancilla, which is exactly what a measurement
+    record carries, so a dispatch whose fall-through is "measurement" would
+    accept this record and build a model from it. ``_mechanisms`` never sets
+    such a kind; the guard is for a caller that builds records by hand.
+    """
+
+    built = build_memory_circuit(_TwoObservableCode(), rounds=2)
+    record = _Mechanism(kind="Data", round_index=0, wire=3, probability=0.05)
+    monkeypatch.setattr(dem_module, "_mechanisms", lambda circuit, noise: (record,))
+    with pytest.raises(ValueError, match="unknown mechanism kind 'Data'"):
+        DetectorErrorModel.from_memory_circuit(
+            built, noise=PhenomenologicalNoise(measurement_flip=0.05)
+        )
+
+
 def test_noise_must_be_a_phenomenological_noise_record() -> None:
     built = build_memory_circuit(_TwoObservableCode(), rounds=2)
     with pytest.raises(TypeError, match="noise must be a PhenomenologicalNoise"):
         DetectorErrorModel.from_memory_circuit(built, noise=0.05)
+
+
+@dataclass(frozen=True)
+class _RepeatedDataWireCode(_TwoObservableCode):
+    """A code that declares data wire 1 twice.
+
+    Membership is all Stage 1 checks a data wire for, in both
+    ``MemoryCircuit`` and the observable layout, so a repeated wire is
+    representable and builds. It is the input that makes the enumeration visit
+    one physical location twice per round.
+    """
+
+    @property
+    def data_wires(self) -> tuple[int, ...]:
+        return (0, 1, 2, 1)
+
+
+def test_duplicate_data_wires_are_refused() -> None:
+    """A repeated data wire would state one location's rate as two flips.
+
+    Both copies of the location carry the same signature, so the merge would
+    combine ``p`` with itself and the model would claim ``2p(1-p)`` for a
+    location the circuit has once.
+    """
+
+    built = build_memory_circuit(_RepeatedDataWireCode(), rounds=2)
+    with pytest.raises(ValueError, match="repeated data wire"):
+        DetectorErrorModel.from_memory_circuit(
+            built, noise=PhenomenologicalNoise(data_flip=0.05)
+        )
 
 
 def test_merging_combines_identical_signatures() -> None:

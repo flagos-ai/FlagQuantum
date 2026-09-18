@@ -27,6 +27,7 @@ import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from numbers import Integral, Real
+from typing import Literal
 
 import torch
 
@@ -458,20 +459,19 @@ class DetectorErrorModel:
         Two mechanisms that flip the same detectors and the same observables are
         one mechanism to a decoder, which sees only their combined parity, so
         their probabilities combine by ``p1 * (1 - p2) + p2 * (1 - p1)``. An
-        entry whose signature is empty flips nothing at all and is dropped here;
-        the count of those is not part of the model, whose shape comes from the
-        caller's counts and from nowhere else.
+        entry whose signature is empty flips nothing at all, so it becomes no
+        mechanism and is dropped here. Nothing counts the dropped entries: the
+        model has no field for that count, and its shape comes from the caller's
+        counts and from nowhere else.
         """
 
         accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
-        discarded = 0
         for probability, detectors, observables in entries:
             signature = (
                 _normalized_indices(detectors, name="mechanism detectors"),
                 _normalized_indices(observables, name="mechanism observables"),
             )
             if not signature[0] and not signature[1]:
-                discarded += 1
                 continue
             previous = accumulated.get(signature)
             accumulated[signature] = (
@@ -515,16 +515,27 @@ class DetectorErrorModel:
                     round_index=mechanism.round_index,
                     wire=mechanism.wire,
                 )
-            else:
+            elif mechanism.kind == "measurement":
                 source = _inject_measurement_flip(
                     circuit,
                     round_index=mechanism.round_index,
                     ancilla_wire=mechanism.wire,
                 )
+            else:
+                # Unreachable through ``_mechanisms``, which sets the field from
+                # the annotation; stated for a caller that builds records itself,
+                # where a bare ``else`` would read an unknown kind as a
+                # measurement flip whenever the wire is a declared ancilla.
+                raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
             detectors, observables = _forced_signature(circuit, source)
             entries.append((mechanism.probability, detectors, observables))
         return cls._merge_mechanisms(
             entries,
+            # The model describes the circuit's own layouts, not a count
+            # re-derived from the code. Stage 1 pins both to each other, so
+            # ``len(circuit.code.checks) * (circuit.rounds + 1)`` for the
+            # detector count and ``len(circuit.code.logical_observables)`` for
+            # the observable count are equivalent mutants.
             num_detectors=len(circuit.detectors),
             num_observables=len(circuit.observables),
         )
@@ -582,10 +593,12 @@ class _Mechanism:
     source from a string alone; carrying coordinates also keeps injection in
     exactly one place. ``kind`` is ``"data"`` for a flip on a data wire, where
     ``wire`` is that data wire, and ``"measurement"`` for a flip on a check's
-    syndrome measurement, where ``wire`` is that check's ancilla.
+    syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
+    literal rather than a free string, so a caller that builds a record by hand
+    is told at the type checker which two flips exist.
     """
 
-    kind: str
+    kind: Literal["data", "measurement"]
     round_index: int
     wire: int
     probability: float
@@ -601,12 +614,25 @@ def _mechanisms(
     order, which is the order the emitted program measures in. A location whose
     probability is zero cannot flip anything, so it is not enumerated at all: a
     caller that counts mechanisms then counts exactly what can happen.
+
+    A code that declares a data wire twice is refused rather than enumerated
+    twice. Its second copy would be the same physical location as the first
+    with the same signature, so merging them states one location's rate as two
+    independent flips, ``p * (1 - p) + p * (1 - p)``, instead of ``p`` — a wrong
+    model with no signal. No check duplicates reach this point: a repeated
+    check ancilla is refused by the injection engine's anchor.
     """
 
+    data_wires = circuit.code.data_wires
+    if len(set(data_wires)) != len(data_wires):
+        raise ValueError(
+            "the code declares a repeated data wire, so a mechanism at that "
+            "location would be enumerated twice and merged with itself"
+        )
     mechanisms: list[_Mechanism] = []
     if noise.data_flip:
         for round_index in range(circuit.rounds):
-            for wire in circuit.code.data_wires:
+            for wire in data_wires:
                 mechanisms.append(
                     _Mechanism(
                         kind="data",
