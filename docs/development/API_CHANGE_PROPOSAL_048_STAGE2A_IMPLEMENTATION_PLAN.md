@@ -1976,7 +1976,7 @@ Add the imports and `__all__` entries to `flagquantum/qec/__init__.py`, keeping 
 
 - [ ] **Step 4: Run the full QEC suite and every repository gate**
 
-Run each command **separately** — do not join them with `&&`. Joining suppresses every later gate whenever an earlier one fails, and in this container three tests fail for a reason unrelated to this change (the image has no `git`, so `tracked_files`/`_commit_sha` raise `FileNotFoundError`), which would silently skip the coverage gate entirely. A gate that skips itself is the exact failure shape this plan keeps correcting.
+Run each command **separately** — do not join them into one `&&` chain as a convenience. Joining suppresses every later gate whenever an earlier one fails, and in this container three tests fail for a reason unrelated to this change (the image has no `git`, so `tracked_files`/`_commit_sha` raise `FileNotFoundError`), so a chained invocation would skip the coverage gate entirely and report nothing. A gate that skips itself looks exactly like a gate that passed.
 
 ```bash
 python -m pytest tests/qec -q
