@@ -15,6 +15,7 @@ def test_registers_distributed_marker_split():
     assert "    distributed:" in text
     assert "    distributed_cpu:" in text
     assert "    distributed_accel:" in text
+    assert "    distributed_launch:" in text
     assert "    distributed_multinode:" in text
     assert "    gpu:" in text
 
@@ -64,7 +65,12 @@ def test_torchrun_cpu_candidates_keep_local_skip_guards():
         text = _read(path)
         assert "pytest.mark.distributed" in text, path
         assert "pytest.mark.distributed_cpu" in text, path
-        assert "pytest.mark.distributed_multinode" in text, path
+        # These tests run on one host and need a launcher, not a cluster. They
+        # carried `distributed_multinode` until 2026-09-18, which named an
+        # environment they never asked for and put them in a lane that ran a
+        # bare `pytest` and recorded a skip for every one of them.
+        assert "pytest.mark.distributed_launch" in text, path
+        assert "pytest.mark.distributed_multinode" not in text, path
         assert '"RANK" not in os.environ' in text, path
         assert (
             "requires torchrun with distributed RANK/WORLD_SIZE environment" in text

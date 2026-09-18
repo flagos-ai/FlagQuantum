@@ -125,6 +125,8 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Prove native distributed runtime does not require JAX
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
+      - name: Run the launched distributed tests under a real launcher
+        run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
 
   jax-optional:
     runs-on: ubuntu-latest
