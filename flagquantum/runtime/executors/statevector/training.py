@@ -470,6 +470,413 @@ def _load_checkpoint(
     return completed_steps
 
 
+class _ShardedTrainingSweep:
+    """Run ordinary PyTorch backward/optimizer steps over sharded state."""
+
+    def __init__(
+        self,
+        circuit_or_ir: Any,
+        *,
+        steps: int,
+        observable_wire: int = 0,
+        optimizer: Literal["sgd", "adam"] = "sgd",
+        lr: float = 0.05,
+        checkpoint_dir: str | Path | None = None,
+        resume: bool = False,
+        checkpoint_interval: int = 1,
+        rematerialization_interval: int = 0,
+        memory_budget_bytes: int | None = None,
+        timeout_seconds: float = 120.0,
+        cancelled: Callable[[], bool] | None = None,
+        fault_rank: int | None = None,
+        inject_collective_timeout: bool = False,
+    ) -> None:
+        """Resolve the plan, the sharding and every buffer training needs."""
+
+        self.circuit_or_ir = circuit_or_ir
+        self.steps = steps
+        self.observable_wire = observable_wire
+        self.optimizer = optimizer
+        self.lr = lr
+        self.checkpoint_dir = checkpoint_dir
+        self.resume = resume
+        self.checkpoint_interval = checkpoint_interval
+        self.rematerialization_interval = rematerialization_interval
+        self.memory_budget_bytes = memory_budget_bytes
+        self.timeout_seconds = timeout_seconds
+        self.cancelled = cancelled
+        self.fault_rank = fault_rank
+        self.inject_collective_timeout = inject_collective_timeout
+
+        if self.steps <= 0 or self.lr <= 0 or self.checkpoint_interval <= 0:
+            raise ValueError("steps, lr and checkpoint_interval must be positive")
+        if self.optimizer not in {"sgd", "adam"}:
+            raise ValueError("optimizer must be 'sgd' or 'adam'")
+        self.ir = ensure_circuit_ir(self.circuit_or_ir)
+        self.world_size = dist.get_world_size() if dist.is_initialized() else 1
+        self.rank = dist.get_rank() if dist.is_initialized() else 0
+        backend = dist.get_backend() if dist.is_initialized() else "single_process"
+        self.device = (
+            resolve_platform_device("cuda")
+            if backend == "nccl"
+            else next(
+                (
+                    value.device
+                    for item in self.ir.instructions
+                    for value in item.params.values()
+                    if isinstance(value, torch.Tensor) and value.requires_grad
+                ),
+                torch.device("cpu"),
+            )
+        )
+        self.platform = get_platform_runtime(self.device.type)
+        first_reverse = execute_torch_distributed_statevector_reverse(
+            self.ir, observable_wire=self.observable_wire, device=self.device
+        )
+        self.parameters = first_reverse.parameters
+        # Reverse-mode gradients are replicated after all-reduce. Optimizer owners
+        # are a separate training concern and are assigned explicitly here.
+        self.owners = tuple(
+            index % self.world_size for index in range(len(self.parameters))
+        )
+        self.owned_indices = tuple(
+            index for index, owner in enumerate(self.owners) if owner == self.rank
+        )
+        owned_parameters = [self.parameters[index] for index in self.owned_indices]
+        self.checkpoint_contract = _checkpoint_contract(
+            self.ir,
+            observable_wire=self.observable_wire,
+            optimizer_name=self.optimizer,
+            lr=self.lr,
+            parameters=self.parameters,
+        )
+        self.optimizer_obj: torch.optim.Optimizer | None
+        if not owned_parameters:
+            self.optimizer_obj = None
+        elif self.optimizer == "sgd":
+            self.optimizer_obj = torch.optim.SGD(owned_parameters, lr=self.lr)
+        else:
+            self.optimizer_obj = torch.optim.Adam(owned_parameters, lr=self.lr)
+
+        batch_size = int(self.ir.shape[0]) if self.ir.shape else 1
+        complex_bytes = (
+            16 if any(item.dtype == torch.float64 for item in self.parameters) else 8
+        )
+        local_state_bytes = (
+            (2**self.ir.n_wires // self.world_size) * batch_size * complex_bytes
+        )
+        # Forward state, reverse adjoint/rematerialization and communication/output
+        # buffers can coexist. Keep this preflight deliberately conservative.
+        estimated_local_state = 4 * local_state_bytes
+        parameter_bytes = sum(
+            item.numel() * item.element_size() for item in owned_parameters
+        )
+        estimated_optimizer = parameter_bytes * (3 if self.optimizer == "adam" else 1)
+        if (
+            self.memory_budget_bytes is not None
+            and estimated_local_state + estimated_optimizer > self.memory_budget_bytes
+        ):
+            raise DistributedTrainingError(
+                "oom_preflight",
+                rank=self.rank,
+                phase="preflight",
+                operation="estimate_state_and_optimizer_memory",
+            )
+
+        self.start_step = 0
+        self.root = (
+            Path(self.checkpoint_dir) if self.checkpoint_dir is not None else None
+        )
+        if self.resume:
+            if self.root is None:
+                raise ValueError("resume requires checkpoint_dir")
+            checkpoint_error: DistributedTrainingError | None = None
+            try:
+                self.start_step = _load_checkpoint(
+                    self.root,
+                    rank=self.rank,
+                    world_size=self.world_size,
+                    optimizer_name=self.optimizer,
+                    owned_indices=self.owned_indices,
+                    parameters=self.parameters,
+                    optimizer=self.optimizer_obj,
+                    contract=self.checkpoint_contract,
+                )
+            except DistributedTrainingError as error:
+                checkpoint_error = error
+            if self.world_size > 1:
+                failure_vote = torch.tensor(
+                    int(checkpoint_error is not None),
+                    dtype=torch.int32,
+                    device=self.device,
+                )
+                dist.all_reduce(failure_vote, op=dist.ReduceOp.MAX)
+                if int(failure_vote.item()):
+                    if checkpoint_error is not None:
+                        raise checkpoint_error
+                    raise DistributedTrainingError(
+                        "checkpoint_peer_validation_failed",
+                        rank=self.rank,
+                        phase="resume",
+                        operation="distributed_checkpoint_preflight",
+                    )
+            elif checkpoint_error is not None:
+                raise checkpoint_error
+            if self.start_step > self.steps:
+                raise DistributedTrainingError(
+                    "resume_step_regression",
+                    rank=self.rank,
+                    phase="resume",
+                    operation=f"checkpoint:{self.start_step}>target:{self.steps}",
+                )
+            if self.world_size > 1:
+                step_tensor = torch.tensor(
+                    self.start_step, dtype=torch.long, device=self.device
+                )
+                gathered_steps = [
+                    torch.zeros_like(step_tensor) for _ in range(self.world_size)
+                ]
+                dist.all_gather(gathered_steps, step_tensor)
+                _validate_checkpoint_generations(
+                    tuple(int(item.item()) for item in gathered_steps), rank=self.rank
+                )
+            _broadcast_parameters(self.parameters, self.owners)
+
+        if self.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(self.device)
+        self.progress: list[TrainingProgress] = []
+        self.losses: list[float] = []
+        self.checkpoint_files: list[str] = []
+        self.communication_events = 0
+        self.communication_bytes = 0
+        self.watchdog = PhaseAwareWatchdog(
+            stall_seconds=self.timeout_seconds,
+            bounded_phase_seconds={"checkpoint": self.timeout_seconds * 2},
+        )
+        self.started = time.monotonic()
+
+    def emit(
+        self,
+        step: int,
+        phase: str,
+        operation: str,
+        completed: int,
+        collective: str = "none",
+    ) -> None:
+        """Record one progress snapshot and let the watchdog observe it."""
+
+        if self.device.type == "cuda":
+            self.platform.synchronize(self.device)
+        now = time.monotonic()
+        snapshot = ProgressSnapshot(
+            timestamp=now,
+            phase=phase,
+            operation=operation,
+            completed_units=completed,
+            memory_bytes=_memory_bytes(self.device),
+            collective=collective,
+            rank=self.rank,
+            useful_work_launched=completed > 0 or phase in {"forward", "backward"},
+        )
+        diagnosis = self.watchdog.observe(snapshot)
+        self.progress.append(
+            TrainingProgress(
+                rank=self.rank,
+                step=step,
+                phase=phase,
+                operation=operation,
+                completed_units=completed,
+                collective=collective,
+                memory_bytes=snapshot.memory_bytes,
+                useful_work_launched=snapshot.useful_work_launched,
+                device=str(self.device),
+                device_activity=(
+                    "cuda_phase_synchronized"
+                    if self.device.type == "cuda"
+                    else "cpu_operation_completed"
+                ),
+                topology=f"rank:{self.rank}/world:{self.world_size}",
+                timestamp=now,
+            )
+        )
+        if diagnosis is not None:
+            raise DistributedTrainingError(
+                diagnosis.cause, rank=self.rank, phase=phase, operation=operation
+            )
+
+    def run(self) -> ShardedTrainingResult:
+        """Take the optimizer steps this rank owns and build the result."""
+
+        for step in range(self.start_step, self.steps):
+            if time.monotonic() - self.started > self.timeout_seconds:
+                raise DistributedTrainingError(
+                    "training_timeout",
+                    rank=self.rank,
+                    phase="step",
+                    operation=str(step),
+                )
+            local_cancel = bool(self.cancelled and self.cancelled())
+            cancel_tensor = torch.tensor(int(local_cancel), device=self.device)
+            if self.world_size > 1:
+                dist.all_reduce(cancel_tensor, op=dist.ReduceOp.MAX)
+                self.communication_events += 1
+            if int(cancel_tensor.item()):
+                raise DistributedTrainingError(
+                    "cancelled", rank=self.rank, phase="step", operation=str(step)
+                )
+            if self.fault_rank is not None and step == self.start_step:
+                _raise_coordinated_injected_failure(
+                    fault_rank=self.fault_rank,
+                    rank=self.rank,
+                    world_size=self.world_size,
+                    device=self.device,
+                    step=step,
+                )
+            if self.inject_collective_timeout and step == self.start_step:
+                _raise_control_plane_timeout(
+                    rank=self.rank,
+                    world_size=self.world_size,
+                    timeout_seconds=self.timeout_seconds,
+                )
+            self.emit(step, "forward", "statevector_expectation", step)
+            self.emit(step, "execution_segment", "validated_ir_segment", step + 1)
+            self.emit(
+                step, "gate_block", f"gates:{len(self.ir.instructions)}", step + 1
+            )
+            policy = (
+                StatevectorCheckpointPolicy(
+                    strategy="interval", interval=self.rematerialization_interval
+                )
+                if self.rematerialization_interval > 0
+                else StatevectorCheckpointPolicy()
+            )
+            reverse = execute_torch_distributed_statevector_reverse(
+                self.ir,
+                observable_wire=self.observable_wire,
+                checkpoint_policy=policy,
+                device=self.device,
+            )
+            for parameter in self.parameters:
+                parameter.grad = None
+            self.emit(step, "backward", "explicit_shard_adjoint", step)
+            try:
+                with _operation_deadline(self.timeout_seconds):
+                    reverse.backward()
+            except _OperationTimeoutError as error:
+                raise DistributedTrainingError(
+                    "backward_timeout",
+                    rank=self.rank,
+                    phase="backward",
+                    operation="explicit_shard_adjoint",
+                ) from error
+            self.emit(step, "backward_segment", "parameter_vjp_complete", step + 1)
+            reverse_summary = reverse.summary()
+            self.communication_events += int(
+                reverse_summary["backward_communication_count"]
+            )
+            self.communication_bytes += int(
+                reverse_summary["backward_communication_bytes"]
+            )
+            self.emit(step, "optimizer", f"torch.optim.{self.optimizer}", step)
+            self.emit(step, "optimizer_step", "owner_local_step", step + 1)
+            if self.optimizer_obj is not None:
+                self.optimizer_obj.step()
+            try:
+                with _operation_deadline(self.timeout_seconds):
+                    broadcast_count = _broadcast_parameters(
+                        self.parameters, self.owners
+                    )
+            except _OperationTimeoutError as error:
+                raise DistributedTrainingError(
+                    "collective_timeout",
+                    rank=self.rank,
+                    phase="collective",
+                    operation="parameter_broadcast",
+                ) from error
+            self.communication_events += broadcast_count
+            if self.world_size > 1:
+                self.communication_bytes += sum(
+                    parameter.numel() * parameter.element_size()
+                    for parameter in self.parameters
+                )
+            self.losses.append(float(reverse.value.detach().cpu()))
+            self.emit(
+                step, "optimizer", "owner_broadcast_complete", step + 1, "broadcast"
+            )
+            self.emit(step, "collective", "parameter_broadcast", step + 1, "broadcast")
+            if self.root is not None and (step + 1) % self.checkpoint_interval == 0:
+                self.emit(step, "checkpoint", "rank_local_torch_save", step + 1)
+                path = _write_checkpoint(
+                    self.root,
+                    rank=self.rank,
+                    world_size=self.world_size,
+                    step=step + 1,
+                    optimizer_name=self.optimizer,
+                    owned_indices=self.owned_indices,
+                    parameters=self.parameters,
+                    optimizer=self.optimizer_obj,
+                    contract=self.checkpoint_contract,
+                )
+                self.checkpoint_files.append(str(path))
+                if self.world_size > 1:
+                    try:
+                        with _operation_deadline(self.timeout_seconds):
+                            _failure_detection_barrier(self.timeout_seconds)
+                    except (RuntimeError, _OperationTimeoutError) as error:
+                        raise DistributedTrainingError(
+                            "checkpoint_barrier_timeout",
+                            rank=self.rank,
+                            phase="checkpoint",
+                            operation="checkpoint_generation_barrier",
+                        ) from error
+                    self.communication_events += 1
+                    self.communication_bytes += torch.empty(
+                        (), dtype=torch.int64
+                    ).element_size()
+        return self._result()
+
+    def _result(self) -> ShardedTrainingResult:
+        """Build the training result from the completed sweep."""
+
+        self.emit(self.steps, "teardown", "training_complete", self.steps)
+        peak_memory = (
+            int(torch.cuda.max_memory_allocated(self.device))
+            if self.device.type == "cuda"
+            else max((item.memory_bytes for item in self.progress), default=0)
+        )
+        ownership = tuple(
+            OptimizerOwnership(
+                parameter=f"parameter:{index}",
+                owner_rank=owner,
+                gradient_reduction="all_reduce_sum" if self.world_size > 1 else "local",
+                optimizer_state_local=owner == self.rank,
+                update_route=(
+                    "owner_step_then_broadcast" if self.world_size > 1 else "local_step"
+                ),
+            )
+            for index, owner in enumerate(self.owners)
+        )
+        local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE") or self.world_size)
+        local_world_size = min(self.world_size, max(1, local_world_size))
+        node_count = (self.world_size + local_world_size - 1) // local_world_size
+        return ShardedTrainingResult(
+            losses=tuple(self.losses),
+            completed_steps=self.steps,
+            start_step=self.start_step,
+            rank=self.rank,
+            world_size=self.world_size,
+            local_world_size=local_world_size,
+            node_count=node_count,
+            optimizer=self.optimizer,
+            ownership=ownership,
+            progress=tuple(self.progress),
+            peak_memory_bytes=peak_memory,
+            communication_events=self.communication_events,
+            communication_bytes=self.communication_bytes,
+            checkpoint_files=tuple(self.checkpoint_files),
+        )
+
+
 def train_distributed_statevector(
     circuit_or_ir: Any,
     *,
@@ -488,327 +895,22 @@ def train_distributed_statevector(
     inject_collective_timeout: bool = False,
 ) -> ShardedTrainingResult:
     """Run ordinary PyTorch backward/optimizer steps with owner-sharded state."""
-
-    if steps <= 0 or lr <= 0 or checkpoint_interval <= 0:
-        raise ValueError("steps, lr and checkpoint_interval must be positive")
-    if optimizer not in {"sgd", "adam"}:
-        raise ValueError("optimizer must be 'sgd' or 'adam'")
-    ir = ensure_circuit_ir(circuit_or_ir)
-    world_size = dist.get_world_size() if dist.is_initialized() else 1
-    rank = dist.get_rank() if dist.is_initialized() else 0
-    backend = dist.get_backend() if dist.is_initialized() else "single_process"
-    device = (
-        resolve_platform_device("cuda")
-        if backend == "nccl"
-        else next(
-            (
-                value.device
-                for item in ir.instructions
-                for value in item.params.values()
-                if isinstance(value, torch.Tensor) and value.requires_grad
-            ),
-            torch.device("cpu"),
-        )
-    )
-    platform = get_platform_runtime(device.type)
-    first_reverse = execute_torch_distributed_statevector_reverse(
-        ir, observable_wire=observable_wire, device=device
-    )
-    parameters = first_reverse.parameters
-    # Reverse-mode gradients are replicated after all-reduce. Optimizer owners
-    # are a separate training concern and are assigned explicitly here.
-    owners = tuple(index % world_size for index in range(len(parameters)))
-    owned_indices = tuple(index for index, owner in enumerate(owners) if owner == rank)
-    owned_parameters = [parameters[index] for index in owned_indices]
-    checkpoint_contract = _checkpoint_contract(
-        ir,
+    return _ShardedTrainingSweep(
+        circuit_or_ir,
+        steps=steps,
         observable_wire=observable_wire,
-        optimizer_name=optimizer,
-        lr=lr,
-        parameters=parameters,
-    )
-    optimizer_obj: torch.optim.Optimizer | None
-    if not owned_parameters:
-        optimizer_obj = None
-    elif optimizer == "sgd":
-        optimizer_obj = torch.optim.SGD(owned_parameters, lr=lr)
-    else:
-        optimizer_obj = torch.optim.Adam(owned_parameters, lr=lr)
-
-    batch_size = int(ir.shape[0]) if ir.shape else 1
-    complex_bytes = 16 if any(item.dtype == torch.float64 for item in parameters) else 8
-    local_state_bytes = (2**ir.n_wires // world_size) * batch_size * complex_bytes
-    # Forward state, reverse adjoint/rematerialization and communication/output
-    # buffers can coexist. Keep this preflight deliberately conservative.
-    estimated_local_state = 4 * local_state_bytes
-    parameter_bytes = sum(
-        item.numel() * item.element_size() for item in owned_parameters
-    )
-    estimated_optimizer = parameter_bytes * (3 if optimizer == "adam" else 1)
-    if (
-        memory_budget_bytes is not None
-        and estimated_local_state + estimated_optimizer > memory_budget_bytes
-    ):
-        raise DistributedTrainingError(
-            "oom_preflight",
-            rank=rank,
-            phase="preflight",
-            operation="estimate_state_and_optimizer_memory",
-        )
-
-    start_step = 0
-    root = Path(checkpoint_dir) if checkpoint_dir is not None else None
-    if resume:
-        if root is None:
-            raise ValueError("resume requires checkpoint_dir")
-        checkpoint_error: DistributedTrainingError | None = None
-        try:
-            start_step = _load_checkpoint(
-                root,
-                rank=rank,
-                world_size=world_size,
-                optimizer_name=optimizer,
-                owned_indices=owned_indices,
-                parameters=parameters,
-                optimizer=optimizer_obj,
-                contract=checkpoint_contract,
-            )
-        except DistributedTrainingError as error:
-            checkpoint_error = error
-        if world_size > 1:
-            failure_vote = torch.tensor(
-                int(checkpoint_error is not None), dtype=torch.int32, device=device
-            )
-            dist.all_reduce(failure_vote, op=dist.ReduceOp.MAX)
-            if int(failure_vote.item()):
-                if checkpoint_error is not None:
-                    raise checkpoint_error
-                raise DistributedTrainingError(
-                    "checkpoint_peer_validation_failed",
-                    rank=rank,
-                    phase="resume",
-                    operation="distributed_checkpoint_preflight",
-                )
-        elif checkpoint_error is not None:
-            raise checkpoint_error
-        if start_step > steps:
-            raise DistributedTrainingError(
-                "resume_step_regression",
-                rank=rank,
-                phase="resume",
-                operation=f"checkpoint:{start_step}>target:{steps}",
-            )
-        if world_size > 1:
-            step_tensor = torch.tensor(start_step, dtype=torch.long, device=device)
-            gathered_steps = [torch.zeros_like(step_tensor) for _ in range(world_size)]
-            dist.all_gather(gathered_steps, step_tensor)
-            _validate_checkpoint_generations(
-                tuple(int(item.item()) for item in gathered_steps), rank=rank
-            )
-        _broadcast_parameters(parameters, owners)
-
-    if device.type == "cuda":
-        torch.cuda.reset_peak_memory_stats(device)
-    progress: list[TrainingProgress] = []
-    losses: list[float] = []
-    checkpoint_files: list[str] = []
-    communication_events = 0
-    communication_bytes = 0
-    watchdog = PhaseAwareWatchdog(
-        stall_seconds=timeout_seconds,
-        bounded_phase_seconds={"checkpoint": timeout_seconds * 2},
-    )
-    started = time.monotonic()
-
-    def emit(
-        step: int, phase: str, operation: str, completed: int, collective: str = "none"
-    ) -> None:
-        if device.type == "cuda":
-            platform.synchronize(device)
-        now = time.monotonic()
-        snapshot = ProgressSnapshot(
-            timestamp=now,
-            phase=phase,
-            operation=operation,
-            completed_units=completed,
-            memory_bytes=_memory_bytes(device),
-            collective=collective,
-            rank=rank,
-            useful_work_launched=completed > 0 or phase in {"forward", "backward"},
-        )
-        diagnosis = watchdog.observe(snapshot)
-        progress.append(
-            TrainingProgress(
-                rank=rank,
-                step=step,
-                phase=phase,
-                operation=operation,
-                completed_units=completed,
-                collective=collective,
-                memory_bytes=snapshot.memory_bytes,
-                useful_work_launched=snapshot.useful_work_launched,
-                device=str(device),
-                device_activity=(
-                    "cuda_phase_synchronized"
-                    if device.type == "cuda"
-                    else "cpu_operation_completed"
-                ),
-                topology=f"rank:{rank}/world:{world_size}",
-                timestamp=now,
-            )
-        )
-        if diagnosis is not None:
-            raise DistributedTrainingError(
-                diagnosis.cause, rank=rank, phase=phase, operation=operation
-            )
-
-    for step in range(start_step, steps):
-        if time.monotonic() - started > timeout_seconds:
-            raise DistributedTrainingError(
-                "training_timeout", rank=rank, phase="step", operation=str(step)
-            )
-        local_cancel = bool(cancelled and cancelled())
-        cancel_tensor = torch.tensor(int(local_cancel), device=device)
-        if world_size > 1:
-            dist.all_reduce(cancel_tensor, op=dist.ReduceOp.MAX)
-            communication_events += 1
-        if int(cancel_tensor.item()):
-            raise DistributedTrainingError(
-                "cancelled", rank=rank, phase="step", operation=str(step)
-            )
-        if fault_rank is not None and step == start_step:
-            _raise_coordinated_injected_failure(
-                fault_rank=fault_rank,
-                rank=rank,
-                world_size=world_size,
-                device=device,
-                step=step,
-            )
-        if inject_collective_timeout and step == start_step:
-            _raise_control_plane_timeout(
-                rank=rank,
-                world_size=world_size,
-                timeout_seconds=timeout_seconds,
-            )
-        emit(step, "forward", "statevector_expectation", step)
-        emit(step, "execution_segment", "validated_ir_segment", step + 1)
-        emit(step, "gate_block", f"gates:{len(ir.instructions)}", step + 1)
-        policy = (
-            StatevectorCheckpointPolicy(
-                strategy="interval", interval=rematerialization_interval
-            )
-            if rematerialization_interval > 0
-            else StatevectorCheckpointPolicy()
-        )
-        reverse = execute_torch_distributed_statevector_reverse(
-            ir,
-            observable_wire=observable_wire,
-            checkpoint_policy=policy,
-            device=device,
-        )
-        for parameter in parameters:
-            parameter.grad = None
-        emit(step, "backward", "explicit_shard_adjoint", step)
-        try:
-            with _operation_deadline(timeout_seconds):
-                reverse.backward()
-        except _OperationTimeoutError as error:
-            raise DistributedTrainingError(
-                "backward_timeout",
-                rank=rank,
-                phase="backward",
-                operation="explicit_shard_adjoint",
-            ) from error
-        emit(step, "backward_segment", "parameter_vjp_complete", step + 1)
-        reverse_summary = reverse.summary()
-        communication_events += int(reverse_summary["backward_communication_count"])
-        communication_bytes += int(reverse_summary["backward_communication_bytes"])
-        emit(step, "optimizer", f"torch.optim.{optimizer}", step)
-        emit(step, "optimizer_step", "owner_local_step", step + 1)
-        if optimizer_obj is not None:
-            optimizer_obj.step()
-        try:
-            with _operation_deadline(timeout_seconds):
-                broadcast_count = _broadcast_parameters(parameters, owners)
-        except _OperationTimeoutError as error:
-            raise DistributedTrainingError(
-                "collective_timeout",
-                rank=rank,
-                phase="collective",
-                operation="parameter_broadcast",
-            ) from error
-        communication_events += broadcast_count
-        if world_size > 1:
-            communication_bytes += sum(
-                parameter.numel() * parameter.element_size() for parameter in parameters
-            )
-        losses.append(float(reverse.value.detach().cpu()))
-        emit(step, "optimizer", "owner_broadcast_complete", step + 1, "broadcast")
-        emit(step, "collective", "parameter_broadcast", step + 1, "broadcast")
-        if root is not None and (step + 1) % checkpoint_interval == 0:
-            emit(step, "checkpoint", "rank_local_torch_save", step + 1)
-            path = _write_checkpoint(
-                root,
-                rank=rank,
-                world_size=world_size,
-                step=step + 1,
-                optimizer_name=optimizer,
-                owned_indices=owned_indices,
-                parameters=parameters,
-                optimizer=optimizer_obj,
-                contract=checkpoint_contract,
-            )
-            checkpoint_files.append(str(path))
-            if world_size > 1:
-                try:
-                    with _operation_deadline(timeout_seconds):
-                        _failure_detection_barrier(timeout_seconds)
-                except (RuntimeError, _OperationTimeoutError) as error:
-                    raise DistributedTrainingError(
-                        "checkpoint_barrier_timeout",
-                        rank=rank,
-                        phase="checkpoint",
-                        operation="checkpoint_generation_barrier",
-                    ) from error
-                communication_events += 1
-                communication_bytes += torch.empty((), dtype=torch.int64).element_size()
-    emit(steps, "teardown", "training_complete", steps)
-    peak_memory = (
-        int(torch.cuda.max_memory_allocated(device))
-        if device.type == "cuda"
-        else max((item.memory_bytes for item in progress), default=0)
-    )
-    ownership = tuple(
-        OptimizerOwnership(
-            parameter=f"parameter:{index}",
-            owner_rank=owner,
-            gradient_reduction="all_reduce_sum" if world_size > 1 else "local",
-            optimizer_state_local=owner == rank,
-            update_route=(
-                "owner_step_then_broadcast" if world_size > 1 else "local_step"
-            ),
-        )
-        for index, owner in enumerate(owners)
-    )
-    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE") or world_size)
-    local_world_size = min(world_size, max(1, local_world_size))
-    node_count = (world_size + local_world_size - 1) // local_world_size
-    return ShardedTrainingResult(
-        losses=tuple(losses),
-        completed_steps=steps,
-        start_step=start_step,
-        rank=rank,
-        world_size=world_size,
-        local_world_size=local_world_size,
-        node_count=node_count,
         optimizer=optimizer,
-        ownership=ownership,
-        progress=tuple(progress),
-        peak_memory_bytes=peak_memory,
-        communication_events=communication_events,
-        communication_bytes=communication_bytes,
-        checkpoint_files=tuple(checkpoint_files),
-    )
+        lr=lr,
+        checkpoint_dir=checkpoint_dir,
+        resume=resume,
+        checkpoint_interval=checkpoint_interval,
+        rematerialization_interval=rematerialization_interval,
+        memory_budget_bytes=memory_budget_bytes,
+        timeout_seconds=timeout_seconds,
+        cancelled=cancelled,
+        fault_rank=fault_rank,
+        inject_collective_timeout=inject_collective_timeout,
+    ).run()
 
 
 __all__ = (
