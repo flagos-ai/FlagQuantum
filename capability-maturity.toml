@@ -684,3 +684,20 @@ level = "experimental"
 owner = "Algorithms maintainers"
 limitations = "Demonstration scale. The density matrix is materialized classically and its exponential is built with a dense matrix exponential, so the unit does not reproduce quantum PCA's input model: it never avoids forming rho and never uses the O(1/eps^3) state copies the algorithm is built on. The purified input is supplied as all 2**n amplitudes. Meaningful only for low effective rank."
 focused_tests = "tests/unit/test_algorithms_pca.py"
+
+[capabilities.algorithms_kmedians]
+title = "Quantum k-medians"
+summary = "Assign points to their nearest centroids with a Grover-style minimum search over a centroid index register, then move each centroid to the classical coordinate-wise median of its cluster."
+category = "simulation_and_training"
+user_goals = ["Assign each point to its nearest centroid", "Read an assignment off sampled searches", "Update centroid positions to the medians of the points assigned to them"]
+public_apis = ["flagquantum.algorithms.kmedians"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "The advantage premise is Grover's oracle model, and it is not met: the oracle is not free here. The search's oracle is synthesized from the predicate's truth table at O(2**n) cost, so no end-to-end advantage follows at this scale, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built -- the register is capped at three wires, which is also what keeps the distances out of it. Nothing here reads a qRAM or runs an adiabatic evolution, so no conclusion that rests on either applies to this unit. Demonstration scale: the search is bounded at three evaluation wires, so at most eight centroids, and the assignment is sampled rather than read out, which is why a small sample can stop a point's search short. It makes no performance, convergence, or hardware claim."
+focused_tests = "tests/unit/test_algorithms_kmedians.py"

@@ -53,6 +53,7 @@ applies to them as to everything else in this guide.
 | Unit | What it does | Citation | Advantage premise |
 | --- | --- | --- | --- |
 | `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |
+| `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -82,6 +83,13 @@ applies to them as to everything else in this guide.
   its exponential as a dense matrix, and takes the purification's amplitudes
   from the caller, so the property the paper's cost counts is absent. See the
   section below.
+- **Quantum k-medians rests on Grover's oracle model, and the oracle is not
+  free.** The paper counts oracle calls, and the call it counts evaluates a
+  distance in one step. This unit synthesizes its oracle from the predicate's
+  truth table at `O(2**n)` cost, and it computes the whole distance table
+  classically, one point at a time, before the circuit exists — the register is
+  capped at three wires, which is also what keeps the distances out of it. No
+  end-to-end advantage follows. See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -430,6 +438,127 @@ already hold the entire amplitude vector. Nothing in this unit is faster, or
 smaller, than diagonalising `rho` with `torch.linalg.eigvalsh` directly, and the
 capability entry repeats the boundary.
 
+## Quantum k-medians
+
+`kmedians.py` is the second unit of Phase 2 and the fourth algorithm unit in
+this guide's programme. `kmedians(points, centroids, shots=..., seed=...)` takes
+the points, the centroid positions, and the sampler's `shots` and `seed`, and
+performs one assignment step of k-medians: `KMediansResult` carries the centroid
+each point was assigned to, the updated centroid positions, and the number of
+Grover searches the run sampled. Each point's nearest centroid is found by
+`grover.run_grover` over a register holding a centroid index, and the centroid
+update is classical arithmetic. **The quantization is the assignment step and
+only the assignment step**: the search is a Grover-style minimum search, not a
+distance measured in superposition.
+
+**The search is a minimum search over a moving threshold.** One point's
+assignment is a loop, not a single circuit: it holds the index of the best
+centroid found so far, marks the indices whose pair of distance and index is
+strictly smaller than the held one's, and moves to one of the marked indices
+when the sample found one. A round that finds none ends the loop, and the index
+it holds is the assignment. Each moving round strictly decreases a pair drawn
+from a finite set, so a point costs at most as many searches as there are
+centroids, and a point whose nearest centroid is index 0 costs exactly one.
+
+**Ties are broken by the index, inside the search rather than after it.** The
+comparison is on the pair of distance and index, so a centroid at exactly the
+threshold distance is marked only when its index is the smaller one. Measured on
+a point at `(3, 3)` against centroids at `(0, 0)`, `(2, 0)` and `(0, 2)`, whose
+distances to the last two are exactly equal at `3.1622776601683795`: the
+assignment was index `1` for every sampling seed from 0 through 199 at 1024
+shots. The same instance with the index dropped from the comparison returns
+index `2` at seed 0 and both tied indices across those seeds, because which tied
+centroid the sample favours is then the assignment — which is why the index is
+part of the order and not a patch on the result.
+
+**That is a statement about the comparison, not about every run.** The loop ends on
+the first round whose sample finds none of the indices that round marked, so the
+rule decides the assignment under one condition: no round of the point's loop
+misses the indices it marked. Under it the assignment is the smallest pair of
+distance and index in the table — the nearest centroid, and the lower-indexed of
+two that are exactly as near as each other. A run with a round that misses ends
+on an index it has not finished improving. Measured on a point at `(2.5,)`
+against centroids at `(0,)`, `(1,)`, `(2,)` and `(3,)`, whose distances to the
+last two are exactly equal at `0.5`, over seeds 0 through 199: 102 of the 200
+runs had no round that missed a marked index at one shot and every one of those
+102 ended on index `2`; at four shots the counts are 186 and 186; at eight, 198
+and 198; and at 16, 64 and 1024 shots all 200 runs had no missed round and every
+one ended on index `2`. The runs that did miss ended on index `1` or, at the
+smallest widths, on index `0`, which is a centroid farther away than either of
+the tied ones.
+
+**The rule is stated for a pair.** `kmedians.py` makes no general claim about
+three or more centroids at exactly the same distance: the marked sets it
+compares are not a pair there, and the measured tables above are all two-way.
+What the tests pin is one such instance, and it is an instance rather than a
+rule: a point at `(1, 1)` with centroids at `(0, 3)`, `(3, 0)` and `(2, -1)`,
+whose three distances are all exactly `2.23606797749979`, is assigned index `0`,
+because no centroid beats the one the loop starts from and that first round
+marks nothing.
+
+**The distance table is classical, and that is the whole of what the unit gives
+up.** `grover_circuit` builds its own register and refuses more than three
+evaluation wires, so the search runs over the centroid index alone and the
+distance from the point being assigned to each centroid is computed in double
+precision outside the circuit — the predicate closes over that table, and every
+round builds its register afresh. The circuit holds no state about the
+points or the centroids: what it searches is a table the classical caller built,
+which is precisely the cost the paper's oracle model assumes away.
+
+**The median update is classical, and two of its cases have to be named.** Each
+coordinate of a centroid is set to the median of that coordinate over the points
+assigned to it. A cluster with an even number of points has a range of medians
+rather than one, and this unit takes the lower of the two, which is what
+`torch.median` returns. A cluster with no points has no median at all, and its
+centroid keeps the position it was given. Both in one measured run: points
+`(0,)`, `(1,)`, `(2,)` and `(10,)` against centroids `(0,)` and `(50,)` give the
+assignment `(0, 0, 0, 0)`, the first centroid moving to `1.0` — the lower middle
+of `0, 1, 2, 10` — and the second keeping `50.0`.
+
+**The search is sampled, not read out, and the sample size is visible.** A round
+ends when its sample found no marked index, so a sample that missed a marked
+index ends a point's loop early, at an index that is not the nearest centroid.
+Measured on two points at `(7, 0)` and `(4, 0)` against eight centroids at
+`(0, 0)` through `(7, 0)`, whose nearest centroids are index 7 and index 4: the
+assignment differed from the classical labelling for 43 of the 50 sampling seeds
+tried at one shot, for 23 at two shots, for 8 at four, and for none at 16, 64 or
+1024 shots. That is a measurement at those seeds and those shot counts, not a
+guarantee: the tail a small sample leaves belongs to the sampler, and the module
+computes and reports no error bound, confidence interval or repetition scheme.
+The default is 1024 shots per search.
+
+```python
+import torch
+
+from flagquantum.algorithms.kmedians import kmedians
+
+points = torch.tensor(
+    [[0.0, 0.0], [1.0, 0.0], [5.0, 0.0], [5.2, 0.1], [0.2, 1.5], [4.9, -0.4]],
+    dtype=torch.float64,
+)
+centroids = torch.tensor([[0.0, 0.0], [5.0, 0.0], [0.0, 2.0]], dtype=torch.float64)
+
+result = kmedians(points, centroids, shots=1024, seed=7)
+print(result.labels)
+# (0, 0, 1, 1, 2, 1)  -- each point's nearest centroid
+print(result.medians)
+# ((0.0, 0.0), (5.0, 0.0), (0.2, 1.5))  -- the coordinate-wise medians of the three clusters
+print(result.searches)
+# 10  -- ten searches sampled: six points, and four rounds that moved
+```
+
+**The premise is the oracle model, and this unit does not meet it.** The paper
+counts oracle calls, and in that model the distance function has to be computed
+into a register — a cost the count does not include. Here the oracle is
+synthesized from the predicate's truth table, so it costs `O(2**n)` — over the
+at most eight register values the three-wire search can carry — and the distance
+table the predicate compares is computed classically, one point at a time,
+before any circuit is built. Neither cost is in the query count, and nothing
+here reads a qRAM or runs an adiabatic evolution, so no conclusion that rests on
+either applies. The unit is bounded at eight centroids by the three-wire
+register, and the search is sampled rather than read out, so a small sample can
+stop a point's search short. The capability entry repeats the boundary.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -465,6 +594,16 @@ capability entry repeats the boundary.
   eigenphases carry the eigenvalues, the purification the subroutine is applied
   to, and the `O(1/eps**3)` copies of `rho` that the paper's input model counts
   and this unit's classical formation of `rho` replaces.
+- Quantum k-medians follows Esma Aïmeur, Gilles Brassard & Sébastien Gambs,
+  "Quantum clustering algorithms", *Proceedings of the 24th International
+  Conference on Machine Learning (ICML 2007)*, pp. 1-8, DOI
+  10.1145/1273496.1273497; journal version *Machine Learning* **90**(2), 261-287
+  (2012), DOI 10.1007/s10994-012-5316-5 — the quantization of k-medians by a
+  Grover-style minimum search over the centroids, which `kmedians.py`
+  implements, and the k-medians median update, which stays classical here.
+  **No arXiv identifier is attached to that paper**: this programme's citation
+  check recorded that it has no arXiv version, so the record above carries a DOI
+  and a journal version and nothing else.
 - The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
   string comparator: circuits and applications", *Quantum Computers and
   Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**
