@@ -125,6 +125,22 @@ class MPSPlanningMixin(ABC):
         growth_factor: float = 2.0,
         min_increment: int = 1,
     ) -> MPSAdaptiveBondPlan:
+        """Report which bonds the recorded truncation error says to grow.
+
+        The global error budget is divided evenly across the bonds that have error,
+        and every bond above its share is named as hot. With no budget the
+        threshold is zero, so only exact bonds are cold -- which is the honest
+        reading of "no budget was given" rather than an implicit one being picked.
+
+        The plan is derived from errors already recorded by the run; it does not
+        measure anything itself, so calling it before applying gates reports a plan
+        over no evidence.
+
+        Raises:
+            ValueError: if `growth_factor` is not finite or below one, if
+                `min_increment` is not a non-negative integer, or if the budget is
+                not a finite non-negative number.
+        """
         if not math.isfinite(growth_factor):
             raise ValueError("growth_factor must be finite.")
         if growth_factor < 1:

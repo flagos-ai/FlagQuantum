@@ -193,6 +193,22 @@ def create_evidence_artifact(
 def verify_evidence_artifact(
     payload: Mapping[str, Any], *, signing_key: bytes
 ) -> tuple[bool, tuple[str, ...]]:
+    """Check an evidence artifact's checksum and signature.
+
+    The digest is recomputed over the canonical form of the unsigned fields, so
+    anything appended to the artifact outside that set is not covered by it and
+    cannot be smuggled into a release scan. The signature is an HMAC over that
+    digest, which is what ties the content to a holder of the key rather than
+    only to itself.
+
+    Returns the reasons instead of raising, because a release scan wants every
+    reason at once rather than the first one: the caller is deciding whether to
+    promote, and a partial list of faults is worse than a full one.
+
+    Anything that is not a `measured_production_run` is reported as an error
+    rather than skipped, so development evidence cannot pass a release scan by
+    being the wrong kind of artifact.
+    """
     errors: list[str] = []
     if payload.get("schema") != "flagquantum_runtime_evidence_v1":
         errors.append("runtime evidence schema is missing or unknown")

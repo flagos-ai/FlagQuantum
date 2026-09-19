@@ -364,6 +364,23 @@ def thermal_relaxation_channel(
     dtype: torch.dtype | None = None,
     device: torch.device | str | None = None,
 ) -> KrausChannel:
+    """Amplitude decay toward the equilibrium population, with dephasing.
+
+    T1 sets how fast the state relaxes toward the thermal equilibrium, and T2
+    sets the total dephasing. The pure-dephasing rate is what is left of 1/T2
+    after the relaxation contributes its half, so the two are composed rather
+    than applied one after the other as independent channels.
+
+    `excited_population` is the equilibrium excited probability, so the default
+    of zero is decay toward the ground state and 0.5 is an infinite-
+    temperature bath. It is a parameter rather than an assumption because the
+    difference is a real physical one that a caller may need to state.
+
+    Raises:
+        ValueError: if a time constant is not positive, if `duration` is
+            negative, if `t2 > 2 * t1` (which would make the pure-dephasing
+            rate negative), or if `excited_population` is outside [0, 1].
+    """
     if t1 <= 0 or t2 <= 0 or duration < 0:
         raise ValueError("t1 and t2 must be positive and duration non-negative")
     if t2 > 2 * t1:

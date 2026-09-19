@@ -181,6 +181,21 @@ class NativeJiudingJobClient(JiudingClient):
         shots: int | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        """Submit one circuit to the native executor and return its handle.
+
+        `outputs` decides what the remote side computes: without it the job
+        measures nothing, and `shots` is rejected rather than ignored in that case,
+        because a caller who asked for sampling and silently got a statevector
+        would read the absence of counts as an empty result.
+
+        The circuit is routed to the target's coupling map first unless the IR
+        already records a routing for exactly that map, so this does not re-route a
+        program that a previous stage already made executable.
+
+        Raises:
+            TypeError: if an option this executor does not support is passed, or if
+                `shots` is given without an explicit sampling output.
+        """
         if kwargs:
             raise TypeError("Unsupported native job options: " + ", ".join(kwargs))
         ir = ensure_circuit_ir(program)

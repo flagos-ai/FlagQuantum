@@ -70,6 +70,23 @@ def create_dynamic_deployment_package(
     shots: int = 1024,
     metadata: Mapping[str, Any] | None = None,
 ) -> DeploymentPackage:
+    """Build a deployable package for a dynamic circuit on a given backend.
+
+    A dynamic circuit carries control flow, so the backend has to support it:
+    compatibility is assessed before and again after routing, because a
+    coupling map that cannot host the circuit's conditionals would otherwise
+    only show up at execution time.
+
+    The circuit has to be fully bound and start from the default state, since
+    the package is a self-contained artifact and there is nowhere for a caller
+    to supply inputs to it.
+
+    Raises:
+        ValueError: if `shots` is not positive, or if the circuit carries
+            parameters that are still unbound or a non-default initial state.
+        RuntimeError: if the backend cannot host the circuit, either before
+            routing or after it.
+    """
     if int(shots) <= 0:
         raise ValueError("shots must be a positive integer")
     if circuit.bsz != 1 or circuit._inputs is not None:

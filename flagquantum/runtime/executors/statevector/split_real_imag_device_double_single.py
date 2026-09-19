@@ -444,6 +444,20 @@ def parameter_shift_split_real_imag_device_double_single_gradient(
     preflight: bool = True,
     renormalize_every: int = 16,
 ) -> SplitRealImagDeviceDoubleSingleGradientResult:
+    """P4: parameter-shift gradients with device-generated gates.
+
+    The difference from the P3 path is where the gate matrices come from: here
+    the device generates them, so the host never holds a complex128 matrix at
+    all. State evolution is Double-Single either way, and the parameter
+    bindings are held to the same exact-match rule, for the same reason -- a
+    shift that evaluates a different circuit than the one being differentiated
+    produces a gradient of nothing in particular.
+
+    Raises:
+        ValueError: if the bindings do not exactly match the circuit's named
+            parameters, or if the circuit is outside the scope this path
+            certifies.
+    """
     plan = _coerce_plan(precision_plan)
     requirement = _coerce_accuracy(accuracy_requirement)
     ir = ensure_circuit_ir(circuit_or_ir)

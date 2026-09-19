@@ -121,6 +121,19 @@ def run_benchmark(
     warmup: int,
     iterations: int,
 ) -> dict[str, Any]:
+    """Measure one workload twice on the same device and report both.
+
+    The comparison is the point: the optimized path (`circuit.state` with a
+    refresh) and a sequential reference execute the same circuit, so the
+    payload can carry a speed ratio and a correctness verdict that answer each
+    other. Peak memory is taken per leg with a reset in between, because the
+    two paths allocate differently and a shared high-water mark would report
+    whichever ran first.
+
+    Raises:
+        ValueError: if the shape parameters could not describe a circuit, or
+            there are too few iterations to report a timing.
+    """
     if n_wires < 2 or batch_size < 1 or layers < 1:
         raise ValueError("n_wires >= 2, batch_size >= 1 and layers >= 1 required")
     if warmup < 0 or iterations < 2:
@@ -221,6 +234,12 @@ def run_benchmark(
 
 
 def main() -> None:
+    """Run the local statevector comparison and print its payload.
+
+    Exits non-zero when the correctness verdict inside the payload is false, so
+    a lane sees the failure without having to parse the JSON it just printed.
+    That is what makes this usable as a gate rather than only as a report.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-wires", type=int, default=12)
     parser.add_argument("--batch-size", type=int, default=4)

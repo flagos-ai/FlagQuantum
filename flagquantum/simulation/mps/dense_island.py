@@ -90,6 +90,18 @@ class DenseIslandState:
         return int(self.tensors[0].shape[0])
 
     def apply_local(self, matrix: torch.Tensor, wires: Sequence[int]) -> None:
+        """Apply a gate whose wires lie inside one island.
+
+        A gate spanning two islands cannot be applied to a single tensor, so it is
+        handed to the cross-island path and counted; the count is what tells a
+        caller how much of the circuit escaped the dense-island plan.
+
+        The island's tensor is flattened to a matrix over its physical index so the
+        existing local-application helper can be reused, and reshaped back
+        afterwards. A batched gate is required to agree with the island's batch,
+        since broadcasting it would otherwise silently apply one batch's matrix to
+        another's state.
+        """
         wires = tuple(int(wire) for wire in wires)
         islands = {self.plan.island_for_wire(wire) for wire in wires}
         if len(islands) != 1:

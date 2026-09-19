@@ -89,6 +89,17 @@ class TensorNetworkState:
         return torch.abs(self.state()) ** 2
 
     def expectation_z(self, wires: int | Sequence[int] | None = None) -> torch.Tensor:
+        """Return the Z expectation on the named wires, one per wire.
+
+        Two paths: below `dense_observable_wires` the dense state is materialized
+        and the expectations are a single matmul against cached sign weights; above
+        it a bra-ket contraction is built instead, and the strategy recorded on the
+        state decides how that contraction is ordered.
+
+        The path taken, whether the weight cache was reused and the peak size of
+        the contraction are recorded on the state, so a caller can tell which route
+        answered without inferring it from the timing.
+        """
         if wires is None:
             wire_tuple = tuple(range(self.n_wires))
         elif isinstance(wires, int):

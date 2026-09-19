@@ -220,6 +220,20 @@ class ExecutionRecordContract(VersionedContract):
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ExecutionRecordContract":
+        """Rebuild a runtime plan contract from its serialized form.
+
+        The nested records are rebuilt rather than left as mappings, so a consumer
+        sees the same object it would have got from the constructor. Three
+        capability fields come back as tuples: JSON has no tuple, and the contract
+        compares them as sequences that must not be mutable.
+
+        Raises:
+            UnknownContractFieldError: if the payload carries a field the contract
+                does not declare.
+            ContractError: if it is not this contract's kind.
+            ContractVersionError: if it is a version that has to be migrated
+                explicitly rather than read.
+        """
         values = _strict_values(cls, payload)
         values["observed"] = ExecutionObservation(
             **_strict_values(ExecutionObservation, values["observed"])

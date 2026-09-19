@@ -49,6 +49,18 @@ def jax_mps_split_pair_batched(
     max_bond: int | None,
     cutoff: float,
 ) -> tuple[Any, Any, MpsSplitInfo]:
+    """Split a batched two-site tensor under a bond limit and cutoff.
+
+    When the cutoff is zero and the bond limit does not bite, the split is
+    exact and is taken as an identity gauge on the smaller side rather than by
+    SVD: a repeated zero singular value -- ordinary in the low-entanglement
+    states this path sees -- leaves singular vectors without a defined
+    derivative, and the backward pass needs one.
+
+    Returns the two tensors and the record of how the split was made, so a
+    caller can tell an exact split from a truncated one without recomputing
+    it.
+    """
     import jax.numpy as jnp
 
     bsz = int(matrix.shape[0])

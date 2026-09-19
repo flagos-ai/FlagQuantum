@@ -215,6 +215,19 @@ class RuntimeCandidateBuilder:
         jax_statevector_training_summary: Mapping[str, Any] | None = None,
         jax_mps_training_summary: Mapping[str, Any] | None = None,
     ) -> None:
+        """Record one execution candidate the planner may choose between.
+
+        The caller supplies the candidate's own attributes and this fills in the
+        verdicts that follow from them: blockers and warnings are derived from the
+        context, and the score is settled against the memory, communication and
+        gradient plans. Callers that already know part of the answer pass the
+        `*_override` arguments, which is how a candidate whose plan was computed
+        elsewhere keeps that plan instead of having a default substituted.
+
+        `claim_allowed` defaults to being decided from the context rather than
+        assumed, so a candidate is not silently allowed to make a claim its
+        environment does not support.
+        """
         context = self.context
         blockers = _candidate_blockers(
             context,

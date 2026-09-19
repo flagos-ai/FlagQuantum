@@ -491,6 +491,22 @@ def parameter_shift_split_real_imag_double_single_gradient(
     preflight: bool = True,
     renormalize_every: int = 16,
 ) -> SplitRealImagDoubleSingleGradientResult:
+    """P3: parameter-shift gradients with Double-Single state evolution.
+
+    Complex128 gate matrices are encoded into FP32 words on the host and then
+    the state, the shifts and the accumulation all run in Double-Single on the
+    device; the encoded gates are explicit metadata rather than a fallback, so
+    a reader can tell that the host did not participate in the evolution.
+
+    Bindings must name exactly the circuit's parameters. A partial set would
+    leave a shift evaluating a circuit that is not the one the gradient is
+    about, so the mismatch is refused rather than defaulted.
+
+    Raises:
+        ValueError: if the bindings do not exactly match the circuit's named
+            parameters, or if the circuit is outside the execution scope this
+            path certifies.
+    """
     plan = _coerce_plan(precision_plan)
     requirement = _coerce_accuracy(accuracy_requirement)
     ir = ensure_circuit_ir(circuit_or_ir)

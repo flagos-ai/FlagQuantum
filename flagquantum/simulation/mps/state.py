@@ -115,6 +115,14 @@ class MPSState(MPSPlanningMixin):
         *,
         config: MPSConfig | None = None,
     ) -> "MPSState":
+        """Build an MPS from a dense statevector by successive SVD.
+
+        Each step splits the remaining state into a tensor and a carry, taking the
+        rank the cutoff and bond limit allow. The per-batch ranks are combined by
+        taking the largest, because the tensors have to share a shape; the
+        truncation error reported is the worst across the batch, not the sum, so it
+        reads as a bound on the whole conversion.
+        """
         if state.ndim == 1:
             state = state.reshape(1, -1)
         cfg = config or MPSConfig()
@@ -975,6 +983,19 @@ class MPSState(MPSPlanningMixin):
     def apply_two(
         self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
     ) -> None:
+        """Apply a two-site gate to `left_wire` and the wire after it.
+
+        The two tensors are contracted into one, the gate is applied to the joint
+        index, and the result is split back by SVD under the configured bond limit
+        and cutoff. What is discarded by that split is recorded as truncation
+        error, which is what the adaptive-bond planning reads later; when the
+        fixed-rank QR route is taken instead, the discarded weight is not
+        computable without materializing the very matrix that route exists to
+        avoid, so a NaN is recorded rather than a misleading number.
+
+        `reverse` swaps the two physical indices so the same routine serves the
+        backward sweep.
+        """
         left = self.tensors[int(left_wire)]
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
