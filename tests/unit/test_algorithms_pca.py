@@ -206,7 +206,10 @@ def test_the_resolution_is_the_counter_step_in_eigenvalue_units() -> None:
 
     A wider counting register resolves a finer phase, and the eigenvalue step narrows
     with it, so the readout's accuracy is a property of the register that the result
-    reports rather than of the sample it happened to draw.
+    reports rather than of the sample it happened to draw. ``within`` is checked at
+    its boundary on both sides: half a step holds and a full step does not. At these
+    widths the step and the readout are both exact binary fractions, so the boundary
+    itself is exact and needs no tolerance.
     """
     data = _data_matrix([0.9962, 0.0038], 2)
 
@@ -215,7 +218,8 @@ def test_the_resolution_is_the_counter_step_in_eigenvalue_units() -> None:
             data, n_counting_wires=n_counting_wires, shots=512, seed=0
         )
         assert result.resolution == pytest.approx(1 / 2**n_counting_wires)
-        assert result.within(result.dominant_eigenvalue)
+        assert result.within(result.dominant_eigenvalue - result.resolution / 2)
+        assert not result.within(result.dominant_eigenvalue - result.resolution)
 
 
 def test_a_zero_data_matrix_is_refused() -> None:
