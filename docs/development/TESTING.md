@@ -492,6 +492,24 @@ the four- and eight-device matrix legs take turns instead of both landing on one
 host. A lane that waits stays queued: the default keeps one waiting lane and
 drops it when another arrives, which reports nothing at all for the one dropped.
 
+The clone those jobs check out is shared for the same reason the hosts are: the
+runner keeps one working directory per repository and reuses it for every job,
+so what one job does to `.git` outlives it. `actions/checkout@v4` cannot undo a
+sparse checkout on the git these runners carry (2.34). It runs `git
+sparse-checkout disable`, which restores the files and clears the skip-worktree
+bits, but leaves `core.sparseCheckout` set and the pattern file in
+`.git/info/sparse-checkout`; the `git checkout --force -B <branch> <sha>` that
+follows in the same step then re-applies those patterns, and `git clean -ffdx`
+and `git reset --hard` do not repair the tree because both honour the
+skip-worktree bits. A job that does not name its own paths can therefore find
+the tree pruned by whatever ran before it, and see a successful checkout. That
+is how `local-scale-scheduled` got six phases through on 2026-09-18 and then
+could not open `benchmarks/mps_boundary_transport.py`, a file `local-gpu.yml`'s
+pattern list does not name. Every self-hosted job here that does not pass
+`sparse-checkout:` clears the leftover state before it checks out, and
+`tests/unit/test_shared_runner_checkout_policy.py` holds both halves of that
+rule.
+
 **A pull request must not be able to reach a self-hosted runner.** The runners
 are root shells on hosts that other people share, and one of them serves a
 public repository, which is the combination GitHub's own guidance warns about.
