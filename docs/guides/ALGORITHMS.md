@@ -598,9 +598,15 @@ contract rather than assume it.** One state, measured against three partners
 that differ only in a relative phase, has the overlaps `+1/sqrt(2)`,
 `-1/sqrt(2)` and `+i/sqrt(2)` — all three of the same magnitude, and all three
 the same experiment to this circuit, so all three must return the same
-statistic. A test that checked one pair could not tell a correct implementation
-from one that returned the signed inner product — the identical-states pair
-reads `1` under both — which is why the triple is the check the unit carries.
+statistic. The magnitude assertion is what catches a sign-carrying
+implementation, first and on its own: its reading of the first partner is
+`0.707` against the `0.5` the magnitude is asserted at. The equality across the
+three is a second net, for an implementation whose three readings all land
+inside that tolerance but differ from each other. A test built on the
+**identical-states pair alone** could not tell a sign-carrying implementation
+from a correct one — both paths read `1` there — and the equality the triple
+carries is a net a pair cannot provide: two readings give one comparison, three
+give one that a per-state error can break.
 
 **The feature map is this package's own angle encoding, and not the cited
 paper's.** A Hadamard on every wire, a phase rotation carrying each feature on
@@ -617,13 +623,15 @@ compare every entry against it. Because the map is this module's and not
 Havlíček et al.'s, their hardness conjecture says nothing about this unit, and
 nothing here should be read as though it did.
 
-**One entry costs `O(eps**-2)` samples and a matrix costs `O(m**2 / eps**2)`,
-in the paper's own words.** That is the sampling cost Havlíček et al. state, and
-this module adds no arithmetic to it: no error bound, no confidence interval, no
-shot-selection rule and no repetition scheme is computed or reported. The
-estimate is `1 - 2 * share` with `share` in `[0, 1]`, so an entry lies in
-`[-1, 1]` by construction and one whose overlap is near zero can come back
-slightly negative; the readout is reported as it comes and is not clamped.
+**One kernel entry costs `O(eps**-2)` shots, in the paper's own words, and an
+`m` by `m` kernel matrix therefore costs `O(m**2 / eps**2)`.** The per-entry
+figure is the paper's; the matrix figure is that one multiplied by the `m**2`
+entries, and not a second figure the paper states. Nothing here converts either
+into an accuracy: no error bound, no confidence interval, no shot-selection rule
+and no repetition scheme is computed or reported. The estimate is
+`1 - 2 * share` with `share` in `[0, 1]`, so an entry lies in `[-1, 1]` by
+construction and one whose overlap is near zero can come back slightly
+negative; the readout is reported as it comes and is not clamped.
 
 **The classifier is classical, and its fit inherits the sample.**
 `kernel_ridge_regression` solves `(K + lambda I) alpha = y` for the dual
@@ -640,8 +648,9 @@ different sample, and no margin, bound or accuracy estimate is computed.
 `n`. The unit is bounded at three features, and the matrix is symmetric by
 construction — the swap test of `(i, j)` and of `(j, i)` is the same experiment,
 so the entry is sampled once and mirrored rather than sampled twice. The
-diagonal is sampled like every other entry and comes back exactly one, because
-the overlap of a state with itself is one and the ancilla is never found set.
+diagonal is sampled like every other entry and comes back exactly one. That is
+the circuit's arithmetic: the overlap of a state with itself is one, so the
+circuit never finds that ancilla set.
 
 ```python
 import torch

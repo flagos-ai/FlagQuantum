@@ -364,8 +364,8 @@ def quantum_kernel_matrix(
     confidence interval is computed or reported anywhere in this unit.
 
     The diagonal is sampled rather than assumed. Rows ``i`` and ``j`` that are equal
-    give the same feature state twice, whose overlap is one, so the ancilla is never
-    found set and the entry is one; the module runs that swap test like any other
+    give the same feature state twice, whose overlap is one, so the circuit never finds
+    the ancilla set and the entry is one; the module runs that swap test like any other
     instead of writing one into the matrix.
 
     Args:

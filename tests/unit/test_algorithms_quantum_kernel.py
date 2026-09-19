@@ -284,12 +284,27 @@ def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
     circuit's probabilities, is 0.25 for all three to float32 precision, which is the
     precision a statevector is held at.
 
-    This is the test a sign-carrying implementation fails. Such an implementation
-    returns the three overlaps themselves, which are three different numbers, and the
-    equality below fires. A single pair cannot do it: on the identical-states pair both
-    paths read one, so the check the contract needs is the triple and not a pair. The
-    assertion's own reach was confirmed by planting the regression rather than by
-    assuming it -- see the test below for what the other pairs do and do not separate.
+    This is the test a sign-carrying implementation fails, and the assertion that
+    catches it is the **magnitude** one, first and on its own: a signed path returns
+    ``0.7071``, ``-0.7071`` and ``0.0`` for the triple, and the first of those is
+    ``0.207`` from one half, well outside the ``0.05`` tolerance. Measured by running
+    this test body with its estimating helper replaced by one that returns the signed
+    overlap: the first failure is at the magnitude assertion, so the equality below is
+    **never reached** by that implementation.
+
+    The equality is a second net for a different implementation, and that is why it is
+    asserted at all: one whose three readings all land inside the magnitude tolerance
+    but differ from each other passes every ``*_exact`` and magnitude assertion and is
+    caught here alone. Measured on a stand-in whose three readings are ``0.53``,
+    ``0.47`` and ``0.47`` -- the first two assertions pass, and this equality is the
+    only one that fires.
+
+    The **identical-states** pair cannot separate the two paths: both read one there, so
+    a test built on that pair alone would pass for either. That is a statement about
+    that pair and not about every pair -- the test below measures a half-overlap pair,
+    whose two paths read ``0.5`` and ``0.707`` and are separated by the magnitude
+    assertion. The triple is what the contract names, and it is also what the equality
+    needs: two states give one equality, three give one that a per-state error can break.
     """
     for n_wires in (1, 2):
         zero, plus, minus, imaginary = _signed_states(n_wires)
@@ -318,8 +333,8 @@ def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
 def test_the_swap_test_estimates_the_squared_overlap_and_not_the_overlap() -> None:
     """One, one half and zero squared overlap, at both register widths.
 
-    Equal feature vectors have a squared overlap of one and an ancilla that is never
-    found set, so the estimate is exactly one at every seed rather than merely close to
+    Equal feature vectors have a squared overlap of one, and the circuit never finds that
+    ancilla set, so the estimate is exactly one at every seed rather than merely close to
     it. Orthogonal ones have a squared overlap of zero and an ancilla found set exactly
     half the time. A pair whose overlap is ``1/sqrt(2)`` -- the sign-blindness triple's
     states, read as a squared overlap instead of as a sign -- has a squared overlap of
@@ -381,8 +396,8 @@ def test_a_dirty_ancilla_negates_the_readout_rather_than_shifting_it() -> None:
     exactly, and the ancilla's exact one-branch marginal is ``0.0`` and ``1.0``
     respectively -- the second to float32 precision, ``0.9999998807907104``, which is
     the precision a statevector is held at. The clean value is not merely negated on
-    average, it is negated at every sample, because the ancilla is never found set on a
-    clean run and always found set on a dirty one. A half-overlap pair moves from
+    average, it is negated at every sample, because the circuit never finds the ancilla
+    set on a clean run and always finds it on a dirty one. A half-overlap pair moves from
     ``0.25`` to ``0.75`` in that marginal and its estimate from about ``+0.5`` to about
     ``-0.5``.
     """
@@ -487,14 +502,17 @@ def test_the_kernel_matrix_is_symmetric_with_a_unit_diagonal() -> None:
     two triangles are the same sample rather than two samples of the same quantity, and
     the difference between them is ``0.0`` at every seed and width. The diagonal is
     sampled like every other entry -- the module runs the swap test of a state with
-    itself rather than writing one into the matrix -- and it comes back ``1.0`` exactly,
-    because that swap test's ancilla is never found set.
+    itself rather than writing one into the matrix -- and it comes back ``1.0`` exactly.
+    That is the circuit's arithmetic: the overlap of a state with itself is one, so the
+    circuit never finds that ancilla set.
 
-    The entry range is asserted on the four-point instance only. Its exact kernel's
-    smallest entry is ``0.0926``, well above the sampler's error at this width, so the
-    range clause holds there as well; on the three-feature instance the smallest exact
-    entry is ``0.010026`` and the readout can cross zero, which the test below measures
-    instead of denying.
+    Symmetry, the unit diagonal and the **upper** bound of the entry range run inside the
+    loop, so all three are asserted on both instances. The **lower** bound runs on the
+    four-point instance only, through ``_invariant_violations`` under the width gate
+    below: its exact kernel's smallest entry is ``0.0926``, well above the sampler's
+    error at this width, so the range clause holds there as well; on the three-feature
+    instance the smallest exact entry is ``0.010026`` and the readout can cross zero,
+    which the test below measures instead of denying.
     """
     for rows, n_features in ((_FAR, 2), (_NEAR, 3)):
         data = torch.tensor(rows, dtype=torch.float64)
