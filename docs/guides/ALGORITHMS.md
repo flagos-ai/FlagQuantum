@@ -55,6 +55,7 @@ applies to them as to everything else in this guide.
 | `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |
 | `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
 | `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
+| `feature_selection.py` — feature selection as a QUBO | Available. Builds the binary objective of a feature-selection instance — a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size — and evaluates it at an assignment or maps it to an Ising Hamiltonian. | Ferrari Dacrema et al. 2022 | **This unit does not solve, and there is no solver here.** The repository has no annealer: the unit builds the objective and evaluates it, so which subset comes back, and at what cost, belongs to whatever solver the problem is handed to, and any advantage such a solver observes is the solver's. |
 
 ## Advantage premises
 
@@ -104,6 +105,16 @@ applies to them as to everything else in this guide.
   computer** (Liu et al. 2021). The cited construction itself is written for
   noisy intermediate-scale devices and does not require fault tolerance. See the
   section below.
+- **Feature selection carries no advantage premise of its own, and runs no
+  solver either.** `feature_selection.py` builds a binary objective — a subset's
+  relevance and pairwise redundancy plus a penalty on the subset's size — and
+  evaluates it at an assignment, or maps it to an Ising Hamiltonian. The
+  repository has no annealer, so which subset comes back, and at what cost,
+  belongs to whatever solver the problem is handed to: this is a polynomial
+  classical transformation, the position `qubo.py` occupies, and any advantage a
+  caller observes belongs to the solver. The scores and the penalty weight are
+  the caller's, and the unit computes no weight at which the target size binds.
+  See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -701,6 +712,84 @@ kernel methods require a fault-tolerant quantum computer (Liu et al. 2021) —
 which the cited construction does not, being written for noisy
 intermediate-scale devices. The capability entry repeats the boundary.
 
+## Feature selection as a QUBO
+
+`feature_selection.py` is the fourth unit of Phase 2, and the sixth algorithm unit
+in this guide's programme. `feature_selection_qubo(relevance, n_selected=...,
+penalty=..., redundancy=...)` takes one relevance score per feature, an optional
+pairwise redundancy, a target number of features and a penalty weight, and returns
+a `FeatureSelectionProblem`: the objective as a `QuboProblem`, with `energy` to
+evaluate it at an assignment and `to_ising` to map it to a `Hamiltonian`.
+
+**The objective is a subset's scores plus a penalty on its size.** With `r_i` the
+relevance of feature `i` and `s_ij` the redundancy of the pair `(i, j)`, a subset
+`S` is scored
+
+    F(S) = - sum_{i in S} r_i + sum_{i < j, both in S} s_ij
+           + penalty * (|S| - n_selected) ** 2
+
+and the QUBO carries it with the squared size term expanded. The diagonal of that
+square is where a binary variable's own square goes -- `x_i ** 2 = x_i` -- so the
+penalty reaches the linear coefficient map as well as the quadratic one and the
+offset.
+
+**The unit does not solve, and the repository has no annealer.** What it does is
+build the objective of one instance and evaluate that objective at an assignment:
+`energy` is `qubo_energy` on the carried problem and `to_ising` is `qubo_to_ising`,
+so neither the evaluation nor the mapping is new here. Which subset a solver
+returns, and at what cost, belongs to the solver the problem is handed to, and any
+advantage such a solver observes is the solver's. The module says this before it
+says anything about what it builds, and the position is `qubo.py`'s: a polynomial
+classical transformation with no advantage of its own.
+
+**The penalty weight is the caller's decision.** There is no default for it
+anywhere in the module, and no weight at which the target size starts to bind is
+computed or predicted: a weight small enough against the scores can leave a subset
+of another size cheapest, and how far the size term should outweigh them is the
+caller's choice rather than the module's. The weight must be positive and finite,
+because the term it multiplies exists to price a subset's size.
+
+**The scores are the caller's data.** This unit defines no relevance measure and no
+redundancy measure, and puts no interpretation on either. The diagonal of a
+redundancy matrix is not read -- a pair is two features -- and the two triangles
+must agree exactly, because `(i, j)` and `(j, i)` are one pair with one score.
+
+```python
+import torch
+
+from flagquantum.algorithms.feature_selection import feature_selection_qubo
+
+relevance = torch.tensor([1.0, 0.9, 0.8, 0.7, 0.6], dtype=torch.float64)
+
+problem = feature_selection_qubo(relevance, n_selected=2, penalty=5.0)
+print(problem.qubo.linear)
+# {0: -16.0, 1: -15.9, 2: -15.8, 3: -15.7, 4: -15.6}
+#   -- -relevance[i] + 5.0 * (1 - 2 * 2): the size penalty's linear term and the score
+print(problem.qubo.offset)
+# 20.0  -- penalty * n_selected ** 2
+for assignment in ((1, 1, 0, 0, 0), (1, 1, 1, 1, 1)):
+    print(assignment, round(problem.energy(assignment), 3))
+# (1, 1, 0, 0, 0) -1.9   -- the two most relevant features, at the target size
+# (1, 1, 1, 1, 1) 41.0   -- all five, where two were asked for
+print([term.pauli for term in problem.to_ising().terms].count("ZZ"))
+# 10  -- one quadratic term per pair of features
+
+loose = feature_selection_qubo(relevance, n_selected=2, penalty=0.05)
+for assignment in ((1, 1, 0, 0, 0), (1, 1, 1, 1, 1)):
+    print(assignment, round(loose.energy(assignment), 3))
+# (1, 1, 0, 0, 0) -1.9
+# (1, 1, 1, 1, 1) -3.55  -- at a weight this small the size term does not bind
+```
+
+**The scale figure is the paper's own, and not a measurement here.** Feature
+selection posed as a binary objective for an annealer is the route of Ferrari
+Dacrema, Moroni, Nembrini, Ferro, Faggioli & Cremonesi, SIGIR 2022, DOI
+10.1145/3477495.3531755, arXiv:2205.04346 -- **that paper's own largest problem
+solved directly on the QPU had 124 features**, which is the paper's figure and not
+something this unit does or measures. What is built here is this package's own
+spelling of the objective, and this unit neither hands its problem to a solver nor
+observes one.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -774,6 +863,13 @@ intermediate-scale devices. The capability entry repeats the boundary.
 - Multi-controlled X is standard reversible logic and is cited to no paper here,
   matching the record kept for it: the ancilla ladder it is built as is a
   textbook construction, and the index above carries no citation for it.
+- Feature selection posed as a binary objective for an annealer is recorded to
+  Ferrari Dacrema, Moroni, Nembrini, Ferro, Faggioli & Cremonesi, SIGIR 2022, DOI
+  10.1145/3477495.3531755, arXiv:2205.04346 — the route `feature_selection.py`
+  follows, in this package's own spelling of the objective. **The one figure from
+  that record, written as the paper's own:** the largest problem that paper solved
+  directly on the QPU had 124 features. It is not a measurement of this unit,
+  which solves nothing.
 
 ## Scope
 

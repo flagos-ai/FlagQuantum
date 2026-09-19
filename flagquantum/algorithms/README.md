@@ -15,6 +15,10 @@ external-framework objects or a second execution path.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
+  redundancy scored with a penalty on the size of the subset, built for a solver
+  and evaluated at an assignment. No solver is supplied: the repository has no
+  annealer, and any advantage a solver observes is the solver's.
 - `kmedians.py`: Grover-quantized k-medians — each point's nearest centroid is
   found by a Grover-style minimum search over a centroid index register, and the
   centroid positions are then moved to classical coordinate-wise medians.
