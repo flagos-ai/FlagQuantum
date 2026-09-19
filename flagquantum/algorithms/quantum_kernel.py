@@ -101,9 +101,12 @@ _MAX_FEATURE_ANGLE = 2.0 * math.pi
 class KernelMatrixResult:
     """One sampled kernel matrix over a set of feature vectors.
 
-    ``kw_only`` is not optional here: ``shots`` is a count and the matrix is a nested
-    sequence of the same element type, so a positional spelling would let a caller
-    transpose the two without an error.
+    ``kw_only`` is not optional here, and the reason is how a call site reads rather than
+    what it would catch. The two fields are a nested sequence of floats and the count its
+    entries were sampled from, so a positional spelling would read as two anonymous
+    objects of unrelated shape. A transposed spelling is not what ``kw_only`` is
+    protecting against either: it is caught by this class's own reading of the matrix,
+    which subscripts it and raises a ``TypeError`` when it is handed a count.
 
     Attributes:
         matrix: One row per input feature vector, in the order the rows were given, one
@@ -170,12 +173,22 @@ class KernelRidgeClassifier:
     classifier built over the same training set with the same seed is the same
     classifier; a different sample is a different fit.
 
-    ``kw_only`` is not optional here: the four fields are three tuples and a float --
-    ``coefficients`` and ``labels`` are one number per training row, ``training_data`` is
-    a tuple of rows, and ``regularization`` is a single weight -- so a positional call
-    site would read as three anonymous tuples followed by a number, and a caller who
-    transposed two of the tuples would fit a classifier on the wrong pairing without an
-    error.
+    ``kw_only`` is not optional here, and the reason is how a call site reads: the four
+    fields are three tuples and a float -- ``coefficients`` and ``labels`` are one number
+    per training row, ``training_data`` is a tuple of rows and ``regularization`` is a
+    single weight -- so a positional call site would read as three anonymous tuples
+    followed by a number.
+
+    The three tuple pairings are not equally safe, and the difference is this class's own
+    validation rather than the spelling. Two of them raise from that validation for every
+    coefficient the field describes: transposing ``coefficients`` with ``training_data``,
+    or ``training_data`` with ``labels``, hands a number where a row belongs, and the
+    width check rejects it. The third, ``coefficients`` against ``labels``, raises only
+    when some coefficient's value is neither ``+1`` nor ``-1``, because what the label
+    check then reads is the transposed coefficients. Measured, a classifier whose
+    coefficients are all exactly ``+1`` or ``-1`` constructs under that transposition, and
+    the two fields then hold each other's values, with ``labels`` carrying floats where
+    ints belong.
 
     Attributes:
         coefficients: The dual coefficients, one per training feature vector, in

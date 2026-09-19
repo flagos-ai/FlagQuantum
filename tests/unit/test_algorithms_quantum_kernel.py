@@ -630,7 +630,7 @@ def test_a_small_sample_leaves_every_entry_short() -> None:
 
     Measured on the four-point instance, the worst deviation from the exact kernel over
     seeds 0 through 5 is ``1.0926``, ``1.2872``, ``1.2872``, ``1.2408``, ``1.2610`` and
-    ``1.2021`` at one shot, ``0.1396`` to ``0.2646`` at 64, ``0.0439`` to ``0.0850`` at
+    ``1.2021`` at one shot, ``0.1342`` to ``0.2646`` at 64, ``0.0439`` to ``0.0850`` at
     1024, and ``0.0099`` to ``0.0233`` at 16384. The floors and ceilings below are the
     measured values with room on each side, and the point of the test is what the one
     shot figure means: the readout is a sample and not a reading, so an implementation
