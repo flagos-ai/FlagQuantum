@@ -303,8 +303,7 @@ def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
     a test built on that pair alone would pass for either. That is a statement about
     that pair and not about every pair -- the test below measures a half-overlap pair,
     whose two paths read ``0.5`` and ``0.707`` and are separated by the magnitude
-    assertion. The triple is what the contract names, and it is also what the equality
-    needs.
+    assertion. The triple is what the contract names.
     """
     for n_wires in (1, 2):
         zero, plus, minus, imaginary = _signed_states(n_wires)
