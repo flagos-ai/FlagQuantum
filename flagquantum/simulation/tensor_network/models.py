@@ -535,6 +535,13 @@ class CompiledTNObservableProgram:
     def bind(
         self, ket_plan: TensorNetworkContractionPlan
     ) -> TensorNetworkExpectationPlan:
+        """Attach concrete tensors to this observable program's slots.
+
+        The program fixes an order for its slots, so the tensors are matched by
+        position and a wrong count is refused rather than truncated or padded: a
+        short list would otherwise bind the wrong tensor to a wire and produce a
+        plausible-looking expectation value.
+        """
         from .contraction import _clone_nodes_with_offset
 
         if ket_plan.n_wires != self.n_wires:

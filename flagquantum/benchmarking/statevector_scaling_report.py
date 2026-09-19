@@ -93,6 +93,23 @@ def bootstrap_median_speedup(
 
 
 def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fold strong-scaling runs at several world sizes into one report.
+
+    The source artifacts must describe the same work, so a single
+    `workload_sha256` is required across all of them; points measured on
+    different workloads would make the speedup column meaningless. World sizes
+    must be distinct and include one, because the row for a single rank is what
+    every other row is a ratio against.
+
+    Each source is also required to *refuse* a scalability and a release claim.
+    Without that, folding development runs into a summary would be a way to
+    launder a claim out of artifacts that declined to make one.
+
+    Raises:
+        ValueError: if a source is missing, off-schema, not a measured
+            development run, not NCCL, incomplete in its per-rank evidence, or
+            inconsistent with the others about the workload.
+    """
     if not artifacts:
         raise ValueError("at least one artifact required")
     hashes = {item.get("workload_sha256") for item in artifacts}

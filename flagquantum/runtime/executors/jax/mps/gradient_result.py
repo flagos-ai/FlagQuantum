@@ -256,6 +256,13 @@ class JAXShardedMPSParameterGradientResult:
         )
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. This record is a run, not a plan, so its
+        `claim_evidence_type` says what was actually executed.
+        """
         is_sharded = len(self.rank_shards) > 1
         local_memory = tuple(
             int(shard.summary()["local_tensor_bytes"]) for shard in self.rank_shards

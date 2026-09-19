@@ -8,6 +8,18 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Run one submitted script in this process and record what it returned.
+
+    This is the entry point the remote side invokes inside its container: it
+    imports the named script, calls its `main`, and writes the return value as
+    JSON for the client to read back.
+
+    The result is written to a temporary path and moved into place, so a client
+    polling for the file never reads a half-written one. The worker's own
+    identity -- the GPUs it was given and the device it actually saw -- travels
+    with the value, because that is the only evidence the client has about
+    where the work ran.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("script")
     parser.add_argument("output")

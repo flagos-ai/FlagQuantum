@@ -144,6 +144,22 @@ class CircuitAnalysis:
 
 @dataclass(frozen=True)
 class ExecutionPlan:
+    """What `fq.plan` decided a circuit needs, before anything has run.
+
+    Produced by the planner and consumed by the executors, so it is the one
+    object both sides agree on: the analysis and layer split describe the
+    circuit, and the mode, world size and state mode describe the decision
+    taken about it. Frozen because it records a decision already made -- a
+    consumer that could edit it could contradict the plan it is executing.
+
+    `recommended_mode` and `world_size` are recommendations, not enforcement:
+    `fq.run` accepts a plan and still chooses. `shardable_wires` names the
+    wires a sharded statevector layout may cut, which is every wire but the
+    last. A `runtime_config` of ``None`` means the plan was built without one;
+    `routing_plan` and `noisy_execution_plan` are present only when the
+    corresponding feature was in play.
+    """
+
     analysis: CircuitAnalysis
     layers: tuple[LayerPlan, ...]
     state_bytes: int

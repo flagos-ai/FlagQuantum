@@ -137,6 +137,16 @@ def jax_mps_apply_two_adjacent_active(
     out_rank: int,
     matmul_precision: str | None,
 ) -> tuple[Any, Any]:
+    """Apply a two-site gate to the active block of a padded pair.
+
+    The tensors carry padding to a shape the scan can compile, so each operand
+    is sliced to its active extent before the contraction and the result padded
+    back out afterwards. Working on the padded shapes would produce the same
+    numbers while doing the work of the full bond.
+
+    `exact_split` is requested below, so the re-split introduces no truncation
+    the caller did not ask for.
+    """
     import jax.numpy as jnp
 
     left = left[: int(left_active), :, : int(shared_active)]
@@ -177,6 +187,16 @@ def jax_mps_apply_adjacent_chain_scan(
     layer_index: int,
     matmul_precision: str | None,
 ) -> Any:
+    """Apply the same two-site gate across a chain in one scanned pass.
+
+    The bond a wire sits on grows with the layer index until it saturates, and
+    the per-wire shapes below are derived from that rule rather than from the
+    tensors, so every step of the scan has the same shape and can be compiled
+    once. Compiling per step instead would be correct and much slower.
+
+    Padding to those shapes is what makes the scan uniform; the caller is
+    applying one layer, so `layer_index` is what fixes the widths.
+    """
     import jax
     import jax.numpy as jnp
 
@@ -317,6 +337,13 @@ def jax_mps_apply_two_adjacent(
     cutoff: float,
     matmul_precision: str | None,
 ) -> list[Any]:
+    """Apply a two-site gate to adjacent wires and re-split the pair.
+
+    `reverse` swaps the two physical indices before the gate and back after it,
+    which is what lets one kernel serve both sweeps. The result is split by the
+    same routine the forward path uses, so a gate applied during the backward
+    pass truncates the bond identically.
+    """
     import jax.numpy as jnp
 
     left = tensors[int(left_wire)]
@@ -586,6 +613,18 @@ def jax_mps_zz_z_chain_expectation_padded_scan(
     parsed: tuple[dict[str, tuple[float, ...]], tuple[float, ...], float],
     matmul_precision: str | None,
 ) -> Any:
+    """Evaluate a ZZ-plus-Z chain Hamiltonian over padded MPS tensors.
+
+    The tensors are padded to a common bond before the scan so one compiled
+    step serves every site, and the environment is carried through in a scan
+    rather than by walking the sites in Python. Only the physical dimension is
+    untouched by the padding, which is what keeps the transfer operators
+    comparable across sites.
+
+    `parsed` carries the coefficient dictionaries and the constant term
+    together, because a caller that supplied a Hamiltonian has already had to
+    parse it once and re-parsing per site would repeat that work.
+    """
     import jax
     import jax.numpy as jnp
 

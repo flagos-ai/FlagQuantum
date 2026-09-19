@@ -331,6 +331,16 @@ class StaticMPSProgram:
     def apply_two(
         self, tensors: TensorTuple, matrix: torch.Tensor, left_wire: int
     ) -> TensorTuple:
+        """Apply a two-site gate at a fixed bond dimension.
+
+        The split that follows the gate is done at the rank the program was
+        compiled with rather than chosen from a cutoff, so the tensor shapes are
+        known ahead of time. When that rank is not below the full rank the
+        factorization is exact, and it is taken in the fixed-shape form rather than
+        by SVD: singular vectors have no defined gradient at repeated zero singular
+        values, which is exactly the case for the product states this path is used
+        on.
+        """
         left_wire = int(left_wire)
         left, right = tensors[left_wire], tensors[left_wire + 1]
         batch, left_dim, _, _ = left.shape

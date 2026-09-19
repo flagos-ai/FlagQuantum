@@ -20,6 +20,24 @@ SOURCE_SCHEMA = "flagquantum.statevector.strong_scaling.v1"
 
 
 def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fold weak-scaling runs into one report.
+
+    Weak scaling holds the work *per rank* fixed while the machine grows, so
+    the qubit count must rise by exactly `log2(world_size)` and the depth must
+    not move; a point that changed both would be neither weak nor strong
+    scaling. World sizes are powers of two for the same reason the qubit count
+    is a logarithm.
+
+    The rank-local state size is required to be equal within a point and
+    constant across points: that is the property the report's efficiency
+    column divides by, and a run where it drifted was measuring a different
+    workload per rank.
+
+    Raises:
+        ValueError: if a source is missing or off-schema, the qubit count or
+            depth does not follow the rule, the rank evidence is incomplete, or
+            the rank-local state size is not constant.
+    """
     if not artifacts:
         raise ValueError("at least one artifact required")
     by_world = {int(item.get("world_size", 0)): item for item in artifacts}

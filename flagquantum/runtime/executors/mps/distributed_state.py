@@ -265,6 +265,13 @@ class DistributedMPSState:
         return self.local_state.counts(*args, **kwargs)
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this state into the payload the scalability audit reads.
+
+        The local state's own summary is the base, so a single-rank run reports
+        what a local run would; the rank-shard metadata is added on top. The
+        keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`.
+        """
         summary = dict(self.local_state.summary())
         initialized = bool(self.context and self.context.initialized)
         has_development_sharded_forward = (

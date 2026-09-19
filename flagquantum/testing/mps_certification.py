@@ -11,6 +11,18 @@ class MPSCertificationError(ValueError):
 
 
 def require_mps_numerical_certification(payload: Mapping[str, Any]) -> None:
+    """Accept an ISSUE-091 correctness matrix only if it covers the whole grid.
+
+    The matrix is a cross product: both dtypes against one, two, four and eight
+    ranks, trained with Adam. A subset that happens to pass is not a
+    certification of the other cells, so the cells are compared as a set rather
+    than counted -- four passing cases could be the same corner measured twice.
+
+    Raises:
+        MPSCertificationError: if the schema is not the ISSUE-091 one, if either
+            dtype or any of the required rank counts is missing from the grid,
+            or if the run is too short to have reached a steady state.
+    """
     if payload.get("schema") != "flagquantum.issue091.mps_correctness_matrix.v1":
         raise MPSCertificationError("unexpected ISSUE-091 schema")
     if set(payload.get("dtypes", ())) != {"complex64", "complex128"}:

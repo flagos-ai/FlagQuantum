@@ -403,6 +403,14 @@ class DistributedStatevectorPlan:
     distribution: str
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this plan into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. `is_sharded` is derived from the plan's
+        distribution rather than from a run, so this summary states an intent
+        and not a measurement.
+        """
         is_sharded = (
             self.world_size > 1 and self.distribution != "replicated_single_rank"
         )

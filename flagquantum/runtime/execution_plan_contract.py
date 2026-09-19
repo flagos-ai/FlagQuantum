@@ -356,6 +356,21 @@ def _validate_plan_identity(
 
 
 def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a serialized execution plan and return it in canonical form.
+
+    This is the contract a plan has to satisfy to be consumed by something that
+    did not build it, so the checks are about identity rather than shape: the
+    program still has to deserialize to the same IR, the fingerprint and
+    decision field sets have to match the schema exactly, and the extensions
+    have to be a JSON array. A plan that passes is one whose recorded identity
+    can be recomputed from its contents.
+
+    Raises:
+        TypeError: if the payload is not a mapping.
+        ExecutionPlanContractError: if any part of the identity, fingerprint,
+            decision or extension record is missing, unknown, or inconsistent
+            with the schema, or if the program cannot be read back.
+    """
     if not isinstance(payload, Mapping):
         raise TypeError("execution plan payload must be a mapping")
     values = dict(payload)

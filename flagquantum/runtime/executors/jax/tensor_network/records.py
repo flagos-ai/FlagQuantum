@@ -116,6 +116,13 @@ class JAXShardedTensorNetworkResult:
         return torch.stack(values, dim=-1)
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. `active_ranks` counts only ranks that were given
+        slices, so an idle rank does not inflate the distribution semantics.
+        """
         active_ranks = tuple(rank.rank for rank in self.rank_partials if rank.tasks)
         is_sharded = len(active_ranks) > 1 and int(self.slicing.n_slices) > 1
         root = active_ranks[0] if active_ranks else 0
@@ -260,6 +267,13 @@ class JAXSlicedTensorNetworkGradientResult:
         )
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. Node gradients are reported per sliced task rather
+        than per rank, because one rank may hold several slices.
+        """
         tasks_by_rank = _tasks_by_rank_from_slicing(
             self.slicing, self.jax_plan.world_size
         )
@@ -399,6 +413,14 @@ class JAXSlicedTensorNetworkParameterGradientResult:
         )
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. The gradient is reported against circuit
+        parameters, which is the form a caller can act on; the per-node
+        gradients it was pulled back from are on the sliced-gradient record.
+        """
         tasks_by_rank = _tasks_by_rank_from_slicing(
             self.slicing, self.jax_plan.world_size
         )
