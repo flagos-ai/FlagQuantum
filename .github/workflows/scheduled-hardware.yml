@@ -27,6 +27,18 @@ jobs:
       queue: max
     timeout-minutes: 45
     steps:
+      # The clone belongs to the runner and outlives this job, and so does a
+      # sparse checkout another job left in it: `actions/checkout` cannot undo
+      # one on this runner's git, and either way it reports success. Undoing it
+      # first is what makes the checkout below the plain one it says it is. See
+      # tests/unit/test_shared_runner_checkout_policy.py.
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -69,6 +81,20 @@ jobs:
       matrix:
         gpu-count: [4, 8]
     steps:
+      # The clone belongs to the runner and outlives this job, and so does a
+      # sparse checkout another job left in it: `actions/checkout` cannot undo
+      # one on this runner's git, and either way it reports success. This lane
+      # has already been stopped by that once -- `benchmarks/mps_boundary_transport.py`
+      # and `benchmarks/mps_stability.py` are not in the list `local-gpu.yml`
+      # leaves behind, and six phases passed before the seventh could not open
+      # its own script. See tests/unit/test_shared_runner_checkout_policy.py.
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - run: python -m pip install -e '.[dev]'
       - name: Scheduled topology, correctness, memory and scaling lane
@@ -113,6 +139,18 @@ jobs:
       queue: max
     timeout-minutes: 45
     steps:
+      # The clone belongs to the runner and outlives this job, and so does a
+      # sparse checkout another job left in it: `actions/checkout` cannot undo
+      # one on this runner's git, and either way it reports success. Undoing it
+      # first is what makes the checkout below the plain one it says it is. See
+      # tests/unit/test_shared_runner_checkout_policy.py.
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - run: python -m pip install -e '.[dev]'
       - name: Measure matched-workload crossover surface

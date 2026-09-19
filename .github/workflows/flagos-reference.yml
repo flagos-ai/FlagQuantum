@@ -18,6 +18,18 @@ jobs:
       CUDA_VISIBLE_DEVICES: "0"
       TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
     steps:
+      # The clone belongs to the runner and outlives this job, and so does a
+      # sparse checkout another job left in it: `actions/checkout` cannot undo
+      # one on this runner's git, and either way it reports success. This job
+      # reads `artifacts/`, which more than one lane's pattern list omits. See
+      # tests/unit/test_shared_runner_checkout_policy.py.
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - name: Require provisioner-owned environment identity
         run: >-
