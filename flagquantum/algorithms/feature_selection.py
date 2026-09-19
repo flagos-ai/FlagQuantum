@@ -198,9 +198,9 @@ def feature_selection_qubo(
     Raises:
         ValueError: If ``relevance`` is not a one-dimensional real floating-point tensor,
             holds no entry, or holds a non-finite entry; if ``redundancy`` is not a tensor
-            of shape ``(m, m)``, holds a non-finite entry outside its diagonal, or is not
-            symmetric; if ``n_selected`` is not an integer in ``range(m + 1)``; or if
-            ``penalty`` is not positive and finite.
+            of shape ``(m, m)`` or is not a real floating-point tensor, holds a non-finite
+            entry outside its diagonal, or is not symmetric; if ``n_selected`` is not an
+            integer in ``range(m + 1)``; or if ``penalty`` is not positive and finite.
     """
     scores = _validated_relevance(relevance)
     pairs = _validated_redundancy(redundancy, len(scores))
@@ -290,8 +290,8 @@ def _validated_redundancy(
 
     Raises:
         ValueError: If ``redundancy`` is not a tensor of shape
-            ``(n_features, n_features)``, holds a non-finite entry outside its
-            diagonal, or is not symmetric.
+            ``(n_features, n_features)`` or is not a real floating-point tensor, holds a
+            non-finite entry outside its diagonal, or is not symmetric.
     """
     if redundancy is None:
         return tuple(tuple(0.0 for _ in range(n_features)) for _ in range(n_features))
