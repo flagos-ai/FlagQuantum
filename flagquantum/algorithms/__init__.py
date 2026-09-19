@@ -3,6 +3,7 @@
 from . import amplitude_estimation as amplitude_estimation
 from . import core as core
 from . import grover as grover
+from . import pca as pca
 from . import qubo as qubo
 from .core import (
     AdaptVQEIteration,
@@ -55,6 +56,7 @@ __all__ = [
     "heisenberg_hva_parameter_count",
     "optimize_hybrid",
     "pauli_term",
+    "pca",
     "qaoa_circuit",
     "qaoa_loss",
     "qubo",

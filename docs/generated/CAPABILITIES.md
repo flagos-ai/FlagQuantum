@@ -119,6 +119,9 @@ This catalog is generated from the machine-validated
 | Estimate the amplitude a marking operator selects | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read an amplitude off the counting register | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Compare an estimate against a known amplitude | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Estimate the spectrum of a density matrix | Quantum principal component analysis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read an eigenvalue off a counting register | Quantum principal component analysis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Compare a read-out eigenvalue against the density matrix's own spectrum | Quantum principal component analysis | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -418,6 +421,20 @@ Estimate the probability a state-preparation unitary's marked subspace carries, 
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** The quadratic speedup over classical sampling is real only given that the state-preparation unitary A is free: a real distribution needs QRAM, and this unit does not supply one, so it does not show that any Monte Carlo integral is estimated faster than classically. The estimate lies on the amplitude grid sin^2(pi j / 2**(m+1)) and is accurate to about one grid step; that is a resolution, not a coverage-calibrated confidence interval, and no confidence interval is reported. The operator must be able to apply A, its adjoint, the marking operator and the zero-state reflection each under control, which excludes state-preparation circuits that cannot be controlled. It makes no performance, convergence, or hardware claim.
+
+### Quantum principal component analysis
+
+Estimate the eigenvalues of a data matrix's density matrix by phase estimation over its exponential, reading them off a counting register.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.pca`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** Demonstration scale. The density matrix is materialized classically and its exponential is built with a dense matrix exponential, so the unit does not reproduce quantum PCA's input model: it never avoids forming rho and never uses the O(1/eps^3) state copies the algorithm is built on. The purified input is supplied as all 2**n amplitudes. Meaningful only for low effective rank.
 
 
 ## Distributed execution
