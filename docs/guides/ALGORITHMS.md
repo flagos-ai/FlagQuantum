@@ -577,8 +577,8 @@ stop a point's search short. The capability entry repeats the boundary.
   Grover-style minimum search over the centroids, which `kmedians.py`
   implements, and the k-medians median update, which stays classical here.
   **No arXiv identifier is attached to that paper**: this programme's citation
-  check recorded that it has no arXiv version, so the identifier once attached
-  to it here was the wrong one and is not restored.
+  check recorded that it has no arXiv version, so the record above carries a DOI
+  and a journal version and nothing else.
 - The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
   string comparator: circuits and applications", *Quantum Computers and
   Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**

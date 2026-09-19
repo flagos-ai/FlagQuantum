@@ -48,18 +48,31 @@ exactly one search, the round that finds nothing.
 
 **Ties are broken by the index.** The comparison is on the pair of distance and index and
 not on the distance alone, so a centroid at exactly the threshold distance is marked only
-when its index is the smaller one, and a point equidistant from two centroids is assigned
-the lower-indexed of them. The rule is not a tie-break applied afterwards: it is the
-order the search moves in, so it is the same whichever of the tied centroids a round
-happens to return -- the round that leaves the farther centroid marks both of them, and
-the round after that marks only the lower-indexed one, because the higher-indexed one is
-then at exactly the threshold distance with a larger index. Measured on a point at
+when its index is the smaller one. The rule is in the order the search moves in and not in
+a tie-break applied afterwards, which is what makes it reach the returned label without a
+separate path: the loop cannot move away from the lower-indexed of two equidistant
+centroids, because a threshold at the tie distance never marks the higher-indexed one.
+
+**What the tie rule does and does not say about a run.** It is a statement about the
+comparison, and it carries the same condition as the paragraph above: it reaches the
+returned label when every round of the point's loop found what it marked, and a round
+whose sample came back empty ends the loop where it stands. Measured on a point at
 ``(3, 3)`` with centroids at ``(0, 0)``, ``(2, 0)`` and ``(0, 2)``, whose distances to
-the last two are exactly equal at ``3.1622776601683795``: the assignment was index ``1``
-for every sampling seed from 0 through 199, at 1024 shots, which is the outcome measured
-rather than a distribution statement. Register values that
-name no centroid are excluded by the same predicate, so a three-centroid search in a
-two-wire register never returns the slot no centroid occupies.
+the last two are exactly equal at ``3.1622776601683795``, at 1024 shots: over seeds 0
+through 199, the round that left the farther centroid marked both tied ones, and in 107
+of the 200 the sample returned the lower-indexed of them, so the next round marked
+nothing and the loop ended on it; in the other 93 it returned the higher-indexed one, so
+the next round marked only the lower-indexed one and moved to it. The assignment was
+index ``1`` for every one of the 200, which is the outcome measured rather than a
+distribution statement. Measured on a point at ``(2.5,)`` against centroids at ``(0,)``,
+``(1,)``, ``(2,)`` and ``(3,)``, whose distances to the last two are exactly equal at
+``0.5``: over the same 200 seeds the returned label was index ``2``, the lower-indexed of
+the tie, at 16, 64 and 1024 shots; at 8 shots it was index ``1`` for 2 of the 200; and at
+one shot it was index ``2`` for 102, index ``1`` for 55 and index ``0`` for 43, where
+index ``0`` is a centroid farther away than either of the tied ones.
+
+Register values that name no centroid are excluded by the same predicate, so a
+three-centroid search in a two-wire register never returns the slot no centroid occupies.
 
 **The median update is classical, and two of its cases have to be named.** Each
 coordinate of a centroid is set to the median of that coordinate over the points assigned
@@ -357,13 +370,21 @@ def _operands(
         )
     if n_centroids > _MAX_CENTROIDS:
         n_wires = _centroid_index_width(n_centroids)
+        # One ladder wire per control above two, and this branch is reached only above the
+        # cap, where the register is at least four wires wide and the ladder is one
+        # ancilla or more; four wires, the first width this branch sees, takes the
+        # singular noun.
+        needed = n_wires - 3
+        ancilla_word = "ancilla" if needed == 1 else "ancillas"
+        wire_word = "wire" if needed == 1 else "wires"
         raise ValueError(
             f"a k-medians step is bounded at {_MAX_CENTROIDS} centroids, got "
             f"{n_centroids}: the centroid index register needs "
             f"ceil(log2({n_centroids})) = {n_wires} wires, and the Grover search this "
             f"unit runs refuses more than {_CENTROID_WIRE_LIMIT} evaluation wires, "
-            "because its diffusion operator's multi-controlled Z would need a ladder "
-            "ancilla that a register of exactly that width has no free wire for"
+            "because its diffusion operator's multi-controlled Z would need "
+            f"len(controls) - 2 = {needed} ladder {ancilla_word} in |0>, which a register "
+            f"of exactly {n_wires} wires has no free {wire_word} for"
         )
     return data, positions, int(data.shape[0]), n_centroids
 

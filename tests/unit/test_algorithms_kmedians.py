@@ -102,8 +102,9 @@ def test_the_assignment_holds_at_every_centroid_count_the_register_carries() -> 
 
     The register is one wire at two centroids and three at eight, and the number of
     register slots the centroid set does not fill grows as the count moves away from a
-    power of two -- two slots at three centroids in a two-wire register. The reference is
-    recomputed at each count, and every width has to agree with it.
+    power of two -- one slot at three centroids in a two-wire register, which has four
+    slots and fills three of them. The reference is recomputed at each count, and every
+    width has to agree with it.
     """
     points = torch.tensor(
         [
@@ -137,9 +138,12 @@ def test_a_point_equidistant_from_two_centroids_takes_the_lower_index() -> None:
     produce it are the same two terms in the other order -- and both are shorter than the
     ``4.242640687119285`` to the first, so the assignment is a tie between indices 1 and
     2. Measured over every sampling seed from 0 through 199 at 1024 shots, the assignment
-    is index 1, and two of its rounds are what establishes that: the round that leaves
-    index 0 marks both tied centroids, and the round after it marks only index 1, because
-    index 2 is at exactly the threshold distance with a larger index.
+    is index 1, and the loop reaches it by one of two paths, both measured on those
+    seeds: in 107 of the 200, the round that left index 0 returned index 1 and the next
+    round marked nothing, ending the loop there; in the other 93 it returned index 2, and
+    the next round marked only index 1 -- index 1 is at exactly the threshold distance
+    with the smaller index -- and moved to it. Neither path can move off index 1, because
+    no threshold at the tie distance ever marks index 2.
 
     This is the test a distance-only comparison fails. Measured with the index dropped
     from the pair, the same instance returns index 2 at seed 0 and both indices across
@@ -326,40 +330,67 @@ def test_the_same_seed_replays_the_same_result_field_for_field() -> None:
     assert first.searches == second.searches
 
 
-def test_the_callers_dtype_does_not_change_the_assignment() -> None:
-    """A single-precision input is promoted before the distances are compared.
+def test_a_single_precision_input_is_promoted_before_the_distances_are_compared() -> (
+    None
+):
+    """The promotion is the difference between the two labels, on an instance that shows it.
 
-    The comparison the search makes is a comparison of floats, and the module forms the
-    distance table in double precision whatever dtype it was handed, so the single
-    precision spelling of an instance assigns what the double precision spelling does.
-    Both runs are the same seed, and the values here are exactly representable in both
-    dtypes, so the two spellings are the same points.
+    Every other instance in this file is small and exactly representable, so single and
+    double precision form the same distances for it and neither spelling can tell the
+    promotion from its absence. This one is not: at ``1e8`` the **float32** distances to
+    ``0.2`` and to ``3.0`` both round to exactly ``100000000.0`` -- measured -- so a
+    distance table formed without the promotion holds a tie between two centroids that are
+    not equally far away, the lower-indexed of that tie is index 0, and the first round
+    finds nothing. The same point in float64 gives ``99999999.8`` and ``99999997.0``, where
+    the nearer centroid is index 1. Measured, the module returns index 1 for both
+    spellings, because ``_coordinates`` promotes before the distances are formed; with
+    that promotion removed the float32 call returns index 0 while the float64 call still
+    returns 1.
     """
-    points, centroids = _plane(
-        [[0.0, 0.0], [1.0, 0.0], [3.0, 0.0]], [[0.0, 0.0], [2.0, 0.0], [4.0, 0.0]]
-    )
+    points = torch.tensor([[1e8]], dtype=torch.float32)
+    centroids = torch.tensor([[0.2], [3.0]], dtype=torch.float32)
+    assert [
+        float(torch.linalg.vector_norm(points[0] - centroid)) for centroid in centroids
+    ] == [100000000.0, 100000000.0]
 
-    double = kmedians(points, centroids, shots=_SHOTS, seed=5)
-    single = kmedians(
-        points.to(torch.float32), centroids.to(torch.float32), shots=_SHOTS, seed=5
+    double = kmedians(
+        points.to(torch.float64), centroids.to(torch.float64), shots=_SHOTS, seed=0
     )
+    single = kmedians(points, centroids, shots=_SHOTS, seed=0)
 
-    assert double.labels == single.labels == (0, 0, 1)
-    assert double.medians == single.medians == ((0.0, 0.0), (3.0, 0.0), (4.0, 0.0))
+    assert double.labels == (1,)
+    assert single.labels == (1,)
+    assert single.searches == double.searches == 2
 
 
 def test_the_round_count_is_the_loops_own() -> None:
     """Round counts read directly off the loop, including the round that finds nothing.
 
-    The first call's nearest centroid is index 1, and its first round marks indices 1 and
-    2 while its second marks nothing, so it is three rounds: two that moved and the one
-    that ended the loop. The second call starts on the nearest centroid, so its first
-    round is the one that finds nothing and the whole point costs one round. The third is
-    a tie between indices 1 and 2, and it also settles on index 1.
+    The first call's nearest centroid is index 1 and its loop costs two or three rounds,
+    measured over seeds 0 through 199 at 1024 shots: in 107 of them the round that leaves
+    index 0 returns index 1, so the next round marks nothing and ends the loop after two
+    rounds; in the other 93 it returns index 2 -- not the nearest, but in the marked set
+    -- so the next round marks only index 1 and moves to it, and the round after that
+    marks nothing and ends the loop after three. The count at seed 0 is the three-round
+    path. The second call starts on the nearest centroid, so its first round is the one
+    that finds nothing and the whole point costs one round, at every seed checked. The
+    third is a tie between indices 1 and 2, and it settles on index 1 with the same two
+    paths and the same split as the first.
     """
-    assert _nearest_centroid([9.0, 0.5, 3.0], n_wires=2, shots=_SHOTS, seed=0) == (1, 3)
     assert _nearest_centroid([0.5, 9.0, 3.0], n_wires=2, shots=_SHOTS, seed=0) == (0, 1)
-    assert _nearest_centroid([9.0, 1.0, 1.0], n_wires=2, shots=_SHOTS, seed=0) == (1, 3)
+
+    spread = {
+        _nearest_centroid([9.0, 0.5, 3.0], n_wires=2, shots=_SHOTS, seed=seed)
+        for seed in range(200)
+    }
+    assert spread == {(1, 2), (1, 3)}
+    assert _nearest_centroid([9.0, 0.5, 3.0], n_wires=2, shots=_SHOTS, seed=0) == (1, 3)
+
+    tied = {
+        _nearest_centroid([9.0, 1.0, 1.0], n_wires=2, shots=_SHOTS, seed=seed)
+        for seed in range(200)
+    }
+    assert tied == spread
 
 
 def test_the_points_and_centroids_are_validated() -> None:
@@ -369,8 +400,15 @@ def test_the_points_and_centroids_are_validated() -> None:
     own: two operands in spaces of different dimension have no distance at all, and the
     message names the two counts rather than letting the arithmetic broadcast or fail
     somewhere further down.
+
+    The empty-points case is spelled with a **valid** centroid set, so the only thing
+    wrong with it is the empty operand: with one centroid the call is refused for the
+    register's slots instead, and the empty-points message would never be reached. Each
+    match is on this module's own wording, so a deleted guard cannot be covered up by the
+    message some other check raises.
     """
     one = torch.zeros((1, 1), dtype=torch.float64)
+    pair = torch.zeros((2, 1), dtype=torch.float64)
 
     with pytest.raises(ValueError, match="torch.Tensor"):
         kmedians([[0.0], [1.0]], one)  # type: ignore[arg-type]
@@ -380,10 +418,10 @@ def test_the_points_and_centroids_are_validated() -> None:
         kmedians(torch.zeros((2, 1), dtype=torch.int64), one)
     with pytest.raises(ValueError, match="finite"):
         kmedians(torch.tensor([[float("nan")]]), one)
-    with pytest.raises(ValueError, match="at least one point"):
-        kmedians(torch.zeros((0, 1), dtype=torch.float64), one)
+    with pytest.raises(ValueError, match="assigns at least one point, got none"):
+        kmedians(torch.zeros((0, 1), dtype=torch.float64), pair)
     with pytest.raises(ValueError, match="at least two slots"):
-        kmedians(torch.zeros((2, 1), dtype=torch.float64), one)
+        kmedians(pair, one)
     with pytest.raises(ValueError, match="agree on the number of coordinates"):
         kmedians(
             torch.zeros((2, 2), dtype=torch.float64),
@@ -392,10 +430,18 @@ def test_the_points_and_centroids_are_validated() -> None:
 
 
 def test_the_run_validates_its_shot_count() -> None:
-    """A sample with no shots is refused rather than run into a fixed assignment."""
+    """A sample with no shots is refused by this module's own check, not deeper in.
+
+    The match is on this module's wording rather than on the phrase "at least one shot",
+    which the Grover search four frames down raises as well: with the module's guard
+    deleted, ``shots=0`` still raises a ``ValueError`` and still says "at least one
+    shot", so a loose match would report a guard that is gone as a guard that works.
+    """
     points, centroids = _plane([[0.0], [1.0]], [[0.0], [1.0]])
 
-    with pytest.raises(ValueError, match="at least one shot"):
+    with pytest.raises(
+        ValueError, match="a k-medians step needs at least one shot per"
+    ):
         kmedians(points, centroids, shots=0)
 
 
