@@ -471,6 +471,17 @@ index `2` at seed 0 and both tied indices across those seeds, because which tied
 centroid the sample favours is then the assignment — which is why the index is
 part of the order and not a patch on the result.
 
+**That is a statement about the comparison, and it reaches the label only while
+each round finds what it marks.** A round whose sample comes back empty ends a
+point's loop where it stands, so a tie is settled by the index at any sample
+size at which no round comes back empty, and not below it. Measured on a point
+at `(2.5,)` against centroids at `(0,)`, `(1,)`, `(2,)` and `(3,)`, whose
+distances to the last two are exactly equal at `0.5`: over seeds 0 through 199
+the label was index `2`, the lower-indexed of the tie, at 16, 64 and 1024 shots;
+at 8 shots it was index `1` for 2 of them; and at one shot it was index `2` for
+102, index `1` for 55 and index `0` for 43, where index `0` is a centroid
+farther away than either of the tied ones.
+
 **The distance table is classical, and that is the whole of what the unit gives
 up.** `grover_circuit` builds its own register and refuses more than three
 evaluation wires, so the search runs over the centroid index alone and the
