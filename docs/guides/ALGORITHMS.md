@@ -19,7 +19,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev 1995; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
-| `grover.py` — Grover search | Not yet available. | — | — |
+| `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
 
 Rows marked "not yet available" are placeholders for later units of this
@@ -219,8 +219,44 @@ ladder ancillas a wider one needs, so above three wires the caller supplies the
 register and the ancillas through the append form. `bit_oracle` has no such cap,
 because it allocates its own ladder ancillas and restores them.
 
-Grover search, which consumes these oracles, is not available yet; the index
-above reserves its row.
+## Grover search
+
+`grover.py` is the first algorithm unit in this index: it consumes the oracle
+primitives rather than extending them. `grover_circuit` puts the evaluation
+register into the uniform superposition with one Hadamard per wire, then applies
+`optimal_iterations` rounds of the phase oracle followed by the diffusion
+operator, the reflection about the uniform superposition. `run_grover` samples
+that circuit and ranks the states it marks by how often the sample landed on
+them, and `optimal_iterations` returns the
+`floor(pi / (4 * asin(sqrt(m / 2**n))))` rounds that leave `m` marked states out
+of `2**n` with the largest total amplitude.
+
+**The oracle is where the cost sits.** Grover's result is a query-count result,
+and the oracle it counts is the truth-table form from the section above, which
+enumerates all `2**n` inputs classically. The query count improves; the oracle's
+own construction does not, so the index row claims no end-to-end advantage, and
+nothing here should be read as one.
+
+**The register is the whole circuit, and that bounds it at three wires.** The
+diffusion operator's multi-controlled Z is a multi-controlled X with `n - 1`
+controls, and above two controls that is an ancilla ladder needing `n - 3`
+ancillas in `|0>`. A circuit that *is* the evaluation register has no free wire
+for one, so `grover_circuit` refuses `n_wires > 3` rather than allocating it: a
+wire added to this circuit is part of the register the samples are read over, so
+the "ancilla" would be sampled along with the answer. A wider search is built
+from `append_phase_oracle` on a register and ancillas the caller lays out.
+
+```python
+from flagquantum.algorithms.grover import run_grover
+
+result = run_grover(lambda value: value == 5, 3, shots=1024, seed=0)
+print(result.candidates, result.iterations, round(result.success_probability, 4))
+# (5,) 2 0.9395
+
+# Counts are keyed by the big-endian bit string, one character per wire:
+print(result.counts[format(5, "03b")])
+# 962
+```
 
 ## Sources
 
@@ -245,6 +281,12 @@ above reserves its row.
   Estimation", *AMS Contemporary Mathematics* **305**, 53–74 (2002),
   DOI 10.1090/conm/305/05215, arXiv:quant-ph/0005055 — the controlled powers of
   the unitary and the inverse Fourier transform on the counting register.
+- Grover search follows Lov K. Grover, "A fast quantum mechanical algorithm for
+  database search", *Proc. 28th Annual ACM Symposium on Theory of Computing
+  (STOC '96)*, pp. 212-219, 1996, DOI 10.1145/237814.237866,
+  arXiv:quant-ph/9605043 — the amplitude-amplification iteration, the inversion
+  about the average it is built from, and the `O(sqrt(N))` query count that
+  `grover.py` reports.
 - The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
   string comparator: circuits and applications", *Quantum Computers and
   Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**
