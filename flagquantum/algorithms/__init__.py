@@ -3,6 +3,7 @@
 from . import amplitude_estimation as amplitude_estimation
 from . import core as core
 from . import grover as grover
+from . import kmedians as kmedians
 from . import pca as pca
 from . import qubo as qubo
 from .core import (
@@ -54,6 +55,7 @@ __all__ = [
     "heisenberg_chain_hamiltonian",
     "heisenberg_hva",
     "heisenberg_hva_parameter_count",
+    "kmedians",
     "optimize_hybrid",
     "pauli_term",
     "pca",

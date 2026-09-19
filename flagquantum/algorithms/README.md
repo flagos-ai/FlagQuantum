@@ -15,6 +15,11 @@ external-framework objects or a second execution path.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `kmedians.py`: Grover-quantized k-medians — each point's nearest centroid is
+  found by a Grover-style minimum search over a centroid index register, and the
+  centroid positions are then moved to classical coordinate-wise medians.
+  Demonstration scale: the distance table is classical and the search is bound
+  at three register wires.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
 - `pca.py`: quantum PCA — the eigenvalue readout of a data matrix's density
   matrix, by phase estimation over its exponential. Demonstration scale: the
