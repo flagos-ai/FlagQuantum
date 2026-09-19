@@ -475,8 +475,8 @@ part of the order and not a patch on the result.
 up.** `grover_circuit` builds its own register and refuses more than three
 evaluation wires, so the search runs over the centroid index alone and the
 distance from the point being assigned to each centroid is computed in double
-precision outside the circuit — the predicate closes over that table, and the
-register is rebuilt for the next point. The circuit holds no state about the
+precision outside the circuit — the predicate closes over that table, and every
+round builds its register afresh. The circuit holds no state about the
 points or the centroids: what it searches is a table the classical caller built,
 which is precisely the cost the paper's oracle model assumes away.
 
@@ -496,8 +496,8 @@ index ends a point's loop early, at an index that is not the nearest centroid.
 Measured on two points at `(7, 0)` and `(4, 0)` against eight centroids at
 `(0, 0)` through `(7, 0)`, whose nearest centroids are index 7 and index 4: the
 assignment differed from the classical labelling for 43 of the 50 sampling seeds
-tried at one shot, for 23 at two shots, for 8 at four, and for none at 16 shots
-and above. That is a measurement at those seeds and those shot counts, not a
+tried at one shot, for 23 at two shots, for 8 at four, and for none at 16, 64 or
+1024 shots. That is a measurement at those seeds and those shot counts, not a
 guarantee: the tail a small sample leaves belongs to the sampler, and the module
 computes and reports no error bound, confidence interval or repetition scheme.
 The default is 1024 shots per search.

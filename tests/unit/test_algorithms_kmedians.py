@@ -276,8 +276,8 @@ def test_a_small_sample_leaves_the_search_short() -> None:
     The instance is the one whose nearest centroids are index 7 and index 4 of an
     eight-centroid register, so each point's loop is several rounds long. Measured over
     sampling seeds 0 through 49 at one shot, 43 of the 50 assignments differ from the
-    classical labelling; at two shots, 23 differ; at four shots, 8; and at 16 shots and
-    above, none. This test exists so that the module's statement that the search is
+    classical labelling; at two shots, 23 differ; at four shots, 8; and at 16, 64 and
+    1024 shots, none. This test exists so that the module's statement that the search is
     sampled and not read out is a measured property of the code and not a caveat: an
     implementation that replaced the search with the classical answer would return the
     classical labelling at one shot too, and the floor below fails.

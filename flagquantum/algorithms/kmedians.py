@@ -78,7 +78,7 @@ rather than impossible, and the two are worth separating: measured on two points
 ``(7, 0)`` and ``(4, 0)`` against eight centroids at ``(0, 0)`` through ``(7, 0)``, whose
 nearest centroids are index 7 and index 4, the assignment differed from the classical
 labelling for 401 of the 500 sampling seeds tried at one shot, for 65 of them at four
-shots, and for none of them at 16 shots and above. That is a measurement of those 500
+shots, and for none of them at 16, 64 or 1024 shots. That is a measurement of those 500
 seeds at those shot counts and not a guarantee: the tail that a small sample leaves is
 the sampler's, and no error bound, confidence interval or repetition scheme is computed
 or reported anywhere in this module. The default sample size is 1024 shots per search.
