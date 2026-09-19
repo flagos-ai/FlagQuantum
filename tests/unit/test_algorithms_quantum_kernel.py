@@ -211,7 +211,7 @@ def _signed_states(n_wires: int) -> tuple[torch.Tensor, ...]:
     """Return four states whose overlaps are the sign-blindness triple plus a control.
 
     ``zero`` is ``|0...0>`` and the other three differ only in the phase of their
-    ``|1...1>`` component, so every one of them has the same squared overlap with
+    ``|0...0>`` component, so every one of them has the same squared overlap with
     ``zero`` -- one half -- while the overlaps themselves are ``+1/sqrt(2)``,
     ``-1/sqrt(2)`` and ``+i/sqrt(2)``.
     """
@@ -273,7 +273,7 @@ def _swap_estimate(
 def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
     """The triple the contract names: ``+1/sqrt(2)``, ``-1/sqrt(2)`` and ``+i/sqrt(2)``.
 
-    The three states differ only in the phase of their ``|1...1>`` component, so their
+    The three states differ only in the phase of their ``|0...0>`` component, so their
     signed overlaps with ``|0...0>`` are ``+1/sqrt(2)``, ``-1/sqrt(2)`` and
     ``+i/sqrt(2)`` while all three squared overlaps are one half. The swap test is
     blind to that phase, so all three must return the same statistic -- and here they
