@@ -54,7 +54,7 @@ applies to them as to everything else in this guide.
 | --- | --- | --- | --- |
 | `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |
 | `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
-| `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map, one sample per entry, and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
+| `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -594,12 +594,13 @@ with probability `1/2 - 1/2 |<a|b>|^2`, so the module estimates the **squared**
 overlap and reads `|<a|b>|^2 = 1 - 2 * share` back out of the sample.
 
 **The readout is sign-blind by construction, and the tests check it as a
-contract rather than assume it.** Two states whose overlaps are `+1/sqrt(2)`,
-`-1/sqrt(2)` and `+i/sqrt(2)` have the same squared overlap and are the same
-experiment to this circuit, so all three must return the same statistic. A test
-that checked one pair could not tell a correct implementation from one that
-returned the signed inner product — the identical-states pair reads `1` under
-both — which is why the triple is the check the unit carries.
+contract rather than assume it.** One state, measured against three partners
+that differ only in a relative phase, has the overlaps `+1/sqrt(2)`,
+`-1/sqrt(2)` and `+i/sqrt(2)` — all three of the same magnitude, and all three
+the same experiment to this circuit, so all three must return the same
+statistic. A test that checked one pair could not tell a correct implementation
+from one that returned the signed inner product — the identical-states pair
+reads `1` under both — which is why the triple is the check the unit carries.
 
 **The feature map is this package's own angle encoding, and not the cited
 paper's.** A Hadamard on every wire, a phase rotation carrying each feature on
@@ -748,7 +749,7 @@ intermediate-scale devices. The capability entry repeats the boundary.
   statement is a conjecture and not a theorem, and the paper is written for
   noisy intermediate-scale devices — it does not require fault tolerance, and no
   entry in this guide says that it does.
-- The fault-tolerance requirement is recorded separately, to Tongyang Liu,
+- The fault-tolerance requirement is recorded separately, to Yunchao Liu,
   Srinivasan Arunachalam & Kristan Temme, "A rigorous and robust quantum
   speed-up in supervised machine learning", *Nature Physics* **17**, 1013–1017
   (2021), DOI 10.1038/s41567-021-01287-z — the rigorous speed-up result for

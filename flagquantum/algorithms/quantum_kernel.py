@@ -170,9 +170,12 @@ class KernelRidgeClassifier:
     classifier built over the same training set with the same seed is the same
     classifier; a different sample is a different fit.
 
-    ``kw_only`` is not optional here: the fields are three sequences of the same kinds
-    of numbers, so a positional spelling would let a caller transpose the training data
-    and the labels without an error.
+    ``kw_only`` is not optional here: the four fields are three tuples and a float --
+    ``coefficients`` and ``labels`` are one number per training row, ``training_data`` is
+    a tuple of rows, and ``regularization`` is a single weight -- so a positional call
+    site would read as three anonymous tuples followed by a number, and a caller who
+    transposed two of the tuples would fit a classifier on the wrong pairing without an
+    error.
 
     Attributes:
         coefficients: The dual coefficients, one per training feature vector, in
@@ -196,9 +199,9 @@ class KernelRidgeClassifier:
 
         Raises:
             ValueError: If no training row is carried; if the coefficients, the training
-                rows and the labels disagree in length; if a label is not ``+1`` or
-                ``-1``; if a coefficient or a feature is non-finite; or if the
-                regularization is not positive.
+                rows and the labels disagree in length; if the training rows disagree on
+                their width; if a label is not ``+1`` or ``-1``; if a coefficient or a
+                feature is non-finite; or if the regularization is not positive.
         """
         if not self.training_data:
             raise ValueError(
@@ -211,6 +214,14 @@ class KernelRidgeClassifier:
                 "training point, so the three lengths must agree, got "
                 f"{len(self.coefficients)} coefficient(s), {len(self.training_data)} "
                 f"training row(s) and {len(self.labels)} label(s)"
+            )
+        widths = {len(row) for row in self.training_data}
+        if len(widths) != 1:
+            raise ValueError(
+                "a kernel entry is an overlap of two states of the same width, so every "
+                f"training row must carry the same number of features, got widths "
+                f"{sorted(widths)}; a decision function would compare against the first "
+                "row's width alone and drop or misread the rest"
             )
         if any(label not in (-1, 1) for label in self.labels):
             raise ValueError(
@@ -510,8 +521,13 @@ def _swap_test_overlap(
     already carry the two states** when this is called: the swaps act on whatever the
     registers hold. **The ancilla must be in ``|0>`` on entry**, the same contract
     :func:`~flagquantum.algorithms.primitives.oracle.append_multi_controlled_x` states
-    for its ladder wires; an ancilla that enters in ``|1>`` shifts the readout instead
-    of raising.
+    for its ladder wires. An ancilla that enters in ``|1>`` **negates** the readout
+    instead of raising: the two Hadamards then leave the ancilla found set with
+    probability ``1/2 + 1/2 |<a|b>|^2`` rather than ``1/2 - 1/2 |<a|b>|^2``, so the
+    estimate is ``-|<a|b>|^2``, the negation of what a clean ancilla gives and not a
+    shifted version of it. A pair of equal states reads one with a clean ancilla and
+    minus one with a dirty one, and the negation is what makes the fault recoverable by
+    a caller who reads the sign; an offset would not be.
 
     Args:
         circuit: The circuit to extend.

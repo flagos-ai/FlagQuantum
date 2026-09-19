@@ -236,6 +236,7 @@ def _swap_estimate(
     *,
     shots: int,
     seed: int,
+    dirty: bool = False,
 ) -> tuple[float, float]:
     """Run the module's swap test on two states and return its estimate and the exact one.
 
@@ -244,10 +245,16 @@ def _swap_estimate(
     off the same circuit's exact probabilities afterwards as the ancilla's one-branch
     marginal, which is the relation the helper inverts -- and it is the same circuit
     object the helper sampled, so the two values describe one construction.
+
+    ``dirty`` starts the ancilla in ``|1>`` instead of ``|0>``, which the helper's
+    contract forbids and does not check. The flag exists so that what the forbidden
+    entry does can be measured rather than described.
     """
     wires = list(range(1, 1 + n_wires))
     other = list(range(1 + n_wires, 1 + 2 * n_wires))
     circuit = Circuit(1 + 2 * n_wires)
+    if dirty:
+        circuit.gate("x", 0)
     append_arbitrary_state(circuit, left, wires)
     append_arbitrary_state(circuit, right, other)
     estimate = _swap_test_overlap(
@@ -323,12 +330,14 @@ def test_the_swap_test_estimates_the_squared_overlap_and_not_the_overlap() -> No
 
     What this pins is the readout's arithmetic and not its sign blindness. A run that
     read the share rather than inverting it would return ``0.0``, ``0.5`` and ``0.25``
-    here, and every assertion below fires on that. A run that returned the *signed*
-    overlap would leave the first two of these three pairs reading exactly what the
-    squared overlap reads -- ``1.0`` and ``0.0`` -- and would read ``0.707`` on the
-    third, which the third assertion fires on. The triple test above is the one that
-    catches the sign, because a signed path returns three different numbers there while
-    this circuit returns one.
+    here, and the three **estimate** assertions below fire on that -- ``identical``,
+    ``orthogonal`` and ``half``. The three ``*_exact`` assertions do not, and cannot:
+    they are read from the circuit's own probabilities, which the module's readout never
+    touches. A run that returned the *signed* overlap would leave the first two of these
+    three pairs reading exactly what the squared overlap reads -- ``1.0`` and ``0.0`` --
+    and would read ``0.707`` on the third, which the third estimate assertion fires on.
+    The triple test above is the one that catches the sign, because a signed path
+    returns three different numbers there while this circuit returns one.
     """
     for n_wires in (1, 2):
         zero, plus, _, _ = _signed_states(n_wires)
@@ -355,6 +364,55 @@ def test_the_swap_test_estimates_the_squared_overlap_and_not_the_overlap() -> No
             assert orthogonal == pytest.approx(0.0, abs=0.05), (n_wires, seed)
             assert half_exact == pytest.approx(0.25, abs=1e-6), (n_wires, seed)
             assert half == pytest.approx(0.5, abs=0.05), (n_wires, seed)
+
+
+def test_a_dirty_ancilla_negates_the_readout_rather_than_shifting_it() -> None:
+    """The violation the helper's contract forbids, measured instead of described.
+
+    The contract says the ancilla must enter in ``|0>``, and the helper does not check
+    it. What a ``|1>`` does is a **negation** and not an offset: with the ancilla
+    flipped, the two Hadamards leave it found set with probability
+    ``1/2 + 1/2 |<a|b>|^2``, so the estimate is ``-|<a|b>|^2``, the negation of the
+    clean reading. The distinction is not cosmetic, because a caller who reads the sign
+    can undo a negation and cannot undo an offset.
+
+    Measured at 20000 shots over seeds 0, 1 and 2 at both register widths. A pair of
+    equal states reads ``+1.0`` with a clean ancilla and ``-1.0`` with a dirty one, both
+    exactly, and the ancilla's exact one-branch marginal is ``0.0`` and ``1.0``
+    respectively -- the second to float32 precision, ``0.9999998807907104``, which is
+    the precision a statevector is held at. The clean value is not merely negated on
+    average, it is negated at every sample, because the ancilla is never found set on a
+    clean run and always found set on a dirty one. A half-overlap pair moves from
+    ``0.25`` to ``0.75`` in that marginal and its estimate from about ``+0.5`` to about
+    ``-0.5``.
+    """
+    for n_wires in (1, 2):
+        zero, plus, _, _ = _signed_states(n_wires)
+
+        for seed in (0, 1, 2):
+            clean, clean_exact = _swap_estimate(
+                zero, zero, n_wires, shots=20000, seed=seed
+            )
+            dirty, dirty_exact = _swap_estimate(
+                zero, zero, n_wires, shots=20000, seed=seed, dirty=True
+            )
+
+            assert clean == 1.0, (n_wires, seed)
+            assert clean_exact == 0.0, (n_wires, seed)
+            assert dirty == -1.0, (n_wires, seed)
+            assert dirty_exact == pytest.approx(1.0, abs=1e-6), (n_wires, seed)
+
+            clean_half, clean_half_exact = _swap_estimate(
+                zero, plus, n_wires, shots=20000, seed=seed
+            )
+            dirty_half, dirty_half_exact = _swap_estimate(
+                zero, plus, n_wires, shots=20000, seed=seed, dirty=True
+            )
+
+            assert clean_half == pytest.approx(0.5, abs=0.05), (n_wires, seed)
+            assert dirty_half == pytest.approx(-0.5, abs=0.05), (n_wires, seed)
+            assert clean_half_exact == pytest.approx(0.25, abs=1e-6), (n_wires, seed)
+            assert dirty_half_exact == pytest.approx(0.75, abs=1e-6), (n_wires, seed)
 
 
 def test_the_swap_test_refuses_registers_of_different_widths() -> None:
@@ -586,7 +644,7 @@ def test_a_small_sample_leaves_every_entry_short() -> None:
         matrix = quantum_kernel_matrix(data, shots=shots, seed=seed).matrix
         return max(abs(matrix[i][j] - exact[i][j]) for i in range(4) for j in range(4))
 
-    for seed in range(5):
+    for seed in range(6):
         assert worst(1, seed) > 1.0, seed
         assert worst(4, seed) > 0.3, seed
         assert worst(64, seed) < 0.5, seed
@@ -815,12 +873,13 @@ def test_the_decision_function_is_the_weighted_sum_the_module_documents() -> Non
     ``alpha * K(x, x_0)``, and at ``x = x_0`` that entry is the diagonal, which is one:
     so the decision value there is exactly ``alpha`` however the entry was sampled, and
     the value at a different row is ``alpha`` times that row's entry. Measured: at 4096
-    shots over seeds 0 through 4 the training row's value is ``2.0`` exactly, and at
-    16384 shots over seeds 0 through 9 the other row's value is within ``0.031`` of
-    ``0.378504``, which is ``2`` times the exact squared overlap ``0.189252``. The first
-    of those is a hand-computed value and the second is the module's own kernel entry
-    scaled by the coefficient it was given, so the formula the docstring writes is the
-    object the code computes.
+    shots over seeds 0 through 9 the training row's value is ``2.0`` exactly at every
+    one of them, and at 16384 shots over the same ten seeds the other row's value is
+    within ``0.031`` of ``0.378504``, which is ``2`` times the exact squared overlap
+    ``0.189252``. The first of those is a hand-computed value -- the diagonal entry is
+    one by construction, so the product is ``alpha`` whatever the sample -- and the
+    second is the module's own kernel entry scaled by the coefficient it was given, so
+    the formula the docstring writes is the object the code computes.
     """
     row = list(_FAR[0])
     classifier = KernelRidgeClassifier(
@@ -936,6 +995,20 @@ def test_the_classifier_validates_its_own_fields() -> None:
             coefficients=(0.0, 0.0),
             training_data=((0.0,), (1.0,)),
             labels=(1, 0),
+            regularization=1.0,
+        )
+    # A ragged row is the case the factory path cannot produce and the decision function
+    # does not catch: it compares the incoming feature count against the first row's
+    # alone, so a narrower row reaches the encoding and raises IndexError from it --
+    # measured, on a training set of widths 2 and 1 -- while a wider one has its extra
+    # features silently dropped: measured, a set of widths 1 and 2 decides a width-1 row
+    # to 1.5362548828125, exactly as the truncated pair does. Neither is reported by any
+    # other check, which is why the width belongs here.
+    with pytest.raises(ValueError, match="same number of features"):
+        KernelRidgeClassifier(
+            coefficients=(0.0, 0.0),
+            training_data=((0.0,), (1.0, 2.0)),
+            labels=(1, -1),
             regularization=1.0,
         )
     with pytest.raises(ValueError, match="coefficient must be finite"):
