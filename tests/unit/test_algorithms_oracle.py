@@ -33,6 +33,21 @@ def _wire(circuit: Circuit, n_wires: int, wire: int) -> int:
     return (_basis_index(circuit, n_wires) >> (n_wires - 1 - wire)) & 1
 
 
+def _prepared(oracle: Circuit, n_wires: int, value: int) -> Circuit:
+    """Return the standalone ``oracle`` preceded by the X gates that load ``value``.
+
+    A standalone builder allocates and wires its own circuit, so the only way to feed it
+    a register value is to put the preparation in front of it. The two gate lists are
+    joined through the public QIR form rather than by reaching into either circuit, which
+    keeps the builder's own wiring the thing under test.
+    """
+    prep = Circuit(oracle.n_qubits)
+    for position in range(n_wires):
+        if (value >> (n_wires - 1 - position)) & 1:
+            prep.gate("x", position)
+    return Circuit.from_qir(prep.to_qir() + oracle.to_qir(), n_qubits=oracle.n_qubits)
+
+
 def test_multi_controlled_x_flips_only_the_saturated_pattern() -> None:
     """With two controls the target flips exactly when both are set, and nothing else moves."""
     for pattern in range(8):
@@ -144,6 +159,29 @@ def test_comparator_leaves_every_other_wire_alone() -> None:
             assert _basis_index(circuit, 9) == expected, (left, right)
 
 
+def test_comparator_xors_a_target_that_enters_set() -> None:
+    """With the target entering as ``|1>``, the result separates XOR from assignment.
+
+    Every other comparator test starts its target in ``|0>``, where the two agree. Here
+    ``lhs = 0, rhs = 0`` must leave the target set and ``lhs = 1, rhs = 0`` must clear it,
+    which is the opposite of what an assigning implementation would do.
+    """
+    for left in range(4):
+        for right in range(4):
+            circuit = Circuit(9)
+            for position, wire in enumerate((0, 1)):
+                if (left >> (1 - position)) & 1:
+                    circuit.gate("x", wire)
+            for position, wire in enumerate((2, 3)):
+                if (right >> (1 - position)) & 1:
+                    circuit.gate("x", wire)
+            circuit.gate("x", 4)
+            append_comparator(
+                circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
+            )
+            assert _wire(circuit, 9, 4) == 1 ^ int(left > right), (left, right)
+
+
 def test_comparator_is_exact_and_clean_at_three_bits() -> None:
     """The three-bit case is where the comparator's internal multi-controlled X needs its ancilla."""
     for left in range(8):
@@ -252,12 +290,70 @@ def test_phase_oracle_refuses_more_than_three_wires() -> None:
         phase_oracle(lambda value: value == 1, 4)
 
 
+def test_standalone_phase_oracle_marks_exactly_its_predicate() -> None:
+    """The builder's own circuit, read on every basis state, negates exactly the marked set.
+
+    The append form is covered above; this reads the circuit ``phase_oracle`` allocates
+    itself, over all ``2**n`` inputs, so a builder that wires the wrong register or marks
+    nothing fails here while the append tests stay green.
+    """
+    for n_wires in (1, 2, 3):
+
+        def predicate(value: int, n: int = n_wires) -> bool:
+            return value in (1, 2**n - 1)
+
+        oracle = phase_oracle(predicate, n_wires)
+        assert oracle.n_qubits == n_wires
+        marked = set(marked_states(predicate, n_wires))
+        for basis in range(2**n_wires):
+            amplitude = complex(
+                _prepared(oracle, n_wires, basis).state().reshape(-1)[basis]
+            )
+            expected = -1.0 if basis in marked else 1.0
+            assert amplitude == pytest.approx(expected, abs=1e-5), (n_wires, basis)
+
+
 def test_bit_oracle_wire_budget() -> None:
     """The output wire plus one ladder ancilla per control above two."""
     for n_wires, expected in ((1, 2), (2, 3), (3, 5), (4, 7)):
         assert (
             bit_oracle(lambda value: value == 0, n_wires).n_qubits == expected
         ), n_wires
+
+
+def test_standalone_bit_oracle_writes_its_own_output_wire() -> None:
+    """The builder's own circuit carries the predicate value and clears the wires it allocates.
+
+    The append form is covered above; this reads the circuit ``bit_oracle`` allocates
+    itself, over every register value, so a builder that writes the wrong wire or leaves a
+    ladder ancilla dirty fails here while the append tests stay green.
+    """
+    for n_wires in (1, 2, 3):
+        n_ancillas = max(0, n_wires - 2)
+
+        def predicate(value: int, n: int = n_wires) -> bool:
+            return value == 2**n - 1
+
+        oracle = bit_oracle(predicate, n_wires)
+        assert oracle.n_qubits == n_wires + 1 + n_ancillas
+        for value in range(2**n_wires):
+            circuit = _prepared(oracle, n_wires, value)
+            assert _wire(circuit, oracle.n_qubits, n_wires) == int(predicate(value)), (
+                n_wires,
+                value,
+                "output",
+            )
+            for position in range(n_wires):
+                assert (
+                    _wire(circuit, oracle.n_qubits, position)
+                    == (value >> (n_wires - 1 - position)) & 1
+                ), (n_wires, value, "register")
+            for ancilla in range(n_wires + 1, oracle.n_qubits):
+                assert _wire(circuit, oracle.n_qubits, ancilla) == 0, (
+                    n_wires,
+                    value,
+                    "ancilla",
+                )
 
 
 def test_bit_oracle_xors_the_predicate_onto_the_output() -> None:

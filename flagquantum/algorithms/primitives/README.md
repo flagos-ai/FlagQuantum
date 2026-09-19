@@ -2,18 +2,32 @@
 
 Reusable quantum primitives that the algorithm modules share. This layer owns
 the quantum Fourier transform, phase estimation, state preparation, and oracle
-synthesis; the Fourier transform is the primitive that ships today, and the
-others arrive with the algorithms that need them.
+synthesis, and all four of them ship today.
 
-A primitive is admitted here only when at least two algorithm modules need it.
-This package is not a general-purpose quantum toolkit, and a construction only
-one workflow uses stays in that workflow's module until a second one needs it.
+A primitive is admitted here when more than one algorithm module needs it or is
+expected to need it and the expectation is confirmed, or when it is a public
+unit callers use directly: state preparation shipped on the public-unit ground,
+with no consumer inside `flagquantum/` at all, and the Fourier transform on the
+expectation ground, admitted with one consumer, phase estimation, and confirmed
+when amplitude estimation landed. This package is not a general-purpose quantum
+toolkit, and a construction only one workflow uses stays in that workflow's
+module until admitting it is justified, whether by a second consumer arriving or
+by a grounded expectation of one.
 
 ## Where to start
 
-- `qft.py`: the quantum Fourier transform and its inverse, emitted as a
-  circuit fragment that callers append to a circuit they already hold.
-- `__init__.py`: the small public primitives surface.
+- `qft.py`: the quantum Fourier transform and its inverse, emitted as a circuit
+  fragment that callers append to a circuit they already hold, and the primitive
+  phase estimation consumes.
+- `phase_estimation.py`: phase estimation over a controlled unitary, with the
+  resolution and the success bound the counting register buys.
+- `state_preparation.py`: a uniform superposition, and an arbitrary state built
+  from a classical amplitude vector by uniformly controlled rotations.
+- `oracle.py`: the reversible classical building blocks the oracle units are
+  composed from -- a multi-controlled X and a bit-string comparator -- and the
+  truth-table synthesis of a phase or bit oracle on top of them.
+- `types.py`: the callable protocols the primitives are written against.
+- `__init__.py`: the public primitives surface.
 
 ## Boundaries
 

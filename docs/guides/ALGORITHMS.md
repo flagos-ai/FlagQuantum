@@ -22,11 +22,14 @@ tested, and reproducible still does not carry an advantage of its own.
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 
-The primitive rows are listed separately because the package admits a shared
-primitive only when more than one algorithm module is expected to need it: the
-Fourier transform shipped with one consumer, phase estimation, and gained its
-second when amplitude estimation landed. A primitive does not by itself change
-what a caller can run.
+The primitive rows are listed separately because the package admits a primitive
+on one of two grounds: when more than one algorithm module needs it, or is
+expected to need it and the expectation is later confirmed — the Fourier
+transform shipped with one consumer, phase estimation, and was admitted on the
+expectation of a second, which amplitude estimation's arrival confirmed — or
+when it is a public unit callers use directly, which is how state preparation
+was admitted, with no consumer inside `flagquantum/` at all. A primitive does
+not by itself change what a caller can run.
 
 ## Advantage premises
 
@@ -96,11 +99,12 @@ print(best)
 # -2.0  -- the negated maximum cut size of a triangle
 ```
 
-The converted Hamiltonian is an ordinary `Hamiltonian`, so it goes straight into
-the existing workflows: `vqe_loss`, `qaoa_circuit`, and `run_vqe` accept it
-without a new execution path. The constant is carried as one identity term and
-recovered as `QuboProblem.offset`, so the two forms of the same problem agree on
-every assignment.
+The converted Hamiltonian is an ordinary `Hamiltonian`, so `vqe_loss`, `run_vqe`,
+and `qaoa_loss` accept it without a new execution path. `qaoa_circuit` does not:
+it takes a wire count and the cost edges as a list of ZZ pairs, with the QAOA
+angles, and it is `qaoa_loss` that pairs such a circuit with a Hamiltonian. The
+constant is carried as one identity term and recovered as `QuboProblem.offset`,
+so the two forms of the same problem agree on every assignment.
 
 ## State preparation
 
@@ -144,13 +148,14 @@ print([round(complex(a).imag, 6) for a in state])
 Wires are ordered most significant first, so `state[k]` is the amplitude of the
 basis state whose bits read wire `0` to wire `n-1` from left to right.
 
-## Oracle building blocks
+## Oracle building blocks and synthesis
 
 `primitives/oracle.py` holds the two pieces of reversible classical logic the
-oracle units are composed from. `append_multi_controlled_x` flips one target
-wire exactly on the operand pattern that sets every control; one control is a
-`cx` and two are a `ccx`, and three or more are built as an ancilla ladder,
-because the circuit layer has no native gate above two controls.
+oracle units are composed from, and the truth-table synthesis that sits on top
+of them. `append_multi_controlled_x` flips one target wire exactly on the operand
+pattern that sets every control; one control is a `cx` and two are a `ccx`, and
+three or more are built as an ancilla ladder, because the circuit layer has no
+native gate above two controls.
 `append_comparator` XORs one target wire with the truth value of `lhs > rhs`
 for two equally wide bit strings read most significant first. On `n` bits the
 comparator occupies `2n` operand wires, one target, `n + 1` prefix-equality
@@ -173,7 +178,12 @@ prefix-equality ladder and the scratch wire are uncomputed, so the comparator
 composes into a larger circuit instead of leaving `n` wires holding
 intermediate flags. Its internal three-control X is
 `append_multi_controlled_x` with the scratch wire as the ladder's ancilla,
-which is the same `|0>`-on-entry requirement one level down.
+which is the same `|0>`-on-entry requirement one level down. **The comparator's
+own flags and scratch wire carry that requirement too**: all `len(lhs) + 1`
+equality wires and the scratch wire must enter in `|0>`, since a dirty
+`equality[0]` makes the target come out wrong on a large fraction of the operand
+patterns — 6 of 16 at two bits — and the ladder then restores the flag, so
+nothing is raised.
 
 ```python
 from flagquantum.algorithms.primitives import append_comparator, append_multi_controlled_x
@@ -337,6 +347,9 @@ capability entry repeats the boundary.
 Everything here is a demonstration-scale, teaching-oriented construction. No
 unit in this guide makes a performance claim, a capacity claim, or a
 quantum-advantage claim, and none of them certifies solver behavior,
-convergence, or hardware behavior. A unit is admitted to the index only with the
-tests that exercise it and the boundary that limits it, both recorded in
-`capability-maturity.toml`.
+convergence, or hardware behavior. A unit is admitted to the index with the
+tests that exercise it and the boundary that limits it: the units classified in
+`capability-maturity.toml` record both there, and the two rows without an entry
+— the Fourier transform and phase estimation — carry their advantage premise in
+the index table above and their tests in `tests/unit/test_algorithms_qft.py` and
+`tests/unit/test_algorithms_phase_estimation.py`.
