@@ -125,6 +125,9 @@ This catalog is generated from the machine-validated
 | Assign each point to its nearest centroid | Quantum k-medians | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read an assignment off sampled searches | Quantum k-medians | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Update centroid positions to the medians of the points assigned to them | Quantum k-medians | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Estimate the kernel matrix of a set of feature vectors | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read a kernel entry off sampled swap tests | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Classify held-out rows with a kernel ridge classifier | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -452,6 +455,20 @@ Assign points to their nearest centroids with a Grover-style minimum search over
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** The advantage premise is Grover's oracle model, and it is not met: the oracle is not free here. The search's oracle is synthesized from the predicate's truth table at O(2**n) cost, so no end-to-end advantage follows at this scale, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built -- the register is capped at three wires, which is also what keeps the distances out of it. Nothing here reads a qRAM or runs an adiabatic evolution, so no conclusion that rests on either applies to this unit. Demonstration scale: the search is bounded at three evaluation wires, so at most eight centroids, and the assignment is sampled rather than read out, which is why a small sample can stop a point's search short. It makes no performance, convergence, or hardware claim.
+
+### Quantum kernel estimation and kernel ridge classification
+
+Estimate a kernel matrix by swap test over an angle-encoded feature map, and fit a classical kernel ridge classifier on the estimated entries.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.quantum_kernel`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** The advantage premise is the data-access model, and this unit does not meet it. The kernel-matrix circuit's cost statement assumes the two feature states are available, reached through a qRAM or an amplitude-encoding unitary whose cost the estimate does not count; here each feature state is built gate by gate from the classical feature vector on every run, so that cost is paid rather than assumed away and no end-to-end advantage follows. The sampling cost is the paper's own -- O(eps**-2) shots per kernel entry and O(m**2 / eps**2) for an m by m kernel matrix -- and no error bound, confidence interval or repetition scheme is computed or reported anywhere in this unit. Every entry is a sampled estimate, so the classifier's coefficients and its predictions inherit the sample, and an estimate of a near-zero overlap can come back slightly negative because the readout is 1 - 2 * share and is not clamped. The classical hardness of estimating these kernel entries is a conjecture in Havlicek et al. and not a theorem, and the rigorous speed-up results for quantum kernel methods require a fault-tolerant quantum computer (Liu, Arunachalam and Temme 2021). Demonstration scale: the feature map is a three-feature angle encoding of this package's own, and the classifier is classical kernel ridge regression whose only quantum part is the kernel. It makes no performance, convergence, or hardware claim.
 
 
 ## Distributed execution
