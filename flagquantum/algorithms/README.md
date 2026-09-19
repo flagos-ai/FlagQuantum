@@ -16,6 +16,9 @@ external-framework objects or a second execution path.
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
+- `pca.py`: quantum PCA — the eigenvalue readout of a data matrix's density
+  matrix, by phase estimation over its exponential. Demonstration scale: the
+  density matrix and its exponential are formed classically.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

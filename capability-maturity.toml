@@ -667,3 +667,20 @@ level = "experimental"
 owner = "Algorithms maintainers"
 limitations = "The quadratic speedup over classical sampling is real only given that the state-preparation unitary A is free: a real distribution needs QRAM, and this unit does not supply one, so it does not show that any Monte Carlo integral is estimated faster than classically. The estimate lies on the amplitude grid sin^2(pi j / 2**(m+1)) and is accurate to about one grid step; that is a resolution, not a coverage-calibrated confidence interval, and no confidence interval is reported. The operator must be able to apply A, its adjoint, the marking operator and the zero-state reflection each under control, which excludes state-preparation circuits that cannot be controlled. It makes no performance, convergence, or hardware claim."
 focused_tests = "tests/unit/test_algorithms_amplitude_estimation.py"
+
+[capabilities.algorithms_quantum_pca]
+title = "Quantum principal component analysis"
+summary = "Estimate the eigenvalues of a data matrix's density matrix by phase estimation over its exponential, reading them off a counting register."
+category = "simulation_and_training"
+user_goals = ["Estimate the spectrum of a density matrix", "Read an eigenvalue off a counting register", "Compare a read-out eigenvalue against the density matrix's own spectrum"]
+public_apis = ["flagquantum.algorithms.pca"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Demonstration scale. The density matrix is materialized classically and its exponential is built with a dense matrix exponential, so the unit does not reproduce quantum PCA's input model: it never avoids forming rho and never uses the O(1/eps^3) state copies the algorithm is built on. The purified input is supplied as all 2**n amplitudes. Meaningful only for low effective rank."
+focused_tests = "tests/unit/test_algorithms_pca.py"

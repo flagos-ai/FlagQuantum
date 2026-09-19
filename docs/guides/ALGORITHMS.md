@@ -39,6 +39,21 @@ when it is a public unit callers use directly, which is how state preparation
 was admitted, with no consumer inside `flagquantum/` at all. A primitive does
 not by itself change what a caller can run.
 
+The Phase 2 quantum machine learning units are indexed in the table under
+[Quantum machine learning units (Phase 2)](#quantum-machine-learning-units-phase-2)
+below, which is where each unit of that phase adds its row.
+
+## Quantum machine learning units (Phase 2)
+
+These rows are the Phase 2 quantum machine learning units. They are tabulated
+apart from the index above so that a phase's own set can be read together, and
+each unit of this phase appends its row here as it lands. The same promise
+applies to them as to everything else in this guide.
+
+| Unit | What it does | Citation | Advantage premise |
+| --- | --- | --- | --- |
+| `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |
+
 ## Advantage premises
 
 - **The QUBO mapping carries no advantage premise.** It is a polynomial
@@ -60,6 +75,13 @@ not by itself change what a caller can run.
   predicate costs on the order of `2**n` gates, and the state-preparation
   operator is not free. Neither unit yields an end-to-end advantage at
   demonstration scale.
+- **Quantum PCA's premise is its input model, and the unit does not meet it.**
+  The algorithm's contribution is that it never forms `rho`: it consumes copies
+  of it, one use per run, in `O(1/eps**3)` of them, and that count is what a
+  speedup would be measured against. This unit forms `rho` classically, builds
+  its exponential as a dense matrix, and takes the purification's amplitudes
+  from the caller, so the property the paper's cost counts is absent. See the
+  section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -278,9 +300,9 @@ print(result.counts[format(5, "03b")])
 ## Amplitude estimation
 
 `amplitude_estimation.py` is the second algorithm unit in the index, and the last
-one. It consumes the phase estimation primitive and the Grover iteration rather
-than extending either: `amplitude_estimation_circuit` prepares the operator's own
-register and hands the controlled Grover operator
+of the Phase 1 set. It consumes the phase estimation primitive and the Grover
+iteration rather than extending either: `amplitude_estimation_circuit` prepares the
+operator's own register and hands the controlled Grover operator
 `Q = -A (I - 2|0><0|) A† S_chi` to `append_phase_estimation`, which emits the
 counting register's Hadamards, the controlled powers and the inverse Fourier
 transform itself. `run_amplitude_estimation(operator, n_counting_wires=...,
@@ -307,6 +329,67 @@ sampling counts applications of the state-preparation unitary and its adjoint;
 here the caller supplies that unitary and the count assumes it costs nothing, and
 a real distribution would need QRAM to be loaded in. Nothing in this unit shows
 that a Monte Carlo integral is estimated faster than classically, and the
+capability entry repeats the boundary.
+
+## Quantum PCA
+
+`pca.py` is the first unit of Phase 2 and the third algorithm unit in this
+guide's programme. `principal_components(A, n_counting_wires=..., shots=...,
+seed=...)`
+forms the density matrix `rho = A A^T / tr(A A^T)` of a data matrix `A` with at
+least two rows and two columns, each a power of two, prepares the purification
+`vec(A) / ||A||_F` on the data and purification registers with
+`append_arbitrary_state`, and hands `exp(-2 pi i rho)` to
+`append_phase_estimation`. The counting register's marginal is the eigenvalue
+distribution: `PcaResult` carries it, with the dominant eigenvalue, that value's
+measured share, and the resolution the register achieves.
+
+**The phase is not the eigenvalue.** At `t = 2*pi` the exponential's eigenphase on
+an eigenvector of `rho` with eigenvalue `lambda` is `exp(-2 pi i lambda)`, which is
+the phase `phi = (-lambda) mod 1`, so a counter value `k` of `m` counting wires
+reads `lambda = 1 - k / 2**m`. Reading `k / 2**m` is a wrong eigenvalue rather than
+an error, which is why the inversion is part of the readout and has a test of its
+own: with it removed, the two tests that compare the readout against
+`torch.linalg.eigvalsh` of the density matrix fail.
+
+**A share is not an eigenvalue.** The counter value nearest a small eigenvalue
+carries the dominant peak's phase-estimation tail rather than that eigenvalue's
+weight. Measured at six counting wires: the eigenvalue `0.0038` comes back on its
+own counter value with `0.0331` of the sample, about nine times its weight. Only
+the *position* of the mode is an eigenvalue estimate, `PcaResult.within` states
+that contract as half a counter step, and no confidence interval is computed or
+reported.
+
+```python
+import math
+
+import torch
+
+from flagquantum.algorithms.pca import principal_components
+
+# A data matrix whose density matrix has eigenvalues 0.9962 and 0.0038.
+data = torch.diag(torch.tensor([math.sqrt(0.9962), math.sqrt(0.0038)]))
+rho = (data @ data.T) / torch.trace(data @ data.T)
+print([round(float(value), 4) for value in torch.linalg.eigvalsh(rho)])
+# [0.0038, 0.9962]
+
+result = principal_components(data, n_counting_wires=6, shots=20000, seed=11)
+print(round(result.dominant_eigenvalue, 4), round(result.dominant_probability, 4))
+# 1.0 0.8196  -- the dominant eigenvalue, read off the counter value 0
+print(round(result.distribution["111111"], 4))
+# 0.0331  -- the counter value nearest 0.0038, and this share is the tail above
+```
+
+**The premise is the input model, and this unit does not meet it.** The paper's
+subroutine consumes copies of `rho`, one use per run, in `O(1/eps**3)` of them, and
+never forms it; that count is what its speedup would be measured against. This unit
+forms `rho` classically from the whole matrix `A`, builds `exp(-2 pi i rho)` with
+`torch.matrix_exp`, and passes the result to the circuit as a dense gate matrix, so
+no part of the paper's input model survives here. The purification inherits a second
+premise: `append_arbitrary_state` solves for its angles with a classical pass over
+all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the caller must
+already hold the entire amplitude vector. Nothing in this unit is faster, or
+smaller, than diagonalising `rho` with `torch.linalg.eigvalsh` directly, and the
 capability entry repeats the boundary.
 
 ## Sources
@@ -338,6 +421,12 @@ capability entry repeats the boundary.
   arXiv:quant-ph/9605043 — the amplitude-amplification iteration, the inversion
   about the average it is built from, and the `O(sqrt(N))` query count that
   `grover.py` reports.
+- Quantum PCA follows Seth Lloyd, Masoud Mohseni & Patrick Rebentrost, "Quantum
+  principal component analysis", *Nature Physics* **10**, 631-633 (2014),
+  DOI 10.1038/nphys3029, arXiv:1307.0401 — the density-matrix exponential whose
+  eigenphases carry the eigenvalues, the purification the subroutine is applied
+  to, and the `O(1/eps**3)` copies of `rho` that the paper's input model counts
+  and this unit's classical formation of `rho` replaces.
 - The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
   string comparator: circuits and applications", *Quantum Computers and
   Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**
