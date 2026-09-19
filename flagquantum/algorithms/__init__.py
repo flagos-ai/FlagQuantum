@@ -1,5 +1,6 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
+from . import amplitude_estimation as amplitude_estimation
 from . import core as core
 from . import grover as grover
 from . import qubo as qubo
@@ -45,6 +46,7 @@ __all__ = [
     "OptimizationRecord",
     "OptimizationStage",
     "VQEResult",
+    "amplitude_estimation",
     "grover",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",

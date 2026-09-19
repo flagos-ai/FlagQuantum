@@ -116,6 +116,9 @@ This catalog is generated from the machine-validated
 | Search for the states a predicate marks | Grover search | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Amplify the marked states' amplitudes | Grover search | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read the most likely marked state from samples | Grover search | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Estimate the amplitude a marking operator selects | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read an amplitude off the counting register | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Compare an estimate against a known amplitude | Quantum amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -401,6 +404,20 @@ Search a classical predicate's truth table by amplitude amplification over an ev
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** The improvement is in query complexity, against an oracle this unit synthesizes from a truth table at a classical cost of 2**n. No end-to-end advantage follows at any scale beyond demonstration, and no qRAM, block encoding or amplitude encoding is assumed. The search is bounded at three evaluation wires, because a phase oracle above that needs ladder ancillas a register of exactly that width does not have. The register width makes the classical truth-table enumeration exponential, which is the honest limit of the unit. It makes no performance, convergence, or hardware claim.
+
+### Quantum amplitude estimation
+
+Estimate the probability a state-preparation unitary's marked subspace carries, by phase estimation over the Grover operator.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.amplitude_estimation`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** The quadratic speedup over classical sampling is real only given that the state-preparation unitary A is free: a real distribution needs QRAM, and this unit does not supply one, so it does not show that any Monte Carlo integral is estimated faster than classically. The estimate lies on the amplitude grid sin^2(pi j / 2**(m+1)) and is accurate to about one grid step; that is a resolution, not a coverage-calibrated confidence interval, and no confidence interval is reported. The operator must be able to apply A, its adjoint, the marking operator and the zero-state reflection each under control, which excludes state-preparation circuits that cannot be controlled. It makes no performance, convergence, or hardware claim.
 
 
 ## Distributed execution

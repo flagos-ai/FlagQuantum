@@ -20,14 +20,13 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
-| `amplitude_estimation.py` — amplitude estimation | Not yet available. | — | — |
+| `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 
-Rows marked "not yet available" are placeholders for later units of this
-programme; they carry no content yet. The primitive rows are listed separately
-because the package admits a shared primitive only when more than one algorithm
-module is expected to need it: the Fourier transform has one consumer today,
-phase estimation, and gains a second when amplitude estimation lands. A
-primitive does not by itself change what a caller can run.
+The primitive rows are listed separately because the package admits a shared
+primitive only when more than one algorithm module is expected to need it: the
+Fourier transform shipped with one consumer, phase estimation, and gained its
+second when amplitude estimation landed. A primitive does not by itself change
+what a caller can run.
 
 ## Advantage premises
 
@@ -257,6 +256,40 @@ print(result.candidates, result.iterations, round(result.success_probability, 4)
 print(result.counts[format(5, "03b")])
 # 962
 ```
+
+## Amplitude estimation
+
+`amplitude_estimation.py` is the second algorithm unit in the index, and the last
+one. It consumes the phase estimation primitive and the Grover iteration rather
+than extending either: `amplitude_estimation_circuit` prepares the operator's own
+register and hands the controlled Grover operator
+`Q = -A (I - 2|0><0|) A† S_chi` to `append_phase_estimation`, which emits the
+counting register's Hadamards, the controlled powers and the inverse Fourier
+transform itself. `run_amplitude_estimation(operator, n_counting_wires=...,
+shots=..., seed=...)` samples that circuit and returns the maximum likelihood grid
+point, and `amplitude_resolution` reports the widest step of the grid
+`sin²(pi j / 2**(m+1))`.
+
+**The readout is a phase, not an amplitude.** The two eigenphases of `Q` are
+conjugate, so a counting outcome is a phase and the amplitude behind it is
+`sin²(theta)`: reading the register's value as an amplitude is a wrong answer
+rather than an error. `maximum_likelihood_estimate` inverts the two-term model
+both eigenphases produce, and because sample keys carry every wire it marginalises
+the evaluation register's bits away first; skipping that step loses their whole
+share of the probability mass and returns a wrong estimate without raising.
+
+**The estimate is a resolution, not a confidence interval.** An estimate is always
+one of the grid amplitudes, so its error is at most about one grid step at the
+counting width used. That is a property of the grid, not a coverage-calibrated
+error bar: no interval is computed or reported, and
+`AmplitudeEstimationResult.within` checks the resolution and says so.
+
+**The premise is `A`, and it is not free.** The quadratic speedup over classical
+sampling counts applications of the state-preparation unitary and its adjoint;
+here the caller supplies that unitary and the count assumes it costs nothing, and
+a real distribution would need QRAM to be loaded in. Nothing in this unit shows
+that a Monte Carlo integral is estimated faster than classically, and the
+capability entry repeats the boundary.
 
 ## Sources
 

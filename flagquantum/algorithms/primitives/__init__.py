@@ -25,11 +25,13 @@ from .qft import qft as qft
 from .state_preparation import append_arbitrary_state as append_arbitrary_state
 from .state_preparation import arbitrary_state as arbitrary_state
 from .state_preparation import uniform_state as uniform_state
+from .types import AmplitudeOperator as AmplitudeOperator
 from .types import ControlledUnitary as ControlledUnitary
 from .types import Predicate as Predicate
 from .types import StatePreparationOperator as StatePreparationOperator
 
 __all__ = [
+    "AmplitudeOperator",
     "ControlledUnitary",
     "PhaseEstimationSpec",
     "Predicate",
