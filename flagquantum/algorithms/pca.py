@@ -38,9 +38,32 @@ does *not* report is a probability per eigenvalue: the sample's share at the cou
 value nearest an eigenvalue is not that eigenvalue. Measured at six counting wires,
 the small eigenvalue ``0.0038`` comes back on its own counter value with probability
 ``0.0331``, about nine times its weight, because phase estimation spreads the
-dominant peak's tail into the neighbouring value. Only the *position* of the mode is
-an eigenvalue estimate; :meth:`PcaResult.within` is the contract for it, and no
-confidence interval is computed or reported anywhere in this module.
+dominant peak's tail into the neighbouring value. :meth:`PcaResult.within` is the
+contract for the resolution, and no confidence interval is computed or reported
+anywhere in this module.
+
+**Which eigenvalue the mode resolves is conditional, and the condition is not
+automatic.** The readout reports the dominant eigenvalue only while that
+eigenvalue's peak stays in one counter value, which is the case whenever its phase
+falls close enough to a counter value that neither neighbouring value takes a share
+of it. A phase near a counter midpoint instead splits the peak across the two
+neighbouring values, and neither half carries more than a fraction of that
+eigenvalue's weight -- while a *smaller* eigenvalue whose phase sits close to a
+counter value keeps all of its own weight on one value and can outrank both halves.
+The mode is then that smaller eigenvalue, and :meth:`PcaResult.within` rejects the
+largest one, which is the contract working as written rather than a failure of it:
+the readout is not claiming to have resolved the largest eigenvalue, it is reporting
+the counter value that was sampled most.
+
+Measured at six counting wires, a density matrix with spectrum ``0.5078125``,
+``0.375``, ``0.097`` and ``0.0201875`` -- the first at exactly a counter midpoint
+and the second exactly on a counter value -- reads back as ``0.375``, the second
+largest, with shares ``0.3765`` at that value against ``0.2050`` and ``0.2041`` for
+the two halves of the largest eigenvalue's split peak. Whether a given spectrum
+resolves cleanly is a property of where each eigenvalue's phase falls relative to
+the counter grid and not of the counter width alone, so a caller that needs the
+largest eigenvalue specifically has to check the readout rather than assume the mode
+is it.
 
 **Wire layout.** The counting register is wires ``0 .. m - 1``, the data register
 ``a`` follows it, and the purification register ``b`` follows that. The counting
@@ -79,8 +102,11 @@ class PcaResult:
     transpose ``n_counting_wires`` and ``shots``-derived counts without an error.
 
     Attributes:
-        dominant_eigenvalue: The eigenvalue the sample resolves most often,
-            ``1 - k / 2**n_counting_wires`` at the mode ``k`` of ``distribution``.
+        dominant_eigenvalue: The eigenvalue read out at the mode ``k`` of
+            ``distribution``, which is ``1 - k / 2**n_counting_wires``. It is the
+            dominant eigenvalue of ``rho`` only when that eigenvalue's peak stays in
+            one counter value: a split peak hands the mode to a smaller eigenvalue.
+            See the module docstring for the condition and for a measured case.
         dominant_probability: The share of the sample that landed on that mode.
             It is not the eigenvalue's weight in ``rho``: see the module docstring.
         distribution: The counter register's marginal distribution, keyed by its
@@ -142,10 +168,21 @@ class PcaResult:
         """Return whether ``eigenvalue`` is within half a counter step of the readout.
 
         This is the accuracy contract the module makes, expressed once here rather
-        than re-derived by every caller. Half a step is the whole of it: the counter
-        value the mode sits on is the nearest one to the exact phase, so the exact
-        eigenvalue is at most half a step away from the one the readout reports, and
-        a full step would accept a value the next counter value could equally claim.
+        than re-derived by every caller. Half a step is the whole of it: ``within``
+        compares ``eigenvalue`` against the eigenvalue the readout reports and asks
+        only whether the counter register could have produced that report from a
+        phase that close. A full step would accept a value the neighbouring counter
+        value could equally claim, which is why the bound is half and not whole.
+
+        **It does not claim that the readout resolves the largest eigenvalue.** The
+        counter value the mode sits on is the nearest one to that eigenvalue's phase
+        only while the peak stays in a single counter value. A phase near a counter
+        midpoint splits the peak across two values, and a smaller eigenvalue whose
+        phase sits near a counter value can then take the mode; ``within`` rejects
+        the largest eigenvalue in that case, correctly, because the readout did not
+        report it. The module docstring states the condition and gives a measured
+        spectrum that splits.
+
         It is a resolution statement and not a distribution statement: a value this
         rejects is not excluded at any stated confidence level, and an eigenvalue
         whose weight in ``rho`` is small is not disqualified by the readout at all.
@@ -166,7 +203,7 @@ def principal_components(
     shots: int = _DEFAULT_SHOTS,
     seed: int | None = None,
 ) -> PcaResult:
-    """Estimate the dominant eigenvalue of ``A``'s density matrix by phase estimation.
+    """Estimate the eigenvalues of ``A``'s density matrix by phase estimation.
 
     ``A`` is spelled as the construction and the paper read it, which is the one
     place this package keeps an upper-case parameter name and the reason the naming
@@ -177,7 +214,9 @@ def principal_components(
     module docstring for what that costs and what it gives up. ``rho``'s
     purification ``vec(A) / ||A||_F`` is prepared on the data register and the
     purification register, ``exp(-2 pi i rho)`` is phase-estimated against it, and
-    the counter register is read out as described there.
+    the counter register is read out as described there. The normalisation is what
+    makes the readout depend on ``A``'s direction and not on its scale: ``A`` and
+    ``c * A`` give the same result for any positive ``c``.
 
     Args:
         A: The data matrix, a real floating-point tensor with at least two rows and
@@ -186,13 +225,17 @@ def principal_components(
             refused rather than normalised into a NaN.
         n_counting_wires: The width of the counting register, at least one. The
             resolution is ``2**-n_counting_wires`` in eigenvalue units.
-        shots: The number of samples to draw, at least one.
+        shots: The number of samples to draw, at least one. Every share in the
+            returned distribution is a count over exactly this many samples.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
             The same seed and the same arguments replay the same result exactly.
 
     Returns:
-        The dominant eigenvalue with its measured probability, the counter
-        register's distribution, and the resolution they were read at.
+        The eigenvalue read out at the counter register's mode with that value's
+        measured share, the counter register's distribution, and the resolution they
+        were read at. The readout reports the dominant eigenvalue while that
+        eigenvalue's peak stays in one counter value; a split peak hands the mode to
+        a smaller eigenvalue, and the module docstring says so and shows a case.
 
     Raises:
         ValueError: If ``A`` is not a two-dimensional real floating-point tensor

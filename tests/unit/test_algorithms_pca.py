@@ -6,7 +6,13 @@ from collections.abc import Sequence
 import pytest
 import torch
 
-from flagquantum.algorithms.pca import PcaResult, principal_components
+from flagquantum.algorithms.pca import (
+    PcaResult,
+    _PhaseFromDensityMatrix,
+    principal_components,
+)
+from flagquantum.algorithms.primitives.types import ControlledUnitary
+from flagquantum.circuit import Circuit
 
 pytestmark = pytest.mark.unit
 
@@ -102,6 +108,169 @@ def test_the_mode_resolves_the_largest_eigenvalue_on_two_data_wires() -> None:
 
     assert abs(result.dominant_eigenvalue - float(exact[-1])) <= _half_step(
         _COUNTING_WIRES
+    )
+
+
+def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> None:
+    """A split peak hands the mode to the second largest eigenvalue, by design.
+
+    This case is in the file because it is the counterexample to a claim the module
+    used to make: that the counter value the mode sits on is the one nearest the
+    largest eigenvalue's phase, so the readout is always within half a step of the
+    largest eigenvalue. It is not, and this spectrum is where that shows.
+
+    At six counting wires the counter grid is 1/64 of a turn. The largest eigenvalue
+    here is 0.5078125, whose phase ``1 - 0.5078125 = 0.4921875`` is exactly the
+    midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5, so its peak
+    splits across both and neither half carries its full weight. The second largest
+    is 0.375, whose phase 0.625 is exactly a counter value, so all of its weight
+    lands on one value. Measured: 0.3765 at the counter value reading 0.375, against
+    0.2050 and 0.2041 for the two halves. The mode is therefore the second largest
+    eigenvalue, and it is the same readout for every sampling seed tried and at both
+    8000 and 20000 shots -- the split decides it, not the noise.
+
+    That is documented behaviour: the module docstring states the condition under
+    which the readout resolves the largest eigenvalue, and ``within`` no longer
+    claims to guarantee it. The assertion below is the observed readout, so a change
+    that quietly restores the old claim -- or one that changes where the peak splits
+    -- fails here.
+    """
+    data = _data_matrix([0.5078125, 0.375, 0.097, 0.0201875], 4)
+    exact = _exact_eigenvalues(data)
+    assert [round(float(value), 6) for value in exact] == [
+        0.020188,
+        0.097,
+        0.375,
+        0.507812,
+    ]
+
+    result = principal_components(
+        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+    )
+
+    # The mode is the second largest eigenvalue, and the largest is correctly refused.
+    assert result.dominant_eigenvalue == pytest.approx(0.375, abs=1e-9)
+    assert result.within(0.375)
+    assert not result.within(float(exact[-1]))
+    # The two halves of the split peak, measured, each below the runner-up's share.
+    assert result.distribution[_counter_of(0.5, _COUNTING_WIRES)] == pytest.approx(
+        0.2050, abs=0.01
+    )
+    assert result.distribution[_counter_of(0.515625, _COUNTING_WIRES)] == (
+        pytest.approx(0.2041, abs=0.01)
+    )
+    assert result.distribution[_counter_of(0.375, _COUNTING_WIRES)] > (
+        result.distribution[_counter_of(0.5, _COUNTING_WIRES)]
+    )
+
+
+def test_the_readout_is_invariant_in_the_scale_of_the_data_matrix() -> None:
+    """Doubling ``A`` leaves the readout identical, and only a normalised Gram does.
+
+    Every other spectrum in this file is built by ``_data_matrix``, whose trace is
+    exactly one, so ``A A^T`` and ``A A^T / tr(A A^T)`` are the same matrix there and
+    none of them can tell the two apart. This one scales ``A`` by two, so the Gram
+    matrix's trace is four and the division is the only thing that keeps the density
+    matrix's spectrum -- and therefore the readout -- unchanged.
+
+    The reference path is computed here from the scaled matrix, independently of the
+    module: ``eigvalsh(A A^T / tr(A A^T))``. With the normalisation removed, the
+    unitary becomes ``exp(-2 pi i * 4 rho)`` and one extra turn of phase folds every
+    eigenvalue onto ``-4 lambda mod 1``: measured, the readout moves from 1.0 to
+    0.984375, ``within`` the largest eigenvalue goes from ``True`` to ``False``, and
+    the two distributions stop being equal.
+    """
+    data = _data_matrix([0.9962, 0.0038], 2)
+    scaled = data * 2
+    gram = scaled @ scaled.T
+    assert float(torch.trace(gram)) == pytest.approx(4.0)
+    largest = float(_exact_eigenvalues(scaled)[-1])
+
+    reference = principal_components(
+        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+    )
+    result = principal_components(
+        scaled, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+    )
+
+    assert dict(result.distribution) == dict(reference.distribution)
+    assert result.dominant_eigenvalue == reference.dominant_eigenvalue
+    assert result.dominant_probability == reference.dominant_probability
+    assert result.within(largest)
+
+
+def test_the_sample_size_is_visible_in_the_distribution() -> None:
+    """Every share is a count over exactly ``shots`` samples, so ``shots`` reaches it.
+
+    ``shots`` is a public argument with a documented meaning -- the number of samples
+    the distribution is drawn from -- so the relation has to be checkable from the
+    result alone. It is: a share is ``count / shots`` for an integer count, so
+    multiplying every share back by ``shots`` recovers whole samples, and those
+    samples sum to ``shots``. Both hold at every width tried.
+
+    The check is what makes the argument load-bearing rather than decorative. A run
+    that ignored the caller's ``shots`` and fell back on the module's default 4096
+    would return shares that are multiples of ``1 / 4096``, which are not multiples
+    of ``1 / 20000``: measured under that change, the worst share times ``shots``
+    lands 0.48 away from an integer and the recovered samples sum to 20008 instead of
+    20000.
+    """
+    data = _data_matrix([0.9962, 0.0038], 2)
+
+    for shots in (100, 250, 20000):
+        result = principal_components(
+            data, n_counting_wires=_COUNTING_WIRES, shots=shots, seed=_SEED
+        )
+        samples = [share * shots for share in result.distribution.values()]
+        assert all(abs(sample - round(sample)) < 1e-9 for sample in samples), shots
+        assert sum(round(sample) for sample in samples) == shots
+
+
+def test_the_adapter_satisfies_the_controlled_unitary_protocol() -> None:
+    """The power form is what phase estimation consumes; the other two are its contract.
+
+    ``append_phase_estimation`` only ever calls ``apply_power_controlled``, so the
+    bare and single-power forms on ``_PhaseFromDensityMatrix`` are never reached by
+    ``principal_components``. They are not dead code to delete: they are two thirds
+    of the ``ControlledUnitary`` protocol the adapter is passed as, and a protocol
+    method that is never executed is a method whose block order can silently be
+    wrong. So they are exercised here, against a density matrix whose exponential is
+    known by hand.
+
+    ``rho = diag(0.75, 0.25)``, so ``U = exp(-2 pi i rho)`` multiplies an eigenvector
+    with eigenvalue 0.75 by ``exp(-2 pi i * 0.75) = exp(-1.5 pi i) = i``. The circuit
+    starts every wire in ``|0>``, so the data register holds the eigenvector of
+    0.75 and ``U`` turns its amplitude into that phase. The controlled case pins the
+    block order: ``diag(I, U)`` means the control being ``|0>`` leaves the register
+    alone, and the control being ``|1>`` is the branch that carries the phase. The
+    opposite order is the same matrix written the other way round and would pass a
+    test that only checked a phase appeared somewhere.
+    """
+    rho = torch.diag(torch.tensor([0.75, 0.25], dtype=torch.float64))
+    adapter = _PhaseFromDensityMatrix(rho)
+
+    assert isinstance(adapter, ControlledUnitary)
+    assert adapter.n_wires == 1
+
+    # ``complex(...)`` on both sides: ``pytest.approx`` only understands a tensor
+    # when numpy is importable, and this repository does not declare numpy.
+    phase = complex(torch.exp(torch.tensor(-1.5j * math.pi)))
+
+    bare = Circuit(1)
+    adapter.apply(bare, [0])
+    assert complex(bare.state().reshape(-1)[0]) == pytest.approx(phase, abs=1e-6)
+
+    control_off = Circuit(2)
+    adapter.apply_controlled(control_off, 0, [1])
+    assert [complex(value) for value in control_off.state().reshape(-1)] == (
+        pytest.approx([1.0, 0.0, 0.0, 0.0], abs=1e-6)
+    )
+
+    control_on = Circuit(2)
+    control_on.gate("x", 0)
+    adapter.apply_controlled(control_on, 0, [1])
+    assert [complex(value) for value in control_on.state().reshape(-1)] == (
+        pytest.approx([0.0, 0.0, phase, 0.0], abs=1e-6)
     )
 
 
@@ -236,16 +405,24 @@ def test_a_non_finite_data_matrix_is_refused() -> None:
 
 
 def test_the_data_matrix_is_validated() -> None:
-    """A non-tensor, a 1-D tensor, an integer matrix and a non-power-of-two shape go."""
+    """A non-tensor, a 1-D tensor, an integer matrix and a non-power-of-two shape go.
 
+    The shape messages are matched on this module's own wording rather than on the
+    phrase "power of two", which the state-preparation primitive raises too: a
+    regression that deleted the module's own check would let the amplitudes reach
+    ``append_arbitrary_state`` and come back reporting a length, and a loose match
+    would not notice.
+    """
     with pytest.raises(ValueError, match="torch.Tensor"):
         principal_components([1.0, 0.0, 0.0, 1.0], n_counting_wires=4)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="two-dimensional"):
         principal_components(torch.ones(4), n_counting_wires=4)
     with pytest.raises(ValueError, match="floating-point"):
         principal_components(torch.eye(2, dtype=torch.int64), n_counting_wires=4)
-    with pytest.raises(ValueError, match="power of two"):
+    with pytest.raises(ValueError, match=r"A's rows must be a power of two"):
         principal_components(torch.eye(3), n_counting_wires=4)
+    with pytest.raises(ValueError, match=r"A's columns must be a power of two"):
+        principal_components(torch.zeros(4, 3), n_counting_wires=4)
 
 
 def test_the_run_validates_its_counting_width_and_shot_count() -> None:
