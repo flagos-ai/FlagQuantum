@@ -294,7 +294,7 @@ def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
 
     The equality is a second net for a different implementation, and that is why it is
     asserted at all: one whose three readings all land inside the magnitude tolerance
-    but differ from each other passes every ``*_exact`` and magnitude assertion and is
+    but differ from each other passes the ``*_exact`` and magnitude assertions and is
     caught here alone. Measured on a stand-in whose three readings are ``0.53``,
     ``0.47`` and ``0.47`` -- the first two assertions pass, and this equality is the
     only one that fires.
@@ -304,7 +304,7 @@ def test_the_swap_test_is_sign_blind_in_the_three_relative_phases() -> None:
     that pair and not about every pair -- the test below measures a half-overlap pair,
     whose two paths read ``0.5`` and ``0.707`` and are separated by the magnitude
     assertion. The triple is what the contract names, and it is also what the equality
-    needs: two states give one equality, three give one that a per-state error can break.
+    needs.
     """
     for n_wires in (1, 2):
         zero, plus, minus, imaginary = _signed_states(n_wires)

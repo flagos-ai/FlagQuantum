@@ -93,8 +93,8 @@ applies to them as to everything else in this guide.
   end-to-end advantage follows. See the section below.
 - **Quantum kernel estimation rests on a data-access model it does not meet.**
   The kernel-matrix circuit's cost counts the swap tests: `O(eps**-2)` of them per
-  entry and `O(m**2 / eps**2)` for an `m` by `m` matrix, in the paper's own
-  words. It assumes the two feature states are already available, reached through
+  entry, in the paper's own words, and therefore `O(m**2 / eps**2)` for an `m` by
+  `m` matrix. It assumes the two feature states are already available, reached through
   a qRAM or an amplitude-encoding unitary whose cost the count does not include.
   Each feature state is built here gate by gate from the classical feature vector,
   so that cost is paid rather than assumed away. Two further statements are the
@@ -604,9 +604,8 @@ implementation, first and on its own: its reading of the first partner is
 three is a second net, for an implementation whose three readings all land
 inside that tolerance but differ from each other. A test built on the
 **identical-states pair alone** could not tell a sign-carrying implementation
-from a correct one — both paths read `1` there — and the equality the triple
-carries is a net a pair cannot provide: two readings give one comparison, three
-give one that a per-state error can break.
+from a correct one — both paths read `1` there — which is why the triple is the
+check the unit carries.
 
 **The feature map is this package's own angle encoding, and not the cited
 paper's.** A Hadamard on every wire, a phase rotation carrying each feature on
