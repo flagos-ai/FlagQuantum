@@ -29,9 +29,9 @@ more than three evaluation wires, and a register is also where a distance would 
 be carried. So the search here runs over the centroid index alone, at most three wires
 wide, and the distance from the point being assigned to each centroid is computed in
 double precision outside the circuit: the predicate closes over that table. The point is
-assigned by one such table at a time, and the register is dropped and rebuilt for the
-next point. What remains of the paper's quantization is the search itself -- a minimum
-search, not a distance computed coherently -- and that is what the module demonstrates.
+assigned by one such table at a time, and every round builds its register afresh. What
+remains of the paper's quantization is the search itself -- a minimum search, not a
+distance computed coherently -- and that is what the module demonstrates.
 
 **The search is a minimum search over a moving threshold.** One point's assignment is a
 loop rather than a single circuit. The loop holds the index of the best centroid found so
@@ -49,11 +49,14 @@ exactly one search, the round that finds nothing.
 not on the distance alone, so a centroid at exactly the threshold distance is marked only
 when its index is the smaller one, and a point equidistant from two centroids is assigned
 the lower-indexed of them. The rule is not a tie-break applied afterwards: it is the
-order the search moves in, so it needs no separate path and it holds however the sample
-falls. Measured on a point at ``(3, 3)`` with centroids at ``(0, 0)``, ``(2, 0)`` and
-``(0, 2)``, whose distances to the last two are exactly equal at ``3.1622776601683795``:
-the assignment was index ``1`` for every sampling seed from 0 through 199, at 1024 shots,
-which is the outcome measured rather than a distribution statement. Register values that
+order the search moves in, so it is the same whichever of the tied centroids a round
+happens to return -- the round that leaves the farther centroid marks both of them, and
+the round after that marks only the lower-indexed one, because the higher-indexed one is
+then at exactly the threshold distance with a larger index. Measured on a point at
+``(3, 3)`` with centroids at ``(0, 0)``, ``(2, 0)`` and ``(0, 2)``, whose distances to
+the last two are exactly equal at ``3.1622776601683795``: the assignment was index ``1``
+for every sampling seed from 0 through 199, at 1024 shots, which is the outcome measured
+rather than a distribution statement. Register values that
 name no centroid are excluded by the same predicate, so a three-centroid search in a
 two-wire register never returns the slot no centroid occupies.
 
