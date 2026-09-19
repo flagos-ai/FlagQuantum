@@ -739,7 +739,7 @@ build the objective of one instance and evaluate that objective at an assignment
 so neither the evaluation nor the mapping is new here. Which subset a solver
 returns, and at what cost, belongs to the solver the problem is handed to, and any
 advantage such a solver observes is the solver's. The module says this before it
-says anything about what it builds, and the position is `qubo.py`'s: a polynomial
+describes the objective it builds, and the position is `qubo.py`'s: a polynomial
 classical transformation with no advantage of its own.
 
 **The penalty weight is the caller's decision.** There is no default for it

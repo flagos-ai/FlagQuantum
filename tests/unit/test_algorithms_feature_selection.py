@@ -214,11 +214,14 @@ def test_the_size_penalty_is_the_difference_the_energy_carries() -> None:
             n_selected=_N_SELECTED,
             penalty=_PENALTY,
         )
-        assert problem.energy(assignment) - (choice + pairs) == pytest.approx(size)
+        # ``difference`` is read off the module's own energy; it vanishes on the target
+        # size and is positive off it, which is what the penalty's presence means here.
+        difference = problem.energy(assignment) - (choice + pairs)
+        assert difference == pytest.approx(size)
         if len(selected) == _N_SELECTED:
-            assert size == 0.0
+            assert difference == pytest.approx(0.0, abs=1e-9)
         else:
-            assert size > 0.0
+            assert difference > 1e-9
 
 
 def test_a_problem_without_redundancy_keeps_the_size_penalty_in_its_pairs() -> None:
@@ -407,7 +410,7 @@ def test_the_redundancy_is_validated() -> None:
             penalty=1.0,
             redundancy=torch.zeros(4, 4, dtype=torch.int64),
         )
-    with pytest.raises(ValueError, match="every redundancy must be finite"):
+    with pytest.raises(ValueError, match="outside the diagonal must be finite"):
         feature_selection_qubo(
             relevance,
             n_selected=1,
@@ -428,6 +431,36 @@ def test_the_redundancy_is_validated() -> None:
             penalty=1.0,
             redundancy=torch.tensor([[0.0, 0.5], [0.25, 0.0]]),
         )
+
+
+def test_the_diagonal_of_a_redundancy_matrix_is_not_read() -> None:
+    """A pair is two features, so the diagonal carries no score and no requirement.
+
+    Measured: a diagonal of ``nan``, of ``inf`` or of any number is accepted, and the
+    coefficient maps and every subset's objective are the ones a zero diagonal gives. The
+    off-diagonal entries are still held to finiteness and to symmetry, which the test
+    above checks.
+    """
+    for diagonal in (float("nan"), float("inf"), 7.5):
+        rows = [
+            [
+                diagonal if first == second else _REDUNDANCY[first][second]
+                for second in range(4)
+            ]
+            for first in range(4)
+        ]
+        problem = feature_selection_qubo(
+            torch.tensor(_RELEVANCE, dtype=torch.float64),
+            n_selected=_N_SELECTED,
+            penalty=_PENALTY,
+            redundancy=torch.tensor(rows, dtype=torch.float64),
+        )
+        clean = _problem()
+        assert problem.qubo.quadratic == clean.qubo.quadratic
+        assert problem.qubo.linear == clean.qubo.linear
+        assert problem.qubo.offset == clean.qubo.offset
+        for assignment in _assignments(4):
+            assert problem.energy(assignment) == clean.energy(assignment)
 
 
 def test_the_target_size_is_validated() -> None:
@@ -488,12 +521,12 @@ def test_the_instance_is_keyword_only_and_that_is_what_it_protects() -> None:
     assert transposed.n_selected == 3
     assert transposed.penalty == pytest.approx(2.0)
 
-    for fields in (
-        {"n_selected": 3.0, "penalty": 2.0},
-        {"n_selected": 100, "penalty": 2.0},
-        {"n_selected": 3, "penalty": 0.0},
+    for fields, reads in (
+        ({"n_selected": 3.0, "penalty": 2.0}, "must be an integer"),
+        ({"n_selected": 100, "penalty": 2.0}, r"size in range\(5\)"),
+        ({"n_selected": 3, "penalty": 0.0}, "positive and finite"),
     ):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=reads):
             FeatureSelectionProblem(qubo=problem.qubo, **fields)  # type: ignore[arg-type]
 
 

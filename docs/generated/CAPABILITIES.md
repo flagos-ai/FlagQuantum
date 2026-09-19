@@ -479,7 +479,7 @@ Build the binary objective of a feature-selection instance -- a subset's relevan
 
 - **Maturity:** Experimental
 - **Public API:** `flagquantum.algorithms.feature_selection`
-- **Runtime modes:** `local_statevector`
+- **Runtime modes:** `not_applicable`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_process`

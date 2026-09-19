@@ -75,9 +75,9 @@ class FeatureSelectionProblem:
 
     The target size and the penalty weight are carried here rather than read back off the
     problem. A ``QuboProblem`` holds a variable count, a linear map, a quadratic map and
-    an offset, and neither of these two is one of those; and both enter those maps as
-    sums the caller's scores share, the weight joining the relevance in the linear map
-    and the pairs' redundancies in the quadratic one.
+    an offset, and neither of these two is one of those; the weight joins the relevance in
+    the linear map and the pairs' redundancies in the quadratic one, and the target size
+    reaches that linear map and the offset through the weight.
 
     ``kw_only`` is not optional here, and the reason is how a call site reads rather than
     what it would catch: the fields are a problem object, a count and a weight, so a
@@ -86,14 +86,14 @@ class FeatureSelectionProblem:
     protects against either: where a transposed spelling is refused, it is this class's
     own reading of the fields that refuses it, and a target size must be an integer where
     a weight need not be, so a weight handed in as a fraction cannot be read as a size.
-    Measured, a transposed spelling constructs exactly where its weight was an integer no
-    larger than the feature count and its target size was positive; the two fields then
-    hold each other's values.
+    Measured, a transposed spelling constructs exactly where its weight was an integer in
+    ``range(m + 1)`` and its target size was a positive finite number that is not a flag;
+    the two fields then hold each other's values.
 
     Attributes:
         qubo: The binary objective. ``linear[i]`` is feature ``i``'s coefficient,
             ``quadratic[(i, j)]`` is the coefficient of the pair with the lower index
-            first, and ``offset`` is the constant the size penalty contributes.
+            first, and ``offset`` is the constant added to every objective value.
         n_selected: The target number of features, an integer in
             ``range(qubo.n_variables + 1)``.
         penalty: The weight the objective puts on the target size, positive and finite.
@@ -124,8 +124,8 @@ class FeatureSelectionProblem:
         """Return the objective value of ``assignment``.
 
         The value is :func:`~flagquantum.algorithms.qubo.qubo_energy` applied to the
-        problem this instance carries, so the offset the size penalty contributes is part
-        of it.
+        problem this instance carries; for an instance :func:`feature_selection_qubo`
+        built, the offset the size penalty contributes is part of it.
 
         Args:
             assignment: One binary value per feature, in feature order, where
@@ -198,9 +198,9 @@ def feature_selection_qubo(
     Raises:
         ValueError: If ``relevance`` is not a one-dimensional real floating-point tensor,
             holds no entry, or holds a non-finite entry; if ``redundancy`` is not a tensor
-            of shape ``(m, m)``, holds a non-finite entry, or is not symmetric; if
-            ``n_selected`` is not an integer in ``range(m + 1)``; or if ``penalty`` is not
-            positive and finite.
+            of shape ``(m, m)``, holds a non-finite entry outside its diagonal, or is not
+            symmetric; if ``n_selected`` is not an integer in ``range(m + 1)``; or if
+            ``penalty`` is not positive and finite.
     """
     scores = _validated_relevance(relevance)
     pairs = _validated_redundancy(redundancy, len(scores))
@@ -290,7 +290,8 @@ def _validated_redundancy(
 
     Raises:
         ValueError: If ``redundancy`` is not a tensor of shape
-            ``(n_features, n_features)``, holds a non-finite entry, or is not symmetric.
+            ``(n_features, n_features)``, holds a non-finite entry outside its
+            diagonal, or is not symmetric.
     """
     if redundancy is None:
         return tuple(tuple(0.0 for _ in range(n_features)) for _ in range(n_features))
@@ -317,21 +318,23 @@ def _validated_redundancy(
         tuple(float(value) for value in row)
         for row in redundancy.detach().to(device="cpu", dtype=torch.float64)
     )
-    for row in matrix:
-        if not all(math.isfinite(value) for value in row):
-            raise ValueError(
-                "every redundancy must be finite, and one entry is not; a non-finite "
-                "redundancy makes the objective's value at a subset holding that pair "
-                "undefined"
-            )
     for first in range(n_features):
         for second in range(first + 1, n_features):
-            if matrix[first][second] != matrix[second][first]:
+            above = matrix[first][second]
+            below = matrix[second][first]
+            if not (math.isfinite(above) and math.isfinite(below)):
+                raise ValueError(
+                    "every redundancy outside the diagonal must be finite, got one that "
+                    f"is not at ({first}, {second}) or ({second}, {first}); a non-finite "
+                    "redundancy makes the objective's value at a subset holding that "
+                    "pair undefined"
+                )
+            if above != below:
                 raise ValueError(
                     "a pair of features has one redundancy, so the entry above the "
                     "diagonal and the one below it must be the same number, got "
-                    f"{matrix[first][second]} at ({first}, {second}) against "
-                    f"{matrix[second][first]} at ({second}, {first}); symmetrize the "
+                    f"{above} at ({first}, {second}) against "
+                    f"{below} at ({second}, {first}); symmetrize the "
                     "matrix if the two triangles differ"
                 )
     return matrix
