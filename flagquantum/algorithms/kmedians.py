@@ -202,7 +202,8 @@ def kmedians(
         shots: The number of samples each Grover search draws, at least one. Every
             search in the run is sampled exactly this many times.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator. The
-            same seed and the same arguments replay the same result exactly.
+            same seed is handed to every search in the run, so the same seed and the same
+            arguments replay the same result exactly.
 
     Returns:
         The assignment of every point, the updated centroid positions, and the number of
