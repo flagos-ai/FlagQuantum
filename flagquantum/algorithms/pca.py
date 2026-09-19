@@ -42,28 +42,39 @@ dominant peak's tail into the neighbouring value. :meth:`PcaResult.within` is th
 contract for the resolution, and no confidence interval is computed or reported
 anywhere in this module.
 
-**Which eigenvalue the mode resolves is conditional, and the condition is not
-automatic.** The readout reports the dominant eigenvalue only while that
-eigenvalue's peak stays in one counter value, which is the case whenever its phase
-falls close enough to a counter value that neither neighbouring value takes a share
-of it. A phase near a counter midpoint instead splits the peak across the two
-neighbouring values, and neither half carries more than a fraction of that
-eigenvalue's weight -- while a *smaller* eigenvalue whose phase sits close to a
-counter value keeps all of its own weight on one value and can outrank both halves.
-The mode is then that smaller eigenvalue, and :meth:`PcaResult.within` rejects the
-largest one, which is the contract working as written rather than a failure of it:
-the readout is not claiming to have resolved the largest eigenvalue, it is reporting
-the counter value that was sampled most.
+**Which eigenvalue the mode reports is a weight comparison, not a rule about the
+peak's shape.** The mode is the counter value carrying the largest share of the
+sample, and nothing else; the readout is that counter value's eigenvalue,
+``1 - k / 2**m``. So :meth:`PcaResult.within` accepts the largest eigenvalue exactly
+when the mode's counter value lies within half a step of that eigenvalue's phase,
+and rejects it when some other counter value's share is the larger one.
 
-Measured at six counting wires, a density matrix with spectrum ``0.5078125``,
-``0.375``, ``0.097`` and ``0.0201875`` -- the first at exactly a counter midpoint
-and the second exactly on a counter value -- reads back as ``0.375``, the second
-largest, with shares ``0.3765`` at that value against ``0.2050`` and ``0.2041`` for
-the two halves of the largest eigenvalue's split peak. Whether a given spectrum
-resolves cleanly is a property of where each eigenvalue's phase falls relative to
-the counter grid and not of the counter width alone, so a caller that needs the
-largest eigenvalue specifically has to check the readout rather than assume the mode
-is it.
+What decides that is where each eigenvalue's phase falls on the counter grid, because
+it sets how that eigenvalue's weight is spread across counter values, and therefore
+how large a share each of its counter values can carry. An eigenvalue whose phase
+lands on a counter value keeps its whole share there. One whose phase lands near a
+counter midpoint is split across the two neighbouring values, and each half is
+smaller than the whole share would have been. **A split is a risk and not a cause:**
+the split eigenvalue keeps the mode whenever each half beats every other counter
+value's share, and it then passes ``within`` when the half that kept it is the one
+within half a step of the phase, which the nearer of the two halves is. It loses the
+mode, and ``within`` with it, as soon as a concentrated competitor's share is larger
+than both halves -- the contract working as written, since the readout is not
+claiming to have resolved the largest eigenvalue, only reporting the counter value
+that was sampled most. Neither the counter width nor the shape of the peak settles
+the question; only the comparison of shares does.
+
+Both outcomes are measured, at six counting wires, with the largest eigenvalue held
+fixed at phase ``31.35/64`` -- split across counters 31 and 32, whose shares are
+``0.3385`` and ``0.0973`` -- and only a competitor's weight moving. With a
+competitor of weight ``0.296875`` on counter 45 (share ``0.2981``) the split peak
+*keeps* the mode: both halves beat the competitor, the readout is ``0.515625``, and
+it is within half a step of the largest eigenvalue. With a competitor of weight
+``0.390625`` on counter 39 (share ``0.3889``) the split peak *loses* it: the
+competitor's share is above both halves, the readout is ``0.390625``, and the
+largest eigenvalue is correctly rejected. A caller that needs the largest eigenvalue
+specifically has to check the readout, and cannot infer it from the peak having been
+split or from the counter width.
 
 **Wire layout.** The counting register is wires ``0 .. m - 1``, the data register
 ``a`` follows it, and the purification register ``b`` follows that. The counting
@@ -104,9 +115,11 @@ class PcaResult:
     Attributes:
         dominant_eigenvalue: The eigenvalue read out at the mode ``k`` of
             ``distribution``, which is ``1 - k / 2**n_counting_wires``. It is the
-            dominant eigenvalue of ``rho`` only when that eigenvalue's peak stays in
-            one counter value: a split peak hands the mode to a smaller eigenvalue.
-            See the module docstring for the condition and for a measured case.
+            dominant eigenvalue of ``rho``, to within the counter's resolution, when
+            the mode's counter value lies within half a step of that eigenvalue's
+            phase. Whether it does is a comparison between counter values' shares and
+            not a property of the peak's shape: a split peak can keep the mode or
+            lose it. See the module docstring for both outcomes, measured.
         dominant_probability: The share of the sample that landed on that mode.
             It is not the eigenvalue's weight in ``rho``: see the module docstring.
         distribution: The counter register's marginal distribution, keyed by its
@@ -169,19 +182,22 @@ class PcaResult:
 
         This is the accuracy contract the module makes, expressed once here rather
         than re-derived by every caller. Half a step is the whole of it: ``within``
-        compares ``eigenvalue`` against the eigenvalue the readout reports and asks
-        only whether the counter register could have produced that report from a
-        phase that close. A full step would accept a value the neighbouring counter
-        value could equally claim, which is why the bound is half and not whole.
+        accepts ``eigenvalue`` when the mode's counter value lies within half a step
+        of that eigenvalue's phase, and rejects it otherwise. A full step would
+        accept a value the neighbouring counter value could equally claim, which is
+        why the bound is half and not whole.
 
         **It does not claim that the readout resolves the largest eigenvalue.** The
-        counter value the mode sits on is the nearest one to that eigenvalue's phase
-        only while the peak stays in a single counter value. A phase near a counter
-        midpoint splits the peak across two values, and a smaller eigenvalue whose
-        phase sits near a counter value can then take the mode; ``within`` rejects
-        the largest eigenvalue in that case, correctly, because the readout did not
-        report it. The module docstring states the condition and gives a measured
-        spectrum that splits.
+        mode is the counter value with the largest share, so whether it lands within
+        half a step of the largest eigenvalue's phase is decided by a comparison
+        between counter values' shares. The largest eigenvalue's own phase sets how
+        its weight is spread over counter values -- concentrated on one of them, or
+        split across two -- and both outcomes are reachable: a split peak keeps the
+        mode when each half beats every other counter value's share, and loses it to
+        a concentrated competitor whose share is larger than both halves. ``within``
+        rejects the largest eigenvalue in that second case, correctly, because the
+        readout did not report it. The module docstring states this and gives a
+        measured spectrum for each outcome.
 
         It is a resolution statement and not a distribution statement: a value this
         rejects is not excluded at any stated confidence level, and an eigenvalue
@@ -233,9 +249,10 @@ def principal_components(
     Returns:
         The eigenvalue read out at the counter register's mode with that value's
         measured share, the counter register's distribution, and the resolution they
-        were read at. The readout reports the dominant eigenvalue while that
-        eigenvalue's peak stays in one counter value; a split peak hands the mode to
-        a smaller eigenvalue, and the module docstring says so and shows a case.
+        were read at. The readout reports the dominant eigenvalue when the mode's
+        counter value lies within half a step of that eigenvalue's phase; a split peak
+        can keep the mode or lose it to a concentrated competitor, and the module
+        docstring measures both.
 
     Raises:
         ValueError: If ``A`` is not a two-dimensional real floating-point tensor

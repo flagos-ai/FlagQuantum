@@ -112,28 +112,28 @@ def test_the_mode_resolves_the_largest_eigenvalue_on_two_data_wires() -> None:
 
 
 def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> None:
-    """A split peak hands the mode to the second largest eigenvalue, by design.
+    """A split peak that loses the mode: the failure mode, measured.
 
     This case is in the file because it is the counterexample to a claim the module
-    used to make: that the counter value the mode sits on is the one nearest the
-    largest eigenvalue's phase, so the readout is always within half a step of the
-    largest eigenvalue. It is not, and this spectrum is where that shows.
+    once made, that the readout is always within half a step of the largest
+    eigenvalue. It is not, and this spectrum is one where it is not.
 
     At six counting wires the counter grid is 1/64 of a turn. The largest eigenvalue
     here is 0.5078125, whose phase ``1 - 0.5078125 = 0.4921875`` is exactly the
     midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5, so its peak
-    splits across both and neither half carries its full weight. The second largest
-    is 0.375, whose phase 0.625 is exactly a counter value, so all of its weight
-    lands on one value. Measured: 0.3765 at the counter value reading 0.375, against
-    0.2050 and 0.2041 for the two halves. The mode is therefore the second largest
-    eigenvalue, and it is the same readout for every sampling seed tried and at both
-    8000 and 20000 shots -- the split decides it, not the noise.
+    splits across both and each half is about two fifths of its weight. The second
+    largest is 0.375, whose phase 0.625 is exactly a counter value, so all of its
+    weight lands on one value. Measured: 0.3765 at the counter value reading 0.375,
+    against 0.2050 and 0.2041 for the two halves. The mode is therefore the second
+    largest eigenvalue, and it is the same readout for every sampling seed tried and
+    at both 8000 and 20000 shots -- this spectrum decides it, not the noise.
 
-    That is documented behaviour: the module docstring states the condition under
-    which the readout resolves the largest eigenvalue, and ``within`` no longer
-    claims to guarantee it. The assertion below is the observed readout, so a change
-    that quietly restores the old claim -- or one that changes where the peak splits
-    -- fails here.
+    What this pins is the observed readout of a split peak that lost, and the shares
+    that made it lose. It is **not** a claim that a split always loses: the companion
+    test below removes only a competitor's weight and has the very same split win.
+    A change to the readout, to the register layout, or to where this peak splits
+    moves the assertions here; a change to the docstring alone does not, and is not
+    something a test can catch.
     """
     data = _data_matrix([0.5078125, 0.375, 0.097, 0.0201875], 4)
     exact = _exact_eigenvalues(data)
@@ -272,6 +272,58 @@ def test_the_adapter_satisfies_the_controlled_unitary_protocol() -> None:
     assert [complex(value) for value in control_on.state().reshape(-1)] == (
         pytest.approx([0.0, 0.0, phase, 0.0], abs=1e-6)
     )
+
+
+def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> None:
+    """The same split that loses above still wins when the competitor is smaller.
+
+    The mode is the counter value with the largest share, so a split peak loses only
+    when a concentrated competitor's share is larger than both of its halves. This
+    test is the other side of that comparison, and without it a readout that
+    hard-coded "split means lost" -- the opposite overclaim to the one this file
+    already corrected -- would pass every other test here.
+
+    The largest eigenvalue is 0.51015625, at phase ``31.35/64``: it is split across
+    counters 31 and 32, whose measured shares are 0.3385 and 0.0973. Only the
+    competitor moves. At weight 0.296875 on counter 45 its share is 0.2981, below the
+    split's larger half, so the split peak takes the mode and the readout is 0.515625
+    -- counter 31 reads ``1 - 31/64`` -- which is within half a step of the largest
+    eigenvalue. Raising that one weight to 0.390625, as the losing case above does at
+    counter 39, pushes the competitor's share to 0.3889 and hands the mode over.
+
+    Both readouts are stable across sampling seeds: the winner is decided by the
+    shares, which the weights set, and not by the sampling noise on top of them.
+    """
+    # The largest eigenvalue's phase is 31.35/64, so lambda = 1 - 31.35/64.
+    split = [0.51015625, 0.296875, 0.096484375, 0.096484375]
+    assert sum(split) == pytest.approx(1.0)
+
+    data = _data_matrix(split, 4)
+    exact = _exact_eigenvalues(data)
+    largest = float(exact[-1])
+    assert largest == pytest.approx(1.0 - 31.35 / 64)
+
+    result = principal_components(
+        data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=1
+    )
+
+    # The readout is the split peak's larger half, and it resolves the largest eigenvalue.
+    assert result.dominant_eigenvalue == pytest.approx(0.515625, abs=1e-9)
+    assert result.within(largest)
+    # The two halves of the split, and the competitor they both beat.
+    halves = (
+        result.distribution[_counter_of(0.515625, _COUNTING_WIRES)],
+        result.distribution[_counter_of(0.5, _COUNTING_WIRES)],
+    )
+    competitor = result.distribution[_counter_of(0.296875, _COUNTING_WIRES)]
+    assert halves[0] == pytest.approx(0.3385, abs=0.01)
+    assert halves[1] == pytest.approx(0.0973, abs=0.01)
+    assert competitor == pytest.approx(0.2981, abs=0.01)
+    assert result.dominant_probability > competitor
+    # The split is real, not a peak that merely leaned: both halves carry a share of
+    # their own, and the competitor sits on a different counter value entirely.
+    assert min(halves) > 0.05
+    assert competitor < halves[0]
 
 
 def test_the_dominant_counter_value_carries_the_largest_share() -> None:
@@ -423,6 +475,19 @@ def test_the_data_matrix_is_validated() -> None:
         principal_components(torch.eye(3), n_counting_wires=4)
     with pytest.raises(ValueError, match=r"A's columns must be a power of two"):
         principal_components(torch.zeros(4, 3), n_counting_wires=4)
+    # A power of two with one row or one column is still not a register: a single
+    # wire carries two amplitudes, and a one-amplitude register has no density
+    # matrix with a meaningful spectrum. Without this case the ``size < 2`` half of
+    # the check can be deleted and the matrix is accepted instead, returning a
+    # degenerate readout rather than refusing.
+    with pytest.raises(
+        ValueError, match=r"A's rows must be a power of two of at least two"
+    ):
+        principal_components(torch.ones(1, 2), n_counting_wires=4)
+    with pytest.raises(
+        ValueError, match=r"A's columns must be a power of two of at least two"
+    ):
+        principal_components(torch.ones(2, 1), n_counting_wires=4)
 
 
 def test_the_run_validates_its_counting_width_and_shot_count() -> None:

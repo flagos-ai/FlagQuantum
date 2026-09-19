@@ -340,8 +340,11 @@ matrix `rho = A A^T / tr(A A^T)` of a real `A` with at least two rows and two
 columns, each a power of two, prepares the purification `vec(A) / ||A||_F` on the
 data and purification registers with `append_arbitrary_state`, and hands
 `exp(-2 pi i rho)` to `append_phase_estimation`. The counting register's marginal
-is the eigenvalue distribution: `PcaResult` carries it, with the dominant
-eigenvalue, that value's measured share, and the resolution the register achieves.
+is the eigenvalue distribution: `PcaResult` carries it, with the eigenvalue read out
+at the distribution's mode, that value's measured share, and the resolution the
+register achieves. The readout is the mode's counter value, which is the largest
+eigenvalue when that counter value lies within half a step of the largest
+eigenvalue's phase — see *Which eigenvalue the mode reports* below.
 
 **The phase is not the eigenvalue.** At `t = 2*pi` the exponential's eigenphase on
 an eigenvector of `rho` with eigenvalue `lambda` is `exp(-2 pi i lambda)`, which is
@@ -354,10 +357,28 @@ own: with it removed, the two tests that compare the readout against
 **A share is not an eigenvalue.** The counter value nearest a small eigenvalue
 carries the dominant peak's phase-estimation tail rather than that eigenvalue's
 weight. Measured at six counting wires: the eigenvalue `0.0038` comes back on its
-own counter value with `0.0331` of the sample, about nine times its weight. Only
-the *position* of the mode is an eigenvalue estimate, `PcaResult.within` states
-that contract as half a counter step, and no confidence interval is computed or
-reported.
+own counter value with `0.0331` of the sample, about nine times its weight.
+`PcaResult.within` states the resolution contract as half a counter step, and no
+confidence interval is computed or reported.
+
+**Which eigenvalue the mode reports is a weight comparison, not a rule about the
+peak's shape.** The mode is the counter value with the largest share, so the readout
+is that counter value's eigenvalue, and `within` accepts the largest eigenvalue
+exactly when the mode's counter value lies within half a step of that eigenvalue's
+phase. Where each eigenvalue's phase falls on the counter grid decides how its weight
+is spread: on a counter value it stays concentrated, near a counter midpoint it
+splits across the two neighbours and each half is smaller than the whole share would
+have been. **A split is a risk and not a cause** — the split peak keeps the mode
+while each half beats every other counter value's share, and loses it to a
+concentrated competitor whose share is larger than both. Measured at six counting
+wires, with the largest eigenvalue held at phase `31.35/64` (split across counters
+31 and 32, shares `0.3385` and `0.0973`) and only a competitor's weight moving: at
+weight `0.296875` the competitor's share is `0.2981`, below the split's larger half,
+so the split peak keeps the readout `0.515625`, within half a step of the largest
+eigenvalue; at weight `0.390625` its share is `0.3889`, above both halves, and the
+readout is the competitor's `0.390625`, with the largest eigenvalue correctly
+rejected. A caller that needs the largest eigenvalue specifically has to check the
+readout rather than infer it from the counter width or the shape of the peak.
 
 ```python
 import math
@@ -374,7 +395,7 @@ print([round(float(value), 4) for value in torch.linalg.eigvalsh(rho)])
 
 result = principal_components(data, n_counting_wires=6, shots=20000, seed=11)
 print(round(result.dominant_eigenvalue, 4), round(result.dominant_probability, 4))
-# 1.0 0.8196  -- the dominant eigenvalue, read off the counter value 0
+# 1.0 0.8196  -- the mode's readout; here it is the dominant eigenvalue, read off counter 0
 print(round(result.distribution["111111"], 4))
 # 0.0331  -- the counter value nearest 0.0038, and this share is the tail above
 ```
