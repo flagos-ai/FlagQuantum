@@ -26,6 +26,25 @@ target comes out wrong on a large fraction of inputs -- 8 of 16 operand patterns
 controls and 32 of 96 at four -- and nothing is raised; the ancilla itself is never
 corrupted, so the failure is invisible from the ancilla. A circuit builder has no way to
 learn where a wire starts, so meeting that precondition is the caller's to do.
+
+**Truth-table synthesis.** :func:`marked_states` and the oracle units above the building
+blocks -- :func:`phase_oracle` and :func:`append_phase_oracle`, :func:`bit_oracle` and
+:func:`append_bit_oracle` -- turn a classical predicate into a quantum oracle by
+enumerating the predicate's truth table. Each marked input is mapped onto the all-ones
+pattern with X gates, acted on by the multi-controlled X above, and mapped back, so the
+phase oracle multiplies exactly the marked amplitudes by ``-1``, and the bit oracle XORs
+the predicate's value onto its target wire and then restores every wire it allocated. The
+loop enumerates all ``2**n`` inputs, so synthesis costs ``O(2**n)`` classically and **no
+advantage follows from it at any scale**: the oracle a query-model algorithm is handed
+here is no cheaper than the classical search it is meant to replace. Truth-table synthesis
+is standard textbook material, and no paper is cited for it.
+
+The standalone :func:`phase_oracle` is capped at three wires. Its multi-controlled Z is a
+multi-controlled X with ``n - 1`` controls, and a multi-controlled X above two controls
+needs ``len(controls) - 2`` caller-supplied ancillas -- ``n - 3`` of them from ``n = 4`` up
+-- while a circuit pinned at exactly ``n_wires`` wires has none to spare. The append form
+takes the caller's register and its ancillas. :func:`bit_oracle` has no such cap, because
+it allocates the ladder ancillas it needs and restores them.
 """
 
 from __future__ import annotations
@@ -33,8 +52,21 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ...circuit import Circuit
+from .types import Predicate
 
-__all__ = ["append_comparator", "append_multi_controlled_x"]
+__all__ = [
+    "append_bit_oracle",
+    "append_comparator",
+    "append_multi_controlled_x",
+    "append_phase_oracle",
+    "bit_oracle",
+    "marked_states",
+    "phase_oracle",
+]
+
+# A standalone phase oracle has one wire per register bit and none to spare, so the
+# multi-controlled X inside its multi-controlled Z can fold at most two controls onto it.
+_PHASE_ORACLE_WIRE_LIMIT = 3
 
 
 def append_multi_controlled_x(
@@ -163,6 +195,201 @@ def append_comparator(
             circuit, left[index], right[index], flags[index], flags[index + 1], scratch
         )
     circuit.gate("x", flags[0])
+
+
+def marked_states(predicate: Predicate, n_wires: int) -> tuple[int, ...]:
+    """List the register values ``predicate`` marks, in ascending order.
+
+    The set is the predicate's truth table, read by calling ``predicate`` once per input of
+    an ``n_wires``-wide register, all ``2**n_wires`` of them. That enumeration is the whole
+    cost of the synthesis in the oracle builders below: a classical pass of ``O(2**n)``
+    predicate calls, which is why an oracle built this way carries no advantage of its own.
+
+    Args:
+        predicate: The property to evaluate, one register value at a time.
+        n_wires: The width of the register the predicate is read over.
+
+    Returns:
+        Every ``value`` in ``range(2**n_wires)`` for which ``predicate(value)`` is truthy,
+        in ascending order.
+
+    Raises:
+        ValueError: If ``n_wires`` is less than one; a register with no wires has no input
+            to enumerate.
+    """
+    _validate_register_width(n_wires)
+    return tuple(value for value in range(2**n_wires) if predicate(value))
+
+
+def phase_oracle(predicate: Predicate, n_wires: int) -> Circuit:
+    """Build a standalone phase oracle over ``n_wires`` wires for ``predicate``.
+
+    The circuit carries exactly ``n_wires`` wires, one per register bit, and multiplies the
+    amplitude of every marked basis state by ``-1`` while leaving the other basis states
+    alone. That fixed width is what an algorithm wrapping the register needs, and it is
+    also why this form stops at three wires: the ancilla the multi-controlled Z needs above
+    that has no free wire to sit on. The append form takes a register the caller supplies.
+
+    Args:
+        predicate: The property the oracle marks.
+        n_wires: The width of the register, at most three.
+
+    Returns:
+        The standalone phase oracle, its wires numbered ``0`` to ``n_wires - 1``.
+
+    Raises:
+        ValueError: If ``n_wires`` is less than one, or more than three; the message names
+            the ancillas the wider construction needs and the form that takes them.
+    """
+    _validate_register_width(n_wires)
+    if n_wires > _PHASE_ORACLE_WIRE_LIMIT:
+        raise ValueError(
+            f"a standalone phase oracle is capped at {_PHASE_ORACLE_WIRE_LIMIT} wires, got "
+            f"{n_wires}: its multi-controlled Z is a multi-controlled X with {n_wires - 1} "
+            f"controls, and a multi-controlled X above two controls needs "
+            f"len(controls) - 2 = {n_wires - 3} ancillas in |0>, which a circuit of "
+            f"exactly {n_wires} wires has no free wire for. Use append_phase_oracle to "
+            f"append the oracle to a circuit whose register and ancillas the caller lays "
+            f"out, or bit_oracle, which allocates its own ladder ancillas."
+        )
+    circuit = Circuit(n_wires)
+    append_phase_oracle(circuit, predicate, list(range(n_wires)))
+    return circuit
+
+
+def append_phase_oracle(
+    circuit: Circuit,
+    predicate: Predicate,
+    wires: Sequence[int],
+    *,
+    ancillas: Sequence[int] = (),
+) -> None:
+    """Append a phase oracle for ``predicate`` to ``circuit`` in place.
+
+    For each marked register value, the wires whose bit is zero are flipped, so that
+    value's basis state is mapped onto the all-ones pattern; a Z on that pattern is applied;
+    and the flips are undone. The Z on the all-ones pattern is the only gate that touches a
+    phase, so the net effect is that exactly the marked basis states pick up a factor of
+    ``-1``, and every other basis state is returned to where it started.
+
+    Args:
+        circuit: The circuit to extend.
+        predicate: The property the oracle marks.
+        wires: The register's wires, most significant first.
+        ancillas: The wires the multi-controlled Z's multi-controlled X folds onto, one per
+            control above two of them: ``max(len(wires) - 3, 0)`` wires, none at all at
+            three wires or fewer. **Each must be in ``|0>`` on entry**, and each is
+            restored to ``|0>`` on exit. They must lie outside the register.
+
+    Raises:
+        ValueError: If ``wires`` is empty or repeats a wire; or if the ancilla count is not
+            ``max(len(wires) - 3, 0)``, or an ancilla repeats a register wire.
+    """
+    ordered = list(wires)
+    _validate_register(ordered, "phase oracle")
+    spare = list(ancillas)
+    _validate_ladder_ancillas(ordered, spare, 3, "phase oracle")
+    for value in range(2 ** len(ordered)):
+        if not predicate(value):
+            continue
+        zeros = _zero_wires(ordered, value)
+        for wire in zeros:
+            circuit.gate("x", wire)
+        _append_multi_controlled_z(circuit, ordered, spare)
+        for wire in zeros:
+            circuit.gate("x", wire)
+
+
+def bit_oracle(predicate: Predicate, n_wires: int) -> Circuit:
+    """Build a standalone bit oracle over ``n_wires`` wires for ``predicate``.
+
+    The circuit XORs the predicate's value onto one output wire, so on a register holding
+    ``value`` the output wire carries ``predicate(value)``. Because the value is XORed and
+    not assigned, and because every wire the oracle allocates is restored, applying the
+    oracle twice is the identity.
+
+    The circuit carries ``n_wires + 1 + max(0, n_wires - 2)`` wires: the evaluation
+    register, then the output wire, then the ladder ancillas the multi-controlled X needs
+    above two controls. They are allocated, started in ``|0>``, and restored by the builder,
+    which is why this form has no wire cap.
+
+    Args:
+        predicate: The property the oracle marks.
+        n_wires: The width of the evaluation register.
+
+    Returns:
+        The standalone bit oracle, its evaluation wires numbered ``0`` to ``n_wires - 1``,
+        its output wire ``n_wires``, and its ladder ancillas above that.
+
+    Raises:
+        ValueError: If ``n_wires`` is less than one, since a register with no wires has no
+            input to enumerate.
+    """
+    _validate_register_width(n_wires)
+    spare = max(0, n_wires - 2)
+    circuit = Circuit(n_wires + 1 + spare)
+    append_bit_oracle(
+        circuit,
+        predicate,
+        list(range(n_wires)),
+        target=n_wires,
+        ancillas=list(range(n_wires + 1, n_wires + 1 + spare)),
+    )
+    return circuit
+
+
+def append_bit_oracle(
+    circuit: Circuit,
+    predicate: Predicate,
+    wires: Sequence[int],
+    *,
+    target: int,
+    ancillas: Sequence[int] = (),
+) -> None:
+    """Append a bit oracle for ``predicate`` to ``circuit`` in place.
+
+    The construction mirrors :func:`append_phase_oracle`, with the multi-controlled X
+    writing to ``target`` instead of a phase being applied to the all-ones pattern: each
+    marked value's zero bits are flipped, the multi-controlled X XORs ``target`` with the
+    all-ones pattern's occupancy, and the flips are undone. The output wire therefore ends
+    holding ``predicate(value)`` XORed with whatever it entered with, and every other wire,
+    the ladder ancillas included, comes back to the value it entered with.
+
+    Args:
+        circuit: The circuit to extend.
+        predicate: The property the oracle marks.
+        wires: The evaluation register's wires, most significant first.
+        target: The wire XORed with the predicate's value. It must not be a register wire.
+        ancillas: The wires the ladder folds onto, ``max(len(wires) - 2, 0)`` of them, none
+            at all at two wires or fewer. **Each must be in ``|0>`` on entry** and each is
+            restored to ``|0>`` on exit. They must be wired in the order the ladder computes
+            them: ``ancillas[i]`` carries the conjunction of ``wires[:i + 2]``.
+
+    Raises:
+        ValueError: If ``wires`` is empty or repeats a wire; if the ancilla count is not
+            ``max(len(wires) - 2, 0)``; or if the target or an ancilla repeats a wire from
+            the register, the target, or the ancillas.
+    """
+    ordered = list(wires)
+    _validate_register(ordered, "bit oracle")
+    spare = list(ancillas)
+    _validate_ladder_ancillas(ordered, spare, 2, "bit oracle")
+    occupied = ordered + [target] + spare
+    if len(set(occupied)) != len(occupied):
+        raise ValueError(
+            "the evaluation register, the target, and the ladder ancillas must be "
+            f"distinct wires, got wires={ordered}, target={target}, ancillas={spare}; a "
+            "wire that is read and written by the same oracle cannot carry both"
+        )
+    for value in range(2 ** len(ordered)):
+        if not predicate(value):
+            continue
+        zeros = _zero_wires(ordered, value)
+        for wire in zeros:
+            circuit.gate("x", wire)
+        append_multi_controlled_x(circuit, ordered, target, ancillas=spare)
+        for wire in zeros:
+            circuit.gate("x", wire)
 
 
 def _append_equality_step(
@@ -330,3 +557,122 @@ def _validate_comparator(
             "the operands, the target, the equality flags, and the scratch wire must be "
             f"distinct wires, got {occupied}"
         )
+
+
+def _validate_register_width(n_wires: int) -> None:
+    """Check the width of a truth table's evaluation register.
+
+    Args:
+        n_wires: The register width as given.
+
+    Raises:
+        ValueError: If ``n_wires`` is less than one.
+    """
+    if n_wires < 1:
+        raise ValueError(
+            f"a register is at least one wire wide, got n_wires={n_wires}; with no wires "
+            "there is no input to enumerate and nothing to mark"
+        )
+
+
+def _validate_register(wires: Sequence[int], caller: str) -> None:
+    """Check the evaluation register of an oracle builder.
+
+    Args:
+        wires: The register wires as given.
+        caller: The name of the builder being validated, for the message.
+
+    Raises:
+        ValueError: If ``wires`` is empty or repeats a wire.
+    """
+    if not wires:
+        raise ValueError(
+            f"a {caller} needs at least one register wire, got none; with no wires there "
+            "is no input to enumerate and nothing to mark"
+        )
+    if len(set(wires)) != len(wires):
+        raise ValueError(
+            f"the register wires of a {caller} must be distinct, got {list(wires)}; a "
+            "repeated wire would be conditioned on and flipped by the same oracle"
+        )
+
+
+def _validate_ladder_ancillas(
+    register: Sequence[int],
+    ancillas: Sequence[int],
+    free_at: int,
+    caller: str,
+) -> None:
+    """Check the ladder ancillas of an oracle against the register that drives them.
+
+    Args:
+        register: The evaluation wires the predicate is read over.
+        ancillas: The ladder ancillas as given.
+        free_at: The register width at or below which the oracle's widest controlled gate
+            consumes no ancilla -- three for a phase oracle's multi-controlled Z, two for a
+            bit oracle's multi-controlled X.
+        caller: The name of the builder being validated, for the message.
+
+    Raises:
+        ValueError: If the ancilla count is not ``max(len(register) - free_at, 0)``, or an
+            ancilla is also a register wire or repeats another ancilla.
+    """
+    needed = max(len(register) - free_at, 0)
+    if len(ancillas) != needed:
+        raise ValueError(
+            f"a {caller} folds its ladder onto max(0, n_wires - {free_at}) wires -- "
+            f"{needed} of them for this register -- and was given {len(ancillas)}; each "
+            "ladder wire folds one control above the widest natively supported one and "
+            "must be in |0> on entry"
+        )
+    occupied = list(register) + list(ancillas)
+    if len(set(occupied)) != len(occupied):
+        raise ValueError(
+            f"the register and the ladder ancillas of a {caller} must be distinct wires, "
+            f"got wires={list(register)}, ancillas={list(ancillas)}; an ancilla folded "
+            "onto a register wire would corrupt the input it is reading"
+        )
+
+
+def _zero_wires(wires: Sequence[int], value: int) -> list[int]:
+    """Return the wires whose bit is zero in ``value``, read most significant first.
+
+    Args:
+        wires: The register wires, most significant first.
+        value: The register value to read.
+
+    Returns:
+        The wires carrying a zero bit in ``value``, in register order.
+    """
+    width = len(wires)
+    return [
+        wire
+        for index, wire in enumerate(wires)
+        if not (value >> (width - 1 - index)) & 1
+    ]
+
+
+def _append_multi_controlled_z(
+    circuit: Circuit, wires: Sequence[int], ancillas: Sequence[int]
+) -> None:
+    """Append a Z on the all-ones pattern of ``wires``.
+
+    One wire is a plain ``z``. Above that the gate is a Hadamard on the last wire, a
+    multi-controlled X across the rest, and the Hadamard again: the Hadamard pair turns the
+    target wire's ``|1>`` into a sign, so the composed gate multiplies exactly the all-ones
+    pattern by ``-1`` and leaves every other pattern alone. Above three wires the
+    multi-controlled X folds onto the ancillas it is given, each of which must be in
+    ``|0>``.
+
+    Args:
+        circuit: The circuit to extend.
+        wires: The wires the pattern is read over, at least one.
+        ancillas: The ladder ancillas, ``max(len(wires) - 3, 0)`` of them.
+    """
+    if len(wires) == 1:
+        circuit.gate("z", wires[0])
+        return
+    target = wires[-1]
+    circuit.gate("h", target)
+    append_multi_controlled_x(circuit, wires[:-1], target, ancillas=list(ancillas))
+    circuit.gate("h", target)

@@ -10,8 +10,13 @@ is not a general-purpose quantum toolkit.
 
 from __future__ import annotations
 
+from .oracle import append_bit_oracle as append_bit_oracle
 from .oracle import append_comparator as append_comparator
 from .oracle import append_multi_controlled_x as append_multi_controlled_x
+from .oracle import append_phase_oracle as append_phase_oracle
+from .oracle import bit_oracle as bit_oracle
+from .oracle import marked_states as marked_states
+from .oracle import phase_oracle as phase_oracle
 from .phase_estimation import PhaseEstimationSpec as PhaseEstimationSpec
 from .phase_estimation import append_phase_estimation as append_phase_estimation
 from .phase_estimation import phase_estimation_circuit as phase_estimation_circuit
@@ -30,12 +35,17 @@ __all__ = [
     "Predicate",
     "StatePreparationOperator",
     "append_arbitrary_state",
+    "append_bit_oracle",
     "append_comparator",
     "append_multi_controlled_x",
     "append_phase_estimation",
+    "append_phase_oracle",
     "append_qft",
     "arbitrary_state",
+    "bit_oracle",
+    "marked_states",
     "phase_estimation_circuit",
+    "phase_oracle",
     "qft",
     "uniform_state",
 ]
