@@ -22,6 +22,14 @@ tested, and reproducible still does not carry an advantage of its own.
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 
+Two rows carry `—` in the Citation column rather than a source, and that is a
+statement rather than a placeholder: the Fourier transform and oracle synthesis
+are standard constructions with no single paper to cite, and the one cited
+component of the second, the bit-string comparator, carries the semi-verified
+record under Sources. A source that exists but has not been confirmed is
+recorded as exactly that, the way the comparator's is — so a `—` never means
+"sought and not yet found".
+
 The primitive rows are listed separately because the package admits a primitive
 on one of two grounds: when more than one algorithm module needs it, or is
 expected to need it and the expectation is later confirmed — the Fourier
