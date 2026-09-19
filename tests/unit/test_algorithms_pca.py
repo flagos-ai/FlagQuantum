@@ -112,7 +112,7 @@ def test_the_mode_resolves_the_largest_eigenvalue_on_two_data_wires() -> None:
 
 
 def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> None:
-    """A split peak that loses the mode: the failure mode, measured.
+    """A readout that is not the largest eigenvalue: this spectrum's observed outcome.
 
     This case is in the file because it is the counterexample to a claim the module
     once made, that the readout is always within half a step of the largest
@@ -120,20 +120,26 @@ def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> Non
 
     At six counting wires the counter grid is 1/64 of a turn. The largest eigenvalue
     here is 0.5078125, whose phase ``1 - 0.5078125 = 0.4921875`` is exactly the
-    midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5, so its peak
-    splits across both and each half is about two fifths of its weight. The second
-    largest is 0.375, whose phase 0.625 is exactly a counter value, so all of its
-    weight lands on one value. Measured: 0.3765 at the counter value reading 0.375,
-    against 0.2050 and 0.2041 for the two halves. The mode is therefore the second
-    largest eigenvalue, and it is the same readout for every sampling seed tried and
-    at both 8000 and 20000 shots -- this spectrum decides it, not the noise.
+    midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5. The second
+    largest is 0.375, whose phase 0.625 is exactly counter value 40/64. Measured at
+    8000 shots: counter 40 carries 0.3619 to 0.3910 depending on the sampling seed,
+    and counters 31 and 32 carry 0.1959 to 0.2164 and 0.1971 to 0.2188 -- so the mode
+    is counter 40, the second largest eigenvalue, and the largest is not within half
+    a step of it. That readout and that answer held for every one of the 300 sampling
+    seeds checked at each of 4096, 8000, 20000 and 50000 shots.
 
-    What this pins is the observed readout of a split peak that lost, and the shares
-    that made it lose. It is **not** a claim that a split always loses: the companion
-    test below removes only a competitor's weight and has the very same split win.
-    A change to the readout, to the register layout, or to where this peak splits
-    moves the assertions here; a change to the docstring alone does not, and is not
-    something a test can catch.
+    The assertions are orderings and floors rather than a seed's third decimal,
+    because the shares move with the sample: the only pinned value is the readout,
+    which is the mode's counter value and does not. The two halves of the largest
+    eigenvalue's spread are close enough to each other that their own order is a coin
+    flip across seeds, so it is not asserted, and neither half is pinned to a value.
+
+    What this pins is the outcome of a spectrum whose largest eigenvalue lost the
+    mode. It is not a claim about spectra in general, and not a claim that a peak
+    between two counter values always loses: the companion test below has a largest
+    eigenvalue whose phase also sits between two counter values, and a mode that is
+    that eigenvalue. A change to the readout or to the register layout moves every
+    assertion here.
     """
     data = _data_matrix([0.5078125, 0.375, 0.097, 0.0201875], 4)
     exact = _exact_eigenvalues(data)
@@ -143,25 +149,32 @@ def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> Non
         0.375,
         0.507812,
     ]
+    largest = float(exact[-1])
 
-    result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
-    )
+    for seed in range(4):
+        result = principal_components(
+            data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=seed
+        )
+        reader = _counter_of(0.375, _COUNTING_WIRES)
 
-    # The mode is the second largest eigenvalue, and the largest is correctly refused.
-    assert result.dominant_eigenvalue == pytest.approx(0.375, abs=1e-9)
-    assert result.within(0.375)
-    assert not result.within(float(exact[-1]))
-    # The two halves of the split peak, measured, each below the runner-up's share.
-    assert result.distribution[_counter_of(0.5, _COUNTING_WIRES)] == pytest.approx(
-        0.2050, abs=0.01
-    )
-    assert result.distribution[_counter_of(0.515625, _COUNTING_WIRES)] == (
-        pytest.approx(0.2041, abs=0.01)
-    )
-    assert result.distribution[_counter_of(0.375, _COUNTING_WIRES)] > (
-        result.distribution[_counter_of(0.5, _COUNTING_WIRES)]
-    )
+        assert result.dominant_eigenvalue == pytest.approx(0.375, abs=1e-9), seed
+        assert result.within(0.375), seed
+        assert not result.within(largest), seed
+        # The mode is counter 40, and both of the largest eigenvalue's counter values
+        # carry less than it does -- measured minima 0.3619 against maximum 0.2188.
+        assert (
+            result.dominant_probability
+            > result.distribution[_counter_of(0.5, _COUNTING_WIRES)]
+        ), seed
+        assert (
+            result.dominant_probability
+            > result.distribution[_counter_of(0.515625, _COUNTING_WIRES)]
+        ), seed
+        # The largest eigenvalue's weight is spread over both neighbours rather than
+        # sitting on one: measured, each carries at least 0.1959 over 400 runs.
+        for half in (0.5, 0.515625):
+            assert result.distribution[_counter_of(half, _COUNTING_WIRES)] > 0.05, seed
+        assert reader in result.distribution, seed
 
 
 def test_the_readout_is_invariant_in_the_scale_of_the_data_matrix() -> None:
@@ -275,24 +288,30 @@ def test_the_adapter_satisfies_the_controlled_unitary_protocol() -> None:
 
 
 def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> None:
-    """The same split that loses above still wins when the competitor is smaller.
+    """A readout that is the largest eigenvalue, on a spectrum where its peak splits.
 
-    The mode is the counter value with the largest share, so a split peak loses only
-    when a concentrated competitor's share is larger than both of its halves. This
-    test is the other side of that comparison, and without it a readout that
-    hard-coded "split means lost" -- the opposite overclaim to the one this file
-    already corrected -- would pass every other test here.
+    The mode is the counter value with the largest share and nothing else, so which
+    eigenvalue it reports is an outcome of the shares and not a rule about the shape
+    of the peak. This test is one of the two outcomes: here the readout *is* the
+    largest eigenvalue, on a spectrum whose largest eigenvalue's phase sits between
+    two counter values. Without it, a readout that assumed "a peak between two
+    counter values means the eigenvalue lost" -- the opposite overclaim to the one
+    this file already corrected -- would pass every other test here.
 
-    The largest eigenvalue is 0.51015625, at phase ``31.35/64``: it is split across
-    counters 31 and 32, whose measured shares are 0.3385 and 0.0973. Only the
-    competitor moves. At weight 0.296875 on counter 45 its share is 0.2981, below the
-    split's larger half, so the split peak takes the mode and the readout is 0.515625
-    -- counter 31 reads ``1 - 31/64`` -- which is within half a step of the largest
-    eigenvalue. Raising that one weight to 0.390625, as the losing case above does at
-    counter 39, pushes the competitor's share to 0.3889 and hands the mode over.
+    The largest eigenvalue is 0.51015625, at phase ``31.35/64``, so its counter
+    values are 31 and 32. Measured at 8000 shots: over seeds 0 through 199, counter
+    31 carries 0.3215 to 0.3464, counter 32 carries 0.0881 to 0.1045, and counter 45
+    -- where the second largest eigenvalue, 0.296875, sits -- carries 0.2845 to
+    0.3111. The mode is counter 31, the readout is 0.515625, and ``within`` the
+    largest eigenvalue is ``True``: that readout and that answer held for every one
+    of the 300 sampling seeds checked at each of 4096, 8000, 20000 and 50000 shots.
 
-    Both readouts are stable across sampling seeds: the winner is decided by the
-    shares, which the weights set, and not by the sampling noise on top of them.
+    The assertions are orderings and floors rather than a seed's third decimal: the
+    shares move with the sample and the mode's counter value does not, so the readout
+    is the only pinned value. The narrowest margin among them is counter 31's share
+    against counter 45's -- measured, at 4096 shots over 200 seeds, a minimum of
+    0.3179 against a maximum of 0.3167 -- and that comparison is the claim this test
+    exists to make, so it is asserted as an ordering rather than as a value.
     """
     # The largest eigenvalue's phase is 31.35/64, so lambda = 1 - 31.35/64.
     split = [0.51015625, 0.296875, 0.096484375, 0.096484375]
@@ -303,27 +322,25 @@ def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> Non
     largest = float(exact[-1])
     assert largest == pytest.approx(1.0 - 31.35 / 64)
 
-    result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=1
-    )
+    for seed in range(4):
+        result = principal_components(
+            data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=seed
+        )
+        near = result.distribution[_counter_of(0.515625, _COUNTING_WIRES)]
+        far = result.distribution[_counter_of(0.5, _COUNTING_WIRES)]
+        competitor = result.distribution[_counter_of(0.296875, _COUNTING_WIRES)]
 
-    # The readout is the split peak's larger half, and it resolves the largest eigenvalue.
-    assert result.dominant_eigenvalue == pytest.approx(0.515625, abs=1e-9)
-    assert result.within(largest)
-    # The two halves of the split, and the competitor they both beat.
-    halves = (
-        result.distribution[_counter_of(0.515625, _COUNTING_WIRES)],
-        result.distribution[_counter_of(0.5, _COUNTING_WIRES)],
-    )
-    competitor = result.distribution[_counter_of(0.296875, _COUNTING_WIRES)]
-    assert halves[0] == pytest.approx(0.3385, abs=0.01)
-    assert halves[1] == pytest.approx(0.0973, abs=0.01)
-    assert competitor == pytest.approx(0.2981, abs=0.01)
-    assert result.dominant_probability > competitor
-    # The split is real, not a peak that merely leaned: both halves carry a share of
-    # their own, and the competitor sits on a different counter value entirely.
-    assert min(halves) > 0.05
-    assert competitor < halves[0]
+        # The readout is counter 31, and it resolves the largest eigenvalue.
+        assert result.dominant_eigenvalue == pytest.approx(0.515625, abs=1e-9), seed
+        assert result.within(largest), seed
+        assert result.dominant_probability == near, seed
+        # The mode's share beats the competitor's, and the competitor's beats the
+        # other half of the largest eigenvalue's spread.
+        assert near > competitor, seed
+        assert competitor > far, seed
+        # Both counter values of the largest eigenvalue carry a real share: measured,
+        # the smaller carries at least 0.0835 over 600 runs.
+        assert far > 0.05, seed
 
 
 def test_the_dominant_counter_value_carries_the_largest_share() -> None:

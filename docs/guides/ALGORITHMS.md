@@ -342,9 +342,9 @@ data and purification registers with `append_arbitrary_state`, and hands
 `exp(-2 pi i rho)` to `append_phase_estimation`. The counting register's marginal
 is the eigenvalue distribution: `PcaResult` carries it, with the eigenvalue read out
 at the distribution's mode, that value's measured share, and the resolution the
-register achieves. The readout is the mode's counter value, which is the largest
-eigenvalue when that counter value lies within half a step of the largest
-eigenvalue's phase — see *Which eigenvalue the mode reports* below.
+register achieves. The readout is the mode's counter value; whether that is the
+largest eigenvalue is an outcome of the shares rather than a rule — see *Which
+eigenvalue the mode reports* below.
 
 **The phase is not the eigenvalue.** At `t = 2*pi` the exponential's eigenphase on
 an eigenvector of `rho` with eigenvalue `lambda` is `exp(-2 pi i lambda)`, which is
@@ -361,24 +361,37 @@ own counter value with `0.0331` of the sample, about nine times its weight.
 `PcaResult.within` states the resolution contract as half a counter step, and no
 confidence interval is computed or reported.
 
-**Which eigenvalue the mode reports is a weight comparison, not a rule about the
-peak's shape.** The mode is the counter value with the largest share, so the readout
-is that counter value's eigenvalue, and `within` accepts the largest eigenvalue
-exactly when the mode's counter value lies within half a step of that eigenvalue's
-phase. Where each eigenvalue's phase falls on the counter grid decides how its weight
-is spread: on a counter value it stays concentrated, near a counter midpoint it
-splits across the two neighbours and each half is smaller than the whole share would
-have been. **A split is a risk and not a cause** — the split peak keeps the mode
-while each half beats every other counter value's share, and loses it to a
-concentrated competitor whose share is larger than both. Measured at six counting
-wires, with the largest eigenvalue held at phase `31.35/64` (split across counters
-31 and 32, shares `0.3385` and `0.0973`) and only a competitor's weight moving: at
-weight `0.296875` the competitor's share is `0.2981`, below the split's larger half,
-so the split peak keeps the readout `0.515625`, within half a step of the largest
-eigenvalue; at weight `0.390625` its share is `0.3889`, above both halves, and the
-readout is the competitor's `0.390625`, with the largest eigenvalue correctly
-rejected. A caller that needs the largest eigenvalue specifically has to check the
-readout rather than infer it from the counter width or the shape of the peak.
+**Which eigenvalue the mode reports is not something the unit predicts.** The mode is
+the counter value with the largest share, and the readout is that counter value's
+eigenvalue, `1 - k / 2**m`. The unit does not claim that this is the largest
+eigenvalue and does not predict which eigenvalue it will be: that depends on how each
+eigenvalue's weight is spread across the counter values the register has, set against
+the other eigenvalues' shares at theirs, and the unit computes neither. `within`
+answers only what it says — whether a named eigenvalue lies within half a counter
+step of the readout — so a caller who needs the largest eigenvalue specifically has
+to check the readout, and cannot infer it from the counter width or the shape of the
+peak.
+
+Two runs illustrate two outcomes. They are examples, not a criterion. Both use
+`rho = diag(spectrum)`, six counting wires, `shots=8000` and sampling `seed=1`, and
+both have the same largest eigenvalue, `0.51015625`, at phase `31.35/64`, so the
+largest eigenvalue and the trace are not what differs between them. In each, the
+second largest eigenvalue also sits exactly on a counter value — a different one,
+because moving that eigenvalue's weight moves its phase with it.
+
+- Spectrum `[0.51015625, 0.296875, 0.096484375, 0.096484375]`. The mode is counter
+  31, reading `0.515625`, with share `0.3385`, and `within` accepts `0.51015625`.
+  The largest eigenvalue's two counter values, 31 and 32, carry `0.3385` and
+  `0.0973`; the second largest eigenvalue sits at counter 45 with `0.2981`. The
+  mode's counter value is one of the largest eigenvalue's, although the other one
+  carries the smallest share of the three.
+- Spectrum `[0.51015625, 0.390625, 0.049609375, 0.049609375]`. The mode is counter
+  39, reading `0.390625`, with share `0.3889`, and `within` rejects `0.51015625`.
+  Counter 39 is where the second largest eigenvalue sits; the largest eigenvalue's
+  two counter values carry `0.3385` and `0.0973`.
+
+Both readouts held for all 300 sampling seeds checked at each of 4096, 8000, 20000
+and 50000 shots, so neither example turns on the sampler's noise.
 
 ```python
 import math

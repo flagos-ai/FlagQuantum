@@ -42,39 +42,39 @@ dominant peak's tail into the neighbouring value. :meth:`PcaResult.within` is th
 contract for the resolution, and no confidence interval is computed or reported
 anywhere in this module.
 
-**Which eigenvalue the mode reports is a weight comparison, not a rule about the
-peak's shape.** The mode is the counter value carrying the largest share of the
-sample, and nothing else; the readout is that counter value's eigenvalue,
-``1 - k / 2**m``. So :meth:`PcaResult.within` accepts the largest eigenvalue exactly
-when the mode's counter value lies within half a step of that eigenvalue's phase,
-and rejects it when some other counter value's share is the larger one.
+**Which eigenvalue the mode reports is not something this module predicts.** The mode
+is the counter value carrying the largest share of the sample, and nothing else; the
+readout is that counter value's eigenvalue, ``1 - k / 2**m``. The module does not
+claim that this is the largest eigenvalue of ``rho``, and it does not predict which
+eigenvalue it will be. That depends on how each eigenvalue's weight is spread across
+the counter values the register has, set against the other eigenvalues' shares at
+theirs, and the module computes neither. :meth:`PcaResult.within` says only what it
+says -- whether a given eigenvalue lies within half a counter step of the readout --
+so a caller who needs the largest eigenvalue specifically has to check the readout,
+and cannot infer it from the counter width or from the shape of the peak.
 
-What decides that is where each eigenvalue's phase falls on the counter grid, because
-it sets how that eigenvalue's weight is spread across counter values, and therefore
-how large a share each of its counter values can carry. An eigenvalue whose phase
-lands on a counter value keeps its whole share there. One whose phase lands near a
-counter midpoint is split across the two neighbouring values, and each half is
-smaller than the whole share would have been. **A split is a risk and not a cause:**
-the split eigenvalue keeps the mode whenever each half beats every other counter
-value's share, and it then passes ``within`` when the half that kept it is the one
-within half a step of the phase, which the nearer of the two halves is. It loses the
-mode, and ``within`` with it, as soon as a concentrated competitor's share is larger
-than both halves -- the contract working as written, since the readout is not
-claiming to have resolved the largest eigenvalue, only reporting the counter value
-that was sampled most. Neither the counter width nor the shape of the peak settles
-the question; only the comparison of shares does.
+The two runs below illustrate two outcomes. They are examples and not a criterion:
+nothing here says which spectra do which. Both use ``rho = diag(spectrum)``, six
+counting wires, ``shots=8000`` and sampling ``seed=1``, and both have the same
+largest eigenvalue, ``0.51015625``, at phase ``31.35/64``, so the largest eigenvalue
+and the trace are not what differs between them. In each, the second largest
+eigenvalue also sits exactly on a counter value -- a different one, because moving
+that eigenvalue's weight moves its phase with it.
 
-Both outcomes are measured, at six counting wires, with the largest eigenvalue held
-fixed at phase ``31.35/64`` -- split across counters 31 and 32, whose shares are
-``0.3385`` and ``0.0973`` -- and only a competitor's weight moving. With a
-competitor of weight ``0.296875`` on counter 45 (share ``0.2981``) the split peak
-*keeps* the mode: both halves beat the competitor, the readout is ``0.515625``, and
-it is within half a step of the largest eigenvalue. With a competitor of weight
-``0.390625`` on counter 39 (share ``0.3889``) the split peak *loses* it: the
-competitor's share is above both halves, the readout is ``0.390625``, and the
-largest eigenvalue is correctly rejected. A caller that needs the largest eigenvalue
-specifically has to check the readout, and cannot infer it from the peak having been
-split or from the counter width.
+* Spectrum ``[0.51015625, 0.296875, 0.096484375, 0.096484375]``. The mode is counter
+  31, reading ``0.515625``, with share ``0.3385``, and :meth:`PcaResult.within`
+  accepts ``0.51015625``. The largest eigenvalue's two counter values, 31 and 32,
+  carry ``0.3385`` and ``0.0973``; the second largest eigenvalue sits at counter 45
+  with ``0.2981``. The mode's counter value is therefore one of the largest
+  eigenvalue's, although the other one carries the smallest share of the three.
+* Spectrum ``[0.51015625, 0.390625, 0.049609375, 0.049609375]``. The mode is counter
+  39, reading ``0.390625``, with share ``0.3889``, and ``within`` rejects
+  ``0.51015625``. Counter 39 is where the second largest eigenvalue sits; the largest
+  eigenvalue's two counter values carry ``0.3385`` and ``0.0973``.
+
+Both readouts held for every sampling seed tried at these settings -- 0 through 299
+at each of 4096, 8000, 20000 and 50000 shots -- so neither example turns on the
+sampler's noise.
 
 **Wire layout.** The counting register is wires ``0 .. m - 1``, the data register
 ``a`` follows it, and the purification register ``b`` follows that. The counting
@@ -114,12 +114,12 @@ class PcaResult:
 
     Attributes:
         dominant_eigenvalue: The eigenvalue read out at the mode ``k`` of
-            ``distribution``, which is ``1 - k / 2**n_counting_wires``. It is the
-            dominant eigenvalue of ``rho``, to within the counter's resolution, when
-            the mode's counter value lies within half a step of that eigenvalue's
-            phase. Whether it does is a comparison between counter values' shares and
-            not a property of the peak's shape: a split peak can keep the mode or
-            lose it. See the module docstring for both outcomes, measured.
+            ``distribution``, which is ``1 - k / 2**n_counting_wires``. The module
+            does not claim this is the largest eigenvalue of ``rho`` and does not
+            predict which eigenvalue it will be; the mode is simply the counter value
+            with the largest share. :meth:`within` is how a caller checks a specific
+            eigenvalue against it, and the module docstring gives two measured
+            examples of the two outcomes.
         dominant_probability: The share of the sample that landed on that mode.
             It is not the eigenvalue's weight in ``rho``: see the module docstring.
         distribution: The counter register's marginal distribution, keyed by its
@@ -188,16 +188,12 @@ class PcaResult:
         why the bound is half and not whole.
 
         **It does not claim that the readout resolves the largest eigenvalue.** The
-        mode is the counter value with the largest share, so whether it lands within
-        half a step of the largest eigenvalue's phase is decided by a comparison
-        between counter values' shares. The largest eigenvalue's own phase sets how
-        its weight is spread over counter values -- concentrated on one of them, or
-        split across two -- and both outcomes are reachable: a split peak keeps the
-        mode when each half beats every other counter value's share, and loses it to
-        a concentrated competitor whose share is larger than both halves. ``within``
-        rejects the largest eigenvalue in that second case, correctly, because the
-        readout did not report it. The module docstring states this and gives a
-        measured spectrum for each outcome.
+        mode is the counter value with the largest share, and the module does not
+        predict which eigenvalue that will be: :meth:`within` compares a value the
+        caller names against what the mode reported, and answers only whether the
+        two are that close. A caller who needs the largest eigenvalue has to ask
+        this for the largest eigenvalue and read the answer. The module docstring
+        gives two measured examples, one where it accepts and one where it rejects.
 
         It is a resolution statement and not a distribution statement: a value this
         rejects is not excluded at any stated confidence level, and an eigenvalue
@@ -249,10 +245,10 @@ def principal_components(
     Returns:
         The eigenvalue read out at the counter register's mode with that value's
         measured share, the counter register's distribution, and the resolution they
-        were read at. The readout reports the dominant eigenvalue when the mode's
-        counter value lies within half a step of that eigenvalue's phase; a split peak
-        can keep the mode or lose it to a concentrated competitor, and the module
-        docstring measures both.
+        were read at. The module does not claim the readout is the largest eigenvalue
+        of ``rho`` and does not predict which eigenvalue it will be; use
+        :meth:`PcaResult.within` to check a specific one, and see the module
+        docstring for two measured examples.
 
     Raises:
         ValueError: If ``A`` is not a two-dimensional real floating-point tensor
