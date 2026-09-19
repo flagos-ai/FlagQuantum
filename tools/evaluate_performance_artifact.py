@@ -251,6 +251,21 @@ def _record(payload: dict[str, object]) -> PerformanceRecord:
     return PerformanceRecord(**{name: payload[name] for name in names})
 
 
+def gate_failure_message(path: Path, gate: dict[str, object]) -> str:
+    """What the gate objected to, named so the log can be acted on.
+
+    The measured value is not repeated here: the gate compares a value against
+    a threshold it was given, and the artifact that holds both is the one this
+    message names. What this adds over the exit code is which artifact failed
+    and on which of the gate's errors.
+    """
+
+    errors = ", ".join(str(item) for item in gate.get("errors") or ()) or "unspecified"
+    message = f"{path}: performance gate failed on {errors}"
+    warnings = ", ".join(str(item) for item in gate.get("warnings") or ())
+    return f"{message} (warnings: {warnings})" if warnings else message
+
+
 def evaluate_path(
     path: Path, *, write: bool, baseline_path: Path | None = None
 ) -> bool:
@@ -273,6 +288,16 @@ def evaluate_path(
     payload["comparison_baseline"] = (
         str(baseline_path) if baseline_path is not None else None
     )
+    # The exit code says the artifact failed and nothing else. Every command
+    # before this one in a hardware lane prints something, so a step that ends
+    # here with a bare `exit 1` leaves its job log with nothing to read at all:
+    # on 2026-09-18 the weekly lane's last phase failed this way and the failing
+    # metric was only visible after downloading the artifact.
+    if not payload["performance_gate"]["passed"]:
+        print(
+            "::error title=performance gate::"
+            f"{gate_failure_message(path, payload['performance_gate'])}"
+        )
     # The environment verdict is recorded rather than folded into the gate.
     # A contended run fails `latency_variance_exceeds_threshold` exactly as a
     # regressed one does, and letting contention turn the gate red would make a

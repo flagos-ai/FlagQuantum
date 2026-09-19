@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import fields
+from pathlib import Path
 
 import pytest
 
@@ -233,3 +234,44 @@ def test_the_evaluator_stays_quiet_about_an_environment_that_supports_a_claim(
     assert written["measurement_validity"]["status"] == CLEAN
     assert written["measurement_validity"]["claim_supported"] is True
     assert "::warning" not in capsys.readouterr().out
+
+
+def test_a_failed_gate_says_which_artifact_and_which_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A gate that fails has to leave something in the log to act on.
+
+    The exit code is the only other thing this tool produces on failure, and a
+    workflow step that ends on it reads as an empty log. On 2026-09-18 the
+    weekly lane's last phase failed exactly that way: the job log ended at the
+    line that started the benchmark, and which threshold had been missed was
+    only visible after downloading the artifact.
+    """
+    artifact = tmp_path / "performance.json"
+    # The gate judges the median absolute deviation over the median, so half
+    # the samples have to sit away from the middle one for it to object.
+    artifact.write_text(
+        json.dumps(_performance_payload(samples_seconds=(1.0, 1.0, 2.0, 2.0))),
+        encoding="utf-8",
+    )
+
+    assert evaluate_path(artifact, write=True) is False
+
+    reported = capsys.readouterr().out
+    # The environment warning names this artifact too, so the assertion is on
+    # the error line itself rather than on the whole of what was written.
+    errors = [line for line in reported.splitlines() if line.startswith("::error")]
+    assert len(errors) == 1, reported
+    assert str(artifact) in errors[0]
+    assert "latency_variance_exceeds_threshold" in errors[0]
+
+
+def test_a_gate_that_passes_reports_no_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    artifact = tmp_path / "performance.json"
+    artifact.write_text(json.dumps(_performance_payload()), encoding="utf-8")
+
+    assert evaluate_path(artifact, write=True) is True
+
+    assert "::error" not in capsys.readouterr().out
