@@ -100,11 +100,14 @@ def test_the_assignment_is_the_classical_labelling_of_every_point() -> None:
 def test_the_assignment_holds_at_every_centroid_count_the_register_carries() -> None:
     """Two to eight centroids, so every register width the search can carry is exercised.
 
-    The register is one wire at two centroids and three at eight, and the number of
-    register slots the centroid set does not fill grows as the count moves away from a
-    power of two -- one slot at three centroids in a two-wire register, which has four
-    slots and fills three of them. The reference is recomputed at each count, and every
-    width has to agree with it.
+    The register is one wire at two centroids and three at eight, and it is not always
+    fully occupied: at three centroids in a two-wire register one of the four slots names
+    no centroid, because the centroid set fills three of them. That count is not
+    monotone in how far the count sits from a power of two -- it runs 0, 1, 0, 3, 2, 1, 0
+    for two through eight centroids, so it falls from 3 to 0 as the count moves from five
+    to eight -- which is why this docstring names the case the test uses and states no
+    rule about the shape. The reference is recomputed at each count, and every width has
+    to agree with it.
     """
     points = torch.tensor(
         [

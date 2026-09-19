@@ -49,17 +49,23 @@ exactly one search, the round that finds nothing.
 **Ties are broken by the index.** The comparison is on the pair of distance and index and
 not on the distance alone, so a centroid at exactly the threshold distance is marked only
 when its index is the smaller one. The rule is in the order the search moves in and not in
-a tie-break applied afterwards, which is what makes it reach the returned label without a
-separate path: the loop cannot move away from the lower-indexed of two equidistant
-centroids, because from the higher-indexed one the only tied centroid marked is the lower,
-and from the lower one no tied centroid is marked at all, since neither is smaller than
-itself. The three marked sets the ``(3, 3)`` instance below reaches are ``(1, 2)`` from
-index 0, ``()`` from index 1 and ``(1,)`` from index 2.
+a tie-break applied afterwards: no label is patched after the loop returns, and what the
+rule decides is decided inside the loop. The loop cannot move away from the lower-indexed
+of two equidistant centroids, because from the higher-indexed one the only tied centroid
+marked is the lower, and from the lower one no tied centroid is marked at all, since
+neither is smaller than itself. The three marked sets the ``(3, 3)`` instance below
+reaches are ``(1, 2)`` from index 0, ``()`` from index 1 and ``(1,)`` from index 2. The
+rule is stated for a **pair** of equidistant centroids, which is what those marked sets
+come from: with three or more centroids at exactly the same distance the marked sets are
+not a pair, and this module makes no claim about which of them an assignment returns.
 
 **What the tie rule does and does not say about a run.** It is a statement about the
-comparison, and it carries the same condition as the paragraph above: it reaches the
-returned label when every round of the point's loop found what it marked, and a round
-whose sample came back empty ends the loop where it stands. Measured on a point at
+comparison and not about every run. The loop ends on the first round whose sample came
+back empty, so the rule decides the assignment when the loop reaches one of the two tied
+centroids before that round: from the higher-indexed one the only marked centroid is the
+lower, and from the lower one nothing is marked, so a loop that reaches either cannot move
+off the lower. A loop that comes back empty earlier ends on an index it has not finished
+improving, and the measurement below separates the two. Measured on a point at
 ``(3, 3)`` with centroids at ``(0, 0)``, ``(2, 0)`` and ``(0, 2)``, whose distances to
 the last two are exactly equal at ``3.1622776601683795``, at 1024 shots: over seeds 0
 through 199, the round that left the farther centroid marked both tied ones, and in 107
@@ -70,9 +76,11 @@ index ``1`` for every one of the 200, which is the outcome measured rather than 
 distribution statement. Measured on a point at ``(2.5,)`` against centroids at ``(0,)``,
 ``(1,)``, ``(2,)`` and ``(3,)``, whose distances to the last two are exactly equal at
 ``0.5``: over the same 200 seeds the returned label was index ``2``, the lower-indexed of
-the tie, at 16, 64 and 1024 shots; at 8 shots it was index ``1`` for 2 of the 200; and at
-one shot it was index ``2`` for 102, index ``1`` for 55 and index ``0`` for 43, where
-index ``0`` is a centroid farther away than either of the tied ones.
+the tie, at 16, 64 and 1024 shots, where every one of the 200 ended on it; at 8 shots it
+was index ``2`` for 198 of the 200 and index ``1`` for 2; at 4 shots it was index ``2``
+for 186, index ``1`` for 12 and index ``0`` for 2; and at one shot it was index ``2`` for
+102, index ``1`` for 55 and index ``0`` for 43, where index ``0`` is a centroid farther
+away than either of the tied ones.
 
 Register values that name no centroid are excluded by the same predicate, so a
 three-centroid search in a two-wire register never returns the slot no centroid occupies.

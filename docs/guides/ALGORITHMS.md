@@ -471,16 +471,24 @@ index `2` at seed 0 and both tied indices across those seeds, because which tied
 centroid the sample favours is then the assignment — which is why the index is
 part of the order and not a patch on the result.
 
-**That is a statement about the comparison, and it reaches the label only while
-each round finds what it marks.** A round whose sample comes back empty ends a
-point's loop where it stands, so a tie is settled by the index at any sample
-size at which no round comes back empty, and not below it. Measured on a point
-at `(2.5,)` against centroids at `(0,)`, `(1,)`, `(2,)` and `(3,)`, whose
-distances to the last two are exactly equal at `0.5`: over seeds 0 through 199
-the label was index `2`, the lower-indexed of the tie, at 16, 64 and 1024 shots;
-at 8 shots it was index `1` for 2 of them; and at one shot it was index `2` for
-102, index `1` for 55 and index `0` for 43, where index `0` is a centroid
-farther away than either of the tied ones.
+**That is a statement about the comparison, not about every run.** The loop ends
+on the first round whose sample came back empty, so the rule decides the
+assignment when the loop reaches one of the two tied centroids before that
+round: from the higher-indexed one the only marked centroid is the lower, and
+from the lower one nothing is marked. A loop that comes back empty earlier ends
+on an index it has not finished improving. Measured on a point at `(2.5,)`
+against centroids at `(0,)`, `(1,)`, `(2,)` and `(3,)`, whose distances to the
+last two are exactly equal at `0.5`: over seeds 0 through 199 the label was
+index `2`, the lower-indexed of the tie, at 16, 64 and 1024 shots, where every
+one of the 200 ended on it; at 8 shots it was index `2` for 198 of the 200 and
+index `1` for 2; and at one shot it was index `2` for 102, index `1` for 55 and
+index `0` for 43, where index `0` is a centroid farther away than either of the
+tied ones.
+
+**The rule is stated for a pair.** `kmedians.py` makes no claim about three or
+more centroids at exactly the same distance: the marked sets it compares are not
+a pair there, and whether an assignment returns the lowest-indexed of them is
+not something this unit measures or asserts.
 
 **The distance table is classical, and that is the whole of what the unit gives
 up.** `grover_circuit` builds its own register and refuses more than three
