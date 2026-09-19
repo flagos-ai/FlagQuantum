@@ -51,7 +51,10 @@ not on the distance alone, so a centroid at exactly the threshold distance is ma
 when its index is the smaller one. The rule is in the order the search moves in and not in
 a tie-break applied afterwards, which is what makes it reach the returned label without a
 separate path: the loop cannot move away from the lower-indexed of two equidistant
-centroids, because a threshold at the tie distance never marks the higher-indexed one.
+centroids, because from the higher-indexed one the only tied centroid marked is the lower,
+and from the lower one no tied centroid is marked at all, since neither is smaller than
+itself. The three marked sets the ``(3, 3)`` instance below reaches are ``(1, 2)`` from
+index 0, ``()`` from index 1 and ``(1,)`` from index 2.
 
 **What the tie rule does and does not say about a run.** It is a statement about the
 comparison, and it carries the same condition as the paragraph above: it reaches the

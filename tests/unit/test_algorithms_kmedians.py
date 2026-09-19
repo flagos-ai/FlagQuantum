@@ -142,8 +142,9 @@ def test_a_point_equidistant_from_two_centroids_takes_the_lower_index() -> None:
     seeds: in 107 of the 200, the round that left index 0 returned index 1 and the next
     round marked nothing, ending the loop there; in the other 93 it returned index 2, and
     the next round marked only index 1 -- index 1 is at exactly the threshold distance
-    with the smaller index -- and moved to it. Neither path can move off index 1, because
-    no threshold at the tie distance ever marks index 2.
+    with the smaller index -- and moved to it. Neither path can move off index 1: index
+    1's own pair marks no tied centroid at all -- neither index is smaller than itself --
+    and index 2's own pair marks only index 1.
 
     This is the test a distance-only comparison fails. Measured with the index dropped
     from the pair, the same instance returns index 2 at seed 0 and both indices across
