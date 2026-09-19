@@ -24,6 +24,10 @@ external-framework objects or a second execution path.
 - `pca.py`: quantum PCA — the eigenvalue readout of a data matrix's density
   matrix, by phase estimation over its exponential. Demonstration scale: the
   density matrix and its exponential are formed classically.
+- `quantum_kernel.py`: kernel entries by swap test, with a classical kernel ridge
+  classifier over them. Demonstration scale: the feature map is this package's
+  own angle encoding, built gate by gate on every run, and every entry is a
+  sample rather than a reading.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

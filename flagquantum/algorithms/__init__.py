@@ -5,6 +5,7 @@ from . import core as core
 from . import grover as grover
 from . import kmedians as kmedians
 from . import pca as pca
+from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
 from .core import (
     AdaptVQEIteration,
@@ -61,6 +62,7 @@ __all__ = [
     "pca",
     "qaoa_circuit",
     "qaoa_loss",
+    "quantum_kernel",
     "qubo",
     "run_hybrid_vqe",
     "run_layerwise_vqe",

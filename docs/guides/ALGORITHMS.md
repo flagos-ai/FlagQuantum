@@ -54,6 +54,7 @@ applies to them as to everything else in this guide.
 | --- | --- | --- | --- |
 | `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |
 | `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
+| `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map, one sample per entry, and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -90,6 +91,19 @@ applies to them as to everything else in this guide.
   classically, one point at a time, before the circuit exists — the register is
   capped at three wires, which is also what keeps the distances out of it. No
   end-to-end advantage follows. See the section below.
+- **Quantum kernel estimation rests on a data-access model it does not meet.**
+  The kernel-matrix circuit's cost counts the swap tests: `O(eps**-2)` of them per
+  entry and `O(m**2 / eps**2)` for an `m` by `m` matrix, in the paper's own
+  words. It assumes the two feature states are already available, reached through
+  a qRAM or an amplitude-encoding unitary whose cost the count does not include.
+  Each feature state is built here gate by gate from the classical feature vector,
+  so that cost is paid rather than assumed away. Two further statements are the
+  literature's and are not softened here: the classical hardness of estimating
+  these kernel entries is **a conjecture** in Havlíček et al., and the rigorous
+  speed-up results for quantum kernel methods require a **fault-tolerant quantum
+  computer** (Liu et al. 2021). The cited construction itself is written for
+  noisy intermediate-scale devices and does not require fault tolerance. See the
+  section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -559,6 +573,125 @@ either applies. The unit is bounded at eight centroids by the three-wire
 register, and the search is sampled rather than read out, so a small sample can
 stop a point's search short. The capability entry repeats the boundary.
 
+## Quantum kernel estimation and kernel ridge classification
+
+`quantum_kernel.py` is the third unit of Phase 2, and the fifth algorithm unit
+in this guide's programme. `quantum_kernel_matrix(data, shots=..., seed=...)`
+takes a real matrix of feature vectors and returns a `KernelMatrixResult` whose
+`matrix` holds one estimated entry per pair;
+`kernel_ridge_classifier(training_data, labels, regularization=..., shots=...,
+seed=...)` returns a `KernelRidgeClassifier` carrying the dual coefficients of a
+ridge-regularised kernel regression, the training set they were fitted on, and
+`decision_function` and `predict` for new rows.
+
+**The kernel is the only quantum part.** An entry is the squared overlap of two
+feature states, estimated with the swap test — the kernel-matrix circuit of
+Havlíček, Córcoles, Temme, Harrow, Kandala, Chow and Gambetta, "Supervised
+learning with quantum-enhanced feature spaces", *Nature* **567**, 209–212
+(2019), DOI 10.1038/s41586-019-0980-2. A Hadamard on the ancilla, a native
+controlled swap per wire pair, and a Hadamard again leave the ancilla found set
+with probability `1/2 - 1/2 |<a|b>|^2`, so the module estimates the **squared**
+overlap and reads `|<a|b>|^2 = 1 - 2 * share` back out of the sample.
+
+**The readout is sign-blind by construction, and the tests check it as a
+contract rather than assume it.** Two states whose overlaps are `+1/sqrt(2)`,
+`-1/sqrt(2)` and `+i/sqrt(2)` have the same squared overlap and are the same
+experiment to this circuit, so all three must return the same statistic. A test
+that checked one pair could not tell a correct implementation from one that
+returned the signed inner product — the identical-states pair reads `1` under
+both — which is why the triple is the check the unit carries.
+
+**The feature map is this package's own angle encoding, and not the cited
+paper's.** A Hadamard on every wire, a phase rotation carrying each feature on
+its own wire, and an entangling phase rotation on every pair whose angle is the
+product of the two features' complements to `pi`, with features in `[0, 2*pi]`:
+
+    |Phi(x)> = prod_{j<k} exp(i (pi - x_j) (pi - x_k) Z_j Z_k)
+               prod_k exp(i x_k Z_k) H^{tensor n} |0...0>
+
+The map is chosen to be small, concrete and classically computable, which is
+what makes the independent reference path in the tests possible: the tests sum
+`<Phi(x)|Phi(z)>` over the `2**n` basis states with the encoding's own phase and
+compare every entry against it. Because the map is this module's and not
+Havlíček et al.'s, their hardness conjecture says nothing about this unit, and
+nothing here should be read as though it did.
+
+**One entry costs `O(eps**-2)` samples and a matrix costs `O(m**2 / eps**2)`,
+in the paper's own words.** That is the sampling cost Havlíček et al. state, and
+this module adds no arithmetic to it: no error bound, no confidence interval, no
+shot-selection rule and no repetition scheme is computed or reported. The
+estimate is `1 - 2 * share` with `share` in `[0, 1]`, so an entry lies in
+`[-1, 1]` by construction and one whose overlap is near zero can come back
+slightly negative; the readout is reported as it comes and is not clamped.
+
+**The classifier is classical, and its fit inherits the sample.**
+`kernel_ridge_regression` solves `(K + lambda I) alpha = y` for the dual
+coefficients and `predict` returns the sign of the resulting decision function,
+a value at or above zero reading `+1`. The ridge weight is a required argument
+with no default anywhere in the module: it is what keeps the training system
+solvable when the kernel matrix is close to singular, and how closely the fit
+should follow the training targets is the caller's choice rather than the
+module's. A point whose decision value is small can be decided differently by a
+different sample, and no margin, bound or accuracy estimate is computed.
+
+**Wire layout and scale.** One kernel entry is one circuit: the ancilla on wire
+0, the left feature state on the next `n` wires and the right one on the last
+`n`. The unit is bounded at three features, and the matrix is symmetric by
+construction — the swap test of `(i, j)` and of `(j, i)` is the same experiment,
+so the entry is sampled once and mirrored rather than sampled twice. The
+diagonal is sampled like every other entry and comes back exactly one, because
+the overlap of a state with itself is one and the ancilla is never found set.
+
+```python
+import torch
+
+from flagquantum.algorithms.quantum_kernel import (
+    kernel_ridge_classifier,
+    quantum_kernel_matrix,
+)
+
+train = torch.tensor(
+    [[0.4, 0.5], [1.2, 1.7], [4.6, 1.1], [5.4, 1.9]], dtype=torch.float64
+)
+labels = (1, 1, -1, -1)
+
+matrix = quantum_kernel_matrix(train, shots=4096, seed=5)
+print([round(value, 3) for value in matrix.matrix[0]])
+# [1.0, 0.419, 0.218, 0.306]  -- the first row; the exact values are 1.0, 0.4199, 0.2037, 0.3042
+print([round(value, 3) for value in matrix.matrix[1]])
+# [0.419, 1.0, 0.514, 0.138]  -- symmetric, and every diagonal entry is exactly 1
+
+classifier = kernel_ridge_classifier(
+    train, labels, regularization=1e-2, shots=4096, seed=5
+)
+print(classifier.predict(train, shots=4096, seed=6))
+# (1, 1, -1, -1)  -- the training labels, recovered by the sign of the decision function
+print([round(c, 3) for c in classifier.coefficients])
+# [1.036, 1.609, -1.768, -1.095]  -- the dual coefficients of the sampled kernel
+print(
+    [
+        round(value, 3)
+        for value in classifier.decision_function(
+            torch.tensor([[1.3, 1.8], [4.5, 1.2], [0.5, 0.6]]), shots=4096, seed=7
+        )
+    ]
+)
+# [1.451, -1.034, 0.769]  -- held-out decision values; the exact-kernel values are
+# 1.394, -0.996 and 0.667, so every sign agrees
+```
+
+**The premise is the data-access model, and this unit does not meet it.** The
+kernel-matrix circuit's cost counts the swap tests, not the data access: the two
+feature states are assumed to be available, reached through a qRAM or an
+amplitude-encoding unitary whose cost the count does not include. Here each
+feature state is built gate by gate from the classical feature vector on every
+run, so that cost is paid rather than assumed away, and no end-to-end advantage
+follows. The classical hardness of estimating these entries is a conjecture in
+Havlíček et al. and not a theorem, and the rigorous speed-up results for quantum
+kernel methods require a fault-tolerant quantum computer (Liu et al. 2021) —
+which the cited construction does not, being written for noisy
+intermediate-scale devices. The capability entry repeats the boundary.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -604,6 +737,23 @@ stop a point's search short. The capability entry repeats the boundary.
   **No arXiv identifier is attached to that paper**: this programme's citation
   check recorded that it has no arXiv version, so the record above carries a DOI
   and a journal version and nothing else.
+- Quantum kernel estimation follows Vojtěch Havlíček, Antonio D. Córcoles,
+  Kristan Temme, Aram W. Harrow, Abhinav Kandala, Jerry M. Chow & Jay M.
+  Gambetta, "Supervised learning with quantum-enhanced feature spaces", *Nature*
+  **567**, 209–212 (2019), DOI 10.1038/s41586-019-0980-2 — the kernel-matrix
+  circuit, the swap test whose ancilla is found set with probability
+  `1/2 - 1/2 |<a|b>|^2`, which `quantum_kernel.py` estimates its entries with,
+  and the `O(eps**-2)` sampling cost per entry that the module's boundary
+  repeats. **Two things this record does not say.** The paper's classical-hardness
+  statement is a conjecture and not a theorem, and the paper is written for
+  noisy intermediate-scale devices — it does not require fault tolerance, and no
+  entry in this guide says that it does.
+- The fault-tolerance requirement is recorded separately, to Tongyang Liu,
+  Srinivasan Arunachalam & Kristan Temme, "A rigorous and robust quantum
+  speed-up in supervised machine learning", *Nature Physics* **17**, 1013–1017
+  (2021), DOI 10.1038/s41567-021-01287-z — the rigorous speed-up result for
+  quantum kernel methods, which is proved for a fault-tolerant quantum computer.
+  It is cited for that requirement and for nothing else here.
 - The bit-string comparator follows D. S. Oliveira & R. V. Ramos, "Quantum bit
   string comparator: circuits and applications", *Quantum Computers and
   Computing* **7**(1), 17-26 (2007) — **this record is not index-confirmed.**
