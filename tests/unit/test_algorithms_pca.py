@@ -314,9 +314,8 @@ def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> Non
     4096 shots over seeds 0 through 199, a minimum of 0.3179 against a maximum of
     0.3167, and over 5000 seeds at that width the two do cross -- six of them put the
     mode on counter 45 instead. At 8000 shots and above no crossing appeared in the
-    seeds checked (0 through 4999 at 8000 and 20000, 0 through 299 at 50000), with a
-    minimum margin of ``0.0055`` at 8000, so the assertion is made at 8000 shots and
-    is an ordering rather than a value.
+    seeds checked (0 through 4999 at 8000 and 20000, 0 through 299 at 50000), so the
+    assertion is made at 8000 shots and is an ordering rather than a value.
     """
     # The largest eigenvalue's phase is 31.35/64, so lambda = 1 - 31.35/64.
     split = [0.51015625, 0.296875, 0.096484375, 0.096484375]
