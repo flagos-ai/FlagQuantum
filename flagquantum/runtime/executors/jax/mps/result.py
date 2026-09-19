@@ -79,6 +79,13 @@ class JAXShardedMPSResult:
         return self.to_mps().expectation_z(wire)
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. `is_sharded` here means more than one rank holds
+        tensors, which is what distinguishes this from a replicated run.
+        """
         is_sharded = len(self.rank_shards) > 1
         local_memory = tuple(
             int(shard.summary()["local_tensor_bytes"]) for shard in self.rank_shards

@@ -11,6 +11,23 @@ class MPSCommunicationCertificationError(ValueError):
 
 
 def require_mps_communication(payload: Mapping[str, Any]) -> None:
+    """Accept an ISSUE-094 transport artifact only if the batched path ran.
+
+    The claim is about the batched ``isend``/``irecv`` descriptor protocol on a
+    dedicated CUDA stream, so the artifact has to show that protocol *and* the
+    steady-state runs that used it: an unbatched run, or one that emitted a P2P
+    warning, measured something else and cannot stand in for it.
+
+    Each run's boundary trace must name every adjacent rank pair exactly once,
+    in order. That is what distinguishes a run that actually exchanged across
+    all boundaries from one that reported a timing without crossing them.
+
+    Raises:
+        MPSCommunicationCertificationError: if the schema is not the ISSUE-094
+            one, the batched protocol or the dedicated stream is absent, the
+            rank coverage is not 2/4/8, or a run's timing or boundary trace is
+            incomplete.
+    """
     if payload.get("schema") != "flagquantum.issue094.mps_communication_matrix.v1":
         raise MPSCommunicationCertificationError("unexpected ISSUE-094 schema")
     if payload.get("protocol") != "batched_isend_irecv_descriptor_payload":

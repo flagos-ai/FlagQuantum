@@ -276,6 +276,13 @@ class JAXShardedStatevectorResult:
         return torch.stack(values, dim=-1)
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this result into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. The plan summary is folded in so a reader has the
+        intent and the outcome in one document.
+        """
         plan_summary = self.plan.summary()
         jax_plan_summary = self.jax_plan.summary()
         is_sharded = (

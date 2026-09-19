@@ -72,6 +72,22 @@ def _require_rank_timelines(soak: Mapping[str, Any]) -> None:
 
 
 def require_mps_stability(payload: Mapping[str, Any]) -> None:
+    """Accept an ISSUE-093 stability artifact only if it holds under failure.
+
+    Stability here means two things measured separately: that a long soak does
+    not grow memory, and that the run survives each of six named faults and
+    releases what it held. Both optimizers are required because they keep
+    different state -- an SGD-only result says nothing about Adam's moments.
+
+    The fault matrix is compared against the required set rather than counted,
+    so six passing entries covering the same fault twice are still incomplete.
+
+    Raises:
+        MPSStabilityCertificationError: if either soak is missing or short of
+            eight ranks and a hundred steps, if any per-rank timeline is
+            incomplete or reports a negative quantity, or if a fault is absent
+            or did not pass with a verified cleanup.
+    """
     if payload.get("schema") != "flagquantum.issue093.mps_stability_matrix.v2":
         raise MPSStabilityCertificationError("unexpected ISSUE-093 schema")
     soaks = payload.get("soaks", ())

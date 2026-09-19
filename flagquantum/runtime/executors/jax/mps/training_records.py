@@ -42,6 +42,14 @@ class JAXShardedMPSTrainingPlan:
     inspected_devices: bool
 
     def summary(self) -> dict[str, Any]:
+        """Flatten this plan into the payload the scalability audit reads.
+
+        The keys `scalability_claim_allowed`, `release_gate_allowed` and the
+        `*_blockers` lists are read by name in `flagquantum.runtime.audit`; the
+        rest is descriptive. Nothing has run when this is built, so the payload
+        is a `plan_preflight`: it reports what the plan intends and refuses to
+        claim any of it as measured.
+        """
         jax_summary = dict(self.jax_plan_summary)
         communication_tiers = dict(jax_summary.get("communication_tiers", {}))
         parameter_flow = dict(self.parameter_flow_summary)

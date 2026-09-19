@@ -52,6 +52,22 @@ class MPSCapacityCertificationError(ValueError):
 
 
 def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
+    """Accept an ISSUE-092 capacity artifact only if it shows the whole claim.
+
+    The claim is that a variable-bond workload finishes on eight or sixteen
+    ranks having *failed* on one, with the state sharded rather than each rank
+    holding a full MPS. So the artifact has to carry the single-GPU failure and
+    the wider completion together: either one alone is consistent with a
+    workload that simply fits, and with a claim that was never exercised.
+
+    Every adjacent rank boundary is checked for forward and reverse evidence
+    under the same batched transport, because a capacity number produced by one
+    rank silently holding the bond is not the number the claim is about.
+
+    Raises:
+        MPSCapacityCertificationError: if any part of that evidence is absent,
+            inconsistent, or shaped so that it cannot support the claim.
+    """
     if payload.get("schema") != "flagquantum.issue092.general_mps_capacity.v1":
         raise MPSCapacityCertificationError("unexpected ISSUE-092 schema")
     if int(payload.get("batch_size", 0)) != 1:
