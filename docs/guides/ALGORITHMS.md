@@ -334,15 +334,14 @@ capability entry repeats the boundary.
 ## Quantum PCA
 
 `pca.py` is the first unit of Phase 2 and the third algorithm unit in this
-guide's programme. `principal_components(A, n_counting_wires=..., shots=...,
-seed=...)`
-forms the density matrix `rho = A A^T / tr(A A^T)` of a data matrix `A` with at
-least two rows and two columns, each a power of two, prepares the purification
-`vec(A) / ||A||_F` on the data and purification registers with
-`append_arbitrary_state`, and hands `exp(-2 pi i rho)` to
-`append_phase_estimation`. The counting register's marginal is the eigenvalue
-distribution: `PcaResult` carries it, with the dominant eigenvalue, that value's
-measured share, and the resolution the register achieves.
+guide's programme. `principal_components` takes the data matrix `A`, the keyword
+`n_counting_wires`, and the sampler's `shots` and `seed`: it forms the density
+matrix `rho = A A^T / tr(A A^T)` of a real `A` with at least two rows and two
+columns, each a power of two, prepares the purification `vec(A) / ||A||_F` on the
+data and purification registers with `append_arbitrary_state`, and hands
+`exp(-2 pi i rho)` to `append_phase_estimation`. The counting register's marginal
+is the eigenvalue distribution: `PcaResult` carries it, with the dominant
+eigenvalue, that value's measured share, and the resolution the register achieves.
 
 **The phase is not the eigenvalue.** At `t = 2*pi` the exponential's eigenphase on
 an eigenvector of `rho` with eigenvalue `lambda` is `exp(-2 pi i lambda)`, which is
