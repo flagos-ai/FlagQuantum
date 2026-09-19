@@ -507,11 +507,12 @@ def test_the_instance_validates_its_own_fields() -> None:
 def test_the_instance_is_keyword_only_and_that_is_what_it_protects() -> None:
     """The spelling is keyword-only, and the two numbers are read by the class, not by it.
 
-    Measured on instance A: a transposed spelling whose weight is an integer no larger
-    than the feature count and whose target size is positive constructs, and the two
-    fields then hold each other's values; the same transposition with a weight that is a
-    fraction, with a weight above the feature count, or with a target size of zero is
-    refused, each by the check that reads that field.
+    Measured on instance A: a transposed spelling whose weight is an integer in
+    ``range(qubo.n_variables + 1)`` and whose target size is a positive finite number that
+    is not a flag constructs, and the two fields then hold each other's values; the same
+    transposition with a weight that is a fraction, a flag or outside that range, or with a
+    target size that is zero, non-finite or a flag, is refused, each by the check that
+    reads that field.
     """
     problem = _problem()
     with pytest.raises(TypeError):
@@ -523,8 +524,12 @@ def test_the_instance_is_keyword_only_and_that_is_what_it_protects() -> None:
 
     for fields, reads in (
         ({"n_selected": 3.0, "penalty": 2.0}, "must be an integer"),
-        ({"n_selected": 100, "penalty": 2.0}, r"size in range\(5\)"),
+        ({"n_selected": True, "penalty": 2.0}, "must be an integer"),
+        ({"n_selected": 5, "penalty": 2.0}, r"size in range\(5\)"),
+        ({"n_selected": -1, "penalty": 2.0}, r"size in range\(5\)"),
         ({"n_selected": 3, "penalty": 0.0}, "positive and finite"),
+        ({"n_selected": 3, "penalty": float("inf")}, "positive and finite"),
+        ({"n_selected": 3, "penalty": True}, "must be a real number"),
     ):
         with pytest.raises(ValueError, match=reads):
             FeatureSelectionProblem(qubo=problem.qubo, **fields)  # type: ignore[arg-type]

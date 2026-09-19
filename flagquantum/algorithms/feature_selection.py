@@ -87,8 +87,8 @@ class FeatureSelectionProblem:
     own reading of the fields that refuses it, and a target size must be an integer where
     a weight need not be, so a weight handed in as a fraction cannot be read as a size.
     Measured, a transposed spelling constructs exactly where its weight was an integer in
-    ``range(m + 1)`` and its target size was a positive finite number that is not a flag;
-    the two fields then hold each other's values.
+    ``range(qubo.n_variables + 1)`` and its target size was a positive finite number that
+    is not a flag; the two fields then hold each other's values.
 
     Attributes:
         qubo: The binary objective. ``linear[i]`` is feature ``i``'s coefficient,
