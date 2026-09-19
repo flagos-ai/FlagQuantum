@@ -523,17 +523,16 @@ print(result.searches)
 ```
 
 **The premise is the oracle model, and this unit does not meet it.** The paper
-counts oracle calls, and the call it counts evaluates a distance in one step;
-its k-medians is a query-complexity result against that oracle. Here the oracle
-is synthesized from the predicate's truth table, so it costs `O(2**n)` — over
-the at most eight register values the three-wire search can carry — and the
-distance table the predicate compares is computed classically, one point at a
-time, before any circuit is built. The classical evaluation the search stands in
-for is therefore already paid for, and nothing here reads a qRAM or runs an
-adiabatic evolution, so no conclusion that rests on either applies. The unit is
-bounded at eight centroids by the three-wire register, and the search is sampled
-rather than read out, so a small sample can stop a point's search short. The
-capability entry repeats the boundary.
+counts oracle calls, and in that model the distance function has to be computed
+into a register — a cost the count does not include. Here the oracle is
+synthesized from the predicate's truth table, so it costs `O(2**n)` — over the
+at most eight register values the three-wire search can carry — and the distance
+table the predicate compares is computed classically, one point at a time,
+before any circuit is built. Neither cost is in the query count, and nothing
+here reads a qRAM or runs an adiabatic evolution, so no conclusion that rests on
+either applies. The unit is bounded at eight centroids by the three-wire
+register, and the search is sampled rather than read out, so a small sample can
+stop a point's search short. The capability entry repeats the boundary.
 
 ## Sources
 

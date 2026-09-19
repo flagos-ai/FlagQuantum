@@ -12,16 +12,17 @@ index. The centroid update stays classical, as the paper leaves it: each centroi
 moved to the coordinate-wise median of the points assigned to it.
 
 **The premise is Grover's oracle model, and the oracle here is not free.** The paper
-counts oracle calls, and the call it counts evaluates a distance in one step. This unit
-synthesizes its oracle the way Phase 1's Grover unit synthesizes its own, so Phase 1's
-boundary for that unit applies here unchanged: the oracle is synthesized from a truth
+counts oracle calls, and in that model the distance function has to be computed into a
+register -- a cost the caller of the search pays and the count does not include. This
+unit synthesizes its oracle the way Phase 1's Grover unit synthesizes its own, so Phase
+1's boundary for that unit applies here unchanged: the oracle is synthesized from a truth
 table at O(2**n) cost, so no end-to-end advantage follows. Here ``n`` is the width of the
 centroid index register, at most three, so the truth table is over at most eight register
-values. The distance the predicate compares is a Python float computed before the circuit
-is built, as the next paragraph explains, so the evaluation the search stands in for is
-already paid for classically by the time the circuit exists. Nothing here reads a qRAM or
-runs an adiabatic evolution, so no conclusion that rests on either applies to this unit,
-and no number it reports is evidence of a speedup.
+values. The distance table the predicate compares is computed classically, one point at a
+time, before the circuit exists, as the next paragraph explains. Neither cost is in the
+query count. Nothing here reads a qRAM or runs an adiabatic evolution, so no conclusion
+that rests on either applies to this unit, and no number it reports is evidence of a
+speedup.
 
 **The distance table is computed classically, one point at a time.** Phase 1's
 :func:`~flagquantum.algorithms.grover.grover_circuit` builds its own register and refuses
@@ -136,8 +137,10 @@ class KMediansResult:
         searches: The number of Grover searches the run sampled, summed over every point
             and every round of every point's minimum search. It is at least the number of
             points, because a point whose first round finds nothing still ran that round,
-            and at most the number of points times the number of centroids, because each
-            moving round strictly decreases the pair the loop compares.
+            and at most the number of points times the number of centroids: a point's
+            loop runs one round per move and then one round that does not move, and it can
+            move at most one fewer time than there are centroids, since each move strictly
+            decreases the pair the loop compares.
     """
 
     labels: tuple[int, ...]
