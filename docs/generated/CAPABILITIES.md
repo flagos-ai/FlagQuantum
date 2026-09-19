@@ -128,6 +128,9 @@ This catalog is generated from the machine-validated
 | Estimate the kernel matrix of a set of feature vectors | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read a kernel entry off sampled swap tests | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Classify held-out rows with a kernel ridge classifier | Quantum kernel estimation and kernel ridge classification | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Build the binary objective of a feature-selection instance | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read the objective's value off an assignment | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Map the objective to an Ising Hamiltonian for a solver to consume | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -469,6 +472,20 @@ Estimate a kernel matrix by swap test over an angle-encoded feature map, and fit
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** The advantage premise is the data-access model, and this unit does not meet it. The kernel-matrix circuit's cost statement assumes the two feature states are available, reached through a qRAM or an amplitude-encoding unitary whose cost the estimate does not count; here each feature state is built gate by gate from the classical feature vector on every run, so that cost is paid rather than assumed away and no end-to-end advantage follows. The sampling cost is the paper's own -- O(eps**-2) shots per kernel entry and O(m**2 / eps**2) for an m by m kernel matrix -- and no error bound, confidence interval or repetition scheme is computed or reported anywhere in this unit. Every entry is a sampled estimate, so the classifier's coefficients and its predictions inherit the sample, and an estimate of a near-zero overlap can come back slightly negative because the readout is 1 - 2 * share and is not clamped. The classical hardness of estimating these kernel entries is a conjecture in Havlicek et al. and not a theorem, and the rigorous speed-up results for quantum kernel methods require a fault-tolerant quantum computer (Liu, Arunachalam and Temme 2021). Demonstration scale: the feature map is a three-feature angle encoding of this package's own, and the classifier is classical kernel ridge regression whose only quantum part is the kernel. It makes no performance, convergence, or hardware claim.
+
+### Feature selection as a QUBO
+
+Build the binary objective of a feature-selection instance -- a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size -- and evaluate or map it for a solver.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.feature_selection`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** This unit does not solve, and the repository has no annealer: it builds the objective of one feature-selection instance and evaluates that objective at an assignment the caller supplies. Which subset a solver returns, and at what cost, belongs to the solver the problem is handed to, so any advantage such a solver observes is the solver's and this construction carries none of its own -- the QUBO form and the Ising form are a polynomial classical transformation with no advantage of their own. Both scores are the caller's data: this unit defines no relevance measure and no redundancy measure and puts no interpretation on either. The penalty weight is the caller's too, with no default here and no weight at which the target size starts to bind computed or predicted, so a weight small enough against the scores can leave a subset of another size cheapest. Demonstration scale: the instance is a set of feature scores the caller brings, and the objective is an ordinary quadratic binary form whose quadratic terms are the pairwise scores folded together with the size penalty. It certifies no solver, convergence, performance, or hardware behavior, and it selects no runtime.
 
 
 ## Distributed execution

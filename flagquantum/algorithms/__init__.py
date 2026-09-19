@@ -2,6 +2,7 @@
 
 from . import amplitude_estimation as amplitude_estimation
 from . import core as core
+from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
 from . import pca as pca
@@ -50,6 +51,7 @@ __all__ = [
     "OptimizationStage",
     "VQEResult",
     "amplitude_estimation",
+    "feature_selection",
     "grover",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",
