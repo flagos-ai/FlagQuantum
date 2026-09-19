@@ -122,11 +122,12 @@ def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> Non
     here is 0.5078125, whose phase ``1 - 0.5078125 = 0.4921875`` is exactly the
     midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5. The second
     largest is 0.375, whose phase 0.625 is exactly counter value 40/64. Measured at
-    8000 shots: counter 40 carries 0.3619 to 0.3910 depending on the sampling seed,
-    and counters 31 and 32 carry 0.1959 to 0.2164 and 0.1971 to 0.2188 -- so the mode
-    is counter 40, the second largest eigenvalue, and the largest is not within half
-    a step of it. That readout and that answer held for every one of the 300 sampling
-    seeds checked at each of 4096, 8000, 20000 and 50000 shots.
+    8000 shots over seeds 0 through 299: counter 40 carries 0.3619 to 0.3910, and
+    counters 31 and 32 carry 0.1953 to 0.2164 and 0.1935 to 0.2188 -- so the mode is
+    counter 40, the second largest eigenvalue, and the largest is not within half a
+    step of it. That readout and that answer held for every one of the 300 sampling
+    seeds checked at each of 4096, 8000, 20000 and 50000 shots, and over 5000 seeds
+    at 4096.
 
     The assertions are orderings and floors rather than a seed's third decimal,
     because the shares move with the sample: the only pinned value is the readout,
@@ -299,7 +300,7 @@ def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> Non
     this file already corrected -- would pass every other test here.
 
     The largest eigenvalue is 0.51015625, at phase ``31.35/64``, so its counter
-    values are 31 and 32. Measured at 8000 shots: over seeds 0 through 199, counter
+    values are 31 and 32. Measured at 8000 shots over seeds 0 through 199, counter
     31 carries 0.3215 to 0.3464, counter 32 carries 0.0881 to 0.1045, and counter 45
     -- where the second largest eigenvalue, 0.296875, sits -- carries 0.2845 to
     0.3111. The mode is counter 31, the readout is 0.515625, and ``within`` the
@@ -308,10 +309,14 @@ def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> Non
 
     The assertions are orderings and floors rather than a seed's third decimal: the
     shares move with the sample and the mode's counter value does not, so the readout
-    is the only pinned value. The narrowest margin among them is counter 31's share
-    against counter 45's -- measured, at 4096 shots over 200 seeds, a minimum of
-    0.3179 against a maximum of 0.3167 -- and that comparison is the claim this test
-    exists to make, so it is asserted as an ordering rather than as a value.
+    is the only pinned value. The comparison they all rest on is counter 31's share
+    against counter 45's, and it is the narrowest of the claims here: measured, at
+    4096 shots over seeds 0 through 199, a minimum of 0.3179 against a maximum of
+    0.3167, and over 5000 seeds at that width the two do cross -- six of them put the
+    mode on counter 45 instead. At 8000 shots and above no crossing appeared in the
+    seeds checked (0 through 4999 at 8000 and 20000, 0 through 299 at 50000), with a
+    minimum margin of ``0.0055`` at 8000, so the assertion is made at 8000 shots and
+    is an ordering rather than a value.
     """
     # The largest eigenvalue's phase is 31.35/64, so lambda = 1 - 31.35/64.
     split = [0.51015625, 0.296875, 0.096484375, 0.096484375]

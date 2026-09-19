@@ -390,8 +390,17 @@ because moving that eigenvalue's weight moves its phase with it.
   Counter 39 is where the second largest eigenvalue sits; the largest eigenvalue's
   two counter values carry `0.3385` and `0.0973`.
 
-Both readouts held for all 300 sampling seeds checked at each of 4096, 8000, 20000
-and 50000 shots, so neither example turns on the sampler's noise.
+Both readouts held for every sampling seed from 0 through 299 at each of 4096, 8000,
+20000 and 50000 shots, and for seeds 0 through 4999 at 8000 and 20000. That is what
+those runs did, and not a claim that either readout is independent of the sampler's
+noise. Where the margin is thin enough it is not: the first example's leading counter
+values are separated by only about `0.004` at 4096 shots, and six of the first 5000
+sampling seeds at that width put the mode on the second largest eigenvalue, the
+narrowest of the six by `0.000244`. Neither example flipped in any run checked at
+8000 shots or above, and the measured margins there are wider: the first example's is
+at least `0.0055` over 5000 seeds at 8000 shots and `0.0169` at 20000, and the second
+example's — its mode's share against the larger of the largest eigenvalue's two
+counter values — is at least `0.125` at 4096 shots and `0.141` at 8000.
 
 ```python
 import math
