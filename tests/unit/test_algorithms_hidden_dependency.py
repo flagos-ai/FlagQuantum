@@ -126,6 +126,7 @@ def test_the_guard_scans_the_whole_algorithms_surface() -> None:
     # scan is recursive, so a module in a subdirectory is covered too.
     assert len(modules) >= 10, sorted(modules)
     assert "tests/unit/test_algorithms_package.py" in tests, sorted(tests)
+    assert "tests/unit/test_algorithms_pca.py" in tests, sorted(tests)
     assert len(tests) >= 8, sorted(tests)
 
 
