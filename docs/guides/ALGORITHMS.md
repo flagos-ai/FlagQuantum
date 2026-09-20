@@ -953,8 +953,7 @@ prepares the state whose overlap with the embedding's eigenvector of `+sigma_i` 
 the weighting the vectorised matrix carries. Its amplitudes are the classical `U` and `V`
 factors scaled by the singular values, so a singular value decomposition is computed before
 the circuit exists and the readout is an estimate of something the module already holds.
-That is the algorithm's input model, paid rather than assumed, and the module docstring
-states the premise before it states what the readout is.
+That is the algorithm's input model, paid rather than assumed.
 
 **The block encoding, and what reading it costs.** The module also builds, in private, a
 block encoding of the embedding: a preparation, a selection and the adjoint of the
@@ -1035,8 +1034,10 @@ problem removes the *exponential* speed-up and is **"only polynomially slower"**
 bound contains `eps**-12`, which the author calls "a large slowdown in some exponents".
 It is not a classical algorithm that matches the quantum runtime, and nothing in this guide
 says that it is. The counter-evidence is recorded with it: the practical conditions the
-dequantized algorithms need are Arrazola et al.'s, and the hardness result for
-singular-value estimation under the sparse access model is Gharibian–Le Gall's.
+dequantized algorithms need are Arrazola et al.'s, and Gharibian–Le Gall dequantize the
+quantum singular value transformation for sparse matrices at constant precision; their
+hardness result is for a different task, estimating a local Hamiltonian's ground-state
+energy at inverse-polynomial precision given a state close to the ground state.
 
 ## Sources
 
@@ -1155,9 +1156,11 @@ singular-value estimation under the sparse access model is Gharibian–Le Gall's
   nothing in this guide says so either.
 - The two records that qualify it are kept separately. The practical conditions the
   dequantized algorithms need are Arrazola et al., *Quantum* **4**, 307 (2020) — **this
-  entry carries no title** — and the hardness result for singular-value estimation under
-  the sparse access model is Gharibian–Le Gall, STOC 2022 / SICOMP **52**(4) — **this
-  entry carries no title either**, and no DOI is attached to it here.
+  entry carries no title**. Gharibian–Le Gall, STOC 2022 / SICOMP **52**(4) — **this
+  entry carries no title either**, and no DOI is attached to it here — dequantize the
+  quantum singular value transformation for sparse matrices at constant precision; their
+  hardness result is for a different task, estimating a local Hamiltonian's ground-state
+  energy at inverse-polynomial precision given a state close to the ground state.
 
 ## Scope
 

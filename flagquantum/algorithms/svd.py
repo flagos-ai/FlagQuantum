@@ -34,8 +34,10 @@ bound contains ``eps**-12``, and the author calls it "a large slowdown in some
 exponents". It is not a classical algorithm that matches the quantum runtime, and no
 sentence here says that it is. Arrazola et al., *Quantum* **4**, 307 (2020), record the
 practical conditions the dequantized algorithms need, and Gharibian-Le Gall (STOC 2022 /
-SICOMP **52**(4)) give the hardness result for singular-value estimation under the sparse
-access model, which is what rules the dequantization out for that model.
+SICOMP **52**(4)) dequantize the quantum singular value transformation for sparse matrices
+at constant precision; their hardness result is for a different task, estimating a local
+Hamiltonian's ground-state energy at inverse-polynomial precision given a state close to
+the ground state.
 
 **The block encoding, and what reading it costs.** The private construction below
 composes a preparation, a selection and the adjoint of the preparation. Its
@@ -46,8 +48,8 @@ block encoding is not free to read.** A readout that post-selects the ancilla su
 with probability ``||(A / alpha) |psi>||**2`` on a normalised input ``|psi>``, whose
 greatest value over inputs is ``(||A|| / alpha)**2``; where ``alpha`` is much larger than
 ``||A||`` that probability is exponentially small, and a caller who is not told so will
-take the block for free. The count that succeeds is the same number the extraction here
-reads: the block's column ``j`` is the post-selected amplitude vector of the basis state
+take the block for free. The count that succeeds is the number the tests read out of the
+circuit: the block's column ``j`` is the post-selected amplitude vector of the basis state
 ``|j>``, so its squared norm is that state's post-selection probability.
 
 **The phase is not the singular value.** At the exponent ``pi`` the embedding's eigenvalue
@@ -246,10 +248,9 @@ def estimate_singular_values(
 ) -> SingularValueResult:
     """Estimate the singular values of ``A`` from the phase of its embedding.
 
-    ``A`` is spelled as the construction reads it, which is the one place this package
-    keeps an upper-case parameter name and the reason the naming rule is suppressed above:
-    every formula in the module docstring is stated in terms of ``A`` and of the embedding
-    it is carried in.
+    ``A`` is spelled as the construction reads it, which is the reason the naming rule is
+    suppressed above: every formula in the module docstring is stated in terms of ``A``
+    and of the embedding it is carried in.
 
     The readout is the singular value at the counting register's mode, read back as
     described in the module docstring: the embedding ``[[0, A], [A^T, 0]]`` is
@@ -429,9 +430,10 @@ def _append_block_encoding(
 
     ``embedding`` must be Hermitian, which is what makes the eigenvalues real and the
     pair's mean their quotient by ``alpha``: the decomposition is the spectral one, and
-    ``eigh`` reads one triangle of its argument, so a non-Hermitian matrix would be
-    encoded from the wrong triangle rather than refused. Every call site of this module
-    passes the Hermitian embedding that :func:`_embedding_of` forms.
+    ``eigh`` reads one triangle of its argument, so encoding a non-Hermitian matrix would
+    take that one triangle as the spectrum. That case is refused rather than encoded, and
+    :func:`_select_unitary` is where. Every call site of this module passes the Hermitian
+    embedding that :func:`_embedding_of` forms.
 
     Args:
         circuit: The circuit to extend.
@@ -481,8 +483,8 @@ def _select_unitary(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
     if not bool(torch.allclose(embedding, embedding.T.conj())):
         raise ValueError(
             "the block encoding is built from the matrix's own eigenbasis, and eigh "
-            "reads one triangle of its argument, so a matrix that is not Hermitian "
-            "would be encoded from the wrong triangle rather than refused"
+            "reads one triangle of its argument, so this matrix, which is not Hermitian, "
+            "is refused rather than encoded from that one triangle"
         )
     eigenvalues, eigenvectors = torch.linalg.eigh(embedding)
     # The eigenvalues of a contraction, and the pair of phases whose mean they are: the

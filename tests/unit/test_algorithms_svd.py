@@ -32,6 +32,7 @@ from flagquantum.algorithms.svd import (
     SingularValueResult,
     _append_block_encoding,
     _input_amplitudes,
+    _PhaseFromEmbedding,
     _subnormalisation,
     estimate_singular_values,
 )
@@ -360,6 +361,35 @@ def test_the_post_selection_probability_of_the_dominant_direction_is_the_ratio()
         kept = float((state[:dimension].abs() ** 2).sum())
         largest = float(torch.linalg.svdvals(matrix)[0])
         assert kept == pytest.approx((largest / alpha) ** 2, abs=1e-6)
+
+
+def test_every_form_of_the_phase_unitary_appends_a_gate() -> None:
+    """Each of the operator's three forms appends one gate on the wires it is given.
+
+    Phase estimation consumes the power form only, so the plain form and the
+    single-controlled form are reached by nothing else in the package: this is where they
+    are exercised, and it is the reason the class docstring says they are implemented
+    rather than refused.
+    """
+    embedding = _embedding(_NON_SYMMETRIC)
+    unitary = _PhaseFromEmbedding(embedding, _subnormalisation(embedding, None))
+    wires = list(range(1, 1 + unitary.n_wires))
+    plain = Circuit(1 + unitary.n_wires)
+    unitary.apply(plain, wires)
+    controlled = Circuit(2 + unitary.n_wires)
+    unitary.apply_controlled(controlled, 0, wires)
+    powered = Circuit(2 + unitary.n_wires)
+    unitary.apply_power_controlled(powered, 0, wires, 3)
+    for circuit in (plain, controlled, powered):
+        assert len(circuit.to_qir()) == 1
+    # The two controlled forms are unitaries on one more wire than the plain one, which is
+    # what makes them the same operator with an identity prepended on the control branch.
+    matrix = torch.as_tensor(plain.to_qir()[0]["gate"]).to(torch.complex128)
+    product = matrix @ matrix.conj().T
+    assert float((product - torch.eye(matrix.shape[0])).abs().max()) < 1e-6
+    for circuit in (controlled, powered):
+        emitted = torch.as_tensor(circuit.to_qir()[0]["gate"])
+        assert emitted.shape[0] == 2 * matrix.shape[0]
 
 
 @pytest.mark.parametrize("matrix", _MATRICES)
