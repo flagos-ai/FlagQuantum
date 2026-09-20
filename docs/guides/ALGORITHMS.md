@@ -999,8 +999,8 @@ anywhere in this unit. The unit is bounded at four rows and four columns, becaus
 embedding is twice as wide as the matrix and every form of the phase unitary is a dense
 gate on it.
 
-**Measured.** The matrix `[[1, 2], [3, 4]]` has singular values `5.464985...` and
-`0.365966...`. At six counting wires, 20000 shots and sampling seed 11:
+**Measured.** The matrix `[[1, 2], [3, 4]]` has singular values `5.4649857...` and
+`0.3659661...`. At six counting wires, 20000 shots and sampling seed 11:
 
 ```python
 import torch
@@ -1008,9 +1008,13 @@ import torch
 from flagquantum.algorithms.svd import estimate_singular_values
 
 matrix = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-largest = float(torch.linalg.svdvals(matrix)[0])
-print([round(value, 6) for value in torch.linalg.svdvals(matrix).tolist()])
-# [5.464985, 0.365966]  -- the decomposition the readout is an estimate of
+# Read in double precision, so the digits quoted below are the matrix's rather than the
+# installed BLAS's: in float32 the largest lands 2e-7 from the sixth decimal's rounding
+# boundary, closer than float32 resolves, and builds disagree about which side they round on.
+exact = torch.linalg.svdvals(matrix.double())
+largest = float(exact[0])
+print([round(value, 6) for value in exact.tolist()])
+# [5.464986, 0.365966]  -- the decomposition the readout is an estimate of
 
 result = estimate_singular_values(matrix, n_counting_wires=6, shots=20000, seed=11)
 print(round(result.dominant_singular_value, 6), round(result.resolution, 6))
@@ -1042,7 +1046,7 @@ mode where, and the unit does not predict which singular value the mode reports.
 The same matrix at other widths, to show what the step is: four counting wires reads
 `5.809475` at a resolution of `0.968246`, six reads `5.567414` at `0.242061`, and seven
 reads `5.446383` at `0.121031`. Each of the three is within its own half step of
-`5.464985`, which is the contract; none of them is an exact reading.
+`5.4649857`, which is the contract; none of them is an exact reading.
 
 **The premise, and the dequantization.** The cited algorithm's cost is counted in queries
 to a structure that returns the matrix's entries, and against that count the state the

@@ -57,7 +57,11 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=11)
     args = parser.parse_args()
 
-    exact = [float(value) for value in torch.linalg.svdvals(MATRIX)]
+    # Read in double precision, so the digits printed below are the matrix's rather than
+    # the installed BLAS's: in float32 the largest lands 2e-7 from the sixth decimal's
+    # rounding boundary, closer than float32 resolves, and builds disagree about which
+    # side they round on.
+    exact = [float(value) for value in torch.linalg.svdvals(MATRIX.double())]
     result = estimate_singular_values(
         MATRIX,
         n_counting_wires=N_COUNTING_WIRES,

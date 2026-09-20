@@ -231,7 +231,7 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     output = _run("svd")
 
     assert "singular values by phase estimation -- flagquantum.algorithms.svd" in output
-    assert _labelled(output, "exact singular values") == "[5.464985, 0.365966]"
+    assert _labelled(output, "exact singular values") == "[5.464986, 0.365966]"
     assert _labelled(output, "readout") == "5.567414"
     assert _labelled(output, "readout share") == "0.5306"
     assert _labelled(output, "resolution") == "0.242061"

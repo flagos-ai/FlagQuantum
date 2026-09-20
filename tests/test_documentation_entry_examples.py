@@ -364,6 +364,25 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
     - Every block is executed twice and the two runs must have made the same calls
       with the same text: the comparison assumes the quoted values are reproducible,
       and every block of this guide passes an explicit seed to the sampler it runs.
+    - **Reproducible has a second half that no single machine can show: portable.**
+      The comparison is exact, so a value the guide quotes has to be one the
+      arithmetic determines rather than one the installed BLAS does -- and two runs
+      in one process agree whatever the build is. That half was measured across
+      builds instead: the guide's ten blocks, and the six scripts under
+      ``examples/algorithms/``, were run on macOS/Accelerate (arm64) and on
+      Linux/OpenBLAS at both arm64 and x86_64 -- the architecture CI's
+      ``ubuntu-latest`` is -- and the six scripts print byte-identically on all
+      three. **One quoted value was found to depend on the build**, and it was found
+      by the two runs disagreeing rather than by that comparison:
+      ``torch.linalg.svdvals`` of a ``float32`` matrix rounded at its sixth decimal.
+      The exact value sits 2.0e-7 from that decimal's rounding boundary, inside
+      ``float32``'s own error at that magnitude, so macOS printed ``5.464985`` where
+      Linux printed ``5.464986``. The block now reads its decomposition in double
+      precision, which leaves the value 2.04e-7 from the boundary against a
+      double-precision error of about 6e-16 -- a margin about 3e8 times the
+      arithmetic's own error, where ``float32``'s 3.3e-7 error exceeded it -- and
+      the example script that prints the same number was changed with it. **The rest
+      agreeing is evidence and not a guarantee** -- see the last bullet below.
 
     **What this test does not check, stated rather than left to be discovered.** It
     checks values, not prose, and it checks them as one sequence per statement:
@@ -392,6 +411,14 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
       to one. A quote removed while the statement that printed it survives is the
       other case and does fail: the statement then quotes fewer values than it
       printed.
+    - **Whether a quoted value is one the arithmetic determines.** Because the
+      comparison is exact, a value that depends on the installed BLAS passes on
+      the build that produced the quote and fails on another -- which is how the
+      one above was found, as a failure and not as a survey result. The portability
+      bullet above records that value and its repair; what is left is that this
+      test reports such a disagreement without telling it apart from a real change,
+      and that a value which happens to sit far enough from its rounding boundary
+      on all three builds measured so far can move across it on the next one.
 
     Everything else a quoted value can do fails: a changed value, a quote removed
     while its statement survives, a quote attached to a statement that did not print
