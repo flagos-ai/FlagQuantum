@@ -66,19 +66,27 @@ before retrying: the server may already have accepted the job.
 
 ## Jiuding native jobs
 
-In a shared JupyterLab, keep credentials in the current kernel instead of shared
-environment variables. Enter them through hidden input so they are not saved in
-notebook source:
+Choose one complete Jiuding credential source. Explicit credentials are the
+appropriate path when each user supplies a different pair in a shared
+JupyterLab. Local single-user processes may use environment variables, while a
+Jiuding workspace can use the platform-injected files.
+
+| Context | Configuration | Calls |
+| --- | --- | --- |
+| Per-user notebook or application session | Construct `JiudingCredentials(access_key=..., secret_key=...)` | Pass `credentials=` to `JiudingClient`, `fq.submit()` and `fq.restore_job()` |
+| Local single-user shell | Set both `JIUDING_AK` and `JIUDING_SK` | Omit `credentials`; FlagQuantum reads the environment |
+| Jiuding workspace | Let the platform inject `/etc/accesskey/user-ak` and `/etc/accesskey/user-sk` | Omit `credentials`; FlagQuantum reads both files |
+
+`JiudingCredentials` accepts ordinary strings; it does not depend on
+`getpass`. The placeholders below make that API explicit:
 
 ```python
-from getpass import getpass
-
 import flagquantum as fq
 from flagquantum.remote.compute import JiudingClient, JiudingCredentials
 
 credentials = JiudingCredentials(
-    access_key=getpass("Jiuding AK: "),
-    secret_key=getpass("Jiuding SK: "),
+    access_key="YOUR_JIUDING_AK",
+    secret_key="YOUR_JIUDING_SK",
 )
 
 # Copy project, queue and image values from one returned entry.
@@ -98,6 +106,43 @@ job = fq.submit(
 job.save("jiuding-job.json")
 print(job.id)
 ```
+
+Replace the AK/SK placeholders at runtime and never commit or save real values in
+a notebook. `getpass()` remains an optional way to collect the same two strings
+without displaying or storing them in a cell. The resulting
+`JiudingCredentials` object behaves identically.
+
+For a trusted local single-user shell, configure the fallback instead:
+
+```bash
+export JIUDING_AK="YOUR_JIUDING_AK"
+export JIUDING_SK="YOUR_JIUDING_SK"
+```
+
+FlagQuantum reads the current process environment. It does not parse a `.env`
+file automatically; a launcher or environment loader must export those values
+before the Python process starts.
+
+Then omit `credentials` from all calls:
+
+```python
+resources = JiudingClient().list_resources()
+job = fq.submit(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="jiuding:gpu",
+    project="YOUR_PROJECT_SET.YOUR_PROJECT",
+    queue="YOUR_QUEUE",
+    image="YOUR_FLAGQUANTUM_IMAGE",
+    outputs=fq.counts(),
+    shots=1024,
+)
+job.save("jiuding-job.json")
+restored = fq.restore_job("jiuding-job.json")
+```
+
+Both environment variables are required; FlagQuantum rejects a partial pair.
+Supplying `credentials=` takes precedence and bypasses environment and injected
+file discovery completely. FlagQuantum never combines values from two sources.
 
 Replace every `YOUR_...` value with an identifier from the signed-in user's
 Jiuding project. These are Jiuding platform resource names, not names invented
@@ -137,14 +182,12 @@ readable shortly after completion; `wait()` retries incomplete results until its
 deadline, while `result()` reports that no result is available yet.
 
 Restore with `fq.restore_job("jiuding-job.json", credentials=credentials)` in a
-later cell. After a kernel restart, create a new credential object through hidden
-input and pass it again. The receipt never contains AK, SK or an access token.
+later cell. After a kernel restart, create a new credential object and pass it
+again. The receipt never contains AK, SK or an access token.
 Restoration retrieves the existing job without resubmitting. If a
 submission response is lost, the exception names a private local journal: inspect
 that experiment before retrying to avoid duplicate jobs.
 
-For local single-user development, omitting `credentials` retains support for a
-complete `JIUDING_AK`/`JIUDING_SK` pair or Jiuding-injected credential files.
 Do not configure long-lived Jiuding credentials in a Quafu JupyterLab shared by
 multiple users. Session-level injection prevents ordinary environment, receipt
 and logging leakage; it is not a hard tenant boundary when kernels share one Unix

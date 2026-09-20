@@ -3,13 +3,18 @@
 > Commit references below have been mapped to the publication history.
 > Recorded outcomes and approval status are unchanged.
 
-`JiudingClient(credentials=JiudingCredentials(...))` keeps an explicit credential
-pair in the current Python process and never reads environment variables or
-injected files. This is the supported path for a notebook session in a shared
-Quafu JupyterLab. Inside a Jiuding development workspace, omitting the argument
-reads `/etc/accesskey/user-ak` and `user-sk`; local single-user environments may
-instead set a complete `JIUDING_AK`/`JIUDING_SK` pair. Partial credentials are
-rejected. Tokens stay in memory and refresh according to the server expiry.
+`JiudingCredentials(access_key=..., secret_key=...)` accepts ordinary strings;
+`getpass` is optional input handling, not a FlagQuantum dependency. Passing the
+object to `JiudingClient`, `fq.submit()` or `fq.restore_job()` keeps that explicit
+pair in the current Python process and bypasses all fallback discovery. This is
+the supported path for a per-user notebook session in a shared Quafu JupyterLab.
+
+When `credentials` is omitted, a local single-user process may instead set both
+`JIUDING_AK` and `JIUDING_SK`. Inside a Jiuding development workspace, the final
+fallback reads both `/etc/accesskey/user-ak` and `/etc/accesskey/user-sk` files.
+A partial pair is rejected, and values are never combined across sources. Tokens
+stay in memory and refresh according to the server expiry. FlagQuantum reads the
+process environment and does not load `.env` files by itself.
 Requests use HTTPS, reject redirects, have a 20-second socket timeout, and are
 not retried blindly. Credentials are never stored in task receipts.
 
@@ -39,18 +44,20 @@ For native jobs, discover copyable project, queue and private-image names withou
 requiring a workspace:
 
 ```python
-from getpass import getpass
-
 from flagquantum.remote.compute import JiudingClient, JiudingCredentials
 
 credentials = JiudingCredentials(
-    access_key=getpass("Jiuding AK: "),
-    secret_key=getpass("Jiuding SK: "),
+    access_key="YOUR_JIUDING_AK",
+    secret_key="YOUR_JIUDING_SK",
 )
 resources = JiudingClient(credentials=credentials).list_resources()
 for resource in resources:
     print(resource)
 ```
+
+Replace the placeholders at runtime; do not commit real AK/SK values. If hidden
+interactive input is preferred, values returned by `getpass()` can be passed to
+the same constructor without changing any later call.
 
 The method returns non-secret names from the signed-in account's Jiuding project
 memberships. It omits inactive queues and marks queue layouts the current adapter
