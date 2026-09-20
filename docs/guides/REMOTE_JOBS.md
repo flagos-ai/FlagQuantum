@@ -107,6 +107,48 @@ job.save("jiuding-job.json")
 print(job.id)
 ```
 
+A submit-ready entry has this shape:
+
+```python
+[
+    {
+        "project": "YOUR_PROJECT_SET.YOUR_PROJECT",
+        "queue": "YOUR_A100_QUEUE",
+        "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+        "images": [
+            "flagquantum-runtime:YOUR_VERSION-cu128-a100",
+        ],
+        "submission_supported": True,
+    }
+]
+```
+
+Copy `project`, `queue`, and one compatible entry from `images` into
+`fq.submit()`. The list is sorted by project and queue, and each image list is
+sorted. Private-image visibility does not prove that an image contains
+FlagQuantum; use the runtime image published or approved by the project
+administrator.
+
+An Active queue that the current adapter cannot submit to remains visible and
+explains why:
+
+```python
+[
+    {
+        "project": "YOUR_PROJECT_SET.YOUR_PROJECT",
+        "queue": "YOUR_QUEUE",
+        "accelerator_model": None,
+        "images": [],
+        "submission_supported": False,
+        "reason": "queue must expose exactly one high-priority resource configuration",
+    }
+]
+```
+
+An empty list means the account has no visible Active queue. It does not mean
+authentication succeeded with newly provisioned resources; project membership
+and quota still come from Jiuding.
+
 Replace the AK/SK placeholders at runtime and never commit or save real values in
 a notebook. `getpass()` remains an optional way to collect the same two strings
 without displaying or storing them in a cell. The resulting

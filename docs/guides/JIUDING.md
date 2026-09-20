@@ -55,6 +55,24 @@ for resource in resources:
     print(resource)
 ```
 
+For example, a usable entry is returned as a list containing one dictionary:
+
+```python
+[
+    {
+        "project": "YOUR_PROJECT_SET.YOUR_PROJECT",
+        "queue": "YOUR_A100_QUEUE",
+        "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+        "images": ["flagquantum-runtime:YOUR_VERSION-cu128-a100"],
+        "submission_supported": True,
+    }
+]
+```
+
+Copy the three platform values into `fq.submit()`. See the
+[`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs) for unsupported-queue
+and empty-result examples.
+
 Replace the placeholders at runtime; do not commit real AK/SK values. If hidden
 interactive input is preferred, values returned by `getpass()` can be passed to
 the same constructor without changing any later call.
