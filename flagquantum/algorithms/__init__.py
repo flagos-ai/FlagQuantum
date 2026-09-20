@@ -9,6 +9,7 @@ from . import pca as pca
 from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
+from . import svd as svd
 from .core import (
     AdaptVQEIteration,
     AdaptVQEResult,
@@ -72,6 +73,7 @@ __all__ = [
     "run_layerwise_vqe",
     "run_vqe",
     "run_adapt_vqe",
+    "svd",
     "transverse_field_ising",
     "vqe_loss",
     "zz_chain_hamiltonian",

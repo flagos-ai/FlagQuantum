@@ -134,6 +134,9 @@ This catalog is generated from the machine-validated
 | Estimate the fraction of a database's items whose support meets a threshold | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read that fraction off an amplitude estimation counting register | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Compare the estimate against an enumerated frequent fraction | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Estimate a matrix's singular values from a counting register | Singular values by phase estimation over the Hermitian embedding | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read one singular value off the register's mode | Singular values by phase estimation over the Hermitian embedding | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Compare a read-out value against the matrix's own decomposition | Singular values by phase estimation over the Hermitian embedding | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -503,6 +506,20 @@ Estimate the fraction of a binary incidence matrix's items whose support meets a
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** The advantage premise is coherent entry-wise database access, and this unit does not meet it. The cited paper's speed-up is measured in calls to an oracle that returns one database entry per call, and it reaches the candidate itemset superpositions it prepares through a qRAM; neither is exercised here: the transactions are iterated over classically, one controlled increment of the support register per transaction-item membership, emitted from the incidence matrix as Python reads it, so the access cost is paid explicitly rather than assumed away and no end-to-end advantage follows. The improvement the paper claims is quadratic in the number of database queries and is stated conditionally, for the case M_f^(k) << M_c^(k); it is not exponential, and that wording appears only in an earlier arXiv listing of the same work. The support register must be wide enough to hold the largest support any database of that transaction count could produce: the increment is a permutation of the register's own values, so a narrower register wraps a support into another value and the readout can come back wrong with nothing raised, and a width that cannot hold every support is therefore refused rather than left to wrap. The item register is addressed by one wire per item-index bit, so the item count is a power of two. Demonstration scale: at most eight items and seven transactions, and the marking operator enumerates the support values at or above the threshold. It makes no performance, convergence, or hardware claim.
+
+### Singular values by phase estimation over the Hermitian embedding
+
+Estimate a matrix's singular values from the phase of the Hermitian matrix that carries it as its off-diagonal block, with a private block encoding of that embedding under a stated subnormalisation.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.svd`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** The advantage premise is the input model, and this unit does not meet it. The cited algorithm's cost is counted in queries to a structure that returns the matrix's entries, and against that count the state the estimation is applied to is assumed to be preparable; neither is present here. The matrix is held as an ordinary tensor, its embedding is formed and exponentiated as a dense matrix, and the input state is built from the singular vectors a classical torch.linalg.svd returns -- the very decomposition the readout estimates -- so the access and the preparation are paid explicitly rather than assumed away and no end-to-end advantage follows. Dequantization is recorded rather than glossed over: Tang's classical algorithm for the recommendation problem removes the exponential speed-up and is only polynomially slower, its bound containing eps**-12, which the author calls a large slowdown in some exponents; it is not a classical algorithm that matches the quantum runtime. Arrazola et al. record the practical conditions the dequantized algorithms need, and Gharibian-Le Gall give the hardness result for singular-value estimation under the sparse access model. The block encoding is not free to read: a readout that post-selects the ancilla succeeds with probability ||(A/alpha)|psi>||**2 on a normalised input, whose greatest value over inputs is (||A||/alpha)**2, and where alpha is much larger than ||A|| that probability is exponentially small. The readout is the counting register's mode, and the unit does not claim that the mode's value is the largest singular value: the readout is a grid value at the register's own resolution, and within() is the whole of the accuracy contract. The input state is prepared from the singular vectors, so the classical work includes the very decomposition the unit estimates. Demonstration scale: at most four rows and four columns, with the embedding, its exponential and the state preparation all classical. It makes no performance, convergence, or hardware claim.
 
 
 ## Distributed execution

@@ -37,6 +37,11 @@ external-framework objects or a second execution path.
   classifier over them. Demonstration scale: the feature map is this package's
   own angle encoding, built gate by gate on every run, and every entry is a
   sample rather than a reading.
+- `svd.py`: singular values read from the phase of a matrix's Hermitian
+  embedding, with a private block encoding of that embedding beside the readout.
+  Demonstration scale: the matrix, its embedding, the embedding's exponential and
+  the input state are all formed classically, the input state from the matrix's
+  own singular vectors.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.
