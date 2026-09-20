@@ -28,9 +28,10 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from ._jiuding_credentials import load_jiuding_credentials
+from ._jiuding_credentials import JiudingCredentials, resolve_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
+from ._resource_discovery import discover_resources
 from ._workspace_discovery import select_workspace, summarize_workspaces
 from ._workspace_results import decode_tensor, measurement_result
 
@@ -81,8 +82,9 @@ class JiudingClient(_ProgramSubmissionMixin):
     """Use injected credentials and discover the current workspace's queue.
 
     ``workspace`` is optional inside a platform pod; outside it, specify a
-    unique workspace name. Credentials come from JIUDING_AK/JIUDING_SK or
-    /etc/accesskey/user-{ak,sk}. No credentials are stored in receipts.
+    unique workspace name. Explicit credentials stay in this client and take
+    precedence over JIUDING_AK/JIUDING_SK and injected credential files. No
+    credentials are stored in receipts.
     """
 
     def __init__(
@@ -90,7 +92,10 @@ class JiudingClient(_ProgramSubmissionMixin):
         *,
         workspace: str | None = None,
         endpoint: str = "https://platform-multi.baai.ac.cn",
+        credentials: JiudingCredentials | None = None,
     ):
+        if credentials is not None and not isinstance(credentials, JiudingCredentials):
+            raise TypeError("credentials must be JiudingCredentials or None")
         url = urlsplit(endpoint)
         if (
             url.scheme != "https"
@@ -104,6 +109,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             raise ValueError("endpoint must be an HTTPS origin")
         self.endpoint = endpoint.rstrip("/")
         self.workspace_name = workspace
+        self._credentials = credentials
         self._token = ""
         self._expires = 0.0
         self._workspace: dict[str, Any] | None = None
@@ -117,6 +123,13 @@ class JiudingClient(_ProgramSubmissionMixin):
 
         return summarize_workspaces(
             self._pages("/api/v1/workspaces/select", {}, "items", self._auth())
+        )
+
+    def list_resources(self) -> list[dict[str, Any]]:
+        """Return non-secret native-job project, queue and image choices."""
+
+        return discover_resources(
+            auth=self._auth(), request=self._request, request_pages=self._pages
         )
 
     def _request(
@@ -144,7 +157,10 @@ class JiudingClient(_ProgramSubmissionMixin):
                 error = json.loads(exc.read(8192))
                 if isinstance(error, dict):
                     message = str(error.get("message", ""))[:1000]
-                    for value in headers.values():
+                    sensitive = list(headers.values())
+                    if self._credentials is not None:
+                        sensitive.extend(self._credentials._pair())
+                    for value in sorted(set(sensitive), key=len, reverse=True):
                         if value:
                             message = message.replace(value, "[REDACTED]")
             except (ValueError, OSError):
@@ -160,7 +176,7 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def _auth(self) -> dict[str, str]:
         if time.monotonic() >= self._expires:
-            ak, sk = load_jiuding_credentials()
+            ak, sk = resolve_jiuding_credentials(self._credentials)
             path = "/api/v1/users/token/exchange"
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             digest = hashlib.sha256(f"POST\n{path}\n{stamp}".encode()).hexdigest()

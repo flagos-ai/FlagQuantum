@@ -3,25 +3,88 @@
 > Commit references below have been mapped to the publication history.
 > Recorded outcomes and approval status are unchanged.
 
-Inside a Jiuding development workspace, the client reads the injected
-`/etc/accesskey/user-ak` and `user-sk` automatically. Outside Jiuding, set both
-`JIUDING_AK` and `JIUDING_SK`; these environment values override injected files
-only as a complete pair. Partial credentials are rejected. Tokens stay in memory
-and refresh according to the server expiry. Requests use HTTPS, reject redirects,
-have a 20-second socket timeout, and are not retried blindly. No CLI installation
-or manual project and queue IDs are required.
+`JiudingCredentials(access_key=..., secret_key=...)` accepts ordinary strings;
+`getpass` is optional input handling, not a FlagQuantum dependency. Passing the
+object to `JiudingClient`, `fq.submit()` or `fq.restore_job()` keeps that explicit
+pair in the current Python process and bypasses all fallback discovery. This is
+the supported path for a per-user notebook session in a shared Quafu JupyterLab.
+
+When `credentials` is omitted, a local single-user process may instead set both
+`JIUDING_AK` and `JIUDING_SK`. Inside a Jiuding development workspace, the final
+fallback reads both `/etc/accesskey/user-ak` and `/etc/accesskey/user-sk` files.
+A partial pair is rejected, and values are never combined across sources. Tokens
+stay in memory and refresh according to the server expiry. FlagQuantum reads the
+process environment and does not load `.env` files by itself.
+Requests use HTTPS, reject redirects, have a 20-second socket timeout, and are
+not retried blindly. Credentials are never stored in task receipts.
+
+Session injection protects against ordinary shared-environment and receipt
+leakage, but kernels running as the same Unix account are not a hard security
+boundary. Mutually untrusted users require per-user process/container isolation
+or a credential broker issuing short-lived scoped tokens; long-lived AK/SK must
+remain outside notebooks in that deployment model.
 
 For native jobs without a workspace or SSH, use the development-version
 [`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs). It requires project
 membership, queue capacity and a compatible image. The workspace examples below
 remain useful for repeated interactive execution and shared-storage jobs.
+The `project`, `queue` and `image` arguments are exact Jiuding platform resource
+identifiers supplied by the user's administrator or shown in the Jiuding
+console; FlagQuantum does not define or create them. Only targets such as
+`jiuding:gpu` belong to FlagQuantum's target vocabulary. See the linked journey
+for the accepted formats and replacement rules.
 
 ## First account check
 
 A new account must first be added to a Jiuding project and an active compute
 queue by a platform administrator. FlagQuantum cannot grant quota or project
-membership. Once at least one development workspace is visible, verify access
-without copying project or queue IDs:
+membership.
+
+For native jobs, discover copyable project, queue and private-image names without
+requiring a workspace:
+
+```python
+from flagquantum.remote.compute import JiudingClient, JiudingCredentials
+
+credentials = JiudingCredentials(
+    access_key="YOUR_JIUDING_AK",
+    secret_key="YOUR_JIUDING_SK",
+)
+resources = JiudingClient(credentials=credentials).list_resources()
+for resource in resources:
+    print(resource)
+```
+
+For example, a usable entry is returned as a list containing one dictionary:
+
+```python
+[
+    {
+        "project": "YOUR_PROJECT_SET.YOUR_PROJECT",
+        "queue": "YOUR_A100_QUEUE",
+        "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+        "images": ["flagquantum-runtime:YOUR_VERSION-cu128-a100"],
+        "submission_supported": True,
+    }
+]
+```
+
+Copy the three platform values into `fq.submit()`. See the
+[`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs) for unsupported-queue
+and empty-result examples.
+
+Replace the placeholders at runtime; do not commit real AK/SK values. If hidden
+interactive input is preferred, values returned by `getpass()` can be passed to
+the same constructor without changing any later call.
+
+The method returns non-secret names from the signed-in account's Jiuding project
+memberships. It omits inactive queues and marks queue layouts the current adapter
+cannot submit to. Select an image that contains a compatible FlagQuantum program
+executor; catalog visibility alone does not certify its contents.
+
+For workspace execution, the existing example reports the context attached to
+visible workspaces. Once at least one development workspace is visible, verify
+access without copying project or queue IDs:
 
 ```bash
 python examples/remote/jiuding_workspace_bell.py --list-workspaces

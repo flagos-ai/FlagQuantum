@@ -8,6 +8,7 @@ import pytest
 import flagquantum as fq
 from flagquantum.errors import CapabilityError, ExecutionError
 from flagquantum.remote import jobs
+from flagquantum.remote.compute import JiudingCredentials
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
@@ -159,11 +160,17 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
     calls = []
     state = ["Pending"]
     expected = fq.run(fq.Circuit(1))
+    credentials = JiudingCredentials(
+        access_key="session-ak", secret_key="session-secret"
+    )
+    clients = []
 
     class Client(NativeJiudingJobClient):
-        def __init__(self, *, project, queue=None):
+        def __init__(self, *, project, queue=None, credentials=None):
             self.project = project
             self.queue = queue
+            self.credentials = credentials
+            clients.append(self)
 
         def submit_program(self, *args, **kwargs):
             calls.append("submit")
@@ -194,17 +201,22 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
         image="test-image",
         project="test.project",
         queue="test-queue",
+        credentials=credentials,
     )
     assert job.status() == "queued"
     with pytest.raises(ExecutionError):
         job.result()
     path = tmp_path / "compute.json"
     job.save(path)
-    restored = fq.restore_job(path)
+    assert "session-ak" not in path.read_text()
+    assert "session-secret" not in path.read_text()
+    restored = fq.restore_job(path, credentials=credentials)
     state[0] = "Succeed"
     assert restored.result() is expected
     assert calls.count("submit") == 1
     assert calls == ["submit"]
+    assert len(clients) == 2
+    assert all(client.credentials is credentials for client in clients)
     restored.cancel()
     assert restored.status() == "cancelled"
 
@@ -215,6 +227,18 @@ def test_jiuding_missing_image_fails_before_client(monkeypatch):
     with pytest.raises(ValueError, match="requires image"):
         fq.submit(fq.Circuit(1), target="jiuding:cpu")
     client.assert_not_called()
+
+
+def test_explicit_jiuding_credentials_are_rejected_for_quafu(quafu):
+    credentials = JiudingCredentials(access_key="ak", secret_key="sk")
+    with pytest.raises(TypeError, match="only to Jiuding"):
+        fq.submit(
+            fq.Circuit(2),
+            target="quafu:Baihua",
+            shots=1024,
+            credentials=credentials,
+        )
+    assert quafu.posts == []
 
 
 def test_wait_polls_without_resubmitting(quafu, monkeypatch):
