@@ -6,6 +6,7 @@ from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
 from . import pca as pca
+from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
 from .core import (
@@ -64,6 +65,7 @@ __all__ = [
     "pca",
     "qaoa_circuit",
     "qaoa_loss",
+    "qarm",
     "quantum_kernel",
     "qubo",
     "run_hybrid_vqe",

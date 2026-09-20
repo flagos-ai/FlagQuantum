@@ -131,6 +131,9 @@ This catalog is generated from the machine-validated
 | Build the binary objective of a feature-selection instance | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Read the objective's value off an assignment | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Map the objective to an Ising Hamiltonian for a solver to consume | Feature selection as a QUBO | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Estimate the fraction of a database's items whose support meets a threshold | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Read that fraction off an amplitude estimation counting register | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Compare the estimate against an enumerated frequent fraction | Frequent-item fractions by amplitude estimation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 
 ## Build and compile
 
@@ -486,6 +489,20 @@ Build the binary objective of a feature-selection instance -- a subset's relevan
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** This unit does not solve, and the repository has no annealer: it builds the objective of one feature-selection instance and evaluates that objective at an assignment the caller supplies. Which subset a solver returns, and at what cost, belongs to the solver the problem is handed to, so any advantage such a solver observes is the solver's and this construction carries none of its own -- the QUBO form and the Ising form are a polynomial classical transformation with no advantage of their own. Both scores are the caller's data: this unit defines no relevance measure and no redundancy measure and puts no interpretation on either. The penalty weight is the caller's too, with no default here and no weight at which the target size starts to bind computed or predicted, so a weight small enough against the scores can leave a subset of another size cheapest. Demonstration scale: the instance is a set of feature scores the caller brings, and the objective is an ordinary quadratic binary form whose quadratic terms are the pairwise scores folded together with the size penalty. It certifies no solver, convergence, performance, or hardware behavior, and it selects no runtime.
+
+### Frequent-item fractions by amplitude estimation
+
+Estimate the fraction of a binary incidence matrix's items whose support meets a threshold, with a support register the circuit fills one controlled increment per transaction-item membership.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.qarm`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** The advantage premise is coherent entry-wise database access, and this unit does not meet it. The cited paper's speed-up is measured in calls to an oracle that returns one database entry per call, and it reaches the candidate itemset superpositions it prepares through a qRAM; neither is exercised here: the transactions are iterated over classically, one controlled increment of the support register per transaction-item membership, emitted from the incidence matrix as Python reads it, so the access cost is paid explicitly rather than assumed away and no end-to-end advantage follows. The improvement the paper claims is quadratic in the number of database queries and is stated conditionally, for the case M_f^(k) << M_c^(k); it is not exponential, and that wording appears only in an earlier arXiv listing of the same work. The support register must be wide enough to hold the largest support any database of that transaction count could produce: the increment is a permutation of the register's own values, so a narrower register wraps a support into another value and the readout can come back wrong with nothing raised, and a width that cannot hold every support is therefore refused rather than left to wrap. The item register is addressed by one wire per item-index bit, so the item count is a power of two. Demonstration scale: at most eight items and seven transactions, and the marking operator enumerates the support values at or above the threshold. It makes no performance, convergence, or hardware claim.
 
 
 ## Distributed execution
