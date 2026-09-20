@@ -39,10 +39,11 @@ and the item register's preparation has to be controllable for the Grover operat
 
 **The support register has to be wide enough, and a narrow one is refused rather than
 wrapped.** The increment is a permutation of the register's own values, so a support the
-register cannot hold comes back as another value, the mark then reads the wrong set of
-items, and nothing is raised. :func:`frequent_itemset_operator` therefore refuses a
-register that cannot hold the largest support the database can produce, which is the number
-of transactions; the fewest wires that can hold it is the default.
+register cannot hold comes back as another value, the mark then sees a support that can be
+on the wrong side of the threshold, and the readout can come back wrong with nothing
+raised. :func:`frequent_itemset_operator` therefore refuses a register that cannot hold the
+largest support the database can produce, which is the number of transactions; the fewest
+wires that can hold it is the default.
 
 **The threshold is inclusive.** An item whose support equals the threshold is frequent, and
 the marking operator is built over the support values at or above it.
@@ -107,8 +108,9 @@ class FrequentItemsetOperator:
     item-index bit with the first wire the most significant; the support register follows
     it, first wire most significant as well; then the ancillas the multi-controlled X
     ladders borrow and restore; and last the flag wire the marking operator flips. The
-    ancillas and the flag enter every gate that touches them in ``|0>`` and leave it in
-    ``|0>``.
+    ancillas are ``|0>`` at the start of every ladder that borrows them, and each ladder
+    restores what it borrows; the flag is ``|0>`` on entry to and on exit from each
+    protocol method.
 
     ``kw_only`` is not optional here, and the reason is how a call site reads rather than
     what it would catch: the fields are a matrix, a threshold and a register width, so a
@@ -395,7 +397,7 @@ def frequent_itemset_operator(
     the largest support a database of ``n`` transactions can produce is ``n``, so the fewest
     wires that can hold every support are the bits ``n`` needs. A width passed explicitly is
     accepted when it is at least that, and **refused when it is not**, rather than left to
-    wrap the register's values into a wrong readout.
+    wrap the register's values into a readout that can come back wrong.
 
     Args:
         incidence: The database, a real two-dimensional torch.Tensor of ``0`` and ``1``, one
@@ -509,8 +511,7 @@ def _validated_matrix(incidence: object) -> tuple[tuple[int, ...], ...]:
             "and a complex entry is not a membership"
         )
     values = incidence.detach().to(device="cpu", dtype=torch.float64)
-    rows = tuple(tuple(int(value) for value in row) for row in values)
-    if not rows:
+    if not values.shape[0]:
         raise ValueError(
             "a database holds at least one transaction, got none; with no transaction "
             "every support is zero and there is no frequent fraction to estimate"
@@ -523,7 +524,7 @@ def _validated_matrix(incidence: object) -> tuple[tuple[int, ...], ...]:
                     "says whether one transaction holds one item, and a count in its place "
                     "would be read as a membership"
                 )
-    return rows
+    return tuple(tuple(int(value) for value in row) for row in values)
 
 
 def _validated_incidence(rows: object) -> tuple[tuple[int, ...], ...]:
@@ -536,20 +537,28 @@ def _validated_incidence(rows: object) -> tuple[tuple[int, ...], ...]:
         The same rows.
 
     Raises:
-        ValueError: If it is not a tuple of rows, holds no transaction, holds a row whose
-            width differs from the first's or is empty, or holds an entry that is neither
-            ``0`` nor ``1``.
+        ValueError: If it is not a tuple, holds no transaction, holds a row that is not a
+            tuple, holds rows whose widths differ or are empty, or holds an entry that is
+            neither ``0`` nor ``1``.
     """
-    if (
-        not isinstance(rows, tuple)
-        or not rows
-        or not all(isinstance(r, tuple) for r in rows)
-    ):
+    if not isinstance(rows, tuple):
         raise ValueError(
             "the incidence matrix is carried as a tuple of rows, each a tuple of zeros "
             f"and ones, got {type(rows).__name__}; build the operator with "
             "frequent_itemset_operator, which reads a tensor"
         )
+    if not rows:
+        raise ValueError(
+            "a database holds at least one transaction, got none; with no transaction "
+            "every support is zero and there is no frequent fraction to estimate"
+        )
+    for row in rows:
+        if not isinstance(row, tuple):
+            raise ValueError(
+                "every row of the incidence matrix is carried as a tuple of zeros and "
+                f"ones, got {type(row).__name__} in its place; build the operator with "
+                "frequent_itemset_operator, which reads a tensor"
+            )
     widths = {len(row) for row in rows}
     if len(widths) != 1 or not next(iter(widths)):
         raise ValueError(
@@ -648,8 +657,8 @@ def _validated_support_width(n_support_wires: object, n_transactions: int) -> in
             f"the support register needs at least {fewest} wires to hold the largest "
             f"support {largest} that {n_transactions} transactions can produce, got "
             f"{n_support_wires}; the increment is a permutation of the register's values, "
-            "so a narrower register wraps a support into another value and the readout "
-            "comes back wrong with nothing raised"
+            "so a narrower register wraps a support into another value and the readout can "
+            "come back wrong with nothing raised"
         )
     if n_support_wires > _MAX_SUPPORT_WIRES:
         raise ValueError(

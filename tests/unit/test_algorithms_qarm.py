@@ -3,17 +3,21 @@
 Every database here is small enough for its supports and its frequent fraction to be
 computed in plain Python from the incidence matrix: one column sum per item for the
 supports, and one count of the columns at or above the threshold for the fraction. Those
-values are the reference, and they are compared against the unit's own in three places --
-the operator's classical support column, the preparation's joint distribution of item and
-support over the circuit's own state, and the amplitude-estimation readout.
+values are the reference the circuit is read against, in two places -- the preparation's
+joint distribution of item and support over the circuit's own state, and the
+amplitude-estimation readout. The operator's own ``support`` property is that same column
+sum written a second time, so the test on it checks the length and the item order it
+reports rather than the arithmetic it performs.
 
-The marking operator is checked against the same reference a fourth time, on the sign it
+The marking operator is checked against the same reference a third time, on the sign it
 gives each item's amplitude: an item is marked exactly when its support meets the
 threshold, which is where the inclusive comparison is pinned rather than described.
 
 The measured instance of the brief -- two transactions over two items, threshold two --
 is carried below with the values this repository's runs produce for it, and every expected
-value in this file was measured by running the construction it checks.
+value in this file was measured by running the construction it checks. One measurement --
+the one-wire support register -- was taken with the builder's width refusal lifted, which
+the test that carries it says.
 """
 
 from __future__ import annotations
@@ -167,7 +171,14 @@ def test_the_operator_is_a_frozen_keyword_only_dataclass() -> None:
 
 @pytest.mark.parametrize("rows", _DATABASES)
 def test_the_supports_are_the_column_sums(rows: list[list[int]]) -> None:
-    """The operator's classical support column matches an enumerated column count."""
+    """The support column has one entry per item, in item order.
+
+    What this compares is the operator's own column sum against the same column sum
+    written in this file, so the arithmetic is the same expression on both sides and the
+    test can fail only on the length or the item order. The circuit's supports are read
+    against the independent reference in
+    :func:`test_the_preparation_pairs_every_item_with_its_own_support`.
+    """
     assert _operator(rows, 1).support == _supports(rows)
 
 
@@ -308,10 +319,10 @@ def test_a_support_register_that_cannot_hold_the_largest_support_is_refused() ->
     """A register too narrow to hold every support is refused, not left to wrap.
 
     Two transactions can produce a support of 2, and one wire holds 0 and 1 only. Measured
-    on that instance with a register of one wire, the increment wraps the support of 2 back
-    to 0, the mark then sees no support at the threshold, the estimate reads 0.0 against an
-    exact fraction of 0.5, and nothing is raised -- which is why the width is checked here
-    instead.
+    on that instance with a register of one wire, and with the width refusal lifted for the
+    measurement: the increment wraps the support of 2 back to 0, the mark then sees no
+    support at the threshold, the estimate reads 0.0 against an exact fraction of 0.5, and
+    nothing is raised -- which is why the width is checked here instead.
     """
     with pytest.raises(ValueError, match="at least 2 wires"):
         frequent_itemset_operator(
@@ -360,6 +371,8 @@ def test_a_database_may_be_handed_over_in_any_real_dtype(dtype: torch.dtype) -> 
         torch.empty((0, 2), dtype=torch.int64),
         torch.tensor([[1, 0], [1, 2]]),
         torch.tensor([[1.0, 0.0], [0.5, 1.0]]),
+        torch.tensor([[float("inf"), 0.0], [1.0, 1.0]]),
+        torch.tensor([[float("nan"), 0.0], [1.0, 1.0]]),
         torch.tensor([[1 + 0j, 0 + 0j]]),
         torch.ones((2, 3), dtype=torch.int64),
         torch.ones((2, 1), dtype=torch.int64),
@@ -391,6 +404,20 @@ def test_a_support_register_width_the_unit_cannot_use_is_refused(width: object) 
             torch.tensor(_MEASURED),
             threshold=2,
             n_support_wires=width,  # type: ignore[arg-type]
+        )
+
+
+def test_the_row_diagnostic_names_the_row() -> None:
+    """A row that is not a tuple is refused by that row's type, not the container's.
+
+    The container here is a tuple either way, so a message that names the container says
+    nothing about what is wrong with it.
+    """
+    with pytest.raises(ValueError, match="got int in its place"):
+        FrequentItemsetOperator(
+            incidence=((1, 0), 1),  # type: ignore[arg-type]
+            threshold=1,
+            n_support_wires=3,
         )
 
 

@@ -119,10 +119,10 @@ applies to them as to everything else in this guide.
 - **Frequent-item fractions rest on coherent database access, and that access is not
   exercised here.** `qarm.py` estimates the share of a database's items whose support
   meets a threshold, by amplitude estimation over a support register the circuit fills
-  one controlled increment per transaction. The paper's count is a count of oracle calls
-  that return one database entry each, held in a qRAM; neither is present here, and the
-  incidence matrix is read in Python to build that loop, so the access cost is paid
-  rather than assumed away. **The improvement the paper claims is quadratic and
+  one controlled increment per transaction-item membership. The paper's count is a count
+  of oracle calls that return one database entry each, held in a qRAM; neither is present
+  here, and the incidence matrix is read in Python to build that loop, so the access cost
+  is paid rather than assumed away. **The improvement the paper claims is quadratic and
   conditional** — it is stated for the case `M_f^(k) << M_c^(k)`, and it is not
   exponential. See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
@@ -846,14 +846,14 @@ item meets it, or none does, and neither needs a circuit.
 
 **The support register has to be wide enough, and a narrow one is refused.** The
 increment is a permutation of the register's own values, so a support the register
-cannot hold comes back as another value, the mark then sees a support below the threshold
-and the set it marks is not the frequent set, and the readout is wrong with nothing
-raised. Measured on the database below with the support
-register narrowed to a single wire, a width the builder refuses: the first item's support
-is 2 and comes back as 0, the estimate reads 0.0 against an exact fraction of 0.5, and
-nothing is raised. `frequent_itemset_operator` therefore refuses a register that cannot
-hold the largest support the database can produce, which is its transaction count, and the
-default is the fewest wires that can hold it.
+cannot hold comes back as another value, the mark then sees a support that can be on the
+wrong side of the threshold, and the readout can come back wrong with nothing raised.
+Measured on the database below with the support register narrowed to a single wire, a
+width the builder refuses, and with that refusal lifted for the measurement: the first
+item's support is 2 and comes back as 0, the estimate reads 0.0 against an exact fraction
+of 0.5, and nothing is raised. `frequent_itemset_operator` therefore refuses a register
+that cannot hold the largest support any database of that transaction count could
+produce, and the default is the fewest wires that can hold it.
 
 **The item count is a power of two.** The item register is addressed by one wire per
 item-index bit, and a uniform state over another count has no controlled preparation in
@@ -901,10 +901,10 @@ estimate gives, not a claim that the estimate is exact.
 
 **The premise, and what this unit does not show.** The cited paper's improvement is
 quadratic in the number of database queries, and it is stated conditionally, for the case
-`M_f^(k) << M_c^(k)`; it is not exponential. An earlier arXiv listing of the same work,
-`arXiv:1512.02420`, is the only place that wording appears, and nothing in this guide
-repeats it. Because the paper's oracle and its qRAM are both absent here, no part of its
-query-count advantage survives into this unit.
+`M_f^(k) << M_c^(k)`; it is not exponential. An earlier arXiv listing of the same work is
+the only place that wording appears, and nothing in this guide repeats it. Because the
+paper's oracle and its qRAM are both absent here, no part of its query-count advantage
+survives into this unit.
 
 ## Sources
 
@@ -995,8 +995,7 @@ query-count advantage survives into this unit.
   was confirmed with it. **Two things it does not say.** Its improvement is quadratic in
   the number of database queries and it is conditional, stated for the case
   `M_f^(k) << M_c^(k)`; it is not exponential, and the exponential wording appears only in
-  an earlier arXiv listing of the same work, `arXiv:1512.02420`, which is that paper
-  rather than a second one.
+  an earlier arXiv listing of the same work, which is that paper rather than a second one.
 
 ## Scope
 
