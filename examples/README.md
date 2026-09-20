@@ -3,12 +3,20 @@
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
 
-All curated examples use:
+Examples built on the root surface use:
 
 - `import flagquantum as fq` as the public entry point;
 - `fq.Circuit(n_qubits=...)` for circuit construction;
 - PyTorch for parameters, gradients, and optimizers;
 - explicit runtime and distribution semantics when making performance claims.
+
+One exception is the algorithm demonstrations in
+[`algorithms/`](algorithms/README.md): the algorithm units are reachable at
+`flagquantum.algorithms.<unit>` and carry no root-level `fq.` name, so those
+scripts import the unit they demonstrate from the subpackage.
+[`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
+reference they follow, and the place each unit's advantage premise is recorded
+in full.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -89,6 +97,7 @@ boundaries are listed in the capability catalog.
 | Goal | Recommended entry | Scope |
 | --- | --- | --- |
 | Learn circuits, measurements, gradients, and QML | [Tutorials](tutorials/README.md) | Guided notebooks |
+| Run one quantum algorithm unit end to end | [Algorithm examples](algorithms/README.md) and the [algorithms guide](../docs/guides/ALGORITHMS.md) | Demonstration-scale units, subpackage surface |
 | Verify the local CPU or one-GPU path | [Single-machine quantum AI](single_machine_quantum_ai/README.md) | Supported local workflows |
 | Train a local statevector VQE | [`01_vqe_statevector.py`](single_machine_quantum_ai/01_vqe_statevector.py) | Exact differentiable simulation |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
