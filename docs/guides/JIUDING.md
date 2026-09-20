@@ -23,6 +23,11 @@ For native jobs without a workspace or SSH, use the development-version
 [`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs). It requires project
 membership, queue capacity and a compatible image. The workspace examples below
 remain useful for repeated interactive execution and shared-storage jobs.
+The `project`, `queue` and `image` arguments are exact Jiuding platform resource
+identifiers supplied by the user's administrator or shown in the Jiuding
+console; FlagQuantum does not define or create them. Only targets such as
+`jiuding:gpu` belong to FlagQuantum's target vocabulary. See the linked journey
+for the accepted formats and replacement rules.
 
 ## First account check
 

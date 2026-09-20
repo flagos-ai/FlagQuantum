@@ -95,6 +95,22 @@ job.save("jiuding-job.json")
 print(job.id)
 ```
 
+Replace every `YOUR_...` value with an identifier from the signed-in user's
+Jiuding project. These are Jiuding platform resource names, not names invented
+or provisioned by FlagQuantum:
+
+- `project` is the Jiuding project identifier in `project-set.project` form.
+- `queue` is the exact compute-queue name assigned to that project.
+- `image` is an image reference available from that queue's private image
+  catalog and containing a compatible FlagQuantum program executor.
+- `target="jiuding:gpu"` is the FlagQuantum target selector; the chosen Jiuding
+  queue determines the concrete GPU model. Use `jiuding:gpu/<model>` only when
+  an exact model match is required.
+
+Users must obtain project membership, queue access and the image reference from
+their Jiuding administrator or Jiuding console. One user's values generally do
+not work for another account.
+
 This path uses native HTTP jobs, without SSH, workspace pods or source uploads.
 The image must contain a compatible FlagQuantum program executor. You can set
 `JIUDING_PROJECT` instead of passing `project`; omit `queue` only when exactly one
