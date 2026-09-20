@@ -57,6 +57,7 @@ applies to them as to everything else in this guide.
 | `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 | `feature_selection.py` — feature selection as a QUBO | Available. Builds the binary objective of a feature-selection instance — a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size — and evaluates it at an assignment or maps it to an Ising Hamiltonian. | Ferrari Dacrema et al. 2022 | **This unit does not solve, and there is no solver here.** The repository has no annealer: the unit builds the objective and evaluates it, so which subset comes back, and at what cost, belongs to whatever solver the problem is handed to, and any advantage such a solver observes is the solver's. |
 | `qarm.py` — frequent-item fractions by amplitude estimation | Available. Estimates the fraction of a database's items whose support meets a threshold: a uniform superposition over the items, a support register the circuit fills one controlled increment per transaction-item membership, and a mark at the threshold, read out by amplitude estimation. | Yu et al. 2016 | **The premise is coherent entry-wise database access, and it is not met.** The paper's speed-up counts calls to an oracle that returns one database entry per call, and it reaches the candidate itemset superpositions it prepares through a qRAM; here the transactions are iterated classically and the incidence matrix is read in Python to emit that loop. Its improvement is **quadratic and conditional**, stated for the case `M_f^(k) << M_c^(k)` — not exponential. No end-to-end advantage follows. |
+| `svd.py` — singular values by phase estimation | Available. Estimates a matrix's singular values from the phase of its Hermitian embedding — exponentiated, phase-estimated, and read at the counting register's mode — and builds that embedding's block encoding in private. | Kerenidis & Prakash 2017; Rebentrost et al. 2018; Gilyén et al. 2019 | **The premise is the input model, and it is not met.** The algorithm's cost is counted in queries to a structure that returns the matrix's entries, and against that count the state the estimation is applied to is assumed to be preparable. Here the matrix, its embedding, the embedding's exponential and the input state are all formed classically, the input state from the very decomposition the readout estimates. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -126,6 +127,19 @@ applies to them as to everything else in this guide.
   rather than assumed away. **The improvement the paper claims is quadratic and
   conditional** — it is stated for the case `M_f^(k) << M_c^(k)`, and it is not
   exponential. See the section below.
+- **Singular values rest on an input model this unit does not meet, and the
+  dequantization is recorded beside it.** `svd.py` reads a matrix's singular values from
+  the phase of its Hermitian embedding, and it builds that embedding's block encoding in
+  private. The cited algorithm's cost is counted in queries to a structure that returns
+  the matrix's entries, and against that count the state the estimation is applied to is
+  assumed to be preparable; here the matrix is an ordinary tensor, its embedding and the
+  embedding's exponential are dense classical objects, and the input state is built from
+  the singular vectors that a classical `torch.linalg.svd` returns — the decomposition the
+  readout itself estimates. **Tang's classical algorithm removes the exponential speed-up
+  and is only polynomially slower** — its bound contains `eps**-12` — and that is not the
+  same as a classical algorithm matching the quantum runtime. The block encoding is not
+  free to read either: a readout that post-selects its ancilla costs `(||A|| / alpha)**2`
+  at the most. See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -908,6 +922,133 @@ the only place that wording appears, and nothing in this guide repeats it. Becau
 paper's oracle and its qRAM are both absent here, no part of its query-count advantage
 survives into this unit.
 
+## Singular values by phase estimation
+
+`svd.py` is the sixth unit of Phase 2, and the eighth algorithm unit in this guide's
+programme. `estimate_singular_values(A, n_counting_wires=..., shots=..., seed=...)` forms
+the Hermitian embedding `[[0, A], [A^T, 0]]` of a real square matrix, exponentiates it,
+phase-estimates a counting register against that exponential, and returns a
+`SingularValueResult`: the singular value read out at the register's mode, that value's
+share of the sample, the register's marginal distribution, the step the register resolves,
+and the subnormalisation the readout is scaled by. The counting width is the caller's and is
+at least one, and one wire is degenerate rather than a second contract: the register then
+holds two counter values, of which one is refused, so the only value it can return is
+`alpha` itself. `A`'s singular values are the magnitudes
+of the embedding's eigenvalues — the embedding carries `A` and `A^T` as its two
+off-diagonal blocks, and its spectrum is `±sigma_i` — so what the readout inverts to is the
+magnitude of one of the embedding's eigenvalues, which is one of `A`'s singular values.
+
+**The phase is not the singular value.** The exponential's eigenphase on an eigenvector of
+eigenvalue `mu` is `exp(-i pi mu / alpha)`, which is the phase `phi = (-mu / (2 alpha)) mod
+1`, so a counter value `k` of `m` counting wires reads the singular value
+`2 * alpha * (1 - k / 2**m)`. The inversion is part of the readout and not a cosmetic
+detail: dropping the `2 * alpha` factor reports a phase, which is a wrong singular value
+rather than an error, and the tests that compare the readout against `torch.linalg.svdvals`
+fail with it removed. **The readout's range is `(0, alpha]` because a readout the register's
+lower half produces is refused**, not because of the resolution: a lower-half counter value
+reads a value above `alpha`, and such a value is refused rather than returned. At one counting
+wire the register holds two counter values and one of them is the refused half, so the only
+value a one-wire run can return is `alpha` itself, and a one-wire run whose mode falls in the
+refused half raises. **Separately, the input state carries no weight on the embedding's
+negative eigenvectors**, whose phases lie in the lower half, so nothing peaks at their counter
+values. What the lower half carries at the example's six counting wires — the dominant
+peak's tail, under a fiftieth of the sample against the mode's half — is therefore not a
+peak of its own there. At one wire it need not be a tail at all: with a single upper-half
+counter value, the dominant peak's own phase wraps into the refused half instead, which is
+the raise above.
+
+**The input state is where the singular vectors enter, and it is the premise.** The circuit
+prepares the state whose overlap with the embedding's eigenvector of `+sigma_i` is
+`sigma_i / ||A||_F` and whose overlap with the eigenvector of `-sigma_i` is zero, which is
+the weighting the vectorised matrix carries. Its amplitudes are the classical `U` and `V`
+factors scaled by the singular values, so a singular value decomposition is computed before
+the circuit exists and the readout is an estimate of something the module already holds.
+That is the algorithm's input model, paid rather than assumed.
+
+**The block encoding, and what reading it costs.** The module also builds, in private, a
+block encoding of the embedding: a preparation, a selection and the adjoint of the
+preparation, whose composition extracts the embedding over `alpha`. `alpha` is the
+subnormalisation — the embedding's Frobenius norm by default, and at least its spectral
+norm, so `||A|| <= alpha` — and a block encoding is not free to read. A readout that
+post-selects the ancilla succeeds with probability `||(A / alpha) |psi>||**2` on a
+normalised input, whose greatest value over inputs is `(||A|| / alpha)**2`: where `alpha`
+is much larger than `||A||` that probability is exponentially small. The block's column `j`
+is the post-selected amplitude vector of the basis state `|j>`, so the number the tests
+read out of the circuit is the same one. A subnormalisation below the embedding's spectral
+norm is refused rather than encoded: the block would then be an operator of norm greater
+than one, and no unitary has such an operator as one of its blocks, so there would be no
+encoding to build.
+
+**The mode is not a statement about the largest singular value.** The readout is the
+counting register's mode, and the register's resolution spreads each eigenvalue's share
+over neighbouring counter values. `within` answers only whether a named singular value lies
+within half a counter step of the readout, and it is the whole of the accuracy contract: no
+error bound, no confidence interval and no shot-selection rule is computed or reported
+anywhere in this unit. The unit is bounded at four rows and four columns, because the
+embedding is twice as wide as the matrix and every form of the phase unitary is a dense
+gate on it.
+
+**Measured.** The matrix `[[1, 2], [3, 4]]` has singular values `5.464985...` and
+`0.365966...`. At six counting wires, 20000 shots and sampling seed 11:
+
+```python
+import torch
+
+from flagquantum.algorithms.svd import estimate_singular_values
+
+matrix = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+largest = float(torch.linalg.svdvals(matrix)[0])
+print([round(value, 6) for value in torch.linalg.svdvals(matrix).tolist()])
+# [5.464985, 0.365966]  -- the decomposition the readout is an estimate of
+
+result = estimate_singular_values(matrix, n_counting_wires=6, shots=20000, seed=11)
+print(round(result.dominant_singular_value, 6), round(result.resolution, 6))
+# 5.567414 0.242061  -- the mode's readout, and the step it was resolved at
+print(round(result.alpha, 6), round(result.dominant_share, 4))
+# 7.745967 0.5306  -- the subnormalisation, and the share that landed on the mode
+print(result.within(largest))
+# True  -- the readout is within half a counter step of the largest singular value
+print(
+    [
+        (key, round(share, 5))
+        for key, share in sorted(result.distribution.items(), key=lambda item: -item[1])[
+            :3
+        ]
+    ]
+)
+# [('101001', 0.53065), ('101010', 0.28805), ('101000', 0.04545)]
+#   -- the mode's counter value, then the two around it: one peak, spread by the register
+```
+
+The readout is a grid value of the register's own resolution, and its distance from the
+singular value it estimates is what `within` states — here `5.567414` against a step of
+`0.242061`, so the value printed is not accurate to the digits shown. The mode's counter
+value is the one nearest the embedding's largest eigenvalue's phase, and the two
+neighbouring counter values carry the peak's own spread rather than separate peaks.
+**That is what this run did and not a criterion:** nothing here says which spectra put the
+mode where, and the unit does not predict which singular value the mode reports.
+
+The same matrix at other widths, to show what the step is: four counting wires reads
+`5.809475` at a resolution of `0.968246`, six reads `5.567414` at `0.242061`, and seven
+reads `5.446383` at `0.121031`. Each of the three is within its own half step of
+`5.464985`, which is the contract; none of them is an exact reading.
+
+**The premise, and the dequantization.** The cited algorithm's cost is counted in queries
+to a structure that returns the matrix's entries, and against that count the state the
+estimation is applied to is assumed to be preparable. Neither is present here: the matrix
+is an ordinary tensor, its embedding and the embedding's exponential are dense classical
+objects, and the input state is built from the singular vectors a classical
+`torch.linalg.svd` returns. **No end-to-end advantage follows.** **Dequantization is
+recorded rather than glossed over:** Tang's classical algorithm for the recommendation
+problem removes the *exponential* speed-up and is **"only polynomially slower"** — its
+bound contains `eps**-12`, which the author calls "a large slowdown in some exponents".
+It is not a classical algorithm that matches the quantum runtime, and nothing in this guide
+says that it is. The counter-evidence is recorded with it: the practical conditions the
+dequantized algorithms need are Arrazola et al.'s, and Gharibian–Le Gall dequantize the
+quantum singular value transformation for sparse matrices at constant precision; their
+hardness result is for a different task, estimating a local Hamiltonian's ground-state
+energy at inverse-polynomial precision given a state close to the ground state.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -998,6 +1139,38 @@ survives into this unit.
   the number of database queries and it is conditional, stated for the case
   `M_f^(k) << M_c^(k)`; it is not exponential, and the exponential wording appears only in
   an earlier arXiv listing of the same work, which is that paper rather than a second one.
+- Singular values by phase estimation follow Kerenidis & Prakash, "Quantum Recommendation
+  Systems", ITCS 2017, LIPIcs Vol. 67, 49:1-49:21, DOI 10.4230/LIPIcs.ITCS.2017.49 — the
+  singular-value-estimation subroutine a recommendation algorithm is built on, and the
+  query model this unit's readout is not taken under. **The DOI is registered with
+  DataCite and not with Crossref**: a Crossref lookup of it returns nothing, which is a
+  fact about the registrar and not a reason to replace the identifier or to drop it.
+- The singular value decomposition of non-sparse low-rank matrices is the subject of
+  Rebentrost, Steffens, Marvian & Lloyd, *Physical Review A* **97**(1), 012327 (2018),
+  DOI 10.1103/PhysRevA.97.012327, approached there by exponentiating the matrix. **The
+  author list recorded here is the published one, and it has four authors.** The arXiv
+  listing of the same work, arXiv:1607.05404, carries three: Marvian is on the journal
+  version only, so a three-author spelling belongs to the preprint and a four-author
+  spelling to the published paper.
+- The block encoding is that of Gilyén, Su, Low & Wiebe, "Quantum singular value
+  transformation and beyond: exponential improvements for quantum matrix arithmetics",
+  STOC 2019, pp. 193-204, DOI 10.1145/3313276.3316366, **Definition 1** — the definition
+  and the subnormalisation convention this unit's `alpha` follows. That definition's
+  neighbourhood is not the source of the term: the string does not appear in Childs &
+  Wiebe, and that work is not cited for it here.
+- Dequantization is recorded to Tang, STOC 2019, DOI 10.1145/3313276.3316310 — the
+  classical algorithm for the recommendation problem that removes the exponential
+  speed-up, and which is **"only polynomially slower"**: its bound contains `eps**-12`,
+  and the author calls it "a large slowdown in some exponents". **This entry carries no
+  title.** It does not say that a classical algorithm matches the quantum runtime, and
+  nothing in this guide says so either.
+- The two records that qualify it are kept separately. The practical conditions the
+  dequantized algorithms need are Arrazola et al., *Quantum* **4**, 307 (2020) — **this
+  entry carries no title**. Gharibian–Le Gall, STOC 2022 / SICOMP **52**(4) — **this
+  entry carries no title either**, and no DOI is attached to it here — dequantize the
+  quantum singular value transformation for sparse matrices at constant precision; their
+  hardness result is for a different task, estimating a local Hamiltonian's ground-state
+  energy at inverse-polynomial precision given a state close to the ground state.
 
 ## Scope
 
