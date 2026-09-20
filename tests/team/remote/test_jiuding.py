@@ -36,7 +36,7 @@ def test_explicit_credentials_bypass_environment_and_injected_files(monkeypatch)
     monkeypatch.setenv("JIUDING_AK", "shared-environment-ak")
     monkeypatch.setenv("JIUDING_SK", "shared-environment-sk")
     monkeypatch.setattr(
-        "flagquantum.remote.compute.jiuding.load_jiuding_credentials",
+        "flagquantum.remote.compute._jiuding_credentials.load_jiuding_credentials",
         Mock(side_effect=AssertionError("credential discovery must not run")),
     )
     client = JiudingClient(

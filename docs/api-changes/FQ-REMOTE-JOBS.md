@@ -21,6 +21,8 @@ shared Quafu JupyterLab deployment. `fq.submit(..., credentials=...)` and
 Passing it explicitly disables environment and injected-file credential
 discovery. The object has a redacted representation, rejects serialization and
 is never included in a receipt. The argument is rejected for Quafu jobs.
+Explicit and discovered credentials converge before authentication; both use the
+same HMAC exchange, token cache, expiry refresh and control-plane request path.
 
 ## Scope and compatibility
 

@@ -28,7 +28,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from ._jiuding_credentials import JiudingCredentials, load_jiuding_credentials
+from ._jiuding_credentials import JiudingCredentials, resolve_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
 from ._workspace_discovery import select_workspace, summarize_workspaces
@@ -168,11 +168,7 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def _auth(self) -> dict[str, str]:
         if time.monotonic() >= self._expires:
-            ak, sk = (
-                self._credentials._pair()
-                if self._credentials is not None
-                else load_jiuding_credentials()
-            )
+            ak, sk = resolve_jiuding_credentials(self._credentials)
             path = "/api/v1/users/token/exchange"
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             digest = hashlib.sha256(f"POST\n{path}\n{stamp}".encode()).hexdigest()

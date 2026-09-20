@@ -36,6 +36,17 @@ class JiudingCredentials:
         return self._access_key, self._secret_key
 
 
+def resolve_jiuding_credentials(
+    credentials: JiudingCredentials | None,
+) -> tuple[str, str]:
+    """Resolve explicit credentials or fall back to established discovery."""
+    if credentials is not None:
+        if not isinstance(credentials, JiudingCredentials):
+            raise TypeError("credentials must be JiudingCredentials or None")
+        return credentials._pair()
+    return load_jiuding_credentials()
+
+
 def load_jiuding_credentials() -> tuple[str, str]:
     """Load one complete credential pair without mixing sources."""
     ak = os.environ.get("JIUDING_AK")
