@@ -13,6 +13,7 @@ python -m examples.algorithms.kmedians
 python -m examples.algorithms.quantum_kernel
 python -m examples.algorithms.feature_selection
 python -m examples.algorithms.qarm
+python -m examples.algorithms.svd
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -32,6 +33,9 @@ What they show:
   built and evaluated. It runs no circuit, because the unit has no quantum part.
 - [`qarm.py`](qarm.py): the fraction of a database's items whose support meets a
   threshold, by amplitude estimation over a support register.
+- [`svd.py`](svd.py): a matrix's singular values read off the phase of its
+  Hermitian embedding's exponential, plus the boundary of a one-wire counting
+  register.
 
 ## These scripts use the subpackage surface
 
@@ -46,6 +50,7 @@ that is easiest to lose: quantum PCA's density matrix, its exponential and the
 purification's amplitudes are all built classically here, quantum k-medians
 compares a distance table built classically and synthesizes its oracle from a
 truth table, quantum kernel estimation builds each feature state gate by gate
-from a classical vector, feature selection runs no solver, and the frequent-item
-fractions iterate the transactions in Python. The guide holds the full boundary
-for each.
+from a classical vector, feature selection runs no solver, the frequent-item
+fractions iterate the transactions in Python, and the singular values come from a
+state built out of the classical `torch.linalg.svd` the readout estimates. The
+guide holds the full boundary for each.

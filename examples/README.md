@@ -13,8 +13,8 @@ Examples driven by the root-level `fq` alias use:
 These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
-  `quantum_kernel.py`, `feature_selection.py` and `qarm.py`, which import the unit
-  they demonstrate from the subpackage surface because
+  `quantum_kernel.py`, `feature_selection.py`, `qarm.py` and `svd.py`, which
+  import the unit they demonstrate from the subpackage surface because
   `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
   [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
   reference they follow, and the place each unit's advantage premise is recorded

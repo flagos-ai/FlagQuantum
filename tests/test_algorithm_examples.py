@@ -32,6 +32,7 @@ SCRIPTS = (
     "quantum_kernel",
     "feature_selection",
     "qarm",
+    "svd",
 )
 
 
@@ -131,6 +132,26 @@ def test_qarm_example_estimates_the_frequent_item_fraction() -> None:
     assert _labelled(output, "resolution") == "0.097545"
     assert _labelled(output, "exact fraction") == "0.5"
     assert _labelled(output, "within(exact)") == "True"
+    assert _labelled(output, "premise")
+    assert "take away" in output
+
+
+def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> None:
+    output = _run("svd")
+
+    assert "singular values by phase estimation -- flagquantum.algorithms.svd" in output
+    assert _labelled(output, "exact singular values") == "[5.464985, 0.365966]"
+    assert _labelled(output, "readout") == "5.567414"
+    assert _labelled(output, "readout share") == "0.5306"
+    assert _labelled(output, "resolution") == "0.242061"
+    assert _labelled(output, "alpha") == "7.745967"
+    assert _labelled(output, "within(largest)") == "True"
+    assert _labelled(output, "mode") == "101001"
+    assert _labelled(output, "one-wire readout") == "7.745967"
+    assert _labelled(output, "one-wire alpha") == "7.745967"
+    assert _labelled(output, "readout equals alpha") == "True"
+    assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
+    assert _labelled(output, "raised")
     assert _labelled(output, "premise")
     assert "take away" in output
 
