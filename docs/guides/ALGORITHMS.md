@@ -56,7 +56,7 @@ applies to them as to everything else in this guide.
 | `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
 | `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 | `feature_selection.py` — feature selection as a QUBO | Available. Builds the binary objective of a feature-selection instance — a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size — and evaluates it at an assignment or maps it to an Ising Hamiltonian. | Ferrari Dacrema et al. 2022 | **This unit does not solve, and there is no solver here.** The repository has no annealer: the unit builds the objective and evaluates it, so which subset comes back, and at what cost, belongs to whatever solver the problem is handed to, and any advantage such a solver observes is the solver's. |
-| `qarm.py` — frequent-item fractions by amplitude estimation | Available. Estimates the fraction of a database's items whose support meets a threshold: a uniform superposition over the items, a support register the circuit fills one controlled increment per transaction-item membership, and a mark at the threshold, read out by amplitude estimation. | Yu et al. 2016 | **The premise is coherent entry-wise database access, and it is not met.** The paper's speed-up counts calls to an oracle that returns one database entry per call, held in a qRAM; here the transactions are iterated classically and the incidence matrix is read in Python to emit that loop. Its improvement is **quadratic and conditional**, stated for the case `M_f^(k) << M_c^(k)` — not exponential. No end-to-end advantage follows. |
+| `qarm.py` — frequent-item fractions by amplitude estimation | Available. Estimates the fraction of a database's items whose support meets a threshold: a uniform superposition over the items, a support register the circuit fills one controlled increment per transaction-item membership, and a mark at the threshold, read out by amplitude estimation. | Yu et al. 2016 | **The premise is coherent entry-wise database access, and it is not met.** The paper's speed-up counts calls to an oracle that returns one database entry per call, and reaches the candidate itemset superpositions it prepares through a qRAM; here the transactions are iterated classically and the incidence matrix is read in Python to emit that loop. Its improvement is **quadratic and conditional**, stated for the case `M_f^(k) << M_c^(k)` — not exponential. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -120,9 +120,10 @@ applies to them as to everything else in this guide.
   exercised here.** `qarm.py` estimates the share of a database's items whose support
   meets a threshold, by amplitude estimation over a support register the circuit fills
   one controlled increment per transaction-item membership. The paper's count is a count
-  of oracle calls that return one database entry each, held in a qRAM; neither is present
-  here, and the incidence matrix is read in Python to build that loop, so the access cost
-  is paid rather than assumed away. **The improvement the paper claims is quadratic and
+  of oracle calls that return one database entry each, and it reaches the candidate
+  itemset superpositions it prepares through a qRAM; neither is present here, and the
+  incidence matrix is read in Python to build that loop, so the access cost is paid
+  rather than assumed away. **The improvement the paper claims is quadratic and
   conditional** — it is stated for the case `M_f^(k) << M_c^(k)`, and it is not
   exponential. See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
@@ -829,12 +830,12 @@ documents.
 
 **The transactions are iterated classically, and that is the unit's headline
 limitation.** The paper's speed-up is measured in calls to an oracle that returns one
-database entry per call, held in a qRAM; neither is present here. The loop that fills the
-support register is a pass over the incidence matrix in Python, one controlled increment
-per transaction-item membership, so the database is walked entry by entry outside the
-circuit and the access cost is paid rather than assumed away. **No end-to-end advantage
-follows**: that loop is exactly the part of the paper's assumption its speed-up is
-measured against.
+database entry per call, and it reaches the candidate itemset superpositions it prepares
+through a qRAM; neither is present here. The loop that fills the support register is a pass
+over the incidence matrix in Python, one controlled increment per transaction-item
+membership, so the database is walked entry by entry outside the circuit and the access
+cost is paid rather than assumed away. **No end-to-end advantage follows**: that loop is
+exactly the part of the paper's assumption its speed-up is measured against.
 
 **The comparison at the threshold is inclusive.** An item whose support equals the
 threshold is frequent, and the marking operator is built over the support values at or

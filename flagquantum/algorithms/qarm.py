@@ -15,12 +15,13 @@ caller's binary incidence matrix, and no rule-mining stage is part of this modul
 
 **The premise is coherent entry-wise database access, and this unit does not meet it.** The
 paper's count is a count of oracle calls, and the oracle it counts returns one database
-entry per call, held in a qRAM. Neither is exercised here. The transactions are iterated
-over **classically**: one controlled increment of the support register per transaction-item
-membership, emitted from the incidence matrix as Python reads it. The access cost is
-therefore paid explicitly rather than assumed away, and **no end-to-end advantage follows**:
-the classical loop is precisely the part of the paper's assumption that its speed-up is
-measured against, and it is this unit's headline limitation.
+entry per call; the candidate itemset superpositions the paper prepares are reached through
+a qRAM. Neither is exercised here. The transactions are iterated over **classically**: one
+controlled increment of the support register per transaction-item membership, emitted from
+the incidence matrix as Python reads it. The access cost is therefore paid explicitly
+rather than assumed away, and **no end-to-end advantage follows**: the classical loop is
+precisely the part of the paper's assumption that its speed-up is measured against, and it
+is this unit's headline limitation.
 
 **The construction.** The evaluation register carries a uniform superposition over the
 items -- one half-turn ``ry`` per item wire, which is the state a Hadamard on every item
@@ -117,8 +118,8 @@ class FrequentItemsetOperator:
     positional spelling would read as a matrix followed by two bare numbers of unrelated
     kind. A transposition of those two numbers is not what ``kw_only`` protects against
     either: each is checked against its own bound and the two bounds overlap, so a pair
-    written the wrong way round is refused by neither. Measured on a database of two
-    two-item transactions, the pair the caller who means a threshold of 2 and a single
+    written the wrong way round can satisfy both and be accepted. Measured on a database of
+    two two-item transactions, the pair the caller who means a threshold of 2 and a single
     support wire would write -- ``threshold=2`` with ``n_support_wires=1`` -- is refused as
     a register too narrow to hold every support, and the same pair written the other way
     round, a threshold of 1 with two support wires, constructs, with a threshold every item

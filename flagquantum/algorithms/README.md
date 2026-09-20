@@ -31,7 +31,7 @@ external-framework objects or a second execution path.
 - `qarm.py`: the frequent-itemset fraction by amplitude estimation — the uniform
   superposition over the items, a support register the circuit fills one controlled
   increment per transaction-item membership, and a mark at the support threshold.
-  Demonstration scale: the transactions are iterated classically, which is the coherent
+  Demonstration scale: the transactions are iterated classically, in place of the coherent
   database access the cited paper assumes and this unit does not exercise.
 - `quantum_kernel.py`: kernel entries by swap test, with a classical kernel ridge
   classifier over them. Demonstration scale: the feature map is this package's
