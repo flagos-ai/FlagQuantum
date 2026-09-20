@@ -116,7 +116,7 @@ class PcaResult:
     rather than what it would catch: three of the fields are bare floats -- an
     eigenvalue, a share of the sample and a step -- and the other two are a count
     and a mapping, so a positional spelling would read as a row of numbers with the
-    counter's distribution among them. The eigenvalue's bound and the share's
+    counter's distribution among them. The eigenvalue's bound and the share's bound
     overlap: the eigenvalue is confined to ``(0, 1]`` and the share to ``[0, 1]``,
     so the two overlap on ``(0, 1]``, and a spelling that hands each to the other's
     keyword can satisfy both bounds and be accepted. Measured, the readout of the
