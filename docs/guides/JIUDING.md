@@ -33,8 +33,33 @@ for the accepted formats and replacement rules.
 
 A new account must first be added to a Jiuding project and an active compute
 queue by a platform administrator. FlagQuantum cannot grant quota or project
-membership. Once at least one development workspace is visible, verify access
-without copying project or queue IDs:
+membership.
+
+For native jobs, discover copyable project, queue and private-image names without
+requiring a workspace:
+
+```python
+from getpass import getpass
+
+from flagquantum.remote.compute import JiudingClient, JiudingCredentials
+
+credentials = JiudingCredentials(
+    access_key=getpass("Jiuding AK: "),
+    secret_key=getpass("Jiuding SK: "),
+)
+resources = JiudingClient(credentials=credentials).list_resources()
+for resource in resources:
+    print(resource)
+```
+
+The method returns non-secret names from the signed-in account's Jiuding project
+memberships. It omits inactive queues and marks queue layouts the current adapter
+cannot submit to. Select an image that contains a compatible FlagQuantum program
+executor; catalog visibility alone does not certify its contents.
+
+For workspace execution, the existing example reports the context attached to
+visible workspaces. Once at least one development workspace is visible, verify
+access without copying project or queue IDs:
 
 ```bash
 python examples/remote/jiuding_workspace_bell.py --list-workspaces

@@ -31,6 +31,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from ._jiuding_credentials import JiudingCredentials, resolve_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
+from ._resource_discovery import discover_resources
 from ._workspace_discovery import select_workspace, summarize_workspaces
 from ._workspace_results import decode_tensor, measurement_result
 
@@ -122,6 +123,13 @@ class JiudingClient(_ProgramSubmissionMixin):
 
         return summarize_workspaces(
             self._pages("/api/v1/workspaces/select", {}, "items", self._auth())
+        )
+
+    def list_resources(self) -> list[dict[str, Any]]:
+        """Return non-secret native-job project, queue and image choices."""
+
+        return discover_resources(
+            auth=self._auth(), request=self._request, request_pages=self._pages
         )
 
     def _request(

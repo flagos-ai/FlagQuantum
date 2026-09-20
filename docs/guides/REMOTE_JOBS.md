@@ -74,12 +74,16 @@ notebook source:
 from getpass import getpass
 
 import flagquantum as fq
-from flagquantum.remote.compute import JiudingCredentials
+from flagquantum.remote.compute import JiudingClient, JiudingCredentials
 
 credentials = JiudingCredentials(
     access_key=getpass("Jiuding AK: "),
     secret_key=getpass("Jiuding SK: "),
 )
+
+# Copy project, queue and image values from one returned entry.
+resources = JiudingClient(credentials=credentials).list_resources()
+print(resources)
 
 job = fq.submit(
     fq.Circuit(2).h(0).cx(0, 1),
@@ -109,7 +113,12 @@ or provisioned by FlagQuantum:
 
 Users must obtain project membership, queue access and the image reference from
 their Jiuding administrator or Jiuding console. One user's values generally do
-not work for another account.
+not work for another account. `list_resources()` uses Jiuding's read-only
+discovery APIs and returns only names needed for submission, the accelerator
+model, private image names and whether the queue shape is supported. It does not
+return platform IDs, tokens or image registry URLs. An empty list means the
+account has no visible Active queue; it does not create access or quota. A listed
+image must still contain a compatible FlagQuantum program executor.
 
 This path uses native HTTP jobs, without SSH, workspace pods or source uploads.
 The image must contain a compatible FlagQuantum program executor. You can set

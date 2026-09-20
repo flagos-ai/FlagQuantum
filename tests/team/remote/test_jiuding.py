@@ -168,6 +168,133 @@ def test_discovery_rejects_non_object_rows(row: object) -> None:
         list(client._pages("/workspaces", {}, "items", {}))
 
 
+def test_resource_discovery_lists_copyable_native_job_names() -> None:
+    client = JiudingClient(
+        credentials=JiudingCredentials(access_key="session-ak", secret_key="session-sk")
+    )
+    client._auth = Mock(return_value={"AIRS-Token": "session-token"})
+
+    def request(path, body, headers, *, method="POST"):
+        assert headers["AIRS-Token"] == "session-token"
+        if path == "/api/v1/users/token/userinfo":
+            assert method == "GET"
+            return {"data": {"id": 7}}
+        if path == "/api/v1/projsets/select-joined":
+            return {"items": [{"projsetInfo": {"id": "ps-1", "name": "set"}}]}
+        if path == "/api/v1/projects/select-joined":
+            assert body == {"projsetId": "ps-1"}
+            return {"items": [{"projInfo": {"id": "p-1", "name": "project"}}]}
+        if path == "/api/v1/queue/select":
+            assert body["projId"] == "p-1"
+            assert body["as_user"] is True
+            return {
+                "queueSummaryInfos": [
+                    {
+                        "name": "a100-queue",
+                        "status": "QUEUE_STATUS_ACTIVE",
+                        "quotaInfoList": [
+                            {
+                                "clusterId": "cluster-1",
+                                "zoneQuotaInfoList": [
+                                    {
+                                        "zoneId": "zone-1",
+                                        "quotaMetaList": [
+                                            {
+                                                "priority": "high",
+                                                "resourceDetail": {
+                                                    "acceleratorModel": "NVIDIA A100"
+                                                },
+                                            }
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    {"name": "inactive", "status": "QUEUE_STATUS_INACTIVE"},
+                ]
+            }
+        if path == "/api/v1/images/select":
+            assert body["repoTypes"] == "PRIVATE"
+            assert headers["AIRS-Cluster-ID"] == "cluster-1"
+            return {
+                "items": [
+                    {
+                        "id": "image-1",
+                        "name": "flagquantum-runtime",
+                        "tag": "v0.2.0-a100",
+                        "status": 10,
+                        "clusterId": "cluster-1",
+                        "registryUrl": "private.example/secret-path",
+                    },
+                    {
+                        "id": "image-2",
+                        "name": "unavailable",
+                        "tag": "old",
+                        "status": 0,
+                        "clusterId": "cluster-1",
+                    },
+                ]
+            }
+        raise AssertionError(path)
+
+    client._request = Mock(side_effect=request)
+
+    assert client.list_resources() == [
+        {
+            "project": "set.project",
+            "queue": "a100-queue",
+            "accelerator_model": "NVIDIA A100",
+            "images": ["flagquantum-runtime:v0.2.0-a100"],
+            "submission_supported": True,
+        }
+    ]
+    serialized = json.dumps(client.list_resources())
+    assert "session-ak" not in serialized
+    assert "session-sk" not in serialized
+    assert "session-token" not in serialized
+    assert "private.example" not in serialized
+
+
+def test_resource_discovery_reports_queue_configuration_mismatch() -> None:
+    client = JiudingClient()
+    client._auth = Mock(return_value={"AIRS-Token": "token"})
+
+    def request(path, body, headers, *, method="POST"):
+        if path == "/api/v1/users/token/userinfo":
+            return {"data": {"id": "user"}}
+        if path == "/api/v1/projsets/select-joined":
+            return {"items": [{"projsetInfo": {"id": "ps", "name": "set"}}]}
+        if path == "/api/v1/projects/select-joined":
+            return {"items": [{"projInfo": {"id": "p", "name": "project"}}]}
+        if path == "/api/v1/queue/select":
+            return {
+                "queueSummaryInfos": [
+                    {
+                        "name": "not-submit-ready",
+                        "status": "QUEUE_STATUS_ACTIVE",
+                        "quotaInfoList": [],
+                    }
+                ]
+            }
+        raise AssertionError(path)
+
+    client._request = Mock(side_effect=request)
+
+    assert client.list_resources() == [
+        {
+            "project": "set.project",
+            "queue": "not-submit-ready",
+            "accelerator_model": None,
+            "images": [],
+            "submission_supported": False,
+            "reason": (
+                "queue must expose exactly one high-priority resource configuration"
+            ),
+        }
+    ]
+
+
 def test_token_is_cached_and_refreshed_from_server_expiry(monkeypatch):
     monkeypatch.setenv("JIUDING_AK", "test-ak")
     monkeypatch.setenv("JIUDING_SK", "test-sk")
