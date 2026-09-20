@@ -11,6 +11,12 @@ runtime selection, provider lifecycle, numerical kernels, or benchmark claims.
 New workflows should compose supported FlagQuantum APIs and must not introduce
 external-framework objects or a second execution path.
 
+`docs/guides/ALGORITHMS.md` is the per-unit reference for the units it indexes:
+what each one does, where its construction comes from, and the advantage premise
+it rests on. Runnable demonstrations live under
+[`examples/algorithms/`](../../examples/algorithms/README.md), and each one is
+executed by `tests/test_algorithm_examples.py`.
+
 ## Where to start
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
