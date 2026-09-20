@@ -1,8 +1,39 @@
 """Credential discovery for Jiuding control-plane requests."""
 
+from __future__ import annotations
+
 import base64
 import os
 from pathlib import Path
+from typing import NoReturn
+
+
+class JiudingCredentials:
+    """One in-memory Jiuding credential pair with a redacted representation.
+
+    Use this object when credentials belong to a notebook or application session.
+    FlagQuantum does not include it in remote-job receipts.
+    """
+
+    __slots__ = ("_access_key", "_secret_key")
+
+    def __init__(self, *, access_key: str, secret_key: str) -> None:
+        if not isinstance(access_key, str) or not isinstance(secret_key, str):
+            raise TypeError("Jiuding access_key and secret_key must be strings")
+        access_key, secret_key = access_key.strip(), secret_key.strip()
+        if not access_key or not secret_key:
+            raise ValueError("Jiuding access_key and secret_key must not be empty")
+        self._access_key = access_key
+        self._secret_key = secret_key
+
+    def __repr__(self) -> str:
+        return "JiudingCredentials(access_key='[REDACTED]', secret_key='[REDACTED]')"
+
+    def __reduce__(self) -> NoReturn:
+        raise TypeError("JiudingCredentials cannot be serialized")
+
+    def _pair(self) -> tuple[str, str]:
+        return self._access_key, self._secret_key
 
 
 def load_jiuding_credentials() -> tuple[str, str]:

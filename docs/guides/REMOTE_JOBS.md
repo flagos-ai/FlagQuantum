@@ -66,9 +66,21 @@ before retrying: the server may already have accepted the job.
 
 ## Jiuding native jobs
 
-Configure `JIUDING_AK` and `JIUDING_SK`, then choose your project, queue and image:
+In a shared JupyterLab, keep credentials in the current kernel instead of shared
+environment variables. Enter them through hidden input so they are not saved in
+notebook source:
 
 ```python
+from getpass import getpass
+
+import flagquantum as fq
+from flagquantum.remote.compute import JiudingCredentials
+
+credentials = JiudingCredentials(
+    access_key=getpass("Jiuding AK: "),
+    secret_key=getpass("Jiuding SK: "),
+)
+
 job = fq.submit(
     fq.Circuit(2).h(0).cx(0, 1),
     target="jiuding:gpu",
@@ -77,6 +89,7 @@ job = fq.submit(
     image="YOUR_FLAGQUANTUM_IMAGE",
     outputs=fq.counts(),
     shots=1024,
+    credentials=credentials,
 )
 job.save("jiuding-job.json")
 print(job.id)
@@ -98,10 +111,21 @@ transport corruption; it does not attest hardware execution. Logs may become
 readable shortly after completion; `wait()` retries incomplete results until its
 deadline, while `result()` reports that no result is available yet.
 
-Restore with `fq.restore_job("jiuding-job.json")` in a later process, using the same
-account and endpoint. It retrieves the existing job without resubmitting. If a
+Restore with `fq.restore_job("jiuding-job.json", credentials=credentials)` in a
+later cell. After a kernel restart, create a new credential object through hidden
+input and pass it again. The receipt never contains AK, SK or an access token.
+Restoration retrieves the existing job without resubmitting. If a
 submission response is lost, the exception names a private local journal: inspect
 that experiment before retrying to avoid duplicate jobs.
+
+For local single-user development, omitting `credentials` retains support for a
+complete `JIUDING_AK`/`JIUDING_SK` pair or Jiuding-injected credential files.
+Do not configure long-lived Jiuding credentials in a Quafu JupyterLab shared by
+multiple users. Session-level injection prevents ordinary environment, receipt
+and logging leakage; it is not a hard tenant boundary when kernels share one Unix
+account. A production multi-user deployment should use isolated kernels or a
+broker that exchanges the signed-in user identity for a short-lived, scoped
+Jiuding token, keeping long-lived AK/SK outside notebooks.
 
 No background watcher is started automatically. Manual checks and explicit waits
 are supported; a notebook notification widget is outside this API's scope.

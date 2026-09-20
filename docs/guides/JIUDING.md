@@ -3,13 +3,21 @@
 > Commit references below have been mapped to the publication history.
 > Recorded outcomes and approval status are unchanged.
 
-Inside a Jiuding development workspace, the client reads the injected
-`/etc/accesskey/user-ak` and `user-sk` automatically. Outside Jiuding, set both
-`JIUDING_AK` and `JIUDING_SK`; these environment values override injected files
-only as a complete pair. Partial credentials are rejected. Tokens stay in memory
-and refresh according to the server expiry. Requests use HTTPS, reject redirects,
-have a 20-second socket timeout, and are not retried blindly. No CLI installation
-or manual project and queue IDs are required.
+`JiudingClient(credentials=JiudingCredentials(...))` keeps an explicit credential
+pair in the current Python process and never reads environment variables or
+injected files. This is the supported path for a notebook session in a shared
+Quafu JupyterLab. Inside a Jiuding development workspace, omitting the argument
+reads `/etc/accesskey/user-ak` and `user-sk`; local single-user environments may
+instead set a complete `JIUDING_AK`/`JIUDING_SK` pair. Partial credentials are
+rejected. Tokens stay in memory and refresh according to the server expiry.
+Requests use HTTPS, reject redirects, have a 20-second socket timeout, and are
+not retried blindly. Credentials are never stored in task receipts.
+
+Session injection protects against ordinary shared-environment and receipt
+leakage, but kernels running as the same Unix account are not a hard security
+boundary. Mutually untrusted users require per-user process/container isolation
+or a credential broker issuing short-lived scoped tokens; long-lived AK/SK must
+remain outside notebooks in that deployment model.
 
 For native jobs without a workspace or SSH, use the development-version
 [`fq.submit()` journey](REMOTE_JOBS.md#jiuding-native-jobs). It requires project

@@ -1,16 +1,85 @@
 """CPU-only scenarios for the experimental Jiuding task adapter."""
 
 import base64
+import io
 import json
+import pickle
 from pathlib import Path
 from unittest.mock import Mock
+from urllib.error import HTTPError
 
 import pytest
 
+from flagquantum.remote.compute import JiudingCredentials
 from flagquantum.remote.compute._jiuding_credentials import load_jiuding_credentials
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
+
+
+def test_explicit_credentials_are_validated_redacted_and_not_serializable():
+    credentials = JiudingCredentials(
+        access_key=" explicit-ak ", secret_key=" explicit-sk "
+    )
+
+    assert "explicit-ak" not in repr(credentials)
+    assert "explicit-sk" not in repr(credentials)
+    with pytest.raises(TypeError, match="cannot be serialized"):
+        pickle.dumps(credentials)
+    with pytest.raises(ValueError, match="must not be empty"):
+        JiudingCredentials(access_key=" ", secret_key="secret")
+    with pytest.raises(TypeError, match="must be strings"):
+        JiudingCredentials(access_key=object(), secret_key="secret")
+
+
+def test_explicit_credentials_bypass_environment_and_injected_files(monkeypatch):
+    monkeypatch.setenv("JIUDING_AK", "shared-environment-ak")
+    monkeypatch.setenv("JIUDING_SK", "shared-environment-sk")
+    monkeypatch.setattr(
+        "flagquantum.remote.compute.jiuding.load_jiuding_credentials",
+        Mock(side_effect=AssertionError("credential discovery must not run")),
+    )
+    client = JiudingClient(
+        credentials=JiudingCredentials(access_key="session-ak", secret_key="session-sk")
+    )
+    client._request = Mock(return_value={"token": "session-token", "expiresIn": 3600})
+
+    assert client._auth() == {"AIRS-Token": "session-token"}
+    authorization = client._request.call_args.args[2]["Authorization"]
+    assert "Credential=session-ak" in authorization
+    assert "session-sk" not in authorization
+    assert "shared-environment-ak" not in authorization
+
+
+def test_explicit_credentials_are_redacted_from_http_errors(monkeypatch):
+    credentials = JiudingCredentials(
+        access_key="session-ak", secret_key="session-secret"
+    )
+    client = JiudingClient(credentials=credentials)
+    error = HTTPError(
+        "https://platform-multi.baai.ac.cn/test",
+        403,
+        "Forbidden",
+        {},
+        io.BytesIO(
+            json.dumps(
+                {"message": ("session-ak session-secret temporary-header-token")}
+            ).encode()
+        ),
+    )
+    opener = Mock()
+    opener.open.side_effect = error
+    monkeypatch.setattr(
+        "flagquantum.remote.compute.jiuding.build_opener", Mock(return_value=opener)
+    )
+
+    with pytest.raises(RuntimeError) as caught:
+        client._request("/test", None, {"AIRS-Token": "temporary-header-token"})
+
+    message = str(caught.value)
+    assert "session-ak" not in message
+    assert "session-secret" not in message
+    assert "temporary-header-token" not in message
 
 
 def test_complete_environment_credentials_take_priority(monkeypatch):

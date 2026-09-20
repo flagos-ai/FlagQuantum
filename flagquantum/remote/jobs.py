@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from ..errors import CapabilityError, ExecutionError
 from ..runtime.result import ExecutionResult
+from .compute import JiudingCredentials
 from .compute._native_job import NativeJiudingJobClient
 from .compute.jiuding import JiudingClient
 from .qpu.contracts import (
@@ -232,11 +233,13 @@ def submit(
     workspace: str | None = None,
     project: str | None = None,
     queue: str | None = None,
+    credentials: JiudingCredentials | None = None,
 ) -> RemoteJob:
     """Submit once and return without waiting for remote execution.
 
     Quafu supports full-register counts. Jiuding uses native HTTP batch execution and
-    requires an image; credentials come from the existing provider configuration.
+    requires an image. Explicit Jiuding credentials remain in the client session;
+    otherwise the existing provider configuration is used.
     Submission includes preparation and network I/O. Unsupported output requests
     fail before a task is submitted. Save the returned job for later restoration.
     """
@@ -260,7 +263,9 @@ def submit(
             raise ValueError(
                 "Jiuding submission requires project='project-set.project'"
             )
-        client = NativeJiudingJobClient(project=selected_project, queue=queue)
+        client = NativeJiudingJobClient(
+            project=selected_project, queue=queue, credentials=credentials
+        )
         native = client.submit_program(
             ir, target=target, image=image, outputs=outputs, shots=shots
         )
@@ -269,9 +274,12 @@ def submit(
             client,
             native,
         )
-    if any(value is not None for value in (image, workspace, project, queue)):
+    if any(
+        value is not None for value in (image, workspace, project, queue, credentials)
+    ):
         raise TypeError(
-            "image, project, queue and workspace apply only to Jiuding submission"
+            "image, project, queue, workspace and credentials apply only to "
+            "Jiuding submission"
         )
     return _submit_quafu(
         ir,
@@ -358,8 +366,10 @@ def _submit_quafu(
     )
 
 
-def restore_job(path: str | Path) -> RemoteJob:
-    """Reconnect using a saved receipt; never submit or deserialize executable code."""
+def restore_job(
+    path: str | Path, *, credentials: JiudingCredentials | None = None
+) -> RemoteJob:
+    """Reconnect using a receipt and optional in-memory Jiuding credentials."""
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or raw.get("schema") != "flagquantum.remote-job.v1":
         raise ValueError("Unsupported remote job receipt schema")
@@ -388,6 +398,8 @@ def restore_job(path: str | Path) -> RemoteJob:
     if not separator or not backend.strip():
         raise ValueError("Invalid receipt target")
     if provider == "quafu":
+        if credentials is not None:
+            raise TypeError("credentials apply only to Jiuding jobs")
         if not isinstance(receipt.submission_identity, dict) or any(
             not isinstance(k, str) or not isinstance(v, str)
             for k, v in receipt.submission_identity.items()
@@ -415,11 +427,19 @@ def restore_job(path: str | Path) -> RemoteJob:
             return RemoteJob(
                 receipt,
                 NativeJiudingJobClient(
-                    project=native["project"], queue=native["queue"]
+                    project=native["project"],
+                    queue=native["queue"],
+                    credentials=credentials,
                 ),
                 native,
             )
-        return RemoteJob(receipt, JiudingClient(workspace=receipt.workspace))
+        return RemoteJob(
+            receipt,
+            JiudingClient(
+                workspace=receipt.workspace,
+                credentials=credentials,
+            ),
+        )
     raise ValueError("Unsupported receipt provider")
 
 

@@ -17,6 +17,7 @@ from urllib.parse import quote
 from ...core.ir import ensure_circuit_ir
 from ...observables import lower_outputs
 from ...runtime.result import ExecutionResult
+from ._jiuding_credentials import JiudingCredentials
 from ._program_job import decode_program_result
 from .jiuding import JiudingClient
 
@@ -88,8 +89,14 @@ def _decode_lines(lines: list[str], run_id: str) -> dict[str, Any]:
 class NativeJiudingJobClient(JiudingClient):
     """Reuse the job HTTP transport, resolving context from projects, not pods."""
 
-    def __init__(self, *, project: str, queue: str | None = None) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        project: str,
+        queue: str | None = None,
+        credentials: JiudingCredentials | None = None,
+    ) -> None:
+        super().__init__(credentials=credentials)
         parts = project.split(".")
         if len(parts) != 2 or not all(parts):
             raise ValueError("project must use 'project-set.project' notation")
