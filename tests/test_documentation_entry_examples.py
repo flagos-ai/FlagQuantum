@@ -382,10 +382,20 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
       fails, and names the position.
     - A statement that prints nothing but whitespace and quotes nothing is vacuous,
       and is checked as such.
+    - **A statement and its quote lines removed together.** The compared thing is
+      what each statement quotes against what it printed, so a block that loses a
+      print statement and its transcript in one edit has one fewer statement and
+      nothing left to disagree with: the check is green while a value the guide used
+      to show is gone. That is the one shape where the guide can become *less*
+      informative without this test noticing, and it is not checked here — nothing
+      in this test counts the guide's statements or requires a quote to be attached
+      to one. A quote removed while the statement that printed it survives is the
+      other case and does fail: the statement then quotes fewer values than it
+      printed.
 
-    Everything else a quoted value can do fails: a changed value, a deleted quote, a
-    quote attached to a statement that did not print it, and a statement printing a
-    value the guide does not quote for it.
+    Everything else a quoted value can do fails: a changed value, a quote removed
+    while its statement survives, a quote attached to a statement that did not print
+    it, and a statement printing a value the guide does not quote for it.
 
     Nothing here pins the number of blocks or the sections they sit in. The blocks
     are whatever the file declares when this runs, so a section added to the guide

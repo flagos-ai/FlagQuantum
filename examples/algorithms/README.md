@@ -1,9 +1,10 @@
 # Algorithm examples
 
-Runnable demonstrations of the algorithm units in `flagquantum.algorithms`, one
-per script. [`docs/guides/ALGORITHMS.md`](../../docs/guides/ALGORITHMS.md) is the
-per-unit reference they follow, and the place each unit's advantage premise is
-recorded in full.
+Runnable demonstrations of the Phase 2 algorithm units in
+`flagquantum.algorithms`, one per unit of that phase.
+[`docs/guides/ALGORITHMS.md`](../../docs/guides/ALGORITHMS.md) is the per-unit
+reference they follow, and the place each unit's advantage premise is recorded in
+full.
 
 Run them from the repository root:
 

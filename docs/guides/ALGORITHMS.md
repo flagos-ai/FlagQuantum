@@ -50,6 +50,17 @@ apart from the index above so that a phase's own set can be read together, and
 each unit of this phase appends its row here as it lands. The same promise
 applies to them as to everything else in this guide.
 
+**Each unit of this phase ships with a runnable demonstration.**
+[`examples/algorithms/`](../../examples/algorithms/README.md) holds one script per
+Phase 2 unit — `pca.py`, `kmedians.py`, `quantum_kernel.py`,
+`feature_selection.py`, `qarm.py` and `svd.py` — and each runs from the
+repository root as `python -m examples.algorithms.<unit>`. A script prints the
+advantage premise its unit rests on beside the result it measured, and
+`tests/test_algorithm_examples.py` runs all six and asserts on what they printed,
+so a script that stops working fails a test rather than going stale. The scripts
+import their unit from `flagquantum.algorithms.<unit>`, because none of these
+units carries a root-level `fq.` name.
+
 | Unit | What it does | Citation | Advantage premise |
 | --- | --- | --- | --- |
 | `pca.py` — quantum PCA | Available. Estimates the eigenvalues of a data matrix's density matrix from a purification of it, by phase-estimating `exp(-2 pi i rho)` and reading the counting register. | Lloyd et al. 2014 | **The premise is the input model, and it is not met.** The paper's subroutine consumes copies of `rho` and never forms it, in `O(1/eps**3)` of them; this unit forms `rho` classically, builds its exponential as a dense matrix, and takes the purification's `2**n` amplitudes from the caller. No end-to-end advantage follows. |

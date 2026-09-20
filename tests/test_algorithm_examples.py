@@ -6,6 +6,12 @@ command, from the repository root -- and its printed values are asserted. The
 inventory test below compares the directory's contents against the list this
 module runs, so a script added to the directory without a test fails rather than
 being skipped.
+
+Each script's premise line is checked for a phrase and not for its presence:
+``PREMISE_PHRASES`` below pins the load-bearing half of each unit's advantage
+premise, so a script whose premise was softened to something reassuring fails
+here instead of passing as a non-empty line. See that mapping for how the phrase
+for each unit was chosen.
 """
 
 from __future__ import annotations
@@ -35,6 +41,32 @@ SCRIPTS = (
     "svd",
 )
 
+# One phrase per script, each the load-bearing half of that unit's advantage
+# premise: what the unit gives up rather than what it does. Chosen by reading the
+# unit's own ``limitations`` in ``capability-maturity.toml`` and taking the phrase
+# the script's premise paragraph already carries for that half, so the assertion
+# pins the existing wording rather than rewriting the script to fit it.
+PREMISE_PHRASES = {
+    # "The density matrix is materialized classically and its exponential is
+    # built with a dense matrix exponential" -- the input model is not met.
+    "pca": "built classically",
+    # "the oracle is not free here ... synthesized from the predicate's truth
+    # table at O(2**n) cost" -- the oracle model is not met.
+    "kmedians": "not free",
+    # "each feature state is built gate by gate from the classical feature
+    # vector on every run" -- the data-access model is not met.
+    "quantum_kernel": "gate by gate",
+    # "This unit does not solve, and the repository has no annealer."
+    "feature_selection": "no annealer",
+    # "the transactions are iterated over classically, one controlled increment
+    # of the support register per transaction-item membership" -- the coherent
+    # database access is absent.
+    "qarm": "iterated classically",
+    # "The block encoding is not free to read: a readout that post-selects the
+    # ancilla succeeds with probability ..." -- alongside the input model.
+    "svd": "not free to read",
+}
+
 
 def _run(name: str, *args: str) -> str:
     """Run one example as a subprocess and return what it printed."""
@@ -58,6 +90,26 @@ def _labelled(output: str, label: str) -> str:
     raise AssertionError(f"the example printed no {label!r} line:\n{output}")
 
 
+def _premise(output: str) -> str:
+    """Return the whole premise paragraph an example printed, as one line.
+
+    A premise printed across several lines is one paragraph up to the blank line
+    that closes it, and the phrase is checked against the whole of it: checking
+    the ``premise`` label's own line alone would miss a phrase on a continuation
+    line, and checking the whole output would pass on a phrase printed anywhere
+    else in the script.
+    """
+    lines = output.splitlines()
+    for index, line in enumerate(lines):
+        name, separator, _ = line.partition(":")
+        if separator and name.strip() == "premise":
+            end = index
+            while end + 1 < len(lines) and lines[end + 1].strip():
+                end += 1
+            return " ".join(part.strip() for part in lines[index : end + 1])
+    raise AssertionError(f"the example printed no premise paragraph:\n{output}")
+
+
 def test_pca_example_reports_its_readout_against_the_exact_spectrum() -> None:
     output = _run("pca")
 
@@ -67,7 +119,7 @@ def test_pca_example_reports_its_readout_against_the_exact_spectrum() -> None:
     assert _labelled(output, "readout share") == "0.8142"
     assert _labelled(output, "resolution") == "0.015625"
     assert _labelled(output, "within(largest)") == "True"
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["pca"] in _premise(output)
     assert "take away" in output
 
 
@@ -80,7 +132,7 @@ def test_kmedians_example_assigns_every_point_and_updates_the_centroids() -> Non
     assert _labelled(output, "searches") == "10"
     assert _labelled(output, "classical labels") == "(0, 0, 1, 1, 2, 1)"
     assert _labelled(output, "agrees") == "True"
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["kmedians"] in _premise(output)
     assert "take away" in output
 
 
@@ -96,7 +148,7 @@ def test_quantum_kernel_example_estimates_a_kernel_and_classifies_with_it() -> N
     assert _labelled(output, "dual coefficients") == "[1.036, 1.609, -1.768, -1.095]"
     assert _labelled(output, "training predict") == "(1, 1, -1, -1)"
     assert _labelled(output, "recovers labels") == "True"
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["quantum_kernel"] in _premise(output)
     assert "take away" in output
 
 
@@ -117,7 +169,7 @@ def test_feature_selection_example_builds_and_evaluates_one_objective() -> None:
     assert _labelled(output, "energy (1, 1, 1, 1, 1)") == "41.0"
     assert _labelled(output, "penalty 5.0") == "(1, 1, 0, 0, 0) at -1.9"
     assert _labelled(output, "penalty 0.05") == "(1, 1, 1, 1, 1) at -3.55"
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["feature_selection"] in _premise(output)
     assert "take away" in output
 
 
@@ -132,7 +184,7 @@ def test_qarm_example_estimates_the_frequent_item_fraction() -> None:
     assert _labelled(output, "resolution") == "0.097545"
     assert _labelled(output, "exact fraction") == "0.5"
     assert _labelled(output, "within(exact)") == "True"
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["qarm"] in _premise(output)
     assert "take away" in output
 
 
@@ -152,7 +204,7 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     assert _labelled(output, "readout equals alpha") == "True"
     assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
     assert _labelled(output, "raised")
-    assert _labelled(output, "premise")
+    assert PREMISE_PHRASES["svd"] in _premise(output)
     assert "take away" in output
 
 
@@ -163,6 +215,11 @@ def test_the_example_directory_is_covered_and_indexed() -> None:
     assert scripts == expected, (
         "every script in examples/algorithms/ must be run by this module: add it to "
         f"SCRIPTS, or remove it. Found {scripts}, expected {expected}"
+    )
+    assert sorted(PREMISE_PHRASES) == sorted(SCRIPTS), (
+        "every script in SCRIPTS needs a premise phrase in PREMISE_PHRASES, so a new "
+        f"script's premise is pinned rather than only printed. Found "
+        f"{sorted(PREMISE_PHRASES)}, expected {sorted(SCRIPTS)}"
     )
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     for name in scripts:
@@ -179,15 +236,30 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
     """The examples README's alias paragraph must name the files it leaves out.
 
     ``examples/README.md`` says which examples are driven by the root-level ``fq``
-    alias and lists the ones that are not. This test derives that list from the
-    files instead of trusting it: every ``.py`` under ``examples/`` that does not
-    import the alias has to be named in the README, by file name or by its path
-    under ``examples/``, so the sentence stays true of the files it covers as
-    examples are added, rather than going false the way a broader one did. A file
-    that only its directory is named for does not count: the directory may be
-    mentioned for another reason, as ``single_machine_quantum_ai/`` is.
+    alias and lists the ones that are not. This test derives the requirement from
+    the files instead of trusting it: every ``.py`` under ``examples/`` that does
+    not import the alias has to be named **in the list that follows the alias
+    sentence**, by file name or by its path under ``examples/``, so the list stays
+    complete as examples are added rather than going false the way a broader
+    sentence did. A file that only its directory is named for does not count: the
+    directory may be mentioned for another reason, as ``single_machine_quantum_ai/``
+    is.
+
+    **What it does not check** is the classification itself, only that a name
+    appears where the un-aliased examples are listed: a mention before the marker
+    does not satisfy it, which is what keeps a file that *does* use the alias from
+    being counted as an exception by being named in the other half of the
+    paragraph. That a file named after the marker really does import the way the
+    list says is what the list's own reading is for, not this test's.
     """
     readme = (EXAMPLES_ROOT / "README.md").read_text(encoding="utf-8")
+    marker = "These examples do not use that alias:"
+    assert marker in readme, (
+        f"examples/README.md no longer carries its {marker!r} marker, so this test "
+        "cannot tell the examples that use the root-level `fq` alias from the ones "
+        "that do not"
+    )
+    listed = readme.split(marker, 1)[1]
     scanned = sorted(EXAMPLES_ROOT.rglob("*.py"))
     assert scanned, f"{EXAMPLES_ROOT} holds no example file to check"
 
@@ -195,12 +267,12 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
         path.relative_to(ROOT).as_posix()
         for path in scanned
         if ROOT_ALIAS_IMPORT not in path.read_text(encoding="utf-8")
-        and path.name not in readme
-        and path.relative_to(EXAMPLES_ROOT).as_posix() not in readme
+        and path.name not in listed
+        and path.relative_to(EXAMPLES_ROOT).as_posix() not in listed
     ]
 
     assert not missing, (
         "examples/README.md states which examples use the root-level `fq` alias and "
-        "lists the ones that do not, but these are in neither list: "
+        "lists the ones that do not, but these are named in neither list: "
         "\n".join(missing)
     )
