@@ -78,10 +78,11 @@ def main() -> None:
     print(f"  {'within(largest)':<18}: {result.within(largest)}")
     print()
     print("take away")
-    print("  the readout is the counter value carrying the largest share of the sample,")
-    print("  and within() answers one question about it: whether a named eigenvalue lies")
-    print("  within half a counter step of it. The unit does not claim the mode reports")
-    print("  the largest eigenvalue, and it does not predict which eigenvalue it will be.")
+    print("  the mode is the counter value carrying the largest share of the sample, and")
+    print("  the readout is that counter value's eigenvalue. within() answers one question")
+    print("  about the readout: whether a named eigenvalue lies within half a counter step")
+    print("  of it. The unit does not claim the readout is the largest eigenvalue, and it")
+    print("  does not predict which eigenvalue it will be.")
 
 
 if __name__ == "__main__":

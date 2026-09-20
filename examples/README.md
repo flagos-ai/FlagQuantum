@@ -3,20 +3,29 @@
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
 
-Examples built on the root surface use:
+Examples driven by the root-level `fq` alias use:
 
 - `import flagquantum as fq` as the public entry point;
 - `fq.Circuit(n_qubits=...)` for circuit construction;
 - PyTorch for parameters, gradients, and optimizers;
 - explicit runtime and distribution semantics when making performance claims.
 
-One exception is the algorithm demonstrations in
-[`algorithms/`](algorithms/README.md): the algorithm units are reachable at
-`flagquantum.algorithms.<unit>` and carry no root-level `fq.` name, so those
-scripts import the unit they demonstrate from the subpackage.
-[`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
-reference they follow, and the place each unit's advantage premise is recorded
-in full.
+These examples do not use that alias:
+
+- [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
+  `quantum_kernel.py`, `feature_selection.py` and `qarm.py`, which import the unit
+  they demonstrate from the subpackage surface because
+  `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
+  [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
+  reference they follow, and the place each unit's advantage premise is recorded
+  in full.
+- [`extensions/reference_extensions.py`](extensions/reference_extensions.py) and
+  [`extensions/reference_compiler_extension.py`](extensions/reference_compiler_extension.py)
+  — they import the extension and ecosystem APIs, and the second also imports
+  `CircuitIR` from the root rather than through the alias.
+- [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
+- [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
+  a shared helper for the examples beside it, which imports no FlagQuantum at all.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).

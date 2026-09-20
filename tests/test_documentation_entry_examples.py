@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import ast
+import builtins
 import contextlib
 import io
 import re
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,15 +47,21 @@ def _execute_first_python_block(relative_path: str) -> dict[str, object]:
 
 @dataclass(frozen=True)
 class _QuotedRun:
-    """The output the guide quotes for one print statement of a block.
+    """One ``print`` statement of a block, with the output the guide quotes for it.
 
     Attributes:
-        print_line: The document line of the ``print`` statement, 1-based.
+        print_line: The document line the statement starts on, 1-based. This is the
+            statement's identity in a failure message, and the start of the span a
+            call is attributed to.
+        last_line: The document line the statement ends on, 1-based. A statement may
+            span several lines, and the interpreter reports a call on whichever of
+            them it emitted the call from, so attribution uses the whole span.
         tokens: The quoted values split into whitespace-separated tokens, in order,
             each with the document line of the comment it is quoted on.
     """
 
     print_line: int
+    last_line: int
     tokens: tuple[tuple[str, int], ...]
 
 
@@ -144,6 +153,7 @@ def _quoted_runs(source: str, first_line: int) -> tuple[_QuotedRun, ...]:
         runs.append(
             _QuotedRun(
                 print_line=first_line + node.lineno - 1,
+                last_line=first_line + node.end_lineno - 1,
                 tokens=tuple(
                     (token, line) for value, line in values for token in value.split()
                 ),
@@ -162,20 +172,54 @@ def _quoted_tokens(block: _GuideBlock) -> tuple[tuple[str, int], ...]:
     return tuple(token for run in block.runs for token in run.tokens)
 
 
-def _printed_tokens(output: str) -> tuple[tuple[str, int], ...]:
-    """Return every whitespace-separated token ``output`` printed, with its line."""
-    return tuple(
-        (token, line_number)
-        for line_number, line in enumerate(output.splitlines(), start=1)
-        for token in line.split()
-    )
+def _recording_print(records: list[tuple[int, str]]) -> Callable[..., None]:
+    """Return a ``print`` that records the line it was called from and its text.
+
+    The line is taken from the calling frame, so a call is attributed to the
+    statement that made it rather than to the block: the injected name is the only
+    way a block's own code reaches this function, so the caller's line is always a
+    line of the block. The call is then passed through to the real ``print``, which
+    keeps the block's output its own -- the reproducibility check in the test below
+    still compares what the block printed.
+
+    Args:
+        records: The list each call appends ``(call line, printed text)`` to.
+
+    Returns:
+        A callable with ``print``'s own signature.
+    """
+
+    def recorded(*values: object, **keywords: object) -> None:
+        separator = keywords.get("sep", " ")
+        text = str(separator).join(str(value) for value in values)
+        records.append((sys._getframe(1).f_lineno, text))
+        builtins.print(*values, **keywords)
+
+    return recorded
 
 
-def _execute_block(block: _GuideBlock) -> str:
-    """Execute one guide block and return what it printed."""
-    namespace: dict[str, object] = {"__name__": "__documentation_example__"}
-    captured = io.StringIO()
-    with contextlib.redirect_stdout(captured):
+def _execute_block(block: _GuideBlock) -> tuple[tuple[int, str], ...]:
+    """Execute one guide block and return one entry per ``print`` call it made.
+
+    Each entry is ``(line, text)``: the **document** line the call was made from,
+    and the text that call printed. A statement inside a loop contributes one entry
+    per iteration, all carrying the statement's own line, which is what makes the
+    per-statement grouping below possible. The line the interpreter reports is
+    relative to the compiled block, so it is shifted by the block's own first line,
+    the same shift ``_quoted_runs`` applies to the statement lines it records.
+
+    Args:
+        block: The block to execute.
+
+    Returns:
+        The calls the block made, in execution order.
+    """
+    records: list[tuple[int, str]] = []
+    namespace: dict[str, object] = {
+        "__name__": "__documentation_example__",
+        PRINT_NAME: _recording_print(records),
+    }
+    with contextlib.redirect_stdout(io.StringIO()):
         exec(
             compile(
                 block.source,
@@ -184,44 +228,109 @@ def _execute_block(block: _GuideBlock) -> str:
             ),
             namespace,
         )
-    return captured.getvalue()
+    return tuple((block.first_line + line - 1, text) for line, text in records)
 
 
-def _comparison_failure(block: _GuideBlock, output: str) -> str | None:
-    """Return how ``output`` differs from the values ``block`` quotes, or ``None``.
+def _statement_index(block: _GuideBlock, line: int) -> int | None:
+    """Return the index of the statement whose source span holds ``line``.
+
+    A statement's span is its first line through its last, because a call may be
+    reported on any line of a multi-line ``print``. A line inside two spans would
+    mean a print inside a print, which a block does not have; the narrowest match
+    is taken rather than the first, so nesting would still pick the inner one.
+    """
+    matches = [
+        index
+        for index, run in enumerate(block.runs)
+        if run.print_line <= line <= run.last_line
+    ]
+    if not matches:
+        return None
+    return min(matches, key=lambda index: block.runs[index].last_line)
+
+
+def _per_statement_tokens(
+    block: _GuideBlock, records: tuple[tuple[int, str], ...]
+) -> tuple[list[list[tuple[str, int]]], list[int]]:
+    """Group the recorded calls by the statement each was made from.
+
+    Args:
+        block: The block the records came from.
+        records: The calls the block made.
+
+    Returns:
+        ``(tokens, unattributed)``: one token list per statement, each token carried
+        with the block line of the call that printed it, and the lines of the calls
+        that belong to no statement of the block.
+    """
+    tokens: list[list[tuple[str, int]]] = [[] for _ in block.runs]
+    unattributed: list[int] = []
+    for line, text in records:
+        index = _statement_index(block, line)
+        if index is None:
+            unattributed.append(line)
+            continue
+        tokens[index].extend((token, line) for token in text.split())
+    return tokens, unattributed
+
+
+def _difference(
+    where: str,
+    quoted: tuple[tuple[str, int], ...],
+    printed: list[tuple[str, int]],
+) -> str | None:
+    """Return how ``printed`` differs from ``quoted`` for one statement, or ``None``.
 
     The comparison is on whitespace-separated tokens in order, not on lines: the
-    guide wraps a long output across comment lines, and a token that moved between
-    two lines of the same block is not what this test is for. A changed token, an
-    added one and a missing one are all reported, each with the guide line and the
-    output line that disagree.
+    guide wraps a long transcript across comment lines, and the transcript of a
+    statement that prints inside a loop is several lines of its own. A changed
+    token, an added one and a missing one are all reported, each with the guide line
+    and the block line that disagree.
     """
-    quoted = _quoted_tokens(block)
-    printed = _printed_tokens(output)
     for position, (expected, actual) in enumerate(
         zip(quoted, printed, strict=False), start=1
     ):
         if expected[0] != actual[0]:
             return (
-                f"value {position} of the block: the guide quotes {expected[0]!r} at "
-                f"line {expected[1]}, and the block printed {actual[0]!r} at output "
-                f"line {actual[1]}"
+                f"{where}: value {position} of the statement -- the guide quotes "
+                f"{expected[0]!r} at guide line {expected[1]}, and the statement "
+                f"printed {actual[0]!r} from its call at line {actual[1]}"
             )
     if len(quoted) > len(printed):
         token, line = quoted[len(printed)]
         return (
-            f"the guide quotes {len(quoted)} values and the block printed "
-            f"{len(printed)}; the first {len(printed)} agree, and then the guide "
-            f"quotes {token!r} at line {line}, which the block did not print"
+            f"{where}: the guide quotes {len(quoted)} values and the statement "
+            f"printed {len(printed)}; the first {len(printed)} agree, and then the "
+            f"guide quotes {token!r} at guide line {line}, which the statement did "
+            "not print"
         )
     if len(printed) > len(quoted):
         token, line = printed[len(quoted)]
         return (
-            f"the guide quotes {len(quoted)} values and the block printed "
-            f"{len(printed)}; the first {len(quoted)} agree, and then the block "
-            f"printed {token!r} at output line {line}, which the guide does not quote"
+            f"{where}: the guide quotes {len(quoted)} values and the statement "
+            f"printed {len(printed)}; the first {len(quoted)} agree, and then the "
+            f"statement printed {token!r} from its call at line {line}, which the "
+            "guide does not quote"
         )
     return None
+
+
+def _block_failures(
+    name: str, block: _GuideBlock, records: tuple[tuple[int, str], ...]
+) -> list[str]:
+    """Return everything wrong with one block's quotes, given what it printed."""
+    tokens, unattributed = _per_statement_tokens(block, records)
+    failures = [
+        f"{name}: the call at line {line} belongs to no print statement of the "
+        "block, so its output cannot be attributed to one"
+        for line in unattributed
+    ]
+    for index, run in enumerate(block.runs):
+        where = f"{name}, the print statement at line {run.print_line}"
+        difference = _difference(where, run.tokens, tokens[index])
+        if difference is not None:
+            failures.append(difference)
+    return failures
 
 
 @pytest.mark.integration
@@ -240,12 +349,43 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
     - A comment is read as quoted output only when it directly follows a print
       statement with no blank line between. The guide's explanatory comments are
       excluded by that rule and by nothing else.
-    - Values are compared in order, as text, so a changed digit fails and a value
-      that moved between two lines of the same block does not. A block that prints
-      more or fewer values than it quotes fails either way.
-    - Every block is executed twice and the two outputs must be identical: the
-      comparison assumes the quoted values are reproducible, and every block of
-      this guide passes an explicit seed to the sampler it runs.
+    - **Each print statement is checked on its own.** The block is executed with a
+      recording ``print`` in its namespace, so every call carries the block line it
+      was made from, and a call's text is compared against the transcript of *the
+      statement that made it*. A block is therefore a set of statements whose
+      quotes are checked one by one, not one flat stream of values: a value quoted
+      against the statement next to the one that printed it fails, naming the
+      statement, the guide line of the quote and the block line of the call. A
+      statement that prints inside a loop contributes one call per iteration, all
+      grouped under that one statement.
+    - Within a statement the values are compared as text, in order, so a changed
+      digit, a changed format and a value printed but not quoted all fail, and a
+      value quoted but not printed fails.
+    - Every block is executed twice and the two runs must have made the same calls
+      with the same text: the comparison assumes the quoted values are reproducible,
+      and every block of this guide passes an explicit seed to the sampler it runs.
+
+    **What this test does not check, stated rather than left to be discovered.** It
+    checks values, not prose, and it checks them as one sequence per statement:
+
+    - Anything after a ``--``, and any comment line that is prose continuation by
+      position, is not compared at all. A false sentence in the guide's prose keeps
+      this test green while the values beside it are right; a quote block moved
+      between two statements that print the same text is invisible for the same
+      reason, because the values move with it and only the prose is left behind.
+    - Within one statement's transcript the compared thing is the sequence of tokens
+      and not the lines: the same values may be quoted on one comment line or split
+      across several, and a value may be moved to a neighbouring comment line of
+      that statement without failing, as long as the sequence does not change. That
+      is what lets a statement that prints inside a loop quote one line per
+      iteration. Swapping two values of the sequence, or moving one past another,
+      fails, and names the position.
+    - A statement that prints nothing but whitespace and quotes nothing is vacuous,
+      and is checked as such.
+
+    Everything else a quoted value can do fails: a changed value, a deleted quote, a
+    quote attached to a statement that did not print it, and a statement printing a
+    value the guide does not quote for it.
 
     Nothing here pins the number of blocks or the sections they sit in. The blocks
     are whatever the file declares when this runs, so a section added to the guide
@@ -268,8 +408,8 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
                 "it, or record why it cannot be compared in UNCHECKED_BLOCKS"
             )
             continue
-        first = _execute_block(block)
-        if first != _execute_block(block):
+        records = _execute_block(block)
+        if records != _execute_block(block):
             failures.append(
                 f"{name}: two runs of the block printed different output, so its "
                 "quotes cannot be compared; record why in UNCHECKED_BLOCKS"
@@ -277,9 +417,7 @@ def test_algorithms_guide_examples_execute_and_match_their_quotes() -> None:
             continue
         if exempt:
             continue
-        mismatch = _comparison_failure(block, first)
-        if mismatch is not None:
-            failures.append(f"{name}: {mismatch}")
+        failures.extend(_block_failures(name, block, records))
 
     assert not failures, "\n".join(failures)
 

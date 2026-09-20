@@ -19,8 +19,10 @@ import pytest
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples" / "algorithms"
+EXAMPLES_ROOT = ROOT / "examples"
+EXAMPLES = EXAMPLES_ROOT / "algorithms"
 GUIDE = "docs/guides/ALGORITHMS.md"
+ROOT_ALIAS_IMPORT = "import flagquantum as fq"
 TIMEOUT_SECONDS = 120
 
 # Every script in the directory, one entry per unit that has one.
@@ -150,3 +152,34 @@ def test_the_guide_is_linked_from_the_example_and_algorithm_entry_points() -> No
     for relative_path in ("examples/README.md", "flagquantum/algorithms/README.md"):
         text = (ROOT / relative_path).read_text(encoding="utf-8")
         assert GUIDE in text, f"{relative_path} does not point at {GUIDE}"
+
+
+def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() -> None:
+    """The examples README's alias paragraph must name the files it leaves out.
+
+    ``examples/README.md`` says which examples are driven by the root-level ``fq``
+    alias and lists the ones that are not. This test derives that list from the
+    files instead of trusting it: every ``.py`` under ``examples/`` that does not
+    import the alias has to be named in the README, by file name or by its path
+    under ``examples/``, so the sentence stays true of the files it covers as
+    examples are added, rather than going false the way a broader one did. A file
+    that only its directory is named for does not count: the directory may be
+    mentioned for another reason, as ``single_machine_quantum_ai/`` is.
+    """
+    readme = (EXAMPLES_ROOT / "README.md").read_text(encoding="utf-8")
+    scanned = sorted(EXAMPLES_ROOT.rglob("*.py"))
+    assert scanned, f"{EXAMPLES_ROOT} holds no example file to check"
+
+    missing = [
+        path.relative_to(ROOT).as_posix()
+        for path in scanned
+        if ROOT_ALIAS_IMPORT not in path.read_text(encoding="utf-8")
+        and path.name not in readme
+        and path.relative_to(EXAMPLES_ROOT).as_posix() not in readme
+    ]
+
+    assert not missing, (
+        "examples/README.md states which examples use the root-level `fq` alias and "
+        "lists the ones that do not, but these are in neither list: "
+        "\n".join(missing)
+    )

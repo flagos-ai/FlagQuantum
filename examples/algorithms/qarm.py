@@ -20,8 +20,7 @@ measures, and it is inside the unit's bounds -- the item count is a power of two
 and the database is at most eight items and seven transactions. The amplitude
 estimation runs at four counting wires and 8000 shots, the guide's own, which
 sets the resolution the estimate is read at. The script ends by showing the
-refusal the unit makes for a threshold no item or every item could meet, at a
-threshold above this database's transaction count.
+refusal the unit makes for a threshold above this database's transaction count.
 
 Run it with:
 
@@ -101,8 +100,9 @@ def main() -> None:
     print("  the estimate is read off the counting register as the fraction the marking")
     print("  operator selects, and the support it marks is filled from the database entry")
     print("  by entry in Python. The comparison at the threshold is inclusive, so the")
-    print("  item whose support is exactly 2 counts here, and a threshold no item or")
-    print("  every item can meet is refused rather than run.")
+    print("  item whose support is exactly 2 counts here. A threshold below one, or")
+    print("  above the transaction count, is refused rather than run: every item meets")
+    print("  it, or none does, and neither needs a circuit.")
 
 
 if __name__ == "__main__":
