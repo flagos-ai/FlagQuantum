@@ -879,16 +879,17 @@ result = run_frequent_itemset(database, threshold=2, n_counting_wires=4, shots=8
 print(round(result.estimate, 6), round(result.resolution, 6))
 # 0.5 0.097545  -- the readout, against an exact fraction of 0.5
 
-# The support register has to hold every support the database can produce, so a narrower
-# one is refused rather than left to wrap into a wrong readout.
+# The support register has to hold the largest support any database of this transaction
+# count could produce, so a narrower one is refused rather than left to wrap into a
+# readout that can come back wrong.
 try:
     frequent_itemset_operator(database, threshold=2, n_support_wires=1)
 except ValueError as error:
     print(error)
 # the support register needs at least 2 wires to hold the largest support 2 that 2
 # transactions can produce, got 1; the increment is a permutation of the register's
-# values, so a narrower register wraps a support into another value and the readout comes
-# back wrong with nothing raised
+# values, so a narrower register wraps a support into another value and the readout can
+# come back wrong with nothing raised
 ```
 
 A second database reaches fractions the two-transaction one cannot. Four transactions over

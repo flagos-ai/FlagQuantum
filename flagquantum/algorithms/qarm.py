@@ -42,8 +42,8 @@ wrapped.** The increment is a permutation of the register's own values, so a sup
 register cannot hold comes back as another value, the mark then sees a support that can be
 on the wrong side of the threshold, and the readout can come back wrong with nothing
 raised. :func:`frequent_itemset_operator` therefore refuses a register that cannot hold the
-largest support the database can produce, which is the number of transactions; the fewest
-wires that can hold it is the default.
+largest support any database of that transaction count could produce; the fewest wires that
+can hold it is the default.
 
 **The threshold is inclusive.** An item whose support equals the threshold is frequent, and
 the marking operator is built over the support values at or above it.
@@ -148,8 +148,8 @@ class FrequentItemsetOperator:
                 that is neither ``0`` nor ``1``; if its item count is not a power of two of
                 at least two, or exceeds the unit's bound; if ``threshold`` is not an
                 integer in ``range(1, n_transactions + 1)``; or if ``n_support_wires`` is
-                not an integer, cannot hold the largest support the database can produce, or
-                exceeds the unit's bound.
+                not an integer, cannot hold the largest support any database of that
+                transaction count could produce, or exceeds the unit's bound.
         """
         rows = _validated_incidence(self.incidence)
         _validated_item_count(len(rows[0]))
@@ -408,7 +408,8 @@ def frequent_itemset_operator(
             ``range(1, n_transactions + 1)``. The comparison is inclusive, so an item whose
             support is exactly the threshold is frequent.
         n_support_wires: The width of the support register, or ``None`` for the fewest wires
-            that can hold the largest support the database can produce.
+            that can hold the largest support any database of that transaction count could
+            produce.
 
     Returns:
         The operator, carrying the database, the threshold and the register width.
@@ -418,8 +419,8 @@ def frequent_itemset_operator(
             transaction, holds no item, or holds an entry that is neither ``0`` nor ``1``;
             if its item count is not a power of two of at least two, or exceeds the unit's
             bound; if ``threshold`` is not an integer in ``range(1, n_transactions + 1)``;
-            or if ``n_support_wires`` cannot hold the largest support the database can
-            produce or exceeds the unit's bound.
+            or if ``n_support_wires`` cannot hold the largest support any database of that
+            transaction count could produce or exceeds the unit's bound.
     """
     rows = _validated_matrix(incidence)
     n_transactions = len(rows)
@@ -459,7 +460,8 @@ def run_frequent_itemset(
         shots: The number of samples to draw, at least one.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
         n_support_wires: The width of the support register, or ``None`` for the fewest wires
-            that can hold the largest support the database can produce.
+            that can hold the largest support any database of that transaction count could
+            produce.
 
     Returns:
         The amplitude estimation result, whose estimate is the fraction of the items whose
@@ -642,8 +644,9 @@ def _validated_support_width(n_support_wires: object, n_transactions: int) -> in
         The width.
 
     Raises:
-        ValueError: If it is not an integer, if it cannot hold the largest support the
-            database can produce, or if it exceeds this unit's bound.
+        ValueError: If it is not an integer, if it cannot hold the largest support any
+            database of that transaction count could produce, or if it exceeds this unit's
+            bound.
     """
     if isinstance(n_support_wires, bool) or not isinstance(n_support_wires, int):
         raise ValueError(
