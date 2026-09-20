@@ -8,10 +8,15 @@ module runs, so a script added to the directory without a test fails rather than
 being skipped.
 
 Each script's premise line is checked for a phrase and not for its presence:
-``PREMISE_PHRASES`` below pins the load-bearing half of each unit's advantage
-premise, so a script whose premise was softened to something reassuring fails
-here instead of passing as a non-empty line. See that mapping for how the phrase
-for each unit was chosen.
+``PREMISE_PHRASES`` below pins the load-bearing half of every unit's advantage
+premise -- two phrases for ``svd``, whose premise has two halves -- and each
+phrase is matched against the whole premise paragraph, continuation lines
+included. **What that catches is a premise that stops carrying its phrase, and
+what it cannot catch is one that keeps the phrase and dismisses it:** a
+concession can be kept lexically and waved away in the same breath ("not free,
+but negligible at this scale"), and no phrase pins against that. The pins make a
+half's *removal* detectable, not its *dismissal*. See that mapping for how each
+phrase was chosen and for what it leaves uncovered.
 """
 
 from __future__ import annotations
@@ -41,30 +46,48 @@ SCRIPTS = (
     "svd",
 )
 
-# One phrase per script, each the load-bearing half of that unit's advantage
-# premise: what the unit gives up rather than what it does. Chosen by reading the
-# unit's own ``limitations`` in ``capability-maturity.toml`` and taking the phrase
-# the script's premise paragraph already carries for that half, so the assertion
-# pins the existing wording rather than rewriting the script to fit it.
-PREMISE_PHRASES = {
+# One or more phrases per script, each the load-bearing half of that unit's
+# advantage premise: what the unit gives up rather than what it does. Chosen by
+# reading the unit's own ``limitations`` in ``capability-maturity.toml`` and taking
+# the phrase the script's premise paragraph already carries for that half, so the
+# assertion pins the existing wording rather than rewriting the script to fit it.
+# Two entries carry a caveat:
+#
+# - ``kmedians``' phrase ``not free`` is the shortest of them and is a floor
+#   rather than a proof. It catches the clause's removal; a rewrite that keeps
+#   the clause and dismisses it stays green, which is true of every phrase here.
+#   A mechanism phrase such as ``truth table`` would be worse rather than
+#   stronger: it pins *how* the oracle is built, not *that* it costs, and the
+#   cost is the concession.
+# - ``svd`` carries two halves and so two phrases, because a pin on one of them
+#   leaves the other's deletion invisible: removing the whole input-model half
+#   from that script's premise paragraph left the suite green with only the
+#   block-encoding phrase pinned.
+PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # "The density matrix is materialized classically and its exponential is
     # built with a dense matrix exponential" -- the input model is not met.
-    "pca": "built classically",
+    "pca": ("built classically",),
     # "the oracle is not free here ... synthesized from the predicate's truth
     # table at O(2**n) cost" -- the oracle model is not met.
-    "kmedians": "not free",
+    "kmedians": ("not free",),
     # "each feature state is built gate by gate from the classical feature
     # vector on every run" -- the data-access model is not met.
-    "quantum_kernel": "gate by gate",
+    "quantum_kernel": ("gate by gate",),
     # "This unit does not solve, and the repository has no annealer."
-    "feature_selection": "no annealer",
+    "feature_selection": ("no annealer",),
     # "the transactions are iterated over classically, one controlled increment
     # of the support register per transaction-item membership" -- the coherent
     # database access is absent.
-    "qarm": "iterated classically",
-    # "The block encoding is not free to read: a readout that post-selects the
-    # ancilla succeeds with probability ..." -- alongside the input model.
-    "svd": "not free to read",
+    "qarm": ("iterated classically",),
+    # Two halves, and each phrase names its own. "The premise is the input model,
+    # and it is not met ... the input state is built from the singular vectors a
+    # classical torch.linalg.svd returns" is the first; "The block encoding is
+    # not free to read: a readout that post-selects the ancilla succeeds with
+    # probability ..." is the second. Neither phrase covers the *supporting
+    # detail* of its half -- the probability formula under the second, or the
+    # `torch.linalg.svd` line under the first -- which can be dropped while the
+    # phrase remains, the dismissal gap the module docstring records.
+    "svd": ("the input model is assumed, not met", "not free to read"),
 }
 
 
@@ -110,6 +133,22 @@ def _premise(output: str) -> str:
     raise AssertionError(f"the example printed no premise paragraph:\n{output}")
 
 
+def _assert_premise(name: str, output: str) -> None:
+    """Assert the premise paragraph ``name`` printed carries its pinned phrases.
+
+    One assertion per phrase, so a script whose premise carries one half of a
+    two-half premise and not the other fails naming the phrase that went, rather
+    than passing on the half that stayed. Each failure prints the paragraph, so
+    the reader sees what the premise says now.
+    """
+    paragraph = _premise(output)
+    for phrase in PREMISE_PHRASES[name]:
+        assert phrase in paragraph, (
+            f"{name}'s premise paragraph no longer carries the pinned phrase "
+            f"{phrase!r}. It printed:\n{paragraph}"
+        )
+
+
 def test_pca_example_reports_its_readout_against_the_exact_spectrum() -> None:
     output = _run("pca")
 
@@ -119,7 +158,7 @@ def test_pca_example_reports_its_readout_against_the_exact_spectrum() -> None:
     assert _labelled(output, "readout share") == "0.8142"
     assert _labelled(output, "resolution") == "0.015625"
     assert _labelled(output, "within(largest)") == "True"
-    assert PREMISE_PHRASES["pca"] in _premise(output)
+    _assert_premise("pca", output)
     assert "take away" in output
 
 
@@ -132,7 +171,7 @@ def test_kmedians_example_assigns_every_point_and_updates_the_centroids() -> Non
     assert _labelled(output, "searches") == "10"
     assert _labelled(output, "classical labels") == "(0, 0, 1, 1, 2, 1)"
     assert _labelled(output, "agrees") == "True"
-    assert PREMISE_PHRASES["kmedians"] in _premise(output)
+    _assert_premise("kmedians", output)
     assert "take away" in output
 
 
@@ -148,7 +187,7 @@ def test_quantum_kernel_example_estimates_a_kernel_and_classifies_with_it() -> N
     assert _labelled(output, "dual coefficients") == "[1.036, 1.609, -1.768, -1.095]"
     assert _labelled(output, "training predict") == "(1, 1, -1, -1)"
     assert _labelled(output, "recovers labels") == "True"
-    assert PREMISE_PHRASES["quantum_kernel"] in _premise(output)
+    _assert_premise("quantum_kernel", output)
     assert "take away" in output
 
 
@@ -169,7 +208,7 @@ def test_feature_selection_example_builds_and_evaluates_one_objective() -> None:
     assert _labelled(output, "energy (1, 1, 1, 1, 1)") == "41.0"
     assert _labelled(output, "penalty 5.0") == "(1, 1, 0, 0, 0) at -1.9"
     assert _labelled(output, "penalty 0.05") == "(1, 1, 1, 1, 1) at -3.55"
-    assert PREMISE_PHRASES["feature_selection"] in _premise(output)
+    _assert_premise("feature_selection", output)
     assert "take away" in output
 
 
@@ -184,7 +223,7 @@ def test_qarm_example_estimates_the_frequent_item_fraction() -> None:
     assert _labelled(output, "resolution") == "0.097545"
     assert _labelled(output, "exact fraction") == "0.5"
     assert _labelled(output, "within(exact)") == "True"
-    assert PREMISE_PHRASES["qarm"] in _premise(output)
+    _assert_premise("qarm", output)
     assert "take away" in output
 
 
@@ -204,7 +243,7 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     assert _labelled(output, "readout equals alpha") == "True"
     assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
     assert _labelled(output, "raised")
-    assert PREMISE_PHRASES["svd"] in _premise(output)
+    _assert_premise("svd", output)
     assert "take away" in output
 
 
@@ -238,19 +277,23 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
     ``examples/README.md`` says which examples are driven by the root-level ``fq``
     alias and lists the ones that are not. This test derives the requirement from
     the files instead of trusting it: every ``.py`` under ``examples/`` that does
-    not import the alias has to be named **in the list that follows the alias
-    sentence**, by file name or by its path under ``examples/``, so the list stays
-    complete as examples are added rather than going false the way a broader
-    sentence did. A file that only its directory is named for does not count: the
-    directory may be mentioned for another reason, as ``single_machine_quantum_ai/``
-    is.
+    not import the alias has to be named **after that sentence**, by file name or
+    by its path under ``examples/``, so the list stays complete as examples are
+    added rather than going false the way a broader sentence did. A file that only
+    its directory is named for does not count: the directory may be mentioned for
+    another reason, as ``single_machine_quantum_ai/`` is.
 
-    **What it does not check** is the classification itself, only that a name
-    appears where the un-aliased examples are listed: a mention before the marker
-    does not satisfy it, which is what keeps a file that *does* use the alias from
-    being counted as an exception by being named in the other half of the
-    paragraph. That a file named after the marker really does import the way the
-    list says is what the list's own reading is for, not this test's.
+    **The boundary is the sentence, not the bullet list under it.** The check is
+    satisfied by a mention anywhere in the rest of the file, so a non-aliased
+    example discussed in a later section for some other purpose passes without
+    ever being in the exception list. What the boundary does buy is the other
+    direction: a mention *before* the sentence does not satisfy it, which is what
+    keeps a file that does use the alias from being counted as an exception by
+    being named in the alias half of the paragraph.
+
+    **What it does not check** is the classification itself. That a file named
+    after the sentence really does import the way the list says is what the list's
+    own reading is for, not this test's.
     """
     readme = (EXAMPLES_ROOT / "README.md").read_text(encoding="utf-8")
     marker = "These examples do not use that alias:"
@@ -271,8 +314,11 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
         and path.relative_to(EXAMPLES_ROOT).as_posix() not in listed
     ]
 
-    assert not missing, (
-        "examples/README.md states which examples use the root-level `fq` alias and "
-        "lists the ones that do not, but these are named in neither list: "
-        "\n".join(missing)
+    assert not missing, "\n".join(
+        (
+            "examples/README.md states which examples use the root-level `fq` alias, "
+            "and an example that does not use it has to be named after that "
+            "statement; these are not:",
+            *missing,
+        )
     )
