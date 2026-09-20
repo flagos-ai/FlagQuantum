@@ -153,9 +153,13 @@ _MAX_CENTROIDS = 2**_CENTROID_WIRE_LIMIT
 class KMediansResult:
     """The outcome of one sampled :func:`kmedians` run.
 
-    ``kw_only`` is not optional here: ``labels`` is a tuple of centroid indices and
-    ``searches`` is a count, so a positional spelling would let a caller transpose a
-    count for an assignment without an error.
+    ``kw_only`` is not optional here, and the reason is how a call site reads
+    rather than what it would catch: ``labels`` is a tuple of centroid indices,
+    ``medians`` a tuple of coordinate tuples and ``searches`` a count, three shapes
+    that read alike positionally and would read as a row of unrelated objects.
+    ``medians`` sits between the other two in the declaration, so a spelling that
+    puts ``labels`` and ``searches`` next to each other has to move ``medians`` out
+    of its own slot as well.
 
     Attributes:
         labels: The centroid each point was assigned to, in the order the points were

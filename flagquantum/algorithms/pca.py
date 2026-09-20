@@ -112,9 +112,19 @@ _DEFAULT_SHOTS = 4096
 class PcaResult:
     """The outcome of one sampled :func:`principal_components` run.
 
-    ``kw_only`` is not optional here: every field below is one of two numeric types,
-    and two of them are integers, so a positional spelling would let a caller
-    transpose ``n_counting_wires`` and ``shots``-derived counts without an error.
+    ``kw_only`` is not optional here, and the reason is how a call site reads
+    rather than what it would catch: three of the fields are bare floats -- an
+    eigenvalue, a share of the sample and a step -- and the other two are a count
+    and a mapping, so a positional spelling would read as a row of numbers with the
+    counter's distribution among them. The eigenvalue's bound and the share's
+    overlap: the eigenvalue is confined to ``(0, 1]`` and the share to ``[0, 1]``,
+    so the two overlap on ``(0, 1]``, and a spelling that hands each to the other's
+    keyword can satisfy both bounds and be accepted. Measured, the readout of the
+    two-row matrix ``[[1, 0], [0, 2]]`` at four counting wires and 4096 shots with
+    seed 7 -- ``dominant_eigenvalue`` ``0.8125`` and ``dominant_probability``
+    ``0.7060546875``, two different values -- constructs with those two fields
+    transposed, and the object then reports ``dominant_eigenvalue``
+    ``0.7060546875`` and ``dominant_probability`` ``0.8125``.
 
     Attributes:
         dominant_eigenvalue: The eigenvalue read out at the mode ``k`` of
@@ -221,10 +231,9 @@ def principal_components(
 ) -> PcaResult:
     """Estimate the eigenvalues of ``A``'s density matrix by phase estimation.
 
-    ``A`` is spelled as the construction and the paper read it, which is the one
-    place this package keeps an upper-case parameter name and the reason the naming
-    rule is suppressed above: every formula in the module docstring is stated in
-    terms of ``A``, ``rho = A A^T / tr(A A^T)`` and ``vec(A)``.
+    ``A`` is spelled as the construction and the paper read it, which is the reason
+    the naming rule is suppressed above: every formula in the module docstring is
+    stated in terms of ``A``, ``rho = A A^T / tr(A A^T)`` and ``vec(A)``.
 
     The density matrix is ``rho = A A^T / tr(A A^T)``, formed classically: see the
     module docstring for what that costs and what it gives up. ``rho``'s
