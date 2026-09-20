@@ -72,3 +72,9 @@ completed submission and separate-process restoration for one counts task.
 A [native Jiuding A100 job](../development/evidence/remote_jobs_jiuding_20260911.json) also completed with exact two-qubit X counts (1024
 shots), using HTTP submission and separate-process log retrieval without SSH.
 This is a small correctness check, not a performance or scalability claim.
+
+A [session-credential Jiuding check](../development/evidence/jiuding_explicit_credentials_20260920.json)
+then submitted a fresh A100 job while environment and injected-file discovery
+were deliberately blocked. It completed with exact two-qubit X counts (1024
+shots), demonstrating that explicit credentials alone cover submission, polling
+and result retrieval. This remains a small correctness check.
