@@ -951,10 +951,11 @@ wire the register holds two counter values and one of them is the refused half, 
 value a one-wire run can return is `alpha` itself, and a one-wire run whose mode falls in the
 refused half raises. **Separately, the input state carries no weight on the embedding's
 negative eigenvectors**, whose phases lie in the lower half, so nothing peaks at their counter
-values. What the lower half carries at the settings below — the dominant peak's tail, under a
-fiftieth of the sample against the mode's half — is therefore not a peak of its own there. At
-one wire it need not be a tail at all: with a single upper-half counter value, the dominant
-peak's own phase wraps into the refused half instead, which is the raise above.
+values. What the lower half carries at the example's six counting wires — the dominant
+peak's tail, under a fiftieth of the sample against the mode's half — is therefore not a
+peak of its own there. At one wire it need not be a tail at all: with a single upper-half
+counter value, the dominant peak's own phase wraps into the refused half instead, which is
+the raise above.
 
 **The input state is where the singular vectors enter, and it is the premise.** The circuit
 prepares the state whose overlap with the embedding's eigenvector of `+sigma_i` is
