@@ -56,9 +56,14 @@ circuit: the block's column ``j`` is the post-selected amplitude vector of the b
 ``mu`` is carried by the eigenphase ``exp(-i * pi * mu / alpha)``, which is the phase
 ``phi = (-mu / (2 * alpha)) mod 1``. A counting register of ``m`` wires resolves a phase
 to ``1 / 2**m``, so a counter value ``k`` reads the singular value
-``2 * alpha * (1 - k / 2**m)``, and the readout therefore lies in ``(0, alpha]``. The
-inversion is part of the readout and not a cosmetic detail: dropping the ``2 * alpha``
-factor reports a phase, which is a wrong singular value rather than an error.
+``2 * alpha * (1 - k / 2**m)``. A counter value in the register's lower half reads a value
+above ``alpha``, and such a readout is **refused rather than returned**, which is what
+makes the readout's range ``(0, alpha]``: the range is enforced by that refusal and not by
+which counter value the sample happens to peak on. At one counting wire the register holds
+two counter values, one of which is the refused half, so the only value a one-wire run can
+return is ``alpha`` itself, and a run of that width whose mode falls in the refused half
+raises. The inversion is part of the readout and not a cosmetic detail: dropping the
+``2 * alpha`` factor reports a phase, which is a wrong singular value rather than an error.
 
 **The input state is where the singular vectors enter, and it weights the eigenvalues.**
 The circuit prepares the state whose overlap with the embedding's eigenvector of
@@ -135,8 +140,9 @@ class SingularValueResult:
             module does not claim this is the largest singular value of the matrix and
             does not predict which singular value it will be; the mode is simply the
             counter value with the largest share. :meth:`within` is how a caller checks a
-            specific singular value against it. The value lies in ``(0, alpha]``, which is
-            the range the register's upper half resolves to.
+            specific singular value against it. A counter value in the register's lower
+            half reads a value above ``alpha``, and that value is refused by this class
+            rather than carried, so the value here lies in ``(0, alpha]``.
         dominant_share: The share of the sample that landed on that mode. It is not the
             singular value's weight in the matrix, and the counting register's resolution
             spreads each eigenvalue's share over neighbouring counter values: see the
@@ -267,7 +273,10 @@ def estimate_singular_values(
             not be the zero matrix, whose embedding has no positive subnormalisation to
             normalise by.
         n_counting_wires: The width of the counting register, at least one. The resolution
-            is ``2 * alpha / 2**n_counting_wires`` in singular-value units.
+            is ``2 * alpha / 2**n_counting_wires`` in singular-value units. At one wire the
+            register holds two counter values, one of which is the refused half, so the
+            only value a one-wire run can return is ``alpha`` itself and a run of that
+            width whose mode falls in the other half raises rather than returning.
         shots: The number of samples to draw, at least one. Every share in the returned
             distribution is a count over exactly this many samples.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator. The same
@@ -285,7 +294,12 @@ def estimate_singular_values(
             whose dimension is a power of two of at least two and at most four; if ``A``
             holds a non-finite entry; if ``A`` is the zero matrix, whose embedding has no
             positive subnormalisation; if ``n_counting_wires`` is less than one; or if
-            ``shots`` is less than one.
+            ``shots`` is less than one. And, **on the drawn sample rather than on the
+            arguments**, if the counting register's mode falls in its lower half: such a
+            counter value reads a singular value above ``alpha``, which
+            :class:`SingularValueResult` refuses rather than carries. That one is an
+            outcome of the run and not a precondition, and every argument can be legal when
+            it happens.
     """
     _validated_counting_width(n_counting_wires)
     _validated_shots(shots)
@@ -444,17 +458,19 @@ def _append_block_encoding(
         wires: The embedding's wires, block qubit first.
 
     Raises:
-        ValueError: If ``embedding`` is not Hermitian; or if ``alpha`` fails the
-            validation :func:`_subnormalisation` applies to it, which is checked here
-            because a factor below the embedding's spectral norm would otherwise reach the
-            selection's arccosine and be folded into the unit circle silently.
+        ValueError: If ``alpha`` fails the validation :func:`_subnormalisation` applies to
+            it, which is checked here because a factor below the embedding's spectral norm
+            would otherwise reach the selection's arccosine and be folded into the unit
+            circle silently; or if ``embedding`` is not Hermitian. Both are checked before
+            the circuit is touched, so a refused call leaves it as it was.
     """
     alpha = _subnormalisation(embedding, alpha)
+    select = _select_unitary(embedding, alpha)
     circuit.gate("h", ancilla)
     circuit.any(
         ancilla,
         *wires,
-        unitary=_select_unitary(embedding, alpha),
+        unitary=select,
         name="block_encoding_select",
     )
     circuit.gate("h", ancilla)

@@ -209,6 +209,54 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
         )
 
 
+def test_a_refused_encoding_leaves_the_circuit_as_it_was() -> None:
+    """Both refusals are taken before the first gate, so a caller's circuit is untouched.
+
+    The construction appends the ancilla's preparation before its selection, so a refusal
+    taken after that first gate would leave the caller holding a half-built encoding. This
+    asserts the circuit is empty afterwards for each of the two refusal paths.
+    """
+    embedding = _embedding(_NON_SYMMETRIC)
+    alpha = _subnormalisation(embedding, None)
+    spoiled = _embedding(_NON_SYMMETRIC)
+    spoiled[0, 3] += 0.5
+    for target, factor in (
+        (spoiled, _subnormalisation(spoiled, None)),
+        (embedding, alpha / 2.0),
+    ):
+        circuit = Circuit(3)
+        with pytest.raises(ValueError):
+            _append_block_encoding(circuit, target, factor, ancilla=0, wires=[1, 2])
+        assert circuit.to_qir() == []
+
+
+def test_a_mode_in_the_register_lower_half_is_refused() -> None:
+    """At one counting wire the register returns ``alpha`` or it raises, and nothing else.
+
+    The refusal is an outcome of the sample rather than a precondition: the width is legal
+    and the matrix is legal, and which of the two happens depends on where the sample's mode
+    falls. The matrix and width used for the refusal half were measured stable rather than
+    chosen for convenience -- ``eye(4)`` at one wire refused for each of 200 seeds tried --
+    while ``eye(2)`` and ``diag(1, 0.9)`` at the same width refuse for about half of them,
+    which is why neither is used here. The other half of the contract is measured over eight
+    seeds: for ``[[1, 2], [3, 4]]`` at one wire the raise did not happen once in 200 seeds,
+    and the value returned cannot be anything but ``alpha``, because the register holds two
+    counter values of which the lower one is refused -- over 200 seeds of five matrices, no
+    one-wire success read anything else.
+    """
+    for seed in range(24):
+        with pytest.raises(ValueError, match="must lie in \\(0, alpha\\]"):
+            estimate_singular_values(
+                torch.eye(4), n_counting_wires=1, shots=256, seed=seed
+            )
+    for seed in range(8):
+        result = estimate_singular_values(
+            _NON_SYMMETRIC, n_counting_wires=1, shots=256, seed=seed
+        )
+        assert result.dominant_singular_value == pytest.approx(result.alpha, abs=1e-9)
+        assert result.resolution == pytest.approx(result.alpha, abs=1e-9)
+
+
 def test_the_subnormalisation_defaults_to_the_frobenius_norm() -> None:
     """The default factor is the embedding's Frobenius norm, which covers its spectrum."""
     for matrix in _MATRICES:

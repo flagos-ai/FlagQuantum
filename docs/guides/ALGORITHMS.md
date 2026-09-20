@@ -930,7 +930,10 @@ the Hermitian embedding `[[0, A], [A^T, 0]]` of a real square matrix, exponentia
 phase-estimates a counting register against that exponential, and returns a
 `SingularValueResult`: the singular value read out at the register's mode, that value's
 share of the sample, the register's marginal distribution, the step the register resolves,
-and the subnormalisation the readout is scaled by. `A`'s singular values are the magnitudes
+and the subnormalisation the readout is scaled by. The counting width is the caller's and is
+at least one, and one wire is degenerate rather than a second contract: the register then
+holds two counter values, of which one is refused, so the only value it can return is
+`alpha` itself. `A`'s singular values are the magnitudes
 of the embedding's eigenvalues — the embedding carries `A` and `A^T` as its two
 off-diagonal blocks, and its spectrum is `±sigma_i` — so what the readout inverts to is the
 magnitude of one of the embedding's eigenvalues, which is one of `A`'s singular values.
@@ -941,11 +944,17 @@ eigenvalue `mu` is `exp(-i pi mu / alpha)`, which is the phase `phi = (-mu / (2 
 `2 * alpha * (1 - k / 2**m)`. The inversion is part of the readout and not a cosmetic
 detail: dropping the `2 * alpha` factor reports a phase, which is a wrong singular value
 rather than an error, and the tests that compare the readout against `torch.linalg.svdvals`
-fail with it removed. The readout lives in the register's upper half, because the input
-state carries no weight on the embedding's negative eigenvalues, so no counter value is a
-peak of one; the shares the lower half does carry are the dominant peak's phase-estimation
-tail rather than a peak of their own, and measured at the settings below they are under a
-fiftieth of the sample against the mode's half.
+fail with it removed. **The readout's range is `(0, alpha]` because a readout the register's
+lower half produces is refused**, not because of the resolution: a lower-half counter value
+reads a value above `alpha`, and such a value is refused rather than returned. At one counting
+wire the register holds two counter values and one of them is the refused half, so the only
+value a one-wire run can return is `alpha` itself, and a one-wire run whose mode falls in the
+refused half raises. **Separately, the input state carries no weight on the embedding's
+negative eigenvectors**, whose phases lie in the lower half, so nothing peaks at their counter
+values. What the lower half carries at the settings below — the dominant peak's tail, under a
+fiftieth of the sample against the mode's half — is therefore not a peak of its own there. At
+one wire it need not be a tail at all: with a single upper-half counter value, the dominant
+peak's own phase wraps into the refused half instead, which is the raise above.
 
 **The input state is where the singular vectors enter, and it is the premise.** The circuit
 prepares the state whose overlap with the embedding's eigenvector of `+sigma_i` is
