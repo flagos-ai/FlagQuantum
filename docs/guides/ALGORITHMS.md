@@ -56,6 +56,7 @@ applies to them as to everything else in this guide.
 | `kmedians.py` — quantum k-medians | Available. Assigns each point to its nearest centroid with a Grover-style minimum search over a centroid index register, then moves each centroid to the classical coordinate-wise median of its cluster. | Aïmeur et al. 2007 | **The premise is the oracle model, and the oracle is not free.** The search's oracle is synthesized from the predicate's truth table at `O(2**n)` cost, and the distance table the predicate compares is computed classically, one point at a time, before any circuit is built. No end-to-end advantage follows. |
 | `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 | `feature_selection.py` — feature selection as a QUBO | Available. Builds the binary objective of a feature-selection instance — a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size — and evaluates it at an assignment or maps it to an Ising Hamiltonian. | Ferrari Dacrema et al. 2022 | **This unit does not solve, and there is no solver here.** The repository has no annealer: the unit builds the objective and evaluates it, so which subset comes back, and at what cost, belongs to whatever solver the problem is handed to, and any advantage such a solver observes is the solver's. |
+| `qarm.py` — frequent-item fractions by amplitude estimation | Available. Estimates the fraction of a database's items whose support meets a threshold: a uniform superposition over the items, a support register the circuit fills one controlled increment per transaction-item membership, and a mark at the threshold, read out by amplitude estimation. | Yu et al. 2016 | **The premise is coherent entry-wise database access, and it is not met.** The paper's speed-up counts calls to an oracle that returns one database entry per call, held in a qRAM; here the transactions are iterated classically and the incidence matrix is read in Python to emit that loop. Its improvement is **quadratic and conditional**, stated for the case `M_f^(k) << M_c^(k)` — not exponential. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -115,6 +116,15 @@ applies to them as to everything else in this guide.
   caller observes belongs to the solver. The scores and the penalty weight are
   the caller's, and the unit computes no weight at which the target size binds.
   See the section below.
+- **Frequent-item fractions rest on coherent database access, and that access is not
+  exercised here.** `qarm.py` estimates the share of a database's items whose support
+  meets a threshold, by amplitude estimation over a support register the circuit fills
+  one controlled increment per transaction. The paper's count is a count of oracle calls
+  that return one database entry each, held in a qRAM; neither is present here, and the
+  incidence matrix is read in Python to build that loop, so the access cost is paid
+  rather than assumed away. **The improvement the paper claims is quadratic and
+  conditional** — it is stated for the case `M_f^(k) << M_c^(k)`, and it is not
+  exponential. See the section below.
 - **The variational workflows the Hamiltonian feeds are heuristics.** The
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
@@ -790,6 +800,112 @@ something this unit does or measures. What is built here is this package's own
 spelling of the objective, and this unit neither hands its problem to a solver nor
 observes one.
 
+## Frequent-item fractions by amplitude estimation
+
+`qarm.py` is the fifth unit of Phase 2, and the seventh algorithm unit in this guide's
+programme. Association rule mining asks which itemsets recur across a database's
+transactions, and the amplitude-estimation route to it is the one of Yu, Gao, Wang and
+Wen, *Physical Review A* **94**(4), 042311 (2016), DOI 10.1103/PhysRevA.94.042311,
+arXiv:1605.07444v3. `frequent_itemset_operator(database, threshold=...,
+n_support_wires=...)` builds the amplitude operator of one database and threshold, and
+`run_frequent_itemset(database, threshold=..., n_counting_wires=..., shots=...,
+seed=...)` hands it to `amplitude_estimation.run_amplitude_estimation` and returns that
+function's result unchanged: the estimate it carries is the fraction of the items whose
+support meets the threshold. **This unit asks a smaller question than the paper's.** The
+paper mines the frequent itemsets; what is read out here is one number, the fraction of
+the items that are frequent, and no rule-mining stage is part of the module.
+
+**The circuit, register by register.** The item register carries one wire per item-index
+bit and is put into a uniform superposition by a half-turn `ry` on each of them — the
+state a Hadamard on every item wire prepares, chosen because `ry` has a native controlled
+form and the Grover operator has to control the preparation. The support register is then
+filled by the transaction loop: one controlled increment per transaction whose itemset
+holds the item in superposition, so the register ends holding that item's own support.
+The marking operator flips the phase of the subspace whose support register holds a value
+at or above the threshold, so the marked subspace is exactly the frequent items, and its
+amplitude is the frequent fraction. Amplitude estimation reads that amplitude off the
+counting register, on the grid and at the resolution the amplitude estimation unit
+documents.
+
+**The transactions are iterated classically, and that is the unit's headline
+limitation.** The paper's speed-up is measured in calls to an oracle that returns one
+database entry per call, held in a qRAM; neither is present here. The loop that fills the
+support register is a pass over the incidence matrix in Python, one controlled increment
+per transaction-item membership, so the database is walked entry by entry outside the
+circuit and the access cost is paid rather than assumed away. **No end-to-end advantage
+follows**: that loop is exactly the part of the paper's assumption its speed-up is
+measured against.
+
+**The comparison at the threshold is inclusive.** An item whose support equals the
+threshold is frequent, and the marking operator is built over the support values at or
+above it. The boundary is reachable and it changes the answer: the measured database
+below has an item whose support is exactly 2, so a threshold of 2 counts it and the
+fraction is one half, where a strict comparison would mark nothing and read zero. A
+threshold below one, or above the transaction count, is refused rather than run: every
+item meets it, or none does, and neither needs a circuit.
+
+**The support register has to be wide enough, and a narrow one is refused.** The
+increment is a permutation of the register's own values, so a support the register
+cannot hold comes back as another value, the mark then sees a support below the threshold
+and the set it marks is not the frequent set, and the readout is wrong with nothing
+raised. Measured on the database below with the support
+register narrowed to a single wire, a width the builder refuses: the first item's support
+is 2 and comes back as 0, the estimate reads 0.0 against an exact fraction of 0.5, and
+nothing is raised. `frequent_itemset_operator` therefore refuses a register that cannot
+hold the largest support the database can produce, which is its transaction count, and the
+default is the fewest wires that can hold it.
+
+**The item count is a power of two.** The item register is addressed by one wire per
+item-index bit, and a uniform state over another count has no controlled preparation in
+this package, which is what the Grover operator needs. The unit is bounded at eight items
+and seven transactions.
+
+**Measured.** Two transactions over two items, `[[1, 0], [1, 1]]`, at a threshold of 2:
+the supports are 2 and 1, so the exact frequent fraction is one half.
+
+```python
+import torch
+
+from flagquantum.algorithms.qarm import frequent_itemset_operator, run_frequent_itemset
+
+database = torch.tensor([[1, 0], [1, 1]])
+
+operator = frequent_itemset_operator(database, threshold=2)
+print(operator.support, operator.n_support_wires, operator.n_wires)
+# (2, 1) 2 5
+#   -- the column sums, the register's width, and the evaluation register's
+
+result = run_frequent_itemset(database, threshold=2, n_counting_wires=4, shots=8000, seed=17)
+print(round(result.estimate, 6), round(result.resolution, 6))
+# 0.5 0.097545  -- the readout, against an exact fraction of 0.5
+
+# The support register has to hold every support the database can produce, so a narrower
+# one is refused rather than left to wrap into a wrong readout.
+try:
+    frequent_itemset_operator(database, threshold=2, n_support_wires=1)
+except ValueError as error:
+    print(error)
+# the support register needs at least 2 wires to hold the largest support 2 that 2
+# transactions can produce, got 1; the increment is a permutation of the register's
+# values, so a narrower register wraps a support into another value and the readout comes
+# back wrong with nothing raised
+```
+
+A second database reaches fractions the two-transaction one cannot. Four transactions over
+four items, `[[1, 1, 0, 0], [1, 1, 0, 0], [1, 0, 1, 0], [0, 0, 1, 1]]`, has supports 3,
+2, 2 and 1, so its frequent fraction is `3/4` at a threshold of 2 and `1/4` at a threshold
+of 3. Measured at four counting wires, 8000 shots and seed 17, the readouts are `0.777785`
+and `0.222215` — the grid values `sin²(11 pi / 32)` and `sin²(5 pi / 32)`, each within the
+register's resolution `0.097545` of the exact fraction. Both are what a sampled grid
+estimate gives, not a claim that the estimate is exact.
+
+**The premise, and what this unit does not show.** The cited paper's improvement is
+quadratic in the number of database queries, and it is stated conditionally, for the case
+`M_f^(k) << M_c^(k)`; it is not exponential. An earlier arXiv listing of the same work,
+`arXiv:1512.02420`, is the only place that wording appears, and nothing in this guide
+repeats it. Because the paper's oracle and its qRAM are both absent here, no part of its
+query-count advantage survives into this unit.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -870,6 +986,17 @@ observes one.
   that record, written as the paper's own:** the largest problem that paper solved
   directly on the QPU had 124 features. It is not a measurement of this unit,
   which solves nothing.
+- Frequent-item fractions by amplitude estimation follow Yu, Gao, Wang & Wen, *Physical
+  Review A* **94**(4), 042311 (2016), DOI 10.1103/PhysRevA.94.042311,
+  arXiv:1605.07444v3 — the amplitude-estimation route to a transactional database's
+  frequent itemsets, of which `qarm.py` reads out the fraction of the items whose support
+  meets a threshold. **This record carries no title**: the citation this programme
+  verified fixes the authors, the venue, the DOI and the arXiv identifier, and no title
+  was confirmed with it. **Two things it does not say.** Its improvement is quadratic in
+  the number of database queries and it is conditional, stated for the case
+  `M_f^(k) << M_c^(k)`; it is not exponential, and the exponential wording appears only in
+  an earlier arXiv listing of the same work, `arXiv:1512.02420`, which is that paper
+  rather than a second one.
 
 ## Scope
 
