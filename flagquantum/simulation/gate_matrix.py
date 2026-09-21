@@ -11,9 +11,50 @@ from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import value_to_tensor
 from ..core.runtime_config import get_runtime_config
+from ..errors import ValidationError
 from .matrices import GATE_MAT_DICT
 
 _FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
+
+
+def _parameter_rows(
+    name: str,
+    parameter_names: tuple[str, ...],
+    tensors: list[torch.Tensor],
+    *,
+    bsz: int,
+) -> int:
+    """Return the single row count shared by every parameter of one instruction.
+
+    A value is either a scalar broadcast over the batch, a vector of length one, or a
+    vector of exactly ``bsz`` entries. Anything else cannot become one row per batch
+    entry, and the shape is refused here with the gate and parameter names attached,
+    rather than left to fail inside ``torch.bmm`` or ``expand``.
+    """
+
+    rows: int | None = None
+    for parameter_name, tensor in zip(parameter_names, tensors, strict=True):
+        if tensor.ndim == 0:
+            continue
+        if tensor.ndim > 1:
+            raise ValidationError(
+                f"Gate {name!r} parameter {parameter_name!r} has shape "
+                f"{tuple(tensor.shape)}; expected a scalar, a vector of length 1, or a "
+                f"vector of length {bsz} for a batch of {bsz}"
+            )
+        length = int(tensor.shape[0])
+        if length not in (1, bsz):
+            raise ValidationError(
+                f"Gate {name!r} parameter {parameter_name!r} has length {length}; "
+                f"expected 1 or the batch size {bsz}"
+            )
+        if length > 1 and rows is not None and rows != length:
+            raise ValidationError(
+                f"Gate {name!r} parameters mix lengths {rows} and {length}; "
+                f"expected one length for the whole gate"
+            )
+        rows = length if length > 1 else rows
+    return rows or 1
 
 
 def parameter_tensor(
@@ -46,16 +87,14 @@ def parameter_tensor(
     tensors = [
         value_to_tensor(value, device=device, dtype=real_dtype) for value in values
     ]
-    stacked = torch.stack(
-        [tensor.reshape(()) if tensor.ndim == 0 else tensor for tensor in tensors],
-        dim=-1,
-    )
-    stacked = stacked.to(device=device, dtype=real_dtype)
-    if stacked.ndim == 1:
-        stacked = stacked.reshape(1, -1)
-    if stacked.shape[0] == 1 and bsz > 1:
-        stacked = stacked.expand(bsz, -1)
-    return stacked
+    rows = _parameter_rows(name, names, tensors, bsz=bsz)
+    target = bsz if rows == 1 and bsz > 1 else rows
+    columns = [
+        (tensor.reshape(-1) if tensor.ndim else tensor.reshape(1)).expand(target)
+        for tensor in tensors
+    ]
+    stacked = torch.stack(columns, dim=-1)
+    return stacked.to(device=device, dtype=real_dtype)
 
 
 def gate_matrix(
