@@ -221,6 +221,11 @@ class Circuit:
         self._statevector_fused_matrices: dict[
             tuple[int, str, torch.dtype, int], torch.Tensor
         ] = {}
+        # One float32 sign table per requested wire set, keyed by wires, device and
+        # dtype, bounded by ``_z_sign_cache_byte_limit`` with least-recently-used
+        # eviction on the write side in ``simulation.statevector.local``. It
+        # deliberately survives ``_invalidate_execution_cache``: a table depends on
+        # the wire count and nothing else, so a mutated circuit reuses it.
         self._statevector_z_signs: dict[
             tuple[tuple[int, ...], str, torch.dtype], torch.Tensor
         ] = {}
