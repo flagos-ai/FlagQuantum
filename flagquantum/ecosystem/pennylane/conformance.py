@@ -201,7 +201,7 @@ def _flagquantum_circuit(program: _DifferentialProgram) -> Circuit:
                 strict=True,
             )
         )
-        circuit = circuit.gate(operation.name, operation.wires, **parameters)
+        circuit = circuit.gate(operation.name, operation.wires, params=parameters)
     return circuit
 
 
