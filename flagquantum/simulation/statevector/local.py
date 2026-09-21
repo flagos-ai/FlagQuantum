@@ -28,11 +28,13 @@ from .operations import (
     _apply_matrix,
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
+    _apply_single_wire_matrix,
     _batched_rotation_sequence_matrices,
     _batched_rx_ry_rz_matrices,
     _bits_from_indices,
     _compile_statevector_program,
     _cpu_cx_sequence_gather_enabled,
+    _cpu_single_wire_elementwise_enabled,
     _fused_gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCXSequenceStep,
@@ -282,6 +284,59 @@ def _prepare_batched_rotation_matrices(
     return rx_ry_rz_matrices, rotation_matrices
 
 
+def _use_elementwise_single_wire(
+    state: torch.Tensor,
+    wires: Sequence[int],
+    *,
+    uses_diagonal_kernel: bool,
+) -> bool:
+    """Whether the elementwise kernel may stand in for ``_apply_matrix`` here.
+
+    Named rather than inlined because of the device test. The CPU kernel was
+    measured on CPU only, and the CUDA path has its own single-qubit kernels, so
+    this check is what keeps an unmeasured device off the route. This host has no
+    CUDA device, so no circuit can reach the branch the check guards; as a named
+    predicate the condition is still an expression a test can evaluate on a
+    ``meta`` tensor.
+    """
+
+    return (
+        len(wires) == 1
+        and not uses_diagonal_kernel
+        and state.device.type == "cpu"
+        and _cpu_single_wire_elementwise_enabled()
+    )
+
+
+def _apply_gate_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    *,
+    uses_diagonal_kernel: bool,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply one already-built gate matrix with the kernel that fits it.
+
+    ``_apply_matrix`` lays the state out, permutes the gate's wires to the front
+    and permutes back. A one-wire gate does not need any of that, and the
+    elementwise kernel that replaces it agrees with ``_apply_matrix`` to well
+    under an ulp - but it is not bitwise equal to it, and it is not the kernel
+    ``_apply_diagonal_matrix`` uses at all. So ``uses_diagonal_kernel`` records
+    which of the two the shipped dispatch picked, the elementwise kernel is taken
+    only where it stands in for ``_apply_matrix``, and the switch that licenses
+    the swap is off by default.
+    """
+
+    if _use_elementwise_single_wire(
+        state, wires, uses_diagonal_kernel=uses_diagonal_kernel
+    ):
+        return _apply_single_wire_matrix(state, matrix, wires[0], n_wires)
+    apply_gate = _apply_diagonal_matrix if uses_diagonal_kernel else _apply_matrix
+    return apply_gate(state, matrix, wires, n_wires, layout=layout)
+
+
 def _apply_fused_gate_step(
     circuit: Circuit,
     step: _StatevectorFusedGateStep,
@@ -376,11 +431,12 @@ def _apply_fused_gate_step(
             n_wires=circuit.n_wires,
         )
         return result
-    return _apply_matrix(
+    return _apply_gate_matrix(
         state,
         matrix,
         step.wires,
         circuit.n_wires,
+        uses_diagonal_kernel=False,
         layout=step.layout,
     )
 
@@ -500,16 +556,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     dtype=output.dtype,
                     parameter_bindings=parameter_bindings,
                 )
-                apply_gate = (
-                    _apply_diagonal_matrix
-                    if name in _DIAGONAL_STATEVECTOR_GATES
-                    else _apply_matrix
-                )
-                output = apply_gate(
+                output = _apply_gate_matrix(
                     output,
                     matrix,
                     instruction.wires,
                     circuit.n_wires,
+                    uses_diagonal_kernel=name in _DIAGONAL_STATEVECTOR_GATES,
                     layout=step.layout,
                 )
     circuit._state_cache = output
@@ -555,11 +607,16 @@ def _expectation_pauli_string(
             dtype=current_state.dtype,
         )
         for wire in wires:
-            transformed = _apply_matrix(
+            # Every term is a one-wire matrix, which is exactly what the
+            # elementwise kernel is for: a full string costs one pass per wire.
+            # The shipped code sent Z through ``_apply_matrix`` as well rather
+            # than through the diagonal kernel, and that is kept.
+            transformed = _apply_gate_matrix(
                 transformed,
                 matrix,
                 (wire,),
                 circuit.n_wires,
+                uses_diagonal_kernel=False,
             )
     value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
     return torch.real(value)

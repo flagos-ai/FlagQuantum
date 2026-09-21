@@ -26,6 +26,7 @@ from flagquantum.benchmarking.statevector_cpu_paths import (
     SCHEMA,
     _direct_marginal_probabilities,
     build_marginal_circuit,
+    cpu_kernel_switch_state,
     run_benchmark,
 )
 
@@ -341,3 +342,51 @@ def test_cpu_paths_payload_declares_its_evidence_limits():
     limits = _small_run()["evidence_limits"]
     assert "release gate" in limits
     assert "scalability" in limits
+
+
+def test_cpu_paths_records_the_kernel_switches_its_numbers_depend_on(monkeypatch):
+    """A payload is only comparable to another one under the same switches."""
+
+    monkeypatch.delenv("FQ_CPU_CX_SEQUENCE_GATHER", raising=False)
+    monkeypatch.delenv("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", raising=False)
+    flags = _small_run(cases=["rotation_chain"])["execution_flags"]
+
+    assert set(flags) == {
+        "FQ_CPU_CX_SEQUENCE_GATHER",
+        "FQ_CPU_SINGLE_WIRE_ELEMENTWISE",
+    }
+    assert flags["FQ_CPU_CX_SEQUENCE_GATHER"] == {
+        "effective": True,
+        "source": "code_default",
+        "raw": None,
+    }
+    assert flags["FQ_CPU_SINGLE_WIRE_ELEMENTWISE"] == {
+        "effective": False,
+        "source": "code_default",
+        "raw": None,
+    }
+
+    monkeypatch.setenv("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", "1")
+    flags = _small_run(cases=["rotation_chain"])["execution_flags"]
+    assert flags["FQ_CPU_SINGLE_WIRE_ELEMENTWISE"]["effective"] is True
+    assert flags["FQ_CPU_SINGLE_WIRE_ELEMENTWISE"]["source"] == "environment"
+
+
+def test_cpu_paths_switch_state_uses_the_same_reading_as_the_kernels(monkeypatch):
+    """The payload must not disagree with the dispatch it describes."""
+
+    from flagquantum.simulation.statevector.operations import (
+        _cpu_cx_sequence_gather_enabled,
+        _cpu_single_wire_elementwise_enabled,
+    )
+
+    for value in ("0", "1", "false", "true", "nonsense"):
+        monkeypatch.setenv("FQ_CPU_CX_SEQUENCE_GATHER", value)
+        monkeypatch.setenv("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", value)
+        flags = cpu_kernel_switch_state()
+        assert flags["FQ_CPU_CX_SEQUENCE_GATHER"]["effective"] is (
+            _cpu_cx_sequence_gather_enabled()
+        )
+        assert flags["FQ_CPU_SINGLE_WIRE_ELEMENTWISE"]["effective"] is (
+            _cpu_single_wire_elementwise_enabled()
+        )

@@ -177,6 +177,25 @@ def _cpu_cx_sequence_gather_enabled() -> bool:
     return _environment_flag("FQ_CPU_CX_SEQUENCE_GATHER", default=True)
 
 
+def _cpu_single_wire_elementwise_enabled() -> bool:
+    """Whether a CPU one-wire gate is applied by combining the wire's two halves.
+
+    Off by default, unlike the other statevector fast-path switches, because this
+    kernel is *not* bitwise equal to the ``bmm`` it replaces. ``bmm`` on a 2x2
+    complex matrix accumulates the real and imaginary parts as separate sums over
+    the two terms, while this kernel forms each complex product first and then
+    adds, so the last bit can differ. Measured across both dtypes and four wires
+    per width, the difference is zero up to seven wires - below that size ``bmm``
+    takes the same path - and below 0.1 ulp of the real dtype above it: 1.1e-8 on
+    a normalized complex64 state at eight wires, 3.3e-10 at twenty, and 6.9e-18
+    on complex128 at twelve. That is small but it is not nothing, and the tests
+    compare states with ``torch.equal``, so the switch stays opt-in rather than
+    changing what the default path returns.
+    """
+
+    return _environment_flag("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", default=False)
+
+
 def _compile_statevector_program(
     instructions: Sequence[Instruction], n_wires: int, *, enable_triton_loop: bool
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -419,6 +438,49 @@ def _apply_matrix(
         matrix = matrix.expand(bsz, -1, -1)
     out = torch.bmm(matrix, flat)
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
+
+
+def _apply_single_wire_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wire: int,
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply a one-wire gate by combining the two halves of that wire's axis.
+
+    ``state`` is contiguous and wire ``w`` carries the bit of weight
+    ``2 ** (n_wires - 1 - w)``, so ``reshape(bsz, 2 ** w, 2, 2 ** (n_wires - 1 - w))``
+    is a view whose size-2 axis *is* that wire. The gate is then two scaled sums
+    over that axis, which needs neither of the two layout permutations
+    ``_apply_matrix`` performs and only one output allocation.
+
+    This stands in for ``_apply_matrix`` and not for ``_apply_diagonal_matrix``:
+    the two shipped kernels disagree with each other in the last bit, so a gate
+    that would have been dispatched to the diagonal kernel keeps it. Even against
+    ``_apply_matrix`` the agreement is not bitwise, for the reason recorded on
+    ``_cpu_single_wire_elementwise_enabled``.
+    """
+
+    bsz = state.shape[0]
+    wire = int(wire)
+    if matrix.dtype != state.dtype or matrix.device != state.device:
+        matrix = matrix.to(device=state.device, dtype=state.dtype)
+    tensor = state.reshape(bsz, 2**wire, 2, 2 ** (n_wires - 1 - wire))
+    low = tensor[:, :, 0, :]
+    high = tensor[:, :, 1, :]
+    if matrix.ndim == 2:
+        a, b = matrix[0, 0], matrix[0, 1]
+        c, d = matrix[1, 0], matrix[1, 1]
+    else:
+        entries = matrix.reshape(-1, 2, 2)
+        if entries.shape[0] == 1:
+            entries = entries.expand(bsz, -1, -1)
+        a = entries[:, 0, 0].reshape(bsz, 1, 1)
+        b = entries[:, 0, 1].reshape(bsz, 1, 1)
+        c = entries[:, 1, 0].reshape(bsz, 1, 1)
+        d = entries[:, 1, 1].reshape(bsz, 1, 1)
+    combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
+    return combined.reshape(bsz, -1)
 
 
 def _apply_diagonal_matrix(

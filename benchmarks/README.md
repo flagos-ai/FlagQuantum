@@ -78,6 +78,23 @@ the reference is another route in this repository or a reduction computed from
 the same state. No cross-framework comparison is run, so none of these numbers
 is a claim about another library.
 
+The payload also records the CPU kernel switches in force (`execution_flags`),
+because a switch decides which kernel a case takes. Two payloads are comparable
+only when that block agrees, and a switch that is off by default reads as
+`"source": "code_default"` rather than as an absent key:
+
+```bash
+# Default state: the pre-existing kernels.
+flagquantum-benchmark run statevector_cpu_paths \
+  --cases rotation_chain --json-output /tmp/off.json
+# The same case with the opt-in elementwise single-wire kernel.
+FQ_CPU_SINGLE_WIRE_ELEMENTWISE=1 flagquantum-benchmark run statevector_cpu_paths \
+  --cases rotation_chain --json-output /tmp/on.json
+```
+
+Run the two arms alternately inside one process rather than dividing two
+separately recorded medians; the evidence limits in each payload say why.
+
 Distributed measurements are launched with the usual `torchrun` environment;
 the maintained report builders are also exposed by the same command:
 

@@ -117,6 +117,34 @@ CASES: tuple[PathCase, ...] = (
 
 _CASE_BY_NAME = {case.name: case for case in CASES}
 
+# The CPU kernel switches this runner's numbers depend on. Both are read afresh
+# on every dispatch, so the payload records what was in force rather than what
+# the default is; ``source`` distinguishes "the caller set this" from "the code
+# default applied", because for a switch whose default is off those two produce
+# very different states.
+_CPU_KERNEL_SWITCHES: tuple[tuple[str, bool], ...] = (
+    ("FQ_CPU_CX_SEQUENCE_GATHER", True),
+    ("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", False),
+)
+
+
+def cpu_kernel_switch_state() -> dict[str, dict[str, Any]]:
+    """Return the resolved state of each CPU kernel switch for this process."""
+    state: dict[str, dict[str, Any]] = {}
+    for name, default in _CPU_KERNEL_SWITCHES:
+        raw = os.environ.get(name)
+        value = (raw if raw is not None else ("1" if default else "0")).strip().lower()
+        if default:
+            effective = value not in {"0", "false", "off", "no"}
+        else:
+            effective = value in {"1", "true", "on", "yes"}
+        state[name] = {
+            "effective": effective,
+            "source": "environment" if raw is not None else "code_default",
+            "raw": raw,
+        }
+    return state
+
 
 def _angles(*, n_wires: int, layers: int) -> torch.Tensor:
     return torch.linspace(
@@ -623,6 +651,7 @@ def run_benchmark(
             "marginal_wires": marginal_wires,
             "cases": list(requested),
         },
+        "execution_flags": cpu_kernel_switch_state(),
         "cases": results,
         "all_cases_correct": all(item["correctness"]["passed"] for item in results),
         "all_cases_stable": all(item["stability_gate"]["passed"] for item in results),
@@ -642,7 +671,11 @@ def run_benchmark(
             "its reference adjacent within one iteration and gates stability on "
             "that paired ratio. Read the paired ratio, not a ratio of separately "
             "recorded medians. No distributed scalability claim and no release "
-            "gate is licensed."
+            "gate is licensed. The CPU kernel switches recorded under "
+            "``execution_flags`` change which kernel runs, so two payloads are "
+            "comparable only when that block agrees; the default state of "
+            "``FQ_CPU_SINGLE_WIRE_ELEMENTWISE`` is off and an unset variable "
+            "therefore means the pre-existing path, not the new one."
         ),
     }
 
