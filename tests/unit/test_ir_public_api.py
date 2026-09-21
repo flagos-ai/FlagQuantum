@@ -105,6 +105,50 @@ def test_circuit_from_ir_inherits_precision_unless_explicitly_overridden():
     assert overridden.state().dtype == torch.complex64
 
 
+@pytest.mark.parametrize("mode", ("statevector", "mps", "tensor_network"))
+def test_compiled_batched_ir_executes_with_its_declared_batch_size(mode):
+    angles = torch.tensor([0.1, 0.2, 0.3])
+    program = fq.compile(fq.Circuit(2, bsz=3).ry(0, angles).cx(0, 1))
+
+    assert program.metadata["batch_size"] == 3
+    assert fq.plan(program, outputs=fq.expectation(fq.Z(0))).batch_size == 3
+    batched = (
+        fq.run(
+            program,
+            outputs=fq.expectation(fq.Z(0)),
+            options=fq.ExecutionOptions(mode=mode),
+        )
+        .expectation()
+        .reshape(-1)
+    )
+    # Independent reference: the same program executed once per batch entry.
+    expected = torch.stack(
+        [
+            fq.run(
+                fq.Circuit(2).ry(0, float(angle)).cx(0, 1),
+                outputs=fq.expectation(fq.Z(0)),
+            )
+            .expectation()
+            .reshape(-1)
+            for angle in angles
+        ]
+    ).reshape(-1)
+
+    assert batched.shape == expected.shape == angles.shape
+    assert torch.allclose(batched, expected, atol=1e-6, rtol=0)
+
+
+def test_declared_ir_batch_size_conflict_is_rejected_before_execution():
+    program = fq.Circuit(2, bsz=3).ry(0, torch.tensor([0.1, 0.2, 0.3])).cx(0, 1).to_ir()
+
+    with pytest.raises(ValueError, match="program batch constraint"):
+        fq.run(
+            program,
+            outputs=fq.expectation(fq.Z(0)),
+            options=fq.ExecutionOptions(batch_size=2),
+        )
+
+
 def test_serialized_ir_rejects_wrong_kind_version_and_invalid_json():
     payload = fq.Circuit(1).h(0).to_ir().to_dict()
     with pytest.raises(IRSerializationError, match="not a FlagQuantum"):
