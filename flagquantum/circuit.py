@@ -8,6 +8,7 @@ AI accelerators that already support mainstream deep-learning frameworks.
 
 from __future__ import annotations
 
+import operator
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, TypedDict
 
@@ -41,6 +42,28 @@ def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
     if isinstance(wires, int):
         return (wires,)
     return tuple(int(wire) for wire in wires)
+
+
+def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
+    """Read an integer count without quietly rewriting the caller's value.
+
+    ``int(value)`` accepted ``2.7`` as ``2`` and ``"3"`` as ``3``, so a mistyped
+    count changed the program instead of failing. Only values that already denote an
+    integer are accepted, through the interpreter's own ``__index__`` protocol, which
+    admits NumPy integers and zero-dimensional torch integer tensors while refusing
+    floats and strings. ``bool`` is refused because ``True`` is a flag rather than a
+    count, which is the rule ``ExecutionOptions`` already applies to ``batch_size``.
+    """
+
+    if isinstance(value, bool):
+        raise TypeError(f"Circuit {name} must be an integer, got {value!r}")
+    try:
+        count = operator.index(value)
+    except TypeError:
+        raise TypeError(f"Circuit {name} must be an integer, got {value!r}") from None
+    if count < minimum:
+        raise ValidationError(f"Circuit {name} must be >= {minimum}, got {count}")
+    return count
 
 
 class _CircuitConstructionOptions(TypedDict):
@@ -107,7 +130,7 @@ class Circuit:
             if value is not None:
                 warn_qubit_alias(alias, "n_qubits")
         counts = {
-            name: int(value)
+            name: _count_argument(name, value)
             for name, value in (
                 ("n_qubits", n_qubits),
                 ("n_wires", n_wires),
@@ -125,12 +148,8 @@ class Circuit:
                 f"Circuit received conflicting qubit counts: {rendered}."
             )
         self.n_wires = next(iter(counts.values()))
-        if self.n_wires <= 0:
-            raise ValidationError(
-                f"Circuit n_qubits must be positive, got {self.n_wires}."
-            )
         self._nqubits = self.n_wires
-        self.bsz = int(bsz)
+        self.bsz = _count_argument("bsz", bsz)
         self.runtime_config = config or get_runtime_config()
         if dtype is not None:
             self.runtime_config = self.runtime_config.with_overrides(
