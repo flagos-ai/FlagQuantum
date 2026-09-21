@@ -66,15 +66,18 @@ be the easiest way to mislead a reader.
 | One-wire gate without the layout permutation | `rotation_chain` 3.33x, `diagonal_chain` 3.24x, `mixed_chain` 2.88x | speed |
 | Diagonal fused region routed to the diagonal kernel | `diagonal_chain` 2.03x, `two_wire_diagonal_chain` 1.50x, `rotation_chain` 1.00x, `mixed_chain` **0.94x** | speed, and a measured regression on one case |
 | Joint marginal read off the dense state's own distribution | reduction alone 30.4x at k=2 to 4646x at k=8; public entry point **1.11x to 1.18x** | speed, but no longer the bottleneck |
-| Z expectation read off a bounded marginal, sign table capped | memory **79.7 MB resident across 19 keys → 0**, table ceiling 1 GiB | **capacity**, and only a narrow-request speed win |
+| Z expectation read off a bounded marginal, sign table capped | memory **76 MiB resident across 19 keys → 0**, table ceiling 1 GiB | **capacity**, and only a narrow-request speed win |
 | Vectorized trajectory row sampling | 5.2x to 6.2x isolated; 1.49x to 4.44x end to end | speed, opt-in, **different seed mapping** |
 
 Notes that belong beside those rows:
 
-- **The gather's crossover is real and is handled.** Below a sequence length of
-  about 4 the index build is not amortized and the gather loses; the classifier
-  only takes the gather path where the sequence is long enough to pay for it.
-  Length 1 at 0.85x is why.
+- **The gather's crossover is real and is handled by a floor, not a measurement.**
+  The table has to be built before it can be used, so a short sequence loses:
+  with the build charged every time, the gather is 0.31x at length 1, 0.52x at 2,
+  0.69x at 3 and breaks even at 4; with the table already resident it wins from
+  length 2 (1.78x). `_CX_SEQUENCE_GATHER_MINIMUM_LENGTH` is 8, chosen as a floor
+  for the unreused case rather than at the measured crossing, so the first
+  execution of a short region stays on the loop and a reused one still pays.
 - **The diagonal classifier regressed `mixed_chain` to 0.94x** while the
   elementwise arm on the same case reached 2.63x. The classifier is a
   two-way choice made per fused region and it does not always pick the winner;
@@ -146,7 +149,7 @@ new reason.
 | Replace `expectation_z`'s reduction with a hand-written reshape-sum | Shipped 2.377 ms is **faster** than the reshape-sum form at 3.043 ms (1.28x). The existing path is not a defect. |
 | Rewrite *full-state* shot sampling with a cumulative-sum search | `multinomial` 1.712 ms vs cached CDF `searchsorted` 1.583 ms, only **1.08x**. This is the sampling path that builds one distribution over `2**n` outcomes and draws 8192 shots; it is not the trajectory row sampler of §3.1, where the win is large because the cost is one `multinomial` dispatch per (trajectory, event) rather than one search over a full distribution. Do not read the §3.1 result as contradicting this row. |
 | Reuse one generator across trajectories to batch the draw | It is faster by two orders of magnitude and it breaks the documented per-trajectory stream: the trajectory batch size would change a seeded result. This is the shape that produced the disowned 41.5x. |
-| Cache the sign table instead of bounding it | At 20 wires a `(2**20, 20)` table is 80 MB, 10.0x the state, and the per-wire request pattern retains 19 keys without eviction, 76 MiB resident. Widening to n = k = 30 extrapolates to roughly 129 GB against an 8.6 GB state. Pre-allocating the int64 fill is only 1.33x and the float32 variant is slower, so the fix is a bound plus a marginal, not a better table. The cache surviving `_invalidate_execution_cache` is deliberate and is not part of this. |
+| Cache the sign table instead of bounding it | At 20 wires a `(2**20, 20)` table is 80 MiB, 10.0x the 8 MiB state, and the per-wire request pattern retains 19 keys without eviction, 76 MiB resident. Widening to n = k = 30 extrapolates to roughly 129 GB against an 8.6 GB state. Pre-allocating the int64 fill is only 1.33x and the float32 variant is slower, so the fix is a bound plus a marginal, not a better table. The cache surviving `_invalidate_execution_cache` is deliberate and is not part of this. |
 
 ## 5. Registered adjacent subsystem
 
@@ -183,8 +186,10 @@ Before trusting any new measurement on this machine:
    measured separately will disagree by more than the effect.
 3. Report the per-kernel call counts of the held-out arm. Without them, "the old
    kernel was reached" is an assumption.
-4. State which switch state each arm ran in. Three CPU switches exist
-   (`FQ_CPU_CX_SEQUENCE_GATHER`, on by default and bitwise exact;
-   `FQ_CPU_SINGLE_WIRE_ELEMENTWISE` and `FQ_CPU_VECTORIZED_ROW_SAMPLING`, opt-in
-   because their output is not bitwise the output of what they replace), and a
-   ratio measured with the wrong one set is a ratio for a different program.
+4. State which switch state each arm ran in. This series added four CPU
+   switches. `FQ_CPU_CX_SEQUENCE_GATHER` is on by default because a gather is an
+   exact permutation; `FQ_CPU_SINGLE_WIRE_ELEMENTWISE`,
+   `FQ_CPU_Z_MARGINAL` and `FQ_CPU_VECTORIZED_ROW_SAMPLING` are opt-in because
+   their output is not bitwise the output of what they replace, and
+   `FQ_CPU_Z_SIGN_CACHE_BYTES` sets the sign table's ceiling. A ratio measured
+   with the wrong one set is a ratio for a different program.
