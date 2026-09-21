@@ -163,12 +163,87 @@ def test_output_requests_are_serialized_in_an_explicit_plan() -> None:
 
 
 @pytest.mark.parametrize("factory", (fq.probabilities, fq.samples, fq.counts))
-@pytest.mark.parametrize("wire", (True, False, -1))
-def test_output_requests_reject_invalid_scalar_and_sequence_wires_consistently(
+@pytest.mark.parametrize("wire", (True, False, 0.5, 2.0, "0", "01"))
+def test_output_requests_reject_a_wire_that_is_not_an_integer(
+    factory: Callable[..., OutputRequest], wire: object
+) -> None:
+    """A wire label is an integer, and a wrong type is a ``TypeError``.
+
+    ``counts(True)``, ``counts("0")`` and ``counts([0.5])`` used to be refused with
+    ``ValueError``, which is the error for a magnitude; the errors-module boundary
+    reserves ``TypeError`` for a wrong Python type, and the package's other label-taking
+    entry points already refuse these with it.
+    """
+
+    for wires in (wire, (wire,)):
+        with pytest.raises(TypeError, match="wire must be an integer"):
+            factory(wires)
+
+
+@pytest.mark.parametrize("factory", (fq.probabilities, fq.samples, fq.counts))
+@pytest.mark.parametrize("wire", (-1, -7))
+def test_output_requests_reject_a_negative_scalar_and_sequence_wire(
     factory: Callable[..., OutputRequest], wire: int
 ) -> None:
     for wires in (wire, (wire,)):
-        with pytest.raises(
-            ValueError, match="observable wire must be a non-negative integer"
-        ):
+        with pytest.raises(ValueError, match="wire must be a non-negative integer"):
             factory(wires)
+
+
+@pytest.mark.parametrize("factory", (fq.probabilities, fq.samples, fq.counts))
+def test_a_refused_output_wire_names_its_own_kind(
+    factory: Callable[..., OutputRequest],
+) -> None:
+    """The refusal says which request was mistyped, not just that a wire was."""
+
+    with pytest.raises(TypeError, match=f"{factory.__name__} output wire"):
+        factory(0.5)
+
+
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [
+        (None, ()),
+        (0, (0,)),
+        (7, (7,)),
+        ([0, 1], (0, 1)),
+        ((1, 0), (1, 0)),
+    ],
+)
+def test_a_legal_output_selection_records_the_wires_the_caller_named(
+    selection: object, expected: tuple[int, ...]
+) -> None:
+    """Refusing the mistyped values must not change what the legal ones denote."""
+
+    assert fq.counts(selection).wires == expected
+    assert fq.samples(selection).wires == expected
+    assert fq.probabilities(selection).wires == expected
+
+
+def test_an_integral_wire_that_is_not_exactly_an_int_is_still_a_label() -> None:
+    """``operator.index`` is the label rule, so an integer is not required to be ``int``.
+
+    The rule these entry points had was ``type(wire) is not int``, which refused values
+    that do denote a label.  This pins the deliberate change.
+    """
+
+    assert fq.counts(torch.tensor(1)).wires == (1,)
+    assert fq.counts([torch.tensor(1), 0]).wires == (1, 0)
+
+
+def test_an_observable_wire_is_read_by_the_same_rule() -> None:
+    with pytest.raises(TypeError, match="observable wire must be an integer, got 0.5"):
+        fq.X(0.5)
+    with pytest.raises(TypeError, match="observable wire must be an integer, got '0'"):
+        fq.Z("0")
+    with pytest.raises(TypeError, match="observable wire must be an integer, got True"):
+        fq.Y(True)
+    with pytest.raises(ValueError, match="observable wire must be a non-negative"):
+        fq.X(-1)
+
+
+def test_a_repeated_output_wire_is_still_refused_as_before() -> None:
+    with pytest.raises(ValueError, match="output wires must be unique"):
+        fq.counts([0, 0])
+    with pytest.raises(ValueError, match="output wires must be unique"):
+        fq.samples([1, 1, 1])
