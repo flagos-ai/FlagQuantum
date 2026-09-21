@@ -6,8 +6,9 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from ..core.ir import ensure_circuit_ir
 from ..noise import (
     CorrelatedReadoutError,
     DeviceNoiseProfile,
@@ -18,10 +19,14 @@ from ..noise import (
     ReadoutError,
 )
 from .circuit_support import TwinCircuitSupport
+from .experiment import TwinExperiment
 from .factory import from_noise_model
 from .model import QPUDigitalTwin
 from .prediction import TwinPrediction
 from .region import TwinConnectedRegion, compose_connected_region
+
+if TYPE_CHECKING:
+    from .series import TwinValidationSeries
 
 _REGION_MODEL_SCHEMA = "flagquantum.twin_region_model.v1"
 
@@ -301,6 +306,75 @@ class TwinRegionModel:
             details = ", ".join(coverage.reasons) or "unknown scope mismatch"
             raise ValueError(f"circuit is outside the Twin region model: {details}")
         return self.twin.predict(circuit)
+
+    def prepare_experiment(
+        self,
+        circuit: Any,
+        *,
+        physical_qubits: Sequence[int],
+        name: str,
+        shots: int,
+    ) -> TwinExperiment:
+        """Freeze one covered regional circuit for explicit QPU validation.
+
+        The circuit, canonical OpenQASM 2.0 program, regional model prediction,
+        target, physical mapping, and shot count are bound before submission.
+        This method performs no provider I/O; callers must explicitly invoke
+        :meth:`TwinExperiment.submit`.
+        """
+
+        self.predict(circuit, physical_qubits=physical_qubits)
+        return TwinExperiment.prepare(
+            self.twin,
+            circuit,
+            name=name,
+            shots=shots,
+        )
+
+    def support_from_validation_series(
+        self,
+        series: TwinValidationSeries,
+        circuit: Any,
+        *,
+        physical_qubits: Sequence[int],
+    ) -> TwinCircuitSupport:
+        """Qualify exact regional evidence from repeated bound QPU results.
+
+        At least two distinct tasks are required so the resulting artifact
+        carries both Twin-to-QPU agreement and QPU repeatability evidence. The
+        returned support contains only the directed couplers exercised by this
+        exact circuit; it does not claim arbitrary regional-circuit accuracy.
+        """
+
+        from .series import TwinValidationSeries
+
+        if not isinstance(series, TwinValidationSeries):
+            raise TypeError("series must be a TwinValidationSeries")
+        mapping = tuple(int(qubit) for qubit in physical_qubits)
+        if mapping != self.region.physical_qubits:
+            raise ValueError(
+                "physical_qubits must exactly match the composed region wire order"
+            )
+        coverage = self.region.coverage_report(circuit, physical_qubits=mapping)
+        if coverage.status != "covered":
+            details = ", ".join(coverage.reasons) or "unknown scope mismatch"
+            raise ValueError(f"circuit is outside the Twin region model: {details}")
+        if series.repetitions < 2:
+            raise ValueError(
+                "regional Twin support requires at least two distinct hardware tasks"
+            )
+        ir = ensure_circuit_ir(circuit)
+        if series.snapshot_identity != self.twin.snapshot.identity:
+            raise ValueError("validation series does not match the regional Twin")
+        if series.physical_qubits != mapping:
+            raise ValueError("validation series does not match the regional mapping")
+        if series.circuit_identity != ir.content_hash:
+            raise ValueError("validation series does not match the regional circuit")
+        return TwinCircuitSupport(
+            evidence=series.to_evidence(),
+            directed_couplers=coverage.required_directed_couplers,
+            maximum_circuit_depth=coverage.circuit_depth,
+        )
 
 
 def compose_region_twin(
