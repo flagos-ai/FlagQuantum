@@ -325,10 +325,18 @@ the plan. The first public alpha candidate supports stable noisy planning for
 `mode="auto"` and `mode="density_matrix"`; unsupported mode combinations fail
 during planning.
 
-`probabilities` computes an exact joint marginal over the requested wires from
-Pauli-Z contractions. The default limit is eight wires because the cost is
-`2**len(wires)` contractions; callers must set `max_marginal_wires` explicitly
-to accept a larger exponential calculation.
+`probabilities` computes an exact joint marginal over the requested wires.
+A statevector or density-matrix result reduces the distribution it already
+carries — the squared amplitudes or the diagonal — over the complement of those
+wires, which is one sum over `2**n_wires` values, and the surviving axes are
+returned in the order the request named them. A marginal whose total is not one
+is normalised, so a dense result that was handed in unnormalised still returns a
+distribution. An MPS or tensor-network result keeps the parity route, because
+reading a distribution out of one means materialising a dense state it exists to
+avoid; so does a target that exposes only `expectation_ps`, which recovers the
+marginal from `2**len(wires)` Pauli-Z contractions. The default limit of eight
+wires bounds the marginal width itself; callers must set `max_marginal_wires`
+explicitly to request a wider one.
 
 Core IR measurement nodes remain available to Runtime implementers for advanced
 capabilities such as bounded postselection, but are intentionally absent from

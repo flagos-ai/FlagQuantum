@@ -6,8 +6,8 @@ enough to detect a broad regression, but it cannot attribute a change to the
 statevector path that actually moved, because the CPU fast paths differ per gate
 family: single-qubit rotations run through fused matrix regions, CX ladders run
 through permutations, diagonal gates have their own elementwise kernel, and
-joint marginals are recovered from Pauli contractions rather than from a state
-reduction.
+joint marginals are recovered from the state distribution rather than from one
+full-state contraction per parity term.
 
 This runner measures those paths separately on CPU, records the runtime
 statistics the engine already publishes for each case, and fails closed when a
@@ -20,8 +20,12 @@ a defect inside ``_apply_matrix``. For the marginal case the reference
 re-simulates the program and reduces the probabilities of that state over the
 complement of the requested wires, so the reported ratio spans the whole program
 on both sides and pins the reduction semantics rather than the statevector
-kernel; statevector kernels are pinned by the other cases. Independent
-small-width unitary references live in the unit test suite, not here.
+kernel; statevector kernels are pinned by the other cases. That reference and
+the shipped marginal now reduce a distribution the same way, so it pins the wire
+ordering, the shape conventions and the public entry rather than the choice of
+arithmetic; the arithmetic is pinned against the parity reconstruction it
+replaced, in the unit test suite, which is also where the independent
+small-width unitary references live.
 
 Why the marginal case prepares its state with gates. ``Circuit.state()`` and
 ``Circuit.initial_state()`` honour the initial state a circuit carries in
@@ -492,9 +496,11 @@ def _run_marginal_case(
     alone (0.64 ms at 20 wires) against a candidate that re-ran the program,
     which understated the candidate by the whole cost of the simulation.
 
-    The reduction itself is nearly free once the state exists; the shipped path
-    reaches the same marginal through ``2**k - 1`` parity expectations, which is
-    where its time goes and why ``max_marginal_wires`` has a default at all.
+    The reduction itself is nearly free once the state exists, and the shipped
+    path now reaches the same marginal by reducing the state's own distribution
+    over the complement of the requested wires. It used to reach it through
+    ``2**k - 1`` parity expectations, each a separate contraction over the whole
+    state, which is where its time went.
     """
     wires = tuple(range(marginal_wires))
     circuit = _BUILDERS[case.name](
