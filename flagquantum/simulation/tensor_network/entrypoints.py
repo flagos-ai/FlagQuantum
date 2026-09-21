@@ -98,10 +98,25 @@ def tensor_network_expectation_ps(
     z: Sequence[int] | None = None,
     x: Sequence[int] | None = None,
     y: Sequence[int] | None = None,
+    strategy: str = "greedy",
+    max_peak_bytes: int | None = None,
 ) -> torch.Tensor:
-    """Directly contract a Pauli-product expectation from a tensor network."""
+    """Directly contract a Pauli-product expectation from a tensor network.
 
-    return _tensor_network_expectation_ps(plan_or_circuit, x=x, y=y, z=z)
+    ``max_peak_bytes`` is a hard peak budget for this contraction: it is sliced to
+    fit the budget and raises when no slicing can, whereas without it ``strategy``
+    is the order that runs. See
+    :func:`flagquantum.simulation.tensor_network.observables.tensor_network_expectation_ps`.
+    """
+
+    return _tensor_network_expectation_ps(
+        plan_or_circuit,
+        x=x,
+        y=y,
+        z=z,
+        strategy=strategy,
+        max_peak_bytes=max_peak_bytes,
+    )
 
 
 def _normalize_bitstring(
@@ -316,8 +331,14 @@ def run_tensor_network(
     max_intermediate_size: int | None = None,
     sliced_labels: Sequence[int] | None = None,
     dense_observable_wires: int = 0,
+    max_intermediate_bytes: int | None = None,
 ) -> TensorNetworkState:
-    """Run a circuit through the general tensor-network contraction engine."""
+    """Run a circuit through the general tensor-network contraction engine.
+
+    ``max_intermediate_bytes`` is a hard peak budget for the contraction, in
+    bytes: it selects the slicing order and raises instead of running over a
+    budget that no slicing can satisfy. See :func:`run_local_tensor_network`.
+    """
 
     if hasattr(circuit_or_ir, "to_ir"):
         bsz = circuit_or_ir.bsz
@@ -335,4 +356,5 @@ def run_tensor_network(
         max_intermediate_size=max_intermediate_size,
         sliced_labels=sliced_labels,
         dense_observable_wires=dense_observable_wires,
+        max_intermediate_bytes=max_intermediate_bytes,
     )

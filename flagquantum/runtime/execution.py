@@ -558,7 +558,18 @@ def _run_tensor_network_mode(
     if mode == "tensor_network":
         from ..simulation.tensor_network.entrypoints import run_tensor_network
 
-        result = run_tensor_network(source, **tensor_network_options)
+        # A declared memory limit is this run's capacity, and the planner admitted
+        # tensor network against it. The estimate the planner compares with is a
+        # floor rather than a peak, so the capacity is passed down as a hard peak
+        # budget that governs every contraction the state performs: the run slices
+        # to fit it, or raises instead of overrunning the memory it was admitted
+        # for. Without a declared limit there is no capacity to enforce.
+        tensor_network_options.pop("max_intermediate_bytes", None)
+        result = run_tensor_network(
+            source,
+            max_intermediate_bytes=options.get("memory_limit_bytes"),
+            **tensor_network_options,
+        )
     else:
         world_size = _distributed_world_size_from_options(
             options,

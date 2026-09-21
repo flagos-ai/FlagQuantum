@@ -182,6 +182,7 @@ def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
                 "max_intermediate_size": None,
                 "sliced_labels": None,
                 "dense_observable_wires": 0,
+                "max_intermediate_bytes": None,
             },
         )
     ]

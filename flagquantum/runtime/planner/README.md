@@ -21,7 +21,10 @@ product from resolved Runtime policy. Plan types and serialization live in
   backend selection, the selection context, and the execution policy, and it is
   an uncalibrated width-based proxy rather than the executor's measured
   `peak_size`. That proxy is not an upper bound on the peak, so it admits runs
-  that cannot fit; do not present it as a capacity guarantee.
+  that cannot fit; do not present it as a capacity guarantee. What does bound an
+  admitted run is a declared `memory_limit_bytes`, which the tensor-network
+  executor passes down as a hard peak budget for every contraction the run
+  performs and which raises rather than being overrun.
 - Change candidate evidence in `candidate_plans.py`, `candidates.py`, and
   `providers.py`.
 - Change selection ranking in `selection_result.py`.

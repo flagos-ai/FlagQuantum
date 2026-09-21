@@ -8,11 +8,18 @@ from typing import Any
 import torch
 
 from ..statevector.operations import _bits_from_indices
+from .contraction import contract_nodes_with_byte_budget
 from .models import CompiledTNObservableProgram, TensorNetworkContractionPlan
 
 _DENSE_Z_OBSERVABLE_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
 ] = {}
+
+# Orders the slicing planner can drive. A contraction in one of these families can
+# be given a byte budget; the others cannot, because nothing in them lowers a peak.
+_SLICED_CONTRACTION_STRATEGIES = frozenset(
+    {"sliced", "auto_sliced", "beam_sliced", "quality_sliced"}
+)
 
 
 class TensorNetworkState:
@@ -26,10 +33,12 @@ class TensorNetworkState:
         max_intermediate_size: int | None = None,
         sliced_labels: Sequence[int] | None = None,
         dense_observable_wires: int = 0,
+        max_intermediate_bytes: int | None = None,
     ) -> None:
         self.plan = plan
         self.contraction_strategy = contraction_strategy
         self.max_intermediate_size = max_intermediate_size
+        self.max_intermediate_bytes = max_intermediate_bytes
         self.sliced_labels = tuple(sliced_labels) if sliced_labels is not None else None
         self.dense_observable_wires = int(dense_observable_wires)
         self._state_cache: torch.Tensor | None = None
@@ -48,6 +57,65 @@ class TensorNetworkState:
     def bsz(self) -> int:
         return self.plan.bsz
 
+    def _state_contraction(
+        self,
+        strategy: str | None = None,
+        *,
+        max_intermediate_bytes: int | None = None,
+    ) -> tuple[str, int | None]:
+        """Resolve the state contraction order against this state's peak budget.
+
+        The state network is built once and its full materialization is what the
+        planner's ``state_bytes`` models, so a declared limit is met by slicing:
+        a contracted order request becomes the slicing family with the requested
+        order as the order *inside* each slice, and the slicing planner lowers the
+        peak until it fits the budget or raises. An order already in the slicing
+        family keeps its own inner order. With no budget the request passes
+        through untouched, so nothing about an unlimited run changes.
+        """
+
+        requested = strategy or self.contraction_strategy
+        budget = (
+            self.max_intermediate_bytes
+            if max_intermediate_bytes is None
+            else max_intermediate_bytes
+        )
+        if budget is None:
+            return requested, None
+        if requested in _SLICED_CONTRACTION_STRATEGIES:
+            return requested, budget
+        inner = {
+            "beam": "beam_sliced",
+            "quality_multistart": "quality_sliced",
+        }.get(requested)
+        return (inner or "quality_sliced"), budget
+
+    def _observable_contraction(self) -> tuple[str, int | None]:
+        """Resolve the expectation order and the ceiling that governs it.
+
+        The bra-operator-ket networks behind expectations are a contraction in
+        their own right and are built per observable and per marginal, so a
+        declared limit governs them too. ``quality_sliced`` is the order that runs
+        under a budget because it is the one whose plan is both inside the budget
+        and affordable to find: on a bonded eight-wire circuit the unsliced orders
+        peak at 524288 bytes (``greedy``), 8388608 (``memory_greedy``) and 2048
+        (``quality_multistart``), and the ``greedy`` slicing search costs minutes
+        on the 75-node network before it produces a plan. The slice count is then
+        what the budget really buys, and it is unbounded — the same network needs
+        16 slices per marginal at 512 bytes, 512 at 256, and 131072 at 128 — so
+        the economics preflight in
+        :func:`flagquantum.simulation.tensor_network.contraction.contract_nodes_with_byte_budget`
+        refuses the budgets whose slicing would cost more than the memory it saves
+        instead of contracting them one slice at a time.
+
+        With no budget the caller's order stands, so nothing about an unlimited
+        run changes.
+        """
+
+        if self.max_intermediate_bytes is None:
+            return self.contraction_strategy, None
+        return "quality_sliced", self.max_intermediate_bytes
+
     def state(
         self,
         *,
@@ -55,6 +123,7 @@ class TensorNetworkState:
         strategy: str | None = None,
         max_intermediate_size: int | None = None,
         sliced_labels: Sequence[int] | None = None,
+        max_intermediate_bytes: int | None = None,
     ) -> torch.Tensor:
         strategy = strategy or self.contraction_strategy
         max_intermediate_size = (
@@ -62,23 +131,34 @@ class TensorNetworkState:
             if max_intermediate_size is None
             else max_intermediate_size
         )
+        budget = (
+            self.max_intermediate_bytes
+            if max_intermediate_bytes is None
+            else max_intermediate_bytes
+        )
         sliced_labels = self.sliced_labels if sliced_labels is None else sliced_labels
+        effective_strategy, effective_budget = self._state_contraction(
+            strategy, max_intermediate_bytes=budget
+        )
         cacheable = (
             strategy == self.contraction_strategy
             and max_intermediate_size == self.max_intermediate_size
+            and budget == self.max_intermediate_bytes
             and tuple(sliced_labels or ()) == tuple(self.sliced_labels or ())
         )
         if cacheable:
             if self._state_cache is None or refresh:
                 self._state_cache = self.plan.contract(
-                    strategy=strategy,
+                    strategy=effective_strategy,
                     max_intermediate_size=max_intermediate_size,
+                    max_intermediate_bytes=effective_budget,
                     sliced_labels=sliced_labels,
                 )
             return self._state_cache
         return self.plan.contract(
-            strategy=strategy,
+            strategy=effective_strategy,
             max_intermediate_size=max_intermediate_size,
+            max_intermediate_bytes=effective_budget,
             sliced_labels=sliced_labels,
         )
 
@@ -128,11 +208,9 @@ class TensorNetworkState:
                 weights = torch.stack(columns, dim=-1).to(probabilities.dtype)
                 _DENSE_Z_OBSERVABLE_CACHE[key] = weights
             return probabilities @ weights
-        observable_strategy = (
-            "memory_greedy"
-            if self.contraction_strategy == "greedy"
-            else self.contraction_strategy
-        )
+        # The expectation network is a contraction in its own right, so a declared
+        # peak budget is a ceiling for it too.
+        observable_strategy, observable_budget = self._observable_contraction()
         cache = self.plan.program_cache
         cache_key = (
             "tn_observable",
@@ -140,6 +218,7 @@ class TensorNetworkState:
             self.bsz,
             wire_tuple,
             observable_strategy,
+            observable_budget,
         )
         cached = None if cache is None else cache.get(cache_key)
         self._last_observable_program_cache_hit = cached is not None
@@ -158,10 +237,26 @@ class TensorNetworkState:
         self._last_observable_peak_size = peak_size
         if use_direct_batch:
             self._last_observable_execution = "memory_first_direct_batch"
-            return torch.real(observable_plan.contract(strategy=observable_strategy))
+            if observable_budget is None:
+                return torch.real(
+                    observable_plan.contract(strategy=observable_strategy)
+                )
+            direct, _ = contract_nodes_with_byte_budget(
+                observable_plan.nodes,
+                observable_plan.output_labels,
+                max_peak_bytes=observable_budget,
+                contraction_strategy=observable_strategy,
+            )
+            return torch.real(direct)
         self._last_observable_execution = "per_observable_direct_fallback"
         values = [
-            tensor_network_expectation_ps(self.plan, z=(wire,)) for wire in wire_tuple
+            tensor_network_expectation_ps(
+                self.plan,
+                z=(wire,),
+                strategy=observable_strategy,
+                max_peak_bytes=observable_budget,
+            )
+            for wire in wire_tuple
         ]
         return torch.stack(values, dim=-1)
 
@@ -178,7 +273,15 @@ class TensorNetworkState:
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
             raise ValueError("A wire can appear in only one of x, y, or z.")
 
-        return tensor_network_expectation_ps(self.plan, x=x, y=y, z=z)
+        strategy, budget = self._observable_contraction()
+        return tensor_network_expectation_ps(
+            self.plan,
+            x=x,
+            y=y,
+            z=z,
+            strategy=strategy,
+            max_peak_bytes=budget,
+        )
 
     def sample(
         self,

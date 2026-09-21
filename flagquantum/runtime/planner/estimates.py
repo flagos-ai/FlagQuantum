@@ -72,14 +72,21 @@ def estimate_tensor_network_working_set_bytes(
       cotangent, matching what the adjoint path holds at once.
     * The exponent saturates at 62 bits so the value stays representable.
 
-    This is **not** an upper bound on the chosen contraction order's peak, and it
-    must not be used as a capacity guarantee. A bonded network holds far more
-    than ``width`` legs at once: on an 8-wire circuit with 24 two-qubit gates and
-    width 3 this returns 512 bytes while the executor measures 32768 with
-    ``memory_greedy`` and 8192 with ``quality_multistart``. The measured value is
+    This is **not** an upper bound on the chosen contraction order's peak, and it is
+    a floor rather than a capacity guarantee. A bonded network holds far more than
+    ``width`` legs at once: on an 8-wire circuit with 24 two-qubit gates and width 3
+    this returns 512 bytes while the executor measures 32768 with ``memory_greedy``
+    and 8192 with ``quality_multistart``. The measured value is
     ``TensorNetworkContractionProfile.peak_size``; only that is evidence about a
-    specific run. A batch axis is not modelled here; the estimate is per batch
-    item.
+    specific run, and
+    ``flagquantum.simulation.tensor_network.local.tensor_network_contraction_peak_bytes``
+    reports it for one named order without allocating.
+
+    What bounds a run is capacity rather than this estimate. A tensor-network run
+    that declares ``memory_limit_bytes`` is executed against it as a hard peak
+    budget, so the residency of an admitted run cannot exceed the declared limit;
+    with no declared limit there is no ceiling and this estimate is not one. A
+    batch axis is not modelled here; the estimate is per batch item.
     """
 
     n_wires = max(1, int(n_wires))
