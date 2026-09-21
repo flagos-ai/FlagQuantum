@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
+import operator
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from numbers import Real
+from typing import Any, cast
 
 from ..core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..core.ir import MeasurementNode
@@ -94,7 +96,9 @@ class OutputRequest:
     def __post_init__(self) -> None:
         if self.kind not in {"counts", "expectation", "probabilities", "samples"}:
             raise ValueError(f"unsupported output kind {self.kind!r}")
-        object.__setattr__(self, "wires", _wires(self.wires))
+        object.__setattr__(
+            self, "wires", _wires(self.wires, owner=f"{self.kind} output")
+        )
         if self.name is not None and (
             not isinstance(self.name, str) or not self.name.strip()
         ):
@@ -116,21 +120,63 @@ def _real_scalar(value: object) -> float | None:
     return result
 
 
-def _wire(wire: int) -> int:
-    if type(wire) is not int or wire < 0:
-        raise ValueError("observable wire must be a non-negative integer")
-    return wire
+def _wire(owner: str, value: Any) -> int:
+    """Read one wire label without quietly rewriting or iterating the caller's value.
+
+    A label is an integer, read through the interpreter's own ``__index__`` protocol,
+    which admits NumPy integers and zero-dimensional torch integer tensors while refusing
+    floats and strings.  ``bool`` is refused although it satisfies ``operator.index``, for
+    the reason the package's counts give: it is a flag rather than a label.  ``TypeError``
+    reports a wrong Python type, which is what the errors-module boundary reserves for it;
+    a negative label is a magnitude and keeps its own error below.
+    """
+
+    if isinstance(value, bool):
+        raise TypeError(f"{owner} wire must be an integer, got {value!r}")
+    try:
+        label = operator.index(value)
+    except TypeError:
+        raise TypeError(f"{owner} wire must be an integer, got {value!r}") from None
+    if label < 0:
+        raise ValueError(f"{owner} wire must be a non-negative integer")
+    return label
 
 
-def _wires(wires: Iterable[int]) -> tuple[int, ...]:
-    normalized = tuple(_wire(wire) for wire in wires)
+def _wires(wires: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
+    """Read a selection of wire labels, one label at a time.
+
+    A single label and a sequence of labels are both accepted, and the order matters: a
+    label is tried first, so a bare zero-dimensional tensor is read as the label it
+    denotes, and a value that cannot be iterated at all -- a float is the case that
+    occurs -- is reported as the bad label it is instead of as ``'float' object is not
+    iterable``.  ``str`` is excluded from the sequence form, because ``"01"`` is a
+    mistyped label rather than two labels.
+    """
+
+    normalized: tuple[int, ...]
+    if isinstance(wires, (str, bytes)):
+        normalized = (_wire(owner, wires),)
+    else:
+        try:
+            normalized = (_wire(owner, wires),)
+        except TypeError as scalar_error:
+            if not hasattr(wires, "__iter__"):
+                raise
+            try:
+                items = tuple(cast("Iterable[int]", wires))
+            except TypeError:
+                # An iterable that refuses to be iterated as a sequence -- a
+                # zero-dimensional tensor is the case that occurs -- is a bad label, not
+                # a bad sequence, so the scalar refusal is the true one.
+                raise scalar_error from None
+            normalized = tuple(_wire(owner, wire) for wire in items)
     if len(set(normalized)) != len(normalized):
         raise ValueError("output wires must be unique")
     return normalized
 
 
 def _pauli(axis: str, wire: int) -> Observable:
-    return Observable((_PauliTerm(1.0, ((_wire(wire), axis),)),))
+    return Observable((_PauliTerm(1.0, ((_wire("observable", wire), axis),)),))
 
 
 def I(wire: int | None = None) -> Observable:
@@ -141,7 +187,7 @@ def I(wire: int | None = None) -> Observable:
     """
 
     if wire is not None:
-        _wire(wire)
+        _wire("observable", wire)
     return Observable((_PauliTerm(1.0, ()),))
 
 
@@ -198,7 +244,9 @@ def probabilities(
     selected = _selection_alias(qubits, wires)
     if isinstance(selected, Observable):
         raise TypeError("probabilities requires qubit indices, not an Observable")
-    return OutputRequest("probabilities", _optional_wires(selected), name=name)
+    return OutputRequest(
+        "probabilities", _optional_wires(selected, kind="probabilities"), name=name
+    )
 
 
 def samples(
@@ -211,7 +259,9 @@ def samples(
     selected = _selection_alias(qubits, wires)
     if isinstance(selected, Observable):
         return OutputRequest("samples", observable=selected, name=name)
-    return OutputRequest("samples", _optional_wires(selected), name=name)
+    return OutputRequest(
+        "samples", _optional_wires(selected, kind="samples"), name=name
+    )
 
 
 def counts(
@@ -224,13 +274,13 @@ def counts(
     selected = _selection_alias(qubits, wires)
     if isinstance(selected, Observable):
         return OutputRequest("counts", observable=selected, name=name)
-    return OutputRequest("counts", _optional_wires(selected), name=name)
+    return OutputRequest("counts", _optional_wires(selected, kind="counts"), name=name)
 
 
-def _optional_wires(wires: Iterable[int] | int | None) -> tuple[int, ...]:
+def _optional_wires(wires: Iterable[int] | int | None, *, kind: str) -> tuple[int, ...]:
     if wires is None:
         return ()
-    return (_wire(wires),) if isinstance(wires, int) else _wires(wires)
+    return _wires(wires, owner=f"{kind} output")
 
 
 def _sampled_pauli_term(observable: Observable) -> _PauliTerm:
