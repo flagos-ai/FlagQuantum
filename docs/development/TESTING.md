@@ -114,7 +114,7 @@ so the check is per test rather than per file.
 | `distributed` | Umbrella marker for distributed planning, runtime, or evidence tests. | The test touches distributed behavior in some form. | Which environment is required; use `distributed_cpu`, `distributed_accel`, or `distributed_multinode` for CI policy. |
 | `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
 | `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
-| `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
+| `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional differential programs, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract and complex128 QuantumScript semantics. | Hardware submission, or that PennyLane is a core dependency. |
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
@@ -406,9 +406,9 @@ The checked-in `ci.yml` defines eleven jobs:
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
-  Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance
-  on the certified Qiskit 2.0.x and 2.5.x lanes, isolated from the core
-  environment;
+  Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
+  differential programs, and local Aer conformance on the certified Qiskit
+  2.0.x and 2.5.x lanes, isolated from the core environment;
 - `pennylane-optional`: the IR-only contract and complex128 QuantumScript
   semantics against the minimum 0.44.1 and latest 0.45.1 supported lanes;
 - `dependency-bounds`: the oldest supported Python and Torch line beside the
