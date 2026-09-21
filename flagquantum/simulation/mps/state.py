@@ -10,7 +10,7 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.runtime_config import get_runtime_config
-from ..gate_matrix import gate_matrix
+from ..gate_matrix import gate_matrix, parameter_tensor
 from ..matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix, _bits_from_indices
@@ -869,19 +869,35 @@ class MPSState(MPSPlanningMixin):
         self.tensors[int(wire)] = complex_einsum_pair(equation, matrix, tensor)
 
     def apply_parametric_one(self, name: str, theta: Any, wire: int) -> None:
-        tensor = self.tensors[int(wire)]
-        real_dtype = torch.float32 if self.dtype == torch.complex64 else torch.float64
-        angle = torch.as_tensor(theta, dtype=real_dtype, device=self.device)
-        if angle.ndim == 0:
-            angle = angle.reshape(1)
-        angle = angle.reshape(-1)
-        if angle.numel() == 1 and self.bsz > 1:
-            angle = angle.expand(self.bsz)
-        if angle.numel() != self.bsz:
-            raise ValueError(
-                "Parameterized MPS gate batch dimension must match MPS batch size."
-            )
+        """Apply one batched ``rx``/``ry``/``rz`` through the shared parameter rule.
 
+        This single-wire fast path skipped ``gate_matrix``, and read the caller's angle
+        with ``reshape(-1)``, which *flattens* a bracketed shape instead of refusing it:
+
+        * ``(3, 3)``, ``(3, 1)`` and ``(1, 3)`` all flattened to three angles;
+        * ``(1, 1)`` flattened to one angle and broadcast;
+        * any ``(a, b)`` with ``a * b == bsz`` was accepted, so the engine could not tell
+          three batched angles apart from one 3x1 column.
+
+        Every other engine reached ``_parameter_rows`` through ``gate_matrix`` and refused
+        those shapes, so the same call succeeded or failed by engine. Reading the angle
+        through ``parameter_tensor`` puts this path under the rule those engines already
+        apply, instead of under a rule of its own.
+        """
+
+        parameters = parameter_tensor(
+            name,
+            {},
+            bsz=self.bsz,
+            device=self.device,
+            complex_dtype=self.dtype,
+            direct_values=(theta,),
+        )
+        if parameters is None:
+            raise ValueError(f"Gate {name!r} requires parameters.")
+        angle = parameters[:, 0]
+
+        tensor = self.tensors[int(wire)]
         view_shape = (self.bsz, 1, 1)
         if name == "rz":
             phase0 = torch.exp((-0.5j * angle).to(self.dtype)).reshape(view_shape)

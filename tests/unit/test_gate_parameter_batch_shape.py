@@ -4,6 +4,12 @@ A batched circuit carries ``bsz`` amplitudes, so the kernel multiplies ``bsz`` g
 matrices and needs one parameter row per entry. A value that cannot become that row
 used to reach the kernel and fail there, as a shape complaint about a tensor the
 caller never wrote. These tests pin the accepted layouts and the public error.
+
+The rule is one rule, so it cannot depend on which engine ran the program or on how the
+MPS compiler grouped the gates. The MPS engine executes a lone single-qubit parametric
+gate on its own single-wire path and the same gate fused with a neighbouring
+single-qubit gate through the shared parameter rule; ``fused`` selects the second, and
+both are covered below.
 """
 
 import pytest
@@ -16,7 +22,11 @@ pytestmark = pytest.mark.unit
 
 BSZ = 3
 ANGLES = [0.1, 0.2, 0.3]
+# `density_matrix` refuses a batched expectation as unsupported, so the engines that can
+# report one are listed separately from every engine that must read a parameter.
 MODES = ("statevector", "mps", "tensor_network")
+ENGINES = ("statevector", "mps", "tensor_network", "density_matrix")
+LAYOUTS = (False, True)
 
 
 def _z_expectation(circuit, mode: str = "statevector") -> torch.Tensor:
@@ -28,8 +38,17 @@ def _z_expectation(circuit, mode: str = "statevector") -> torch.Tensor:
     return result.expectation().reshape(-1)
 
 
-def _ry_circuit(theta, bsz: int = BSZ):
-    return fq.Circuit(2, bsz=bsz).ry(0, theta).cx(0, 1)
+def _ry_circuit(theta, bsz: int = BSZ, *, fused: bool = False):
+    """A parametric gate, optionally behind a Hadamard on the same wire.
+
+    Behind the Hadamard the MPS engine fuses the two single-qubit gates into one
+    operation, so the parameter is read by a different code path from the bare form.
+    """
+
+    circuit = fq.Circuit(2, bsz=bsz)
+    if fused:
+        circuit.h(0)
+    return circuit.ry(0, theta).cx(0, 1)
 
 
 @pytest.mark.parametrize("mode", MODES)
@@ -68,30 +87,74 @@ def test_scalar_parameter_broadcasts_over_the_batch(value) -> None:
     )
 
 
+@pytest.mark.parametrize("mode", ENGINES)
+@pytest.mark.parametrize("fused", LAYOUTS)
 @pytest.mark.parametrize("length", [2, 4])
-def test_parameter_length_must_be_one_or_the_batch_size(length: int) -> None:
+def test_parameter_length_must_be_one_or_the_batch_size(
+    length: int, mode: str, fused: bool
+) -> None:
     """A short or long vector is refused as a validation error, not an execution one."""
 
     with pytest.raises(ValidationError) as captured:
-        _z_expectation(_ry_circuit(torch.arange(length, dtype=torch.float32)))
+        _z_expectation(
+            _ry_circuit(torch.arange(length, dtype=torch.float32), fused=fused),
+            mode=mode,
+        )
 
     assert captured.value.category == "validation"
     assert "Gate 'ry' parameter 'theta' has length" in str(captured.value)
     assert f"expected 1 or the batch size {BSZ}" in str(captured.value)
 
 
+@pytest.mark.parametrize("mode", ENGINES)
+@pytest.mark.parametrize("fused", LAYOUTS)
 @pytest.mark.parametrize("shape", [(3, 1), (1, 1), (2, 1), (1, 3), (3, 2)])
-def test_two_dimensional_parameter_is_refused(shape: tuple[int, ...]) -> None:
+def test_two_dimensional_parameter_is_refused(
+    shape: tuple[int, ...], mode: str, fused: bool
+) -> None:
     """A matrix of angles has no single reading for a flat batch, so it is refused."""
 
     with pytest.raises(ValidationError) as captured:
-        _z_expectation(_ry_circuit(torch.ones(*shape)))
+        _z_expectation(_ry_circuit(torch.ones(*shape), fused=fused), mode=mode)
 
     assert captured.value.category == "validation"
     assert f"Gate 'ry' parameter 'theta' has shape ({shape[0]}, {shape[1]})" in str(
         captured.value
     )
     assert f"vector of length {BSZ} for a batch of {BSZ}" in str(captured.value)
+
+
+@pytest.mark.parametrize("mode", ENGINES)
+@pytest.mark.parametrize("shape", [(3, 1), (1, 1), (2, 1), (1, 3), (3, 2)])
+def test_the_two_mps_code_paths_refuse_a_shape_with_the_same_message(
+    shape: tuple[int, ...], mode: str
+) -> None:
+    """A gate and the same gate fused with a neighbour cannot disagree about a shape."""
+
+    theta = torch.ones(*shape)
+    messages = []
+    for fused in LAYOUTS:
+        with pytest.raises(ValidationError) as captured:
+            _z_expectation(_ry_circuit(theta, fused=fused), mode=mode)
+        messages.append(str(captured.value))
+
+    assert messages[0] == messages[1]
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_the_two_mps_code_paths_read_a_batch_the_same_way(mode: str) -> None:
+    """The batched reading is per row on both paths, not one angle broadcast."""
+
+    angles = torch.tensor(ANGLES)
+    for fused in LAYOUTS:
+        batched = _z_expectation(_ry_circuit(angles, fused=fused), mode=mode)
+        per_sample = torch.tensor(
+            [
+                _z_expectation(_ry_circuit(angle, bsz=1, fused=fused), mode=mode)[0]
+                for angle in ANGLES
+            ]
+        )
+        torch.testing.assert_close(batched, per_sample, rtol=1e-6, atol=1e-6)
 
 
 def test_multi_parameter_gate_accepts_vectors_and_scalars() -> None:
