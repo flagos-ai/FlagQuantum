@@ -661,10 +661,58 @@ noise is inferred between cells.
 
 `total_variation_from_ideal` compares the regional Twin's predicted Z-basis
 measurement distribution with noiseless statevector simulation. It is not a
-Twin-to-QPU accuracy measurement. `TwinRegionModel` intentionally has no
-`evidence_report`, accuracy bound, or confidence level: those require a later
-prospective validation of the complete regional circuit. The full offline code
-is `examples/twin_region_model.py`.
+Twin-to-QPU accuracy measurement. A newly composed model therefore has no
+regional accuracy bound or confidence level. The full offline code is
+`examples/twin_region_model.py`.
+
+### Prospectively validate one regional circuit
+
+Freeze the complete mapped circuit before any hardware task is created:
+
+```python
+experiment = region_twin.prepare_experiment(
+    circuit,
+    physical_qubits=(20, 27, 34),
+    name="regional-ghz",
+    shots=1024,
+)
+```
+
+`prepare_experiment()` checks the region mapping, directed couplers, operations,
+instruction count, and depth, then binds the composed prediction to canonical
+OpenQASM 2.0. It performs no provider I/O. Submission remains explicit through
+`experiment.submit(provider)`.
+
+After at least two distinct tasks have been validated with
+`experiment.validate_result(...)`, create a repeated validation series and
+qualify the exact circuit:
+
+```python
+series = experiment.validation_series(
+    (first_report, second_report),
+    circuit=circuit,
+)
+support = region_twin.support_from_validation_series(
+    series,
+    circuit,
+    physical_qubits=(20, 27, 34),
+)
+report = support.evidence_report(region_twin.twin, circuit)
+
+print(report.status)
+print(series.mean_twin_qpu_agreement)
+print(series.mean_ideal_qpu_agreement)
+print(series.mean_qpu_repeatability)
+print(report.tv_error_bound)
+print(report.confidence_level)
+```
+
+The returned support contains only the directed couplers exercised by this
+exact circuit. It does not validate arbitrary circuits on the region or
+unexercised links. The three agreement values compare classical Z-basis
+measurement distributions; they are not quantum-state fidelity. See
+`examples/remote/quafu_twin_region_validation.py` for the complete token,
+polling, repeated-submission, and persistence workflow.
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an

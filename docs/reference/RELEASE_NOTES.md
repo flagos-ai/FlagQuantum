@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added prospective validation for a composed `TwinRegionModel`. Applications
+  can freeze a covered regional circuit before explicit Quafu submission, build
+  a repeated validation series from at least two identity-bound tasks, and
+  produce exact-circuit `TwinCircuitSupport`. The support includes only couplers
+  exercised by that circuit and does not claim arbitrary regional accuracy. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.compose_region_twin()` and immutable `TwinRegionModel` for
   offline measurement-distribution prediction across a connected union of
   compatible local Twin cells. Composition remaps local calibration and noise
