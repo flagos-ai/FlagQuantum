@@ -19,8 +19,10 @@ from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
+    _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
+    _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
@@ -30,6 +32,7 @@ from .operations import (
     _batched_rx_ry_rz_matrices,
     _bits_from_indices,
     _compile_statevector_program,
+    _cpu_cx_sequence_gather_enabled,
     _fused_gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCXSequenceStep,
@@ -402,6 +405,14 @@ def _apply_cx_sequence(
             reverse_control_masks=reverse_control_masks,
             reverse_target_masks=reverse_target_masks,
             n_wires=circuit.n_wires,
+        )
+
+    if (
+        _cpu_cx_sequence_gather_enabled()
+        and len(step.controls) >= _CX_SEQUENCE_GATHER_MINIMUM_LENGTH
+    ):
+        return _apply_cx_sequence_gather(
+            state, step.controls, step.targets, circuit.n_wires
         )
 
     for control, target in zip(step.controls, step.targets, strict=True):

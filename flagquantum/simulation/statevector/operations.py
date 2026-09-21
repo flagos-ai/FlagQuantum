@@ -32,6 +32,45 @@ def clear_statevector_layout_cache() -> None:
     _STATEVECTOR_LAYOUT_CACHE.clear()
 
 
+# A CX sequence acts on basis indices as an affine map over GF(2), so the whole
+# sequence can be applied as one gather instead of one pass per gate. The table
+# costs one int32 per amplitude, which is half the size of a complex64 state, and
+# it is addressed by its content rather than by a Circuit, so it cannot go stale
+# when a Circuit is mutated. The budget bounds what distinct sequences may keep
+# resident; the entries are dropped in insertion order once it is exceeded.
+_CX_SEQUENCE_INDEX_CACHE_BYTES = 128 * 1024 * 1024
+_CX_SEQUENCE_INDEX_CACHE: dict[
+    tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype], torch.Tensor
+] = {}
+
+
+def clear_statevector_cx_index_cache() -> None:
+    """Clear the cached CX-sequence permutation tables."""
+
+    _CX_SEQUENCE_INDEX_CACHE.clear()
+
+
+def _cx_sequence_index_cache_bytes() -> int:
+    return sum(
+        int(table.numel()) * int(table.element_size())
+        for table in _CX_SEQUENCE_INDEX_CACHE.values()
+    )
+
+
+def _store_cx_sequence_index(
+    key: tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype],
+    table: torch.Tensor,
+) -> torch.Tensor:
+    _CX_SEQUENCE_INDEX_CACHE[key] = table
+    while (
+        len(_CX_SEQUENCE_INDEX_CACHE) > 1
+        and _cx_sequence_index_cache_bytes() > _CX_SEQUENCE_INDEX_CACHE_BYTES
+    ):
+        oldest = next(iter(_CX_SEQUENCE_INDEX_CACHE))
+        del _CX_SEQUENCE_INDEX_CACHE[oldest]
+    return table
+
+
 _DIAGONAL_STATEVECTOR_GATES = frozenset(
     {"z", "s", "sdg", "t", "tdg", "rz", "p", "phase", "u1", "cz", "cphase", "rzz"}
 )
@@ -116,6 +155,26 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
     return _environment_flag(
         "FQ_TRITON_PARAMETERIZED_SINGLE_QUBIT_MATRIX", default=False
     )
+
+
+# Sequence lengths at or above this one apply as a single gather. The table has
+# to be built before it can be used, and measured against the per-gate loop on
+# this host the build costs about as much as six to eight gates, so a shorter
+# sequence is left on the loop. The threshold is a floor for the *unreused* case:
+# a region executed more than once finds the table already cached.
+_CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
+
+
+def _cpu_cx_sequence_gather_enabled() -> bool:
+    """Whether a CPU CX sequence may be applied as one gather.
+
+    On by default, like the other statevector fast-path switches. A gather is an
+    exact permutation of amplitudes, so it cannot move a result even in the last
+    bit; the switch exists to restore the per-gate loop if the table's memory or
+    its build time is unwanted.
+    """
+
+    return _environment_flag("FQ_CPU_CX_SEQUENCE_GATHER", default=True)
 
 
 def _compile_statevector_program(
@@ -402,6 +461,85 @@ def _apply_cx_permutation(
         target_axis -= 1
     one = torch.flip(one, dims=(target_axis,))
     return torch.stack((zero, one), dim=control_axis).reshape(state.shape)
+
+
+def _cx_sequence_index_dtype(n_wires: int) -> torch.dtype:
+    """Index dtype for a permutation table over ``2 ** n_wires`` amplitudes.
+
+    ``index_select`` takes int32, and an int32 index addresses every amplitude up
+    to 31 wires, so the wider dtype is only needed past that point - where the
+    state itself would already be 32 GiB per batch row.
+    """
+
+    return torch.int32 if n_wires <= 31 else torch.int64
+
+
+def _cx_sequence_permutation_index(
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_wires: int,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Build the gather table for one CX sequence.
+
+    ``index_select(state, 1, table)`` sends ``state[:, source]`` to position
+    ``destination`` where ``table[destination] == source``, so the table is the
+    *inverse* of the map the sequence applies. A single CX is an involution and
+    hides the difference; a longer sequence does not, so the transvections are
+    composed in reverse here.
+
+    The inverse map is affine over GF(2), so the table is built from the images
+    of the ``n_wires`` basis vectors by doubling: entry ``i`` is the XOR of the
+    images of the wires set in ``i``. That is ``n_wires`` vector operations on
+    the whole table rather than one pass per basis index.
+    """
+
+    canonical_controls = tuple(int(wire) for wire in controls)
+    canonical_targets = tuple(int(wire) for wire in targets)
+    if len(canonical_controls) != len(canonical_targets):
+        raise ValueError("a CX sequence needs one target per control")
+    table_dtype = _cx_sequence_index_dtype(n_wires)
+    key = (n_wires, canonical_controls, canonical_targets, str(device), table_dtype)
+    cached = _CX_SEQUENCE_INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    images = torch.tensor(
+        [1 << (n_wires - 1 - wire) for wire in range(n_wires)],
+        dtype=torch.int64,
+        device=device,
+    )
+    for control, target in zip(
+        reversed(canonical_controls), reversed(canonical_targets), strict=True
+    ):
+        control_mask = 1 << (n_wires - 1 - control)
+        target_mask = 1 << (n_wires - 1 - target)
+        hit = (images & control_mask) != 0
+        images = torch.where(hit, images ^ target_mask, images)
+    # Doubling appends the new bit at the high end of the offset, so the first
+    # step fixes the state index's least significant bit, which belongs to the
+    # last wire. Consuming the wires in reverse is what keeps the bit order.
+    table = torch.zeros(1, dtype=torch.int64, device=device)
+    for wire in reversed(range(n_wires)):
+        table = torch.cat((table, table ^ images[wire]))
+    return _store_cx_sequence_index(key, table.to(table_dtype))
+
+
+def _apply_cx_sequence_gather(
+    state: torch.Tensor,
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply a whole CX sequence as one gather over the amplitude axis."""
+
+    index = _cx_sequence_permutation_index(
+        controls, targets, n_wires, device=state.device, dtype=state.dtype
+    )
+    gathered = torch.index_select(state.reshape(state.shape[0], -1), 1, index)
+    return gathered.reshape(state.shape)
 
 
 def _apply_fixed_permutation(
