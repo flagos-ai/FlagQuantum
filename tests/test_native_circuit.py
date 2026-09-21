@@ -300,6 +300,124 @@ def test_growing_a_qubit_count_keeps_the_recorded_instructions():
     assert fq.run(circuit, outputs=fq.probabilities()).probabilities.shape == (1, 16)
 
 
+@pytest.mark.parametrize(
+    "value", [0.5, 2.0, 0.0, "0", "01", "2", "", True, False, 3 + 0j]
+)
+def test_a_gate_refuses_a_wire_that_is_not_a_label(value):
+    """``int(wire)`` rewrote the caller's wire instead of refusing it.
+
+    ``circuit.h(0.5)`` acted on wire 0, ``circuit.h("01")`` acted on wire 1 and
+    ``circuit.h(True)`` acted on wire 1, so a mistyped wire changed which qubit the
+    gate touched and nothing said so.  The refusals that did happen named something
+    else entirely: ``circuit.h("")`` raised a bare ``ValueError`` from ``int()`` that
+    is not part of ``flagquantum.errors``, and ``circuit.cx(2.0, 2)`` raised
+    ``IRValidationError: instruction 'cx' cannot repeat a wire: (2, 2)``.
+    """
+
+    circuit = fq.Circuit(4)
+
+    with pytest.raises(TypeError, match=r"Gate 'h' wire must be an integer"):
+        circuit.h(value)
+
+    assert len(circuit) == 0
+
+
+def test_a_gate_refuses_an_absent_wire_before_it_reads_one():
+    """``None`` is refused, earlier and elsewhere, and that is left as it is.
+
+    An absent wire is rejected by the argument binder as a missing argument
+    (``h requires qubit arguments: qubit``) before the wire reader sees a value, so the
+    label rule does not apply to it and this change does not touch that path.  It is
+    recorded here so the boundary between the two rules is stated rather than assumed.
+    """
+
+    circuit = fq.Circuit(4)
+
+    with pytest.raises(TypeError, match="requires qubit arguments"):
+        circuit.h(None)
+
+    assert len(circuit) == 0
+
+
+@pytest.mark.parametrize("gate", ["h", "x", "ry", "cx", "cz", "rzz"])
+def test_a_gate_refuses_a_wire_that_is_not_a_label_on_every_gate(gate):
+    """The rule belongs to the wire argument, not to one gate method."""
+
+    circuit = fq.Circuit(4)
+    method = getattr(circuit, gate)
+
+    with pytest.raises(TypeError, match=rf"Gate '{gate}' wire must be an integer"):
+        if gate in {"cx", "cz", "rzz"}:
+            method(1.5, 2)
+        else:
+            method(1.5)
+
+    assert len(circuit) == 0
+
+
+def test_a_wire_label_reaches_the_instruction_unchanged():
+    """An accepted label is recorded as written, and a refused one leaves nothing."""
+
+    circuit = fq.Circuit(4)
+    circuit.h(3).cx(1, 2)
+
+    recorded = [
+        tuple(instruction.wires) for instruction in circuit.to_ir().instructions
+    ]
+
+    assert recorded == [(3,), (1, 2)]
+
+
+def test_a_sequence_of_wire_labels_still_works_and_is_still_checked():
+    """``gate`` takes ``Iterable[int] | int``, and both forms are read by one rule.
+
+    A sequence of labels keeps working, and a sequence holding a value that is not a
+    label is refused by the same rule rather than by ``int()``.  On the previous code
+    ``gate("h", [1.0])`` was accepted and acted on wire 1.
+    """
+
+    circuit = fq.Circuit(4)
+    circuit.gate("cx", (1, 2))
+
+    assert circuit.to_ir().instructions[0].wires == (1, 2)
+
+    empty = fq.Circuit(4)
+    with pytest.raises(TypeError, match=r"Gate 'h' wire must be an integer, got 1\.0"):
+        empty.gate("h", [1.0])
+
+    assert len(empty) == 0
+
+
+def test_a_gate_reads_an_integral_scalar_wire_by_the_integer_protocol():
+    """A control, not a defect: integral scalars keep working.
+
+    ``int(wire)`` already followed ``__index__``, so this behaviour is unchanged and is
+    pinned here only to show that the stricter reader did not narrow what the old
+    coercion accepted.  NumPy is not a dependency of this package and
+    ``tests/unit/test_lane_dependency_policy.py`` refuses a test that probes one, so the
+    protocol is exercised through a plain ``__index__`` object and a zero-dimensional
+    tensor instead.
+    """
+
+    class IntegralLike:
+        """An object that denotes an integer without being ``int``."""
+
+        def __init__(self, value):
+            self._value = value
+
+        def __index__(self):
+            return self._value
+
+    circuit = fq.Circuit(4)
+    circuit.h(IntegralLike(3)).cx(torch.tensor(1), torch.tensor([2]))
+
+    recorded = [
+        tuple(instruction.wires) for instruction in circuit.to_ir().instructions
+    ]
+
+    assert recorded == [(3,), (1, 2)]
+
+
 def test_native_parameter_gradient():
     theta = torch.tensor(0.3, requires_grad=True)
 

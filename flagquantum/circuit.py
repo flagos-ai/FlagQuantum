@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import torch
 
@@ -38,10 +38,52 @@ if TYPE_CHECKING:
     from .runtime.result import ExecutionResult
 
 
-def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
-    if isinstance(wires, int):
-        return (wires,)
-    return tuple(int(wire) for wire in wires)
+def _wire_argument(owner: str, value: Any) -> int:
+    """Read one wire label without quietly rewriting the caller's value.
+
+    ``int(wire)`` accepted ``0.5`` as wire ``0``, ``"0"`` as wire ``0`` and ``True`` as
+    wire ``1``, so a mistyped wire changed which qubit a gate acted on instead of
+    failing.  A wire label is an integer, read through the interpreter's own
+    ``__index__`` protocol, which admits NumPy integers and zero-dimensional torch
+    integer tensors while refusing floats and strings.  ``bool`` is refused although it
+    satisfies ``operator.index``, for the reason :func:`_count_argument` gives: it is a
+    flag rather than a label, and the other label-taking entry points in this package
+    refuse it too.  The range of the label is not this function's business -- the
+    circuit refuses a wire past its width and the IR refuses a negative one.
+    """
+
+    if isinstance(value, bool):
+        raise TypeError(f"{owner} wire must be an integer, got {value!r}")
+    try:
+        return operator.index(value)
+    except TypeError:
+        raise TypeError(f"{owner} wire must be an integer, got {value!r}") from None
+
+
+def _normalize_wires(wires: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
+    """Read the wire arguments of one instruction, one label at a time.
+
+    A single label and a sequence of labels are both accepted, and the order matters:
+    a label is tried first, so a bare zero-dimensional tensor is read as the label it
+    denotes instead of being iterated.  ``str`` is excluded from the sequence form,
+    because ``"01"`` is a mistyped label rather than two labels.
+    """
+
+    if isinstance(wires, (str, bytes)):
+        return (_wire_argument(owner, wires),)
+    try:
+        return (_wire_argument(owner, wires),)
+    except TypeError as scalar_error:
+        if not hasattr(wires, "__iter__"):
+            raise
+        try:
+            items = tuple(cast("Iterable[int]", wires))
+        except TypeError:
+            # An iterable that refuses to be iterated as a sequence -- a
+            # zero-dimensional tensor is the case that occurs -- is a bad label, not a
+            # bad sequence, so the scalar refusal is the true one.
+            raise scalar_error from None
+        return tuple(_wire_argument(owner, wire) for wire in items)
 
 
 def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
@@ -298,7 +340,7 @@ class Circuit:
     ) -> "Circuit":
         merged_params = dict(params or {})
         merged_params.update(kwargs)
-        normalized_wires = _normalize_wires(wires)
+        normalized_wires = _normalize_wires(wires, owner=f"Gate {name!r}")
         outside = tuple(wire for wire in normalized_wires if wire >= self.n_wires)
         if outside:
             raise ValidationError(
@@ -500,7 +542,7 @@ class Circuit:
 
         if wires is None:
             wires = range(self.n_wires)
-        return _expectation_z(self, _normalize_wires(wires))
+        return _expectation_z(self, _normalize_wires(wires, owner="expectation_z"))
 
     def expectation_ps(
         self,
