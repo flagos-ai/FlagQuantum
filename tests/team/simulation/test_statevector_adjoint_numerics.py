@@ -70,7 +70,7 @@ def _rotation_matrix(
 def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, real_dtype):
     theta = torch.tensor(0.37, dtype=real_dtype, requires_grad=True)
     complex_dtype = torch.complex64 if real_dtype == torch.float32 else torch.complex128
-    instruction = Instruction(gate_name, (0,), {"theta": "theta"})
+    instruction = Instruction(gate_name, (0,), {"theta": theta})
 
     matrix = _rotation_matrix(gate_name, theta, dtype=complex_dtype)
     _, reference = torch.autograd.functional.jvp(

@@ -7,6 +7,7 @@ import json
 import operator
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from numbers import Real
 from typing import Any
 
 from ..errors import SerializationError, ValidationError
@@ -103,6 +104,73 @@ def _normalize_shots(shots: Any) -> int | None:
     return int(count)
 
 
+# NumPy spells the element kind as a code: complex, unicode, bytes, object,
+# datetime, timedelta and void are not real numbers.  Torch has no ``kind``, so a
+# bool is recognised by name instead.
+_NON_REAL_DTYPE_KINDS = frozenset("cUSOMmV")
+_BOOL_DTYPE_NAMES = frozenset({"bool", "torch.bool"})
+
+
+def _dtype_holds_real_numbers(dtype: Any) -> bool:
+    """Return whether an array-like element ``dtype`` describes real numbers."""
+
+    if getattr(dtype, "is_complex", False):
+        return False
+    if str(dtype) in _BOOL_DTYPE_NAMES:
+        return False
+    return getattr(dtype, "kind", None) not in _NON_REAL_DTYPE_KINDS
+
+
+def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
+    """Check that a gate parameter is a real angle, without rewriting it.
+
+    Every gate parameter in the operator registry is a rotation angle, so it has to
+    denote a real number.  ``Circuit.ry(0, "0.3")`` stored the string, and the only
+    reader was the simulator: the failure surfaced as ``ExecutionError: planned
+    execution failed`` wrapping ``TypeError: new(): invalid data type 'str'``, which
+    reports neither the gate nor the parameter.  ``ry(0, True)`` was worse than a late
+    failure, because ``True`` became the angle one radian and the run succeeded.
+
+    The value is checked and returned unchanged: only the simulator knows the batch
+    size that decides how many angles one gate may carry, so length and shape stay
+    that side of the boundary, and a bound tensor keeps its autograd identity.
+    ``Parameter`` and ``ParameterExpression`` are accepted because they are angles
+    whose value arrives later, at bind time, and a sequence of angles is checked
+    element by element because that is how a per-batch angle is written.
+
+    A wrong Python type is a ``TypeError``, which is what the errors-module boundary
+    reserves for it; ``bool`` is refused although it is a real number, for the reason
+    :func:`_normalize_count` gives -- it is a flag rather than an angle.  ``str``,
+    ``bytes`` and ``bytearray`` are refused before the sequence branch, so that
+    ``b"0"`` cannot iterate into ``48`` and be read as one.
+    """
+
+    owner = f"gate {opcode!r} parameter {parameter!r}"
+    if isinstance(value, (Parameter, ParameterExpression)):
+        return
+    if isinstance(value, bool):
+        raise TypeError(f"{owner} must be a real number, not a bool")
+    if isinstance(value, Real):
+        return
+    if isinstance(value, (str, bytes, bytearray)):
+        raise TypeError(f"{owner} must be a real number, got {type(value).__name__}")
+    # An array, a tensor and this package's own Double-Single carrier all report an
+    # element dtype, which is what says whether the numbers inside are real.
+    dtype = getattr(value, "dtype", None)
+    if dtype is not None:
+        if not _dtype_holds_real_numbers(dtype):
+            raise TypeError(
+                f"{owner} must be a real number, got a {dtype} "
+                f"{type(value).__name__}"
+            )
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _normalize_angle(item, opcode=opcode, parameter=parameter)
+        return
+    raise TypeError(f"{owner} must be a real number, got {type(value).__name__}")
+
+
 @dataclass(frozen=True)
 class Instruction:
     """Backend-neutral operation with opcode and parameter contracts."""
@@ -140,6 +208,10 @@ class Instruction:
             if missing:
                 raise IRValidationError(
                     f"opcode {name!r} is missing parameter(s): {', '.join(missing)}"
+                )
+            for parameter in schema.parameters:
+                _normalize_angle(
+                    self.params[parameter], opcode=name, parameter=parameter
                 )
 
 

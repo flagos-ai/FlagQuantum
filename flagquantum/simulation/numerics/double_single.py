@@ -138,6 +138,18 @@ class DoubleSingleTensor:
     def __post_init__(self) -> None:
         _require_pair(self.high, self.low)
 
+    @property
+    def dtype(self) -> torch.dtype:
+        """Return the element type of the numbers this carrier holds.
+
+        A gate parameter is checked by asking the value what kind of numbers it
+        holds, so a carrier has to answer. ``_require_pair`` already fixes both
+        words to float32, so this reports where the value is stored rather than a
+        preference, and the P4 executor can keep accepting these pairs unchanged.
+        """
+
+        return torch.float32
+
     @classmethod
     def from_float32(cls, value: torch.Tensor) -> "DoubleSingleTensor":
         _require_float32(value, name="value")
