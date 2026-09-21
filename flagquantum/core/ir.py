@@ -44,6 +44,35 @@ def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     return normalized
 
 
+def _normalize_count(value: Any, *, what: str) -> int:
+    """Return a count as an integer, refusing anything that does not denote one.
+
+    ``n_wires`` is a number of wires and a ``shape`` entry is a dimension, so a value
+    that is not exactly an integer is not a count.  ``int(value)`` accepted ``2.7`` as
+    ``2``, ``"3"`` as ``3`` and ``True`` as ``1``, which silently rewrote the width of
+    the program the caller described and then executed it at that other width.  Only
+    values that already denote an integer are accepted, through the interpreter's own
+    ``__index__`` protocol, which admits NumPy integers and zero-dimensional torch
+    integer tensors while refusing floats and strings.  ``bool`` is refused although it
+    satisfies ``operator.index``, for the reason :func:`_normalize_shots` gives: it is
+    a flag rather than a count, and the other count-taking entry points in this package
+    refuse it too.
+
+    ``TypeError`` reports a wrong Python type, which is what the errors-module boundary
+    reserves for it; a magnitude is the caller's to check.
+    """
+
+    if isinstance(value, bool):
+        raise TypeError(f"{what} must be an integer, not a bool")
+    try:
+        count = operator.index(value)
+    except TypeError:
+        raise TypeError(
+            f"{what} must be an integer, got {type(value).__name__}"
+        ) from None
+    return int(count)
+
+
 def _normalize_shots(shots: Any) -> int | None:
     """Return ``shots`` as a shot count, refusing anything that is not one.
 
@@ -169,7 +198,7 @@ class CircuitIR:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        n_wires = int(self.n_wires)
+        n_wires = _normalize_count(self.n_wires, what="n_wires")
         if n_wires <= 0:
             raise IRValidationError(f"n_wires must be positive, got {n_wires}")
         if str(self.version) != IR_VERSION:
@@ -186,7 +215,9 @@ class CircuitIR:
         if not dtype:
             raise IRValidationError("IR dtype cannot be empty")
         object.__setattr__(self, "dtype", dtype)
-        shape = tuple(int(size) for size in self.shape) or (2**n_wires,)
+        shape = tuple(
+            _normalize_count(size, what="IR shape dimension") for size in self.shape
+        ) or (2**n_wires,)
         if any(size <= 0 for size in shape):
             raise IRValidationError(f"IR shape dimensions must be positive: {shape}")
         object.__setattr__(self, "shape", shape)
@@ -257,13 +288,13 @@ class CircuitIR:
                 "serialized payload is not a FlagQuantum CircuitIR"
             )
         return cls(
-            n_wires=int(payload["n_wires"]),
+            n_wires=payload["n_wires"],
             instructions=tuple(
                 _instruction_from_dict(item) for item in payload.get("instructions", ())
             ),
             version=str(payload.get("version", "")),
             dtype=str(payload.get("dtype", "")),
-            shape=tuple(int(item) for item in payload.get("shape", ())),
+            shape=tuple(payload.get("shape", ())),
             observables=tuple(
                 _observable_from_dict(item) for item in payload.get("observables", ())
             ),
