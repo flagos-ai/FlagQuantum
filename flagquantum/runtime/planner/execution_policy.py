@@ -7,6 +7,7 @@ from .estimates import (
     estimate_mps_bytes,
     estimate_state_bytes,
     estimate_tensor_network_bytes,
+    estimate_tensor_network_working_set_bytes,
 )
 
 _VALID_STATE_MODES = frozenset(
@@ -58,8 +59,26 @@ def estimate_execution_state_bytes(
     bsz: int,
     complex_bytes: int,
     max_bond: int | None,
+    contraction_width: int | None = None,
+    target_count: int = 1,
+    require_gradients: bool = False,
 ) -> int:
-    """Estimate storage for one normalized execution state."""
+    """Estimate storage for one normalized execution state.
+
+    For ``tensor_network`` the footprint is the larger of the state the
+    contraction materializes and the contraction's working-set proxy, because the
+    contraction holds at least its result. ``contraction_width`` is the program's
+    interaction width; omitting it assumes a fully connected program.
+
+    The working set is a heuristic proxy, so this number is a lower bound on
+    nothing and an upper bound on nothing: it is monotone in the inputs and never
+    below the materialized state, which is what keeps it no more permissive than
+    the dense estimate it replaced. It is deliberately *not* made smaller for
+    sparse output targets — a contraction that returns one amplitude can still
+    hold more intermediate amplitudes than it returns, so a sparse reduction here
+    would admit runs that cannot fit. The executor's
+    ``TensorNetworkContractionProfile.peak_size`` is the measured value.
+    """
 
     if state_mode == "density_matrix":
         return estimate_density_bytes(
@@ -75,10 +94,20 @@ def estimate_execution_state_bytes(
             complex_bytes=complex_bytes,
         )
     if state_mode == "tensor_network":
-        return estimate_tensor_network_bytes(
+        working_set = estimate_tensor_network_working_set_bytes(
             n_wires,
-            bsz=bsz,
+            contraction_width=contraction_width,
             complex_bytes=complex_bytes,
+            target_count=target_count,
+            require_gradients=require_gradients,
+        )
+        return max(
+            estimate_tensor_network_bytes(
+                n_wires,
+                bsz=bsz,
+                complex_bytes=complex_bytes,
+            ),
+            working_set,
         )
     return estimate_state_bytes(
         n_wires,

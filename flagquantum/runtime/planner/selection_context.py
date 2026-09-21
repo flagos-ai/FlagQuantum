@@ -9,8 +9,8 @@ from .estimates import (
     estimate_density_bytes,
     estimate_mps_bytes,
     estimate_state_bytes,
-    estimate_tensor_network_bytes,
 )
+from .execution_policy import estimate_execution_state_bytes
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,8 @@ def build_runtime_selection_context(
     prefer_distributed: bool | None,
     require_gradients: bool,
     require_deployment: bool,
+    contraction_width: int | None = None,
+    target_count: int = 1,
 ) -> RuntimeSelectionContext:
     """Normalize selection inputs without initializing a runtime backend."""
 
@@ -94,10 +96,15 @@ def build_runtime_selection_context(
         max_bond=max_bond,
         complex_bytes=complex_bytes,
     )
-    tensor_network_bytes = estimate_tensor_network_bytes(
-        analysis.n_wires,
+    tensor_network_peak_bytes = estimate_execution_state_bytes(
+        "tensor_network",
+        n_wires=analysis.n_wires,
         bsz=bsz,
         complex_bytes=complex_bytes,
+        max_bond=max_bond,
+        contraction_width=contraction_width,
+        target_count=target_count,
+        require_gradients=require_gradients,
     )
     return RuntimeSelectionContext(
         world_size=normalized_world_size,
@@ -111,7 +118,9 @@ def build_runtime_selection_context(
         dense_bytes=dense_bytes,
         density_bytes=density_bytes,
         mps_bytes=mps_bytes,
-        tensor_network_peak_bytes=int(max_intermediate_size or tensor_network_bytes),
+        tensor_network_peak_bytes=int(
+            max_intermediate_size or tensor_network_peak_bytes
+        ),
         sharded_dense_bytes=max(
             1,
             (dense_bytes + normalized_world_size - 1) // normalized_world_size,

@@ -13,6 +13,7 @@ from .contraction import (
     _build_slicing_plan,
     _clone_nodes_with_offset,
     _contract_nodes_sliced,
+    contract_nodes_with_byte_budget,
 )
 from .local import ensure_local_tensor_network_plan
 from .models import (
@@ -471,11 +472,29 @@ def tensor_network_expectation_ps(
     z: Sequence[int] | None = None,
     x: Sequence[int] | None = None,
     y: Sequence[int] | None = None,
+    strategy: str = "greedy",
+    max_peak_bytes: int | None = None,
 ) -> torch.Tensor:
-    """Directly contract a Pauli-product expectation from a tensor network."""
+    """Directly contract a Pauli-product expectation from a tensor network.
+
+    The bra-operator-ket network this builds is a separate contraction from the
+    state one and has a peak of its own, so a caller holding a capacity passes it
+    as ``max_peak_bytes``: the contraction is sliced to hold that peak and raises
+    when no slicing can, or when the slicing needed would cost more than the
+    memory it saves. With no budget the contraction runs in ``strategy`` order
+    exactly as before, so no unlimited expectation changes.
+    """
 
     plan = build_tensor_network_expectation(plan_or_circuit, x=x, y=y, z=z)
-    return torch.real(plan.contract())
+    if max_peak_bytes is None:
+        return torch.real(plan.contract(strategy=strategy))
+    result, _ = contract_nodes_with_byte_budget(
+        plan.nodes,
+        plan.output_labels,
+        max_peak_bytes=int(max_peak_bytes),
+        contraction_strategy=strategy,
+    )
+    return torch.real(result)
 
 
 def _expectation_batch_projection(

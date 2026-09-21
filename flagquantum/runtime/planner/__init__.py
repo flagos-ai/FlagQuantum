@@ -28,6 +28,7 @@ from .backend_selection import (
     BackendCost,
     BackendSelection,
     OutputTarget,
+    interaction_width,
     select_backend_by_cost,
 )
 from .candidates import (
@@ -40,6 +41,7 @@ from .estimates import (
     estimate_mps_bytes,
     estimate_state_bytes,
     estimate_tensor_network_bytes,
+    estimate_tensor_network_working_set_bytes,
 )
 from .execution_policy import (
     estimate_execution_state_bytes,
@@ -280,6 +282,10 @@ def plan_runtime_selection(
         prefer_distributed=prefer_distributed,
         require_gradients=require_gradients,
         require_deployment=require_deployment,
+        contraction_width=cost_selection.interaction_width_proxy,
+        target_count=(
+            target_count if target in {"few_amplitudes", "local_observables"} else 1
+        ),
     )
     world_size = selection.world_size
     local_world_size = selection.local_world_size
@@ -553,6 +559,13 @@ def plan_advanced(
         bsz=bsz,
         complex_bytes=complex_bytes,
         max_bond=max_bond,
+        contraction_width=(
+            interaction_width(ir) if state_mode == "tensor_network" else None
+        ),
+        target_count=(
+            target_count if target in {"few_amplitudes", "local_observables"} else 1
+        ),
+        require_gradients=require_gradients,
     )
     recommended_mode = recommend_execution_mode(
         state_mode,
@@ -799,7 +812,9 @@ __all__ = [
     "estimate_density_bytes",
     "estimate_mps_bytes",
     "estimate_tensor_network_bytes",
+    "estimate_tensor_network_working_set_bytes",
     "estimate_state_bytes",
+    "interaction_width",
     "load_noise_selector_calibration",
     "load_tn_working_set_calibration",
     "plan",

@@ -123,6 +123,73 @@ def _internal_slice_candidates(
     )
 
 
+_SLICED_INNER_ORDERS = {
+    "sliced": "greedy",
+    "auto_sliced": "greedy",
+    "beam_sliced": "beam",
+    "quality_sliced": "quality_multistart",
+}
+
+
+def contract_nodes_with_byte_budget(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    max_peak_bytes: int,
+    contraction_strategy: str = "quality_multistart",
+    max_slices: int | None = 4096,
+    max_recomputation_factor: float | None = 64.0,
+) -> tuple[torch.Tensor, TensorNetworkSlicingPlan]:
+    """Contract a network under a declared peak budget, or refuse to.
+
+    The declared budget is a hard peak, not a hint: the planner picks the slices
+    that hold the peak inside it and raises when no slicing can, so a run admitted
+    against a capacity never contracts past it. This adds the second half of that
+    refusal, which is the reason a budget can be unaffordable even when it is
+    reachable: a peak met only by slicing into a number of terms that dwarfs the
+    memory it saves. The plan's economics are checked before any slice runs, so an
+    impossible budget ends in a bounded preflight error rather than a run that
+    looks like it has hung — on an eight-wire bra-operator-ket network a 128-byte
+    budget needs 131072 whole-network contractions to save 524288 bytes.
+
+    ``contraction_strategy`` is the order *inside* each slice, taken either as a
+    slicing family name or directly. A budget cannot be met by the caller's
+    unsliced order alone, so this is where an order request is resolved: a slicing
+    family keeps its own inner order, and any other order is contracted in
+    ``quality_multistart`` order inside each slice because that is the only inner
+    order whose slicing search is affordable — the ``greedy`` search explores each
+    candidate slice set with a fresh dry-run contraction, which on a 75-node
+    expectation network costs minutes before it produces a plan.
+    """
+
+    inner = _SLICED_INNER_ORDERS.get(contraction_strategy, "quality_multistart")
+    if inner not in {"greedy", "beam", "quality_multistart"}:
+        raise ValueError(
+            "the order inside each slice must be 'greedy', 'beam', or "
+            "'quality_multistart'."
+        )
+    if int(max_peak_bytes) < 1:
+        raise ValueError("max_peak_bytes must be a positive byte count")
+    slicing = _build_slicing_plan(
+        nodes,
+        output_labels,
+        max_intermediate_bytes=int(max_peak_bytes),
+        contraction_strategy=inner,
+    )
+    slicing.validate_economics(
+        max_slices=max_slices,
+        max_recomputation_factor=max_recomputation_factor,
+    )
+    result, _ = _contract_nodes_sliced(
+        nodes,
+        output_labels,
+        max_intermediate_bytes=int(max_peak_bytes),
+        sliced_labels=slicing.sliced_labels,
+        contraction_strategy=inner,
+    )
+    return result, slicing
+
+
 def _cost_for_sliced_labels(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],
