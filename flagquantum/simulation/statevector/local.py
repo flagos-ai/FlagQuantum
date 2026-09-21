@@ -19,17 +19,22 @@ from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
-    _DIAGONAL_STATEVECTOR_GATES,
+    _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
     _apply_cx_permutation,
+    _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
+    _apply_single_wire_matrix,
     _batched_rotation_sequence_matrices,
     _batched_rx_ry_rz_matrices,
     _bits_from_indices,
     _compile_statevector_program,
+    _cpu_cx_sequence_gather_enabled,
+    _cpu_single_wire_elementwise_enabled,
+    _diagonal_region,
     _fused_gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCXSequenceStep,
@@ -172,6 +177,26 @@ def _initial_runtime_metrics(
     loop_steps = tuple(
         step for step in program if isinstance(step, _StatevectorRXRZLoopStep)
     )
+    # A diagonal gate that was fused into a region is still a diagonal gate, so
+    # it is counted, at one per gate rather than one per region: the regions are
+    # reported by ``diagonal_fused_regions``, and this field answers "how many
+    # gates of this program are diagonal", which is what a reader sums against
+    # ``fused_gate_count``. Before this the fused ones were counted by neither
+    # field, so a rotation column of RZ reported zero diagonal gates.
+    #
+    # The predicate is the one the dispatch routes on, deliberately, including
+    # its treatment of a supplied matrix: a gate named ``rz`` that carries a
+    # matrix of its own does not take the diagonal kernel, so counting it here
+    # would make the field disagree with the run it describes.
+    diagonal_unfused_gates = sum(
+        isinstance(step, _StatevectorGateStep) and _diagonal_region((step.instruction,))
+        for step in program
+    )
+    diagonal_fused_regions = tuple(
+        step
+        for step in program
+        if isinstance(step, _StatevectorFusedGateStep) and step.diagonal
+    )
     return {
         "triton_single_qubit_loop_enabled": enable_triton_loop,
         "triton_single_qubit_loop_regions": len(loop_steps),
@@ -185,11 +210,9 @@ def _initial_runtime_metrics(
         ),
         "triton_ry_rz_pair_executed": 0,
         "triton_single_qubit_matrix_regions": 0,
-        "diagonal_elementwise_gates": sum(
-            isinstance(step, _StatevectorGateStep)
-            and canonical_opcode(step.instruction.name) in _DIAGONAL_STATEVECTOR_GATES
-            for step in program
-        ),
+        "diagonal_elementwise_gates": diagonal_unfused_gates
+        + sum(len(step.instructions) for step in diagonal_fused_regions),
+        "diagonal_fused_regions": len(diagonal_fused_regions),
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
@@ -277,6 +300,64 @@ def _prepare_batched_rotation_matrices(
             {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
         )
     return rx_ry_rz_matrices, rotation_matrices
+
+
+def _use_elementwise_single_wire(
+    state: torch.Tensor,
+    wires: Sequence[int],
+) -> bool:
+    """Whether the elementwise kernel is the one to apply this matrix with.
+
+    Two tests, and neither is decorative. The kernel was measured on CPU only,
+    and the CUDA path has its own single-qubit kernels, so the device test is
+    what keeps an unmeasured device off the route; this host has no CUDA device,
+    so no circuit can reach the branch it guards, and as a named predicate the
+    condition is still an expression a test can evaluate on a ``meta`` tensor.
+    The wire count is the kernel's whole domain: it combines the two amplitudes
+    that differ in one wire, and it has no meaning for a gate spanning more.
+
+    A diagonal one-wire matrix is in the domain too. The kernel is the general
+    one-wire kernel, so a diagonal matrix is a case it handles, and on this host
+    it is the faster of the two: at 20 wires a diagonal single-qubit region takes
+    1.211 ms here against 1.392 ms through ``_apply_diagonal_matrix``.
+    """
+
+    return (
+        len(wires) == 1
+        and state.device.type == "cpu"
+        and _cpu_single_wire_elementwise_enabled()
+    )
+
+
+def _apply_gate_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    *,
+    uses_diagonal_kernel: bool,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply one already-built gate matrix with the kernel that fits it.
+
+    ``_apply_matrix`` lays the state out, permutes the gate's wires to the front
+    and permutes back, which a one-wire gate does not need.
+    ``_apply_diagonal_matrix`` keeps the layout but replaces the batched matmul
+    with an elementwise multiply, which only a diagonal matrix may take.
+
+    ``uses_diagonal_kernel`` says the matrix is known to be diagonal, so the
+    diagonal kernel is available here. It is not a preference: where the
+    elementwise single-wire kernel applies as well, that kernel wins, because it
+    drops the layout permutation the diagonal kernel still pays for, and it
+    agrees with both of them to under an ulp on every shape measured. It is not
+    bitwise equal to either, which is why the switch licensing it is off by
+    default.
+    """
+
+    if _use_elementwise_single_wire(state, wires):
+        return _apply_single_wire_matrix(state, matrix, wires[0], n_wires)
+    apply_gate = _apply_diagonal_matrix if uses_diagonal_kernel else _apply_matrix
+    return apply_gate(state, matrix, wires, n_wires, layout=layout)
 
 
 def _apply_fused_gate_step(
@@ -373,11 +454,12 @@ def _apply_fused_gate_step(
             n_wires=circuit.n_wires,
         )
         return result
-    return _apply_matrix(
+    return _apply_gate_matrix(
         state,
         matrix,
         step.wires,
         circuit.n_wires,
+        uses_diagonal_kernel=step.diagonal,
         layout=step.layout,
     )
 
@@ -402,6 +484,14 @@ def _apply_cx_sequence(
             reverse_control_masks=reverse_control_masks,
             reverse_target_masks=reverse_target_masks,
             n_wires=circuit.n_wires,
+        )
+
+    if (
+        _cpu_cx_sequence_gather_enabled()
+        and len(step.controls) >= _CX_SEQUENCE_GATHER_MINIMUM_LENGTH
+    ):
+        return _apply_cx_sequence_gather(
+            state, step.controls, step.targets, circuit.n_wires
         )
 
     for control, target in zip(step.controls, step.targets, strict=True):
@@ -489,16 +579,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     dtype=output.dtype,
                     parameter_bindings=parameter_bindings,
                 )
-                apply_gate = (
-                    _apply_diagonal_matrix
-                    if name in _DIAGONAL_STATEVECTOR_GATES
-                    else _apply_matrix
-                )
-                output = apply_gate(
+                output = _apply_gate_matrix(
                     output,
                     matrix,
                     instruction.wires,
                     circuit.n_wires,
+                    uses_diagonal_kernel=_diagonal_region((instruction,)),
                     layout=step.layout,
                 )
     circuit._state_cache = output
@@ -544,11 +630,16 @@ def _expectation_pauli_string(
             dtype=current_state.dtype,
         )
         for wire in wires:
-            transformed = _apply_matrix(
+            # Every term is a one-wire matrix, which is exactly what the
+            # elementwise kernel is for: a full string costs one pass per wire.
+            # The shipped code sent Z through ``_apply_matrix`` as well rather
+            # than through the diagonal kernel, and that is kept.
+            transformed = _apply_gate_matrix(
                 transformed,
                 matrix,
                 (wire,),
                 circuit.n_wires,
+                uses_diagonal_kernel=False,
             )
     value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
     return torch.real(value)

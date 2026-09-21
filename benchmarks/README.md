@@ -59,11 +59,18 @@ flagquantum-benchmark run statevector_cpu_paths \
   --json-output benchmarks/results/local/statevector_cpu_paths.json
 ```
 
-It measures a rotation chain, a diagonal chain, a CX ladder, a mixed chain, and
-joint marginal probabilities separately, records the engine's own runtime
-statistics per case, and exits non-zero when a case stops matching its
-reference. Restrict a run with `--cases`, control the intra-op thread count with
-`--threads`, and lower `--n-wires`/`--layers` for a smoke run.
+It measures a rotation chain, a diagonal chain, a fused two-wire diagonal chain,
+a CX ladder, a mixed chain, and joint marginal probabilities separately, records
+the engine's own runtime statistics per case, and exits non-zero when a case
+stops matching its reference. Restrict a run with `--cases`, control the
+intra-op thread count with `--threads`, and lower `--n-wires`/`--layers` for a
+smoke run.
+
+The two-wire diagonal chain repeats one `cz` pair per layer rather than walking
+a ladder, because two-qubit regions only fuse when consecutive gates share the
+identical wire tuple. It is the case that separates the diagonal kernel from the
+dense one where the single-wire kernel cannot reach: a two-wire region is
+outside that kernel's domain.
 
 Ratios computed from that payload share one host, one input, and one warmup
 policy. Each case reports its candidate time, its reference time, and the paired
@@ -77,6 +84,30 @@ Every ratio in that payload is internal: the candidate is the shipped path and
 the reference is another route in this repository or a reduction computed from
 the same state. No cross-framework comparison is run, so none of these numbers
 is a claim about another library.
+
+The payload also records the CPU kernel switches in force (`execution_flags`),
+because a switch decides which kernel a case takes. Two payloads are comparable
+only when that block agrees, and a switch that is off by default reads as
+`"source": "code_default"` rather than as an absent key:
+
+```bash
+# Default state: the pre-existing kernels.
+flagquantum-benchmark run statevector_cpu_paths \
+  --cases rotation_chain --json-output /tmp/off.json
+# The same case with the opt-in elementwise single-wire kernel.
+FQ_CPU_SINGLE_WIRE_ELEMENTWISE=1 flagquantum-benchmark run statevector_cpu_paths \
+  --cases rotation_chain --json-output /tmp/on.json
+```
+
+Run the two arms alternately inside one process rather than dividing two
+separately recorded medians; the evidence limits in each payload say why.
+
+Each case also carries `ir_gate_counts`, counted straight off the circuit IR. It
+is there because `runtime_statistics` is written by the fusion code it reports
+on, so it cannot on its own show that the fusion code counted correctly. The IR
+is the input to that code, so the two numbers are independent, and the diagonal
+count is taken with the same rule the compiler routes on - a named diagonal gate
+carrying no matrix of its own.
 
 Distributed measurements are launched with the usual `torchrun` environment;
 the maintained report builders are also exposed by the same command:

@@ -57,6 +57,10 @@ import torch
 import flagquantum as fq
 from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomic
 from flagquantum.benchmarking.statevector_local import sequential_reference
+from flagquantum.core.operator_schema import canonical_opcode
+from flagquantum.simulation.statevector.operations import (
+    _DIAGONAL_STATEVECTOR_GATES,
+)
 
 SCHEMA = "flagquantum.statevector.cpu_paths.v1"
 DEFAULT_SEED = 4417
@@ -96,6 +100,11 @@ CASES: tuple[PathCase, ...] = (
         reference="same_ir_sequential_dense_matrix_application",
     ),
     PathCase(
+        name="two_wire_diagonal_chain",
+        gate_family="fused diagonal two-qubit gates",
+        reference="same_ir_sequential_dense_matrix_application",
+    ),
+    PathCase(
         name="cx_chain",
         gate_family="nearest-neighbour CX ladder",
         reference="same_ir_sequential_dense_matrix_application",
@@ -116,6 +125,34 @@ CASES: tuple[PathCase, ...] = (
 )
 
 _CASE_BY_NAME = {case.name: case for case in CASES}
+
+# The CPU kernel switches this runner's numbers depend on. Both are read afresh
+# on every dispatch, so the payload records what was in force rather than what
+# the default is; ``source`` distinguishes "the caller set this" from "the code
+# default applied", because for a switch whose default is off those two produce
+# very different states.
+_CPU_KERNEL_SWITCHES: tuple[tuple[str, bool], ...] = (
+    ("FQ_CPU_CX_SEQUENCE_GATHER", True),
+    ("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", False),
+)
+
+
+def cpu_kernel_switch_state() -> dict[str, dict[str, Any]]:
+    """Return the resolved state of each CPU kernel switch for this process."""
+    state: dict[str, dict[str, Any]] = {}
+    for name, default in _CPU_KERNEL_SWITCHES:
+        raw = os.environ.get(name)
+        value = (raw if raw is not None else ("1" if default else "0")).strip().lower()
+        if default:
+            effective = value not in {"0", "false", "off", "no"}
+        else:
+            effective = value in {"1", "true", "on", "yes"}
+        state[name] = {
+            "effective": effective,
+            "source": "environment" if raw is not None else "code_default",
+            "raw": raw,
+        }
+    return state
 
 
 def _angles(*, n_wires: int, layers: int) -> torch.Tensor:
@@ -138,6 +175,31 @@ def _normalized_initial_state(
         generator=generator,
     )
     return initial / torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
+
+
+def _ir_gate_counts(circuit: fq.Circuit) -> dict[str, int]:
+    """Count gates straight off the IR, without the compiler in between.
+
+    ``runtime_statistics`` describes the *compiled* program: it is produced by the
+    fusion and dispatch code whose work it reports. Counting the same property
+    from the IR gives a second, independent number to check it against, so a
+    counter that quietly stops counting shows up as a disagreement rather than as
+    a plausible-looking zero.
+
+    ``diagonal`` applies the same rule the compiler uses - a named diagonal gate
+    carrying no matrix of its own - but reaches it by walking the instructions
+    rather than the regions.
+    """
+
+    instructions = circuit.to_ir().instructions
+    return {
+        "total": len(instructions),
+        "diagonal": sum(
+            instruction.matrix is None
+            and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+            for instruction in instructions
+        ),
+    }
 
 
 def build_rotation_chain(
@@ -178,6 +240,33 @@ def build_diagonal_chain(
     for layer in range(layers):
         for wire in range(n_wires):
             circuit.rz(wire, values[layer, wire, 2])
+    return circuit
+
+
+def build_two_wire_diagonal_chain(
+    *, n_wires: int, layers: int, batch_size: int, seed: int
+) -> fq.Circuit:
+    """``cz`` repeated on each adjacent pair, so consecutive gates fuse.
+
+    Two-qubit regions only fuse when consecutive steps share the identical wire
+    tuple, so a nearest-neighbour ladder does not fuse at all: ``(0, 1)``
+    followed by ``(1, 2)`` never repeats. Repeating one pair before moving on is
+    what produces a fused two-wire region, and a product of diagonal gates is
+    diagonal, so this is the case that separates the diagonal kernel from the
+    dense one where the single-wire kernel cannot reach - which is why it is
+    here rather than left to ``diagonal_chain``.
+    """
+    circuit = fq.Circuit(
+        n_wires,
+        bsz=batch_size,
+        device="cpu",
+        inputs=_normalized_initial_state(
+            n_wires=n_wires, batch_size=batch_size, seed=seed
+        ),
+    )
+    for left in range(n_wires - 1):
+        for _ in range(layers):
+            circuit.cz(left, left + 1)
     return circuit
 
 
@@ -242,6 +331,7 @@ def build_marginal_circuit(
 _BUILDERS: dict[str, Callable[..., "fq.Circuit"]] = {
     "rotation_chain": build_rotation_chain,
     "diagonal_chain": build_diagonal_chain,
+    "two_wire_diagonal_chain": build_two_wire_diagonal_chain,
     "cx_chain": build_cx_chain,
     "mixed_chain": build_mixed_chain,
     "marginal_probabilities": build_marginal_circuit,
@@ -469,6 +559,7 @@ def _run_statevector_case(
         },
         "deterministic_across_repeats": deterministic,
         "runtime_statistics": dict(circuit._last_statevector_runtime),
+        "ir_gate_counts": _ir_gate_counts(circuit),
         "stability_gate": _stability(speedup, timing["samples_seconds"]),
     }
 
@@ -623,6 +714,7 @@ def run_benchmark(
             "marginal_wires": marginal_wires,
             "cases": list(requested),
         },
+        "execution_flags": cpu_kernel_switch_state(),
         "cases": results,
         "all_cases_correct": all(item["correctness"]["passed"] for item in results),
         "all_cases_stable": all(item["stability_gate"]["passed"] for item in results),
@@ -642,7 +734,11 @@ def run_benchmark(
             "its reference adjacent within one iteration and gates stability on "
             "that paired ratio. Read the paired ratio, not a ratio of separately "
             "recorded medians. No distributed scalability claim and no release "
-            "gate is licensed."
+            "gate is licensed. The CPU kernel switches recorded under "
+            "``execution_flags`` change which kernel runs, so two payloads are "
+            "comparable only when that block agrees; the default state of "
+            "``FQ_CPU_SINGLE_WIRE_ELEMENTWISE`` is off and an unset variable "
+            "therefore means the pre-existing path, not the new one."
         ),
     }
 
