@@ -176,9 +176,9 @@ def _compose_noise_model(
                             "a Twin cell cannot repeat an unscoped gate noise rule"
                         )
                     local_unscoped.add(gate_name)
-                    unscoped_by_gate.setdefault(gate_name, {})[cell_index] = (
-                        rule.channel
-                    )
+                    unscoped_by_gate.setdefault(gate_name, {})[
+                        cell_index
+                    ] = rule.channel
                     continue
                 remapped_wires = _remap_wires(
                     rule.wires, local_to_region=local_to_region
