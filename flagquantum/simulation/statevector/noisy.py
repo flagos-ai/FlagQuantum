@@ -7,6 +7,7 @@ import torch
 from ...core.ir import CircuitIR
 from ..gate_matrix import gate_matrix
 from ..matrices import GATE_MAT_DICT
+from .operations import _environment_flag
 
 
 def apply_matrix_batched(
@@ -47,17 +48,76 @@ def apply_matrix_batched(
     )
 
 
-def sample_rows(
-    probabilities: torch.Tensor,
-    generators: list[torch.Generator],
+def _vectorized_row_sampling_enabled() -> bool:
+    """Whether a categorical row is sampled by inverting its cumulative sum.
+
+    Off by default, and unlike the other switches in this package that is not a
+    matter of the last bit: ``torch.multinomial`` and a uniform inverted against
+    a cumulative sum are different estimators over the same distribution, so the
+    same generator does not produce the same choice. The random streams are
+    derived from ``(seed, trajectory_id)`` and callers replay seeded runs, so the
+    mapping is part of the observable contract and a caller opts in deliberately.
+    """
+
+    return _environment_flag("FQ_CPU_VECTORIZED_ROW_SAMPLING", default=False)
+
+
+def _sample_rows_per_row(
+    probabilities: torch.Tensor, generators: list[torch.Generator]
 ) -> torch.Tensor:
-    """Sample one categorical choice per trajectory row."""
+    """One ``torch.multinomial`` call per trajectory row, the shipped path."""
 
     choices = [
         torch.multinomial(row, 1, replacement=True, generator=generator).squeeze(-1)
         for row, generator in zip(probabilities, generators, strict=True)
     ]
     return torch.stack(choices)
+
+
+def _sample_rows_by_inverse_cdf(
+    probabilities: torch.Tensor, generators: list[torch.Generator]
+) -> torch.Tensor:
+    """Draw one uniform per row and invert it against one batched cumulative sum.
+
+    The result has the same shape and the same per-trajectory stream as the
+    per-row path: a trajectory's row is still drawn entirely from the generator
+    its id derives, so the trajectory batch size keeps not changing a seeded
+    result. What is batched is only the search, so ``zip(..., strict=True)``
+    keeps a mismatched generator list reporting the same ``ValueError``.
+
+    A row that ``torch.multinomial`` would refuse is handed to the per-row path
+    rather than answered here: a non-positive total, or an entry that is
+    negative, ``nan`` or ``inf``. Inverting a cumulative sum has no opinion about
+    any of those - it returns an index - so answering would replace a raised error
+    with a silently selected branch. The check is one pass over the request and
+    costs what the ``cumsum`` next to it costs.
+    """
+
+    uniforms = torch.stack(
+        [
+            torch.rand(row.shape[0], generator=generator, dtype=probabilities.dtype)
+            for row, generator in zip(probabilities, generators, strict=True)
+        ]
+    )
+    flat = probabilities.reshape(-1, probabilities.shape[-1])
+    cumulative = torch.cumsum(flat, dim=-1)
+    totals = cumulative[..., -1:]
+    well_formed = bool(torch.all((flat >= 0) & torch.isfinite(flat)))
+    if not well_formed or not bool(torch.all(totals > 0)):
+        return _sample_rows_per_row(probabilities, generators)
+    chosen = torch.searchsorted(cumulative, uniforms.reshape(-1, 1) * totals)
+    return chosen.reshape(uniforms.shape)
+
+
+def sample_rows(
+    probabilities: torch.Tensor,
+    generators: list[torch.Generator],
+) -> torch.Tensor:
+    """Sample one categorical choice per trajectory row."""
+
+    if _vectorized_row_sampling_enabled():
+        return _sample_rows_by_inverse_cdf(probabilities, generators)
+    return _sample_rows_per_row(probabilities, generators)
 
 
 def apply_kraus_batched(
