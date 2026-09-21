@@ -76,6 +76,28 @@ _DIAGONAL_STATEVECTOR_GATES = frozenset(
 )
 
 
+def _diagonal_region(instructions: Sequence[Instruction]) -> bool:
+    """Whether a whole fused region provably applies a diagonal matrix.
+
+    A product of diagonal matrices is diagonal, so it is enough that every
+    member is one, and a member is only known to be one when it is a named
+    diagonal gate carrying no matrix of its own. ``gate_matrix`` returns a
+    supplied ``matrix`` in preference to the gate the name denotes, so for an
+    instruction that carries one the name says nothing about the operator and
+    the region is called non-diagonal. That is the conservative answer and the
+    one the caller needs, because this decides which kernel runs.
+
+    The classification is a property of the program, so it is made once here
+    rather than per execution: a region cannot become diagonal later.
+    """
+
+    return bool(instructions) and all(
+        instruction.matrix is None
+        and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+        for instruction in instructions
+    )
+
+
 @dataclass(frozen=True)
 class _StatevectorGateStep:
     instruction: Instruction
@@ -94,6 +116,9 @@ class _StatevectorFusedGateStep:
     wires: tuple[int, ...]
     layout: tuple[tuple[int, ...], tuple[int, ...]]
     dependency_reordered: bool = False
+    # Decided when the region is formed, not when it runs, because which kernel
+    # the region may take is a property of the program.
+    diagonal: bool = False
 
 
 @dataclass(frozen=True)
@@ -310,11 +335,12 @@ def _fuse_gate_sequences(
                     fused_program.append(positioned_steps[0][1])
                 else:
                     positions = tuple(position for position, _ in positioned_steps)
+                    instructions = tuple(
+                        item.instruction for _, item in positioned_steps
+                    )
                     fused_program.append(
                         _StatevectorFusedGateStep(
-                            instructions=tuple(
-                                item.instruction for _, item in positioned_steps
-                            ),
+                            instructions=instructions,
                             wires=(wire,),
                             layout=positioned_steps[0][1].layout,
                             dependency_reordered=any(
@@ -323,6 +349,7 @@ def _fuse_gate_sequences(
                                     positions, positions[1:], strict=False
                                 )
                             ),
+                            diagonal=_diagonal_region(instructions),
                         )
                     )
             index = cursor
@@ -341,11 +368,13 @@ def _fuse_gate_sequences(
         if len(group) == 1:
             fused_program.append(step)
         else:
+            instructions = tuple(item.instruction for item in group)
             fused_program.append(
                 _StatevectorFusedGateStep(
-                    instructions=tuple(item.instruction for item in group),
+                    instructions=instructions,
                     wires=tuple(step.instruction.wires),
                     layout=step.layout,
+                    diagonal=_diagonal_region(instructions),
                 )
             )
         index = cursor

@@ -57,6 +57,10 @@ import torch
 import flagquantum as fq
 from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomic
 from flagquantum.benchmarking.statevector_local import sequential_reference
+from flagquantum.core.operator_schema import canonical_opcode
+from flagquantum.simulation.statevector.operations import (
+    _DIAGONAL_STATEVECTOR_GATES,
+)
 
 SCHEMA = "flagquantum.statevector.cpu_paths.v1"
 DEFAULT_SEED = 4417
@@ -93,6 +97,11 @@ CASES: tuple[PathCase, ...] = (
     PathCase(
         name="diagonal_chain",
         gate_family="diagonal single-qubit rotations",
+        reference="same_ir_sequential_dense_matrix_application",
+    ),
+    PathCase(
+        name="two_wire_diagonal_chain",
+        gate_family="fused diagonal two-qubit gates",
         reference="same_ir_sequential_dense_matrix_application",
     ),
     PathCase(
@@ -168,6 +177,31 @@ def _normalized_initial_state(
     return initial / torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
 
 
+def _ir_gate_counts(circuit: fq.Circuit) -> dict[str, int]:
+    """Count gates straight off the IR, without the compiler in between.
+
+    ``runtime_statistics`` describes the *compiled* program: it is produced by the
+    fusion and dispatch code whose work it reports. Counting the same property
+    from the IR gives a second, independent number to check it against, so a
+    counter that quietly stops counting shows up as a disagreement rather than as
+    a plausible-looking zero.
+
+    ``diagonal`` applies the same rule the compiler uses - a named diagonal gate
+    carrying no matrix of its own - but reaches it by walking the instructions
+    rather than the regions.
+    """
+
+    instructions = circuit.to_ir().instructions
+    return {
+        "total": len(instructions),
+        "diagonal": sum(
+            instruction.matrix is None
+            and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+            for instruction in instructions
+        ),
+    }
+
+
 def build_rotation_chain(
     *, n_wires: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
@@ -206,6 +240,33 @@ def build_diagonal_chain(
     for layer in range(layers):
         for wire in range(n_wires):
             circuit.rz(wire, values[layer, wire, 2])
+    return circuit
+
+
+def build_two_wire_diagonal_chain(
+    *, n_wires: int, layers: int, batch_size: int, seed: int
+) -> fq.Circuit:
+    """``cz`` repeated on each adjacent pair, so consecutive gates fuse.
+
+    Two-qubit regions only fuse when consecutive steps share the identical wire
+    tuple, so a nearest-neighbour ladder does not fuse at all: ``(0, 1)``
+    followed by ``(1, 2)`` never repeats. Repeating one pair before moving on is
+    what produces a fused two-wire region, and a product of diagonal gates is
+    diagonal, so this is the case that separates the diagonal kernel from the
+    dense one where the single-wire kernel cannot reach - which is why it is
+    here rather than left to ``diagonal_chain``.
+    """
+    circuit = fq.Circuit(
+        n_wires,
+        bsz=batch_size,
+        device="cpu",
+        inputs=_normalized_initial_state(
+            n_wires=n_wires, batch_size=batch_size, seed=seed
+        ),
+    )
+    for left in range(n_wires - 1):
+        for _ in range(layers):
+            circuit.cz(left, left + 1)
     return circuit
 
 
@@ -270,6 +331,7 @@ def build_marginal_circuit(
 _BUILDERS: dict[str, Callable[..., "fq.Circuit"]] = {
     "rotation_chain": build_rotation_chain,
     "diagonal_chain": build_diagonal_chain,
+    "two_wire_diagonal_chain": build_two_wire_diagonal_chain,
     "cx_chain": build_cx_chain,
     "mixed_chain": build_mixed_chain,
     "marginal_probabilities": build_marginal_circuit,
@@ -497,6 +559,7 @@ def _run_statevector_case(
         },
         "deterministic_across_repeats": deterministic,
         "runtime_statistics": dict(circuit._last_statevector_runtime),
+        "ir_gate_counts": _ir_gate_counts(circuit),
         "stability_gate": _stability(speedup, timing["samples_seconds"]),
     }
 

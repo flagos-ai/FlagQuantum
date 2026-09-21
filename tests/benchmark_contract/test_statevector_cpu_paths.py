@@ -138,12 +138,49 @@ def test_fused_rotation_regions_are_attributed_and_reduce_to_one_apply_each():
     assert rotation["fused_gate_count"] == 12
     assert rotation["statevector_apply_count"] == 6
 
-    # Fusion swallows a diagonal chain today: it reports zero diagonal
-    # elementwise gates and falls back to the dense kernel. This is recorded,
-    # not asserted as desirable, so the benchmark can show the change.
+    # A diagonal chain fuses exactly like a rotation chain, and the region it
+    # forms is a product of diagonal matrices, so it is diagonal as a whole. The
+    # region therefore takes the diagonal kernel instead of the dense one, and
+    # the statistic attributes it: one region per wire, one diagonal gate each,
+    # and one state pass each rather than one per gate.
     diagonal = by_case["diagonal_chain"]["runtime_statistics"]
     assert diagonal["fused_gate_regions"] == 6
-    assert diagonal["diagonal_elementwise_gates"] == 0
+    assert diagonal["diagonal_fused_regions"] == 6
+    assert diagonal["diagonal_elementwise_gates"] == 12
+    assert diagonal["statevector_apply_count"] == 6
+
+    # The two-wire case is the one that shows what the diagonal routing buys
+    # where the single-wire kernel cannot reach. ``n_wires - 1`` pairs, one fused
+    # region each, so the count is the pair count rather than the wire count.
+    two_wire = by_case["two_wire_diagonal_chain"]["runtime_statistics"]
+    assert two_wire["fused_gate_regions"] == 5
+    assert two_wire["diagonal_fused_regions"] == 5
+    assert two_wire["diagonal_elementwise_gates"] == 10
+    assert two_wire["statevector_apply_count"] == 5
+
+
+def test_the_diagonal_gate_count_agrees_with_a_count_taken_from_the_ir():
+    """The statistic is checked against the program rather than against itself.
+
+    ``diagonal_elementwise_gates`` is produced by the fusion code, so on its own
+    it cannot show that the fusion code counted correctly - a counter that
+    dropped the fused gates read a clean zero. The IR is the input to fusion, so
+    counting it there is independent of every line that produces the statistic,
+    and the two must agree for a chain whose every gate is diagonal.
+    """
+    by_case = {item["case"]: item for item in _small_run(layers=2, n_wires=6)["cases"]}
+
+    for name in ("diagonal_chain", "rotation_chain", "two_wire_diagonal_chain"):
+        case = by_case[name]
+        counts = case["ir_gate_counts"]
+        assert counts["total"] == case["gate_count"]
+        assert case["runtime_statistics"]["diagonal_elementwise_gates"] == (
+            counts["diagonal"]
+        ), f"{name} attributes a different number of diagonal gates than the IR holds"
+
+    assert by_case["diagonal_chain"]["ir_gate_counts"]["diagonal"] == 12
+    assert by_case["rotation_chain"]["ir_gate_counts"]["diagonal"] == 0
+    assert by_case["two_wire_diagonal_chain"]["ir_gate_counts"]["diagonal"] == 10
 
 
 def test_cpu_paths_can_select_a_subset_of_cases():

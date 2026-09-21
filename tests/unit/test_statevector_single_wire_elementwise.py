@@ -251,23 +251,130 @@ def test_every_one_wire_step_routes_to_the_new_kernel(
     assert sorted(recorder.wires) == [(wire,) for wire in range(n_wires)]
 
 
-def test_a_diagonal_one_wire_gate_keeps_its_own_kernel(
+def test_a_diagonal_one_wire_gate_takes_the_new_kernel(
     recorder: Recorder, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv(SWITCH, "1")
     circuit = fq.Circuit(6, dtype=torch.complex64)
     # One diagonal gate per wire, so each stays a plain gate step rather than
-    # being fused into a region: a *fused* region is dispatched as a matmul
-    # whether or not its members are diagonal, and that is the shipped behavior.
+    # being fused into a region.
     for wire in range(6):
         circuit.rz(wire, 0.2 + 0.1 * wire)
     circuit.state(refresh=True)
 
-    # _apply_diagonal_matrix is a different kernel from _apply_matrix, and the
-    # elementwise kernel was measured against the latter, so a diagonal gate has
-    # to stay where the shipped dispatch put it.
+    # The elementwise kernel is the general one-wire kernel, so a diagonal
+    # matrix is inside its domain, and on this host it is the faster route to the
+    # same state: it drops the layout permutation that _apply_diagonal_matrix
+    # still pays for.
+    assert recorder.calls["elementwise"] == 6
+    assert recorder.calls["diagonal"] == 0
+    assert recorder.calls["matmul"] == 0
+
+
+def test_a_fused_diagonal_region_takes_the_new_kernel(
+    recorder: Recorder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The whole point: fusing a diagonal chain no longer costs the dense kernel.
+
+    Four RZ gates on one wire fuse into a single region. That region applies a
+    product of diagonal matrices, which is diagonal, so it may take a diagonal
+    kernel - and before the classification existed it was dispatched as a matmul
+    like any other fused region, which is why the statistic used to report zero
+    diagonal gates for this circuit.
+    """
+    monkeypatch.setenv(SWITCH, "1")
+    circuit = fq.Circuit(3, dtype=torch.complex64)
+    for layer in range(4):
+        circuit.rz(1, 0.2 + 0.1 * layer)
+    circuit.state(refresh=True)
+
+    statistics = circuit._last_statevector_runtime
+    assert statistics["fused_gate_regions"] == 1
+    assert statistics["fused_gate_count"] == 4
+    assert statistics["statevector_apply_count"] == 1
+    assert statistics["diagonal_fused_regions"] == 1
+    assert recorder.calls["elementwise"] == 1
+    assert recorder.calls["matmul"] == 0
+
+
+def test_a_fused_diagonal_region_falls_back_to_the_diagonal_kernel(
+    recorder: Recorder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With the switch off the region still leaves the matmul, by the other route.
+
+    The routing is decided by the classification and the kernel by the switch, so
+    turning the switch off must not put the region back on the dense kernel.
+    """
+    monkeypatch.setenv(SWITCH, "0")
+    circuit = fq.Circuit(3, dtype=torch.complex64)
+    for layer in range(4):
+        circuit.rz(1, 0.2 + 0.1 * layer)
+    circuit.state(refresh=True)
+
+    assert recorder.calls["diagonal"] == 1
     assert recorder.calls["elementwise"] == 0
-    assert recorder.calls["diagonal"] == 6
+    assert recorder.calls["matmul"] == 0
+
+
+@pytest.mark.parametrize(
+    "gate",
+    ["h", "ry", "rx", "x", "sx"],
+)
+def test_a_fused_region_with_a_non_diagonal_member_stays_on_the_matmul(
+    recorder: Recorder, monkeypatch: pytest.MonkeyPatch, gate: str
+) -> None:
+    """One non-diagonal member makes the product non-diagonal, so the rule holds.
+
+    Each of these is a region of five members of which four are diagonal, so a
+    classifier that looked at the first member, or at any single member, would be
+    caught here rather than by a comment. The switch is off so that the kernel
+    reached is decided by the classification alone: with it on, every one-wire
+    matrix would go to the elementwise kernel and this test could not tell a
+    misclassified region from a well-classified one.
+    """
+    monkeypatch.setenv(SWITCH, "0")
+    circuit = fq.Circuit(3, dtype=torch.complex64)
+    for layer in range(5):
+        if layer == 2:
+            if gate in {"ry", "rx"}:
+                getattr(circuit, gate)(1, 0.3)
+            else:
+                getattr(circuit, gate)(1)
+        else:
+            circuit.rz(1, 0.2 + 0.1 * layer)
+    circuit.state(refresh=True)
+
+    statistics = circuit._last_statevector_runtime
+    assert statistics["fused_gate_regions"] == 1
+    assert statistics["diagonal_fused_regions"] == 0
+    assert recorder.calls["matmul"] == 1
+    assert recorder.calls["elementwise"] == 0
+
+
+def test_a_fused_two_wire_diagonal_region_takes_the_diagonal_kernel(
+    recorder: Recorder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A two-wire diagonal region is the case the one-wire kernel cannot take.
+
+    ``cz`` twice on the same pair fuses, and the product of two diagonal
+    four-by-four matrices is diagonal, so the region routes to
+    ``_apply_diagonal_matrix`` -- which is 1.43x the dense kernel at these wires
+    and is the only kernel available here, because the elementwise single-wire
+    kernel has no meaning for a two-wire gate.
+    """
+    monkeypatch.setenv(SWITCH, "1")
+    circuit = fq.Circuit(3, dtype=torch.complex64)
+    circuit.cz(0, 1)
+    circuit.cz(0, 1)
+    circuit.state(refresh=True)
+
+    statistics = circuit._last_statevector_runtime
+    assert statistics["fused_gate_regions"] == 1
+    assert statistics["diagonal_fused_regions"] == 1
+    assert statistics["diagonal_elementwise_gates"] == 2
+    assert recorder.calls["diagonal"] == 1
+    assert recorder.calls["matmul"] == 0
+    assert recorder.calls["elementwise"] == 0
 
 
 # Which kernel the shipped dispatch picks for each two-wire opcode. ``fixed`` is
@@ -349,23 +456,39 @@ def test_the_dispatch_helper_stays_on_the_matmul_for_two_wires(
     assert torch.equal(result, _apply_matrix(state, matrix, (1, 2), n_wires))
 
 
+@pytest.mark.parametrize("dtype", _COMPLEX_DTYPES)
 def test_the_dispatch_helper_honours_the_diagonal_flag(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
 ) -> None:
-    monkeypatch.setenv(SWITCH, "1")
-    n_wires = 6
-    state = normalized_state(1, n_wires, torch.complex64, seed=19)
-    matrix = torch.diag(torch.tensor([1.0, complex(0.6, 0.8)], dtype=torch.complex64))
+    """With the switch off, the flag alone picks between the two layout-keeping kernels.
 
-    result = statevector_local._apply_gate_matrix(
+    The switch has to be off for this to say anything: with it on, a one-wire
+    matrix goes to the elementwise kernel whichever way the flag points, so the
+    flag would look honoured without being read.
+    """
+    monkeypatch.setenv(SWITCH, "0")
+    n_wires = 6
+    state = normalized_state(1, n_wires, dtype, seed=19)
+    diagonal = torch.diag(torch.tensor([1.0, complex(0.6, 0.8)], dtype=dtype))
+    dense = torch.eye(2, dtype=dtype) * complex(0.6, 0.8)
+
+    flagged = statevector_local._apply_gate_matrix(
         state,
-        matrix,
+        diagonal,
         (2,),
         n_wires,
         uses_diagonal_kernel=True,
     )
+    unflagged = statevector_local._apply_gate_matrix(
+        state,
+        dense,
+        (2,),
+        n_wires,
+        uses_diagonal_kernel=False,
+    )
 
-    assert torch.equal(result, _apply_diagonal_matrix(state, matrix, (2,), n_wires))
+    assert torch.equal(flagged, _apply_diagonal_matrix(state, diagonal, (2,), n_wires))
+    assert torch.equal(unflagged, _apply_matrix(state, dense, (2,), n_wires))
 
 
 def test_the_dispatch_helper_honours_the_switch(
@@ -400,30 +523,16 @@ def test_the_predicate_accepts_a_one_wire_cpu_state(
     monkeypatch.setenv(SWITCH, "1")
     state = torch.empty(2, 8, dtype=torch.complex64)
 
-    assert (
-        statevector_local._use_elementwise_single_wire(
-            state, (3,), uses_diagonal_kernel=False
-        )
-        is True
-    )
+    assert statevector_local._use_elementwise_single_wire(state, (3,)) is True
 
 
-@pytest.mark.parametrize(
-    "wires,uses_diagonal_kernel",
-    [((2, 3), False), ((2,), True)],
-)
-def test_the_predicate_rejects_the_two_kernels_it_does_not_stand_in_for(
-    monkeypatch: pytest.MonkeyPatch, wires: tuple[int, ...], uses_diagonal_kernel: bool
+def test_the_predicate_rejects_a_gate_that_spans_more_than_one_wire(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(SWITCH, "1")
     state = torch.empty(1, 8, dtype=torch.complex64)
 
-    assert (
-        statevector_local._use_elementwise_single_wire(
-            state, wires, uses_diagonal_kernel=uses_diagonal_kernel
-        )
-        is False
-    )
+    assert statevector_local._use_elementwise_single_wire(state, (2, 3)) is False
 
 
 def test_the_predicate_rejects_a_non_cpu_state(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -431,12 +540,7 @@ def test_the_predicate_rejects_a_non_cpu_state(monkeypatch: pytest.MonkeyPatch) 
     state = torch.empty(2, 8, dtype=torch.complex64, device="meta")
 
     assert state.device.type != "cpu"
-    assert (
-        statevector_local._use_elementwise_single_wire(
-            state, (3,), uses_diagonal_kernel=False
-        )
-        is False
-    )
+    assert statevector_local._use_elementwise_single_wire(state, (3,)) is False
 
 
 def test_the_predicate_rejects_a_disabled_switch(
@@ -445,12 +549,7 @@ def test_the_predicate_rejects_a_disabled_switch(
     monkeypatch.setenv(SWITCH, "0")
     state = torch.empty(2, 8, dtype=torch.complex64)
 
-    assert (
-        statevector_local._use_elementwise_single_wire(
-            state, (3,), uses_diagonal_kernel=False
-        )
-        is False
-    )
+    assert statevector_local._use_elementwise_single_wire(state, (3,)) is False
 
 
 # --- the kernel against the matmul ----------------------------------------

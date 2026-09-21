@@ -432,8 +432,13 @@ def test_native_parameter_gradient():
 
 def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monkeypatch):
     import flagquantum.simulation.statevector.local as statevector_runtime
+    from flagquantum.simulation.statevector import operations as statevector_operations
 
-    diagonal_gates = statevector_runtime._DIAGONAL_STATEVECTOR_GATES
+    # The set is patched where the classification reads it, which is the module
+    # that owns it. Patching a copy of the name on the consuming module would
+    # leave the reference on the diagonal kernel while still looking like a
+    # dense-matmul reference, so the comparison below would prove nothing.
+    diagonal_gates = statevector_operations._DIAGONAL_STATEVECTOR_GATES
     reference_theta = torch.tensor(0.31, requires_grad=True)
     theta = torch.tensor(0.31, requires_grad=True)
     initial = torch.tensor([[0.5, 0.5j, -0.5j, 0.5]], dtype=torch.complex64)
@@ -444,19 +449,38 @@ def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monke
     circuit = fq.Circuit(2, inputs=initial)
     circuit.rz(0, theta).cphase(0, 1, theta * 0.5).rzz(1, 0, theta * 0.25)
 
-    monkeypatch.setattr(statevector_runtime, "_DIAGONAL_STATEVECTOR_GATES", frozenset())
+    monkeypatch.setattr(
+        statevector_operations, "_DIAGONAL_STATEVECTOR_GATES", frozenset()
+    )
     reference_state = reference.state()
     reference_loss = reference_state.real.sum()
     reference_loss.backward()
+
+    # With the set emptied the same circuit must reach the dense kernel, which
+    # is what makes the reference a dense-matmul reference rather than a second
+    # run of the kernel under test.
+    dense_calls = []
+    dense_bmm = statevector_runtime.torch.bmm
+
+    def counting_bmm(*args, **kwargs):
+        dense_calls.append(1)
+        return dense_bmm(*args, **kwargs)
+
+    monkeypatch.setattr(statevector_runtime.torch, "bmm", counting_bmm)
+    circuit.state()
+    assert (
+        dense_calls
+    ), "the emptied set did not redirect the circuit to the dense kernel"
+
     monkeypatch.setattr(
-        statevector_runtime, "_DIAGONAL_STATEVECTOR_GATES", diagonal_gates
+        statevector_operations, "_DIAGONAL_STATEVECTOR_GATES", diagonal_gates
     )
 
     def unexpected_bmm(*args, **kwargs):
         raise AssertionError("known diagonal gates must not launch torch.bmm")
 
     monkeypatch.setattr(statevector_runtime.torch, "bmm", unexpected_bmm)
-    state = circuit.state()
+    state = circuit.state(refresh=True)
     loss = state.real.sum()
     loss.backward()
 
@@ -465,6 +489,72 @@ def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monke
     assert reference_theta.grad is not None
     assert torch.allclose(theta.grad, reference_theta.grad, atol=1e-6)
     assert circuit._last_statevector_runtime["diagonal_elementwise_gates"] == 3
+
+
+@pytest.mark.parametrize(
+    "name,params",
+    [
+        ("rz", {"theta": 0.3}),
+        ("p", {"theta": 0.3}),
+        ("z", {}),
+        ("t", {}),
+        ("u1", {"theta": 0.3}),
+    ],
+)
+def test_a_supplied_matrix_overrides_a_diagonal_gate_name(name, params):
+    """The matrix a caller supplies decides the kernel, not the gate's name.
+
+    ``gate_matrix`` returns ``instruction.matrix`` in preference to the operator
+    the name denotes, so ``c.gate("rz", (0,), matrix=X, theta=0.3)`` is an X gate
+    wearing a diagonal name. Routing on the name alone sent it to
+    ``_apply_diagonal_matrix``, which reads only the diagonal of the matrix it is
+    given and therefore dropped the off-diagonal entries: the state came out
+    wrong rather than merely differently rounded. The classification therefore
+    requires the instruction to carry no matrix of its own.
+    """
+    generator = torch.Generator().manual_seed(1207)
+    initial = torch.randn(1, 4, dtype=torch.complex64, generator=generator)
+    initial = initial / torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
+    supplied = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex64)
+
+    circuit = fq.Circuit(2, inputs=initial.clone())
+    circuit.gate(name, (0,), matrix=supplied, **params)
+    state = circuit.state()
+
+    expected = _apply_matrix(initial.clone(), supplied, (0,), 2)
+    assert torch.equal(state, expected)
+
+
+@pytest.mark.parametrize("matrix", [None, "supplied"])
+def test_a_diagonal_gate_name_without_a_matrix_still_takes_the_diagonal_kernel(matrix):
+    """The classification must not push the ordinary diagonal gates onto the matmul."""
+    generator = torch.Generator().manual_seed(1208)
+    initial = torch.randn(1, 4, dtype=torch.complex64, generator=generator)
+    circuit = fq.Circuit(2, inputs=initial.clone())
+    if matrix is None:
+        circuit.rz(0, 0.3)
+    else:
+        circuit.gate(
+            "rz",
+            (0,),
+            matrix=torch.diag(torch.tensor([1.0, -1.0], dtype=torch.complex64)),
+            theta=0.3,
+        )
+    circuit.state(refresh=True)
+
+    # The matrix the engine used, read back off the IR, so this compares the
+    # kernel choice and not a convention about the RZ matrix.
+    instruction = circuit.to_ir().instructions[0]
+    applied = _gate_matrix(instruction, bsz=1, device="cpu", dtype=torch.complex64)
+    assert torch.allclose(
+        circuit.state(),
+        _apply_matrix(initial.clone(), applied, (0,), 2),
+        atol=1e-6,
+    )
+    # A matrix supplied under a diagonal name is still routed by its matrix, so
+    # the statistic must agree with that and not with the name.
+    expected = 1 if matrix is None else 0
+    assert circuit._last_statevector_runtime["diagonal_elementwise_gates"] == expected
 
 
 @pytest.mark.parametrize("wires", [(0, 3), (3, 0), (1, 2), (2, 1)])
