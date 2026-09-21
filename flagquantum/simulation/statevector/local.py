@@ -20,6 +20,7 @@ from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
+    _Z_MARGINAL_MAXIMUM_WIRES,
     _apply_cx_permutation,
     _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
@@ -46,6 +47,8 @@ from .operations import (
     _triton_ry_rz_pair_enabled,
     _triton_single_qubit_loop_enabled,
     _triton_single_qubit_matrix_enabled,
+    _z_marginal_enabled,
+    _z_sign_cache_byte_limit,
 )
 
 if TYPE_CHECKING:
@@ -591,25 +594,97 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     return output
 
 
+def _z_expectations_from_marginal(
+    probabilities: torch.Tensor, wires: tuple[int, ...], *, n_wires: int
+) -> torch.Tensor:
+    """Read per-wire Z expectations out of the reduced marginal.
+
+    ``sum_i p_i * (1 - 2 * bit_w(i))`` is ``P(bit_w = 0) - P(bit_w = 1)``, so a
+    Z expectation does not need a ``(2 ** n_wires, k)`` table of signs at all: it
+    needs the probability vector reduced over the complement of the requested
+    wires, and then one difference per wire. The reduction is the same reshape and
+    sum the joint-marginal path uses, so no index arithmetic over the state is
+    involved and nothing of width ``k`` has to be built before the first wire is
+    answered.
+
+    Wires come back in the order asked, and a repeated wire repeats its column:
+    both are what the table path returns, and ``expectation_z((1, 1, 0))`` is a
+    supported request rather than a mistake to refuse.
+    """
+
+    batch = probabilities.shape[0]
+    shaped = probabilities.reshape((batch,) + (2,) * n_wires)
+    selected = set(wires)
+    unselected = tuple(wire + 1 for wire in range(n_wires) if wire not in selected)
+    marginal = shaped.sum(dim=unselected) if unselected else shaped
+    order = tuple(sorted(selected))
+    view = marginal.reshape((batch,) + (2,) * len(order))
+    columns = []
+    for wire in wires:
+        axis = order.index(wire) + 1
+        columns.append(
+            view.select(axis, 0).reshape(batch, -1).sum(dim=-1)
+            - view.select(axis, 1).reshape(batch, -1).sum(dim=-1)
+        )
+    return torch.stack(columns, dim=-1)
+
+
+def _cached_z_signs(
+    circuit: Circuit, wires: tuple[int, ...], probabilities: torch.Tensor
+) -> torch.Tensor:
+    """Return the sign table for ``wires``, building and evicting as needed.
+
+    Insertion order is the recency order, so a hit is reinserted and the front of
+    the dictionary is the least recently used table. A table larger than the
+    ceiling is handed back without being kept, so residency is bounded by the
+    ceiling rather than by the largest single request.
+    """
+
+    key = (wires, str(probabilities.device), probabilities.dtype)
+    cache = circuit._statevector_z_signs
+    signs = cache.pop(key, None)
+    if signs is not None:
+        cache[key] = signs
+        return signs
+
+    basis = torch.arange(
+        probabilities.shape[-1],
+        dtype=torch.int64,
+        device=probabilities.device,
+    )
+    signs = torch.stack(
+        tuple(1 - 2 * ((basis >> (circuit.n_wires - 1 - wire)) & 1) for wire in wires),
+        dim=-1,
+    ).to(dtype=probabilities.dtype)
+
+    limit = _z_sign_cache_byte_limit()
+    entry_bytes = signs.element_size() * signs.nelement()
+    if entry_bytes > limit:
+        return signs
+    resident = sum(
+        tensor.element_size() * tensor.nelement() for tensor in cache.values()
+    )
+    while cache and resident + entry_bytes > limit:
+        evicted = cache.pop(next(iter(cache)))
+        resident -= evicted.element_size() * evicted.nelement()
+    cache[key] = signs
+    return signs
+
+
 def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
     """Evaluate per-wire Z expectations for a local statevector circuit."""
 
     probabilities = torch.abs(state(circuit)) ** 2
-    key = (wires, str(probabilities.device), probabilities.dtype)
-    signs = circuit._statevector_z_signs.get(key)
-    if signs is None:
-        basis = torch.arange(
-            probabilities.shape[-1],
-            dtype=torch.int64,
-            device=probabilities.device,
+    if (
+        wires
+        and len(wires) <= _Z_MARGINAL_MAXIMUM_WIRES
+        and all(0 <= wire < circuit.n_wires for wire in wires)
+        and _z_marginal_enabled()
+    ):
+        return _z_expectations_from_marginal(
+            probabilities, wires, n_wires=circuit.n_wires
         )
-        signs = torch.stack(
-            tuple(
-                1 - 2 * ((basis >> (circuit.n_wires - 1 - wire)) & 1) for wire in wires
-            ),
-            dim=-1,
-        ).to(dtype=probabilities.dtype)
-        circuit._statevector_z_signs[key] = signs
+    signs = _cached_z_signs(circuit, wires, probabilities)
     return probabilities @ signs
 
 

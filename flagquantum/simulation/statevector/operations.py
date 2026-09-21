@@ -221,6 +221,61 @@ def _cpu_single_wire_elementwise_enabled() -> bool:
     return _environment_flag("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", default=False)
 
 
+# Wire counts at or below this one read a Z expectation out of the reduced
+# marginal rather than out of a cached sign table. The reduction reads the
+# probability vector once and then pays ``k * 2 ** k`` for the per-wire
+# differences, against ``(k + 1) * 2 ** n_wires`` for the table and the matmul, so
+# the marginal is the cheaper of the two while ``k`` is small relative to the
+# width. Measured on this host at 20 wires, against a warm table: 0.12x at k=1,
+# 0.06x at k=4, 0.10x at k=8, 0.13x at k=12, 0.31x at k=16, 1.52x at k=19, 1.87x
+# at k=20 - so the crossing sits between 16 and 19 wires here, and eight is a
+# comfortable interior point rather than the measured boundary, since a threshold
+# on the wrong side of that crossing is what a different memory hierarchy would
+# turn into a regression.
+_Z_MARGINAL_MAXIMUM_WIRES = 8
+
+# Default ceiling, in bytes, on the sign tables one circuit keeps resident. It is a
+# guard rail rather than a tuning knob: at 20 wires the whole 19-request pattern
+# the cache was measured on is 76 MiB, well under it, so no request reachable
+# there changes behaviour. What it stops is the projective growth of the sum - a
+# 30-wire state asked for all 30 wires wants a 128.8 GB table - by evicting the
+# least recently used table, and by not retaining a table that is itself larger
+# than the ceiling.
+_DEFAULT_Z_SIGN_CACHE_BYTES = 1024 * 1024 * 1024
+
+
+def _z_marginal_enabled() -> bool:
+    """Whether a narrow Z expectation is read from the reduced marginal.
+
+    Off by default, following the same rule as ``FQ_CPU_SINGLE_WIRE_ELEMENTWISE``:
+    the table path and this one sum the same probabilities in a different order,
+    so they are not bitwise equal - measured at 2.7e-08 to 5.9e-07 on a
+    normalised complex64 state at 20 wires - and a switch that changes the last
+    bit of a default result is opt-in.
+
+    What it buys is the table itself. A ``(2 ** n_wires, k)`` float32 table is
+    ten times the state at 20 wires, and the requests that fill the cache are
+    narrow ones - nineteen single-wire keys are 76 MiB - which is exactly where
+    this path is eight to sixteen times faster than the matmul it replaces *and*
+    leaves nothing resident. A request wider than
+    ``_Z_MARGINAL_MAXIMUM_WIRES`` still uses the table.
+    """
+
+    return _environment_flag("FQ_CPU_Z_MARGINAL", default=False)
+
+
+def _z_sign_cache_byte_limit() -> int:
+    """Resident ceiling for one circuit's Z sign tables, in bytes."""
+
+    raw = os.getenv("FQ_CPU_Z_SIGN_CACHE_BYTES")
+    if raw is None:
+        return _DEFAULT_Z_SIGN_CACHE_BYTES
+    try:
+        return max(int(raw.strip()), 0)
+    except ValueError:
+        return _DEFAULT_Z_SIGN_CACHE_BYTES
+
+
 def _compile_statevector_program(
     instructions: Sequence[Instruction], n_wires: int, *, enable_triton_loop: bool
 ) -> tuple[_StatevectorProgramStep, ...]:
