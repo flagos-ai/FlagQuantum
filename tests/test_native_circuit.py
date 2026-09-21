@@ -98,6 +98,79 @@ def test_circuit_rejects_conflicting_qubit_count_aliases():
         fq.Circuit(n_qubits=2, n_wires=3)
 
 
+@pytest.mark.parametrize("value", [2.7, 2.0, "3", True, 2 + 0j])
+def test_circuit_rejects_a_non_integral_qubit_count(value):
+    """A qubit count is a count: it must already be an integer.
+
+    ``int(value)`` used to turn ``2.7`` into ``2``, ``"3"`` into ``3`` and ``True``
+    into ``1``, so a mistyped argument silently resized the program.
+    """
+
+    with pytest.raises(TypeError, match="Circuit n_qubits must be an integer"):
+        fq.Circuit(n_qubits=value)
+
+
+@pytest.mark.parametrize("value", [2.7, 2.0, "3", True, False, None])
+def test_circuit_rejects_a_non_integral_batch_size(value):
+    """``bsz`` follows the same rule ``ExecutionOptions`` applies to ``batch_size``.
+
+    ``Circuit(2, bsz=2.7)`` used to build a circuit with ``bsz == 2`` while
+    ``ExecutionOptions(batch_size=2.7)`` raised, so the same concept was strict in
+    one place and lossy in another.
+    """
+
+    with pytest.raises(TypeError, match="Circuit bsz must be an integer"):
+        fq.Circuit(2, bsz=value)
+
+
+@pytest.mark.parametrize(
+    "kwargs, message",
+    [
+        ({"n_qubits": 0}, "Circuit n_qubits must be >= 1"),
+        ({"n_qubits": -1}, "Circuit n_qubits must be >= 1"),
+        ({"n_qubits": 2, "bsz": 0}, "Circuit bsz must be >= 1"),
+        ({"n_qubits": 2, "bsz": -2}, "Circuit bsz must be >= 1"),
+    ],
+)
+def test_circuit_rejects_a_non_positive_count(kwargs, message):
+    """The count is refused where it is written, not later where it is used.
+
+    ``Circuit(2, bsz=0)`` used to construct successfully and only fail inside
+    ``to_ir()`` as ``IRValidationError: IR shape dimensions must be positive``,
+    blaming a shape the caller never wrote.
+    """
+
+    with pytest.raises(ValueError, match=message):
+        fq.Circuit(**kwargs)
+
+
+def test_circuit_accepts_integral_scalars_from_other_libraries():
+    """The integer protocol is followed, so integral scalars still work.
+
+    The count is read with ``operator.index``, so any object that implements
+    ``__index__`` is accepted, which is what NumPy integers do. NumPy is not a
+    dependency of this package and ``tests/unit/test_lane_dependency_policy.py``
+    refuses a test that probes one, so the protocol is exercised through a plain
+    ``__index__`` object and a zero-dimensional tensor instead.
+    """
+
+    class IntegralLike:
+        """An object that denotes an integer without being ``int``."""
+
+        def __init__(self, value):
+            self._value = value
+
+        def __index__(self):
+            return self._value
+
+    assert fq.Circuit(n_qubits=IntegralLike(7)).n_wires == 7
+    assert fq.Circuit(n_qubits=torch.tensor(6)).n_wires == 6
+    assert fq.Circuit(n_qubits=torch.tensor([8])).n_wires == 8
+    assert fq.Circuit(2, bsz=IntegralLike(3)).bsz == 3
+    assert fq.Circuit(2, bsz=torch.tensor(4)).bsz == 4
+    assert fq.Circuit(2, bsz=torch.tensor([5])).bsz == 5
+
+
 def test_native_parameter_gradient():
     theta = torch.tensor(0.3, requires_grad=True)
 
