@@ -125,6 +125,17 @@ def _flagquantum_parameter_expression(value: Any) -> Any:
 
     sympy = import_module("sympy")
     symbolic = value.sympify()
+    if not isinstance(symbolic, sympy.Basic):
+        # Qiskit 2.0's sympify() simplifies through SymEngine and Qiskit 2.5's
+        # through SymPy. Both forms publish `_sympy_`, so normalising here keeps
+        # one node family in the traversal instead of matching two.
+        converter = getattr(symbolic, "_sympy_", None)
+        if converter is None:
+            raise TypeError(
+                f"symbolic form {type(symbolic).__name__} is not a SymPy "
+                "expression and cannot be converted"
+            )
+        symbolic = sympy.sympify(converter())
     qiskit_parameters = tuple(value.parameters)
     parameters_by_name = {
         str(parameter.name): Parameter(str(parameter.name))
