@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.twin.compose_region_twin()` and immutable `TwinRegionModel` for
+  offline measurement-distribution prediction across a connected union of
+  compatible local Twin cells. Composition remaps local calibration and noise
+  semantics into one regional wire order and fails closed on overlap conflicts;
+  it does not infer cross-cell correlated noise or turn local evidence into
+  regional accuracy. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added `fq.twin.compose_connected_region()` and immutable connected-region
   coverage reports. Applications can combine overlapping, contemporaneous
   `TwinCircuitSupport` cells from one QPU and check an explicit circuit mapping

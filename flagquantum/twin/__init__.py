@@ -54,6 +54,7 @@ from .region import (
     TwinRegionCoverageStatus,
     compose_connected_region,
 )
+from .region_model import TwinRegionModel, compose_region_twin
 from .series import (
     TwinValidationSeries,
     dump_validation_series,
@@ -75,6 +76,7 @@ __all__ = (
     "build_validation_history",
     "compare_calibrations",
     "compose_connected_region",
+    "compose_region_twin",
     "from_noise_model",
     "from_quafu_chip_info",
     "dump_calibration_history",
@@ -118,6 +120,7 @@ __all__ = (
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
+    "TwinRegionModel",
     "TwinSnapshot",
     "TwinSubmission",
     "TwinValidationReport",

@@ -633,6 +633,39 @@ averaged nor combined, so `coverage.tv_error_bound` and
 requires prospective evidence for the complete mapped workload. See
 `examples/twin_connected_region.py` for the complete offline workflow.
 
+### Compose a runnable regional Twin model
+
+When the local cells also carry compatible calibration and noise models, compose
+them into one wider offline Twin:
+
+```python
+region_twin = fq.twin.compose_region_twin(
+    [(twin_a, support_a), (twin_b, support_b)]
+)
+
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+prediction = region_twin.predict(
+    circuit,
+    physical_qubits=(20, 27, 34),
+)
+
+print(prediction.twin_probabilities)
+print(prediction.total_variation_from_ideal)
+```
+
+The mapping must exactly equal the model's canonical regional wire order.
+Composition fails closed if overlapping cells disagree on qubit calibration,
+gate duration, gate-noise channels, or readout noise. An unscoped gate-noise
+rule is accepted only when every cell declares the same channel. No correlated
+noise is inferred between cells.
+
+`total_variation_from_ideal` compares the regional Twin's predicted Z-basis
+measurement distribution with noiseless statevector simulation. It is not a
+Twin-to-QPU accuracy measurement. `TwinRegionModel` intentionally has no
+`evidence_report`, accuracy bound, or confidence level: those require a later
+prospective validation of the complete regional circuit. The full offline code
+is `examples/twin_region_model.py`.
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.
