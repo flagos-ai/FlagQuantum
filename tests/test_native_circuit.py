@@ -171,6 +171,135 @@ def test_circuit_accepts_integral_scalars_from_other_libraries():
     assert fq.Circuit(2, bsz=torch.tensor([5])).bsz == 5
 
 
+@pytest.mark.parametrize("value", [2.7, 2.0, "3", True, False, None, 3 + 0j])
+def test_a_batch_size_assignment_follows_the_constructor_rule(value):
+    """``circuit.bsz = value`` is the same write as ``Circuit(2, bsz=value)``.
+
+    The constructor validates the count; the attribute did not, and the object then
+    reported the value it was given while executing a different one:
+    ``circuit.bsz = 2.7`` ran a two-entry batch, ``= True`` ran a one-entry batch,
+    and ``= "3"`` ran three.
+    """
+
+    circuit = fq.Circuit(2, bsz=3)
+
+    with pytest.raises(TypeError, match="Circuit bsz must be an integer"):
+        circuit.bsz = value
+
+    assert circuit.bsz == 3
+
+
+@pytest.mark.parametrize("value", [2.7, 2.0, "3", True, False, None, 3 + 0j])
+def test_a_qubit_count_assignment_follows_the_constructor_rule(value):
+    """``circuit.n_wires = value`` is the same write as ``Circuit(value)``."""
+
+    circuit = fq.Circuit(2, bsz=3)
+
+    with pytest.raises(TypeError, match="Circuit n_wires must be an integer"):
+        circuit.n_wires = value
+
+    assert circuit.n_wires == 2
+
+
+@pytest.mark.parametrize("name", ["bsz", "n_wires"])
+@pytest.mark.parametrize("value", [0, -1, -1024])
+def test_a_non_positive_count_assignment_is_refused_where_it_is_written(name, value):
+    """A count no execution could honor fails at the assignment, not inside a run.
+
+    ``circuit.bsz = 0`` used to be accepted and then fail in ``fq.run`` with
+    ``batch_size must be >= 1``, which names neither the circuit nor ``bsz``.
+    """
+
+    circuit = fq.Circuit(2, bsz=3)
+
+    with pytest.raises(ValueError, match=rf"Circuit {name} must be >= 1"):
+        setattr(circuit, name, value)
+
+    assert circuit.bsz == 3
+    assert circuit.n_wires == 2
+
+
+def test_a_refused_assignment_leaves_a_runnable_circuit():
+    """A refused write changes nothing, so the circuit still runs as it did."""
+
+    circuit = fq.Circuit(2, bsz=3).h(0)
+    before = fq.run(circuit, outputs=fq.probabilities()).probabilities
+
+    with pytest.raises(TypeError):
+        circuit.bsz = 2.7
+
+    after = fq.run(circuit, outputs=fq.probabilities()).probabilities
+    torch.testing.assert_close(after, before)
+
+
+@pytest.mark.parametrize("name, value", [("bsz", 7), ("n_wires", 4)])
+def test_an_assignment_reaches_the_program_that_is_executed(name, value):
+    """The declared count and the program the circuit hands to a backend agree.
+
+    ``to_ir()`` caches the program it built. Assigning a count after that cache was
+    filled left ``to_ir()`` reporting the old value while ``fq.run`` executed the
+    new one, so two public reads of one object described different programs.
+    """
+
+    circuit = fq.Circuit(2, bsz=3).h(0)
+    circuit.to_ir()
+
+    setattr(circuit, name, value)
+
+    declared = getattr(circuit, name)
+    ir = circuit.to_ir()
+    if name == "bsz":
+        assert ir.shape == (declared, 4)
+    else:
+        assert ir.n_wires == declared
+    probabilities = fq.run(circuit, outputs=fq.probabilities()).probabilities
+    assert probabilities.shape == (circuit.bsz, 2**circuit.n_wires)
+
+
+def test_an_assignment_reaches_every_derived_view_of_the_circuit():
+    """``copy``, ``compile`` and the retained construction options agree with it."""
+
+    circuit = fq.Circuit(2, bsz=3).h(0)
+    circuit.to_ir()
+
+    circuit.bsz = 7
+
+    assert circuit.circuit_param["bsz"] == 7
+    assert circuit.copy().bsz == 7
+    assert circuit.to_ir().shape == (7, 4)
+    compiled = fq.compile(circuit)
+    assert fq.run(compiled, outputs=fq.probabilities()).probabilities.shape == (7, 4)
+
+
+def test_a_qubit_count_cannot_be_lowered_onto_a_wire_in_use():
+    """A width that would strand a recorded instruction is refused at the write.
+
+    ``circuit.n_wires = 2`` on a circuit holding a gate on wire 3 was accepted, and
+    the object then failed later with
+    ``IRValidationError: instruction 0 references wire(s) (3,) outside circuit
+    range`` -- an error about the program, not about the assignment that broke it.
+    """
+
+    circuit = fq.Circuit(4).h(3)
+
+    with pytest.raises(ValueError, match="wire 3"):
+        circuit.n_wires = 2
+
+    assert circuit.n_wires == 4
+    assert fq.run(circuit, outputs=fq.probabilities()).probabilities.shape == (1, 16)
+
+
+def test_growing_a_qubit_count_keeps_the_recorded_instructions():
+    """Widening is allowed, and the new wires are usable afterwards."""
+
+    circuit = fq.Circuit(2).h(0)
+    circuit.n_wires = 4
+    circuit.h(3)
+
+    assert circuit.to_ir().n_wires == 4
+    assert fq.run(circuit, outputs=fq.probabilities()).probabilities.shape == (1, 16)
+
+
 def test_native_parameter_gradient():
     theta = torch.tensor(0.3, requires_grad=True)
 

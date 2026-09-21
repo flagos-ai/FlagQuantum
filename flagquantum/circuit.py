@@ -111,6 +111,8 @@ class Circuit:
     """
 
     _parameter_bindings: BuilderBindings
+    _n_wires: int
+    _bsz: int
 
     def __init__(
         self,
@@ -147,9 +149,12 @@ class Circuit:
             raise ValidationError(
                 f"Circuit received conflicting qubit counts: {rendered}."
             )
-        self.n_wires = next(iter(counts.values()))
-        self._nqubits = self.n_wires
-        self.bsz = _count_argument("bsz", bsz)
+        # The backing fields are written directly here: the setters below refresh
+        # derived state that does not exist yet, and both values were already read
+        # through ``_count_argument`` when the aliases were resolved.
+        self._n_wires = next(iter(counts.values()))
+        self._nqubits = self._n_wires
+        self._bsz = _count_argument("bsz", bsz)
         self.runtime_config = config or get_runtime_config()
         if dtype is not None:
             self.runtime_config = self.runtime_config.with_overrides(
@@ -197,6 +202,78 @@ class Circuit:
         self._statevector_constant_parameters.clear()
         self._statevector_cx_masks.clear()
         self._statevector_fused_matrices.clear()
+
+    def _set_declared_count(self, name: str, value: Any) -> None:
+        """Apply one declared count under the rule the constructor already applies.
+
+        ``bsz`` and ``n_wires`` are read by the program builder and by every
+        executor, so the rule that reads them from ``Circuit(...)`` has to be the
+        rule that reads them from an assignment. Without this, ``circuit.bsz = 2.7``
+        was stored as ``2.7``, reported back as ``2.7``, and executed as a
+        two-entry batch; ``circuit.bsz = 0`` was accepted and failed later inside a
+        run with an error naming neither the circuit nor ``bsz``.
+        """
+
+        count = _count_argument(name, value)
+        if name == "n_wires":
+            self._require_width_covers_recorded_wires(count)
+        if getattr(self, f"_{name}") == count:
+            return
+        setattr(self, f"_{name}", count)
+        if name == "n_wires":
+            self._nqubits = count
+        self._after_declared_count_change()
+
+    def _require_width_covers_recorded_wires(self, n_wires: int) -> None:
+        """Refuse a width that would strand an instruction already recorded."""
+
+        for index, instruction in enumerate(self._instructions):
+            stranded = tuple(wire for wire in instruction.wires if wire >= n_wires)
+            if stranded:
+                raise ValidationError(
+                    f"Circuit n_wires must cover every recorded wire: instruction "
+                    f"{index} references wire {stranded[0]}, which needs n_wires >= "
+                    f"{stranded[0] + 1}."
+                )
+
+    def _after_declared_count_change(self) -> None:
+        """Discard everything derived from ``n_wires`` and ``bsz``.
+
+        A count change reaches further than a gate edit. The cached IR carries both
+        counts, the cached backend programs are built from them, and the statevector
+        workspaces are shaped ``(bsz, 2**n_wires)`` — including
+        :attr:`_initial_state_workspace` and the Z-sign table, which a gate edit may
+        keep but a width or batch change cannot.
+        """
+
+        self._invalidate_execution_cache(instructions_changed=True)
+        self._initial_state_workspace = None
+        self._statevector_z_signs.clear()
+        self.circuit_param = {
+            **self.circuit_param,
+            "n_wires": self._n_wires,
+            "bsz": self._bsz,
+        }
+
+    @property
+    def n_wires(self) -> int:
+        """Number of wires the recorded instructions may reference."""
+
+        return self._n_wires
+
+    @n_wires.setter
+    def n_wires(self, value: Any) -> None:
+        self._set_declared_count("n_wires", value)
+
+    @property
+    def bsz(self) -> int:
+        """Declared batch size: one amplitude set per entry."""
+
+        return self._bsz
+
+    @bsz.setter
+    def bsz(self, value: Any) -> None:
+        self._set_declared_count("bsz", value)
 
     @property
     def n_qubits(self) -> int:
