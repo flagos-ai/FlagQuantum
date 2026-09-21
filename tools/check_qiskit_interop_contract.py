@@ -27,6 +27,8 @@ EXPECTED_SEMANTICS = {
     "flagquantum_statevector_order": "wire_zero_most_significant",
     "qiskit_statevector_order": "qubit_zero_least_significant",
     "statevector_comparison": "reverse_qiskit_tensor_axes_before_comparison",
+    "custom_unitary_scope": "one_to_three_qubits",
+    "custom_unitary_basis_conversion": ("reverse_local_input_and_output_bit_axes"),
     "parameter_identity": "unique_name",
     "global_phase": "preserved",
     "loss_policy": "fail_closed_unless_allow_lossy_true",

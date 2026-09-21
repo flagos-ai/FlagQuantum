@@ -13,6 +13,7 @@ from flagquantum.ecosystem.qiskit import (
     export_qiskit,
     from_qiskit,
     import_qiskit,
+    qiskit_statevector_to_flagquantum,
     to_qiskit,
 )
 
@@ -20,6 +21,7 @@ qiskit = pytest.importorskip("qiskit")
 from qiskit import QuantumCircuit, QuantumRegister  # noqa: E402
 from qiskit.circuit import Parameter as QiskitParameter  # noqa: E402
 from qiskit.circuit.library import UnitaryGate  # noqa: E402
+from qiskit.quantum_info import Statevector, random_unitary  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.qiskit]
 
@@ -141,16 +143,117 @@ def test_static_custom_unitary_round_trips_without_entering_runtime_kernels() ->
     assert round_trip.data[0].operation.label == "custom-x"
 
 
-def test_multi_qubit_custom_unitary_fails_closed_until_basis_order_is_defined() -> None:
-    circuit = QuantumCircuit(2)
-    circuit.append(UnitaryGate(torch.eye(4).numpy()), [0, 1])
+@pytest.mark.parametrize("width", (2, 3))
+def test_multi_qubit_custom_unitary_round_trips_local_basis_order(width: int) -> None:
+    matrix = random_unitary(2**width, seed=100 + width).data
+    qargs = list(reversed(range(width)))
+    circuit = QuantumCircuit(width)
+    circuit.append(UnitaryGate(matrix, label=f"custom-{width}"), qargs)
+
+    ir = from_qiskit(circuit)
+    round_trip = to_qiskit(ir)
+
+    assert ir.instructions[0].wires == tuple(qargs)
+    assert round_trip.data[0].operation.label == f"custom-{width}"
+    torch.testing.assert_close(
+        torch.as_tensor(round_trip.data[0].operation.to_matrix()),
+        torch.as_tensor(matrix),
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+def test_multi_qubit_custom_unitary_matches_qiskit_on_reordered_sparse_wires() -> None:
+    matrix = random_unitary(4, seed=731).data
+    circuit = QuantumCircuit(4)
+    circuit.h(0)
+    circuit.ry(0.37, 1)
+    circuit.x(3)
+    circuit.append(UnitaryGate(matrix, label="asymmetric"), [3, 1])
+
+    ir = from_qiskit(circuit)
+    flagquantum_state = fq.Circuit.from_ir(ir, dtype=torch.complex128).state()[0]
+    qiskit_state = qiskit_statevector_to_flagquantum(
+        Statevector.from_instruction(circuit).data,
+        4,
+    ).to(torch.complex128)
+
+    torch.testing.assert_close(
+        flagquantum_state,
+        qiskit_state,
+        rtol=0.0,
+        atol=1e-10,
+    )
+
+
+def test_custom_unitary_export_fails_closed_for_invalid_matrix() -> None:
+    ir = fq.CircuitIR(
+        2,
+        (
+            fq.Instruction(
+                "unitary",
+                (0, 1),
+                matrix=torch.ones((4, 4), dtype=torch.complex128),
+            ),
+        ),
+        shape=(1, 4),
+    )
 
     with pytest.raises(QiskitConversionError) as captured:
-        from_qiskit(circuit)
+        to_qiskit(ir)
+
+    assert captured.value.report.blockers[0].code == "non_unitary_custom_matrix"
+
+
+@pytest.mark.parametrize(
+    ("matrix", "issue_code"),
+    (
+        (torch.eye(3, dtype=torch.complex128), "invalid_custom_unitary_shape"),
+        (
+            torch.diag(
+                torch.tensor(
+                    [1.0, 1.0, 1.0, complex(float("nan"), 0.0)],
+                    dtype=torch.complex128,
+                )
+            ),
+            "invalid_custom_unitary_values",
+        ),
+    ),
+)
+def test_custom_unitary_export_reports_invalid_matrix_contract(
+    matrix: torch.Tensor,
+    issue_code: str,
+) -> None:
+    ir = fq.CircuitIR(
+        2,
+        (fq.Instruction("unitary", (0, 1), matrix=matrix),),
+        shape=(1, 4),
+    )
+
+    with pytest.raises(QiskitConversionError) as captured:
+        to_qiskit(ir)
+
+    assert captured.value.report.blockers[0].code == issue_code
+
+
+def test_custom_unitary_export_rejects_width_above_certified_limit() -> None:
+    ir = fq.CircuitIR(
+        4,
+        (
+            fq.Instruction(
+                "unitary",
+                (0, 1, 2, 3),
+                matrix=torch.eye(16, dtype=torch.complex128),
+            ),
+        ),
+        shape=(1, 16),
+    )
+
+    with pytest.raises(QiskitConversionError) as captured:
+        to_qiskit(ir)
 
     assert (
-        captured.value.report.blockers[0].code
-        == "multi_qubit_unitary_wire_order_unverified"
+        captured.value.report.blockers[0].code == "custom_unitary_width_exceeds_limit"
     )
 
 

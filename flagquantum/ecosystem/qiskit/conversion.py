@@ -34,6 +34,8 @@ _FLAGQUANTUM_TO_QISKIT = {
     "cphase": "cp",
 }
 
+_MAX_CUSTOM_UNITARY_QUBITS = 3
+
 
 def _qiskit_modules() -> tuple[Any, Any, Any]:
     try:
@@ -190,6 +192,96 @@ def _matrix_from_operation(operation: Any) -> torch.Tensor | None:
         return None
 
 
+def _validated_custom_unitary(
+    matrix: Any,
+    wires: tuple[int, ...],
+    *,
+    issues: list[QiskitConversionIssue],
+    operation_index: int,
+    operation_name: str,
+) -> torch.Tensor | None:
+    width = len(wires)
+    if width > _MAX_CUSTOM_UNITARY_QUBITS:
+        issues.append(
+            QiskitConversionIssue(
+                "custom_unitary_width_exceeds_limit",
+                "custom unitary interoperability is limited to at most "
+                f"{_MAX_CUSTOM_UNITARY_QUBITS} qubits; got {width}",
+                "error",
+                operation_index,
+                operation_name,
+            )
+        )
+        return None
+    try:
+        tensor = torch.as_tensor(matrix)
+    except (TypeError, ValueError):
+        tensor = torch.empty(0)
+    dimension = 2**width
+    if tensor.ndim != 2 or tuple(tensor.shape) != (dimension, dimension):
+        issues.append(
+            QiskitConversionIssue(
+                "invalid_custom_unitary_shape",
+                "custom unitary matrix shape must be "
+                f"({dimension}, {dimension}) for {width} wire(s); got "
+                f"{tuple(tensor.shape)}",
+                "error",
+                operation_index,
+                operation_name,
+            )
+        )
+        return None
+    numeric = tensor.detach().to(device="cpu", dtype=torch.complex128)
+    if not bool(torch.isfinite(numeric).all()):
+        issues.append(
+            QiskitConversionIssue(
+                "invalid_custom_unitary_values",
+                "custom unitary matrix entries must all be finite",
+                "error",
+                operation_index,
+                operation_name,
+            )
+        )
+        return None
+    identity = torch.eye(dimension, dtype=torch.complex128)
+    low_precision = tensor.dtype in {torch.float16, torch.float32, torch.complex64}
+    if not torch.allclose(
+        numeric.conj().transpose(-2, -1) @ numeric,
+        identity,
+        rtol=1e-5 if low_precision else 1e-9,
+        atol=1e-6 if low_precision else 1e-10,
+    ):
+        issues.append(
+            QiskitConversionIssue(
+                "non_unitary_custom_matrix",
+                "custom unitary matrix must satisfy U†U = I",
+                "error",
+                operation_index,
+                operation_name,
+            )
+        )
+        return None
+    return tensor
+
+
+def _reverse_local_basis_order(matrix: torch.Tensor, width: int) -> torch.Tensor:
+    """Reverse local input/output bit axes between Qiskit and FlagQuantum.
+
+    Qiskit treats the first qarg as the least-significant local bit, whereas
+    FlagQuantum treats the first instruction wire as the most-significant
+    local bit. Applying the same bit-reversal permutation to rows and columns
+    converts between the two conventions. The transform is its own inverse.
+    """
+
+    if width <= 1:
+        return matrix
+    axes = tuple(reversed(range(width))) + tuple(reversed(range(width, 2 * width)))
+    dimension = 2**width
+    return (
+        matrix.reshape((2,) * (2 * width)).permute(axes).reshape(dimension, dimension)
+    )
+
+
 def import_qiskit(circuit: Any, *, allow_lossy: bool = False) -> QiskitImportResult:
     """Convert a Qiskit ``QuantumCircuit`` into canonical FlagQuantum IR.
 
@@ -330,24 +422,20 @@ def import_qiskit(circuit: Any, *, allow_lossy: bool = False) -> QiskitImportRes
                     )
                 )
                 continue
-            if len(wires) != 1:
-                issues.append(
-                    QiskitConversionIssue(
-                        "multi_qubit_unitary_wire_order_unverified",
-                        "custom multi-qubit matrices require an explicit Qiskit-to-"
-                        "FlagQuantum basis-order conversion that IR v1 does not yet "
-                        "define.",
-                        "error",
-                        index,
-                        raw_name,
-                    )
-                )
+            matrix = _validated_custom_unitary(
+                matrix,
+                wires,
+                issues=issues,
+                operation_index=index,
+                operation_name=raw_name,
+            )
+            if matrix is None:
                 continue
             instructions.append(
                 Instruction(
                     raw_name,
                     wires,
-                    matrix=matrix,
+                    matrix=_reverse_local_basis_order(matrix, len(wires)),
                     metadata={
                         "interop_source": "qiskit",
                         "qiskit_label": getattr(operation, "label", None),
@@ -522,20 +610,16 @@ def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportRes
             circuit.reset(instruction.wires[0])
             return True
         if instruction.matrix is not None:
-            if len(instruction.wires) != 1:
-                issues.append(
-                    QiskitConversionIssue(
-                        "multi_qubit_unitary_wire_order_unverified",
-                        "custom multi-qubit matrices require an explicit FlagQuantum-"
-                        "to-Qiskit basis-order conversion that IR v1 does not yet "
-                        "define.",
-                        "error",
-                        index,
-                        instruction.name,
-                    )
-                )
+            matrix = _validated_custom_unitary(
+                instruction.matrix,
+                tuple(instruction.wires),
+                issues=issues,
+                operation_index=index,
+                operation_name=instruction.name,
+            )
+            if matrix is None:
                 return False
-            matrix = instruction.matrix
+            matrix = _reverse_local_basis_order(matrix, len(instruction.wires))
             if hasattr(matrix, "detach"):
                 matrix = matrix.detach().cpu().numpy()
             circuit.unitary(
