@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import operator
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -41,6 +42,36 @@ def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     if len(set(normalized)) != len(normalized):
         raise IRValidationError(f"{owner} cannot repeat a wire: {normalized}")
     return normalized
+
+
+def _normalize_shots(shots: Any) -> int | None:
+    """Return ``shots`` as a shot count, refusing anything that is not one.
+
+    ``shots`` says how many times a program is run, so a value that is not exactly a
+    positive integer is not a shot count.  A float, a string or a ``Decimal`` is refused
+    rather than rounded, because rounding it would run a different number of shots than
+    the caller wrote while reporting the result as the requested one.  ``bool`` is
+    refused although it satisfies ``operator.index``: ``int(True) == 1`` is not a caller
+    asking for a single shot, and every other count-taking entry point in this package
+    refuses it for the same reason.
+    """
+
+    if shots is None:
+        return None
+    if isinstance(shots, bool):
+        raise TypeError("measurement shots must be an integer or None, not a bool")
+    try:
+        # `operator.index` is the protocol for "I am exactly an integer", so it accepts
+        # the scalar integer types other arrays and tensors provide.
+        count = operator.index(shots)
+    except TypeError:
+        raise TypeError(
+            "measurement shots must be an integer or None, got "
+            f"{type(shots).__name__}"
+        ) from None
+    if count <= 0:
+        raise IRValidationError("measurement shots must be a positive integer")
+    return int(count)
 
 
 @dataclass(frozen=True)
@@ -120,10 +151,7 @@ class MeasurementNode:
         object.__setattr__(
             self, "wires", _normalize_wires(self.wires, owner=f"measurement {kind!r}")
         )
-        if self.shots is not None and int(self.shots) <= 0:
-            raise IRValidationError("measurement shots must be a positive integer")
-        if self.shots is not None:
-            object.__setattr__(self, "shots", int(self.shots))
+        object.__setattr__(self, "shots", _normalize_shots(self.shots))
         object.__setattr__(self, "metadata", dict(self.metadata))
 
 
@@ -372,11 +400,10 @@ def _measurement_to_dict(item: MeasurementNode) -> dict[str, Any]:
 
 
 def _measurement_from_dict(payload: Mapping[str, Any]) -> MeasurementNode:
-    shots = payload.get("shots")
     return MeasurementNode(
         kind=str(payload.get("kind", "")),
         wires=tuple(int(item) for item in payload.get("wires", ())),
-        shots=None if shots is None else int(shots),
+        shots=_normalize_shots(payload.get("shots")),
         metadata=_decode_value(payload.get("metadata", {})),
     )
 
