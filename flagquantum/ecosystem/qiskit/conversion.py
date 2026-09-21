@@ -79,17 +79,20 @@ def _numeric_parameter(
     if isinstance(value, parameter_type):
         return Parameter(str(value.name))
     if isinstance(value, expression_type):
-        issues.append(
-            QiskitConversionIssue(
-                "unsupported_parameter_expression",
-                "Qiskit ParameterExpression is not representable by the FlagQuantum "
-                "v1 arithmetic expression subset; bind or simplify it first.",
-                "error",
-                operation_index,
-                operation_name,
+        try:
+            return _flagquantum_parameter_expression(value)
+        except (ImportError, TypeError, ValueError) as exc:
+            issues.append(
+                QiskitConversionIssue(
+                    "unsupported_parameter_expression",
+                    "Qiskit ParameterExpression is outside the FlagQuantum v1 "
+                    f"arithmetic subset: {exc}",
+                    "error",
+                    operation_index,
+                    operation_name,
+                )
             )
-        )
-        return None
+            return None
     try:
         converted = complex(value)
     except (TypeError, ValueError):
@@ -115,6 +118,54 @@ def _numeric_parameter(
         )
         return None
     return float(converted.real)
+
+
+def _flagquantum_parameter_expression(value: Any) -> Any:
+    """Translate Qiskit's public symbolic form into owned arithmetic nodes."""
+
+    sympy = import_module("sympy")
+    symbolic = value.sympify()
+    qiskit_parameters = tuple(value.parameters)
+    parameters_by_name = {
+        str(parameter.name): Parameter(str(parameter.name))
+        for parameter in qiskit_parameters
+    }
+    if len(parameters_by_name) != len(qiskit_parameters):
+        raise ValueError("distinct Qiskit parameters share the same name")
+
+    def convert(node: Any) -> Any:
+        if isinstance(node, sympy.Symbol):
+            try:
+                return parameters_by_name[str(node)]
+            except KeyError as exc:
+                raise ValueError(f"unknown symbol {node!s}") from exc
+        if bool(getattr(node, "is_Number", False)):
+            converted = complex(node)
+            if converted.imag != 0:
+                raise ValueError(f"constant {node!s} is complex")
+            return float(converted.real)
+        if isinstance(node, sympy.Add):
+            args = tuple(convert(arg) for arg in node.args)
+            if not args:
+                return 0.0
+            result = args[0]
+            for arg in args[1:]:
+                result = result + arg
+            return result
+        if isinstance(node, sympy.Mul):
+            args = tuple(convert(arg) for arg in node.args)
+            if not args:
+                return 1.0
+            result = args[0]
+            for arg in args[1:]:
+                result = result * arg
+            return result
+        function_name = getattr(getattr(node, "func", None), "__name__", None)
+        raise ValueError(
+            f"operation {function_name or type(node).__name__!r} is unsupported"
+        )
+
+    return convert(symbolic)
 
 
 def _matrix_from_operation(operation: Any) -> torch.Tensor | None:
