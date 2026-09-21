@@ -4,6 +4,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 
 - [Python engineering standard](PYTHON_ENGINEERING_STANDARD.md)
 - [Testing manual](TESTING.md)
+- [CPU statevector performance characteristics](CPU_STATEVECTOR_PERFORMANCE_CHARACTERISTICS.md)
 - [Code organization](CODE_ORGANIZATION.md)
 - [Repository governance](REPOSITORY_GOVERNANCE.md)
 - [Multi-team linked-worktree development](MULTI_TEAM_DEVELOPMENT.md)
