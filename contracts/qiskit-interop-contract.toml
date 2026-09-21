@@ -13,6 +13,8 @@ classical_bit_mapping = "flat_qiskit_bit_index_equals_flagquantum_classical_bit"
 flagquantum_statevector_order = "wire_zero_most_significant"
 qiskit_statevector_order = "qubit_zero_least_significant"
 statevector_comparison = "reverse_qiskit_tensor_axes_before_comparison"
+custom_unitary_scope = "one_to_three_qubits"
+custom_unitary_basis_conversion = "reverse_local_input_and_output_bit_axes"
 parameter_identity = "unique_name"
 global_phase = "preserved"
 loss_policy = "fail_closed_unless_allow_lossy_true"
@@ -22,7 +24,7 @@ qiskit_features = [
     "control_flow_import",
     "arbitrary_parameter_expression_import",
     "nonstandard_register_layout_without_explicit_flattening",
-    "multi_qubit_custom_unitary_without_basis_order_conversion",
+    "custom_unitary_above_three_qubits",
 ]
 flagquantum_opcodes = [
     "u1",
@@ -36,9 +38,12 @@ issue_codes = [
     "barrier_dropped",
     "circuit_metadata_dropped",
     "complex_gate_parameter",
+    "custom_unitary_width_exceeds_limit",
+    "invalid_custom_unitary_shape",
+    "invalid_custom_unitary_values",
     "invalid_measurement_shape",
     "measurement_requests_not_embedded",
-    "multi_qubit_unitary_wire_order_unverified",
+    "non_unitary_custom_matrix",
     "observables_not_embedded",
     "operation_label_dropped",
     "parameter_arity_mismatch",

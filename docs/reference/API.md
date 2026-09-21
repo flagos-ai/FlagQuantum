@@ -530,6 +530,13 @@ and records every skipped operation; it is intended for inspection, not silent
 execution fallback. Importing `flagquantum` or `flagquantum.ecosystem.qiskit`
 does not import Qiskit.
 
+Custom unitary matrices on one to three qubits are supported in both
+directions. The adapter reverses the local input and output bit axes because
+Qiskit treats the first qarg as the least-significant local bit while
+FlagQuantum treats the first instruction wire as the most-significant local
+bit. Shape, finite-value, unitarity, and width checks fail closed with
+machine-readable issue codes before a matrix crosses the adapter boundary.
+
 The supported bidirectional gate set, parameter names, bit-index mapping,
 statevector endianness, loss policy, unsupported boundary, and certified
 Qiskit/Aer version lanes are pinned in `contracts/qiskit-interop-contract.toml`. Run the
