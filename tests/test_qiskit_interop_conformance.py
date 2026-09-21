@@ -18,7 +18,6 @@ from flagquantum.ecosystem.qiskit import (
 qiskit = pytest.importorskip("qiskit")
 from qiskit import QuantumCircuit  # noqa: E402
 from qiskit.quantum_info import Statevector  # noqa: E402
-from qiskit_aer import AerSimulator  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.qiskit]
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,12 +101,20 @@ def test_statevector_and_round_trip_golden_cases_pass() -> None:
     assert result.adapter_contract is not None
     assert result.adapter_contract.passed
     assert [case.kind for case in result.adapter_contract.cases] == [
-        "round_trip",
-        "round_trip",
-        "round_trip",
+        *("round_trip",) * 9,
         "rejection",
     ]
-    assert len(result.cases) == 3
+    assert [case.name for case in result.cases] == [
+        "asymmetric_wire_order",
+        "controlled_rotations",
+        "three_qubit_controls",
+        "seeded_differential_731",
+        "seeded_differential_946",
+        "seeded_differential_1212",
+        "seeded_differential_1597",
+        "seeded_differential_2018",
+        "seeded_differential_2371",
+    ]
     assert all(case.maximum_absolute_error <= 1e-10 for case in result.cases)
     assert all(
         case.source_fingerprint == case.round_trip_fingerprint for case in result.cases
@@ -136,6 +143,7 @@ def test_qiskit_little_endian_statevector_is_normalized_to_wire_major() -> None:
 
 
 def test_measurement_classical_bit_indices_survive_export_and_aer() -> None:
+    aer_simulator_type = pytest.importorskip("qiskit_aer").AerSimulator
     ir = fq.CircuitIR(
         3,
         (
@@ -153,7 +161,9 @@ def test_measurement_classical_bit_indices_survive_export_and_aer() -> None:
         ),
     )
     circuit = to_qiskit(ir)
-    memory = AerSimulator().run(circuit, shots=4, memory=True).result().get_memory()
+    memory = (
+        aer_simulator_type().run(circuit, shots=4, memory=True).result().get_memory()
+    )
 
     assert memory == ["100"] * 4
     round_trip = from_qiskit(circuit)
@@ -168,4 +178,34 @@ def test_semantic_fingerprint_ignores_transport_provenance_only() -> None:
     source = fq.Circuit(2).h(0).cx(0, 1).to_ir()
     round_trip = from_qiskit(to_qiskit(source))
 
+    assert semantic_fingerprint(source) == semantic_fingerprint(round_trip)
+
+
+def test_custom_unitary_fingerprint_ignores_qiskit_transport_labels() -> None:
+    source = fq.CircuitIR(
+        2,
+        (
+            fq.Instruction(
+                "unitary",
+                (1, 0),
+                matrix=torch.tensor(
+                    [
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 1j],
+                        [1, 0, 0, 0],
+                        [0, 0, 1j, 0],
+                    ],
+                    dtype=torch.complex128,
+                ),
+            ),
+        ),
+        dtype="complex128",
+        shape=(1, 4),
+    )
+    round_trip = from_qiskit(to_qiskit(source))
+
+    assert round_trip.instructions[0].metadata == {
+        "interop_source": "qiskit",
+        "qiskit_label": "unitary",
+    }
     assert semantic_fingerprint(source) == semantic_fingerprint(round_trip)
