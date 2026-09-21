@@ -38,7 +38,7 @@
       "run_dynamic"
     ],
     "execution": [],
-    "interop": ["pennylane", "qiskit"],
+    "interop": ["cirq", "pennylane", "qiskit"],
     "mps": [],
     "numerics": [
       "execute_split_real_imag_expectation",
@@ -56,7 +56,7 @@
       "discoverable_feature_exports": 6
     }
   ],
-  "current_total_discoverable_feature_exports": 16,
+  "current_total_discoverable_feature_exports": 17,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,

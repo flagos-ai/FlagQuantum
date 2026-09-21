@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib
 from pathlib import Path
 from typing import Any
@@ -15,10 +16,12 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.ecosystem.cirq.conversion import _CIRQ_SYMBOL_TO_FLAGQUANTUM
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "cirq-interop-contract.toml"
 POLICY = ROOT / "dependency-policy.toml"
+CONVERSION = ROOT / "flagquantum/ecosystem/cirq/conversion.py"
 EXPECTED_VERSIONS = ["1.6.1", "1.7.0"]
 EXPECTED_SEMANTICS = {
     "artifact": "cirq.Circuit",
@@ -35,6 +38,20 @@ def load_toml(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
+def conversion_issue_codes(path: Path = CONVERSION) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    return {
+        str(node.args[1].value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "_issue"
+        and len(node.args) >= 2
+        and isinstance(node.args[1], ast.Constant)
+        and isinstance(node.args[1].value, str)
+    }
+
+
 def contract_errors(
     contract: dict[str, Any], policy: dict[str, Any]
 ) -> tuple[str, ...]:
@@ -43,10 +60,10 @@ def contract_errors(
         errors.append("Cirq interop schema drifted")
     if contract.get("ir_version") != IR_VERSION:
         errors.append("Cirq contract must target current IR")
-    if contract.get("implementation_status") != "contract_only":
-        errors.append("Cirq v1 must remain contract-only until its adapter lands")
-    if contract.get("public_api_available") is not False:
-        errors.append("Cirq public API must remain unavailable before implementation")
+    if contract.get("implementation_status") != "implemented":
+        errors.append("Cirq v1 must declare its implemented adapter status")
+    if contract.get("public_api_available") is not True:
+        errors.append("Cirq public API must remain available after implementation")
     if contract.get("dependency_extra") != "cirq":
         errors.append("Cirq must use only its optional extra")
     if contract.get("core_import_allowed") is not False:
@@ -64,6 +81,13 @@ def contract_errors(
             errors.append(f"Cirq semantic {name!r} drifted")
 
     unsupported = contract.get("unsupported", {})
+    declared_issues = set(unsupported.get("issue_codes", ()))
+    emitted_issues = conversion_issue_codes()
+    if declared_issues != emitted_issues:
+        errors.append(
+            "Cirq issue-code coverage drifted: "
+            f"declared={sorted(declared_issues)}, emitted={sorted(emitted_issues)}"
+        )
     excluded = set(unsupported.get("flagquantum_opcodes", ()))
     operations = contract.get("operations", ())
     mapped = [
@@ -73,6 +97,13 @@ def contract_errors(
     ]
     if len(mapped) != len(set(mapped)):
         errors.append("Cirq operation mappings must be unique")
+    pairs = {
+        operation.get("cirq_symbol"): operation.get("flagquantum")
+        for operation in operations
+        if isinstance(operation, dict)
+    }
+    if pairs != _CIRQ_SYMBOL_TO_FLAGQUANTUM:
+        errors.append("Cirq operation contract and adapter mapping drifted")
     expected = set(OPERATOR_SCHEMAS) - excluded
     if set(mapped) != expected:
         errors.append(
@@ -87,11 +118,9 @@ def contract_errors(
         for field in ("cirq_symbol", "cirq_gate_type", "cirq_form"):
             if not isinstance(operation.get(field), str) or not operation[field]:
                 errors.append(f"Cirq operation is missing {field}")
-    policy_path = contract.get("verification", {}).get("policy")
-    if not isinstance(policy_path, str) or not (ROOT / policy_path).is_file():
-        errors.append("Cirq policy verification path does not exist")
-    if (ROOT / "flagquantum" / "ecosystem" / "cirq").exists():
-        errors.append("Cirq adapter exists while contract still declares contract-only")
+    for raw_path in contract.get("verification", {}).values():
+        if not (ROOT / str(raw_path)).is_file():
+            errors.append(f"Cirq verification path does not exist: {raw_path}")
     return tuple(errors)
 
 

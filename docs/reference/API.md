@@ -458,7 +458,7 @@ descriptors and loads an adapter implementation only when requested:
 ```python
 from flagquantum.ecosystem import available_adapters, get_adapter
 
-assert available_adapters() == ("pennylane", "qiskit")
+assert available_adapters() == ("cirq", "pennylane", "qiskit")
 adapter = get_adapter("qiskit")
 result = adapter.import_program(external_circuit)
 flagquantum_ir = result.ir
@@ -472,7 +472,7 @@ the external dependency is loaded only when conversion is requested. Adapter
 API mismatches and registered/loaded identity mismatches fail before use.
 `InteropRegistry.to_dict()` provides a machine-readable inventory for tooling
 and review without probing or importing dependencies. The default registry
-instance and each Qiskit/PennyLane adapter remain experimental implementation
+instance and each Cirq/Qiskit/PennyLane adapter remain experimental implementation
 details; they are not part of the candidate-stable export list.
 
 ### PennyLane QuantumScript interoperability
@@ -504,6 +504,26 @@ The returned `InteropConformanceResult.to_dict()` payload uses the versioned
 `flagquantum_interop_conformance_v1` schema. See
 [Interoperability adapter development](../development/INTEROP_ADAPTERS.md) for
 the required adapter layout and evidence boundary.
+
+### Cirq circuit interoperability
+
+Cirq is an optional static conversion boundary. Install it with
+`pip install 'flagquantum[cirq]'` and convert only `cirq.Circuit` artifacts:
+
+```python
+from flagquantum.ecosystem.cirq import from_cirq, to_cirq
+
+ir = from_cirq(cirq_circuit)
+round_trip = to_cirq(ir)
+```
+
+The v1 adapter supports the gate subset in
+`contracts/cirq-interop-contract.toml`, contiguous `LineQubit` indices, bound
+real parameters, and an explicit statevector qubit order. Moment packing,
+measurements, global phase operations, symbolic parameters, tags, classical
+controls, noise, and unsupported gates fail closed with machine-readable
+diagnostics. Cirq objects remain inside `flagquantum.ecosystem.cirq` and never
+enter the compiler or runtime.
 
 ### Qiskit IR interoperability
 

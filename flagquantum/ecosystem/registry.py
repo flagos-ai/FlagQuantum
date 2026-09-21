@@ -124,6 +124,12 @@ QISKIT_ADAPTER_SPEC = InteropAdapterSpec(
     attribute="QISKIT_ADAPTER",
     dependency_extra="qiskit",
 )
+CIRQ_ADAPTER_SPEC = InteropAdapterSpec(
+    name="cirq",
+    module="flagquantum.ecosystem.cirq.adapter",
+    attribute="CIRQ_ADAPTER",
+    dependency_extra="cirq",
+)
 PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
     name="pennylane",
     module="flagquantum.ecosystem.pennylane.adapter",
@@ -131,7 +137,11 @@ PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
     dependency_extra="pennylane",
 )
 DEFAULT_INTEROP_REGISTRY = InteropRegistry(
-    {"pennylane": PENNYLANE_ADAPTER_SPEC, "qiskit": QISKIT_ADAPTER_SPEC}
+    {
+        "cirq": CIRQ_ADAPTER_SPEC,
+        "pennylane": PENNYLANE_ADAPTER_SPEC,
+        "qiskit": QISKIT_ADAPTER_SPEC,
+    }
 )
 
 
@@ -149,6 +159,7 @@ def get_adapter(name: str) -> InteropAdapter:
 
 __all__ = (
     "DEFAULT_INTEROP_REGISTRY",
+    "CIRQ_ADAPTER_SPEC",
     "PENNYLANE_ADAPTER_SPEC",
     "QISKIT_ADAPTER_SPEC",
     "InteropAdapterSpec",

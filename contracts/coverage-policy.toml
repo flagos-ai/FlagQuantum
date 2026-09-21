@@ -82,6 +82,9 @@ min = 60
 [packages.ecosystem]
 min = 83
 
+[packages."ecosystem.cirq"]
+min = 87
+
 [packages."ecosystem.extensions"]
 min = 82
 

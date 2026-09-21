@@ -2,8 +2,8 @@
 schema = "flagquantum_cirq_interop_contract_v1"
 ir_version = "1.0"
 maturity = "experimental"
-implementation_status = "contract_only"
-public_api_available = false
+implementation_status = "implemented"
+public_api_available = true
 dependency_extra = "cirq"
 cirq_core_versions = ["1.6.1", "1.7.0"]
 python_minimum = "3.11"
@@ -26,14 +26,14 @@ loss_policy = "fail_closed_unless_allow_lossy_true"
 [unsupported]
 flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "measurements", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags", "symbolic_parameters"]
-planned_issue_codes = ["global_phase_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "symbolic_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value"]
+issue_codes = ["global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "symbolic_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value"]
 
 [verification]
 policy = "tests/unit/test_cirq_interop_contract.py"
 sdk_lane = ".github/workflows/ci.yml"
-planned_integration = "tests/test_cirq_interop.py"
-planned_conformance = "tests/test_cirq_interop_conformance.py"
-planned_core_isolation = "tests/unit/test_cirq_interop_boundary.py"
+integration = "tests/test_cirq_interop.py"
+conformance = "tests/test_cirq_interop_conformance.py"
+core_isolation = "tests/unit/test_cirq_interop_boundary.py"
 
 [[operations]]
 cirq_symbol = "I"
