@@ -6,6 +6,7 @@ import pytest
 
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.runtime_config import RuntimeConfig
+from flagquantum.errors import ValidationError
 from flagquantum.runtime.options import ExecutionOptions
 from flagquantum.runtime.options_resolver import (
     circuit_execution_constraints,
@@ -119,6 +120,46 @@ def test_circuit_ir_precision_is_a_program_constraint() -> None:
     resolved = resolve_execution_options(program_constraints=constraints)
     assert resolved.precision == "complex128"
     assert resolved.source_for("precision") == "program_constraints"
+
+
+def test_circuit_ir_batch_size_is_a_program_constraint() -> None:
+    constraints = circuit_execution_constraints(
+        CircuitIR(n_wires=1, instructions=(), metadata={"batch_size": 3})
+    )
+
+    assert constraints.batch_size == 3
+    assert constraints.device is None
+    resolved = resolve_execution_options(program_constraints=constraints)
+    assert resolved.batch_size == 3
+    assert resolved.source_for("batch_size") == "program_constraints"
+
+
+def test_circuit_ir_without_declared_batch_size_keeps_the_framework_default() -> None:
+    constraints = circuit_execution_constraints(CircuitIR(n_wires=1, instructions=()))
+
+    assert constraints.batch_size is None
+    resolved = resolve_execution_options(program_constraints=constraints)
+    assert resolved.batch_size == 1
+    assert resolved.source_for("batch_size") == "framework_defaults"
+
+
+def test_declared_ir_batch_size_conflict_fails_during_resolution() -> None:
+    constraints = circuit_execution_constraints(
+        CircuitIR(n_wires=1, instructions=(), metadata={"batch_size": 3})
+    )
+
+    with pytest.raises(ValueError, match="program batch constraint"):
+        resolve_execution_options(
+            ExecutionOptions(batch_size=2), program_constraints=constraints
+        )
+
+
+@pytest.mark.parametrize("declared", (0, -1, True, 1.5, "3"))
+def test_circuit_ir_rejects_a_malformed_declared_batch_size(declared: object) -> None:
+    program = CircuitIR(n_wires=1, instructions=(), metadata={"batch_size": declared})
+
+    with pytest.raises(ValidationError, match="positive integer"):
+        circuit_execution_constraints(program)
 
 
 def test_resolver_requires_typed_options_instead_of_kwargs_escape_hatch() -> None:

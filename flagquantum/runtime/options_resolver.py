@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, fields
 from typing import Any, TypeVar
 
+from ..errors import ValidationError
 from .options import ExecutionOptions
 
 _OptionValue = TypeVar("_OptionValue")
@@ -120,17 +121,36 @@ def runtime_config_to_execution_options(config: Any | None) -> ExecutionOptions:
     )
 
 
+def _declared_batch_size(metadata: Any) -> int | None:
+    """Read the batch size a serialized program declares in its metadata."""
+
+    if not isinstance(metadata, Mapping):
+        return None
+    declared = metadata.get("batch_size")
+    if declared is None:
+        return None
+    if isinstance(declared, bool) or not isinstance(declared, int) or declared < 1:
+        raise ValidationError(
+            f"program metadata batch_size must be a positive integer, got {declared!r}"
+        )
+    return declared
+
+
 def circuit_execution_constraints(circuit: Any) -> ExecutionOptions:
     """Extract only stable program constraints from a Circuit-like object."""
 
     dtype = str(getattr(circuit, "dtype", "")).removeprefix("torch.") or None
     if not hasattr(circuit, "bsz"):
-        # CircuitIR carries a numerical precision constraint even though it has
-        # no live Circuit device or ``bsz`` attribute. Ignoring it would let the
-        # framework complex64 default silently downcast a complex128 program.
-        if dtype is not None:
-            return ExecutionOptions(precision=dtype)
-        return ExecutionOptions()
+        # CircuitIR carries numerical precision and batch-size constraints even
+        # though it has no live Circuit device or ``bsz`` attribute. Ignoring
+        # either would silently reinterpret the program: the complex64 default
+        # would downcast a complex128 program, and the batch_size=1 default
+        # would apply a batched program's parameters to a single-amplitude
+        # state and fail later inside a numerical kernel.
+        return ExecutionOptions(
+            batch_size=_declared_batch_size(getattr(circuit, "metadata", None)),
+            precision=dtype,
+        )
     device = str(getattr(circuit, "device", "")) or None
     return ExecutionOptions(
         batch_size=int(circuit.bsz),
