@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added fixed regional Twin validation suites. Applications can predeclare
+  distinct connected-region circuits and repeated task counts, checkpoint each
+  explicit submission, and validate the complete result collection under one
+  simultaneous confidence level. The resulting support verifies only the exact
+  suite circuits and exercised directed couplers; missing, duplicate, reordered,
+  or identity-mismatched tasks fail closed. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added prospective validation for a composed `TwinRegionModel`. Applications
   can freeze a covered regional circuit before explicit Quafu submission, build
   a repeated validation series from at least two identity-bound tasks, and

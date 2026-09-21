@@ -714,6 +714,57 @@ measurement distributions; they are not quantum-state fidelity. See
 `examples/remote/quafu_twin_region_validation.py` for the complete token,
 polling, repeated-submission, and persistence workflow.
 
+### Validate a fixed regional circuit suite
+
+One exact circuit does not establish agreement for other regional workloads.
+Freeze at least two distinct covered circuits and at least two repetitions per
+circuit before creating any QPU task:
+
+```python
+suite = fq.twin.prepare_region_validation_suite(
+    region_twin,
+    circuits,
+    physical_qubits=(20, 27, 34),
+    name="shenglian-region-suite",
+    shots=1024,
+    repetitions=2,
+)
+
+print(suite.planned_task_count)
+print(suite.planned_shots)
+```
+
+Preparation is offline. The suite deliberately has no bulk submit method:
+applications explicitly submit each `suite.experiments` member once per
+repetition and persist the resulting `TwinSubmission`. This makes partial
+network failures recoverable without silently resubmitting completed work.
+
+After all planned tasks reach terminal results, validate the complete ordered
+collection at once:
+
+```python
+evaluation = suite.validate_results(
+    submissions,
+    results,
+    circuits=circuits,
+    confidence_level=0.95,
+)
+support = evaluation.to_circuit_support()
+
+print(evaluation.mean_twin_qpu_agreement)
+print(evaluation.mean_ideal_qpu_agreement)
+print(evaluation.mean_qpu_repeatability)
+print(evaluation.simultaneous_finite_shot_tv_radius)
+print(evaluation.simultaneous_tv_error_bound)
+```
+
+Confidence is allocated across every circuit and repetition. The returned
+support lists every exact suite circuit as verified and only the directed
+couplers exercised by those circuits. A different circuit remains unverified,
+even if it uses the same qubits and operations. See
+`examples/remote/quafu_twin_region_validation_suite.py` for the checkpointed
+`prepare`, single-task `submit`, and all-results `evaluate` commands.
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.

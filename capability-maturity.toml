@@ -447,20 +447,20 @@ development_artifact = "flagquantum/deployment"
 
 [capabilities.qpu_digital_twin]
 title = "Evidence-qualified QPU digital twins"
-summary = "Predict calibration-conditioned measurement distributions, qualify them against identity-bound hardware evidence, and prospectively validate compatible connected regional models."
+summary = "Predict calibration-conditioned measurement distributions and prospectively validate exact circuits or fixed suites on compatible connected regional models."
 category = "deployment_and_extension"
-user_goals = ["Predict a mapped QPU measurement distribution", "Compare a frozen prediction with later QPU counts", "Reject circuits outside validated topology and depth", "Compose compatible local Twin cells into a connected regional prediction model", "Prospectively validate one exact regional circuit with repeated QPU tasks"]
+user_goals = ["Predict a mapped QPU measurement distribution", "Compare a frozen prediction with later QPU counts", "Reject circuits outside validated topology and depth", "Compose compatible local Twin cells into a connected regional prediction model", "Prospectively validate one exact regional circuit with repeated QPU tasks", "Validate a fixed regional circuit suite under one simultaneous confidence level"]
 public_apis = ["flagquantum.twin"]
 runtime_modes = ["offline_density_prediction", "offline_evidence_assessment", "explicit_provider_submission"]
 hardware = ["cpu", "quafu_development_evidence"]
 gradient_support = "unsupported"
 distribution_semantics = "single_process"
-quick_start = "examples/remote/quafu_twin_region_validation.py"
+quick_start = "examples/remote/quafu_twin_region_validation_suite.py"
 documentation = "docs/guides/QPU_DIGITAL_TWIN.md"
 level = "development_evidence"
 owner = "QPU digital-twin maintainers"
-limitations = "Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, connected structural cell composition, fail-closed regional model composition, and repeated exact-circuit regional validation are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region-model composition never infers cross-cell correlated noise or combines local bounds into region accuracy. Regional support covers only the exact prospectively validated circuit and its exercised directed couplers. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-wide statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability."
-focused_tests = "tests/test_twin_region_model.py"
+limitations = "Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, connected structural cell composition, fail-closed regional model composition, repeated exact-circuit validation, and fixed regional suite validation with simultaneous confidence are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region-model composition never infers cross-cell correlated noise or combines local bounds into region accuracy. Regional suite support covers only exact prospectively validated circuits and their exercised directed couplers; other circuits remain unverified. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-wide statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability."
+focused_tests = "tests/test_twin_region_validation_suite.py"
 development_artifact = "flagquantum/twin"
 
 [capabilities.interop_adapter_contract]
