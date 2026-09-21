@@ -233,12 +233,15 @@ def run_benchmark(
     }
 
 
-def main() -> None:
+def main() -> int:
     """Run the local statevector comparison and print its payload.
 
-    Exits non-zero when the correctness verdict inside the payload is false, so
-    a lane sees the failure without having to parse the JSON it just printed.
-    That is what makes this usable as a gate rather than only as a report.
+    Returns a non-zero exit code when the correctness verdict inside the payload
+    is false, so a lane sees the failure without having to parse the JSON it just
+    printed. That is what makes this usable as a gate rather than only as a
+    report. The CLI entry point returns whatever the runner returns, so a runner
+    that returns ``None`` fails the call with a TypeError instead of reporting
+    the benchmark's own verdict.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-wires", type=int, default=12)
@@ -266,8 +269,9 @@ def main() -> None:
         args.json_output.parent.mkdir(parents=True, exist_ok=True)
         args.json_output.write_text(encoded + "\n", encoding="utf-8")
     if not payload["correctness"]["passed"]:
-        raise SystemExit(2)
+        return 2
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
