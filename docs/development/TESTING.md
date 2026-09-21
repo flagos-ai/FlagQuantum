@@ -393,7 +393,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines eleven jobs:
+The checked-in `ci.yml` defines twelve jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -405,6 +405,9 @@ The checked-in `ci.yml` defines eleven jobs:
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
+- `cirq-optional`: the contract-only Cirq boundary and public SDK surface checks
+  against the certified Cirq Core 1.6.1 and 1.7.0 lanes, isolated from the core
+  environment;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit

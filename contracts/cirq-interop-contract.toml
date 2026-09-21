@@ -1,0 +1,112 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_cirq_interop_contract_v1"
+ir_version = "1.0"
+maturity = "experimental"
+implementation_status = "contract_only"
+public_api_available = false
+dependency_extra = "cirq"
+cirq_core_versions = ["1.6.1", "1.7.0"]
+python_minimum = "3.11"
+core_import_allowed = false
+runtime_execution_allowed = false
+autograd_bridge_allowed = false
+
+[semantics]
+artifact = "cirq.Circuit"
+qubit_mapping = "contiguous_line_qubit_index_equals_flagquantum_wire"
+operation_order = "stable_moment_then_operation_order"
+moment_packing = "flattened_and_not_preserved"
+statevector_order = "explicit_line_qubit_order_with_wire_zero_most_significant"
+dtype = "complex128"
+parameters = "bound_real_scalars_only"
+global_phase = "not_represented"
+measurements = "execution_plan_not_in_ir"
+loss_policy = "fail_closed_unless_allow_lossy_true"
+
+[unsupported]
+flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "measurements", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags", "symbolic_parameters"]
+planned_issue_codes = ["global_phase_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "symbolic_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value"]
+
+[verification]
+policy = "tests/unit/test_cirq_interop_contract.py"
+sdk_lane = ".github/workflows/ci.yml"
+planned_integration = "tests/test_cirq_interop.py"
+planned_conformance = "tests/test_cirq_interop_conformance.py"
+planned_core_isolation = "tests/unit/test_cirq_interop_boundary.py"
+
+[[operations]]
+cirq_symbol = "I"
+cirq_gate_type = "IdentityGate"
+cirq_form = "canonical_single_qubit_identity"
+flagquantum = "i"
+[[operations]]
+cirq_symbol = "X"
+cirq_gate_type = "XPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "x"
+[[operations]]
+cirq_symbol = "Y"
+cirq_gate_type = "YPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "y"
+[[operations]]
+cirq_symbol = "Z"
+cirq_gate_type = "ZPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "z"
+[[operations]]
+cirq_symbol = "H"
+cirq_gate_type = "HPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "h"
+[[operations]]
+cirq_symbol = "S"
+cirq_gate_type = "ZPowGate"
+cirq_form = "exponent=0.5;global_shift=0"
+flagquantum = "s"
+[[operations]]
+cirq_symbol = "T"
+cirq_gate_type = "ZPowGate"
+cirq_form = "exponent=0.25;global_shift=0"
+flagquantum = "t"
+[[operations]]
+cirq_symbol = "rx"
+cirq_gate_type = "Rx"
+cirq_form = "rads=theta"
+flagquantum = "rx"
+[[operations]]
+cirq_symbol = "ry"
+cirq_gate_type = "Ry"
+cirq_form = "rads=theta"
+flagquantum = "ry"
+[[operations]]
+cirq_symbol = "rz"
+cirq_gate_type = "Rz"
+cirq_form = "rads=theta"
+flagquantum = "rz"
+[[operations]]
+cirq_symbol = "CNOT"
+cirq_gate_type = "CXPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "cx"
+[[operations]]
+cirq_symbol = "CZ"
+cirq_gate_type = "CZPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "cz"
+[[operations]]
+cirq_symbol = "SWAP"
+cirq_gate_type = "SwapPowGate"
+cirq_form = "exponent=1"
+flagquantum = "swap"
+[[operations]]
+cirq_symbol = "CCX"
+cirq_gate_type = "CCXPowGate"
+cirq_form = "exponent=1;global_shift=0"
+flagquantum = "ccx"
+[[operations]]
+cirq_symbol = "CSWAP"
+cirq_gate_type = "CSwapGate"
+cirq_form = "canonical_fredkin"
+flagquantum = "cswap"

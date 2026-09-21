@@ -42,6 +42,9 @@ direct_cuda_allowed = [
 ]
 
 [interop_boundaries]
+cirq_import_allowed_prefixes = [
+    "flagquantum/ecosystem/cirq/",
+]
 qiskit_import_allowed_prefixes = [
     "flagquantum/ecosystem/qiskit/",
 ]

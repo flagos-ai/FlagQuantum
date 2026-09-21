@@ -88,6 +88,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_dependency_policy.py"),
         ),
         Check(
+            "Cirq interoperability contract",
+            (python_executable, "tools/check_cirq_interop_contract.py"),
+        ),
+        Check(
             "Qiskit interoperability contract",
             (python_executable, "tools/check_qiskit_interop_contract.py"),
         ),
