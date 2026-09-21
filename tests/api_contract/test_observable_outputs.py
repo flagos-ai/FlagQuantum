@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import decimal
+import fractions
 from collections.abc import Callable
 
 import pytest
@@ -109,6 +111,44 @@ def test_output_validation_fails_before_execution() -> None:
         fq.run(circuit, outputs=fq.expectation(fq.X(2)))
     with pytest.raises(TypeError, match="OutputRequest"):
         fq.run(circuit, outputs=("probabilities",))
+
+
+@pytest.mark.parametrize(
+    "shots",
+    [
+        2.7,  # a float is not a count, and 2.7 is not even whole
+        2.0,  # whole, but still a float the caller wrote as a float
+        1000.0,
+        "16",  # a string is text, not a number
+        True,  # an int by inheritance, but int(True) == 1 is not "one shot"
+        False,
+        decimal.Decimal(16),
+        fractions.Fraction(16, 1),
+        torch.tensor(16.0),
+    ],
+)
+def test_run_refuses_a_shots_value_that_is_not_a_count(shots: object) -> None:
+    """A count that is rounded is a different number of shots than the caller wrote."""
+
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        fq.run(circuit, outputs=fq.counts(), shots=shots)
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        fq.run(circuit, outputs=fq.samples(qubits=0), shots=shots)
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        fq.run(circuit, outputs=fq.counts(fq.Z(0)), shots=shots)
+
+
+@pytest.mark.parametrize("shots", [1, 16])
+def test_run_counts_exactly_the_requested_number_of_shots(shots: int) -> None:
+    """The count that is accepted is the count that is drawn, per batch entry."""
+
+    circuit = fq.Circuit(2, bsz=2).h(0).cx(0, 1)
+
+    result = fq.run(circuit, outputs=fq.counts(), shots=shots)
+
+    assert [sum(entry.values()) for entry in result.counts] == [shots, shots]
 
 
 def test_output_requests_are_serialized_in_an_explicit_plan() -> None:

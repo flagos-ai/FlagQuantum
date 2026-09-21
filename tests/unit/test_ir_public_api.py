@@ -1,3 +1,5 @@
+import decimal
+import fractions
 import json
 from pathlib import Path
 
@@ -157,6 +159,77 @@ def test_serialized_ir_rejects_wrong_kind_version_and_invalid_json():
         CircuitIR.from_dict({**payload, "version": "99.0"})
     with pytest.raises(IRSerializationError, match="invalid CircuitIR JSON"):
         CircuitIR.from_json("{")
+
+
+def _measurement_payload(shots: object) -> dict[str, object]:
+    """A serialized program whose only unusual value is the stored shots field."""
+
+    payload = CircuitIR(
+        1,
+        (Instruction("h", (0,)),),
+        measurements=(MeasurementNode("counts", (0,), shots=7),),
+    ).to_dict()
+    payload["measurements"] = [dict(payload["measurements"][0], shots=shots)]
+    return payload
+
+
+@pytest.mark.parametrize(
+    "shots",
+    [
+        2.7,  # a float is not a count, and 2.7 is not even whole
+        2.0,  # whole, but still a float the caller wrote as a float
+        7.0,
+        "7",  # a string is text, not a number
+        True,  # an int by inheritance, but int(True) == 1 is not "one shot"
+        False,
+        decimal.Decimal(7),
+        fractions.Fraction(7, 1),
+        torch.tensor(7.0),
+        7j,
+    ],
+)
+def test_measurement_shots_refuses_a_value_that_is_not_a_shot_count(shots: object):
+    """`shots` says how many times to run, so it must be an integer, not a rounding."""
+
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        MeasurementNode("counts", (0,), shots=shots)
+    with pytest.raises(TypeError, match="shots must be an integer"):
+        CircuitIR.from_dict(_measurement_payload(shots))
+
+
+@pytest.mark.parametrize("shots", [0, -1, -1024])
+def test_measurement_shots_refuses_a_non_positive_count(shots: int):
+    with pytest.raises(IRValidationError, match="shots must be a positive integer"):
+        MeasurementNode("counts", (0,), shots=shots)
+    with pytest.raises(IRValidationError, match="shots must be a positive integer"):
+        CircuitIR.from_dict(_measurement_payload(shots))
+
+
+@pytest.mark.parametrize("shots", [1, 7, 1024])
+def test_measurement_shots_accepts_an_integral_scalar_from_another_library(shots: int):
+    """The count is what matters, so an integer scalar from elsewhere is a count."""
+
+    assert MeasurementNode("counts", (0,), shots=shots).shots == shots
+    assert MeasurementNode("counts", (0,), shots=torch.tensor(shots)).shots == shots
+    assert (
+        CircuitIR.from_dict(_measurement_payload(shots)).measurements[0].shots == shots
+    )
+
+
+def test_stored_measurement_shots_survive_a_round_trip_unchanged():
+    """A stored program is data: a round trip must not rewrite its shot count."""
+
+    program = CircuitIR(
+        2,
+        (Instruction("h", (0,)),),
+        measurements=(MeasurementNode("counts", (0, 1), shots=64),),
+    )
+
+    restored = CircuitIR.from_dict(program.to_dict())
+
+    assert restored.measurements[0].shots == 64
+    assert restored.to_dict()["measurements"][0]["shots"] == 64
+    assert restored.content_hash == program.content_hash
 
 
 def test_executor_boundary_rejects_non_ir_input_before_dispatch():
