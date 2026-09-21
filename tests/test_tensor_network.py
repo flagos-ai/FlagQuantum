@@ -20,6 +20,8 @@ from flagquantum.runtime.executors.tensor_network.joint_planning import (
 from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     estimate_tensor_network_bytes,
+    estimate_tensor_network_working_set_bytes,
+    interaction_width,
 )
 from flagquantum.simulation.tensor_network.contraction import (
     _build_slicing_plan,
@@ -926,6 +928,70 @@ def test_plan_accepts_tensor_network_state_mode():
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "tensor_network"
     assert plan.state_bytes == estimate_tensor_network_bytes(4)
+
+
+def test_tensor_network_proxy_is_not_an_upper_bound_on_the_measured_peak():
+    """Record the known under-estimate instead of leaving it to be assumed away.
+
+    The Runtime reports an uncalibrated width-based proxy, and this circuit shows
+    it is not a capacity bound: 24 two-qubit gates on 8 wires give width 3, so the
+    proxy says 512 bytes, while the shape-only profiles the executor plans with
+    measure orders of magnitude more. A run is admitted on this number, so the
+    gap is a real limitation, not a rounding detail. If the proxy is ever made to
+    bound the peak, this test and the
+    ``estimate_tensor_network_working_set_bytes`` docstring both need updating.
+    """
+
+    edges = (
+        (2, 4),
+        (2, 1),
+        (4, 2),
+        (4, 0),
+        (7, 3),
+        (6, 2),
+        (4, 5),
+        (7, 4),
+        (4, 6),
+        (7, 0),
+        (3, 5),
+        (0, 7),
+        (3, 7),
+        (2, 4),
+        (7, 1),
+        (3, 6),
+        (3, 0),
+        (7, 0),
+        (4, 5),
+        (2, 1),
+        (7, 6),
+        (1, 4),
+        (0, 7),
+        (5, 4),
+    )
+    circuit = fq.Circuit(8)
+    circuit.h(0)
+    for left, right in edges:
+        circuit.cx(left, right)
+
+    plan = tensor_execution.build_local_tensor_network(circuit)
+    proxy = estimate_tensor_network_working_set_bytes(
+        circuit.n_wires,
+        contraction_width=interaction_width(circuit),
+    )
+    measured = {
+        strategy: plan.contraction_profile(strategy).peak_size * 8
+        for strategy in ("memory_greedy", "quality_multistart")
+    }
+
+    assert interaction_width(circuit) == 3
+    assert proxy == 512
+    for strategy, peak_bytes in measured.items():
+        assert peak_bytes > proxy, strategy
+    # The planner number is the larger of the proxy and the materialized state,
+    # and even that stays below what the executor measures.
+    assert fqxp.plan_advanced(circuit, state_mode="tensor_network").state_bytes < min(
+        measured.values()
+    )
 
 
 @pytest.mark.parametrize("bitstring", [0, 3, "101", (1, 1, 0)])

@@ -15,7 +15,13 @@ product from resolved Runtime policy. Plan types and serialization live in
 - Change stable `fq.plan` orchestration in `__init__.py`.
 - Change backend cost decisions in `backend_selection.py`.
 - Change memory estimates and execution policy in `estimates.py` and
-  `execution_policy.py`.
+  `execution_policy.py`. A tensor-network estimate is the larger of the state a
+  contraction materializes and its working set; the working set has one
+  definition, `estimates.estimate_tensor_network_working_set_bytes`, shared by
+  backend selection, the selection context, and the execution policy, and it is
+  an uncalibrated width-based proxy rather than the executor's measured
+  `peak_size`. That proxy is not an upper bound on the peak, so it admits runs
+  that cannot fit; do not present it as a capacity guarantee.
 - Change candidate evidence in `candidate_plans.py`, `candidates.py`, and
   `providers.py`.
 - Change selection ranking in `selection_result.py`.

@@ -7,7 +7,11 @@ from math import ceil
 from typing import Any, Literal
 
 from ...core.ir import CircuitIR
-from .estimates import estimate_mps_bytes, estimate_state_bytes
+from .estimates import (
+    estimate_mps_bytes,
+    estimate_state_bytes,
+    estimate_tensor_network_working_set_bytes,
+)
 from .tn_calibration import TNWorkingSetCalibration
 
 OutputTarget = Literal[
@@ -124,6 +128,18 @@ def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
         (local_edges / edges if edges else 1.0),
         max(crossing_counts, default=0),
     )
+
+
+def interaction_width(circuit_or_ir: Any) -> int:
+    """Return the min-fill interaction width the Runtime estimates for a program.
+
+    This is the width term of the tensor-network working-set proxy, exposed so
+    that planning paths which do not run cost selection can still report the
+    same contraction residency the selector reasoned with.
+    """
+
+    ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    return _interaction_metrics(ir)[0]
 
 
 def _validated_output_target(target: str) -> OutputTarget:
@@ -295,12 +311,14 @@ def _tensor_network_candidate(
     if target in {"few_amplitudes", "local_observables"} and target_count > batch_limit:
         sparse_target = False
 
-    proxy_memory = max(
-        1,
-        (1 << min(width + (2 if require_gradients else 0), 62))
-        * int(complex_bytes)
-        * max(1, ir.n_wires)
-        * (target_count if target in {"few_amplitudes", "local_observables"} else 1),
+    proxy_memory = estimate_tensor_network_working_set_bytes(
+        ir.n_wires,
+        contraction_width=width,
+        complex_bytes=complex_bytes,
+        target_count=(
+            target_count if target in {"few_amplitudes", "local_observables"} else 1
+        ),
+        require_gradients=require_gradients,
     )
     matching_calibration = (
         calibration
