@@ -49,6 +49,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--iterations 10 --json-output results/statevector.json"
         ),
     ),
+    "statevector_cpu_paths": RunnerSpec(
+        name="statevector_cpu_paths",
+        module="flagquantum.benchmarking.statevector_cpu_paths",
+        attribute="main",
+        category="statevector",
+        summary="Measure each CPU statevector fast path separately on one host.",
+        hardware="CPU only",
+        example=(
+            "flagquantum-benchmark run statevector_cpu_paths "
+            "--n-wires 20 --layers 8 --warmup 2 --iterations 5 "
+            "--json-output results/cpu-paths.json"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",

@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import typing
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -77,9 +78,21 @@ def test_benchmark_scripts_run_without_package_context(module: str) -> None:
     assert "usage:" in result.stdout
 
 
+@pytest.mark.parametrize("name", names())
+def test_every_registered_runner_declares_an_integer_exit_code(name: str) -> None:
+    """A runner that returns None makes the CLI raise instead of reporting."""
+    runner = resolve(name)
+    hints = typing.get_type_hints(runner)
+    assert hints.get("return") is int, (
+        f"runner {name!r} must be annotated `-> int`; the CLI returns whatever "
+        "the runner returns, so a None return becomes a TypeError exit"
+    )
+
+
 def test_runner_registry_is_lazy_and_sorted() -> None:
     assert names() == (
         "environment_probe",
+        "statevector_cpu_paths",
         "statevector_local",
         "statevector_strong_scaling",
         "statevector_training_scaling",
