@@ -189,7 +189,9 @@ def _seeded_unitary(rng: random.Random, width: int) -> torch.Tensor:
     matrix = torch.zeros((dimension, dimension), dtype=torch.complex128)
     for column, row in enumerate(permutation):
         angle = rng.uniform(-math.pi, math.pi)
-        matrix[row, column] = complex(math.cos(angle), math.sin(angle))
+        matrix[row, column] = torch.tensor(
+            complex(math.cos(angle), math.sin(angle)), dtype=matrix.dtype
+        )
     return matrix
 
 
