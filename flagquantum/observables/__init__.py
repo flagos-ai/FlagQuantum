@@ -305,6 +305,11 @@ def lower_outputs(
             }
             metadata.update(axes)
             metadata["max_marginal_wires"] = _DEFAULT_MAX_PAULI_SAMPLE_WIRES
+            if seed is not None:
+                # Pauli-basis sampling draws from the same sampler as the plain path, so
+                # it carries the seed the same way; without it the runtime falls back to
+                # an unseeded generator and a seeded call is not reproducible.
+                metadata["seed"] = seed
             lowered.append(
                 MeasurementNode(
                     "sample_ps" if request.kind == "samples" else "counts_ps",
