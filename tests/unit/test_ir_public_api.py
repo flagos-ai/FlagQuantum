@@ -232,6 +232,96 @@ def test_stored_measurement_shots_survive_a_round_trip_unchanged():
     assert restored.content_hash == program.content_hash
 
 
+def _program_payload(**overrides: object) -> dict[str, object]:
+    """A serialized program whose only unusual values are the ones overridden."""
+
+    payload = CircuitIR(2, (Instruction("h", (0,)),)).to_dict()
+    payload.update(overrides)
+    return payload
+
+
+@pytest.mark.parametrize(
+    "n_wires",
+    [
+        2.7,  # a float is not a wire count, and 2.7 is not even whole
+        2.0,  # whole, but still a float the caller wrote as a float
+        3.999,  # int() would have made this a 3-wire program
+        "3",  # a string is text, not a number
+        True,  # an int by inheritance, but int(True) == 1 is not one wire
+        False,
+        decimal.Decimal(3),
+        fractions.Fraction(3, 1),
+        torch.tensor(3.0),
+        3j,
+        None,
+    ],
+)
+def test_ir_refuses_a_wire_count_that_is_not_an_integer(n_wires: object):
+    """`n_wires` says how wide the program is, so it must not be rounded to one."""
+
+    with pytest.raises(TypeError, match="n_wires must be an integer"):
+        CircuitIR(n_wires, ())
+    with pytest.raises(TypeError, match="n_wires must be an integer"):
+        CircuitIR.from_dict(_program_payload(n_wires=n_wires))
+
+
+@pytest.mark.parametrize("n_wires", [0, -1, -1024])
+def test_ir_refuses_a_non_positive_wire_count(n_wires: int):
+    with pytest.raises(IRValidationError, match="n_wires must be positive"):
+        CircuitIR(n_wires, ())
+    with pytest.raises(IRValidationError, match="n_wires must be positive"):
+        CircuitIR.from_dict(_program_payload(n_wires=n_wires))
+
+
+@pytest.mark.parametrize("n_wires", [1, 2, 7])
+def test_ir_accepts_a_wire_count_from_another_library(n_wires: int):
+    """`operator.index` is the protocol, so scalar integer types are counts."""
+
+    assert CircuitIR(n_wires, ()).n_wires == n_wires
+    assert CircuitIR(torch.tensor(n_wires), ()).n_wires == n_wires
+    assert CircuitIR.from_dict(_program_payload(n_wires=n_wires)).n_wires == n_wires
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        [2.5, 4.0],
+        [2, "4"],
+        [2, True],
+        [decimal.Decimal(2), 4],
+        [torch.tensor(2.0), 4],
+    ],
+)
+def test_ir_refuses_a_shape_dimension_that_is_not_an_integer(shape: list):
+    """A shape entry is a dimension, and a rounded dimension is another shape."""
+
+    with pytest.raises(TypeError, match="IR shape dimension must be an integer"):
+        CircuitIR(2, (), shape=tuple(shape))
+    with pytest.raises(TypeError, match="IR shape dimension must be an integer"):
+        CircuitIR.from_dict(_program_payload(shape=shape))
+
+
+def test_a_wire_count_survives_a_round_trip_unchanged():
+    """A stored program is data: a round trip must not rewrite its width."""
+
+    program = CircuitIR(3, (Instruction("h", (2,)),))
+    restored = CircuitIR.from_dict(program.to_dict())
+
+    assert restored.n_wires == 3
+    assert restored.to_dict()["n_wires"] == 3
+    assert restored.content_hash == program.content_hash
+
+
+def test_a_refused_wire_count_is_refused_by_the_ir_and_by_a_circuit_alike():
+    """The two boundaries that carry this count must not disagree about it."""
+
+    for value in (2.7, "3", True):
+        with pytest.raises(TypeError):
+            CircuitIR(value, ())
+        with pytest.raises(TypeError):
+            fq.Circuit(value)
+
+
 def test_executor_boundary_rejects_non_ir_input_before_dispatch():
     class InvalidProgram:
         def to_ir(self):

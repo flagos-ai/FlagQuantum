@@ -216,6 +216,7 @@ jobs:
           python -m pip install
           'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'
           'qiskit-aer==0.17.*'
+          'sympy>=1.13,<2'
       - name: Verify the machine-readable interoperability contract
         run: python tools/check_qiskit_interop_contract.py
       - name: Verify Qiskit IR, statevector, and Aer conformance

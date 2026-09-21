@@ -523,7 +523,12 @@ protocol rather than defining a parallel framework architecture. They remain
 experimental and have their own tested dependency-version window.
 
 Both directions fail closed when an operation, control-flow construct, or
-parameter expression cannot be represented losslessly. Use `import_qiskit()`
+parameter expression cannot be represented losslessly. Qiskit arithmetic
+parameter expressions are imported after symbolic simplification when they use
+only addition, multiplication, numeric constants, and negation; subtraction and
+division by a numeric constant are represented through that subset. Functions,
+powers, division by a parameter, and other symbolic operations are rejected.
+Use `import_qiskit()`
 or `export_qiskit()` to receive the converted object together with a
 machine-readable `QiskitConversionReport`. `allow_lossy=True` must be explicit
 and records every skipped operation; it is intended for inspection, not silent

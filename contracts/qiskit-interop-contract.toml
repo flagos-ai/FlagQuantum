@@ -22,7 +22,7 @@ loss_policy = "fail_closed_unless_allow_lossy_true"
 [unsupported]
 qiskit_features = [
     "control_flow_import",
-    "arbitrary_parameter_expression_import",
+    "parameter_expression_operations_outside_add_mul_neg",
     "nonstandard_register_layout_without_explicit_flattening",
     "custom_unitary_above_three_qubits",
 ]

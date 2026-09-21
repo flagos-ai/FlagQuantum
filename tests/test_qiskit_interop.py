@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.parameters import parameter_names_in_value
 from flagquantum.ecosystem import get_adapter
 from flagquantum.ecosystem.qiskit import (
     QiskitConversionError,
@@ -290,3 +291,38 @@ def test_flagquantum_parameter_expression_exports_without_eager_qiskit_state() -
     assert {parameter.name for parameter in circuit.parameters} == {"theta"}
     bound = circuit.assign_parameters({"theta": 0.25})
     assert float(bound.data[0].operation.params[0]) == pytest.approx(pi - 0.5)
+
+
+def test_qiskit_arithmetic_parameter_expression_imports_and_round_trips() -> None:
+    theta = QiskitParameter("theta")
+    offset = QiskitParameter("offset")
+    circuit = QuantumCircuit(1)
+    circuit.rz(-(theta * 2.0) + offset, 0)
+
+    imported = import_qiskit(circuit)
+
+    expression = imported.ir.instructions[0].params["theta"]
+    assert parameter_names_in_value(expression) == ("offset", "theta")
+    bound_ir = (
+        fq.Circuit.from_ir(imported.ir)
+        .bind_parameters({"theta": 0.25, "offset": pi})
+        .to_ir()
+    )
+    assert bound_ir.instructions[0].params["theta"] == pytest.approx(pi - 0.5)
+
+    round_trip = to_qiskit(imported.ir)
+    qiskit_bound = round_trip.assign_parameters({"theta": 0.25, "offset": pi})
+    assert float(qiskit_bound.data[0].operation.params[0]) == pytest.approx(pi - 0.5)
+
+
+def test_qiskit_parameter_expression_outside_arithmetic_subset_fails_closed() -> None:
+    theta = QiskitParameter("theta")
+    circuit = QuantumCircuit(1)
+    circuit.rz(theta.sin(), 0)
+
+    with pytest.raises(QiskitConversionError) as captured:
+        import_qiskit(circuit)
+
+    blocker = captured.value.report.blockers[0]
+    assert blocker.code == "unsupported_parameter_expression"
+    assert "sin" in blocker.message
