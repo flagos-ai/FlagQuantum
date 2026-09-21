@@ -9,7 +9,7 @@ components.
 
 JAX, Triton, cotengra, visualization, examples and provider SDKs remain separate
 extras.
-`interop-all` is the explicit aggregate for the Braket, PennyLane, Quafu and Qiskit
+`interop-all` is the explicit aggregate for the Braket, Cirq, PennyLane, Quafu and Qiskit
 adapters; it is not part of the historical `all` development/runtime bundle.
 Installing core FlagQuantum therefore never installs an external quantum
 framework.

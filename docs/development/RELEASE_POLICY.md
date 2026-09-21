@@ -23,8 +23,8 @@ Dependency groups are intentionally separated:
 - `dev`: tests, formatting, typing and package verification;
 - `jax`: optional bounded JAX quantum kernels;
 - `cuda`: optional Triton kernels without changing native PyTorch CUDA support;
-- `braket`, `pennylane`, `quafu`, `qiskit`: isolated provider and interop SDKs;
-- `interop-all`: the exact aggregate of those four interop groups;
+- `braket`, `cirq`, `pennylane`, `quafu`, `qiskit`: isolated provider and interop SDKs;
+- `interop-all`: the exact aggregate of those five interop groups;
 - `examples`: datasets and transformer examples;
 - `viz`: Matplotlib circuit rendering;
 - `all`: the historical development/runtime aggregate, excluding providers;

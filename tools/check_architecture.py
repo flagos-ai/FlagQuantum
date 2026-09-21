@@ -301,6 +301,9 @@ def architecture_errors() -> tuple[str, ...]:
     simulation_runtime_import_allowed = set(
         simulation_boundaries.get("runtime_import_allowed", ())
     )
+    cirq_import_allowed_prefixes = tuple(
+        interop_boundaries.get("cirq_import_allowed_prefixes", ())
+    )
     qiskit_import_allowed_prefixes = tuple(
         interop_boundaries.get("qiskit_import_allowed_prefixes", ())
     )
@@ -436,6 +439,13 @@ def architecture_errors() -> tuple[str, ...]:
             ) and relative not in torch_fl_import_allowed:
                 errors.append(
                     f"{relative}: torch_fl imports are isolated to the FlagOS adapter"
+                )
+            if (
+                module == "cirq" or module.startswith("cirq.")
+            ) and not relative.startswith(cirq_import_allowed_prefixes):
+                errors.append(
+                    f"{relative}: Cirq imports are isolated to "
+                    "flagquantum.ecosystem.cirq"
                 )
             if (
                 module == "qiskit"

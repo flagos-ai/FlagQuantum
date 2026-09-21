@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "dependency-policy.toml"
 PYPROJECT = ROOT / "pyproject.toml"
 EXPECTED_SCHEMA = "flagquantum_dependency_policy_v2"
-EXPECTED_INTEROP_EXTRAS = ("braket", "pennylane", "quafu", "qiskit")
+EXPECTED_INTEROP_EXTRAS = ("braket", "cirq", "pennylane", "quafu", "qiskit")
 REQUIREMENT_NAME = re.compile(r"^\s*([A-Za-z0-9_.-]+)")
 
 
@@ -108,7 +108,7 @@ def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[st
         interop_names = tuple(interop) if isinstance(interop, list) else ()
         if interop_names != EXPECTED_INTEROP_EXTRAS:
             errors.append(
-                "interop class must be exactly braket, pennylane, quafu, and qiskit"
+                "interop class must be exactly braket, cirq, pennylane, quafu, and qiskit"
             )
 
     aggregates = policy.get("aggregates")
