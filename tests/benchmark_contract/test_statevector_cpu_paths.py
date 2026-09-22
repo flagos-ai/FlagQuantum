@@ -116,6 +116,7 @@ def test_cpu_paths_attributes_each_gate_family_to_its_engine_path():
 
     mixed = by_case["mixed_chain"]["runtime_statistics"]
     assert mixed["permutation_gates"] >= 1
+    assert mixed["statevector_apply_count"] == 2
 
     # ``triton_cx_sequence_regions`` is not asserted to be zero: it counts
     # ``_StatevectorCXSequenceStep`` entries in the built program, which is
@@ -187,6 +188,17 @@ def test_disjoint_single_wire_fusion_can_be_disabled(monkeypatch):
     assert (
         by_case["rotation_chain"]["runtime_statistics"]["statevector_apply_count"] == 6
     )
+
+
+def test_unfused_single_wire_layer_fusion_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+
+    by_case = {
+        item["case"]: item
+        for item in _small_run(layers=2, n_wires=6, cases=["mixed_chain"])["cases"]
+    }
+
+    assert by_case["mixed_chain"]["runtime_statistics"]["statevector_apply_count"] == 14
 
 
 def test_the_diagonal_gate_count_agrees_with_a_count_taken_from_the_ir():

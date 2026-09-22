@@ -47,6 +47,7 @@ from .operations import (
     _StatevectorGateStep,
     _StatevectorProgramStep,
     _StatevectorRXRZLoopStep,
+    _StatevectorSingleWireRegion,
     _triton_parameterized_single_qubit_matrix_enabled,
     _triton_ry_rz_pair_enabled,
     _triton_single_qubit_loop_enabled,
@@ -550,7 +551,7 @@ def _apply_disjoint_single_wire_step(
     rotation_matrices: dict[int, torch.Tensor],
 ) -> torch.Tensor:
     matrices = tuple(
-        _fused_step_matrix(
+        _single_wire_region_matrix(
             circuit,
             region,
             state,
@@ -560,9 +561,42 @@ def _apply_disjoint_single_wire_step(
         )
         for region in step.regions
     )
-    wires = tuple(region.wires[0] for region in step.regions)
+    wires = tuple(
+        (
+            region.instruction.wires[0]
+            if isinstance(region, _StatevectorGateStep)
+            else region.wires[0]
+        )
+        for region in step.regions
+    )
     matrix = _batched_kronecker_product(matrices, batch_size=state.shape[0])
     return _apply_matrix(state, matrix, wires, circuit.n_wires)
+
+
+def _single_wire_region_matrix(
+    circuit: Circuit,
+    region: _StatevectorSingleWireRegion,
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    rx_ry_rz_matrices: dict[int, torch.Tensor],
+    rotation_matrices: dict[int, torch.Tensor],
+) -> torch.Tensor:
+    if isinstance(region, _StatevectorGateStep):
+        return _gate_matrix(
+            region.instruction,
+            bsz=state.shape[0],
+            device=state.device,
+            dtype=state.dtype,
+            parameter_bindings=parameter_bindings,
+        )
+    return _fused_step_matrix(
+        circuit,
+        region,
+        state,
+        parameter_bindings,
+        rx_ry_rz_matrices,
+        rotation_matrices,
+    )
 
 
 def _apply_cx_sequence(
@@ -661,7 +695,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
         enable_cpu_disjoint_single_wire = (
-            output.device.type == "cpu" and _cpu_disjoint_single_wire_fusion_enabled()
+            output.device.type == "cpu"
+            and _cpu_disjoint_single_wire_fusion_enabled()
+            and not _cpu_single_wire_elementwise_enabled()
         )
         program_key = (
             "statevector",

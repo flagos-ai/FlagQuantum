@@ -34,9 +34,14 @@ class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
 
+_StatevectorSingleWireRegion: TypeAlias = (
+    _StatevectorGateStep | _StatevectorFusedGateStep
+)
+
+
 @dataclass(frozen=True)
 class _StatevectorDisjointSingleWireStep:
-    regions: tuple[_StatevectorFusedGateStep, ...]
+    regions: tuple[_StatevectorSingleWireRegion, ...]
 
 
 @dataclass(frozen=True)
