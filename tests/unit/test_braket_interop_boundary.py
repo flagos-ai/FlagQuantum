@@ -48,6 +48,12 @@ def test_ci_runs_both_braket_versions_and_the_braket_suite() -> None:
     assert "braket-optional:" in workflow
     assert 'braket-version: ["1.117.0", "1.127.1"]' in workflow
     assert "python tools/check_braket_interop_contract.py --verify-sdk" in workflow
-    assert "tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py" in workflow
-    assert "tests/test_braket_interop.py tests/test_braket_interop_conformance.py" in workflow
+    assert (
+        "tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py"
+        in workflow
+    )
+    assert (
+        "tests/test_braket_interop.py tests/test_braket_interop_conformance.py"
+        in workflow
+    )
     assert "-m braket -q" in workflow
