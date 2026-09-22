@@ -18,7 +18,7 @@ def test_pennylane_namespace_and_registry_are_lazy() -> None:
 import sys
 import flagquantum.ecosystem.pennylane
 from flagquantum.ecosystem import available_adapters, get_adapter
-assert available_adapters() == ('cirq', 'cudaq', 'pennylane', 'qiskit')
+assert available_adapters() == ('braket', 'cirq', 'cudaq', 'pennylane', 'qiskit')
 assert get_adapter('pennylane').name == 'pennylane'
 assert not [name for name in sys.modules if name == 'pennylane' or name.startswith('pennylane.')]
 """

@@ -466,7 +466,7 @@ descriptors and loads an adapter implementation only when requested:
 ```python
 from flagquantum.ecosystem import available_adapters, get_adapter
 
-assert available_adapters() == ("cirq", "cudaq", "pennylane", "qiskit")
+assert available_adapters() == ("braket", "cirq", "cudaq", "pennylane", "qiskit")
 adapter = get_adapter("qiskit")
 result = adapter.import_program(external_circuit)
 flagquantum_ir = result.ir
@@ -480,8 +480,9 @@ the external dependency is loaded only when conversion is requested. Adapter
 API mismatches and registered/loaded identity mismatches fail before use.
 `InteropRegistry.to_dict()` provides a machine-readable inventory for tooling
 and review without probing or importing dependencies. The default registry
-instance and each Cirq/Qiskit/PennyLane adapter remain experimental implementation
-details; they are not part of the candidate-stable export list.
+instance and each Braket/Cirq/CUDA-Q/Qiskit/PennyLane adapter remain
+experimental implementation details; they are not part of the candidate-stable
+export list.
 
 ### PennyLane QuantumScript interoperability
 

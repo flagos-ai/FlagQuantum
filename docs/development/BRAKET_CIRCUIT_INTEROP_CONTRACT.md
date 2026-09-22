@@ -6,9 +6,9 @@ package boundary and are converted immediately to FlagQuantum IR. The existing
 `flagquantum.remote.qpu.braket` module remains the separate owner of device
 discovery, task submission, polling, and result normalization.
 
-This change defines the boundary before implementation. It does not expose a
-Braket circuit adapter, run a local simulator, submit an AWS task, access
-credentials, or claim compatibility with a real simulator or QPU.
+The implemented adapter exposes static circuit conversion at this boundary. It
+does not submit an AWS task, access credentials, select a device, or claim
+compatibility with a real simulator or QPU.
 
 ## Dependency decision
 
@@ -18,10 +18,9 @@ current 1.127.1 release both require Python 3.11 or newer, so the requirement is
 guarded by the same Python marker. Core FlagQuantum stays usable on Python 3.10
 without installing Braket.
 
-The planned implementation must certify both boundary versions in an isolated
-SDK matrix before the adapter becomes public. The SDK is Apache-2.0 licensed,
-remains optional, and can be removed with the adapter without changing
-FlagQuantum IR or stable core APIs.
+Both boundary versions run in an isolated SDK matrix. The SDK is Apache-2.0
+licensed, remains optional, and can be removed with the adapter without
+changing FlagQuantum IR or stable core APIs.
 
 ## Semantic boundary
 
@@ -37,9 +36,9 @@ verbatim boxes, noise, free parameters, and global phase remain outside this
 adapter. Unsupported input fails closed unless a future implementation exposes
 an explicit lossy conversion and records every loss in its report.
 
-## Implementation acceptance
+## Verification
 
-A later implementation PR must:
+The adapter must continue to:
 
 1. convert the declared static gate subset in both directions;
 2. reject or explicitly report every unsupported feature;

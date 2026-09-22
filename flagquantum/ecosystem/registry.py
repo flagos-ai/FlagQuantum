@@ -124,6 +124,12 @@ QISKIT_ADAPTER_SPEC = InteropAdapterSpec(
     attribute="QISKIT_ADAPTER",
     dependency_extra="qiskit",
 )
+BRAKET_ADAPTER_SPEC = InteropAdapterSpec(
+    name="braket",
+    module="flagquantum.ecosystem.braket.adapter",
+    attribute="BRAKET_ADAPTER",
+    dependency_extra="braket",
+)
 CUDAQ_ADAPTER_SPEC = InteropAdapterSpec(
     name="cudaq",
     module="flagquantum.ecosystem.cudaq.adapter",
@@ -144,6 +150,7 @@ PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
 )
 DEFAULT_INTEROP_REGISTRY = InteropRegistry(
     {
+        "braket": BRAKET_ADAPTER_SPEC,
         "cirq": CIRQ_ADAPTER_SPEC,
         "cudaq": CUDAQ_ADAPTER_SPEC,
         "pennylane": PENNYLANE_ADAPTER_SPEC,
@@ -166,6 +173,7 @@ def get_adapter(name: str) -> InteropAdapter:
 
 __all__ = (
     "DEFAULT_INTEROP_REGISTRY",
+    "BRAKET_ADAPTER_SPEC",
     "CIRQ_ADAPTER_SPEC",
     "CUDAQ_ADAPTER_SPEC",
     "PENNYLANE_ADAPTER_SPEC",

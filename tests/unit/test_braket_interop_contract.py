@@ -21,13 +21,13 @@ def test_braket_circuit_interop_contract_is_current() -> None:
     assert contract_errors(*_inputs()) == ()
 
 
-def test_contract_rejects_premature_api_and_execution_claims() -> None:
+def test_contract_requires_public_api_but_rejects_execution_claims() -> None:
     contract, policy = _inputs()
-    contract["public_api_available"] = True
+    contract["public_api_available"] = False
     contract["runtime_execution_allowed"] = True
     contract["cloud_submission_allowed"] = True
     errors = contract_errors(contract, policy)
-    assert "Braket circuit API must remain unavailable before implementation" in errors
+    assert "Braket circuit public API must remain available" in errors
     assert (
         "Braket contract field 'runtime_execution_allowed' must remain false" in errors
     )
@@ -42,7 +42,7 @@ def test_contract_rejects_dependency_and_version_drift() -> None:
     contract["amazon_braket_sdk_versions"] = ["1.127.1"]
     errors = contract_errors(contract, policy)
     assert "Braket optional dependency range drifted" in errors
-    assert "Braket candidate lanes must be 1.117.0 and 1.127.1" in errors
+    assert "Braket certification lanes must be 1.117.0 and 1.127.1" in errors
 
 
 def test_contract_rejects_incomplete_or_ambiguous_opcode_partition() -> None:
@@ -54,16 +54,15 @@ def test_contract_rejects_incomplete_or_ambiguous_opcode_partition() -> None:
     assert "Braket gate mappings must be unambiguous" in errors
 
 
-def test_contract_keeps_implementation_evidence_deferred() -> None:
+def test_contract_requires_implementation_evidence() -> None:
     contract, policy = _inputs()
-    contract["verification"]["sdk_lane_deferred_until_implementation"] = False
-    contract["verification"]["planned_conformance"] = "tests/changed.py"
+    contract["verification"]["conformance"] = "tests/changed.py"
     errors = contract_errors(contract, policy)
-    assert "Braket SDK lane must remain explicitly deferred" in errors
-    assert "Braket planned_conformance path drifted" in errors
+    assert "Braket conformance path drifted" in errors
 
 
-def test_ci_checks_contract_without_claiming_an_sdk_lane() -> None:
+def test_ci_checks_contract_and_certified_sdk_lanes() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_braket_interop_contract.py" in workflow
-    assert "braket-optional:" not in workflow
+    assert "braket-optional:" in workflow
+    assert 'braket-version: ["1.117.0", "1.127.1"]' in workflow
