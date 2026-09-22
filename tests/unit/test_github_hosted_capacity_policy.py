@@ -67,6 +67,8 @@ BUCKETS = frozenset(
 
 CEILING = 8
 BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=loadscope --durations=50"
+BOUNDED_COVERAGE_WORKERS = "-n 2"
+COVERAGE_DISTRIBUTION = "--dist=worksteal"
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
 
@@ -246,15 +248,15 @@ def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
         assert not isinstance(env, dict) or "PYTEST_ADDOPTS" not in env
 
 
-def test_coverage_uses_the_same_bounded_worker_policy() -> None:
-    commands = [
-        str(step.get("run", ""))
+def test_coverage_uses_bounded_workers_with_tail_work_stealing() -> None:
+    steps = [
+        step
         for step in _steps("ci.yml", "coverage")
         if "python -m pytest" in str(step.get("run", ""))
     ]
-    assert len(commands) == 1
-    command = commands[0]
-    for token in ("-n 2", "--dist=loadscope", "--durations=50"):
+    assert len(steps) == 1
+    command = str(steps[0].get("run", ""))
+    for token in (BOUNDED_COVERAGE_WORKERS, COVERAGE_DISTRIBUTION, "--durations=50"):
         assert token in command
 
 

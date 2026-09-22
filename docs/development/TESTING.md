@@ -452,16 +452,18 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and coverage pytest phases use exactly two xdist workers with
-load-scope scheduling. The fixed count shortens the critical path without
-letting a runner-image CPU change silently widen process fan-out. Smoke/unit
-runs on Python 3.10-3.12; the integration tier runs once on Python 3.12 because
-it proves repository runtime behavior rather than interpreter compatibility.
-Only the ordinary smoke, unit, integration, and coverage phases are
-parallelized: `torchrun` and `distributed_launch` remain explicit serial
-workflow steps on Python 3.12 so xdist never creates a second process topology
-inside a launched rank. Both parallel phases report their fifty slowest tests
-to keep the next optimization grounded in measured durations.
+The CPU core and coverage pytest phases use exactly two xdist workers. CPU core
+uses load-scope scheduling; coverage uses work-stealing scheduling so an idle
+worker can take individual tests from a long module batch near the tail. The
+fixed count shortens the critical path without letting a runner-image CPU
+change silently widen process fan-out. Smoke/unit runs on Python 3.10-3.12; the
+integration tier runs once on Python 3.12 because it proves repository runtime
+behavior rather than interpreter compatibility. Only the ordinary smoke,
+unit, integration, and coverage phases are parallelized: `torchrun` and
+`distributed_launch` remain explicit serial workflow steps on Python 3.12 so
+xdist never creates a second process topology inside a launched rank. Both
+parallel phases report their fifty slowest tests to keep the next optimization
+grounded in measured durations.
 
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
