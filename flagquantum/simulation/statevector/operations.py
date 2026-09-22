@@ -36,6 +36,7 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
+from .program import _StatevectorSingleWireRegion as _StatevectorSingleWireRegion
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -469,7 +470,7 @@ def _fuse_disjoint_single_wire_regions(
     """Pack up to four disjoint dense single-wire regions into one apply."""
 
     optimized: list[_StatevectorPreCXStep] = []
-    group: list[_StatevectorFusedGateStep] = []
+    group: list[_StatevectorSingleWireRegion] = []
 
     def flush() -> None:
         if len(group) >= 2:
@@ -479,22 +480,34 @@ def _fuse_disjoint_single_wire_regions(
         group.clear()
 
     for step in program:
-        if not (
-            isinstance(step, _StatevectorFusedGateStep)
-            and len(step.wires) == 1
-            and not step.diagonal
-        ):
+        region = _dense_single_wire_region(step)
+        if region is None:
             flush()
             optimized.append(step)
             continue
-        wire = step.wires[0]
+        wire = _region_wires(region)[0]
         if len(group) == _CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES or any(
-            item.wires[0] == wire for item in group
+            _region_wires(item)[0] == wire for item in group
         ):
             flush()
-        group.append(step)
+        group.append(region)
     flush()
     return optimized
+
+
+def _dense_single_wire_region(
+    step: _StatevectorPreCXStep,
+) -> _StatevectorSingleWireRegion | None:
+    if isinstance(step, _StatevectorFusedGateStep):
+        return step if len(step.wires) == 1 and not step.diagonal else None
+    if not isinstance(step, _StatevectorGateStep):
+        return None
+    instruction = step.instruction
+    if len(instruction.wires) != 1 or _diagonal_region((instruction,)):
+        return None
+    if canonical_opcode(instruction.name) in {"x", "y"}:
+        return None
+    return step
 
 
 def _fuse_cx_sequences(
