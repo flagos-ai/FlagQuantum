@@ -452,6 +452,57 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
+    if state.device.type == "cpu" and state.is_contiguous() and len(wires) == 1:
+        return _apply_single_qubit_matrix_cpu(
+            state,
+            matrix,
+            wire=wires[0],
+            n_wires=n_wires,
+        )
+    return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
+
+
+def _apply_single_qubit_matrix_cpu(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    wire: int,
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply one CPU gate by visiting contiguous amplitude pairs directly."""
+
+    if not 0 <= int(wire) < int(n_wires):
+        raise ValueError("wire is outside the statevector")
+    bsz = state.shape[0]
+    stride = 1 << (int(n_wires) - int(wire) - 1)
+    paired = state.reshape(bsz, -1, 2, stride)
+    zero = paired[:, :, 0, :]
+    one = paired[:, :, 1, :]
+    matrix = matrix.to(device=state.device, dtype=state.dtype)
+    if matrix.ndim == 2:
+        matrix = matrix.unsqueeze(0).expand(bsz, -1, -1)
+    elif matrix.ndim == 3 and matrix.shape[0] == 1 and bsz != 1:
+        matrix = matrix.expand(bsz, -1, -1)
+    if matrix.shape != (bsz, 2, 2):
+        raise ValueError("single-qubit matrix must have shape [2, 2] or [batch, 2, 2]")
+    coefficient_shape = (bsz, 1, 1)
+    out_zero = zero * matrix[:, 0, 0].reshape(coefficient_shape)
+    out_zero = out_zero + one * matrix[:, 0, 1].reshape(coefficient_shape)
+    out_one = zero * matrix[:, 1, 0].reshape(coefficient_shape)
+    out_one = out_one + one * matrix[:, 1, 1].reshape(coefficient_shape)
+    return torch.stack((out_zero, out_one), dim=2).reshape(state.shape)
+
+
+def _apply_matrix_layout(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply a gate through the general layout-and-batched-matmul path."""
+
+    wires = tuple(wires)
     bsz = state.shape[0]
     k = len(wires)
     dim = 2**k
@@ -524,6 +575,27 @@ def _apply_diagonal_matrix(
     wires = tuple(wires)
     bsz = state.shape[0]
     dim = 2 ** len(wires)
+    if state.device.type == "cpu" and state.is_contiguous():
+        matrix = matrix.to(device=state.device, dtype=state.dtype)
+        diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
+        if diagonal.ndim == 1:
+            diagonal = diagonal.unsqueeze(0).expand(bsz, -1)
+        elif diagonal.shape[0] == 1 and bsz != 1:
+            diagonal = diagonal.expand(bsz, -1)
+        if diagonal.shape != (bsz, dim):
+            raise ValueError(
+                "diagonal matrix must have shape [dim, dim] or [batch, dim, dim]"
+            )
+        ordered_wires = tuple(sorted(wires))
+        wire_order = tuple(wires.index(wire) for wire in ordered_wires)
+        factors = diagonal.reshape((bsz,) + (2,) * len(wires)).permute(
+            (0,) + tuple(index + 1 for index in wire_order)
+        )
+        factor_shape = [bsz] + [1] * n_wires
+        for wire in ordered_wires:
+            factor_shape[wire + 1] = 2
+        tensor = state.reshape((bsz,) + (2,) * n_wires)
+        return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
     if layout is None:
         layout = _statevector_layout(n_wires, wires)
     perm, inv_perm = layout

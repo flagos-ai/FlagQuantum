@@ -9,7 +9,10 @@ from flagquantum.core import Instruction
 from flagquantum.simulation.statevector.local import _rotation_region_angles
 from flagquantum.simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
+    _apply_diagonal_matrix,
     _apply_local_gate_eager,
+    _apply_matrix,
+    _apply_matrix_layout,
     _basis_indices_for_wires,
     _basis_offset,
     _combine_gate_basis_blocks_eager,
@@ -246,3 +249,71 @@ def test_tensor_parameter_matrix_preserves_device_autograd_path(monkeypatch):
     )
 
     assert observed["device"].type == "meta"
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wire", (0, 1, 3))
+def test_cpu_single_qubit_direct_kernel_matches_layout_reference(dtype, wire):
+    generator = torch.Generator().manual_seed(1729 + wire)
+    state = torch.randn((3, 16), dtype=dtype, generator=generator)
+    matrix = torch.randn((3, 2, 2), dtype=dtype, generator=generator)
+
+    actual = _apply_matrix(state, matrix, (wire,), 4)
+    expected = _apply_matrix_layout(state, matrix, (wire,), 4)
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_single_qubit_direct_kernel_does_not_dispatch_bmm(monkeypatch):
+    state = torch.randn((2, 32), dtype=torch.complex128)
+    matrix = torch.randn((2, 2), dtype=torch.complex128)
+
+    def reject_bmm(*args, **kwargs):
+        raise AssertionError("CPU single-qubit fast path must not call torch.bmm")
+
+    monkeypatch.setattr(torch, "bmm", reject_bmm)
+
+    result = _apply_matrix(state, matrix, (2,), 5)
+
+    assert result.shape == state.shape
+
+
+def test_cpu_single_qubit_direct_kernel_preserves_state_and_matrix_gradients():
+    generator = torch.Generator().manual_seed(1733)
+    state = torch.randn(
+        (2, 8), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    matrix = torch.randn(
+        (2, 2, 2), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+
+    actual = _apply_matrix(state, matrix, (1,), 3)
+    expected = _apply_matrix_layout(state, matrix, (1,), 3)
+    actual_loss = torch.abs(actual).square().sum()
+    expected_loss = torch.abs(expected).square().sum()
+    actual_gradients = torch.autograd.grad(
+        actual_loss, (state, matrix), retain_graph=True
+    )
+    expected_gradients = torch.autograd.grad(expected_loss, (state, matrix))
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+@pytest.mark.parametrize("wires", ((0,), (2,), (0, 2), (2, 0)))
+def test_cpu_diagonal_kernel_matches_layout_reference(wires):
+    generator = torch.Generator().manual_seed(1741 + sum(wires))
+    state = torch.randn((2, 8), dtype=torch.complex128, generator=generator)
+    dim = 2 ** len(wires)
+    diagonal = torch.randn((2, dim), dtype=torch.complex128, generator=generator)
+    matrix = torch.diag_embed(diagonal)
+
+    actual = _apply_diagonal_matrix(state, matrix, wires, 3)
+    expected = _apply_matrix_layout(state, matrix, wires, 3)
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
