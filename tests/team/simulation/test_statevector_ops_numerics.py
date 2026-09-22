@@ -118,7 +118,7 @@ def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
     ) == (4, 4, 1)
 
 
-def test_dense_single_wire_grouping_stops_at_diagonal_regions() -> None:
+def test_dense_single_wire_grouping_includes_diagonal_regions() -> None:
     layout = ((), ())
     dense = tuple(
         statevector_ops._StatevectorFusedGateStep(
@@ -139,13 +139,13 @@ def test_dense_single_wire_grouping_stops_at_diagonal_regions() -> None:
         (*dense[:2], diagonal, *dense[2:])
     )
 
-    assert len(optimized) == 3
+    assert len(optimized) == 2
     assert isinstance(optimized[0], statevector_ops._StatevectorDisjointSingleWireStep)
-    assert optimized[1] is diagonal
-    assert isinstance(optimized[2], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert optimized[0].regions == (*dense[:2], diagonal, dense[2])
+    assert optimized[1] is dense[3]
 
 
-def test_unfused_dense_single_wire_layers_are_grouped_without_fixed_gates() -> None:
+def test_unfused_dense_single_wire_layers_include_fixed_gates() -> None:
     layout = ((), ())
     rotations = tuple(
         statevector_ops._StatevectorGateStep(
@@ -159,12 +159,11 @@ def test_unfused_dense_single_wire_layers_are_grouped_without_fixed_gates() -> N
         (*rotations[:3], fixed, *rotations[3:])
     )
 
-    assert len(optimized) == 3
+    assert len(optimized) == 2
     assert isinstance(optimized[0], statevector_ops._StatevectorDisjointSingleWireStep)
     assert optimized[0].regions == rotations[:3]
-    assert optimized[1] is fixed
-    assert isinstance(optimized[2], statevector_ops._StatevectorDisjointSingleWireStep)
-    assert optimized[2].regions == rotations[3:]
+    assert isinstance(optimized[1], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert optimized[1].regions == (fixed, *rotations[3:])
 
 
 def test_rotation_region_angles_preserve_values_and_gradients() -> None:
@@ -753,3 +752,58 @@ def test_cpu_unfused_single_wire_layer_preserves_parameter_autograd(monkeypatch)
         actual_gradients, expected_gradients, strict=True
     ):
         torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_mixed_single_wire_layer_preserves_parameter_autograd(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    generator = torch.Generator().manual_seed(1777)
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    inputs = torch.randn((2, 64), dtype=dtype, generator=generator, requires_grad=True)
+    angles = torch.linspace(-0.4, 0.5, 3, dtype=real_dtype, requires_grad=True)
+    circuit = Circuit(6, dtype=dtype, inputs=inputs)
+    circuit.x(0).y(1).rz(2, theta=angles[0]).ry(3, theta=angles[1])
+    circuit.x(4).p(5, theta=angles[2])
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(), (inputs, angles), retain_graph=True
+    )
+    baseline_statistics = dict(circuit._last_statevector_runtime)
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
+    fused_statistics = dict(circuit._last_statevector_runtime)
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert baseline_statistics["statevector_apply_count"] == 6
+    assert baseline_statistics["permutation_gates"] == 2
+    assert baseline_statistics["fixed_single_qubit_specialized_gates"] == 1
+    assert baseline_statistics["diagonal_elementwise_gates"] == 2
+    assert fused_statistics["statevector_apply_count"] == 2
+    assert fused_statistics["permutation_gates"] == 0
+    assert fused_statistics["fixed_single_qubit_specialized_gates"] == 0
+    assert fused_statistics["diagonal_elementwise_gates"] == 0
+
+
+@pytest.mark.parametrize(
+    ("gate", "counter"),
+    (("x", "permutation_gates"), ("y", "fixed_single_qubit_specialized_gates")),
+)
+def test_single_fixed_gate_keeps_its_specialized_cpu_path(
+    gate: str, counter: str
+) -> None:
+    circuit = Circuit(1, dtype=torch.complex128)
+    getattr(circuit, gate)(0)
+
+    circuit.state(refresh=True)
+
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 1
+    assert circuit._last_statevector_runtime[counter] == 1

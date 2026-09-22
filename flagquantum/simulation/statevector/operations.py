@@ -498,16 +498,21 @@ def _fuse_disjoint_single_wire_regions(
 def _dense_single_wire_region(
     step: _StatevectorPreCXStep,
 ) -> _StatevectorSingleWireRegion | None:
+    """Return a one-wire region that a bounded dense group may absorb.
+
+    Dedicated diagonal matchings are formed before this pass, so only diagonal
+    singletons reach here. Fixed ``x`` and ``y`` gates likewise keep their
+    specialized kernels when alone because ``flush`` unwraps a one-item group.
+    Once either kind sits beside another disjoint one-wire region, including it
+    in the shared Kronecker apply saves a full statevector pass.
+    """
+
     if isinstance(step, _StatevectorFusedGateStep):
-        return step if len(step.wires) == 1 and not step.diagonal else None
+        return step if len(step.wires) == 1 else None
     if not isinstance(step, _StatevectorGateStep):
         return None
     instruction = step.instruction
-    if len(instruction.wires) != 1 or _diagonal_region((instruction,)):
-        return None
-    if canonical_opcode(instruction.name) in {"x", "y"}:
-        return None
-    return step
+    return step if len(instruction.wires) == 1 else None
 
 
 def _fuse_cx_sequences(
