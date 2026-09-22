@@ -76,6 +76,7 @@ MANUAL = ROOT / "docs/development/TESTING.md"
 # as a failure instead of as silence.
 IMPORT_ALIASES = {
     "braket": "amazon-braket-sdk",
+    "cirq": "cirq-core",
     "jaxlib": "jax",
     "quark": "quarkcircuit",
 }
@@ -815,7 +816,9 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     assert {"coverage", "triton-optional", "distributed-cpu"} <= set(by_name)
 
     coverage = by_name["coverage"]
-    assert coverage.extras == frozenset({"dev", "jax", "viz", "pennylane", "cotengra"})
+    assert coverage.extras == frozenset(
+        {"dev", "jax", "viz", "cirq", "pennylane", "cotengra"}
+    )
     assert coverage.expressions == (
         "(smoke or unit or integration or jax) and not qiskit and not triton",
     )

@@ -64,7 +64,7 @@ __all__ = (
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"pennylane", "qiskit"}:
+    if name in {"cirq", "pennylane", "qiskit"}:
         return import_module(f".{name}", __name__)
     raise AttributeError(name)
 

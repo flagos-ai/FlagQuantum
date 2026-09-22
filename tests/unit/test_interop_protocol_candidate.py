@@ -40,7 +40,9 @@ def test_interop_namespace_matches_candidate_exactly() -> None:
     assert list(fqi.__all__) == extension["additions"]
     assert extension["new_namespace_only"] == extension["additions"]
     assert set(extension["additions"]).isdisjoint(dir(fq))
-    assert {"DEFAULT_INTEROP_REGISTRY", "pennylane", "qiskit"}.isdisjoint(fqi.__all__)
+    assert {"DEFAULT_INTEROP_REGISTRY", "cirq", "pennylane", "qiskit"}.isdisjoint(
+        fqi.__all__
+    )
 
 
 def test_interop_function_signatures_match_candidate() -> None:
@@ -69,7 +71,8 @@ def test_interop_errors_join_stable_error_boundary() -> None:
 
 
 def test_experimental_interop_contains_implementations_not_protocol_aliases() -> None:
-    assert fq.experimental.interop.__all__ == ("pennylane", "qiskit")
+    assert fq.experimental.interop.__all__ == ("cirq", "pennylane", "qiskit")
+    assert fq.experimental.interop.cirq is fqi.cirq
     assert fq.experimental.interop.qiskit is fqi.qiskit
     assert fq.experimental.interop.pennylane is fqi.pennylane
     with pytest.raises(AttributeError):

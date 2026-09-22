@@ -21,12 +21,12 @@ def test_cirq_interop_contract_is_current() -> None:
     assert contract_errors(*_inputs()) == ()
 
 
-def test_contract_rejects_premature_public_api_and_version_drift() -> None:
+def test_contract_rejects_public_api_and_version_drift() -> None:
     contract, policy = _inputs()
-    contract["public_api_available"] = True
+    contract["public_api_available"] = False
     contract["cirq_core_versions"] = ["1.7.0"]
     errors = contract_errors(contract, policy)
-    assert "Cirq public API must remain unavailable before implementation" in errors
+    assert "Cirq public API must remain available after implementation" in errors
     assert "Cirq certification lanes must be 1.6.1 and 1.7.0" in errors
 
 

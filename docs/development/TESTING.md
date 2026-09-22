@@ -116,10 +116,11 @@ so the check is per test rather than per file.
 | `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
 | `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional differential programs, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract plus golden and fixed-seed differential complex128 QuantumScript semantics described in [PennyLane Differential Conformance](PENNYLANE_DIFFERENTIAL_CONFORMANCE.md). | Hardware submission, dynamic execution, differentiation, or that PennyLane is a core dependency. |
+| `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, and seeded bidirectional statevector conformance. | Cirq runtime execution, devices, or that Cirq is a core dependency. |
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
-The coverage job installs `jax`, `pennylane`, and `cotengra` because its marker
+The coverage job installs `jax`, `cirq`, `pennylane`, and `cotengra` because its marker
 expression selects their suites, and installs neither `qiskit` nor `triton`: the
 braket tests need no extra, and the other two cannot be measured there.
 `cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
@@ -405,9 +406,9 @@ The checked-in `ci.yml` defines twelve jobs:
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
-- `cirq-optional`: the contract-only Cirq boundary and public SDK surface checks
-  against the certified Cirq Core 1.6.1 and 1.7.0 lanes, isolated from the core
-  environment;
+- `cirq-optional`: static circuit conversion, fail-closed diagnostics, and
+  seeded bidirectional statevector conformance against the certified Cirq Core
+  1.6.1 and 1.7.0 lanes, isolated from the core environment;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit

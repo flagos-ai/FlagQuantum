@@ -27,6 +27,7 @@ from flagquantum.ecosystem import (
     run_adapter_conformance,
     semantic_fingerprint,
 )
+from flagquantum.ecosystem.cirq import CIRQ_ADAPTER
 from flagquantum.ecosystem.pennylane import PENNYLANE_ADAPTER
 from flagquantum.ecosystem.qiskit import (
     QISKIT_ADAPTER,
@@ -70,8 +71,8 @@ def test_framework_neutral_report_is_machine_readable_and_fail_closed() -> None:
 
 
 def test_default_registry_is_immutable_and_lazy() -> None:
-    assert available_adapters() == ("pennylane", "qiskit")
-    assert DEFAULT_INTEROP_REGISTRY.names == ("pennylane", "qiskit")
+    assert available_adapters() == ("cirq", "pennylane", "qiskit")
+    assert DEFAULT_INTEROP_REGISTRY.names == ("cirq", "pennylane", "qiskit")
     with pytest.raises(TypeError):
         DEFAULT_INTEROP_REGISTRY.specs["other"] = DEFAULT_INTEROP_REGISTRY.spec(
             "qiskit"
@@ -88,10 +89,12 @@ def test_default_registry_is_immutable_and_lazy() -> None:
     payload = DEFAULT_INTEROP_REGISTRY.to_dict()
     assert payload["schema"] == "flagquantum_interop_registry_v1"
     assert payload["adapters"] == [
+        DEFAULT_INTEROP_REGISTRY.spec("cirq").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("pennylane").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("qiskit").to_dict(),
     ]
     assert get_adapter("pennylane") is PENNYLANE_ADAPTER
+    assert get_adapter("cirq") is CIRQ_ADAPTER
 
 
 def test_registered_adapter_extras_are_dependency_governed() -> None:
@@ -144,7 +147,8 @@ def test_importing_and_resolving_adapter_does_not_import_qiskit() -> None:
     code = """
 import sys
 from flagquantum.ecosystem import available_adapters, get_adapter
-assert available_adapters() == ('pennylane', 'qiskit')
+assert available_adapters() == ('cirq', 'pennylane', 'qiskit')
+assert get_adapter('cirq').name == 'cirq'
 assert get_adapter('qiskit').name == 'qiskit'
 assert get_adapter('pennylane').name == 'pennylane'
 loaded = [
@@ -152,6 +156,7 @@ loaded = [
     if name == 'qiskit' or name.startswith('qiskit.')
     or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
     or name == 'pennylane' or name.startswith('pennylane.')
+    or name == 'cirq' or name.startswith('cirq.')
 ]
 assert not loaded, loaded
 """

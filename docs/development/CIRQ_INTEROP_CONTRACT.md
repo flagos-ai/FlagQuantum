@@ -5,13 +5,11 @@ FlagQuantum will support `cirq.Circuit` through an optional adapter owned by
 converted immediately to FlagQuantum IR. Core, compiler, runtime, and simulation
 modules must not import Cirq or expose Cirq types.
 
-The first integration change establishes the boundary before implementation. It
-does not add a public adapter or promise runtime execution through Cirq. The
-machine-readable contract fixes the initial gate subset, contiguous
+The first integration change established the boundary before implementation.
+The implemented adapter remains experimental and does not promise runtime
+execution through Cirq. The machine-readable contract fixes the initial gate subset, contiguous
 `LineQubit` mapping, explicit statevector order, bound-real parameter policy,
-and fail-closed handling of unsupported Cirq features. A later ecosystem change
-must implement the conversion and all planned verification paths before changing
-`implementation_status` or `public_api_available`.
+and fail-closed handling of unsupported Cirq features.
 
 ## Dependency decision
 
@@ -30,7 +28,7 @@ adapters continue to consume the same FlagQuantum-owned IR.
 
 ## Implementation acceptance
 
-The implementation PR must:
+The implementation provides:
 
 1. convert supported `cirq.Circuit` programs in both directions;
 2. reject unsupported features unless loss is explicitly authorized and
