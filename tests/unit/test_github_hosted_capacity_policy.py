@@ -221,6 +221,18 @@ def test_cpu_pytest_tiers_use_two_bounded_workers() -> None:
         assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
 
 
+def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
+    expensive_steps = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "ci_tier.py pr-runtime" in str(step.get("run", ""))
+        or "torchrun" in str(step.get("run", ""))
+    ]
+    assert len(expensive_steps) == 3
+    for step in expensive_steps:
+        assert step.get("if") == "matrix.python-version == '3.12'"
+
+
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
     launched = [
         step
