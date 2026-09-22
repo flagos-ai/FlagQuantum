@@ -9,15 +9,16 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ..remote.qpu import DeploymentResult
 from ._atomic import write_once
-from .candidate import TwinCandidateDecision
+from .candidate import TwinCandidateDecision, _matches_canonical_payload
 from .candidate_submission import TwinCandidateSubmission
 from .candidate_suite import (
     TwinCandidateSuite,
     TwinCandidateSuiteEvaluation,
+    _suite_evaluation_from_dict,
     prepare_candidate_suite,
 )
 from .region_model import TwinRegionModel
@@ -179,6 +180,49 @@ class TwinRegionCandidateHoldoutEvaluation:
             "task_count": self.task_count,
             "total_shots": self.total_shots,
         }
+
+
+def _candidate_holdout_evaluation_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinRegionCandidateHoldoutEvaluation:
+    expected = {
+        "schema",
+        "study_identity",
+        "reference_evaluation",
+        "holdout_evaluation",
+        "confidence_level",
+        "decision",
+        "circuit_count",
+        "task_count",
+        "total_shots",
+    }
+    actual = set(payload)
+    if actual != expected:
+        raise ValueError(
+            "Twin region candidate holdout-evaluation fields do not match the v1 "
+            f"schema: missing={sorted(expected - actual)}, "
+            f"unexpected={sorted(actual - expected)}"
+        )
+    reference = payload["reference_evaluation"]
+    holdout = payload["holdout_evaluation"]
+    if not isinstance(reference, Mapping) or not isinstance(holdout, Mapping):
+        raise ValueError("regional candidate evaluations must be JSON objects")
+    try:
+        evaluation = TwinRegionCandidateHoldoutEvaluation(
+            schema=str(payload["schema"]),
+            study_identity=str(payload["study_identity"]),
+            reference_evaluation=_suite_evaluation_from_dict(reference),
+            holdout_evaluation=_suite_evaluation_from_dict(holdout),
+            confidence_level=float(payload["confidence_level"]),
+            decision=cast(TwinCandidateDecision, str(payload["decision"])),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin region candidate holdout evaluation") from error
+    if not _matches_canonical_payload(evaluation.to_dict(), payload):
+        raise ValueError(
+            "Twin region candidate holdout evaluation is not in canonical v1 form"
+        )
+    return evaluation
 
 
 @dataclass(frozen=True)
@@ -454,6 +498,25 @@ def load_region_candidate_holdout_study(
     return study
 
 
+def load_region_candidate_holdout_evaluation(
+    path: str | PathLike[str],
+) -> TwinRegionCandidateHoldoutEvaluation:
+    """Load a strict regional candidate evaluation without provider contact."""
+
+    source = Path(path)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"Cannot load Twin region candidate holdout evaluation from {source}"
+        ) from error
+    if not isinstance(payload, Mapping):
+        raise ValueError(
+            "Twin region candidate holdout-evaluation file must contain a JSON object"
+        )
+    return _candidate_holdout_evaluation_from_dict(payload)
+
+
 def dump_region_candidate_holdout_study(
     study: TwinRegionCandidateHoldoutStudy,
     path: str | PathLike[str],
@@ -478,8 +541,37 @@ def dump_region_candidate_holdout_study(
     )
 
 
+def dump_region_candidate_holdout_evaluation(
+    evaluation: TwinRegionCandidateHoldoutEvaluation,
+    path: str | PathLike[str],
+) -> None:
+    """Write one private evaluation without replacing different content."""
+
+    if not isinstance(evaluation, TwinRegionCandidateHoldoutEvaluation):
+        raise TypeError("evaluation must be a TwinRegionCandidateHoldoutEvaluation")
+    encoded = (
+        json.dumps(
+            evaluation.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    )
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin region candidate holdout evaluation",
+        matches=lambda destination: (
+            load_region_candidate_holdout_evaluation(destination) == evaluation
+        ),
+    )
+
+
 __all__ = (
+    "dump_region_candidate_holdout_evaluation",
     "dump_region_candidate_holdout_study",
+    "load_region_candidate_holdout_evaluation",
     "load_region_candidate_holdout_study",
     "prepare_region_candidate_holdout",
     "TwinRegionCandidateHoldoutEvaluation",

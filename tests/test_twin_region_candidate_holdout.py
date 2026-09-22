@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 
 import pytest
@@ -305,3 +306,54 @@ def test_region_candidate_holdout_study_round_trip_is_create_once(tmp_path) -> N
     )
     with pytest.raises(ValueError):
         fq.twin.dump_region_candidate_holdout_study(changed, destination)
+
+
+def test_region_candidate_holdout_evaluation_round_trip_is_create_once(
+    tmp_path,
+) -> None:
+    evaluation = _evaluate(_with_predictions(_study()))
+    destination = tmp_path / "regional-candidate-evaluation.json"
+
+    fq.twin.dump_region_candidate_holdout_evaluation(evaluation, destination)
+    fq.twin.dump_region_candidate_holdout_evaluation(evaluation, destination)
+    restored = fq.twin.load_region_candidate_holdout_evaluation(destination)
+
+    assert restored == evaluation
+    assert restored.identity == evaluation.identity
+    assert destination.stat().st_mode & 0o777 == 0o600
+
+    different_destination = tmp_path / "occupied-evaluation.json"
+    different_destination.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        fq.twin.dump_region_candidate_holdout_evaluation(
+            evaluation, different_destination
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        lambda payload: payload.update({"total_shots": 1}),
+        lambda payload: payload.update({"total_shots": 16384.0}),
+        lambda payload: payload["holdout_evaluation"].update(
+            {"mean_candidate_improvement": 0.0}
+        ),
+        lambda payload: payload["reference_evaluation"]["evaluations"][0][
+            "hardware_report"
+        ]["counts"].update({"000": 4095}),
+        lambda payload: payload.update({"unexpected": True}),
+        lambda payload: payload.pop("task_count"),
+    ),
+)
+def test_region_candidate_holdout_evaluation_rejects_noncanonical_payloads(
+    tmp_path,
+    mutation,
+) -> None:
+    evaluation = _evaluate(_with_predictions(_study()))
+    payload = evaluation.to_dict()
+    mutation(payload)
+    destination = tmp_path / "tampered-evaluation.json"
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        fq.twin.load_region_candidate_holdout_evaluation(destination)

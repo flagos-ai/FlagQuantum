@@ -291,6 +291,13 @@ evaluation = candidate_study.validate_results(
     reference_circuits=reference_circuits,
     holdout_circuits=holdout_circuits,
 )
+fq.twin.dump_region_candidate_holdout_evaluation(
+    evaluation,
+    "region-candidate-evaluation.json",
+)
+evaluation = fq.twin.load_region_candidate_holdout_evaluation(
+    "region-candidate-evaluation.json",
+)
 print(evaluation.decision)
 ```
 
@@ -298,6 +305,8 @@ Both regional models must have exactly the same target, ordered mapping,
 directed topology, operations, and structural limits. `improved` requires a
 statistically positive holdout result and no reference degradation. This is an
 evidence gate only; applications retain model promotion and routing authority.
+The evaluation checkpoint is private and create-once. Loading it reconstructs
+all nested evidence records and rejects any noncanonical or modified field.
 
 Align the two independently audited timelines by exact snapshot identity:
 
