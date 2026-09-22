@@ -21,15 +21,23 @@ The file imports only ``torch``, ``pytest`` and the standard library on purpose,
 the same reason the neighbouring file gives: a ``unit`` test is collected by every
 CPU lane, including ``triton-optional``, which installs ``torch`` and not much else.
 A NumPy scalar reaches the rule through ``numbers.Real``, which ``float`` and
-``Fraction`` already cover here, and a NumPy array is walked as a sequence, which
-the list and tuple cases cover. The NumPy cases themselves are measured in the pull
-request body and in ``gate_angle_finiteness_measurement.txt``.
+``Fraction`` already cover here; a one-dimensional NumPy array is walked as a
+sequence, which the list and tuple cases cover; and a zero-dimensional one is read as
+the scalar it is, which ``_ScalarOnlyCarrier`` covers. ``numpy`` itself is not
+imported, because no extra declares it and a probe no lane can satisfy fails the
+repository's lane dependency policy. The NumPy values are measured in the pull request
+body instead.
+
+The JAX path is covered by ``tests/test_hybrid_jax.py``, which the ``jax-optional``
+lane runs: a builder compiled under ``jax.jit`` receives a tracer rather than a
+number, and that lane fails without the deferral this file's rule depends on.
 """
 
 from __future__ import annotations
 
 import fractions
 import math
+from collections.abc import Iterator
 
 import pytest
 import torch
@@ -171,6 +179,52 @@ def test_a_gate_angle_refuses_a_sequence_holding_a_non_finite_number(
         ValidationError, match="gate 'ry' parameter 'theta' must be a finite real"
     ):
         fq.Circuit(1).ry(0, value)
+
+
+class _ScalarOnlyCarrier:
+    """The shape of a zero-dimensional array from a library this file cannot import.
+
+    ``numpy`` is neither a core dependency nor declared by an extra, and a probe for a
+    package no lane installs fails the repository's own lane dependency policy, so a
+    bare ``import numpy`` here would be worse than useless -- it would be missing from
+    the lanes that collect this file. The rule reads a zero-dimensional value from its
+    *shape* -- ``ndim`` and ``item`` -- rather than from its type, so a carrier with
+    those two members reaches exactly the line a NumPy 0-d array reaches. ``__iter__``
+    raises, as a real zero-dimensional array does, so a reader that walks the value
+    instead of asking for its scalar fails here rather than passing by luck. The real
+    NumPy values are measured in the pull request body.
+    """
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+        self.dtype = "float64"
+
+    @property
+    def ndim(self) -> int:
+        return 0
+
+    def item(self) -> object:
+        return self._value
+
+    def __iter__(self) -> Iterator[object]:
+        raise TypeError("iteration over a 0-d array")
+
+
+def test_a_zero_dimensional_angle_is_read_as_the_scalar_it_is() -> None:
+    """A zero-dimensional value is asked for its number, not walked.
+
+    ``iter`` over a zero-dimensional array raises instead of yielding it, so walking
+    one reported ``TypeError: iteration over a 0-d array`` -- a message about the array
+    library, from a rule about gate angles, and not the ``ValidationError`` this
+    contract promises. The magnitude it carries is still what decides the answer.
+    """
+
+    fq.Circuit(1).ry(0, _ScalarOnlyCarrier(0.3))
+    for value in (math.nan, math.inf, -math.inf):
+        with pytest.raises(
+            ValidationError, match="gate 'ry' parameter 'theta' must be a finite real"
+        ):
+            fq.Circuit(1).ry(0, _ScalarOnlyCarrier(value))
 
 
 def test_a_double_single_angle_answers_whether_its_words_are_finite() -> None:

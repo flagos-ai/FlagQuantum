@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import operator
+import sys
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Real
@@ -122,19 +123,27 @@ def _dtype_holds_real_numbers(dtype: Any) -> bool:
     return getattr(dtype, "kind", None) not in _NON_REAL_DTYPE_KINDS
 
 
-def _is_being_traced() -> bool:
-    """Return whether a value's magnitude is being traced rather than known.
+def _is_being_traced(value: Any) -> bool:
+    """Return whether ``value`` denotes a magnitude that is not known yet.
 
     ``Module`` compiles a circuit builder with ``make_fx``, which hands the builder a
     real tensor and refuses to let it be read: ``bool(tensor)`` fails so that a value
-    cannot be baked into the traced program as a branch.  An angle written that way
-    has no magnitude to check while the program is built -- the value that will be
-    used is bound when the program runs, and ``Module`` owns that boundary -- so this
-    check defers rather than reading a tracer's sample.
+    cannot be baked into the traced program as a branch.  ``compile_quantum_kernel``
+    does the same under ``jax.jit``, which hands the builder a tracer.  An angle
+    written either way has no magnitude to check while the program is built -- the
+    value that will be used is bound when the program runs, and ``Module`` and the JAX
+    executor own that boundary -- so this check defers rather than reading a sample of
+    it.
 
-    The tracing mode is asked, instead of a failed read being caught and treated as
-    this case, because a read that fails outside tracing is a defect of its own and
-    must not be waved through as an unknown magnitude.
+    Each framework is asked the way it can be asked.  Torch is asked about its
+    *mode*, which is what makes a tensor a proxy.  JAX has no equivalent mode question
+    left to ask, so the *value* is asked instead, and JAX's tracer class is read out of
+    ``sys.modules``: a tracer cannot exist unless JAX has already been imported, so
+    that reads the class without this module importing JAX, which is an optional extra.
+
+    A mode is asked, instead of a failed read being caught and treated as this case,
+    because a read that fails outside tracing is a defect of its own and must not be
+    waved through as an unknown magnitude.
     """
 
     try:
@@ -142,8 +151,13 @@ def _is_being_traced() -> bool:
     except ImportError:
         # A torch without ``fx`` has no tracing to detect, and refusing every angle
         # over a missing optional module would be a worse failure than this check.
-        return False
-    return get_proxy_mode() is not None
+        pass
+    else:
+        if get_proxy_mode() is not None:
+            return True
+    jax = sys.modules.get("jax")
+    tracer = getattr(getattr(jax, "core", None), "Tracer", None)
+    return tracer is not None and isinstance(value, tracer)
 
 
 def _holds_only_finite_values(value: Any) -> bool:
@@ -155,11 +169,16 @@ def _holds_only_finite_values(value: Any) -> bool:
     question into this one.
 
     An array-like is asked in whichever of two generic ways it offers rather than by
-    type, so no import is needed for any of them.  ``isfinite()`` covers a torch
-    tensor and a this-package carrier, and it is also the only way a zero-dimensional
-    value is reached, since that one cannot be walked.  Anything else is walked as a
-    sequence, which is how a NumPy array is read without importing NumPy -- a lane
-    that installs ``torch`` and little else still has to collect this module.
+    type, so no import is needed for any of them.  ``isfinite()`` covers a torch tensor
+    and this package's own carrier, and a zero-dimensional value of any other array
+    library is read as the scalar it is, through ``item()`` -- that is how a NumPy
+    array and a JAX array are read without importing either.
+
+    Walking as a sequence is the last way, and it is the only one a zero-dimensional
+    value cannot take: ``iter`` over one raises ``TypeError`` rather than yielding it,
+    so a value that reports ``ndim == 0`` must not reach that branch.  A lane that
+    installs ``torch`` and little else still has to collect this module, which is why
+    the ways are asked for rather than looked up by type.
 
     A traced carrier is not asked at all: see :func:`_is_being_traced`.
     """
@@ -169,9 +188,18 @@ def _holds_only_finite_values(value: Any) -> bool:
             return math.isfinite(value)
         except OverflowError:
             return True
+    if _is_being_traced(value):
+        return True
     isfinite = getattr(value, "isfinite", None)
     if callable(isfinite):
-        return True if _is_being_traced() else bool(isfinite().all())
+        return bool(isfinite().all())
+    if getattr(value, "ndim", None) == 0:
+        scalar = getattr(value, "item", None)
+        if callable(scalar):
+            try:
+                return math.isfinite(scalar())
+            except OverflowError:
+                return True
     return all(_holds_only_finite_values(item) for item in value)
 
 
