@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import decimal
 import fractions
-import math
 import numbers
 
 import pytest
@@ -152,19 +151,19 @@ def test_a_decoded_instruction_is_held_to_the_same_contract() -> None:
         ("an int", 1),
         ("a whole float", 2.0),
         ("a Fraction", fractions.Fraction(1, 3)),
-        ("an infinity", math.inf),
-        ("a NaN", math.nan),
     ],
 )
 def test_a_gate_parameter_accepts_a_real_scalar(label: str, value: object) -> None:
-    """A real number is an angle, and the value is kept exactly as it arrived."""
+    """A real number is an angle, and the value is kept exactly as it arrived.
+
+    ``inf`` and ``nan`` were listed here while this rule was only about types. They
+    are real numbers of the wrong magnitude rather than the wrong type, so they moved
+    to ``test_gate_angle_finiteness.py`` and the class they are refused with is not
+    the ``TypeError`` this file is about.
+    """
 
     circuit = fq.Circuit(1).ry(0, value)
-    stored = circuit.to_ir().instructions[0].params["theta"]
-    if isinstance(value, float) and math.isnan(value):
-        assert math.isnan(stored)
-    else:
-        assert stored == value
+    assert circuit.to_ir().instructions[0].params["theta"] == value
 
 
 def test_a_gate_parameter_accepts_a_real_number_from_another_library() -> None:

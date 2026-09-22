@@ -7,7 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.openqasm import emit_openqasm
+from flagquantum.compiler.openqasm import _format_number, emit_openqasm
 
 pytestmark = pytest.mark.unit
 
@@ -100,12 +100,18 @@ def test_interaction_decompositions_are_exact(name: str) -> None:
 
 def test_emit_openqasm_requires_bound_finite_parameters() -> None:
     unbound = fq.Circuit(1).rx(0, theta=fq.Parameter("theta"))
-    non_finite = fq.Circuit(1).rx(0, theta=float("nan"))
 
     with pytest.raises(ValueError, match="bind_parameters"):
         emit_openqasm(unbound)
-    with pytest.raises(ValueError, match="finite"):
-        emit_openqasm(non_finite)
+    # The emitter writes a finite number as text, so it keeps its own guard. It is now
+    # the second line of defence rather than the first: an angle that is not finite is
+    # refused where it is stored, before there is a program to emit, so the guard is
+    # exercised through the formatter that owns it.
+    with pytest.raises(ValueError, match="must be finite"):
+        _format_number(float("nan"))
+    with pytest.raises(ValueError, match="must be finite"):
+        _format_number(float("inf"))
+    assert _format_number(0.25) == "0.25"
 
 
 def test_emit_openqasm_rejects_old_device_inputs_and_invalid_versions() -> None:
