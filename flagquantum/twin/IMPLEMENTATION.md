@@ -38,6 +38,8 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
   comparison with disjoint reference and holdout circuits;
 - `TwinRegionCandidateHoldoutEvaluation`: one simultaneous decision in which
   holdout improvement is required and reference degradation vetoes an upgrade.
+- `TwinRegionRelease`: an explicit, immutable release manifest limited to the
+  exact circuits in one improved regional candidate holdout evaluation.
 
 ## Ten-minute path
 
@@ -307,6 +309,28 @@ statistically positive holdout result and no reference degradation. This is an
 evidence gate only; applications retain model promotion and routing authority.
 The evaluation checkpoint is private and create-once. Loading it reconstructs
 all nested evidence records and rejects any noncanonical or modified field.
+
+Explicitly freeze an improved candidate as an exact-circuit release:
+
+```python
+release = fq.twin.release_region_candidate(
+    incumbent_region_twin,
+    candidate_region_twin,
+    study=candidate_study,
+    evaluation=evaluation,
+)
+fq.twin.dump_region_release(release, "region-release.json")
+release = fq.twin.load_region_release("region-release.json")
+
+assert release.scope == "exact_circuits"
+assert release.routing_authorized is False
+print(release.candidate_region_identity)
+print(release.verified_circuit_identities)
+```
+
+This is an application-triggered qualification artifact, not an automatic
+model replacement. It performs no provider operation and grants no routing or
+arbitrary-circuit authority.
 
 Align the two independently audited timelines by exact snapshot identity:
 

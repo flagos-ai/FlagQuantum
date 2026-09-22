@@ -71,6 +71,9 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         contract["public_schema_defaults"]["TwinRegionCandidateHoldoutEvaluation"]
         == "flagquantum.twin_region_candidate_holdout_evaluation.v1"
     )
+    assert contract["public_schema_defaults"]["TwinRegionRelease"] == (
+        "flagquantum.twin_region_release.v1"
+    )
     assert contract["public_literal_values"]["TwinRegionCoverageStatus"] == [
         "covered",
         "out_of_scope",
