@@ -8,6 +8,11 @@ import pytest
 import torch
 
 from flagquantum import Circuit
+from flagquantum.ecosystem._semantic_parity import (
+    maximum_error_up_to_global_phase,
+    reference_state,
+    semantic_parity_cases,
+)
 from flagquantum.ecosystem.cirq import from_cirq, to_cirq
 
 cirq = pytest.importorskip("cirq")
@@ -31,6 +36,24 @@ _CATALOG = (
     ("ccx", 3),
     ("cswap", 3),
 )
+
+
+@pytest.mark.parametrize("case", semantic_parity_cases(), ids=lambda case: case.name)
+def test_shared_cross_framework_semantics(case) -> None:
+    exported = to_cirq(case.program)
+    qubits = cirq.LineQubit.range(case.program.n_wires)
+    external_state = torch.as_tensor(
+        cirq.Simulator(dtype=np.complex128)
+        .simulate(exported, qubit_order=qubits)
+        .final_state_vector.copy()
+    )
+    round_trip_state = Circuit.from_ir(
+        from_cirq(exported), dtype=torch.complex128
+    ).state()[0]
+    expected = reference_state(case)
+
+    assert maximum_error_up_to_global_phase(external_state, expected) <= 1e-10
+    assert maximum_error_up_to_global_phase(round_trip_state, expected) <= 1e-10
 
 
 def _cirq_gate(name: str, angle: float | None):
