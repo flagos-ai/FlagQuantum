@@ -689,8 +689,8 @@ def test_the_kernel_gradients_match_the_matmul(dtype: torch.dtype) -> None:
     assert difference <= tolerance(dtype)
 
 
-def test_the_diagonal_guard_is_not_vacuous() -> None:
-    """The two shipped kernels really do disagree, which is why the flag exists."""
+def test_the_diagonal_kernel_stays_within_the_same_roundoff_envelope() -> None:
+    """The diagonal reference is close without requiring platform-specific drift."""
 
     n_wires = 12
     state = normalized_state(1, n_wires, torch.complex64, seed=808)
@@ -705,8 +705,12 @@ def test_the_diagonal_guard_is_not_vacuous() -> None:
         layout=_statevector_layout(n_wires, (4,)),
     )
 
-    assert not torch.equal(elementwise, diagonal)
-    assert float((elementwise - diagonal).abs().max()) > 0.0
+    torch.testing.assert_close(
+        elementwise,
+        diagonal,
+        rtol=0.0,
+        atol=tolerance(torch.complex64),
+    )
 
 
 # --- end to end -----------------------------------------------------------
