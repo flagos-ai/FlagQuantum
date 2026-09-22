@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from statistics import fmean
-from typing import Any
+from typing import Any, cast
 
 from ..remote.qpu import DeploymentResult
 from ._atomic import write_once
@@ -18,6 +18,8 @@ from .candidate import (
     TwinCandidateDecision,
     TwinCandidateEvaluation,
     TwinCandidateTrial,
+    _candidate_evaluation_from_dict,
+    _matches_canonical_payload,
     prepare_candidate_trial,
 )
 from .candidate_submission import TwinCandidateSubmission
@@ -191,6 +193,51 @@ class TwinCandidateSuiteEvaluation:
                 self.candidate_improvement_upper_bound
             ),
         }
+
+
+def _suite_evaluation_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinCandidateSuiteEvaluation:
+    _require_fields(
+        payload,
+        {
+            "schema",
+            "suite_identity",
+            "evaluations",
+            "confidence_level",
+            "decision",
+            "circuit_count",
+            "total_shots",
+            "mean_incumbent_hardware_total_variation",
+            "mean_candidate_hardware_total_variation",
+            "mean_ideal_hardware_total_variation",
+            "mean_candidate_improvement",
+            "candidate_improvement_error_radius",
+            "candidate_improvement_lower_bound",
+            "candidate_improvement_upper_bound",
+        },
+        name="Twin candidate-suite evaluation",
+    )
+    evaluations = payload["evaluations"]
+    if not isinstance(evaluations, list) or any(
+        not isinstance(item, Mapping) for item in evaluations
+    ):
+        raise ValueError("Twin candidate-suite evaluation records must be JSON objects")
+    try:
+        evaluation = TwinCandidateSuiteEvaluation(
+            schema=str(payload["schema"]),
+            suite_identity=_digest(str(payload["suite_identity"]), "suite_identity"),
+            evaluations=tuple(
+                _candidate_evaluation_from_dict(item) for item in evaluations
+            ),
+            confidence_level=float(payload["confidence_level"]),
+            decision=cast(TwinCandidateDecision, str(payload["decision"])),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin candidate-suite evaluation") from error
+    if not _matches_canonical_payload(evaluation.to_dict(), payload):
+        raise ValueError("Twin candidate-suite evaluation is not in canonical v1 form")
+    return evaluation
 
 
 @dataclass(frozen=True)

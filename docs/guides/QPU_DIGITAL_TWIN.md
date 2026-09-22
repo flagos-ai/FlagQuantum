@@ -906,6 +906,15 @@ evaluation = study.validate_results(
     holdout_circuits=holdout_circuits,
     confidence_level=0.95,
 )
+fq.twin.dump_region_candidate_holdout_evaluation(
+    evaluation,
+    "region-candidate-evaluation.json",
+)
+
+# A later process can restore the complete, evidence-qualified decision.
+evaluation = fq.twin.load_region_candidate_holdout_evaluation(
+    "region-candidate-evaluation.json",
+)
 
 print(evaluation.decision)
 print(evaluation.reference_evaluation.mean_candidate_improvement)
@@ -920,6 +929,9 @@ Confidence covers both groups and every circuit. `improved` requires holdout
 improvement while reference degradation vetoes the upgrade; `degraded` or
 `inconclusive` never replaces a model. The framework reports this decision but
 does not submit automatically, retry, promote a candidate, or route workloads.
+Evaluation checkpoints are private create-once files. Loading reconstructs the
+nested suite, candidate, hardware, and validation records, recomputes every
+derived metric, and rejects missing, extra, modified, or noncanonical data.
 
 ### Track holdout agreement across calibration snapshots
 

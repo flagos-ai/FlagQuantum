@@ -8,7 +8,7 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from ..core.ir import ensure_circuit_ir
 from ..remote.qpu import DeploymentResult, ProviderTaskHandle
@@ -34,6 +34,25 @@ def _identity(payload: Mapping[str, Any]) -> str:
         dict(payload), sort_keys=True, separators=(",", ":"), allow_nan=False
     ).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _matches_canonical_payload(
+    restored: Mapping[str, Any], payload: Mapping[str, Any]
+) -> bool:
+    try:
+        return json.dumps(
+            dict(restored),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ) == json.dumps(
+            dict(payload),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError):
+        return False
 
 
 def _digest(value: str, name: str) -> str:
@@ -74,6 +93,134 @@ def _snapshot_from_dict(payload: Mapping[str, Any]) -> TwinSnapshot:
         )
     except (TypeError, ValueError) as error:
         raise ValueError("Invalid Twin snapshot") from error
+
+
+def _validation_report_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinValidationReport:
+    _require_fields(
+        payload,
+        {
+            "schema",
+            "snapshot_identity",
+            "circuit_identity",
+            "hardware_probabilities",
+            "ideal_hardware_total_variation",
+            "twin_hardware_total_variation",
+            "total_variation_improvement",
+            "shots",
+            "outperforms_ideal_baseline",
+        },
+        name="Twin validation report",
+    )
+    try:
+        report = TwinValidationReport(
+            schema=str(payload["schema"]),
+            snapshot_identity=_digest(
+                str(payload["snapshot_identity"]), "snapshot_identity"
+            ),
+            circuit_identity=_digest(
+                str(payload["circuit_identity"]), "circuit_identity"
+            ),
+            hardware_probabilities=tuple(payload["hardware_probabilities"]),
+            ideal_hardware_total_variation=float(
+                payload["ideal_hardware_total_variation"]
+            ),
+            twin_hardware_total_variation=float(
+                payload["twin_hardware_total_variation"]
+            ),
+            total_variation_improvement=float(payload["total_variation_improvement"]),
+            shots=int(payload["shots"]),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin validation report") from error
+    if not _matches_canonical_payload(report.to_dict(), payload):
+        raise ValueError("Twin validation report is not in canonical v1 form")
+    return report
+
+
+def _hardware_report_from_dict(payload: Mapping[str, Any]) -> TwinHardwareReport:
+    _require_fields(
+        payload,
+        {
+            "schema",
+            "experiment_identity",
+            "provider",
+            "backend_name",
+            "task_id",
+            "submitted_qasm_identity",
+            "executed_qasm_identity",
+            "executed_program_matches_submission",
+            "validation_scope",
+            "counts",
+            "validation",
+            "result_metadata",
+        },
+        name="Twin hardware report",
+    )
+    counts_payload = payload["counts"]
+    validation_payload = payload["validation"]
+    metadata_payload = payload["result_metadata"]
+    if not isinstance(counts_payload, Mapping):
+        raise ValueError("Twin hardware-report counts must be a JSON object")
+    if not isinstance(validation_payload, Mapping):
+        raise ValueError("Twin hardware-report validation must be a JSON object")
+    if not isinstance(metadata_payload, Mapping):
+        raise ValueError("Twin hardware-report metadata must be a JSON object")
+    try:
+        counts = {
+            str(key): int(value)
+            for key, value in counts_payload.items()
+            if type(value) is int
+        }
+        if len(counts) != len(counts_payload) or any(
+            value < 0 for value in counts.values()
+        ):
+            raise ValueError("hardware counts must be non-negative integers")
+        metadata: object = json.loads(
+            json.dumps(dict(metadata_payload), sort_keys=True, allow_nan=False)
+        )
+        if not isinstance(metadata, dict):
+            raise ValueError("hardware metadata must be a JSON object")
+        executed_raw = payload["executed_qasm_identity"]
+        executed_identity = (
+            None
+            if executed_raw is None
+            else _digest(str(executed_raw), "executed_qasm_identity")
+        )
+        validation = _validation_report_from_dict(validation_payload)
+        if sum(counts.values()) != validation.shots:
+            raise ValueError("hardware counts must sum to validation shots")
+        report = TwinHardwareReport(
+            schema=str(payload["schema"]),
+            experiment_identity=_digest(
+                str(payload["experiment_identity"]), "experiment_identity"
+            ),
+            provider=str(payload["provider"]),
+            backend_name=str(payload["backend_name"]),
+            task_id=str(payload["task_id"]),
+            submitted_qasm_identity=_digest(
+                str(payload["submitted_qasm_identity"]),
+                "submitted_qasm_identity",
+            ),
+            executed_qasm_identity=executed_identity,
+            counts=counts,
+            validation=validation,
+            result_metadata=metadata,
+        )
+        if report.schema != "flagquantum.twin_hardware_report.v1":
+            raise ValueError("unsupported Twin hardware-report schema")
+        if (
+            report.provider != "quafu"
+            or not report.backend_name.strip()
+            or not report.task_id.strip()
+        ):
+            raise ValueError("Twin hardware report requires one Quafu task")
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin hardware report") from error
+    if not _matches_canonical_payload(report.to_dict(), payload):
+        raise ValueError("Twin hardware report is not in canonical v1 form")
+    return report
 
 
 @dataclass(frozen=True)
@@ -213,6 +360,55 @@ class TwinCandidateEvaluation:
                 self.candidate_improvement_upper_bound
             ),
         }
+
+
+def _candidate_evaluation_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinCandidateEvaluation:
+    _require_fields(
+        payload,
+        {
+            "schema",
+            "trial_identity",
+            "hardware_report",
+            "incumbent_validation",
+            "finite_shot_tv_radius",
+            "candidate_improvement_error_radius",
+            "confidence_level",
+            "decision",
+            "incumbent_snapshot_identity",
+            "candidate_snapshot_identity",
+            "incumbent_hardware_total_variation",
+            "candidate_hardware_total_variation",
+            "ideal_hardware_total_variation",
+            "candidate_improvement",
+            "candidate_improvement_lower_bound",
+            "candidate_improvement_upper_bound",
+        },
+        name="Twin candidate evaluation",
+    )
+    hardware = payload["hardware_report"]
+    incumbent = payload["incumbent_validation"]
+    if not isinstance(hardware, Mapping) or not isinstance(incumbent, Mapping):
+        raise ValueError("Twin candidate evaluation records must be JSON objects")
+    try:
+        evaluation = TwinCandidateEvaluation(
+            schema=str(payload["schema"]),
+            trial_identity=_digest(str(payload["trial_identity"]), "trial_identity"),
+            hardware_report=_hardware_report_from_dict(hardware),
+            incumbent_validation=_validation_report_from_dict(incumbent),
+            finite_shot_tv_radius=float(payload["finite_shot_tv_radius"]),
+            candidate_improvement_error_radius=float(
+                payload["candidate_improvement_error_radius"]
+            ),
+            confidence_level=float(payload["confidence_level"]),
+            decision=cast(TwinCandidateDecision, str(payload["decision"])),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin candidate evaluation") from error
+    if not _matches_canonical_payload(evaluation.to_dict(), payload):
+        raise ValueError("Twin candidate evaluation is not in canonical v1 form")
+    return evaluation
 
 
 @dataclass(frozen=True)
