@@ -66,6 +66,7 @@ BUCKETS = frozenset(
 )
 
 CEILING = 8
+BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=loadscope --durations=50"
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
 
@@ -124,6 +125,14 @@ def _bucketed_jobs() -> dict[str, dict[str, object]]:
         for name, job in _github_hosted_jobs(workflow).items():
             found[f"{workflow}:{name}"] = job
     return found
+
+
+def _steps(workflow: str, job_name: str) -> list[dict[str, object]]:
+    job = _github_hosted_jobs(workflow)[job_name]
+    steps = job.get("steps")
+    assert isinstance(steps, list), f"{workflow}:{job_name}: no steps"
+    assert all(isinstance(step, dict) for step in steps)
+    return steps
 
 
 def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
@@ -197,6 +206,50 @@ def test_a_superseded_run_is_cancelled_rather_than_queued() -> None:
         "a push that lands during an earlier run must cancel that run, not "
         "queue a second full matrix behind it:\n" + "\n".join(offenders)
     )
+
+
+def test_cpu_pytest_tiers_use_two_bounded_workers() -> None:
+    tier_steps = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "ci_tier.py pr-" in str(step.get("run", ""))
+    ]
+    assert len(tier_steps) == 2
+    for step in tier_steps:
+        env = step.get("env")
+        assert isinstance(env, dict)
+        assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
+
+
+def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
+    launched = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "torchrun" in str(step.get("run", ""))
+    ]
+    assert launched
+    for step in launched:
+        assert "-n 2" not in str(step.get("run", ""))
+        env = step.get("env")
+        assert not isinstance(env, dict) or "PYTEST_ADDOPTS" not in env
+
+
+def test_coverage_uses_the_same_bounded_worker_policy() -> None:
+    commands = [
+        str(step.get("run", ""))
+        for step in _steps("ci.yml", "coverage")
+        if "python -m pytest" in str(step.get("run", ""))
+    ]
+    assert len(commands) == 1
+    command = commands[0]
+    for token in ("-n 2", "--dist=loadscope", "--durations=50"):
+        assert token in command
+
+
+def test_no_github_hosted_lane_uses_unbounded_auto_workers() -> None:
+    for workflow in BUCKETED_WORKFLOWS:
+        text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
+        assert "-n auto" not in text
 
 
 def test_the_container_matrix_does_not_land_all_at_once() -> None:

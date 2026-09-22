@@ -449,6 +449,15 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
+The CPU core and coverage pytest phases use exactly two xdist workers with
+load-scope scheduling. The fixed count shortens the critical path without
+letting a runner-image CPU change silently widen process fan-out. Only the
+ordinary smoke, unit, integration, and coverage phases are parallelized:
+`torchrun` and `distributed_launch` remain explicit serial workflow steps so
+xdist never creates a second process topology inside a launched rank. Both
+parallel phases report their fifty slowest tests to keep the next optimization
+grounded in measured durations.
+
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a
