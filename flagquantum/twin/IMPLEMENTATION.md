@@ -34,6 +34,10 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinRegionHoldoutEvolution`: exact snapshot alignment between regional
   holdout changes and authoritative calibration-drift intervals, without a
   causal or promotion claim.
+- `TwinRegionCandidateHoldoutStudy`: a frozen regional incumbent/candidate
+  comparison with disjoint reference and holdout circuits;
+- `TwinRegionCandidateHoldoutEvaluation`: one simultaneous decision in which
+  holdout improvement is required and reference degradation vetoes an upgrade.
 
 ## Ten-minute path
 
@@ -258,6 +262,42 @@ circuits, not an arbitrary-circuit, training, trust, or routing claim.
 Evaluation loading reconstructs its nested suite and validation-series records
 and verifies every serialized derived metric. Evaluation checkpoints use the
 same private, create-once behavior as the frozen study.
+
+Compare a later regional candidate on future hardware without duplicating QPU
+tasks for the incumbent:
+
+```python
+candidate_study = fq.twin.prepare_region_candidate_holdout(
+    incumbent_region_twin,
+    candidate_region_twin,
+    reference_circuits,
+    holdout_circuits,
+    physical_qubits=(20, 27, 34),
+    name="regional-candidate",
+    shots=1024,
+)
+fq.twin.dump_region_candidate_holdout_study(
+    candidate_study,
+    "region-candidate-holdout.json",
+)
+
+# Each trial's candidate-bound experiment is submitted once. That result is
+# compared with both predictions by the existing TwinCandidateSubmission.
+evaluation = candidate_study.validate_results(
+    reference_submissions,
+    reference_results,
+    holdout_submissions,
+    holdout_results,
+    reference_circuits=reference_circuits,
+    holdout_circuits=holdout_circuits,
+)
+print(evaluation.decision)
+```
+
+Both regional models must have exactly the same target, ordered mapping,
+directed topology, operations, and structural limits. `improved` requires a
+statistically positive holdout result and no reference degradation. This is an
+evidence gate only; applications retain model promotion and routing authority.
 
 Align the two independently audited timelines by exact snapshot identity:
 
