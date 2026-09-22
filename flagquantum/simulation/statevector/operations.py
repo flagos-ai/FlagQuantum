@@ -28,15 +28,15 @@ from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
 )
 from .program import _StatevectorCXSequenceStep as _StatevectorCXSequenceStep
+from .program import _StatevectorDenseRegion as _StatevectorDenseRegion
 from .program import (
-    _StatevectorDisjointSingleWireStep as _StatevectorDisjointSingleWireStep,
+    _StatevectorDisjointDenseStep as _StatevectorDisjointDenseStep,
 )
 from .program import _StatevectorFusedGateStep as _StatevectorFusedGateStep
 from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
-from .program import _StatevectorSingleWireRegion as _StatevectorSingleWireRegion
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -172,7 +172,8 @@ _CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
 # A wider product reduces state passes further but grows its dense matrix by
 # 4x per wire. On the reference 20-wire CPU path, four wires took 11.8 ms,
 # while five took 12.0 ms, so four is the measured bound rather than a knob.
-_CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES = 4
+_CPU_DISJOINT_DENSE_MAX_WIRES = 4
+_CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS = 1
 
 
 def _cpu_cx_sequence_gather_enabled() -> bool:
@@ -213,7 +214,12 @@ def _cpu_cross_wire_diagonal_fusion_enabled() -> bool:
 
 
 def _cpu_disjoint_single_wire_fusion_enabled() -> bool:
-    """Whether CPU single-wire fused regions may share a bounded dense apply."""
+    """Whether CPU wire-disjoint dense regions may share a bounded apply.
+
+    The environment variable retains its original name because it shipped with
+    the single-wire path. Mixed-width grouping extends that optimization and
+    rollback boundary rather than adding a second configuration surface.
+    """
 
     return _environment_flag("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", default=True)
 
@@ -235,7 +241,7 @@ def _compile_statevector_program(
     if enable_cpu_cross_wire_diagonal:
         optimized = _fuse_cross_wire_diagonal_regions(optimized)
     if enable_cpu_disjoint_single_wire:
-        optimized = _fuse_disjoint_single_wire_regions(optimized)
+        optimized = _fuse_disjoint_dense_regions(optimized)
     return tuple(_fuse_cx_sequences(optimized))
 
 
@@ -464,55 +470,75 @@ def _fuse_cross_wire_diagonal_regions(
     return optimized
 
 
-def _fuse_disjoint_single_wire_regions(
+def _fuse_disjoint_dense_regions(
     program: Sequence[_StatevectorPreCXStep],
 ) -> list[_StatevectorPreCXStep]:
-    """Pack up to four disjoint dense single-wire regions into one apply."""
+    """Pack disjoint one- and two-wire dense regions into a bounded apply."""
 
     optimized: list[_StatevectorPreCXStep] = []
-    group: list[_StatevectorSingleWireRegion] = []
+    group: list[_StatevectorDenseRegion] = []
+    occupied_wires: set[int] = set()
+    two_wire_regions = 0
 
     def flush() -> None:
+        nonlocal two_wire_regions
         if len(group) >= 2:
-            optimized.append(_StatevectorDisjointSingleWireStep(tuple(group)))
+            optimized.append(_StatevectorDisjointDenseStep(tuple(group)))
         else:
             optimized.extend(group)
         group.clear()
+        occupied_wires.clear()
+        two_wire_regions = 0
 
     for step in program:
-        region = _dense_single_wire_region(step)
+        region = _bounded_dense_region(step)
         if region is None:
             flush()
             optimized.append(step)
             continue
-        wire = _region_wires(region)[0]
-        if len(group) == _CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES or any(
-            _region_wires(item)[0] == wire for item in group
+        wires = set(_region_wires(region))
+        if (
+            len(occupied_wires) + len(wires) > _CPU_DISJOINT_DENSE_MAX_WIRES
+            or not occupied_wires.isdisjoint(wires)
+            or (
+                len(wires) == 2
+                and two_wire_regions == _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS
+            )
         ):
             flush()
         group.append(region)
+        occupied_wires.update(wires)
+        two_wire_regions += int(len(wires) == 2)
     flush()
     return optimized
 
 
-def _dense_single_wire_region(
+def _bounded_dense_region(
     step: _StatevectorPreCXStep,
-) -> _StatevectorSingleWireRegion | None:
-    """Return a one-wire region that a bounded dense group may absorb.
+) -> _StatevectorDenseRegion | None:
+    """Return a small region that a bounded dense group may absorb.
 
     Dedicated diagonal matchings are formed before this pass, so only diagonal
     singletons reach here. Fixed ``x`` and ``y`` gates likewise keep their
     specialized kernels when alone because ``flush`` unwraps a one-item group.
-    Once either kind sits beside another disjoint one-wire region, including it
-    in the shared Kronecker apply saves a full statevector pass.
+    Standalone ``cx`` and ``swap`` gates remain barriers so their permutation
+    kernels and adjacent CX sequence compilation remain available. Other
+    one- and two-wire regions may share a dense Kronecker apply when their total
+    width stays within the measured four-wire bound. A group contains at most
+    one two-wire region: combining two of them creates a 16x16 product that
+    regressed the reference batch-one workload despite saving a state pass.
     """
 
     if isinstance(step, _StatevectorFusedGateStep):
-        return step if len(step.wires) == 1 else None
+        return step if len(step.wires) in {1, 2} else None
     if not isinstance(step, _StatevectorGateStep):
         return None
     instruction = step.instruction
-    return step if len(instruction.wires) == 1 else None
+    if len(instruction.wires) == 1:
+        return step
+    if len(instruction.wires) != 2:
+        return None
+    return None if canonical_opcode(instruction.name) in {"cx", "swap"} else step
 
 
 def _fuse_cx_sequences(

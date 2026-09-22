@@ -42,12 +42,12 @@ from .operations import (
     _gate_parameter_tensor,
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
-    _StatevectorDisjointSingleWireStep,
+    _StatevectorDenseRegion,
+    _StatevectorDisjointDenseStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
     _StatevectorProgramStep,
     _StatevectorRXRZLoopStep,
-    _StatevectorSingleWireRegion,
     _triton_parameterized_single_qubit_matrix_enabled,
     _triton_ry_rz_pair_enabled,
     _triton_single_qubit_loop_enabled,
@@ -187,7 +187,7 @@ def _initial_runtime_metrics(
             step.regions
             if isinstance(
                 step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointSingleWireStep),
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
             )
             else (step,)
         )
@@ -285,7 +285,7 @@ def _prepare_batched_rotation_matrices(
             step.regions
             if isinstance(
                 step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointSingleWireStep),
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
             )
             else (step,)
         )
@@ -533,32 +533,37 @@ def _batched_kronecker_product(
             matrix = matrix.unsqueeze(0)
         if matrix.shape[0] == 1 and batch_size != 1:
             matrix = matrix.expand(batch_size, -1, -1)
-        if matrix.shape != (batch_size, 2, 2):
-            raise ValueError(
-                "single-wire matrix must have shape [2, 2] or [batch, 2, 2]"
-            )
+        if (
+            matrix.ndim != 3
+            or matrix.shape[0] != batch_size
+            or matrix.shape[1] != matrix.shape[2]
+        ):
+            raise ValueError("matrix must be square and shared or batched")
         expanded.append(matrix)
     if not expanded:
-        raise ValueError("at least one single-wire matrix is required")
+        raise ValueError("at least one dense matrix is required")
     product = expanded[0]
     for matrix in expanded[1:]:
         rows, columns = product.shape[-2:]
+        matrix_rows, matrix_columns = matrix.shape[-2:]
         product = (product[:, :, None, :, None] * matrix[:, None, :, None, :]).reshape(
-            batch_size, rows * 2, columns * 2
+            batch_size,
+            rows * matrix_rows,
+            columns * matrix_columns,
         )
     return product
 
 
-def _apply_disjoint_single_wire_step(
+def _apply_disjoint_dense_step(
     circuit: Circuit,
-    step: _StatevectorDisjointSingleWireStep,
+    step: _StatevectorDisjointDenseStep,
     state: torch.Tensor,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     rx_ry_rz_matrices: dict[int, torch.Tensor],
     rotation_matrices: dict[int, torch.Tensor],
 ) -> torch.Tensor:
     matrices = tuple(
-        _single_wire_region_matrix(
+        _dense_region_matrix(
             circuit,
             region,
             state,
@@ -569,20 +574,21 @@ def _apply_disjoint_single_wire_step(
         for region in step.regions
     )
     wires = tuple(
-        (
-            region.instruction.wires[0]
-            if isinstance(region, _StatevectorGateStep)
-            else region.wires[0]
-        )
+        wire
         for region in step.regions
+        for wire in (
+            region.instruction.wires
+            if isinstance(region, _StatevectorGateStep)
+            else region.wires
+        )
     )
     matrix = _batched_kronecker_product(matrices, batch_size=state.shape[0])
     return _apply_matrix(state, matrix, wires, circuit.n_wires)
 
 
-def _single_wire_region_matrix(
+def _dense_region_matrix(
     circuit: Circuit,
-    region: _StatevectorSingleWireRegion,
+    region: _StatevectorDenseRegion,
     state: torch.Tensor,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     rx_ry_rz_matrices: dict[int, torch.Tensor],
@@ -743,8 +749,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
-            if isinstance(step, _StatevectorDisjointSingleWireStep):
-                output = _apply_disjoint_single_wire_step(
+            if isinstance(step, _StatevectorDisjointDenseStep):
+                output = _apply_disjoint_dense_step(
                     circuit,
                     step,
                     output,
