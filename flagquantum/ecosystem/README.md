@@ -15,6 +15,7 @@ adapters must not import an optional framework.
 - `contracts.py`: framework-neutral adapter and conversion-report protocol.
 - `registry.py`: immutable, lazy adapter discovery.
 - `conformance.py`: common round-trip and rejection checks.
+- `_semantic_parity.py`: deterministic circuits shared by optional SDK parity lanes.
 - `<framework>/conversion.py`: external object to/from `CircuitIR` conversion.
 - `<framework>/models.py`: adapter-local results and errors.
 - `<framework>/adapter.py`: the small implementation of the common protocol.

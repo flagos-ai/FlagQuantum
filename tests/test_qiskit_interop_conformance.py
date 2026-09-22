@@ -7,6 +7,11 @@ import torch
 
 import flagquantum as fq
 import flagquantum.operators as fqo
+from flagquantum.ecosystem._semantic_parity import (
+    maximum_error_up_to_global_phase,
+    reference_state,
+    semantic_parity_cases,
+)
 from flagquantum.ecosystem.qiskit import (
     from_qiskit,
     qiskit_statevector_to_flagquantum,
@@ -21,6 +26,22 @@ from qiskit.quantum_info import Statevector  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.qiskit]
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize("case", semantic_parity_cases(), ids=lambda case: case.name)
+def test_shared_cross_framework_semantics(case) -> None:
+    exported = to_qiskit(case.program)
+    external_state = qiskit_statevector_to_flagquantum(
+        Statevector.from_instruction(exported).data,
+        case.program.n_wires,
+    )
+    round_trip_state = fq.Circuit.from_ir(
+        from_qiskit(exported), dtype=torch.complex128
+    ).state()[0]
+    expected = reference_state(case)
+
+    assert maximum_error_up_to_global_phase(external_state, expected) <= 1e-10
+    assert maximum_error_up_to_global_phase(round_trip_state, expected) <= 1e-10
 
 
 def _contract() -> dict:

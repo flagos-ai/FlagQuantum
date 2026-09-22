@@ -7,6 +7,11 @@ import pytest
 import torch
 
 from flagquantum import Circuit
+from flagquantum.ecosystem._semantic_parity import (
+    maximum_error_up_to_global_phase,
+    reference_state,
+    semantic_parity_cases,
+)
 from flagquantum.ecosystem.cudaq import to_cudaq
 
 cudaq = pytest.importorskip("cudaq")
@@ -19,6 +24,14 @@ def _state(kernel: object, n_wires: int) -> torch.Tensor:
     raw = np.asarray(cudaq.get_state(kernel))
     reordered = raw.reshape((2,) * n_wires).transpose(tuple(reversed(range(n_wires))))
     return torch.as_tensor(reordered.reshape(-1).copy(), dtype=torch.complex128)
+
+
+@pytest.mark.parametrize("case", semantic_parity_cases(), ids=lambda case: case.name)
+def test_shared_cross_framework_semantics(case) -> None:
+    actual = _state(to_cudaq(case.program), case.program.n_wires)
+    expected = reference_state(case)
+
+    assert maximum_error_up_to_global_phase(actual, expected) <= 1e-6
 
 
 @pytest.mark.parametrize("seed", range(5))
