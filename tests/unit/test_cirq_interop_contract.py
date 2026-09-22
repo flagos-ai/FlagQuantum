@@ -37,10 +37,10 @@ def test_contract_rejects_incomplete_opcode_partition() -> None:
     assert any("Cirq opcode coverage drifted" in error for error in errors)
 
 
-def test_symbolic_parameter_extension_is_contract_only() -> None:
+def test_symbolic_parameter_extension_is_implemented() -> None:
     contract, policy = _inputs()
     symbolic_parameters = contract["symbolic_parameter_contract"]
-    assert symbolic_parameters["implementation_status"] == "contract_only"
+    assert symbolic_parameters["implementation_status"] == "implemented"
     assert symbolic_parameters["public_api_change"] is False
     assert symbolic_parameters["supported_nodes"] == [
         "symbol",
@@ -50,27 +50,24 @@ def test_symbolic_parameter_extension_is_contract_only() -> None:
         "neg",
     ]
     assert symbolic_parameters["external_object_retention"] is False
-    assert "symbolic_parameters" in contract["unsupported"]["cirq_features"]
+    assert "symbolic_parameters" not in contract["unsupported"]["cirq_features"]
     assert contract_errors(contract, policy) == ()
 
 
 def test_contract_rejects_symbolic_parameter_scope_drift() -> None:
     contract, policy = _inputs()
     symbolic_parameters = contract["symbolic_parameter_contract"]
-    symbolic_parameters["implementation_status"] = "implemented"
+    symbolic_parameters["implementation_status"] = "contract_only"
     symbolic_parameters["supported_nodes"].append("power")
     symbolic_parameters["external_object_retention"] = True
     errors = contract_errors(contract, policy)
     assert "Cirq symbolic-parameter extension contract drifted" in errors
 
 
-def test_contract_keeps_current_symbolic_rejection_until_implementation() -> None:
+def test_contract_requires_symbolic_parameter_implementation_evidence() -> None:
     contract, policy = _inputs()
-    contract["unsupported"]["cirq_features"].remove("symbolic_parameters")
-    contract["unsupported"]["issue_codes"].remove("symbolic_parameter_not_supported")
+    contract["unsupported"]["cirq_features"].append("symbolic_parameters")
+    contract["unsupported"]["issue_codes"].remove("unsupported_parameter_expression")
     errors = contract_errors(contract, policy)
-    assert (
-        "Cirq symbolic parameters must remain unsupported until implementation"
-        in errors
-    )
-    assert "Cirq must retain its current symbolic-parameter rejection code" in errors
+    assert "Cirq symbolic parameters must not remain globally unsupported" in errors
+    assert "Cirq must declare its symbolic-expression rejection code" in errors

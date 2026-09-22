@@ -86,7 +86,7 @@ reason = "Local Qiskit Aer conformance helpers exist, but execution is not the a
 name = "cirq"
 contract = "contracts/cirq-interop-contract.toml"
 direction = "bidirectional"
-next_gap = "Preserve symbolic parameters across the static circuit boundary before expanding measurement or execution scope."
+next_gap = "Expand measurement conversion without weakening the symbolic-expression or static-runtime boundary."
 
 [[frameworks.capabilities]]
 name = "circuit_conversion"
@@ -108,9 +108,9 @@ reason = "Finite bound real gate parameters are converted."
 
 [[frameworks.capabilities]]
 name = "symbolic_parameters"
-status = "unsupported"
-evidence = ["unsupported.cirq_features", "unsupported.issue_codes"]
-reason = "Symbolic Cirq parameters fail closed."
+status = "partial"
+evidence = ["symbolic_parameter_contract", "unsupported.issue_codes"]
+reason = "Named add, multiply, and negation expressions round-trip for rx, ry, and rz; other symbolic forms fail closed."
 
 [[frameworks.capabilities]]
 name = "measurements"

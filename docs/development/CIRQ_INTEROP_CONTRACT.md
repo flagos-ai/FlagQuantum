@@ -7,9 +7,10 @@ modules must not import Cirq or expose Cirq types.
 
 The first integration change established the boundary before implementation.
 The implemented adapter remains experimental and does not promise runtime
-execution through Cirq. The machine-readable contract fixes the initial gate subset, contiguous
-`LineQubit` mapping, explicit statevector order, bound-real parameter policy,
-and fail-closed handling of unsupported Cirq features.
+execution through Cirq. The machine-readable contract fixes the initial gate
+subset, contiguous `LineQubit` mapping, explicit statevector order, the
+supported symbolic arithmetic subset, and fail-closed handling of unsupported
+Cirq features.
 
 ## Dependency decision
 
@@ -41,10 +42,8 @@ The implementation provides:
 
 ## Symbolic parameter extension contract
 
-The next adapter extension will preserve symbolic rotation parameters across
-the Cirq boundary. This change records the semantic contract only. Symbolic
-parameters remain rejected by the current adapter until the implementation and
-conformance tests land, and this extension does not change the public API.
+The adapter preserves supported symbolic rotation parameters across the Cirq
+boundary without changing the public API.
 
 The adapter will discover symbols through `cirq.parameter_symbols` and use
 `cirq.resolve_parameters` as the Cirq-side binding reference. Cirq and SymPy
@@ -60,17 +59,17 @@ The first implementation supports a deliberately small arithmetic subset:
 
 Functions, powers, complex constants, division by an unbound parameter, and
 symbols outside the expression's reported parameter set fail closed with the
-planned `unsupported_parameter_expression` issue code. Import must reject the
+`unsupported_parameter_expression` issue code. Import must reject the
 expression before an instruction enters IR, and export must reject it before a
 Cirq operation is created. Supported SymPy additions and multiplications are
 canonicalized into deterministic left folds before conversion.
 
-The implementation PR must demonstrate round-trip preservation for expressions
+The integration suite demonstrates round-trip preservation for expressions
 with more than one symbol and binding equivalence at multiple assignments:
 resolving a Cirq circuit with `cirq.resolve_parameters` must produce the same
-bound gate values as binding the corresponding FlagQuantum circuit. It must
-also prove deterministic failure for every unsupported expression family and
-that no Cirq or SymPy object is retained in core IR.
+bound gate values as binding the corresponding FlagQuantum circuit. It also
+proves deterministic failure for every unsupported expression family and that
+no Cirq or SymPy object is retained in core IR.
 
 The boundary relies only on Cirq's public parameter protocols:
 

@@ -29,11 +29,11 @@ EXPECTED_SEMANTICS = {
     "operation_order": "stable_moment_then_operation_order",
     "moment_packing": "flattened_and_not_preserved",
     "statevector_order": ("explicit_line_qubit_order_with_wire_zero_most_significant"),
-    "parameters": "bound_real_scalars_only",
+    "parameters": "bound_real_scalars_or_v1_symbolic_arithmetic",
     "loss_policy": "fail_closed_unless_allow_lossy_true",
 }
 EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
-    "implementation_status": "contract_only",
+    "implementation_status": "implemented",
     "public_api_change": False,
     "source_protocol": "cirq_parameter_protocol_with_sympy_expressions",
     "symbol_discovery": "cirq.parameter_symbols",
@@ -51,7 +51,7 @@ EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
     "canonicalization": "deterministic_left_fold_after_sympy_canonicalization",
     "import_failure": "reject_before_instruction_enters_ir",
     "export_failure": "reject_before_cirq_operation_creation",
-    "planned_issue_code": "unsupported_parameter_expression",
+    "issue_code": "unsupported_parameter_expression",
     "binding_equivalence": (
         "cirq_resolve_parameters_matches_flagquantum_bind_parameters"
     ),
@@ -110,12 +110,10 @@ def contract_errors(
         errors.append("Cirq symbolic-parameter extension contract drifted")
 
     unsupported = contract.get("unsupported", {})
-    if "symbolic_parameters" not in unsupported.get("cirq_features", ()):
-        errors.append(
-            "Cirq symbolic parameters must remain unsupported until implementation"
-        )
-    if "symbolic_parameter_not_supported" not in unsupported.get("issue_codes", ()):
-        errors.append("Cirq must retain its current symbolic-parameter rejection code")
+    if "symbolic_parameters" in unsupported.get("cirq_features", ()):
+        errors.append("Cirq symbolic parameters must not remain globally unsupported")
+    if "unsupported_parameter_expression" not in unsupported.get("issue_codes", ()):
+        errors.append("Cirq must declare its symbolic-expression rejection code")
     declared_issues = set(unsupported.get("issue_codes", ()))
     emitted_issues = conversion_issue_codes()
     if declared_issues != emitted_issues:
