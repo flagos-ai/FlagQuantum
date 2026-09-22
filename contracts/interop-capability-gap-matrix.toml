@@ -1,0 +1,347 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_interop_capability_gap_matrix_v1"
+maturity = "experimental"
+source_of_truth = "adapter_contracts"
+status_values = ["supported", "partial", "unsupported", "out_of_scope"]
+capability_order = [
+    "circuit_conversion",
+    "operation_coverage",
+    "bound_parameters",
+    "symbolic_parameters",
+    "measurements",
+    "noise_channels",
+    "dynamic_control",
+    "custom_unitary",
+    "autograd_bridge",
+    "runtime_execution",
+]
+
+[[frameworks]]
+name = "qiskit"
+contract = "contracts/qiskit-interop-contract.toml"
+direction = "bidirectional"
+next_gap = "Preserve the supported symbolic parameter algebra while expanding dynamic-control conformance beyond one-bit export conditions."
+
+[[frameworks.capabilities]]
+name = "circuit_conversion"
+status = "supported"
+evidence = ["semantics.loss_policy", "verification.integration"]
+reason = "Static import and export are implemented with explicit fail-closed conversion reports."
+
+[[frameworks.capabilities]]
+name = "operation_coverage"
+status = "partial"
+evidence = ["operations", "unsupported.flagquantum_opcodes"]
+reason = "The mapped gate set excludes aliases and noise-channel opcodes recorded by the adapter contract."
+
+[[frameworks.capabilities]]
+name = "bound_parameters"
+status = "supported"
+evidence = ["semantics.parameter_identity", "operations"]
+reason = "Mapped parameterized gates preserve their named scalar parameters."
+
+[[frameworks.capabilities]]
+name = "symbolic_parameters"
+status = "partial"
+evidence = ["semantics.parameter_identity", "unsupported.qiskit_features"]
+reason = "Named add, multiply, and negation expressions are supported; other expression operations fail closed."
+
+[[frameworks.capabilities]]
+name = "measurements"
+status = "partial"
+evidence = ["semantics.classical_bit_mapping", "unsupported.issue_codes"]
+reason = "Measurement instructions round-trip, while execution measurement requests stay outside circuit conversion."
+
+[[frameworks.capabilities]]
+name = "noise_channels"
+status = "unsupported"
+evidence = ["unsupported.flagquantum_opcodes"]
+reason = "FlagQuantum noise-channel opcodes are excluded from the Qiskit circuit mapping."
+
+[[frameworks.capabilities]]
+name = "dynamic_control"
+status = "partial"
+evidence = ["unsupported.qiskit_features", "unsupported.issue_codes"]
+reason = "One-bit Boolean export conditions are supported, but control-flow import and broader conditions fail closed."
+
+[[frameworks.capabilities]]
+name = "custom_unitary"
+status = "partial"
+evidence = ["semantics.custom_unitary_scope", "unsupported.qiskit_features"]
+reason = "Custom unitaries are limited to one through three qubits."
+
+[[frameworks.capabilities]]
+name = "autograd_bridge"
+status = "out_of_scope"
+evidence = ["verification.policy"]
+reason = "The adapter owns format conversion and does not define a training bridge."
+
+[[frameworks.capabilities]]
+name = "runtime_execution"
+status = "partial"
+evidence = ["verification.conformance"]
+reason = "Local Qiskit Aer conformance helpers exist, but execution is not the adapter's general runtime contract."
+
+[[frameworks]]
+name = "cirq"
+contract = "contracts/cirq-interop-contract.toml"
+direction = "bidirectional"
+next_gap = "Preserve symbolic parameters across the static circuit boundary before expanding measurement or execution scope."
+
+[[frameworks.capabilities]]
+name = "circuit_conversion"
+status = "supported"
+evidence = ["semantics.artifact", "semantics.loss_policy"]
+reason = "Static Cirq circuits import and export through the common interoperability boundary."
+
+[[frameworks.capabilities]]
+name = "operation_coverage"
+status = "partial"
+evidence = ["operations", "unsupported.flagquantum_opcodes"]
+reason = "The adapter maps a deterministic gate subset and rejects the remaining FlagQuantum opcodes."
+
+[[frameworks.capabilities]]
+name = "bound_parameters"
+status = "supported"
+evidence = ["semantics.parameters"]
+reason = "Finite bound real gate parameters are converted."
+
+[[frameworks.capabilities]]
+name = "symbolic_parameters"
+status = "unsupported"
+evidence = ["unsupported.cirq_features", "unsupported.issue_codes"]
+reason = "Symbolic Cirq parameters fail closed."
+
+[[frameworks.capabilities]]
+name = "measurements"
+status = "unsupported"
+evidence = ["semantics.measurements", "unsupported.cirq_features"]
+reason = "Measurements require a separate execution plan and are not represented by the static adapter."
+
+[[frameworks.capabilities]]
+name = "noise_channels"
+status = "unsupported"
+evidence = ["unsupported.cirq_features", "unsupported.flagquantum_opcodes"]
+reason = "Cirq noise channels and FlagQuantum channel opcodes are excluded."
+
+[[frameworks.capabilities]]
+name = "dynamic_control"
+status = "unsupported"
+evidence = ["unsupported.cirq_features"]
+reason = "Classical controls are outside the Cirq v1 contract."
+
+[[frameworks.capabilities]]
+name = "custom_unitary"
+status = "unsupported"
+evidence = ["unsupported.cirq_features"]
+reason = "The v1 gate mapping does not admit arbitrary matrix gates."
+
+[[frameworks.capabilities]]
+name = "autograd_bridge"
+status = "out_of_scope"
+evidence = ["autograd_bridge_allowed"]
+reason = "Autograd bridging is explicitly outside the static adapter."
+
+[[frameworks.capabilities]]
+name = "runtime_execution"
+status = "out_of_scope"
+evidence = ["runtime_execution_allowed"]
+reason = "Runtime execution is explicitly outside the Cirq adapter."
+
+[[frameworks]]
+name = "pennylane"
+contract = "contracts/pennylane-interop-contract.toml"
+direction = "bidirectional"
+next_gap = "Preserve symbolic and trainable parameters without admitting PennyLane runtime objects into FlagQuantum IR."
+
+[[frameworks.capabilities]]
+name = "circuit_conversion"
+status = "supported"
+evidence = ["semantics.artifact", "semantics.loss_policy"]
+reason = "Static QuantumScript import and export are implemented."
+
+[[frameworks.capabilities]]
+name = "operation_coverage"
+status = "partial"
+evidence = ["operations", "unsupported.flagquantum_opcodes"]
+reason = "Most unitary opcodes are mapped; selected inverse/U gates and all channels remain excluded."
+
+[[frameworks.capabilities]]
+name = "bound_parameters"
+status = "supported"
+evidence = ["semantics.parameters", "parameter_contract"]
+reason = "Bound real scalar parameters are preserved for mapped operations."
+
+[[frameworks.capabilities]]
+name = "symbolic_parameters"
+status = "unsupported"
+evidence = ["unsupported.issue_codes"]
+reason = "Symbolic and trainable PennyLane parameters fail closed in v1."
+
+[[frameworks.capabilities]]
+name = "measurements"
+status = "unsupported"
+evidence = ["semantics.measurements", "unsupported.issue_codes"]
+reason = "Measurement processes and shots remain execution policy outside CircuitIR."
+
+[[frameworks.capabilities]]
+name = "noise_channels"
+status = "unsupported"
+evidence = ["unsupported.flagquantum_opcodes"]
+reason = "FlagQuantum noise-channel opcodes are excluded from the mapping."
+
+[[frameworks.capabilities]]
+name = "dynamic_control"
+status = "unsupported"
+evidence = ["semantics.artifact"]
+reason = "The v1 boundary is a static QuantumScript conversion contract."
+
+[[frameworks.capabilities]]
+name = "custom_unitary"
+status = "unsupported"
+evidence = ["operations"]
+reason = "Only explicitly mapped PennyLane operation classes are accepted."
+
+[[frameworks.capabilities]]
+name = "autograd_bridge"
+status = "out_of_scope"
+evidence = ["autograd_bridge_allowed"]
+reason = "PennyLane autograd objects do not cross the interoperability boundary."
+
+[[frameworks.capabilities]]
+name = "runtime_execution"
+status = "out_of_scope"
+evidence = ["runtime_execution_allowed"]
+reason = "QNodes, devices, and execution remain outside this adapter."
+
+[[frameworks]]
+name = "cudaq"
+contract = "contracts/cudaq-export-contract.toml"
+direction = "export_only"
+next_gap = "Expand deterministic gate export coverage before considering kernel import or execution."
+
+[[frameworks.capabilities]]
+name = "circuit_conversion"
+status = "partial"
+evidence = ["semantics.direction", "semantics.loss_policy"]
+reason = "FlagQuantum IR exports to a CUDA-Q kernel; reverse conversion is rejected."
+
+[[frameworks.capabilities]]
+name = "operation_coverage"
+status = "partial"
+evidence = ["operations", "unsupported.flagquantum_opcodes"]
+reason = "The dynamic-builder export currently covers a compact unitary gate subset."
+
+[[frameworks.capabilities]]
+name = "bound_parameters"
+status = "supported"
+evidence = ["semantics.parameters"]
+reason = "Bound finite real scalar parameters are emitted."
+
+[[frameworks.capabilities]]
+name = "symbolic_parameters"
+status = "unsupported"
+evidence = ["unsupported.cudaq_features", "unsupported.issue_codes"]
+reason = "Symbolic parameters and kernel arguments are outside export v1."
+
+[[frameworks.capabilities]]
+name = "measurements"
+status = "unsupported"
+evidence = ["semantics.measurements", "unsupported.cudaq_features"]
+reason = "Measurement and observable requests fail closed."
+
+[[frameworks.capabilities]]
+name = "noise_channels"
+status = "unsupported"
+evidence = ["unsupported.cudaq_features", "unsupported.flagquantum_opcodes"]
+reason = "CUDA-Q noise and FlagQuantum channel operations are excluded."
+
+[[frameworks.capabilities]]
+name = "dynamic_control"
+status = "unsupported"
+evidence = ["unsupported.cudaq_features"]
+reason = "Classical control flow and kernel composition are outside export v1."
+
+[[frameworks.capabilities]]
+name = "custom_unitary"
+status = "unsupported"
+evidence = ["operations"]
+reason = "Only explicit dynamic-builder methods in the operation table are emitted."
+
+[[frameworks.capabilities]]
+name = "autograd_bridge"
+status = "out_of_scope"
+evidence = ["autograd_bridge_allowed"]
+reason = "The adapter exports kernels and does not define a gradient bridge."
+
+[[frameworks.capabilities]]
+name = "runtime_execution"
+status = "out_of_scope"
+evidence = ["runtime_execution_allowed", "unsupported.cudaq_features"]
+reason = "Local and remote CUDA-Q execution are outside the adapter contract."
+
+[[frameworks]]
+name = "braket"
+contract = "contracts/braket-circuit-interop-contract.toml"
+direction = "bidirectional"
+next_gap = "Preserve free parameters across static conversion before expanding execution-plan integration."
+
+[[frameworks.capabilities]]
+name = "circuit_conversion"
+status = "supported"
+evidence = ["semantics.direction", "semantics.loss_policy"]
+reason = "Static Amazon Braket circuits import and export bidirectionally."
+
+[[frameworks.capabilities]]
+name = "operation_coverage"
+status = "partial"
+evidence = ["operations", "unsupported.flagquantum_opcodes"]
+reason = "The static gate map excludes selected controlled rotations and all noise channels."
+
+[[frameworks.capabilities]]
+name = "bound_parameters"
+status = "supported"
+evidence = ["semantics.parameters"]
+reason = "Bound finite real scalar parameters are converted."
+
+[[frameworks.capabilities]]
+name = "symbolic_parameters"
+status = "unsupported"
+evidence = ["unsupported.braket_features", "unsupported.issue_codes"]
+reason = "Braket free parameters fail closed."
+
+[[frameworks.capabilities]]
+name = "measurements"
+status = "unsupported"
+evidence = ["semantics.measurements", "unsupported.braket_features"]
+reason = "Measurement instructions and result types require a separate execution plan."
+
+[[frameworks.capabilities]]
+name = "noise_channels"
+status = "unsupported"
+evidence = ["unsupported.braket_features", "unsupported.flagquantum_opcodes"]
+reason = "Noise instructions and FlagQuantum channel opcodes are excluded."
+
+[[frameworks.capabilities]]
+name = "dynamic_control"
+status = "unsupported"
+evidence = ["unsupported.braket_features"]
+reason = "Compiler directives and verbatim boxes are outside static conversion."
+
+[[frameworks.capabilities]]
+name = "custom_unitary"
+status = "unsupported"
+evidence = ["operations"]
+reason = "Only explicitly mapped Braket gate types are accepted."
+
+[[frameworks.capabilities]]
+name = "autograd_bridge"
+status = "out_of_scope"
+evidence = ["autograd_bridge_allowed"]
+reason = "The static circuit adapter does not define an autograd bridge."
+
+[[frameworks.capabilities]]
+name = "runtime_execution"
+status = "out_of_scope"
+evidence = ["runtime_execution_allowed", "cloud_submission_allowed"]
+reason = "Runtime execution and cloud submission belong to provider boundaries."

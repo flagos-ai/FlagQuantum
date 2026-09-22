@@ -108,6 +108,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_pennylane_interop_contract.py"),
         ),
         Check(
+            "interoperability capability-gap matrix",
+            (python_executable, "tools/check_interop_capability_gap_matrix.py"),
+        ),
+        Check(
             "Double-Single FP32 contract",
             (python_executable, "tools/check_double_single_contract.py"),
         ),
