@@ -118,7 +118,7 @@ so the check is per test rather than per file.
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract plus golden and fixed-seed differential complex128 QuantumScript semantics described in [PennyLane Differential Conformance](PENNYLANE_DIFFERENTIAL_CONFORMANCE.md). | Hardware submission, dynamic execution, differentiation, or that PennyLane is a core dependency. |
 | `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, and seeded bidirectional statevector conformance. | Cirq runtime execution, devices, or that Cirq is a core dependency. |
 | `cudaq` | The isolated `cudaq` heterogeneous-toolchain extra installed; selected by the `cudaq-optional` Linux job on the 0.15.1 and 0.16.0.post1 lanes. | One-way static kernel construction, fail-closed diagnostics, explicit bit-order conversion, and seeded statevector conformance. | Reverse import, runtime execution, targets, GPU/QPU support, or that CUDA-Q is a core dependency. |
-| `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
+| `braket` | The current provider tests use fakes and need no SDK; the static circuit adapter remains contract-only. | The Amazon Braket provider and dynamic-deployment surface, plus the machine-readable boundary for a future static circuit adapter. | A public circuit adapter, real SDK compatibility, hardware submission, or any real device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax`, `cirq`, `pennylane`, and `cotengra` because its marker
@@ -400,7 +400,8 @@ The checked-in `ci.yml` defines thirteen jobs:
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
-  capability-maturity, CUDA-Q export-contract, and repository-hygiene checks;
+  capability-maturity, Braket/Cirq/CUDA-Q/Qiskit/PennyLane interoperability
+  contracts, and repository-hygiene checks;
 - `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
   only, including proof that importing and differentiating a native circuit
   does not import JAX;
@@ -433,6 +434,12 @@ The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a
 supported package target in this boundary.
+
+The Braket circuit adapter remains contract-only. The quality job validates its
+machine-readable boundary without installing the SDK. Its implementation must
+add isolated Amazon Braket SDK 1.117.0 and 1.127.1 lanes before exposing the
+adapter or claiming real SDK compatibility. Existing fake-based provider tests
+continue to prove only local submission orchestration and result normalization.
 
 Two further items are not jobs but placement rules for tests that run inside the
 CPU tiers: Double-Single primitives run in the ordinary CPU unit/integration

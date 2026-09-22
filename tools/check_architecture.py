@@ -301,6 +301,9 @@ def architecture_errors() -> tuple[str, ...]:
     simulation_runtime_import_allowed = set(
         simulation_boundaries.get("runtime_import_allowed", ())
     )
+    braket_import_allowed_prefixes = tuple(
+        interop_boundaries.get("braket_import_allowed_prefixes", ())
+    )
     cirq_import_allowed_prefixes = tuple(
         interop_boundaries.get("cirq_import_allowed_prefixes", ())
     )
@@ -442,6 +445,13 @@ def architecture_errors() -> tuple[str, ...]:
             ) and relative not in torch_fl_import_allowed:
                 errors.append(
                     f"{relative}: torch_fl imports are isolated to the FlagOS adapter"
+                )
+            if (
+                module == "braket" or module.startswith("braket.")
+            ) and not relative.startswith(braket_import_allowed_prefixes):
+                errors.append(
+                    f"{relative}: Braket imports are isolated to the Ecosystem "
+                    "adapter or Remote provider"
                 )
             if (
                 module == "cirq" or module.startswith("cirq.")

@@ -50,7 +50,7 @@ cuda = [
 ]
 
 braket = [
-    "amazon-braket-sdk>=1.117,<2",
+    "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'",
 ]
 
 cirq = [
@@ -76,7 +76,7 @@ pennylane = [
 ]
 
 interop-all = [
-    "amazon-braket-sdk>=1.117,<2",
+    "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'",
     "cirq-core>=1.6.1,<1.8; python_version >= '3.11'",
     "pennylane>=0.44.1,<0.46; python_version >= '3.11'",
     "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'",
