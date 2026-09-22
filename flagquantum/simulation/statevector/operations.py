@@ -20,6 +20,12 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
+from .diagonal_cpu import (
+    _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
+)
+from .diagonal_cpu import (
+    _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
+)
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -228,7 +234,7 @@ def _cpu_single_wire_elementwise_enabled() -> bool:
 
 
 def _cpu_cross_wire_diagonal_fusion_enabled() -> bool:
-    """Whether CPU single-wire diagonal regions may share one statevector pass."""
+    """Whether CPU wire-disjoint diagonal regions may share a statevector pass."""
 
     return _environment_flag("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", default=True)
 
@@ -402,20 +408,50 @@ def _fuse_gate_sequences(
     return fused_program
 
 
-def _single_wire_diagonal_region(
+def _small_diagonal_region(
     step: _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep,
 ) -> _StatevectorGateStep | _StatevectorFusedGateStep | None:
     if isinstance(step, _StatevectorGateStep):
-        if len(step.instruction.wires) == 1 and _diagonal_region((step.instruction,)):
+        if len(step.instruction.wires) in {1, 2} and _diagonal_region(
+            (step.instruction,)
+        ):
             return step
         return None
     if (
         isinstance(step, _StatevectorFusedGateStep)
-        and len(step.wires) == 1
+        and len(step.wires) in {1, 2}
         and step.diagonal
     ):
         return step
     return None
+
+
+def _region_wires(
+    region: _StatevectorGateStep | _StatevectorFusedGateStep,
+) -> tuple[int, ...]:
+    if isinstance(region, _StatevectorGateStep):
+        return tuple(region.instruction.wires)
+    return region.wires
+
+
+def _disjoint_diagonal_groups(
+    regions: Sequence[_StatevectorGateStep | _StatevectorFusedGateStep],
+) -> list[list[_StatevectorGateStep | _StatevectorFusedGateStep]]:
+    """Partition commuting diagonal regions into wire-disjoint matchings."""
+
+    groups: list[list[_StatevectorGateStep | _StatevectorFusedGateStep]] = []
+    used_wires: list[set[int]] = []
+    for region in regions:
+        wires = set(_region_wires(region))
+        for group, occupied in zip(groups, used_wires, strict=True):
+            if wires.isdisjoint(occupied):
+                group.append(region)
+                occupied.update(wires)
+                break
+        else:
+            groups.append([region])
+            used_wires.append(wires)
+    return groups
 
 
 def _fuse_cross_wire_diagonal_regions(
@@ -428,7 +464,7 @@ def _fuse_cross_wire_diagonal_regions(
     | _StatevectorFusedGateStep
     | _StatevectorCrossWireDiagonalStep
 ]:
-    """Combine adjacent single-wire diagonal regions spanning multiple wires."""
+    """Combine adjacent small diagonal regions into wire-disjoint matchings."""
 
     optimized: list[
         _StatevectorGateStep
@@ -438,7 +474,7 @@ def _fuse_cross_wire_diagonal_regions(
     ] = []
     index = 0
     while index < len(program):
-        first = _single_wire_diagonal_region(program[index])
+        first = _small_diagonal_region(program[index])
         if first is None:
             optimized.append(program[index])
             index += 1
@@ -446,23 +482,16 @@ def _fuse_cross_wire_diagonal_regions(
         regions = [first]
         cursor = index + 1
         while cursor < len(program):
-            candidate = _single_wire_diagonal_region(program[cursor])
+            candidate = _small_diagonal_region(program[cursor])
             if candidate is None:
                 break
             regions.append(candidate)
             cursor += 1
-        region_wires = {
-            (
-                region.instruction.wires[0]
-                if isinstance(region, _StatevectorGateStep)
-                else region.wires[0]
-            )
-            for region in regions
-        }
-        if len(region_wires) >= 2:
-            optimized.append(_StatevectorCrossWireDiagonalStep(tuple(regions)))
-        else:
-            optimized.extend(regions)
+        for group in _disjoint_diagonal_groups(regions):
+            if len(group) >= 2:
+                optimized.append(_StatevectorCrossWireDiagonalStep(tuple(group)))
+            else:
+                optimized.append(group[0])
         index = cursor
     return optimized
 
@@ -728,42 +757,6 @@ def _apply_diagonal_matrix(
         diagonal = diagonal.expand(bsz, -1)
     out = complex_mul(flat, diagonal.unsqueeze(-1))
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
-
-
-def _apply_cross_wire_diagonal_cpu(
-    state: torch.Tensor,
-    diagonals: Sequence[torch.Tensor],
-    wires: Sequence[int],
-    n_wires: int,
-) -> torch.Tensor:
-    """Apply several one-wire diagonals with one pass over a CPU statevector."""
-
-    normalized_wires = tuple(int(wire) for wire in wires)
-    if len(diagonals) != len(normalized_wires):
-        raise ValueError("one diagonal is required for each wire")
-    if len(set(normalized_wires)) != len(normalized_wires):
-        raise ValueError("cross-wire diagonal fusion requires distinct wires")
-    if any(not 0 <= wire < int(n_wires) for wire in normalized_wires):
-        raise ValueError("wire is outside the statevector")
-
-    bsz = state.shape[0]
-    ordered = sorted(zip(normalized_wires, diagonals, strict=True))
-    combined = state.new_ones((bsz, 1))
-    for _, diagonal in ordered:
-        diagonal = diagonal.to(device=state.device, dtype=state.dtype)
-        if diagonal.ndim == 1:
-            diagonal = diagonal.unsqueeze(0).expand(bsz, -1)
-        elif diagonal.ndim == 2 and diagonal.shape[0] == 1 and bsz != 1:
-            diagonal = diagonal.expand(bsz, -1)
-        if diagonal.shape != (bsz, 2):
-            raise ValueError("single-wire diagonal must have shape [2] or [batch, 2]")
-        combined = (combined.unsqueeze(-1) * diagonal.unsqueeze(1)).reshape(bsz, -1)
-
-    factor_shape = [bsz] + [1] * int(n_wires)
-    for wire, _ in ordered:
-        factor_shape[wire + 1] = 2
-    tensor = state.reshape((bsz,) + (2,) * int(n_wires))
-    return (tensor * combined.reshape(factor_shape)).reshape(state.shape)
 
 
 def _apply_cx_permutation(
