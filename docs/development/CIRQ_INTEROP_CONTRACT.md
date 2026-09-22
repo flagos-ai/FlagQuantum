@@ -38,3 +38,42 @@ The implementation provides:
 5. prove importing `flagquantum` does not import Cirq; and
 6. register the adapter publicly only after integration and conformance tests
    pass.
+
+## Symbolic parameter extension contract
+
+The next adapter extension will preserve symbolic rotation parameters across
+the Cirq boundary. This change records the semantic contract only. Symbolic
+parameters remain rejected by the current adapter until the implementation and
+conformance tests land, and this extension does not change the public API.
+
+The adapter will discover symbols through `cirq.parameter_symbols` and use
+`cirq.resolve_parameters` as the Cirq-side binding reference. Cirq and SymPy
+objects remain confined to `flagquantum.ecosystem.cirq`; the FlagQuantum-owned
+representation is `Parameter` or `ParameterExpression`, identified by a unique
+parameter name.
+
+The first implementation supports a deliberately small arithmetic subset:
+
+- symbols and finite real constants;
+- addition and multiplication; and
+- unary negation, with subtraction represented as addition plus negation.
+
+Functions, powers, complex constants, division by an unbound parameter, and
+symbols outside the expression's reported parameter set fail closed with the
+planned `unsupported_parameter_expression` issue code. Import must reject the
+expression before an instruction enters IR, and export must reject it before a
+Cirq operation is created. Supported SymPy additions and multiplications are
+canonicalized into deterministic left folds before conversion.
+
+The implementation PR must demonstrate round-trip preservation for expressions
+with more than one symbol and binding equivalence at multiple assignments:
+resolving a Cirq circuit with `cirq.resolve_parameters` must produce the same
+bound gate values as binding the corresponding FlagQuantum circuit. It must
+also prove deterministic failure for every unsupported expression family and
+that no Cirq or SymPy object is retained in core IR.
+
+The boundary relies only on Cirq's public parameter protocols:
+
+- <https://quantumai.google/reference/python/cirq/parameter_symbols>
+- <https://quantumai.google/reference/python/cirq/resolve_parameters>
+- <https://quantumai.google/reference/python/cirq/ParamResolver>
