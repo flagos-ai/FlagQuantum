@@ -1,5 +1,10 @@
 """Remote QPU adapters and their quantum task contracts."""
 
+from .azure import (
+    AzureQuantumProvider,
+    AzureSubmissionPreview,
+    azure_backend_profile,
+)
 from .braket import (
     AmazonBraketProvider,
     BraketSubmissionPreview,
@@ -26,6 +31,8 @@ from .quafu import QuafuProvider
 
 __all__ = (
     "AmazonBraketProvider",
+    "AzureQuantumProvider",
+    "AzureSubmissionPreview",
     "BraketSubmissionPreview",
     "DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA",
     "DeploymentResult",
@@ -37,6 +44,7 @@ __all__ = (
     "QuantumCloudTransport",
     "QuantumProvider",
     "UrllibTransport",
+    "azure_backend_profile",
     "braket_backend_profile",
     "build_result_metadata",
     "build_submission_receipt",

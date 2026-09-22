@@ -38,11 +38,36 @@ discovery or an advanced package-oriented workflow.
 `QuafuProvider` accepts an already compiled deployment package or precompiled
 OpenQASM with an explicit physical-qubit mapping. `AmazonBraketProvider`
 adapts an `AwsDevice` and provides a non-submitting `dry_run()` before task
-creation. Generic HTTP transport components support concrete provider adapters;
-they are not a separate execution product.
+creation. `AzureQuantumProvider` adapts one QDK workspace target, compiles a
+sealed OpenQASM 3 deployment package to QIR, and normalizes returned counts or
+probabilities. Generic HTTP transport components support concrete provider
+adapters; they are not a separate execution product.
 
-Change the high-level Quafu `fq.run` workflow in `execution.py`; change Quafu
-HTTP transport and task lifecycle behavior in `quafu.py`.
+The stable Azure counts path uses environment-owned workspace configuration:
+
+```bash
+export AZURE_QUANTUM_RESOURCE_ID="<workspace-resource-id>"
+export AZURE_QUANTUM_TARGET_QUBITS="<authoritative-target-width>"
+```
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    outputs=fq.counts(),
+    target="azure:quantinuum.qpu.h2-1",
+    shots=100,
+)
+```
+
+This route currently supports full-register counts only. It rejects unsupported
+outputs, physical-qubit mappings, and missing target-width evidence before
+creating a cloud job. Use `AzureQuantumProvider.dry_run()` directly when an
+application needs a non-submitting package preview.
+
+Change high-level remote `fq.run` workflows in `execution.py`; change each
+provider's transport and task lifecycle behavior in its provider module.
 
 Follow the [Quafu guide](../../../docs/guides/QUAFU_BACKEND.md) for the complete
 compile, map, submit and result path. A provider adapter must preserve task and
@@ -52,6 +77,7 @@ Run the offline provider checks from the repository root:
 
 ```bash
 python -m pytest tests/test_amazon_braket_provider.py \
-  tests/test_cloud_providers.py tests/test_quafu_calibration.py \
+  tests/test_azure_quantum_provider.py tests/test_cloud_providers.py \
+  tests/test_quafu_calibration.py \
   tests/team/remote/test_quafu_user_path.py -q
 ```

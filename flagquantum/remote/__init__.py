@@ -8,6 +8,8 @@ and results. Directly controlled CPU, GPU, and accelerator resources belong in
 from .qpu import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     AmazonBraketProvider,
+    AzureQuantumProvider,
+    AzureSubmissionPreview,
     BraketSubmissionPreview,
     DeploymentResult,
     HttpQuantumProvider,
@@ -18,6 +20,7 @@ from .qpu import (
     QuantumCloudTransport,
     QuantumProvider,
     UrllibTransport,
+    azure_backend_profile,
     braket_backend_profile,
     build_result_metadata,
     build_submission_receipt,
@@ -27,6 +30,8 @@ from .qpu import (
 
 __all__ = (
     "AmazonBraketProvider",
+    "AzureQuantumProvider",
+    "AzureSubmissionPreview",
     "BraketSubmissionPreview",
     "DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA",
     "DeploymentResult",
@@ -38,6 +43,7 @@ __all__ = (
     "QuantumCloudTransport",
     "QuantumProvider",
     "UrllibTransport",
+    "azure_backend_profile",
     "braket_backend_profile",
     "build_result_metadata",
     "build_submission_receipt",

@@ -157,6 +157,40 @@ def run(
             name=name,
         )
 
+    if target is not None and separator == ":" and provider_name.lower() == "azure":
+        if compiler is not None:
+            raise TypeError(
+                "Azure Quantum fq.run does not accept compiler; "
+                "the provider route compiles OpenQASM 3 to QIR with QDK"
+            )
+        if options is not None or noise_model is not None:
+            raise TypeError(
+                "options and noise_model are local execution inputs; "
+                "Azure Quantum provider controls are environment-owned"
+            )
+        if type(shots) is not int or shots <= 0:
+            raise ValueError("remote execution shots must be a positive integer")
+        if name is not None and (not isinstance(name, str) or not name.strip()):
+            raise ValueError("remote execution name must be a non-empty string")
+        if target_qubits is not None:
+            raise TypeError(
+                "Azure Quantum fq.run does not accept target_qubits; "
+                "the QIR target compiler owns physical mapping"
+            )
+        from .remote.qpu.execution import execute_azure, validate_azure_output
+
+        output = validate_azure_output(program_or_plan, outputs)
+        source = import_module(".core.ir", __package__).ensure_circuit_ir(
+            program_or_plan
+        )
+        return execute_azure(
+            source,
+            output=output,
+            target=target,
+            shots=shots,
+            name=name,
+        )
+
     if target is None or (
         compiler is None and not (separator == ":" and provider_name.lower() == "quafu")
     ):
@@ -172,7 +206,10 @@ def run(
         raise ValueError("remote execution name must be a non-empty string")
 
     if separator != ":" or provider_name.lower() != "quafu":
-        raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
+        raise ValueError(
+            "remote fq.run supports target='quafu:<backend>' or "
+            "target='azure:<target-id>'"
+        )
 
     from .remote.qpu.execution import execute_quafu, validate_quafu_output
 
