@@ -402,9 +402,12 @@ The checked-in `ci.yml` defines fourteen jobs:
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, Braket/Cirq/CUDA-Q/Qiskit/PennyLane interoperability
   contracts, and repository-hygiene checks;
-- `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
-  only, including proof that importing and differentiating a native circuit
-  does not import JAX;
+- `cpu-core`: Python 3.10-3.12 smoke/unit coverage with core dependencies only;
+  Python 3.12 additionally runs the repository-wide integration tier and the
+  launched CPU-distributed proofs. This keeps interpreter compatibility broad
+  without repeating the same runtime proof three times. Every interpreter
+  still proves that importing and differentiating a native circuit does not
+  import JAX;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
@@ -432,6 +435,36 @@ The checked-in `ci.yml` defines fourteen jobs:
   with the floors in `contracts/coverage-policy.toml` enforced by
   `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
+
+The GitHub-hosted jobs are partitioned across eight concurrency buckets per
+pull request or pushed branch. The scope is part of every bucket name: it keeps
+one run at eight concurrent jobs without forcing a new pull request to wait for
+an older pull request's coverage or interpreter lane. The organisation-level
+20-runner pool remains the aggregate admission limit. Superseding a run of the
+same branch still cancels the older run.
+
+Optional integration jobs name the test files they own and retain the marker
+selector inside that file set. This prevents an unrelated module-level
+collection error elsewhere in the repository from making every Cirq, CUDA-Q,
+PennyLane, Qiskit, and Triton lane fail before its own tests start. The broad
+CPU and coverage lanes remain responsible for repository-wide collection.
+
+The pull-request `pre-commit` workflow runs only source-hygiene hooks. Ruff,
+Black, mypy, architecture, generated-contract, and repository-wide policy
+checks are owned by the `quality` job and are not repeated in a second full
+project environment. The local pre-commit configuration remains broader so a
+developer still gets those checks before pushing.
+
+The CPU core and coverage pytest phases use exactly two xdist workers with
+load-scope scheduling. The fixed count shortens the critical path without
+letting a runner-image CPU change silently widen process fan-out. Smoke/unit
+runs on Python 3.10-3.12; the integration tier runs once on Python 3.12 because
+it proves repository runtime behavior rather than interpreter compatibility.
+Only the ordinary smoke, unit, integration, and coverage phases are
+parallelized: `torchrun` and `distributed_launch` remain explicit serial
+workflow steps on Python 3.12 so xdist never creates a second process topology
+inside a launched rank. Both parallel phases report their fifty slowest tests
+to keep the next optimization grounded in measured durations.
 
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.

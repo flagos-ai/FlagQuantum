@@ -447,6 +447,18 @@ def load_region_holdout_evaluation(
         raise ValueError(
             "Twin region holdout-evaluation file must contain a JSON object"
         )
+    try:
+        evaluation = _holdout_evaluation_from_dict(payload)
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin region holdout evaluation") from error
+    if evaluation.to_dict() != payload:
+        raise ValueError("Twin region holdout evaluation is not in canonical v1 form")
+    return evaluation
+
+
+def _holdout_evaluation_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinRegionHoldoutEvaluation:
     actual = set(payload)
     if actual != _EVALUATION_FIELDS:
         raise ValueError(
@@ -458,19 +470,13 @@ def load_region_holdout_evaluation(
     holdout = payload["holdout_evaluation"]
     if not isinstance(reference, Mapping) or not isinstance(holdout, Mapping):
         raise ValueError("Twin region holdout evaluations must be JSON objects")
-    try:
-        evaluation = TwinRegionHoldoutEvaluation(
-            schema=str(payload["schema"]),
-            study_identity=str(payload["study_identity"]),
-            reference_evaluation=_evaluation_from_dict(reference),
-            holdout_evaluation=_evaluation_from_dict(holdout),
-            confidence_level=float(payload["confidence_level"]),
-        )
-    except (TypeError, ValueError) as error:
-        raise ValueError("Invalid Twin region holdout evaluation") from error
-    if evaluation.to_dict() != payload:
-        raise ValueError("Twin region holdout evaluation is not in canonical v1 form")
-    return evaluation
+    return TwinRegionHoldoutEvaluation(
+        schema=str(payload["schema"]),
+        study_identity=str(payload["study_identity"]),
+        reference_evaluation=_evaluation_from_dict(reference),
+        holdout_evaluation=_evaluation_from_dict(holdout),
+        confidence_level=float(payload["confidence_level"]),
+    )
 
 
 def dump_region_holdout_study(

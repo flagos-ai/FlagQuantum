@@ -7,8 +7,9 @@ on:
     branches: [main]
 
 # Same two constraints as CI: cancel a superseded run of the same branch, and
-# hold the job to one of the buckets that bound this repository's share of the
-# organisation's GitHub-hosted pool. See the capacity note in ci.yml.
+# hold the job to one of the pull-request-scoped buckets that bound one run's
+# share of the organisation's GitHub-hosted pool. See the capacity note in
+# ci.yml.
 concurrency:
   group: flagquantum-precommit-${{ github.ref }}
   cancel-in-progress: true
@@ -17,7 +18,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-gh-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
 
     steps:
@@ -30,10 +31,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install project and pre-commit tooling
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]' pre-commit nbformat nbconvert
+      - name: Install source-hygiene tooling
+        run: python -m pip install pre-commit
 
-      - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure
+      # The CI quality job owns Ruff, Black, mypy, architecture, generated
+      # contracts, and repository-wide policy checks. Repeating them here added
+      # a second full project install and several minutes without adding an
+      # independent signal. Keep this required check focused on the source-file
+      # hygiene hooks that quality does not run.
+      - name: Run source-hygiene hooks
+        shell: bash
+        run: |
+          hooks=(trailing-whitespace end-of-file-fixer check-docstring-first check-yaml debug-statements check-ast)
+          for hook in "${hooks[@]}"; do
+            pre-commit run "$hook" --all-files --show-diff-on-failure
+          done

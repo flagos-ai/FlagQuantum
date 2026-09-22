@@ -1,4 +1,4 @@
-"""The GitHub-hosted share this repository is allowed to hold.
+"""The GitHub-hosted share one FlagQuantum workflow run is allowed to hold.
 
 flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
 jobs. A job that joins no concurrency group holds a slot of that pool for as
@@ -6,10 +6,12 @@ long as it runs, so a workflow that is unconstrained here is a workflow that
 queues every other repository in the organisation behind it.
 
 The ceiling is expressed the way GitHub expresses it. A concurrency group
-admits one job at a time, so the number of distinct groups the per-push
-workflows use *is* the number of GitHub-hosted runners this repository can
-hold at once. `ci.yml` and `pre-commit.yaml` partition their jobs across the
-eight buckets below, and this module holds that partition still.
+admits one job at a time, so the number of distinct groups one workflow run
+uses *is* the number of GitHub-hosted runners that run can hold at once.
+`ci.yml` and `pre-commit.yaml` partition their jobs across the eight scoped
+buckets below, and this module holds that partition still. The pull-request or
+branch scope prevents an unrelated older run from serializing a newer run;
+the organisation's 20-runner pool remains the aggregate ceiling.
 
 Five invariants:
 
@@ -47,23 +49,24 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The per-push workflows: every job in them runs on a GitHub-hosted runner.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these eight names are a ceiling of
-# eight concurrent GitHub-hosted runners -- the rest of the pool's twenty is
-# left to the other repositories in the organisation.
+# One concurrency group admits one job, so these eight scoped names are a
+# ceiling of eight concurrent GitHub-hosted runners for one run.
+RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
-        "flagquantum-gh-cpucore-3.10",
-        "flagquantum-gh-cpucore-3.11",
-        "flagquantum-gh-cpucore-3.12",
-        "flagquantum-gh-coverage",
-        "flagquantum-gh-distributed",
-        "flagquantum-gh-light-a",
-        "flagquantum-gh-light-b",
-        "flagquantum-gh-light-c",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage",
+        f"flagquantum-gh-{RUN_SCOPE}-distributed",
+        f"flagquantum-gh-{RUN_SCOPE}-light-a",
+        f"flagquantum-gh-{RUN_SCOPE}-light-b",
+        f"flagquantum-gh-{RUN_SCOPE}-light-c",
     }
 )
 
 CEILING = 8
+BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=loadscope --durations=50"
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
 
@@ -90,10 +93,11 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
 def _groups(job: dict[str, object]) -> set[str]:
     """The group names a job can produce, with its matrix reference resolved.
 
-    `flagquantum-gh-cpucore-${{ matrix.python-version }}` is one bucket per
-    interpreter, so the name in the workflow is not the name GitHub sees. The
-    reference is resolved against the matrix the same job declares, which is
-    also what makes a widened matrix show up here as a widened ceiling.
+    The cpucore group is one bucket per interpreter, so the name in the
+    workflow is not the name GitHub sees. The matrix reference is resolved
+    against the values the same job declares, which is also what makes a
+    widened matrix show up here as a widened ceiling. The run scope is retained
+    verbatim because it is the boundary this policy is asserting.
     """
 
     concurrency = job.get("concurrency")
@@ -123,6 +127,14 @@ def _bucketed_jobs() -> dict[str, dict[str, object]]:
     return found
 
 
+def _steps(workflow: str, job_name: str) -> list[dict[str, object]]:
+    job = _github_hosted_jobs(workflow)[job_name]
+    steps = job.get("steps")
+    assert isinstance(steps, list), f"{workflow}:{job_name}: no steps"
+    assert all(isinstance(step, dict) for step in steps)
+    return steps
+
+
 def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
     # A policy scan that finds nothing passes every rule below while checking
     # nothing, so the discovery itself is asserted.
@@ -147,8 +159,8 @@ def test_every_github_hosted_job_joins_a_bucket() -> None:
         for group in sorted(groups - BUCKETS):
             offenders.append(f"{key} joins {group!r}")
     assert not offenders, (
-        "every GitHub-hosted job must join one of the buckets, so that this "
-        "repository's share of the organisation's runner pool stays bounded:\n"
+        "every GitHub-hosted job must join one of the scoped buckets, so that "
+        "one run's share of the organisation's runner pool stays bounded:\n"
         + "\n".join(offenders)
     )
 
@@ -194,6 +206,62 @@ def test_a_superseded_run_is_cancelled_rather_than_queued() -> None:
         "a push that lands during an earlier run must cancel that run, not "
         "queue a second full matrix behind it:\n" + "\n".join(offenders)
     )
+
+
+def test_cpu_pytest_tiers_use_two_bounded_workers() -> None:
+    tier_steps = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "ci_tier.py pr-" in str(step.get("run", ""))
+    ]
+    assert len(tier_steps) == 2
+    for step in tier_steps:
+        env = step.get("env")
+        assert isinstance(env, dict)
+        assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
+
+
+def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
+    expensive_steps = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "ci_tier.py pr-runtime" in str(step.get("run", ""))
+        or "torchrun" in str(step.get("run", ""))
+    ]
+    assert len(expensive_steps) == 3
+    for step in expensive_steps:
+        assert step.get("if") == "matrix.python-version == '3.12'"
+
+
+def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
+    launched = [
+        step
+        for step in _steps("ci.yml", "cpu-core")
+        if "torchrun" in str(step.get("run", ""))
+    ]
+    assert launched
+    for step in launched:
+        assert "-n 2" not in str(step.get("run", ""))
+        env = step.get("env")
+        assert not isinstance(env, dict) or "PYTEST_ADDOPTS" not in env
+
+
+def test_coverage_uses_the_same_bounded_worker_policy() -> None:
+    commands = [
+        str(step.get("run", ""))
+        for step in _steps("ci.yml", "coverage")
+        if "python -m pytest" in str(step.get("run", ""))
+    ]
+    assert len(commands) == 1
+    command = commands[0]
+    for token in ("-n 2", "--dist=loadscope", "--durations=50"):
+        assert token in command
+
+
+def test_no_github_hosted_lane_uses_unbounded_auto_workers() -> None:
+    for workflow in BUCKETED_WORKFLOWS:
+        text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
+        assert "-n auto" not in text
 
 
 def test_the_container_matrix_does_not_land_all_at_once() -> None:

@@ -97,5 +97,7 @@ def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     assert 'qiskit-version: ["2.0.*", "2.5.*"]' in workflow
     assert "'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'" in workflow
     assert "python tools/check_qiskit_interop_contract.py" in workflow
-    assert "python -m pytest -m qiskit -q" in workflow
+    assert "tests/test_qiskit_interop.py" in workflow
+    assert "tests/test_qiskit_interop_conformance.py" in workflow
+    assert "-m qiskit -q" in workflow
     assert "external quantum frameworks are absent from core" in workflow

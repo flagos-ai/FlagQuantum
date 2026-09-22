@@ -8,6 +8,7 @@ from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.statevector.local import _rotation_region_angles
 from flagquantum.simulation.statevector.operations import (
+    _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
     _apply_local_gate_eager,
@@ -390,3 +391,85 @@ def test_cpu_diagonal_kernel_matches_layout_reference(wires):
 
     torch.testing.assert_close(actual, expected)
     assert actual.is_contiguous()
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wires", ((0, 2, 4), (4, 1, 3)))
+def test_cpu_cross_wire_diagonal_kernel_matches_sequential_application(dtype, wires):
+    generator = torch.Generator().manual_seed(1753 + sum(wires))
+    state = torch.randn((3, 32), dtype=dtype, generator=generator)
+    diagonals = tuple(
+        torch.randn((3, 2), dtype=dtype, generator=generator) for _ in wires
+    )
+
+    actual = _apply_cross_wire_diagonal_cpu(state, diagonals, wires, 5)
+    expected = state
+    for wire, diagonal in zip(wires, diagonals, strict=True):
+        expected = _apply_diagonal_matrix(
+            expected, torch.diag_embed(diagonal), (wire,), 5
+        )
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_cross_wire_diagonal_kernel_preserves_gradients():
+    generator = torch.Generator().manual_seed(1759)
+    state = torch.randn(
+        (2, 16), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    diagonals = tuple(
+        torch.randn(
+            (2, 2), dtype=torch.complex128, generator=generator, requires_grad=True
+        )
+        for _ in range(3)
+    )
+    wires = (3, 0, 2)
+
+    actual = _apply_cross_wire_diagonal_cpu(state, diagonals, wires, 4)
+    expected = state
+    for wire, diagonal in zip(wires, diagonals, strict=True):
+        expected = _apply_diagonal_matrix(
+            expected, torch.diag_embed(diagonal), (wire,), 4
+        )
+    actual_gradients = torch.autograd.grad(
+        torch.abs(actual).square().sum(), (state, *diagonals), retain_graph=True
+    )
+    expected_gradients = torch.autograd.grad(
+        torch.abs(expected).square().sum(), (state, *diagonals)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+def test_cpu_cross_wire_diagonal_circuit_preserves_parameter_autograd(monkeypatch):
+    generator = torch.Generator().manual_seed(1763)
+    inputs = torch.randn(
+        (2, 16), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    angles = torch.linspace(-0.4, 0.5, 4, dtype=torch.float64, requires_grad=True)
+    circuit = Circuit(4, dtype=torch.complex128, inputs=inputs)
+    for wire in range(4):
+        circuit.rz(wire, theta=angles[wire]).p(wire, theta=0.07 * (wire + 1))
+
+    monkeypatch.setenv("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        torch.abs(expected).square().sum(), (inputs, angles), retain_graph=True
+    )
+    monkeypatch.setenv("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(
+        torch.abs(actual).square().sum(), (inputs, angles)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 1

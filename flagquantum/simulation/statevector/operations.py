@@ -122,6 +122,11 @@ class _StatevectorFusedGateStep:
 
 
 @dataclass(frozen=True)
+class _StatevectorCrossWireDiagonalStep:
+    regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
+
+
+@dataclass(frozen=True)
 class _StatevectorCXSequenceStep:
     controls: tuple[int, ...]
     targets: tuple[int, ...]
@@ -131,6 +136,7 @@ _StatevectorProgramStep: TypeAlias = (
     _StatevectorGateStep
     | _StatevectorRXRZLoopStep
     | _StatevectorFusedGateStep
+    | _StatevectorCrossWireDiagonalStep
     | _StatevectorCXSequenceStep
 )
 
@@ -221,15 +227,30 @@ def _cpu_single_wire_elementwise_enabled() -> bool:
     return _environment_flag("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", default=False)
 
 
+def _cpu_cross_wire_diagonal_fusion_enabled() -> bool:
+    """Whether CPU single-wire diagonal regions may share one statevector pass."""
+
+    return _environment_flag("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", default=True)
+
+
 def _compile_statevector_program(
-    instructions: Sequence[Instruction], n_wires: int, *, enable_triton_loop: bool
+    instructions: Sequence[Instruction],
+    n_wires: int,
+    *,
+    enable_triton_loop: bool,
+    enable_cpu_cross_wire_diagonal: bool = False,
 ) -> tuple[_StatevectorProgramStep, ...]:
     program = _fuse_rx_rz_loops(
         instructions,
         n_wires,
         enable_triton_loop=enable_triton_loop,
     )
-    return tuple(_fuse_cx_sequences(_fuse_gate_sequences(program)))
+    fused_program = _fuse_gate_sequences(program)
+    if enable_cpu_cross_wire_diagonal:
+        return tuple(
+            _fuse_cx_sequences(_fuse_cross_wire_diagonal_regions(fused_program))
+        )
+    return tuple(_fuse_cx_sequences(fused_program))
 
 
 def _fuse_rx_rz_loops(
@@ -381,9 +402,77 @@ def _fuse_gate_sequences(
     return fused_program
 
 
+def _single_wire_diagonal_region(
+    step: _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep,
+) -> _StatevectorGateStep | _StatevectorFusedGateStep | None:
+    if isinstance(step, _StatevectorGateStep):
+        if len(step.instruction.wires) == 1 and _diagonal_region((step.instruction,)):
+            return step
+        return None
+    if (
+        isinstance(step, _StatevectorFusedGateStep)
+        and len(step.wires) == 1
+        and step.diagonal
+    ):
+        return step
+    return None
+
+
+def _fuse_cross_wire_diagonal_regions(
+    program: Sequence[
+        _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
+    ],
+) -> list[
+    _StatevectorGateStep
+    | _StatevectorRXRZLoopStep
+    | _StatevectorFusedGateStep
+    | _StatevectorCrossWireDiagonalStep
+]:
+    """Combine adjacent single-wire diagonal regions spanning multiple wires."""
+
+    optimized: list[
+        _StatevectorGateStep
+        | _StatevectorRXRZLoopStep
+        | _StatevectorFusedGateStep
+        | _StatevectorCrossWireDiagonalStep
+    ] = []
+    index = 0
+    while index < len(program):
+        first = _single_wire_diagonal_region(program[index])
+        if first is None:
+            optimized.append(program[index])
+            index += 1
+            continue
+        regions = [first]
+        cursor = index + 1
+        while cursor < len(program):
+            candidate = _single_wire_diagonal_region(program[cursor])
+            if candidate is None:
+                break
+            regions.append(candidate)
+            cursor += 1
+        region_wires = {
+            (
+                region.instruction.wires[0]
+                if isinstance(region, _StatevectorGateStep)
+                else region.wires[0]
+            )
+            for region in regions
+        }
+        if len(region_wires) >= 2:
+            optimized.append(_StatevectorCrossWireDiagonalStep(tuple(regions)))
+        else:
+            optimized.extend(regions)
+        index = cursor
+    return optimized
+
+
 def _fuse_cx_sequences(
     fused_program: Sequence[
-        _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
+        _StatevectorGateStep
+        | _StatevectorRXRZLoopStep
+        | _StatevectorFusedGateStep
+        | _StatevectorCrossWireDiagonalStep
     ],
 ) -> list[_StatevectorProgramStep]:
     optimized_program: list[_StatevectorProgramStep] = []
@@ -639,6 +728,42 @@ def _apply_diagonal_matrix(
         diagonal = diagonal.expand(bsz, -1)
     out = complex_mul(flat, diagonal.unsqueeze(-1))
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
+
+
+def _apply_cross_wire_diagonal_cpu(
+    state: torch.Tensor,
+    diagonals: Sequence[torch.Tensor],
+    wires: Sequence[int],
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply several one-wire diagonals with one pass over a CPU statevector."""
+
+    normalized_wires = tuple(int(wire) for wire in wires)
+    if len(diagonals) != len(normalized_wires):
+        raise ValueError("one diagonal is required for each wire")
+    if len(set(normalized_wires)) != len(normalized_wires):
+        raise ValueError("cross-wire diagonal fusion requires distinct wires")
+    if any(not 0 <= wire < int(n_wires) for wire in normalized_wires):
+        raise ValueError("wire is outside the statevector")
+
+    bsz = state.shape[0]
+    ordered = sorted(zip(normalized_wires, diagonals, strict=True))
+    combined = state.new_ones((bsz, 1))
+    for _, diagonal in ordered:
+        diagonal = diagonal.to(device=state.device, dtype=state.dtype)
+        if diagonal.ndim == 1:
+            diagonal = diagonal.unsqueeze(0).expand(bsz, -1)
+        elif diagonal.ndim == 2 and diagonal.shape[0] == 1 and bsz != 1:
+            diagonal = diagonal.expand(bsz, -1)
+        if diagonal.shape != (bsz, 2):
+            raise ValueError("single-wire diagonal must have shape [2] or [batch, 2]")
+        combined = (combined.unsqueeze(-1) * diagonal.unsqueeze(1)).reshape(bsz, -1)
+
+    factor_shape = [bsz] + [1] * int(n_wires)
+    for wire, _ in ordered:
+        factor_shape[wire + 1] = 2
+    tensor = state.reshape((bsz,) + (2,) * int(n_wires))
+    return (tensor * combined.reshape(factor_shape)).reshape(state.shape)
 
 
 def _apply_cx_permutation(
