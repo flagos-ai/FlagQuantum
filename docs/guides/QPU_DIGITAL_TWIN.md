@@ -765,6 +765,64 @@ even if it uses the same qubits and operations. See
 `examples/remote/quafu_twin_region_validation_suite.py` for the checkpointed
 `prepare`, single-task `submit`, and all-results `evaluate` commands.
 
+### Validate prospectively held-out regional circuits
+
+A reference suite does not establish agreement for circuits chosen after its
+results are known. Freeze a disjoint holdout group at the same time as the
+reference group, before creating any QPU task:
+
+```python
+study = fq.twin.prepare_region_holdout_study(
+    region_twin,
+    reference_circuits,
+    holdout_circuits,
+    physical_qubits=(20, 27, 34),
+    name="shenglian-region-holdout",
+    shots=1024,
+    repetitions=2,
+)
+
+print(study.reference_circuit_count)
+print(study.holdout_circuit_count)
+print(study.planned_task_count)
+print(study.planned_shots)
+
+fq.twin.dump_region_holdout_study(study, "region-holdout-study.json")
+study = fq.twin.load_region_holdout_study("region-holdout-study.json")
+```
+
+The study deliberately has no bulk submit method. Submit and checkpoint every
+experiment from `study.reference_suite` and `study.holdout_suite` explicitly.
+After all predeclared tasks are terminal, validate both groups together:
+
+```python
+evaluation = study.validate_results(
+    reference_submissions,
+    reference_results,
+    holdout_submissions,
+    holdout_results,
+    reference_circuits=reference_circuits,
+    holdout_circuits=holdout_circuits,
+    confidence_level=0.95,
+)
+
+print(evaluation.reference_twin_qpu_agreement)
+print(evaluation.holdout_twin_qpu_agreement)
+print(evaluation.holdout_twin_qpu_tv_increase)
+print(evaluation.holdout_ideal_qpu_agreement)
+print(evaluation.holdout_qpu_repeatability)
+print(evaluation.holdout_simultaneous_tv_error_bound)
+```
+
+`holdout_twin_qpu_tv_increase` is holdout mean Twin-QPU TV error minus
+reference mean Twin-QPU TV error; positive values mean the holdout circuits
+were harder for the Twin. Confidence is simultaneous across both groups,
+their circuits, and every repetition. The result supports only the exact
+predeclared circuits. It is not arbitrary-circuit accuracy, state fidelity, a
+training-generalization claim, or permission to route production workloads.
+The complete checkpointed workflow is
+`examples/remote/quafu_twin_region_holdout.py`.
+
 ### Track one regional suite across calibration snapshots
 
 After the same frozen circuit suite has been evaluated against distinct later
@@ -828,7 +886,10 @@ The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_candidate_suite.v1`,
 `flagquantum.twin_candidate_suite_evaluation.v1`,
 `flagquantum.twin_evidence_envelope.v1`, and
-`flagquantum.twin_validation_series.v1` are frozen compatibility contracts.
+`flagquantum.twin_validation_series.v1`,
+`flagquantum.twin_region_holdout_study.v1`, and
+`flagquantum.twin_region_holdout_evaluation.v1` are frozen compatibility
+contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a
 versioned replacement or the documented deprecation process.

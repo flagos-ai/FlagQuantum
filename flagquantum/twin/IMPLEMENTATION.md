@@ -23,6 +23,9 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinValidationReport`: comparison with one hardware observation;
 - `TwinValidationHistory`: fixed-circuit validation across chronological Twins;
 - `TwinValidationSeries`: conservative summary of distinct repeated results.
+- `TwinRegionHoldoutStudy`: a prospectively frozen reference/holdout circuit
+  split for one regional Twin;
+- `TwinRegionHoldoutEvaluation`: simultaneous evidence for both groups;
 - `TwinRegionValidationHistory`: one fixed regional circuit suite across
   chronological calibration snapshots.
 
@@ -214,6 +217,29 @@ and maximum circuit depth remain fixed while calibration snapshots advance in
 strict time order. Hardware reports cannot be reused across observations.
 This is an offline observational record, not arbitrary-circuit evidence, a
 trust window, a model update, or a scheduling policy.
+
+Prospectively separate reference and holdout regional circuits before any QPU
+work:
+
+```python
+study = fq.twin.prepare_region_holdout_study(
+    region_twin,
+    reference_circuits,
+    holdout_circuits,
+    physical_qubits=(20, 27, 34),
+    name="regional-holdout",
+    shots=1024,
+    repetitions=2,
+)
+fq.twin.dump_region_holdout_study(study, "region-holdout-study.json")
+study = fq.twin.load_region_holdout_study("region-holdout-study.json")
+```
+
+The two groups share one snapshot, mapping, shot count, and repetition count,
+while circuit identities and later QPU task identities must be disjoint. One
+Bonferroni allocation covers both groups, every circuit, and every repetition.
+The resulting holdout TV-error increase is an observation for the frozen
+circuits, not an arbitrary-circuit, training, trust, or routing claim.
 
 Align the two independently audited timelines by exact snapshot identity:
 
