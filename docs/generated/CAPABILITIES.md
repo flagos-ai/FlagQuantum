@@ -79,13 +79,14 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
-| Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Compose compatible local Twin cells into a connected regional prediction model | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Prospectively validate one exact regional circuit with repeated QPU tasks | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Validate a fixed regional circuit suite under one simultaneous confidence level | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
-| Track the same fixed regional suite across calibration snapshots | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_validation_suite.py) |
+| Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Compose compatible local Twin cells into a connected regional prediction model | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Prospectively validate one exact regional circuit with repeated QPU tasks | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Validate a fixed regional circuit suite under one simultaneous confidence level | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Compare predeclared reference and holdout regional circuits | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
+| Track the same fixed regional suite across calibration snapshots | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
 | Discover registered interoperability adapters | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Certify round-trip and fail-closed adapter behavior | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
@@ -616,7 +617,7 @@ Package trained circuits, export provider formats, and route them through deploy
 
 ### Evidence-qualified QPU digital twins
 
-Predict calibration-conditioned measurement distributions, prospectively validate fixed regional suites, and align comparable suite evidence over time.
+Predict calibration-conditioned measurement distributions, prospectively validate fixed and held-out regional suites, and align comparable evidence over time.
 
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.twin`
@@ -624,9 +625,9 @@ Predict calibration-conditioned measurement distributions, prospectively validat
 - **Hardware:** `cpu`, `quafu_development_evidence`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
-- **Start:** [quick example](../../examples/remote/quafu_twin_region_validation_suite.py)
+- **Start:** [quick example](../../examples/remote/quafu_twin_region_holdout.py)
 - **Documentation:** [guide](../../docs/guides/QPU_DIGITAL_TWIN.md)
-- **Known boundary:** Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, connected structural cell composition, fail-closed regional model composition, repeated exact-circuit validation, fixed regional suite validation with simultaneous confidence, and longitudinal fixed-suite regional histories are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region-model composition never infers cross-cell correlated noise or combines local bounds into region accuracy. Regional suite histories compare only the same ordered fixed suite, mapping, and full topology; they do not generalize to other circuits or define a trust window. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-wide statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability.
+- **Known boundary:** Frozen mapped models, validation series, calibration and validation histories, prospective candidate comparisons, topology- and depth-qualified evidence, connected structural cell composition, fail-closed regional model composition, repeated exact-circuit validation, fixed regional suite validation, predeclared reference/holdout comparison with simultaneous confidence, and longitudinal fixed-suite regional histories are available. Agreement is total-variation agreement for classical measurement distributions, not quantum-state fidelity. Region-model composition never infers cross-cell correlated noise or combines local bounds into region accuracy. Holdout evidence applies only to the prospectively declared circuits and does not establish arbitrary-circuit accuracy or training generalization. Regional suite histories compare only the same ordered fixed suite, mapping, and full topology; they do not define a trust window. Evidence remains specific to declared circuits, operations, mappings, physical couplers, depth, calibration snapshots, and confidence bounds. Automatic calibration collection, scheduling, arbitrary-circuit generalization, region-wide statistical inference, trust policy, model promotion, global publication, and release-certified provider support remain outside the framework capability.
 
 ### Interoperability adapter contract
 

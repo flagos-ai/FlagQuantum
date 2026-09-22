@@ -54,6 +54,13 @@ from .region import (
     TwinRegionCoverageStatus,
     compose_connected_region,
 )
+from .region_holdout import (
+    TwinRegionHoldoutEvaluation,
+    TwinRegionHoldoutStudy,
+    dump_region_holdout_study,
+    load_region_holdout_study,
+    prepare_region_holdout_study,
+)
 from .region_model import TwinRegionModel, compose_region_twin
 from .region_suite import (
     TwinRegionSuiteEvaluation,
@@ -98,6 +105,7 @@ __all__ = (
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_region_holdout_study",
     "dump_region_validation_suite",
     "dump_region_validation_history",
     "dump_submission",
@@ -109,6 +117,7 @@ __all__ = (
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_region_holdout_study",
     "load_region_validation_suite",
     "load_region_validation_history",
     "load_submission",
@@ -117,6 +126,7 @@ __all__ = (
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_region_holdout_study",
     "prepare_region_validation_suite",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
@@ -139,6 +149,8 @@ __all__ = (
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
+    "TwinRegionHoldoutEvaluation",
+    "TwinRegionHoldoutStudy",
     "TwinRegionModel",
     "TwinRegionSuiteEvaluation",
     "TwinRegionValidationHistory",

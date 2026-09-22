@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added prospective regional Twin holdout studies. Applications can freeze
+  disjoint reference and holdout circuit suites before hardware work, persist
+  that split, and validate both groups under one simultaneous confidence
+  statement. The result reports the holdout Twin-QPU TV-error increase without
+  claiming arbitrary-circuit accuracy; cross-group circuit or task reuse fails
+  closed. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added immutable regional Twin validation histories. Applications can align
   the same fixed regional circuit suite across chronological calibration
   snapshots and persist chart-ready Twin-QPU agreement, ideal-QPU agreement,
