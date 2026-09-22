@@ -17,25 +17,30 @@ def _digest(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-def _chip_info(captured_at: str, *, fidelity_shift: float = 0.0):
+def _chip_info(
+    captured_at: str,
+    *,
+    fidelity_shift: float = 0.0,
+    t1_shift: float = 0.0,
+):
     return {
         "calibration_time": captured_at,
         "basis_gates": ["h", "rx", "ry", "rz", "cz"],
         "qubits_info": {
             "Q20": {
-                "T1": 41.0,
+                "T1": 41.0 + t1_shift,
                 "T2": 61.0,
                 "fidelity": 0.997 + fidelity_shift,
                 "length": 6.4e-8,
             },
             "Q27": {
-                "T1": 40.0,
+                "T1": 40.0 + t1_shift,
                 "T2": 60.0,
                 "fidelity": 0.998 + fidelity_shift,
                 "length": 6.4e-8,
             },
             "Q34": {
-                "T1": 42.0,
+                "T1": 42.0 + t1_shift,
                 "T2": 62.0,
                 "fidelity": 0.996 + fidelity_shift,
                 "length": 6.4e-8,
@@ -85,8 +90,13 @@ def _region_twin(
     captured_at: str,
     *,
     fidelity_shift: float = 0.0,
+    t1_shift: float = 0.0,
 ) -> fq.twin.TwinRegionModel:
-    chip_info = _chip_info(captured_at, fidelity_shift=fidelity_shift)
+    chip_info = _chip_info(
+        captured_at,
+        fidelity_shift=fidelity_shift,
+        t1_shift=t1_shift,
+    )
     return fq.twin.compose_region_twin(
         (_cell(chip_info, (20, 27)), _cell(chip_info, (27, 34)))
     )
@@ -185,7 +195,11 @@ def _evaluation(
 
 def _observations():
     reference = _region_twin("2026-08-14 10:30:00")
-    current = _region_twin("2026-08-15 10:30:00", fidelity_shift=-0.001)
+    current = _region_twin(
+        "2026-08-15 10:30:00",
+        fidelity_shift=-0.001,
+        t1_shift=1.0,
+    )
     return (
         (
             reference,
@@ -356,3 +370,88 @@ def test_region_holdout_history_requires_chronological_observations() -> None:
 
     with pytest.raises(ValueError, match="strictly increasing"):
         fq.twin.build_region_holdout_history(tuple(reversed(observations)))
+
+
+def _evolution_histories():
+    observations = _observations()
+    return (
+        fq.twin.build_calibration_history(
+            tuple(region_twin.twin for region_twin, _ in observations)
+        ),
+        fq.twin.build_region_holdout_history(observations),
+    )
+
+
+def test_align_region_holdout_history_reports_drift_and_holdout_changes() -> None:
+    calibration, holdout = _evolution_histories()
+
+    evolution = fq.twin.align_region_holdout_history(calibration, holdout)
+
+    assert evolution.observation_count == 2
+    assert evolution.reference_twin_qpu_agreement_changes == pytest.approx((-0.01,))
+    assert evolution.holdout_twin_qpu_agreement_changes == pytest.approx((-0.02,))
+    assert evolution.holdout_tv_error_increase_changes == pytest.approx((0.01,))
+    assert evolution.holdout_simultaneous_tv_error_bound_changes == pytest.approx(
+        (0.02,)
+    )
+    assert evolution.interval_maximum_relative_t1_changes == pytest.approx((0.025,))
+    assert len(evolution.interval_maximum_relative_t2_changes) == 1
+    assert len(evolution.interval_maximum_readout_tv_distances) == 1
+    assert len(evolution.interval_maximum_relative_gate_duration_changes) == 1
+    assert evolution.latest_calibration_drift is calibration.latest_interval_drift
+    assert evolution.latest_holdout_twin_qpu_agreement_change == pytest.approx(-0.02)
+
+
+def test_region_holdout_evolution_is_json_ready_without_causal_claims() -> None:
+    evolution = fq.twin.align_region_holdout_history(*_evolution_histories())
+
+    payload = evolution.to_dict()
+
+    assert payload["observation_count"] == 2
+    assert payload["holdout_twin_qpu_agreement_changes"] == pytest.approx([-0.02])
+    assert "cause" not in payload
+    assert "decision" not in payload
+    json.dumps(payload, allow_nan=False)
+
+
+def test_align_region_holdout_history_rejects_wrong_types() -> None:
+    calibration, holdout = _evolution_histories()
+
+    with pytest.raises(TypeError, match="TwinCalibrationHistory"):
+        fq.twin.align_region_holdout_history(object(), holdout)
+    with pytest.raises(TypeError, match="TwinRegionHoldoutHistory"):
+        fq.twin.align_region_holdout_history(calibration, object())
+
+
+def test_align_region_holdout_history_rejects_snapshot_or_time_mismatch() -> None:
+    calibration, holdout = _evolution_histories()
+    other_calibration = fq.twin.build_calibration_history(
+        (
+            _region_twin(
+                "2026-08-14 10:30:00",
+                fidelity_shift=0.001,
+            ).twin,
+            _region_twin(
+                "2026-08-15 10:30:00",
+                t1_shift=1.0,
+            ).twin,
+        )
+    )
+
+    with pytest.raises(ValueError, match="same snapshot identities"):
+        fq.twin.align_region_holdout_history(other_calibration, holdout)
+
+    changed_calibration_times = replace(
+        calibration,
+        captured_at=(calibration.captured_at[0], "2026-08-15 11:30:00+08:00"),
+    )
+    with pytest.raises(ValueError, match="same captured_at"):
+        fq.twin.align_region_holdout_history(changed_calibration_times, holdout)
+
+
+def test_align_region_holdout_history_rejects_target_mismatch() -> None:
+    calibration, holdout = _evolution_histories()
+    changed_target = replace(holdout, backend_name="Baihua")
+
+    with pytest.raises(ValueError, match="same target and mapping"):
+        fq.twin.align_region_holdout_history(calibration, changed_target)
