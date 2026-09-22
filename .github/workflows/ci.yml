@@ -466,8 +466,20 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra]'
-      - name: Run maintained-runtime tests with coverage
+      - run: python -m pip install -e '.[dev,jax,viz,cirq,pennylane,cotengra]'
+      - name: Run maintained-runtime tests with coverage on pull requests
+        if: github.event_name == 'pull_request'
+        # The two full P5 trajectory conformance tests already run in the
+        # Python 3.12 cpu-core integration tier. Avoid repeating their 3+
+        # instrumented minutes here; pushes to main still measure them below.
+        run: >-
+          python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
+          -n 2 --dist=loadscope --durations=50
+          --cov=flagquantum
+          --cov-report=term-missing
+          --cov-report=xml
+      - name: Run complete maintained-runtime tests with coverage after merge
+        if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
           -n 2 --dist=loadscope --durations=50

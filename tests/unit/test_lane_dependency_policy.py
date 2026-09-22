@@ -821,6 +821,7 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
         {"dev", "jax", "viz", "braket", "cirq", "pennylane", "cotengra"}
     )
     assert coverage.expressions == (
+        "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton",
         "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton",
     )
     # A conjunction stays a conjunction: `and not qiskit` must not read as "any

@@ -9,6 +9,7 @@ from flagquantum.runtime.executors.statevector.split_real_imag_autograd_conforma
 pytestmark = pytest.mark.integration
 
 
+@pytest.mark.slow
 def test_split_real_imag_p5_autograd_cpu_conformance() -> None:
     report = run_split_real_imag_autograd_conformance("cpu")
     report.require_accepted()
