@@ -9,7 +9,7 @@ import torch
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
-from flagquantum.core.parameters import Parameter
+from flagquantum.core.parameters import Parameter, ParameterExpression
 from flagquantum.ecosystem import get_adapter
 from flagquantum.ecosystem.cirq import (
     CirqConversionError,
@@ -20,6 +20,7 @@ from flagquantum.ecosystem.cirq import (
 
 cirq = pytest.importorskip("cirq")
 np = import_module("numpy")
+sympy = import_module("sympy")
 pytestmark = [pytest.mark.integration, pytest.mark.cirq]
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -109,8 +110,6 @@ def test_parallel_moment_and_noncanonical_qubits_require_explicit_loss() -> None
 
 
 def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
-    import sympy
-
     q0, q1 = cirq.LineQubit.range(2)
     cases = (
         (cirq.Circuit(cirq.measure(q0)), "measurement_not_represented"),
@@ -119,10 +118,6 @@ def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
             "global_phase_not_represented",
         ),
         (cirq.Circuit(cirq.ISWAP(q0, q1)), "unsupported_operation"),
-        (
-            cirq.Circuit(cirq.rx(sympy.Symbol("theta"))(q0)),
-            "symbolic_parameter_not_supported",
-        ),
         (cirq.Circuit(cirq.X(q0).with_tags("tag")), "unsupported_operation"),
         (
             cirq.Circuit(cirq.X(q1).with_classical_controls("m")),
@@ -135,12 +130,7 @@ def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
         assert issue_code in {issue.code for issue in caught.value.report.issues}
 
 
-def test_symbolic_parameters_idle_extent_and_execution_requests_fail_closed() -> None:
-    symbolic = CircuitIR(
-        1, (Instruction("rx", (0,), {"theta": Parameter("theta")}),), dtype="complex128"
-    )
-    with pytest.raises(CirqConversionError, match="symbolic_parameter_not_supported"):
-        to_cirq(symbolic)
+def test_idle_extent_and_execution_requests_fail_closed() -> None:
     idle = CircuitIR(2, (Instruction("x", (0,)),), dtype="complex128")
     with pytest.raises(CirqConversionError, match="idle_wire_extent_not_represented"):
         to_cirq(idle)
@@ -153,3 +143,122 @@ def test_symbolic_parameters_idle_extent_and_execution_requests_fail_closed() ->
     )
     with pytest.raises(CirqConversionError, match="measurement_not_represented"):
         to_cirq(measured)
+
+
+def test_symbolic_rotation_parameters_round_trip_and_bind_equivalently() -> None:
+    theta, phi = sympy.symbols("theta phi")
+    q0 = cirq.LineQubit(0)
+    source = cirq.Circuit(
+        cirq.rx(theta + 2 * phi)(q0),
+        cirq.ry(2 * theta - phi)(q0),
+        cirq.rz(-theta)(q0),
+    )
+
+    imported = from_cirq(source)
+    owned = Circuit.from_ir(imported, dtype=torch.complex128)
+    assert owned.parameter_names == ("phi", "theta")
+
+    def contains_sympy(value) -> bool:
+        if isinstance(value, sympy.Basic):
+            return True
+        if isinstance(value, ParameterExpression):
+            return any(contains_sympy(arg) for arg in value.args)
+        return False
+
+    assert not any(
+        contains_sympy(value)
+        for instruction in imported.instructions
+        for value in instruction.params.values()
+    )
+
+    exported = to_cirq(imported)
+    assert {str(symbol) for symbol in cirq.parameter_symbols(exported)} == {
+        "phi",
+        "theta",
+    }
+    for assignment in (
+        {"theta": 0.23, "phi": -0.41},
+        {"theta": -1.17, "phi": 0.09},
+    ):
+        native = cirq.resolve_parameters(source, assignment)
+        restored = cirq.resolve_parameters(exported, assignment)
+        expected = owned.bind_parameters(assignment).state()[0]
+        torch.testing.assert_close(
+            _cirq_state(native, 1), expected, atol=1e-10, rtol=1e-10
+        )
+        torch.testing.assert_close(
+            _cirq_state(restored, 1), expected, atol=1e-10, rtol=1e-10
+        )
+
+    owned_subtraction = CircuitIR(
+        1,
+        (
+            Instruction(
+                "rx",
+                (0,),
+                {"theta": Parameter("theta") - Parameter("phi")},
+            ),
+        ),
+        dtype="complex128",
+    )
+    exported_subtraction = to_cirq(owned_subtraction)
+    resolved_subtraction = cirq.resolve_parameters(
+        exported_subtraction, {"theta": 0.7, "phi": 0.2}
+    )
+    torch.testing.assert_close(
+        _cirq_state(resolved_subtraction, 1),
+        Circuit.from_ir(owned_subtraction, dtype=torch.complex128)
+        .bind_parameters({"theta": 0.7, "phi": 0.2})
+        .state()[0],
+        atol=1e-10,
+        rtol=1e-10,
+    )
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        lambda symbol: sympy.sin(symbol),
+        lambda symbol: symbol**2,
+        lambda symbol: 1 / symbol,
+        lambda symbol: symbol + sympy.I,
+    ],
+)
+def test_unsupported_cirq_parameter_expressions_fail_closed(expression) -> None:
+    theta = sympy.Symbol("theta")
+    circuit = cirq.Circuit(cirq.rx(expression(theta))(cirq.LineQubit(0)))
+    with pytest.raises(CirqConversionError) as caught:
+        from_cirq(circuit)
+    assert {issue.code for issue in caught.value.report.issues} == {
+        "unsupported_parameter_expression"
+    }
+
+
+def test_symbolic_nonrotation_and_malformed_owned_expression_fail_closed() -> None:
+    theta = sympy.Symbol("theta")
+    with pytest.raises(CirqConversionError, match="unsupported_parameter_expression"):
+        from_cirq(cirq.Circuit((cirq.X**theta)(cirq.LineQubit(0))))
+
+    malformed = CircuitIR(
+        1,
+        (
+            Instruction(
+                "rx",
+                (0,),
+                {"theta": ParameterExpression("power", (Parameter("theta"), 2.0))},
+            ),
+        ),
+        dtype="complex128",
+    )
+    with pytest.raises(CirqConversionError, match="unsupported_parameter_expression"):
+        to_cirq(malformed)
+
+
+def test_distinct_cirq_symbols_cannot_collapse_to_one_owned_name() -> None:
+    plain = sympy.Symbol("theta")
+    positive = sympy.Symbol("theta", positive=True)
+    circuit = cirq.Circuit(cirq.rx(plain + positive)(cirq.LineQubit(0)))
+    with pytest.raises(CirqConversionError) as caught:
+        from_cirq(circuit)
+    assert caught.value.report.issues[0].code == "unsupported_parameter_expression"
+    assert "symbol" in caught.value.report.issues[0].message

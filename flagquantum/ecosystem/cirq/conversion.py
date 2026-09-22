@@ -115,6 +115,94 @@ def _close(value: Any, expected: float) -> bool:
         return False
 
 
+def _flagquantum_parameter_value(
+    cirq: Any, value: Any, *, scale_by_pi: bool = False
+) -> Any:
+    """Translate Cirq's public symbolic form into owned arithmetic nodes."""
+
+    sympy = import_module("sympy")
+    symbolic = sympy.sympify(value)
+    if scale_by_pi:
+        symbolic = symbolic * sympy.pi
+    cirq_symbols = tuple(cirq.parameter_symbols(symbolic))
+    parameters_by_name = {
+        str(symbol): Parameter(str(symbol)) for symbol in cirq_symbols
+    }
+    if len(parameters_by_name) != len(cirq_symbols):
+        raise ValueError("distinct Cirq symbols share the same name")
+    parameters_by_symbol = {
+        symbol: parameters_by_name[str(symbol)] for symbol in cirq_symbols
+    }
+
+    def convert(node: Any) -> Any:
+        if isinstance(node, sympy.Symbol):
+            try:
+                return parameters_by_symbol[node]
+            except KeyError as exc:
+                raise ValueError(f"unknown symbol {node!s}") from exc
+        if bool(getattr(node, "is_Number", False)):
+            converted = complex(node)
+            if converted.imag != 0 or not math.isfinite(converted.real):
+                raise ValueError(f"constant {node!s} is not a finite real scalar")
+            return float(converted.real)
+        if isinstance(node, sympy.Add):
+            args = tuple(convert(arg) for arg in node.args)
+            if not args:
+                return 0.0
+            result = args[0]
+            for arg in args[1:]:
+                result = result + arg
+            return result
+        if isinstance(node, sympy.Mul):
+            args = tuple(convert(arg) for arg in node.args)
+            if not args:
+                return 1.0
+            result = args[0]
+            for arg in args[1:]:
+                result = result * arg
+            return result
+        function_name = getattr(getattr(node, "func", None), "__name__", None)
+        raise ValueError(
+            f"operation {function_name or type(node).__name__!r} is unsupported"
+        )
+
+    return convert(symbolic)
+
+
+def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
+    """Translate owned parameter nodes into a SymPy value accepted by Cirq."""
+
+    sympy = import_module("sympy")
+    if isinstance(value, Parameter):
+        return cache.setdefault(value.name, sympy.Symbol(value.name))
+    if isinstance(value, ParameterExpression):
+        expected_operands = 1 if value.op == "neg" else 2
+        if value.op not in {"add", "sub", "mul", "neg"}:
+            raise ValueError(
+                f"unsupported FlagQuantum parameter expression {value.op!r}"
+            )
+        if len(value.args) != expected_operands:
+            raise ValueError(
+                f"FlagQuantum parameter expression {value.op!r} requires "
+                f"{expected_operands} operands; got {len(value.args)}"
+            )
+        args = tuple(_cirq_parameter_value(arg, cache=cache) for arg in value.args)
+        if value.op == "add":
+            return args[0] + args[1]
+        if value.op == "sub":
+            return args[0] + (-args[1])
+        if value.op == "mul":
+            return args[0] * args[1]
+        return -args[0]
+    if isinstance(value, Number) or hasattr(value, "item"):
+        raw = value.item() if hasattr(value, "item") else value
+        converted = complex(raw)
+        if converted.imag != 0 or not math.isfinite(converted.real):
+            raise ValueError(f"constant {value!r} is not a finite real scalar")
+        return float(converted.real)
+    raise TypeError(f"unsupported FlagQuantum parameter value {value!r}")
+
+
 def _qubit_map(
     cirq: Any, circuit: Any, issues: list[CirqConversionIssue]
 ) -> dict[Any, int]:
@@ -146,19 +234,43 @@ def _pow_gate(
     issues: list[CirqConversionIssue],
     index: int,
     name: str,
-) -> tuple[str, dict[str, float]] | None:
-    if cirq.is_parameterized(gate):
+) -> tuple[str, dict[str, Any]] | None:
+    shift = _real_scalar(gate.global_shift, issues, index, name)
+    if shift is None:
+        return None
+    if cirq.is_parameterized(gate.exponent):
+        rotations = (
+            (cirq.XPowGate, "rx"),
+            (cirq.YPowGate, "ry"),
+            (cirq.ZPowGate, "rz"),
+        )
+        for gate_type, opcode in rotations:
+            if isinstance(gate, gate_type) and _close(shift, -0.5):
+                try:
+                    theta = _flagquantum_parameter_value(
+                        cirq, gate.exponent, scale_by_pi=True
+                    )
+                except (TypeError, ValueError) as exc:
+                    _issue(
+                        issues,
+                        "unsupported_parameter_expression",
+                        "Cirq parameter expression is outside the FlagQuantum v1 "
+                        f"arithmetic subset: {exc}",
+                        index=index,
+                        name=name,
+                    )
+                    return None
+                return opcode, {"theta": theta}
         _issue(
             issues,
-            "symbolic_parameter_not_supported",
-            "Bind Cirq symbolic parameters before conversion.",
+            "unsupported_parameter_expression",
+            "Only symbolic rx, ry, and rz rotation angles preserve Cirq semantics.",
             index=index,
             name=name,
         )
         return None
     exponent = _real_scalar(gate.exponent, issues, index, name)
-    shift = _real_scalar(gate.global_shift, issues, index, name)
-    if exponent is None or shift is None:
+    if exponent is None:
         return None
     if isinstance(gate, cirq.XPowGate):
         if _close(shift, 0.0) and _close(exponent, 1.0):
@@ -195,7 +307,7 @@ def _lower_gate(
     gate: Any,
     issues: list[CirqConversionIssue],
     index: int,
-) -> tuple[str, dict[str, float]] | None:
+) -> tuple[str, dict[str, Any]] | None:
     name = type(gate).__name__
     if isinstance(gate, cirq.MeasurementGate):
         _issue(
@@ -232,9 +344,12 @@ def _lower_gate(
             cirq.CCXPowGate,
         ),
     ):
+        issue_count = len(issues)
         lowered = _pow_gate(cirq, gate, issues, index, name)
         if lowered is not None:
             return lowered
+        if len(issues) != issue_count:
+            return None
     _issue(
         issues,
         "unsupported_operation",
@@ -317,7 +432,7 @@ def from_cirq(circuit: Any, *, allow_lossy: bool = False) -> CircuitIR:
     return import_cirq(circuit, allow_lossy=allow_lossy).ir
 
 
-def _export_gate(cirq: Any, instruction: Instruction, params: list[float]) -> Any:
+def _export_gate(cirq: Any, instruction: Instruction, params: list[Any]) -> Any:
     gates = {
         "i": cirq.I,
         "x": cirq.X,
@@ -362,6 +477,7 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
         )
     qubits = cirq.LineQubit.range(ir.n_wires)
     operations: list[Any] = []
+    parameter_cache: dict[str, Any] = {}
     for index, instruction in enumerate(ir.instructions):
         if (
             instruction.name not in _CIRQ_SYMBOL_TO_FLAGQUANTUM.values()
@@ -377,17 +493,30 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
             continue
         schema = get_operator_schema(instruction.name)
         assert schema is not None
-        params: list[float] = []
+        params: list[Any] = []
         blocked = False
         for parameter in schema.parameters:
             value = instruction.params.get(parameter)
-            if isinstance(value, (Parameter, ParameterExpression)) or not (
-                isinstance(value, Number) or hasattr(value, "item")
-            ):
+            if isinstance(value, (Parameter, ParameterExpression)):
+                try:
+                    params.append(_cirq_parameter_value(value, cache=parameter_cache))
+                except (TypeError, ValueError) as exc:
+                    _issue(
+                        issues,
+                        "unsupported_parameter_expression",
+                        "FlagQuantum parameter expression is outside the Cirq v1 "
+                        f"arithmetic subset: {exc}",
+                        index=index,
+                        name=instruction.name,
+                    )
+                    blocked = True
+                    break
+                continue
+            if not (isinstance(value, Number) or hasattr(value, "item")):
                 _issue(
                     issues,
-                    "symbolic_parameter_not_supported",
-                    "Bind FlagQuantum symbolic parameters before Cirq export.",
+                    "unsupported_parameter_value",
+                    f"parameter value {value!r} is not a scalar",
                     index=index,
                     name=instruction.name,
                 )

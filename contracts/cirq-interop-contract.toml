@@ -18,13 +18,13 @@ operation_order = "stable_moment_then_operation_order"
 moment_packing = "flattened_and_not_preserved"
 statevector_order = "explicit_line_qubit_order_with_wire_zero_most_significant"
 dtype = "complex128"
-parameters = "bound_real_scalars_only"
+parameters = "bound_real_scalars_or_v1_symbolic_arithmetic"
 global_phase = "not_represented"
 measurements = "execution_plan_not_in_ir"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
 [symbolic_parameter_contract]
-implementation_status = "contract_only"
+implementation_status = "implemented"
 public_api_change = false
 source_protocol = "cirq_parameter_protocol_with_sympy_expressions"
 symbol_discovery = "cirq.parameter_symbols"
@@ -36,14 +36,14 @@ unsupported_nodes = ["complex_constant", "function", "power", "division_by_unbou
 canonicalization = "deterministic_left_fold_after_sympy_canonicalization"
 import_failure = "reject_before_instruction_enters_ir"
 export_failure = "reject_before_cirq_operation_creation"
-planned_issue_code = "unsupported_parameter_expression"
+issue_code = "unsupported_parameter_expression"
 binding_equivalence = "cirq_resolve_parameters_matches_flagquantum_bind_parameters"
 external_object_retention = false
 
 [unsupported]
 flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
-cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "measurements", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags", "symbolic_parameters"]
-issue_codes = ["global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "symbolic_parameter_not_supported", "unsupported_operation", "unsupported_parameter_value"]
+cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "measurements", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags"]
+issue_codes = ["global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "unsupported_operation", "unsupported_parameter_expression", "unsupported_parameter_value"]
 
 [verification]
 policy = "tests/unit/test_cirq_interop_contract.py"
