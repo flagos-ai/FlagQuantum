@@ -36,13 +36,13 @@ ROOT = Path(__file__).resolve().parents[2]
 #   jax-optional          jax
 #   triton-optional       triton
 #   qiskit-optional       qiskit
+#   braket-optional       braket
 #   pennylane-optional    pennylane
 #   cpu-core (launched)   distributed_launch (under `torchrun`, not a bare pytest)
 #   multinode-scheduled   distributed_multinode
 #
-# `braket` has no lane of its own; those tests are reachable because they also
-# carry `unit`. The accelerator lane selects `distributed_accel and gpu`, so
-# that pair is handled separately below.
+# The accelerator lane selects `distributed_accel and gpu`, so that pair is
+# handled separately below.
 LANE_SELECTORS = frozenset(
     {
         "smoke",

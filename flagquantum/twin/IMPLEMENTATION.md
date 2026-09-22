@@ -28,6 +28,12 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinRegionHoldoutEvaluation`: simultaneous evidence for both groups;
 - `TwinRegionValidationHistory`: one fixed regional circuit suite across
   chronological calibration snapshots.
+- `TwinRegionHoldoutHistory`: one fixed prospective reference/holdout design
+  across chronological calibration snapshots, preserving separate holdout
+  agreement and uncertainty trends without updating or promoting a model.
+- `TwinRegionHoldoutEvolution`: exact snapshot alignment between regional
+  holdout changes and authoritative calibration-drift intervals, without a
+  causal or promotion claim.
 
 ## Ten-minute path
 

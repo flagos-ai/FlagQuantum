@@ -20,10 +20,10 @@ from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
-    _apply_cross_wire_diagonal_cpu,
     _apply_cx_permutation,
     _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
+    _apply_disjoint_diagonal_regions_cpu,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_rx_rz_loop,
@@ -517,14 +517,14 @@ def _apply_cross_wire_diagonal_step(
     state: torch.Tensor,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    """Build small per-wire diagonals, then broadcast their product once."""
+    """Build wire-disjoint diagonals, then broadcast their product once."""
 
-    wires: list[int] = []
+    wire_groups: list[tuple[int, ...]] = []
     diagonals: list[torch.Tensor] = []
     for region in step.regions:
         if isinstance(region, _StatevectorGateStep):
             instruction = region.instruction
-            wire = instruction.wires[0]
+            wires = tuple(instruction.wires)
             matrix = _gate_matrix(
                 instruction,
                 bsz=state.shape[0],
@@ -533,7 +533,7 @@ def _apply_cross_wire_diagonal_step(
                 parameter_bindings=parameter_bindings,
             )
         else:
-            wire = region.wires[0]
+            wires = region.wires
             constant_matrix = _fused_constant_matrix(
                 circuit, region, state, parameter_bindings
             )
@@ -547,9 +547,11 @@ def _apply_cross_wire_diagonal_step(
                 )
             else:
                 matrix = constant_matrix
-        wires.append(wire)
+        wire_groups.append(wires)
         diagonals.append(torch.diagonal(matrix, dim1=-2, dim2=-1))
-    return _apply_cross_wire_diagonal_cpu(state, diagonals, wires, circuit.n_wires)
+    return _apply_disjoint_diagonal_regions_cpu(
+        state, diagonals, wire_groups, circuit.n_wires
+    )
 
 
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:

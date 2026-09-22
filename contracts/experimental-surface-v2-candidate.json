@@ -38,7 +38,7 @@
       "run_dynamic"
     ],
     "execution": [],
-    "interop": ["cirq", "cudaq", "pennylane", "qiskit"],
+    "interop": ["braket", "cirq", "cudaq", "pennylane", "qiskit"],
     "mps": [],
     "numerics": [
       "execute_split_real_imag_expectation",

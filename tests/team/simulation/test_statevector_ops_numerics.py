@@ -11,6 +11,7 @@ from flagquantum.simulation.statevector.operations import (
     _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
+    _apply_disjoint_diagonal_regions_cpu,
     _apply_local_gate_eager,
     _apply_matrix,
     _apply_matrix_layout,
@@ -43,6 +44,51 @@ def test_single_qubit_fusion_preserves_wire_order_and_reordering_evidence() -> N
         tuple(instruction.name for instruction in step.instructions) for step in fused
     ) == (("h", "s"), ("x", "t"))
     assert all(step.dependency_reordered for step in fused)
+
+
+def test_two_wire_diagonal_regions_are_partitioned_into_disjoint_matchings() -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorGateStep(
+            Instruction("cz", (left, left + 1)),
+            layout,
+        )
+        for left in range(5)
+    )
+
+    optimized = statevector_ops._fuse_cross_wire_diagonal_regions(regions)
+
+    assert len(optimized) == 2
+    assert all(
+        isinstance(step, statevector_ops._StatevectorCrossWireDiagonalStep)
+        for step in optimized
+    )
+    assert tuple(
+        tuple(statevector_ops._region_wires(region) for region in step.regions)
+        for step in optimized
+        if isinstance(step, statevector_ops._StatevectorCrossWireDiagonalStep)
+    ) == (((0, 1), (2, 3), (4, 5)), ((1, 2), (3, 4)))
+
+
+def test_non_diagonal_region_ends_a_diagonal_matching_segment() -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorGateStep(Instruction(name, wires), layout)
+        for name, wires in (
+            ("cz", (0, 1)),
+            ("cz", (2, 3)),
+            ("cx", (0, 1)),
+            ("cz", (0, 1)),
+            ("cz", (2, 3)),
+        )
+    )
+
+    optimized = statevector_ops._fuse_cross_wire_diagonal_regions(regions)
+
+    assert len(optimized) == 3
+    assert isinstance(optimized[0], statevector_ops._StatevectorCrossWireDiagonalStep)
+    assert isinstance(optimized[1], statevector_ops._StatevectorGateStep)
+    assert isinstance(optimized[2], statevector_ops._StatevectorCrossWireDiagonalStep)
 
 
 def test_rotation_region_angles_preserve_values_and_gradients() -> None:
@@ -446,6 +492,42 @@ def test_cpu_cross_wire_diagonal_kernel_preserves_gradients():
         torch.testing.assert_close(actual_gradient, expected_gradient)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_disjoint_diagonal_regions_match_sequential_application(dtype):
+    generator = torch.Generator().manual_seed(1761)
+    state = torch.randn((2, 32), dtype=dtype, generator=generator)
+    wire_groups = ((3, 1), (0,), (4, 2))
+    diagonals = tuple(
+        torch.randn((2, 2 ** len(wires)), dtype=dtype, generator=generator)
+        for wires in wire_groups
+    )
+
+    actual = _apply_disjoint_diagonal_regions_cpu(
+        state, diagonals, wire_groups, n_wires=5
+    )
+    expected = state
+    for wires, diagonal in zip(wire_groups, diagonals, strict=True):
+        expected = _apply_diagonal_matrix(
+            expected, torch.diag_embed(diagonal), wires, n_wires=5
+        )
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_disjoint_diagonal_regions_reject_overlapping_wires():
+    state = torch.ones((1, 8), dtype=torch.complex64)
+    diagonals = (
+        torch.ones((1, 4), dtype=torch.complex64),
+        torch.ones((1, 4), dtype=torch.complex64),
+    )
+
+    with pytest.raises(ValueError, match="wire-disjoint"):
+        _apply_disjoint_diagonal_regions_cpu(
+            state, diagonals, ((0, 1), (1, 2)), n_wires=3
+        )
+
+
 def test_cpu_cross_wire_diagonal_circuit_preserves_parameter_autograd(monkeypatch):
     generator = torch.Generator().manual_seed(1763)
     inputs = torch.randn(
@@ -473,3 +555,33 @@ def test_cpu_cross_wire_diagonal_circuit_preserves_parameter_autograd(monkeypatc
     ):
         torch.testing.assert_close(actual_gradient, expected_gradient)
     assert circuit._last_statevector_runtime["statevector_apply_count"] == 1
+
+
+def test_cpu_two_wire_diagonal_matchings_preserve_parameter_autograd(monkeypatch):
+    generator = torch.Generator().manual_seed(1767)
+    inputs = torch.randn(
+        (2, 64), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    angles = torch.linspace(-0.4, 0.5, 5, dtype=torch.float64, requires_grad=True)
+    circuit = Circuit(6, dtype=torch.complex128, inputs=inputs)
+    for left in range(5):
+        if left % 2:
+            circuit.cphase(left, left + 1, theta=angles[left])
+        else:
+            circuit.rzz(left, left + 1, theta=angles[left])
+
+    monkeypatch.setenv("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(), (inputs, angles), retain_graph=True
+    )
+    monkeypatch.setenv("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 2
