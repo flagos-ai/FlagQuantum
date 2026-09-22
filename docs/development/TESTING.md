@@ -402,9 +402,12 @@ The checked-in `ci.yml` defines thirteen jobs:
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, Braket/Cirq/CUDA-Q/Qiskit/PennyLane interoperability
   contracts, and repository-hygiene checks;
-- `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
-  only, including proof that importing and differentiating a native circuit
-  does not import JAX;
+- `cpu-core`: Python 3.10-3.12 smoke/unit coverage with core dependencies only;
+  Python 3.12 additionally runs the repository-wide integration tier and the
+  launched CPU-distributed proofs. This keeps interpreter compatibility broad
+  without repeating the same runtime proof three times. Every interpreter
+  still proves that importing and differentiating a native circuit does not
+  import JAX;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
@@ -451,12 +454,14 @@ developer still gets those checks before pushing.
 
 The CPU core and coverage pytest phases use exactly two xdist workers with
 load-scope scheduling. The fixed count shortens the critical path without
-letting a runner-image CPU change silently widen process fan-out. Only the
-ordinary smoke, unit, integration, and coverage phases are parallelized:
-`torchrun` and `distributed_launch` remain explicit serial workflow steps so
-xdist never creates a second process topology inside a launched rank. Both
-parallel phases report their fifty slowest tests to keep the next optimization
-grounded in measured durations.
+letting a runner-image CPU change silently widen process fan-out. Smoke/unit
+runs on Python 3.10-3.12; the integration tier runs once on Python 3.12 because
+it proves repository runtime behavior rather than interpreter compatibility.
+Only the ordinary smoke, unit, integration, and coverage phases are
+parallelized: `torchrun` and `distributed_launch` remain explicit serial
+workflow steps on Python 3.12 so xdist never creates a second process topology
+inside a launched rank. Both parallel phases report their fifty slowest tests
+to keep the next optimization grounded in measured durations.
 
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.

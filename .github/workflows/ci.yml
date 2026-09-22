@@ -156,6 +156,11 @@ jobs:
           PYTEST_ADDOPTS: -n 2 --dist=loadscope --durations=50
         run: python tools/ci_tier.py pr-default
       - name: Run integration tests with bounded workers
+        # The smoke/unit tier exercises every supported interpreter. The
+        # integration tier proves runtime behavior rather than interpreter
+        # compatibility, so run that repository-wide suite once on the newest
+        # supported Python instead of repeating it three times.
+        if: matrix.python-version == '3.12'
         env:
           PYTEST_ADDOPTS: -n 2 --dist=loadscope --durations=50
         run: python tools/ci_tier.py pr-runtime
@@ -169,8 +174,10 @@ jobs:
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Prove native distributed runtime does not require JAX
+        if: matrix.python-version == '3.12'
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
+        if: matrix.python-version == '3.12'
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
 
   jax-optional:
