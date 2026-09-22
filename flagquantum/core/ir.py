@@ -45,6 +45,56 @@ def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     return normalized
 
 
+def _normalize_dtype(value: Any) -> str:
+    """Return an IR dtype name, refusing anything that does not name one.
+
+    The amplitudes a circuit stores are complex, so the dtype an IR declares is one of
+    ``complex64`` and ``complex128`` -- the two ``Circuit.to_ir()`` can write, because a
+    ``Circuit`` itself refuses a real dtype at construction.
+
+    Nothing owned this field.  ``CircuitIR.__post_init__`` stripped a ``torch.`` prefix
+    and refused an empty string, and the supported set was enforced inline in four
+    readers that did not agree: target legalization and a hybrid session each wanted the
+    two complex names, while :func:`~flagquantum.runtime.backend_registry.resolve_dtype`
+    also accepted ``float32`` and ``float64``, and six further sites --
+    ``Circuit.from_ir`` and five executors -- resolved the name with
+    ``getattr(torch, ir.dtype)``, which accepts any attribute ``torch`` happens to
+    have.  So ``dtype="float32"`` was legal for a run, illegal for target
+    legalization, illegal for a hybrid session, and refused by ``from_ir`` with a
+    message about ``complex_dtype`` instead -- and a run silently used ``complex64``
+    while the IR went on saying ``float32``.  ``dtype="banana"`` reached
+    ``Unsupported dtype 'banana'.`` one layer down, or an ``AttributeError`` about
+    ``torch`` from the other reader.
+
+    ``str(self.dtype)`` also laundered the type: ``3`` became the string ``'3'`` and
+    ``None`` became ``'None'``, each a dtype name nothing recognizes, stored as though
+    the caller had named one.  A wrong Python type is a ``TypeError``, which is what the
+    errors-module boundary reserves for it and what :func:`_normalize_count` in this
+    same file already raises for one; a string that is merely not a supported name is an
+    :class:`IRValidationError`.
+
+    ``resolve_dtype`` is deliberately left accepting ``float32`` and ``float64``.  It
+    answers a different question -- which pair of torch dtypes a *requested* dtype
+    resolves to -- and its caller merges two fields with
+    ``resolve_dtype(options.get("dtype") or ir.dtype)``, where the request may
+    legitimately be a real dtype.  Only the IR side of that merge is narrowed here.
+    """
+
+    if not isinstance(value, str):
+        raise TypeError(f"IR dtype must be a str, got {type(value).__name__}")
+    # Kept for a string that already names a legal dtype; it is an affordance, not the
+    # whole of what this function does with the value.
+    dtype = value.removeprefix("torch.")
+    if not dtype:
+        raise IRValidationError("IR dtype cannot be empty")
+    if dtype not in _IR_DTYPES:
+        expected = ", ".join(repr(name) for name in _IR_DTYPES)
+        raise IRValidationError(
+            f"IR dtype {dtype!r} is not supported; expected {expected}"
+        )
+    return dtype
+
+
 def _normalize_count(value: Any, *, what: str) -> int:
     """Return a count as an integer, refusing anything that does not denote one.
 
@@ -109,6 +159,11 @@ def _normalize_shots(shots: Any) -> int | None:
 # bool is recognised by name instead.
 _NON_REAL_DTYPE_KINDS = frozenset("cUSOMmV")
 _BOOL_DTYPE_NAMES = frozenset({"bool", "torch.bool"})
+
+# An IR describes amplitudes, so the dtype it names is complex.  A tuple rather than a
+# set, because the message lists the names and a set would list them in an order that
+# changes between runs.
+_IR_DTYPES = ("complex64", "complex128")
 
 
 def _dtype_holds_real_numbers(dtype: Any) -> bool:
@@ -283,9 +338,7 @@ class CircuitIR:
         object.__setattr__(self, "observables", tuple(self.observables))
         object.__setattr__(self, "measurements", tuple(self.measurements))
         object.__setattr__(self, "metadata", dict(self.metadata))
-        dtype = str(self.dtype).removeprefix("torch.")
-        if not dtype:
-            raise IRValidationError("IR dtype cannot be empty")
+        dtype = _normalize_dtype(self.dtype)
         object.__setattr__(self, "dtype", dtype)
         shape = tuple(
             _normalize_count(size, what="IR shape dimension") for size in self.shape
@@ -365,7 +418,7 @@ class CircuitIR:
                 _instruction_from_dict(item) for item in payload.get("instructions", ())
             ),
             version=str(payload.get("version", "")),
-            dtype=str(payload.get("dtype", "")),
+            dtype=payload.get("dtype", ""),
             shape=tuple(payload.get("shape", ())),
             observables=tuple(
                 _observable_from_dict(item) for item in payload.get("observables", ())
