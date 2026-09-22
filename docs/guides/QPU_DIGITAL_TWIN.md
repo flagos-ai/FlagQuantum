@@ -904,6 +904,44 @@ The history compares measurement-distribution agreement for the fixed design.
 It does not retrain the Twin, infer a validity duration, prove arbitrary-circuit
 accuracy, schedule QPU work, promote a model, or route workloads.
 
+### Align calibration drift with holdout agreement
+
+Load the two persisted histories and align them by exact snapshot identity and
+capture time:
+
+```python
+import flagquantum as fq
+
+calibration_history = fq.twin.load_calibration_history(
+    "region-calibration-history.json"
+)
+holdout_history = fq.twin.load_region_holdout_history(
+    "region-holdout-history.json"
+)
+
+evolution = fq.twin.align_region_holdout_history(
+    calibration_history,
+    holdout_history,
+)
+
+for values in zip(
+    evolution.interval_maximum_relative_t1_changes,
+    evolution.interval_maximum_relative_t2_changes,
+    evolution.interval_maximum_readout_tv_distances,
+    evolution.interval_maximum_relative_gate_duration_changes,
+    evolution.holdout_twin_qpu_agreement_changes,
+    evolution.holdout_simultaneous_tv_error_bound_changes,
+    strict=True,
+):
+    print(values)
+```
+
+Every tuple has one value per adjacent calibration interval, making the payload
+directly usable by a drift chart. A lower holdout-agreement change or higher
+error-bound change is an observation, not proof that calibration drift caused
+the change. The alignment does not choose thresholds, refresh a model, promote
+a candidate, or route workloads.
+
 ### Track one regional suite across calibration snapshots
 
 After the same frozen circuit suite has been evaluated against distinct later
@@ -970,7 +1008,8 @@ The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_validation_series.v1`,
 `flagquantum.twin_region_holdout_study.v1`, and
 `flagquantum.twin_region_holdout_evaluation.v1`, and
-`flagquantum.twin_region_holdout_history.v1` are frozen compatibility
+`flagquantum.twin_region_holdout_history.v1`, and
+`flagquantum.twin_region_holdout_evolution.v1` are frozen compatibility
 contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a

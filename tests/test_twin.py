@@ -49,6 +49,7 @@ def test_twin_namespace_is_small_and_domain_named():
     assert fqt.__all__ == (
         "QPUDigitalTwin",
         "align_histories",
+        "align_region_holdout_history",
         "build_calibration_history",
         "build_region_holdout_history",
         "build_region_validation_history",
@@ -112,6 +113,7 @@ def test_twin_namespace_is_small_and_domain_named():
         "TwinRegionCoverage",
         "TwinRegionCoverageStatus",
         "TwinRegionHoldoutEvaluation",
+        "TwinRegionHoldoutEvolution",
         "TwinRegionHoldoutHistory",
         "TwinRegionHoldoutStudy",
         "TwinRegionModel",
@@ -129,6 +131,7 @@ def test_twin_namespace_is_small_and_domain_named():
         for value in (
             QPUDigitalTwin.__name__,
             "align_histories",
+            "align_region_holdout_history",
             "from_noise_model",
             "from_quafu_chip_info",
             "compare_calibrations",
@@ -165,6 +168,7 @@ def test_twin_namespace_is_small_and_domain_named():
             "TwinRegionCoverage",
             "TwinRegionCoverageStatus",
             "TwinRegionHoldoutEvaluation",
+            "TwinRegionHoldoutEvolution",
             "TwinRegionHoldoutHistory",
             "TwinRegionHoldoutStudy",
             "TwinRegionValidationHistory",

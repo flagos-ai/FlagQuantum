@@ -63,6 +63,10 @@ from .region_holdout import (
     load_region_holdout_study,
     prepare_region_holdout_study,
 )
+from .region_holdout_evolution import (
+    TwinRegionHoldoutEvolution,
+    align_region_holdout_history,
+)
 from .region_holdout_history import (
     TwinRegionHoldoutHistory,
     build_region_holdout_history,
@@ -100,6 +104,7 @@ from .validation_history import (
 __all__ = (
     "QPUDigitalTwin",
     "align_histories",
+    "align_region_holdout_history",
     "build_calibration_history",
     "build_region_holdout_history",
     "build_region_validation_history",
@@ -163,6 +168,7 @@ __all__ = (
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
     "TwinRegionHoldoutEvaluation",
+    "TwinRegionHoldoutEvolution",
     "TwinRegionHoldoutHistory",
     "TwinRegionHoldoutStudy",
     "TwinRegionModel",
