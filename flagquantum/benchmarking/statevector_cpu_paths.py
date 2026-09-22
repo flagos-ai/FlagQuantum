@@ -178,7 +178,11 @@ def _normalized_initial_state(
         dtype=torch.complex64,
         generator=generator,
     )
-    return initial / torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
+    # ``torch.linalg.vector_norm`` is untyped in torch's bundled stubs, so the
+    # quotient is ``Any`` and ``--strict`` rejects returning it. Naming the norm
+    # states the boundary instead of casting the result.
+    norm: torch.Tensor = torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
+    return initial / norm
 
 
 def _ir_gate_counts(circuit: fq.Circuit) -> dict[str, int]:
@@ -531,7 +535,10 @@ def _run_statevector_case(
     reference = sequential_reference(circuit)
 
     def execute() -> torch.Tensor:
-        return circuit.state(refresh=True)
+        # ``Circuit`` arrives through ``flagquantum``'s lazy ``__getattr__``, which
+        # mypy types as ``Any``; naming the tensor checks the declared return type.
+        state: torch.Tensor = circuit.state(refresh=True)
+        return state
 
     def execute_reference() -> torch.Tensor:
         return sequential_reference(circuit)
@@ -602,7 +609,9 @@ def _run_marginal_case(
     reference = _direct_marginal_probabilities(circuit.state(), wires)
 
     def execute() -> torch.Tensor:
-        return fq.run(circuit, options=options, outputs=request).measurements[0].value
+        result = fq.run(circuit, options=options, outputs=request)
+        value: torch.Tensor = result.measurements[0].value
+        return value
 
     def execute_reference() -> torch.Tensor:
         return _direct_marginal_probabilities(circuit.state(refresh=True), wires)
