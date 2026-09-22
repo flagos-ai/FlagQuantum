@@ -933,6 +933,35 @@ Evaluation checkpoints are private create-once files. Loading reconstructs the
 nested suite, candidate, hardware, and validation records, recomputes every
 derived metric, and rejects missing, extra, modified, or noncanonical data.
 
+### Release an improved regional candidate within its evidence scope
+
+After the complete candidate workflow above returns `improved`, the
+application can explicitly freeze a bounded release manifest:
+
+```python
+release = fq.twin.release_region_candidate(
+    incumbent_region,
+    candidate_region,
+    study=study,
+    evaluation=evaluation,
+)
+fq.twin.dump_region_release(release, "region-release.json")
+
+# Restore and audit the decision in a later process.
+release = fq.twin.load_region_release("region-release.json")
+assert release.candidate_region_identity == candidate_region.identity
+assert release.scope == "exact_circuits"
+assert release.routing_authorized is False
+print(release.target)
+print(release.verified_circuit_identities)
+```
+
+The call fails unless the models, frozen study, completed evaluation, suites,
+snapshots, target, ordered mapping, topology, operations, and structural limits
+all agree. It records only the exact reference and holdout circuits. It does
+not establish arbitrary-circuit accuracy, mutate an active Twin, contact a
+provider, or authorize workload routing; the application still owns deployment.
+
 ### Track holdout agreement across calibration snapshots
 
 After the same predeclared reference and holdout circuits have been evaluated

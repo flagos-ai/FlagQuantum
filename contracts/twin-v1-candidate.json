@@ -40,6 +40,7 @@
     "dump_region_candidate_holdout_study",
     "dump_region_holdout_history",
     "dump_region_holdout_study",
+    "dump_region_release",
     "dump_region_validation_suite",
     "dump_region_validation_history",
     "dump_submission",
@@ -56,6 +57,7 @@
     "load_region_candidate_holdout_study",
     "load_region_holdout_history",
     "load_region_holdout_study",
+    "load_region_release",
     "load_region_validation_suite",
     "load_region_validation_history",
     "load_submission",
@@ -67,6 +69,7 @@
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
+    "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
@@ -95,6 +98,7 @@
     "TwinRegionHoldoutHistory",
     "TwinRegionHoldoutStudy",
     "TwinRegionModel",
+    "TwinRegionRelease",
     "TwinRegionSuiteEvaluation",
     "TwinRegionValidationHistory",
     "TwinRegionValidationSuite",
@@ -151,8 +155,11 @@
     "prepare_region_holdout_study": "(region_twin: 'TwinRegionModel', reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionHoldoutStudy'",
     "dump_region_holdout_evaluation": "(evaluation: 'TwinRegionHoldoutEvaluation', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_holdout_study": "(study: 'TwinRegionHoldoutStudy', path: 'str | PathLike[str]') -> 'None'",
+    "dump_region_release": "(release: 'TwinRegionRelease', path: 'str | PathLike[str]') -> 'None'",
     "load_region_holdout_evaluation": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutEvaluation'",
-    "load_region_holdout_study": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutStudy'"
+    "load_region_holdout_study": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutStudy'",
+    "load_region_release": "(path: 'str | PathLike[str]') -> 'TwinRegionRelease'",
+    "release_region_candidate": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', *, study: 'TwinRegionCandidateHoldoutStudy', evaluation: 'TwinRegionCandidateHoldoutEvaluation') -> 'TwinRegionRelease'"
   },
   "public_class_signatures": {
     "QPUDigitalTwin": "(snapshot: 'TwinSnapshot', noise_model: 'NoiseModel') -> None",
@@ -188,7 +195,8 @@
     "TwinRegionHoldoutEvolution": "(calibration_history: 'TwinCalibrationHistory', holdout_history: 'TwinRegionHoldoutHistory', schema: 'str' = 'flagquantum.twin_region_holdout_evolution.v1') -> None",
     "TwinRegionHoldoutHistory": "(provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', directed_couplers: 'tuple[tuple[int, int], ...]', reference_circuit_identities: 'tuple[str, ...]', holdout_circuit_identities: 'tuple[str, ...]', snapshot_identities: 'tuple[str, ...]', region_identities: 'tuple[str, ...]', study_identities: 'tuple[str, ...]', captured_at: 'tuple[str, ...]', evaluations: 'tuple[TwinRegionHoldoutEvaluation, ...]', schema: 'str' = 'flagquantum.twin_region_holdout_history.v1') -> None",
     "TwinRegionCandidateHoldoutEvaluation": "(study_identity: 'str', reference_evaluation: 'TwinCandidateSuiteEvaluation', holdout_evaluation: 'TwinCandidateSuiteEvaluation', confidence_level: 'float', decision: 'TwinCandidateDecision', schema: 'str' = 'flagquantum.twin_region_candidate_holdout_evaluation.v1') -> None",
-    "TwinRegionCandidateHoldoutStudy": "(incumbent_region_identity: 'str', candidate_region_identity: 'str', physical_qubits: 'tuple[int, ...]', reference_suite: 'TwinCandidateSuite', holdout_suite: 'TwinCandidateSuite', schema: 'str' = 'flagquantum.twin_region_candidate_holdout_study.v1') -> None"
+    "TwinRegionCandidateHoldoutStudy": "(incumbent_region_identity: 'str', candidate_region_identity: 'str', physical_qubits: 'tuple[int, ...]', reference_suite: 'TwinCandidateSuite', holdout_suite: 'TwinCandidateSuite', schema: 'str' = 'flagquantum.twin_region_candidate_holdout_study.v1') -> None",
+    "TwinRegionRelease": "(incumbent_region_identity: 'str', candidate_region_identity: 'str', incumbent_snapshot_identity: 'str', candidate_snapshot_identity: 'str', candidate_captured_at: 'str', study_identity: 'str', evaluation_identity: 'str', provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', directed_couplers: 'tuple[tuple[int, int], ...]', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', maximum_circuit_depth: 'int', source_snapshot_identities: 'tuple[str, ...]', source_support_identities: 'tuple[str, ...]', reference_circuit_identities: 'tuple[str, ...]', holdout_circuit_identities: 'tuple[str, ...]', confidence_level: 'float', reference_decision: 'TwinCandidateDecision', holdout_decision: 'TwinCandidateDecision', reference_candidate_improvement_lower_bound: 'float', reference_candidate_improvement_upper_bound: 'float', holdout_candidate_improvement_lower_bound: 'float', holdout_candidate_improvement_upper_bound: 'float', scope: 'str' = 'exact_circuits', routing_authorized: 'bool' = False, schema: 'str' = 'flagquantum.twin_region_release.v1') -> None"
   },
   "public_method_signatures": {
     "QPUDigitalTwin.evidence_report": "(self, circuit: 'Any', *, evidence: 'TwinEvidenceEnvelope | None' = None) -> 'TwinEvidenceReport'",
@@ -262,7 +270,9 @@
     "TwinRegionCandidateHoldoutEvaluation.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinRegionCandidateHoldoutStudy.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinRegionCandidateHoldoutStudy'",
     "TwinRegionCandidateHoldoutStudy.to_dict": "(self) -> 'dict[str, Any]'",
-    "TwinRegionCandidateHoldoutStudy.validate_results": "(self, reference_submissions: 'Sequence[TwinCandidateSubmission]', reference_results: 'Sequence[DeploymentResult]', holdout_submissions: 'Sequence[TwinCandidateSubmission]', holdout_results: 'Sequence[DeploymentResult]', *, reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', confidence_level: 'float' = 0.95) -> 'TwinRegionCandidateHoldoutEvaluation'"
+    "TwinRegionCandidateHoldoutStudy.validate_results": "(self, reference_submissions: 'Sequence[TwinCandidateSubmission]', reference_results: 'Sequence[DeploymentResult]', holdout_submissions: 'Sequence[TwinCandidateSubmission]', holdout_results: 'Sequence[DeploymentResult]', *, reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', confidence_level: 'float' = 0.95) -> 'TwinRegionCandidateHoldoutEvaluation'",
+    "TwinRegionRelease.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinRegionRelease'",
+    "TwinRegionRelease.to_dict": "(self) -> 'dict[str, Any]'"
   },
   "public_dataclass_fields": {
     "QPUDigitalTwin": [
@@ -579,6 +589,36 @@
       "reference_suite",
       "holdout_suite",
       "schema"
+    ],
+    "TwinRegionRelease": [
+      "incumbent_region_identity",
+      "candidate_region_identity",
+      "incumbent_snapshot_identity",
+      "candidate_snapshot_identity",
+      "candidate_captured_at",
+      "study_identity",
+      "evaluation_identity",
+      "provider",
+      "backend_name",
+      "physical_qubits",
+      "directed_couplers",
+      "supported_operations",
+      "maximum_instruction_count",
+      "maximum_circuit_depth",
+      "source_snapshot_identities",
+      "source_support_identities",
+      "reference_circuit_identities",
+      "holdout_circuit_identities",
+      "confidence_level",
+      "reference_decision",
+      "holdout_decision",
+      "reference_candidate_improvement_lower_bound",
+      "reference_candidate_improvement_upper_bound",
+      "holdout_candidate_improvement_lower_bound",
+      "holdout_candidate_improvement_upper_bound",
+      "scope",
+      "routing_authorized",
+      "schema"
     ]
   },
   "public_properties": {
@@ -782,6 +822,11 @@
       "planned_shots",
       "planned_task_count",
       "reference_circuit_count"
+    ],
+    "TwinRegionRelease": [
+      "identity",
+      "target",
+      "verified_circuit_identities"
     ]
   },
   "public_schema_defaults": {
@@ -817,7 +862,8 @@
     "TwinRegionHoldoutEvolution": "flagquantum.twin_region_holdout_evolution.v1",
     "TwinRegionHoldoutHistory": "flagquantum.twin_region_holdout_history.v1",
     "TwinRegionCandidateHoldoutEvaluation": "flagquantum.twin_region_candidate_holdout_evaluation.v1",
-    "TwinRegionCandidateHoldoutStudy": "flagquantum.twin_region_candidate_holdout_study.v1"
+    "TwinRegionCandidateHoldoutStudy": "flagquantum.twin_region_candidate_holdout_study.v1",
+    "TwinRegionRelease": "flagquantum.twin_region_release.v1"
   },
   "public_literal_values": {
     "TwinCandidateDecision": [

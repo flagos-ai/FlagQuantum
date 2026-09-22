@@ -89,15 +89,25 @@ def _holdout_circuits():
     )
 
 
-def _study() -> fq.twin.TwinRegionCandidateHoldoutStudy:
+def _study_for(
+    incumbent: fq.twin.TwinRegionModel,
+    candidate: fq.twin.TwinRegionModel,
+) -> fq.twin.TwinRegionCandidateHoldoutStudy:
     return fq.twin.prepare_region_candidate_holdout(
-        _region("2026-08-14 10:30:00", 0.96),
-        _region("2026-08-15 10:30:00", 0.99),
+        incumbent,
+        candidate,
         _reference_circuits(),
         _holdout_circuits(),
         physical_qubits=(20, 27, 34),
         name="regional-candidate",
         shots=4096,
+    )
+
+
+def _study() -> fq.twin.TwinRegionCandidateHoldoutStudy:
+    return _study_for(
+        _region("2026-08-14 10:30:00", 0.96),
+        _region("2026-08-15 10:30:00", 0.99),
     )
 
 
@@ -357,3 +367,109 @@ def test_region_candidate_holdout_evaluation_rejects_noncanonical_payloads(
 
     with pytest.raises(ValueError):
         fq.twin.load_region_candidate_holdout_evaluation(destination)
+
+
+def test_improved_regional_candidate_creates_exact_circuit_release() -> None:
+    incumbent = _region("2026-08-14 10:30:00", 0.96)
+    candidate = _region("2026-08-15 10:30:00", 0.99)
+    study = _with_predictions(_study_for(incumbent, candidate))
+    evaluation = _evaluate(study)
+
+    release = fq.twin.release_region_candidate(
+        incumbent,
+        candidate,
+        study=study,
+        evaluation=evaluation,
+    )
+
+    assert release.incumbent_region_identity == incumbent.identity
+    assert release.candidate_region_identity == candidate.identity
+    assert release.incumbent_snapshot_identity == incumbent.twin.snapshot.identity
+    assert release.candidate_snapshot_identity == candidate.twin.snapshot.identity
+    assert release.candidate_captured_at == candidate.twin.snapshot.captured_at
+    assert release.study_identity == study.identity
+    assert release.evaluation_identity == evaluation.identity
+    assert release.target == "quafu:Shenglian"
+    assert release.scope == "exact_circuits"
+    assert release.routing_authorized is False
+    assert release.reference_decision == "improved"
+    assert release.holdout_decision == "improved"
+    assert release.verified_circuit_identities == (
+        *release.reference_circuit_identities,
+        *release.holdout_circuit_identities,
+    )
+
+
+def test_region_release_rejects_non_improved_or_mismatched_evidence() -> None:
+    incumbent = _region("2026-08-14 10:30:00", 0.96)
+    candidate = _region("2026-08-15 10:30:00", 0.99)
+    degraded_study = _with_predictions(
+        _study_for(incumbent, candidate),
+        reference_incumbent=(0.98, 0, 0, 0, 0, 0, 0, 0.02),
+        reference_candidate=(0.70, 0, 0, 0, 0, 0, 0, 0.30),
+    )
+    degraded = _evaluate(degraded_study)
+
+    with pytest.raises(ValueError, match="requires an improved decision"):
+        fq.twin.release_region_candidate(
+            incumbent,
+            candidate,
+            study=degraded_study,
+            evaluation=degraded,
+        )
+
+    improved_study = _with_predictions(_study_for(incumbent, candidate))
+    improved = _evaluate(improved_study)
+    other_candidate = _region("2026-08-16 10:30:00", 0.995)
+    with pytest.raises(ValueError, match="do not match the frozen candidate study"):
+        fq.twin.release_region_candidate(
+            incumbent,
+            other_candidate,
+            study=improved_study,
+            evaluation=improved,
+        )
+
+
+def test_region_release_round_trip_is_private_strict_and_create_once(tmp_path) -> None:
+    incumbent = _region("2026-08-14 10:30:00", 0.96)
+    candidate = _region("2026-08-15 10:30:00", 0.99)
+    study = _with_predictions(_study_for(incumbent, candidate))
+    evaluation = _evaluate(study)
+    release = fq.twin.release_region_candidate(
+        incumbent,
+        candidate,
+        study=study,
+        evaluation=evaluation,
+    )
+    destination = tmp_path / "region-release.json"
+
+    fq.twin.dump_region_release(release, destination)
+    fq.twin.dump_region_release(release, destination)
+    restored = fq.twin.load_region_release(destination)
+
+    assert restored == release
+    assert restored.identity == release.identity
+    assert destination.stat().st_mode & 0o777 == 0o600
+
+    tampered_payloads = []
+    for change in (
+        lambda payload: payload.update({"routing_authorized": True}),
+        lambda payload: payload.update(
+            {"maximum_circuit_depth": float(payload["maximum_circuit_depth"])}
+        ),
+        lambda payload: payload.pop("scope"),
+        lambda payload: payload.update({"unexpected": True}),
+    ):
+        payload = json.loads(json.dumps(release.to_dict()))
+        change(payload)
+        tampered_payloads.append(payload)
+    for index, payload in enumerate(tampered_payloads):
+        tampered = tmp_path / f"tampered-release-{index}.json"
+        tampered.write_text(json.dumps(payload), encoding="utf-8")
+        with pytest.raises(ValueError):
+            fq.twin.load_region_release(tampered)
+
+    occupied = tmp_path / "occupied-release.json"
+    occupied.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        fq.twin.dump_region_release(release, occupied)
