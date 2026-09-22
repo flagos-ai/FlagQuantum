@@ -20,6 +20,7 @@ from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
+    _apply_cross_wire_diagonal_cpu,
     _apply_cx_permutation,
     _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
@@ -32,11 +33,13 @@ from .operations import (
     _batched_rx_ry_rz_matrices,
     _bits_from_indices,
     _compile_statevector_program,
+    _cpu_cross_wire_diagonal_fusion_enabled,
     _cpu_cx_sequence_gather_enabled,
     _cpu_single_wire_elementwise_enabled,
     _diagonal_region,
     _fused_gate_matrix,
     _gate_parameter_tensor,
+    _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
@@ -174,8 +177,17 @@ def _fused_constant_matrix(
 def _initial_runtime_metrics(
     program: Sequence[_StatevectorProgramStep], *, enable_triton_loop: bool
 ) -> _StatevectorExecutionStatistics:
+    metric_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(step, _StatevectorCrossWireDiagonalStep)
+            else (step,)
+        )
+    )
     loop_steps = tuple(
-        step for step in program if isinstance(step, _StatevectorRXRZLoopStep)
+        step for step in metric_steps if isinstance(step, _StatevectorRXRZLoopStep)
     )
     # A diagonal gate that was fused into a region is still a diagonal gate, so
     # it is counted, at one per gate rather than one per region: the regions are
@@ -190,11 +202,11 @@ def _initial_runtime_metrics(
     # would make the field disagree with the run it describes.
     diagonal_unfused_gates = sum(
         isinstance(step, _StatevectorGateStep) and _diagonal_region((step.instruction,))
-        for step in program
+        for step in metric_steps
     )
     diagonal_fused_regions = tuple(
         step
-        for step in program
+        for step in metric_steps
         if isinstance(step, _StatevectorFusedGateStep) and step.diagonal
     )
     return {
@@ -206,7 +218,7 @@ def _initial_runtime_metrics(
         "triton_ry_rz_pair_candidates": sum(
             isinstance(step, _StatevectorFusedGateStep)
             and tuple(item.name for item in step.instructions) == ("ry", "rz")
-            for step in program
+            for step in metric_steps
         ),
         "triton_ry_rz_pair_executed": 0,
         "triton_single_qubit_matrix_regions": 0,
@@ -216,32 +228,32 @@ def _initial_runtime_metrics(
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
-            for step in program
+            for step in metric_steps
         )
         + sum(
             len(step.controls)
-            for step in program
+            for step in metric_steps
             if isinstance(step, _StatevectorCXSequenceStep)
         ),
         "triton_cx_sequence_regions": sum(
-            isinstance(step, _StatevectorCXSequenceStep) for step in program
+            isinstance(step, _StatevectorCXSequenceStep) for step in metric_steps
         ),
         "fixed_single_qubit_specialized_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) == "y"
-            for step in program
+            for step in metric_steps
         ),
         "fused_gate_regions": sum(
-            isinstance(step, _StatevectorFusedGateStep) for step in program
+            isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
         ),
         "fused_gate_count": sum(
             len(step.instructions)
-            for step in program
+            for step in metric_steps
             if isinstance(step, _StatevectorFusedGateStep)
         ),
         "dependency_reordered_single_qubit_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
-            for step in program
+            for step in metric_steps
         ),
         "statevector_apply_count": len(program),
     }
@@ -499,6 +511,47 @@ def _apply_cx_sequence(
     return state
 
 
+def _apply_cross_wire_diagonal_step(
+    circuit: Circuit,
+    step: _StatevectorCrossWireDiagonalStep,
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> torch.Tensor:
+    """Build small per-wire diagonals, then broadcast their product once."""
+
+    wires: list[int] = []
+    diagonals: list[torch.Tensor] = []
+    for region in step.regions:
+        if isinstance(region, _StatevectorGateStep):
+            instruction = region.instruction
+            wire = instruction.wires[0]
+            matrix = _gate_matrix(
+                instruction,
+                bsz=state.shape[0],
+                device=state.device,
+                dtype=state.dtype,
+                parameter_bindings=parameter_bindings,
+            )
+        else:
+            wire = region.wires[0]
+            constant_matrix = _fused_constant_matrix(
+                circuit, region, state, parameter_bindings
+            )
+            if constant_matrix is None:
+                matrix = _fused_gate_matrix(
+                    region,
+                    bsz=state.shape[0],
+                    device=state.device,
+                    dtype=state.dtype,
+                    parameter_bindings=parameter_bindings,
+                )
+            else:
+                matrix = constant_matrix
+        wires.append(wire)
+        diagonals.append(torch.diagonal(matrix, dim1=-2, dim2=-1))
+    return _apply_cross_wire_diagonal_cpu(state, diagonals, wires, circuit.n_wires)
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -513,13 +566,23 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and output.is_cuda
             and output.dtype == torch.complex64
         )
-        program_key = ("statevector", "triton_rx_rz_loop", enable_triton_loop)
+        enable_cpu_cross_wire_diagonal = (
+            output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
+        )
+        program_key = (
+            "statevector",
+            "triton_rx_rz_loop",
+            enable_triton_loop,
+            "cpu_cross_wire_diagonal",
+            enable_cpu_cross_wire_diagonal,
+        )
         program = circuit._backend_programs.get(program_key)
         if program is None:
             program = _compile_statevector_program(
                 circuit._instructions,
                 circuit.n_wires,
                 enable_triton_loop=enable_triton_loop,
+                enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
             )
             circuit._backend_programs[program_key] = program
         circuit._last_statevector_runtime = _initial_runtime_metrics(
@@ -540,6 +603,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
+            if isinstance(step, _StatevectorCrossWireDiagonalStep):
+                output = _apply_cross_wire_diagonal_step(
+                    circuit,
+                    step,
+                    output,
+                    parameter_bindings,
+                )
+                continue
             if isinstance(step, _StatevectorCXSequenceStep):
                 output = _apply_cx_sequence(circuit, step, output)
                 continue
