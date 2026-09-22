@@ -1,7 +1,8 @@
-"""Compose local-compiled or service-compiled Quafu execution into a result."""
+"""Compose remote QPU executions into stable FlagQuantum results."""
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -9,12 +10,14 @@ from ...algorithms import Hamiltonian, HamiltonianTerm
 from ...core.ir import ensure_circuit_ir
 from ...deployment import (
     CloudBackendProfile,
+    create_deployment_package,
     create_pauli_measurement_plan,
     deploy_circuit,
 )
 from ...observables import OutputRequest
 from ...observables import counts as request_counts
 from ...runtime.result import ExecutionResult, MeasurementResult
+from .azure import AzureQuantumProvider
 from .contracts import DeploymentResult
 from .quafu import QuafuProvider, _service_options
 
@@ -125,6 +128,94 @@ def validate_quafu_output(
         raise ValueError("Hamiltonian references wires outside the source circuit")
 
     return requested[0]
+
+
+def validate_azure_output(
+    program: Circuit | CircuitIR | ExecutionPlan,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+) -> OutputRequest:
+    """Validate the initial Azure route before credentials or QDK are loaded."""
+
+    requested_output = request_counts() if outputs is None else outputs
+    requested = (
+        (requested_output,)
+        if isinstance(requested_output, OutputRequest)
+        else tuple(requested_output)
+    )
+    source_ir = ensure_circuit_ir(program)
+    if any(not isinstance(item, OutputRequest) for item in requested):
+        raise TypeError("outputs must contain OutputRequest values")
+    full_counts = (
+        len(requested) == 1
+        and requested[0].kind == "counts"
+        and requested[0].observable is None
+        and requested[0].wires in {(), tuple(range(source_ir.n_wires))}
+    )
+    if not full_counts:
+        raise ValueError(
+            "remote Azure Quantum execution currently supports one "
+            "full-register fq.counts() output"
+        )
+    return requested[0]
+
+
+def _azure_target_width() -> int:
+    raw = os.environ.get("AZURE_QUANTUM_TARGET_QUBITS", "").strip()
+    if not raw:
+        raise RuntimeError(
+            "Azure Quantum fq.run requires AZURE_QUANTUM_TARGET_QUBITS from an "
+            "authoritative target description"
+        )
+    try:
+        width = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(
+            "AZURE_QUANTUM_TARGET_QUBITS must be a positive integer"
+        ) from exc
+    if width <= 0:
+        raise RuntimeError("AZURE_QUANTUM_TARGET_QUBITS must be a positive integer")
+    return width
+
+
+def execute_azure(
+    source: CircuitIR,
+    *,
+    output: OutputRequest,
+    target: str,
+    shots: int,
+    name: str | None,
+) -> ExecutionResult:
+    """Compile OpenQASM 3 to QIR and execute one Azure Quantum counts job."""
+
+    resource_id = os.environ.get("AZURE_QUANTUM_RESOURCE_ID", "").strip()
+    if not resource_id:
+        raise RuntimeError("Azure Quantum fq.run requires AZURE_QUANTUM_RESOURCE_ID")
+    target_id = target.partition(":")[2].strip()
+    if not target_id:
+        raise ValueError("Azure Quantum target must name a backend")
+    provider = AzureQuantumProvider(
+        resource_id,
+        target_id,
+        n_wires=_azure_target_width(),
+    )
+    deployment_name = name.strip() if name is not None else "flagquantum_job"
+    package = create_deployment_package(
+        source,
+        backend=provider.backend,
+        name=deployment_name,
+        shots=shots,
+        qasm_version=3.0,
+    )
+    native = provider.run(package)
+    return counts_result(
+        native,
+        n_wires=source.n_wires,
+        output_name=output.name,
+        compiler="qdk",
+        target=target,
+        target_qubits=(),
+        name=name,
+    )
 
 
 def _execute_expectation(
