@@ -65,6 +65,7 @@ be the easiest way to mislead a reader.
 | Fused CX sequence applied with one gather | 145x cached at length 152; 1.78x at length 2; **0.85x at length 1** | speed, above a length threshold |
 | One-wire gate without the layout permutation | `rotation_chain` 3.33x, `diagonal_chain` 3.24x, `mixed_chain` 2.88x | speed |
 | Diagonal fused region routed to the diagonal kernel | `diagonal_chain` 2.03x, `two_wire_diagonal_chain` 1.50x, `rotation_chain` 1.00x, `mixed_chain` **0.94x** | speed, and a measured regression on one case |
+| Cross-wire single-qubit diagonal fusion | `diagonal_chain` **4.07x**, 20 state passes reduced to one; `mixed_chain` 1.06x with no eligible region | speed, CPU-only |
 | Joint marginal read off the dense state's own distribution | reduction alone 30.4x at k=2 to 4646x at k=8; public entry point **1.11x to 1.18x** | speed, but no longer the bottleneck |
 | Z expectation read off a bounded marginal, sign table capped | memory **76 MiB resident across 19 keys → 0**, table ceiling 1 GiB | **capacity**, and only a narrow-request speed win |
 | Vectorized trajectory row sampling | 5.2x to 6.2x isolated; 1.49x to 4.44x end to end | speed, opt-in, **different seed mapping** |
@@ -93,6 +94,15 @@ Notes that belong beside those rows:
   0.315x of the table's time, best at k = 2) and loses from the high teens on,
   1.52x at k = 19 and 1.87x at k = 20, which is why the marginal arm is bounded
   at 8 wires, a comfortable interior point rather than a cliff edge.
+- **Cross-wire diagonal fusion changes the number of full-state passes.** On the
+  same 20-wire, depth-8 `diagonal_chain`, the unfused route took 14.431 ms and
+  the fused route 3.545 ms. The compiled region contains 160 gates over 20
+  wires, builds their small per-wire diagonals, and broadcasts their tensor
+  product over the state once. Two-wire diagonal gates remain on their existing
+  route; `FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION=0` restores the per-wire program.
+  Against that program on normalized random states and unit phases over all 20
+  wires, the maximum absolute difference was 1.88e-9 for complex64 and 3.79e-18
+  for complex128, below 0.02 epsilon of the corresponding real dtype.
 
 ### 3.1 The row-sampling number the plan got wrong
 
@@ -186,9 +196,10 @@ Before trusting any new measurement on this machine:
    measured separately will disagree by more than the effect.
 3. Report the per-kernel call counts of the held-out arm. Without them, "the old
    kernel was reached" is an assumption.
-4. State which switch state each arm ran in. This series added four CPU
+4. State which switch state each arm ran in. This series added five CPU
    switches. `FQ_CPU_CX_SEQUENCE_GATHER` is on by default because a gather is an
-   exact permutation; `FQ_CPU_SINGLE_WIRE_ELEMENTWISE`,
+   exact permutation; `FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION` is on by default for
+   CPU programs with at least two eligible wires; `FQ_CPU_SINGLE_WIRE_ELEMENTWISE`,
    `FQ_CPU_Z_MARGINAL` and `FQ_CPU_VECTORIZED_ROW_SAMPLING` are opt-in because
    their output is not bitwise the output of what they replace, and
    `FQ_CPU_Z_SIGN_CACHE_BYTES` sets the sign table's ceiling. A ratio measured

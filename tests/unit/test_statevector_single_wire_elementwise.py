@@ -35,6 +35,7 @@ from flagquantum.simulation.statevector.operations import (
 pytestmark = pytest.mark.unit
 
 SWITCH = "FQ_CPU_SINGLE_WIRE_ELEMENTWISE"
+CROSS_WIRE_SWITCH = "FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION"
 _TOLERANCE_IN_ULPS = 4
 _COMPLEX_DTYPES = (torch.complex64, torch.complex128)
 
@@ -262,13 +263,29 @@ def test_a_diagonal_one_wire_gate_takes_the_new_kernel(
         circuit.rz(wire, 0.2 + 0.1 * wire)
     circuit.state(refresh=True)
 
-    # The elementwise kernel is the general one-wire kernel, so a diagonal
-    # matrix is inside its domain, and on this host it is the faster route to the
-    # same state: it drops the layout permutation that _apply_diagonal_matrix
-    # still pays for.
-    assert recorder.calls["elementwise"] == 6
+    # Cross-wire diagonal fusion has the more specific route: it combines all
+    # six small diagonals and scans the state only once.
+    statistics = circuit._last_statevector_runtime
+    assert statistics["statevector_apply_count"] == 1
+    assert recorder.calls["elementwise"] == 0
     assert recorder.calls["diagonal"] == 0
     assert recorder.calls["matmul"] == 0
+
+
+def test_cross_wire_diagonal_fusion_can_restore_the_per_wire_route(
+    recorder: Recorder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(SWITCH, "1")
+    monkeypatch.setenv(CROSS_WIRE_SWITCH, "0")
+    circuit = fq.Circuit(6, dtype=torch.complex64)
+    for wire in range(6):
+        circuit.rz(wire, 0.2 + 0.1 * wire)
+
+    circuit.state(refresh=True)
+
+    statistics = circuit._last_statevector_runtime
+    assert statistics["statevector_apply_count"] == 6
+    assert recorder.calls["elementwise"] == 6
 
 
 def test_a_fused_diagonal_region_takes_the_new_kernel(

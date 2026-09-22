@@ -147,7 +147,7 @@ def test_fused_rotation_regions_are_attributed_and_reduce_to_one_apply_each():
     assert diagonal["fused_gate_regions"] == 6
     assert diagonal["diagonal_fused_regions"] == 6
     assert diagonal["diagonal_elementwise_gates"] == 12
-    assert diagonal["statevector_apply_count"] == 6
+    assert diagonal["statevector_apply_count"] == 1
 
     # The two-wire case is the one that shows what the diagonal routing buys
     # where the single-wire kernel cannot reach. ``n_wires - 1`` pairs, one fused
