@@ -34,14 +34,12 @@ class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
 
-_StatevectorSingleWireRegion: TypeAlias = (
-    _StatevectorGateStep | _StatevectorFusedGateStep
-)
+_StatevectorDenseRegion: TypeAlias = _StatevectorGateStep | _StatevectorFusedGateStep
 
 
 @dataclass(frozen=True)
-class _StatevectorDisjointSingleWireStep:
-    regions: tuple[_StatevectorSingleWireRegion, ...]
+class _StatevectorDisjointDenseStep:
+    regions: tuple[_StatevectorDenseRegion, ...]
 
 
 @dataclass(frozen=True)
@@ -55,6 +53,6 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorRXRZLoopStep
     | _StatevectorFusedGateStep
     | _StatevectorCrossWireDiagonalStep
-    | _StatevectorDisjointSingleWireStep
+    | _StatevectorDisjointDenseStep
 )
 _StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep

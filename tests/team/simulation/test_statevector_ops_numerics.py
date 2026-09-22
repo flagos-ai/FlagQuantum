@@ -95,7 +95,7 @@ def test_non_diagonal_region_ends_a_diagonal_matching_segment() -> None:
 
 
 def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
-    assert statevector_ops._CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES == 4
+    assert statevector_ops._CPU_DISJOINT_DENSE_MAX_WIRES == 4
     layout = ((), ())
     regions = tuple(
         statevector_ops._StatevectorFusedGateStep(
@@ -106,12 +106,12 @@ def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
         for wire in range(9)
     )
 
-    optimized = statevector_ops._fuse_disjoint_single_wire_regions(regions)
+    optimized = statevector_ops._fuse_disjoint_dense_regions(regions)
 
     assert tuple(
         (
             len(step.regions)
-            if isinstance(step, statevector_ops._StatevectorDisjointSingleWireStep)
+            if isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
             else 1
         )
         for step in optimized
@@ -135,12 +135,12 @@ def test_dense_single_wire_grouping_includes_diagonal_regions() -> None:
         diagonal=True,
     )
 
-    optimized = statevector_ops._fuse_disjoint_single_wire_regions(
+    optimized = statevector_ops._fuse_disjoint_dense_regions(
         (*dense[:2], diagonal, *dense[2:])
     )
 
     assert len(optimized) == 2
-    assert isinstance(optimized[0], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert isinstance(optimized[0], statevector_ops._StatevectorDisjointDenseStep)
     assert optimized[0].regions == (*dense[:2], diagonal, dense[2])
     assert optimized[1] is dense[3]
 
@@ -155,15 +155,73 @@ def test_unfused_dense_single_wire_layers_include_fixed_gates() -> None:
     )
     fixed = statevector_ops._StatevectorGateStep(Instruction("x", (0,)), layout)
 
-    optimized = statevector_ops._fuse_disjoint_single_wire_regions(
+    optimized = statevector_ops._fuse_disjoint_dense_regions(
         (*rotations[:3], fixed, *rotations[3:])
     )
 
     assert len(optimized) == 2
-    assert isinstance(optimized[0], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert isinstance(optimized[0], statevector_ops._StatevectorDisjointDenseStep)
     assert optimized[0].regions == rotations[:3]
-    assert isinstance(optimized[1], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert isinstance(optimized[1], statevector_ops._StatevectorDisjointDenseStep)
     assert optimized[1].regions == (fixed, *rotations[3:])
+
+
+def test_mixed_width_dense_regions_use_total_wire_bound() -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorGateStep(instruction, layout)
+        for instruction in (
+            Instruction("rxx", (0, 1), params={"theta": 0.1}),
+            Instruction("ry", (2,), params={"theta": 0.2}),
+            Instruction("crx", (3, 4), params={"theta": 0.3}),
+            Instruction("ry", (5,), params={"theta": 0.4}),
+        )
+    )
+
+    optimized = statevector_ops._fuse_disjoint_dense_regions(regions)
+
+    assert len(optimized) == 2
+    assert all(
+        isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+        for step in optimized
+    )
+    assert tuple(
+        tuple(statevector_ops._region_wires(region) for region in step.regions)
+        for step in optimized
+        if isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+    ) == (((0, 1), (2,)), ((3, 4), (5,)))
+
+
+@pytest.mark.parametrize("gate", ("cx", "swap"))
+def test_two_wire_permutation_gate_ends_dense_group(gate: str) -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorGateStep(instruction, layout)
+        for instruction in (
+            Instruction("ry", (0,), params={"theta": 0.1}),
+            Instruction(gate, (1, 2)),
+            Instruction("ry", (3,), params={"theta": 0.2}),
+        )
+    )
+
+    optimized = statevector_ops._fuse_disjoint_dense_regions(regions)
+
+    assert optimized == list(regions)
+
+
+def test_two_dense_two_wire_regions_are_not_grouped() -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorGateStep(instruction, layout)
+        for instruction in (
+            Instruction("rxx", (0, 1), params={"theta": 0.1}),
+            Instruction("crx", (2, 3), params={"theta": 0.2}),
+        )
+    )
+
+    optimized = statevector_ops._fuse_disjoint_dense_regions(regions)
+
+    assert optimized == list(regions)
 
 
 def test_rotation_region_angles_preserve_values_and_gradients() -> None:
@@ -607,7 +665,8 @@ def test_cpu_disjoint_diagonal_regions_reject_overlapping_wires():
 def test_batched_kronecker_product_matches_torch_kron(dtype):
     generator = torch.Generator().manual_seed(1762)
     matrices = tuple(
-        torch.randn((2, 2, 2), dtype=dtype, generator=generator) for _ in range(3)
+        torch.randn((2, dimension, dimension), dtype=dtype, generator=generator)
+        for dimension in (2, 4, 2)
     )
 
     actual = _batched_kronecker_product(matrices, batch_size=2)
@@ -790,6 +849,40 @@ def test_cpu_mixed_single_wire_layer_preserves_parameter_autograd(
     assert fused_statistics["statevector_apply_count"] == 2
     assert fused_statistics["permutation_gates"] == 0
     assert fused_statistics["fixed_single_qubit_specialized_gates"] == 0
+    assert fused_statistics["diagonal_elementwise_gates"] == 0
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_mixed_width_layers_preserve_parameter_autograd(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    generator = torch.Generator().manual_seed(1781)
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    inputs = torch.randn((2, 64), dtype=dtype, generator=generator, requires_grad=True)
+    angles = torch.linspace(-0.4, 0.5, 4, dtype=real_dtype, requires_grad=True)
+    circuit = Circuit(6, dtype=dtype, inputs=inputs)
+    circuit.rxx(0, 1, theta=angles[0]).ry(2, theta=angles[1])
+    circuit.crx(3, 4, theta=angles[2]).rz(5, theta=angles[3])
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(), (inputs, angles), retain_graph=True
+    )
+    baseline_statistics = dict(circuit._last_statevector_runtime)
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
+    fused_statistics = dict(circuit._last_statevector_runtime)
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert baseline_statistics["statevector_apply_count"] == 4
+    assert fused_statistics["statevector_apply_count"] == 2
     assert fused_statistics["diagonal_elementwise_gates"] == 0
 
 
