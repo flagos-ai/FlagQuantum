@@ -6,7 +6,10 @@ import torch
 import flagquantum.simulation.statevector.operations as statevector_ops
 from flagquantum import Circuit
 from flagquantum.core import Instruction
-from flagquantum.simulation.statevector.local import _rotation_region_angles
+from flagquantum.simulation.statevector.local import (
+    _batched_kronecker_product,
+    _rotation_region_angles,
+)
 from flagquantum.simulation.statevector.operations import (
     _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
@@ -89,6 +92,57 @@ def test_non_diagonal_region_ends_a_diagonal_matching_segment() -> None:
     assert isinstance(optimized[0], statevector_ops._StatevectorCrossWireDiagonalStep)
     assert isinstance(optimized[1], statevector_ops._StatevectorGateStep)
     assert isinstance(optimized[2], statevector_ops._StatevectorCrossWireDiagonalStep)
+
+
+def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
+    assert statevector_ops._CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES == 4
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorFusedGateStep(
+            instructions=(Instruction("ry", (wire,), params={"theta": 0.1}),),
+            wires=(wire,),
+            layout=layout,
+        )
+        for wire in range(9)
+    )
+
+    optimized = statevector_ops._fuse_disjoint_single_wire_regions(regions)
+
+    assert tuple(
+        (
+            len(step.regions)
+            if isinstance(step, statevector_ops._StatevectorDisjointSingleWireStep)
+            else 1
+        )
+        for step in optimized
+    ) == (4, 4, 1)
+
+
+def test_dense_single_wire_grouping_stops_at_diagonal_regions() -> None:
+    layout = ((), ())
+    dense = tuple(
+        statevector_ops._StatevectorFusedGateStep(
+            instructions=(Instruction("ry", (wire,), params={"theta": 0.1}),),
+            wires=(wire,),
+            layout=layout,
+        )
+        for wire in range(4)
+    )
+    diagonal = statevector_ops._StatevectorFusedGateStep(
+        instructions=(Instruction("rz", (4,), params={"theta": 0.2}),),
+        wires=(4,),
+        layout=layout,
+        diagonal=True,
+    )
+
+    optimized = statevector_ops._fuse_disjoint_single_wire_regions(
+        (*dense[:2], diagonal, *dense[2:])
+    )
+
+    assert len(optimized) == 3
+    assert isinstance(optimized[0], statevector_ops._StatevectorDisjointSingleWireStep)
+    assert optimized[1] is diagonal
+    assert isinstance(optimized[2], statevector_ops._StatevectorDisjointSingleWireStep)
 
 
 def test_rotation_region_angles_preserve_values_and_gradients() -> None:
@@ -528,6 +582,26 @@ def test_cpu_disjoint_diagonal_regions_reject_overlapping_wires():
         )
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_batched_kronecker_product_matches_torch_kron(dtype):
+    generator = torch.Generator().manual_seed(1762)
+    matrices = tuple(
+        torch.randn((2, 2, 2), dtype=dtype, generator=generator) for _ in range(3)
+    )
+
+    actual = _batched_kronecker_product(matrices, batch_size=2)
+    expected = torch.stack(
+        tuple(
+            torch.kron(
+                torch.kron(matrices[0][batch], matrices[1][batch]), matrices[2][batch]
+            )
+            for batch in range(2)
+        )
+    )
+
+    torch.testing.assert_close(actual, expected)
+
+
 def test_cpu_cross_wire_diagonal_circuit_preserves_parameter_autograd(monkeypatch):
     generator = torch.Generator().manual_seed(1763)
     inputs = torch.randn(
@@ -576,6 +650,33 @@ def test_cpu_two_wire_diagonal_matchings_preserve_parameter_autograd(monkeypatch
         expected.real.sum(), (inputs, angles), retain_graph=True
     )
     monkeypatch.setenv("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 2
+
+
+def test_cpu_disjoint_single_wire_fusion_preserves_parameter_autograd(monkeypatch):
+    generator = torch.Generator().manual_seed(1771)
+    inputs = torch.randn(
+        (2, 64), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    angles = torch.linspace(-0.4, 0.5, 12, dtype=torch.float64, requires_grad=True)
+    circuit = Circuit(6, dtype=torch.complex128, inputs=inputs)
+    for wire in range(6):
+        circuit.rx(wire, theta=angles[wire]).ry(wire, theta=angles[wire + 6])
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(), (inputs, angles), retain_graph=True
+    )
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
     actual = circuit.state(refresh=True)
     actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
 

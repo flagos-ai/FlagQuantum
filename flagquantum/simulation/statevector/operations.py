@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from dataclasses import dataclass
 from numbers import Number
-from typing import TypeAlias
 
 import torch
 
@@ -26,6 +24,18 @@ from .diagonal_cpu import (
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
 )
+from .program import (
+    _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
+)
+from .program import _StatevectorCXSequenceStep as _StatevectorCXSequenceStep
+from .program import (
+    _StatevectorDisjointSingleWireStep as _StatevectorDisjointSingleWireStep,
+)
+from .program import _StatevectorFusedGateStep as _StatevectorFusedGateStep
+from .program import _StatevectorGateStep as _StatevectorGateStep
+from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
+from .program import _StatevectorProgramStep as _StatevectorProgramStep
+from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -104,49 +114,6 @@ def _diagonal_region(instructions: Sequence[Instruction]) -> bool:
     )
 
 
-@dataclass(frozen=True)
-class _StatevectorGateStep:
-    instruction: Instruction
-    layout: tuple[tuple[int, ...], tuple[int, ...]]
-
-
-@dataclass(frozen=True)
-class _StatevectorRXRZLoopStep:
-    wire: int
-    pairs: tuple[tuple[Instruction, Instruction], ...]
-
-
-@dataclass(frozen=True)
-class _StatevectorFusedGateStep:
-    instructions: tuple[Instruction, ...]
-    wires: tuple[int, ...]
-    layout: tuple[tuple[int, ...], tuple[int, ...]]
-    dependency_reordered: bool = False
-    # Decided when the region is formed, not when it runs, because which kernel
-    # the region may take is a property of the program.
-    diagonal: bool = False
-
-
-@dataclass(frozen=True)
-class _StatevectorCrossWireDiagonalStep:
-    regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
-
-
-@dataclass(frozen=True)
-class _StatevectorCXSequenceStep:
-    controls: tuple[int, ...]
-    targets: tuple[int, ...]
-
-
-_StatevectorProgramStep: TypeAlias = (
-    _StatevectorGateStep
-    | _StatevectorRXRZLoopStep
-    | _StatevectorFusedGateStep
-    | _StatevectorCrossWireDiagonalStep
-    | _StatevectorCXSequenceStep
-)
-
-
 def _instruction_matrix(
     instruction: Instruction, *, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
@@ -201,6 +168,11 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
 # a region executed more than once finds the table already cached.
 _CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
 
+# A wider product reduces state passes further but grows its dense matrix by
+# 4x per wire. On the reference 20-wire CPU path, four wires took 11.8 ms,
+# while five took 12.0 ms, so four is the measured bound rather than a knob.
+_CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES = 4
+
 
 def _cpu_cx_sequence_gather_enabled() -> bool:
     """Whether a CPU CX sequence may be applied as one gather.
@@ -239,24 +211,31 @@ def _cpu_cross_wire_diagonal_fusion_enabled() -> bool:
     return _environment_flag("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", default=True)
 
 
+def _cpu_disjoint_single_wire_fusion_enabled() -> bool:
+    """Whether CPU single-wire fused regions may share a bounded dense apply."""
+
+    return _environment_flag("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", default=True)
+
+
 def _compile_statevector_program(
     instructions: Sequence[Instruction],
     n_wires: int,
     *,
     enable_triton_loop: bool,
     enable_cpu_cross_wire_diagonal: bool = False,
+    enable_cpu_disjoint_single_wire: bool = False,
 ) -> tuple[_StatevectorProgramStep, ...]:
     program = _fuse_rx_rz_loops(
         instructions,
         n_wires,
         enable_triton_loop=enable_triton_loop,
     )
-    fused_program = _fuse_gate_sequences(program)
+    optimized: list[_StatevectorPreCXStep] = list(_fuse_gate_sequences(program))
     if enable_cpu_cross_wire_diagonal:
-        return tuple(
-            _fuse_cx_sequences(_fuse_cross_wire_diagonal_regions(fused_program))
-        )
-    return tuple(_fuse_cx_sequences(fused_program))
+        optimized = _fuse_cross_wire_diagonal_regions(optimized)
+    if enable_cpu_disjoint_single_wire:
+        optimized = _fuse_disjoint_single_wire_regions(optimized)
+    return tuple(_fuse_cx_sequences(optimized))
 
 
 def _fuse_rx_rz_loops(
@@ -409,7 +388,7 @@ def _fuse_gate_sequences(
 
 
 def _small_diagonal_region(
-    step: _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep,
+    step: _StatevectorPreCXStep,
 ) -> _StatevectorGateStep | _StatevectorFusedGateStep | None:
     if isinstance(step, _StatevectorGateStep):
         if len(step.instruction.wires) in {1, 2} and _diagonal_region(
@@ -455,23 +434,11 @@ def _disjoint_diagonal_groups(
 
 
 def _fuse_cross_wire_diagonal_regions(
-    program: Sequence[
-        _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
-    ],
-) -> list[
-    _StatevectorGateStep
-    | _StatevectorRXRZLoopStep
-    | _StatevectorFusedGateStep
-    | _StatevectorCrossWireDiagonalStep
-]:
+    program: Sequence[_StatevectorPreCXStep],
+) -> list[_StatevectorPreCXStep]:
     """Combine adjacent small diagonal regions into wire-disjoint matchings."""
 
-    optimized: list[
-        _StatevectorGateStep
-        | _StatevectorRXRZLoopStep
-        | _StatevectorFusedGateStep
-        | _StatevectorCrossWireDiagonalStep
-    ] = []
+    optimized: list[_StatevectorPreCXStep] = []
     index = 0
     while index < len(program):
         first = _small_diagonal_region(program[index])
@@ -496,13 +463,42 @@ def _fuse_cross_wire_diagonal_regions(
     return optimized
 
 
+def _fuse_disjoint_single_wire_regions(
+    program: Sequence[_StatevectorPreCXStep],
+) -> list[_StatevectorPreCXStep]:
+    """Pack up to four disjoint dense single-wire regions into one apply."""
+
+    optimized: list[_StatevectorPreCXStep] = []
+    group: list[_StatevectorFusedGateStep] = []
+
+    def flush() -> None:
+        if len(group) >= 2:
+            optimized.append(_StatevectorDisjointSingleWireStep(tuple(group)))
+        else:
+            optimized.extend(group)
+        group.clear()
+
+    for step in program:
+        if not (
+            isinstance(step, _StatevectorFusedGateStep)
+            and len(step.wires) == 1
+            and not step.diagonal
+        ):
+            flush()
+            optimized.append(step)
+            continue
+        wire = step.wires[0]
+        if len(group) == _CPU_DISJOINT_SINGLE_WIRE_MAX_WIRES or any(
+            item.wires[0] == wire for item in group
+        ):
+            flush()
+        group.append(step)
+    flush()
+    return optimized
+
+
 def _fuse_cx_sequences(
-    fused_program: Sequence[
-        _StatevectorGateStep
-        | _StatevectorRXRZLoopStep
-        | _StatevectorFusedGateStep
-        | _StatevectorCrossWireDiagonalStep
-    ],
+    fused_program: Sequence[_StatevectorPreCXStep],
 ) -> list[_StatevectorProgramStep]:
     optimized_program: list[_StatevectorProgramStep] = []
     index = 0

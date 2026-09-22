@@ -35,12 +35,14 @@ from .operations import (
     _compile_statevector_program,
     _cpu_cross_wire_diagonal_fusion_enabled,
     _cpu_cx_sequence_gather_enabled,
+    _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
     _diagonal_region,
     _fused_gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
+    _StatevectorDisjointSingleWireStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
     _StatevectorProgramStep,
@@ -182,7 +184,10 @@ def _initial_runtime_metrics(
         for step in program
         for region in (
             step.regions
-            if isinstance(step, _StatevectorCrossWireDiagonalStep)
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointSingleWireStep),
+            )
             else (step,)
         )
     )
@@ -265,9 +270,21 @@ def _prepare_batched_rotation_matrices(
     state: torch.Tensor,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
+    matrix_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointSingleWireStep),
+            )
+            else (step,)
+        )
+    )
     rx_ry_rz_steps = tuple(
         step
-        for step in program
+        for step in matrix_steps
         if isinstance(step, _StatevectorFusedGateStep)
         and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
         and len(step.wires) == 1
@@ -286,7 +303,7 @@ def _prepare_batched_rotation_matrices(
     rotation_matrices: dict[int, torch.Tensor] = {}
     rotation_patterns = {
         tuple(item.name for item in step.instructions)
-        for step in program
+        for step in matrix_steps
         if isinstance(step, _StatevectorFusedGateStep)
         and len(step.instructions) >= 2
         and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
@@ -294,7 +311,7 @@ def _prepare_batched_rotation_matrices(
     for names in rotation_patterns:
         rotation_steps = tuple(
             step
-            for step in program
+            for step in matrix_steps
             if isinstance(step, _StatevectorFusedGateStep)
             and tuple(item.name for item in step.instructions) == names
         )
@@ -435,17 +452,14 @@ def _apply_fused_gate_step(
         )
         return result
 
-    matrix = rotation_matrices.get(id(step))
-    if matrix is None:
-        matrix = rx_ry_rz_matrices.get(id(step))
-    if matrix is None:
-        matrix = _fused_gate_matrix(
-            step,
-            bsz=state.shape[0],
-            device=state.device,
-            dtype=state.dtype,
-            parameter_bindings=parameter_bindings,
-        )
+    matrix = _fused_step_matrix(
+        circuit,
+        step,
+        state,
+        parameter_bindings,
+        rx_ry_rz_matrices,
+        rotation_matrices,
+    )
     if (
         state.is_cuda
         and state.dtype == torch.complex64
@@ -474,6 +488,81 @@ def _apply_fused_gate_step(
         uses_diagonal_kernel=step.diagonal,
         layout=step.layout,
     )
+
+
+def _fused_step_matrix(
+    circuit: Circuit,
+    step: _StatevectorFusedGateStep,
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    rx_ry_rz_matrices: dict[int, torch.Tensor],
+    rotation_matrices: dict[int, torch.Tensor],
+) -> torch.Tensor:
+    matrix = rotation_matrices.get(id(step))
+    if matrix is None:
+        matrix = rx_ry_rz_matrices.get(id(step))
+    if matrix is None:
+        matrix = _fused_constant_matrix(circuit, step, state, parameter_bindings)
+    if matrix is None:
+        matrix = _fused_gate_matrix(
+            step,
+            bsz=state.shape[0],
+            device=state.device,
+            dtype=state.dtype,
+            parameter_bindings=parameter_bindings,
+        )
+    return matrix
+
+
+def _batched_kronecker_product(
+    matrices: Sequence[torch.Tensor], *, batch_size: int
+) -> torch.Tensor:
+    """Build a batched Kronecker product without materializing batch pairs."""
+
+    expanded: list[torch.Tensor] = []
+    for matrix in matrices:
+        if matrix.ndim == 2:
+            matrix = matrix.unsqueeze(0)
+        if matrix.shape[0] == 1 and batch_size != 1:
+            matrix = matrix.expand(batch_size, -1, -1)
+        if matrix.shape != (batch_size, 2, 2):
+            raise ValueError(
+                "single-wire matrix must have shape [2, 2] or [batch, 2, 2]"
+            )
+        expanded.append(matrix)
+    if not expanded:
+        raise ValueError("at least one single-wire matrix is required")
+    product = expanded[0]
+    for matrix in expanded[1:]:
+        rows, columns = product.shape[-2:]
+        product = (product[:, :, None, :, None] * matrix[:, None, :, None, :]).reshape(
+            batch_size, rows * 2, columns * 2
+        )
+    return product
+
+
+def _apply_disjoint_single_wire_step(
+    circuit: Circuit,
+    step: _StatevectorDisjointSingleWireStep,
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    rx_ry_rz_matrices: dict[int, torch.Tensor],
+    rotation_matrices: dict[int, torch.Tensor],
+) -> torch.Tensor:
+    matrices = tuple(
+        _fused_step_matrix(
+            circuit,
+            region,
+            state,
+            parameter_bindings,
+            rx_ry_rz_matrices,
+            rotation_matrices,
+        )
+        for region in step.regions
+    )
+    wires = tuple(region.wires[0] for region in step.regions)
+    matrix = _batched_kronecker_product(matrices, batch_size=state.shape[0])
+    return _apply_matrix(state, matrix, wires, circuit.n_wires)
 
 
 def _apply_cx_sequence(
@@ -571,12 +660,17 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_cross_wire_diagonal = (
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
+        enable_cpu_disjoint_single_wire = (
+            output.device.type == "cpu" and _cpu_disjoint_single_wire_fusion_enabled()
+        )
         program_key = (
             "statevector",
             "triton_rx_rz_loop",
             enable_triton_loop,
             "cpu_cross_wire_diagonal",
             enable_cpu_cross_wire_diagonal,
+            "cpu_disjoint_single_wire",
+            enable_cpu_disjoint_single_wire,
         )
         program = circuit._backend_programs.get(program_key)
         if program is None:
@@ -585,6 +679,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 circuit.n_wires,
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
+                enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
             )
             circuit._backend_programs[program_key] = program
         circuit._last_statevector_runtime = _initial_runtime_metrics(
@@ -605,6 +700,16 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
+            if isinstance(step, _StatevectorDisjointSingleWireStep):
+                output = _apply_disjoint_single_wire_step(
+                    circuit,
+                    step,
+                    output,
+                    parameter_bindings,
+                    batched_rx_ry_rz_matrices,
+                    batched_rotation_matrices,
+                )
+                continue
             if isinstance(step, _StatevectorCrossWireDiagonalStep):
                 output = _apply_cross_wire_diagonal_step(
                     circuit,
