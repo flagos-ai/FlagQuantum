@@ -23,11 +23,14 @@ remains outside portable aggregate installations.
 
 External framework imports are also namespace-governed. Cirq, CUDA-Q, Qiskit,
 and PennyLane imports belong only under their matching `flagquantum.ecosystem`
-namespaces; the architecture check rejects those dependencies in core IR,
-compilers, runtimes, kernels, and distributed workers. Existing experimental Aer
-entry points are compatibility wrappers over the Qiskit adapter. The common
+namespaces. Braket imports are restricted to its planned Ecosystem adapter and
+the existing Remote provider. The architecture check rejects these dependencies
+in core IR, compilers, kernels, and distributed workers. Existing experimental
+Aer entry points are compatibility wrappers over the Qiskit adapter. The common
 registry stores only module paths and adapter metadata; listing or resolving an
-adapter must not import its external framework.
+adapter must not import its external framework. The Braket SDK requires Python
+3.11 or newer, so its optional and aggregate requirements carry an environment
+marker while core FlagQuantum retains Python 3.10 support.
 
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as

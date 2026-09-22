@@ -68,6 +68,8 @@ jobs:
         run: python tools/check_team_scope.py --validate
       - name: Enforce core, extras, interop, and external-platform dependencies
         run: python tools/check_dependency_policy.py
+      - name: Verify Amazon Braket circuit interoperability contract
+        run: python tools/check_braket_interop_contract.py
       - name: Verify Cirq interoperability contract
         run: python tools/check_cirq_interop_contract.py
       - name: Verify CUDA-Q export contract

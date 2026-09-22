@@ -1,0 +1,143 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_braket_circuit_interop_contract_v1"
+ir_version = "1.0"
+maturity = "experimental"
+implementation_status = "contract_only"
+public_api_available = false
+dependency_extra = "braket"
+amazon_braket_sdk_versions = ["1.117.0", "1.127.1"]
+python_minimum = "3.11"
+core_import_allowed = false
+runtime_execution_allowed = false
+cloud_submission_allowed = false
+autograd_bridge_allowed = false
+
+[semantics]
+artifact = "braket.circuits.Circuit"
+direction = "bidirectional_static_circuit"
+qubit_mapping = "braket_integer_qubit_index_equals_flagquantum_wire"
+wire_extent = "explicit_identity_preserves_unreferenced_flagquantum_wires"
+operation_order = "braket_instruction_order"
+statevector_order = "ascending_braket_qubits_with_wire_zero_most_significant"
+dtype = "complex128"
+parameters = "bound_finite_real_scalars_only"
+global_phase = "not_represented"
+measurements = "execution_plan_not_in_static_circuit_ir"
+loss_policy = "fail_closed_unless_allow_lossy_true"
+
+[unsupported]
+flagquantum_opcodes = ["u1", "u2", "crx", "cry", "crz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+braket_features = ["compiler_directives", "free_parameters", "gate_calibrations", "global_phase", "measurement_instructions", "noise_instructions", "pulse_gates", "result_types", "verbatim_boxes"]
+planned_issue_codes = ["global_phase_not_represented", "measurement_not_represented", "non_finite_parameter", "non_real_parameter", "result_type_not_represented", "symbolic_parameter_not_supported", "unsupported_instruction", "unsupported_operation", "wire_extent_not_represented"]
+
+[verification]
+policy = "tests/unit/test_braket_interop_contract.py"
+planned_integration = "tests/test_braket_interop.py"
+planned_conformance = "tests/test_braket_interop_conformance.py"
+planned_core_isolation = "tests/unit/test_braket_interop_boundary.py"
+sdk_lane_deferred_until_implementation = true
+
+[[operations]]
+braket_gate_type = "I"
+braket_form = "Circuit().i(target)"
+flagquantum = "i"
+[[operations]]
+braket_gate_type = "X"
+braket_form = "Circuit().x(target)"
+flagquantum = "x"
+[[operations]]
+braket_gate_type = "Y"
+braket_form = "Circuit().y(target)"
+flagquantum = "y"
+[[operations]]
+braket_gate_type = "Z"
+braket_form = "Circuit().z(target)"
+flagquantum = "z"
+[[operations]]
+braket_gate_type = "H"
+braket_form = "Circuit().h(target)"
+flagquantum = "h"
+[[operations]]
+braket_gate_type = "S"
+braket_form = "Circuit().s(target)"
+flagquantum = "s"
+[[operations]]
+braket_gate_type = "Si"
+braket_form = "Circuit().si(target)"
+flagquantum = "sdg"
+[[operations]]
+braket_gate_type = "T"
+braket_form = "Circuit().t(target)"
+flagquantum = "t"
+[[operations]]
+braket_gate_type = "Ti"
+braket_form = "Circuit().ti(target)"
+flagquantum = "tdg"
+[[operations]]
+braket_gate_type = "V"
+braket_form = "Circuit().v(target)"
+flagquantum = "sx"
+[[operations]]
+braket_gate_type = "Vi"
+braket_form = "Circuit().vi(target)"
+flagquantum = "sxdg"
+[[operations]]
+braket_gate_type = "Rx"
+braket_form = "Circuit().rx(target, theta)"
+flagquantum = "rx"
+[[operations]]
+braket_gate_type = "Ry"
+braket_form = "Circuit().ry(target, theta)"
+flagquantum = "ry"
+[[operations]]
+braket_gate_type = "Rz"
+braket_form = "Circuit().rz(target, theta)"
+flagquantum = "rz"
+[[operations]]
+braket_gate_type = "PhaseShift"
+braket_form = "Circuit().phaseshift(target, theta)"
+flagquantum = "phase"
+[[operations]]
+braket_gate_type = "U"
+braket_form = "Circuit().u(target, theta, phi, lbd)"
+flagquantum = "u3"
+[[operations]]
+braket_gate_type = "CNot"
+braket_form = "Circuit().cnot(control, target)"
+flagquantum = "cx"
+[[operations]]
+braket_gate_type = "CY"
+braket_form = "Circuit().cy(control, target)"
+flagquantum = "cy"
+[[operations]]
+braket_gate_type = "CZ"
+braket_form = "Circuit().cz(control, target)"
+flagquantum = "cz"
+[[operations]]
+braket_gate_type = "Swap"
+braket_form = "Circuit().swap(left, right)"
+flagquantum = "swap"
+[[operations]]
+braket_gate_type = "CPhaseShift"
+braket_form = "Circuit().cphaseshift(control, target, theta)"
+flagquantum = "cphase"
+[[operations]]
+braket_gate_type = "XX"
+braket_form = "Circuit().xx(left, right, theta)"
+flagquantum = "rxx"
+[[operations]]
+braket_gate_type = "YY"
+braket_form = "Circuit().yy(left, right, theta)"
+flagquantum = "ryy"
+[[operations]]
+braket_gate_type = "ZZ"
+braket_form = "Circuit().zz(left, right, theta)"
+flagquantum = "rzz"
+[[operations]]
+braket_gate_type = "CCNot"
+braket_form = "Circuit().ccnot(control_0, control_1, target)"
+flagquantum = "ccx"
+[[operations]]
+braket_gate_type = "CSwap"
+braket_form = "Circuit().cswap(control, target_0, target_1)"
+flagquantum = "cswap"
