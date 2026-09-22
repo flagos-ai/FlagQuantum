@@ -21,6 +21,7 @@
     "QPUDigitalTwin",
     "align_histories",
     "build_calibration_history",
+    "build_region_validation_history",
     "build_validation_history",
     "compare_calibrations",
     "compose_connected_region",
@@ -33,6 +34,7 @@
     "dump_circuit_support",
     "dump_evidence",
     "dump_region_validation_suite",
+    "dump_region_validation_history",
     "dump_submission",
     "dump_twin",
     "dump_validation_history",
@@ -43,6 +45,7 @@
     "load_circuit_support",
     "load_evidence",
     "load_region_validation_suite",
+    "load_region_validation_history",
     "load_submission",
     "load_twin",
     "load_validation_history",
@@ -73,6 +76,7 @@
     "TwinRegionCoverageStatus",
     "TwinRegionModel",
     "TwinRegionSuiteEvaluation",
+    "TwinRegionValidationHistory",
     "TwinRegionValidationSuite",
     "TwinSnapshot",
     "TwinSubmission",
@@ -111,7 +115,10 @@
     "load_validation_series": "(path: 'str | PathLike[str]') -> 'TwinValidationSeries'",
     "prepare_candidate_trial": "(incumbent: 'QPUDigitalTwin', candidate: 'QPUDigitalTwin', circuit: 'Any', *, name: 'str', shots: 'int') -> 'TwinCandidateTrial'",
     "prepare_candidate_suite": "(incumbent: 'QPUDigitalTwin', candidate: 'QPUDigitalTwin', circuits: 'Sequence[Any]', *, name: 'str', shots: 'int') -> 'TwinCandidateSuite'",
-    "prepare_region_validation_suite": "(region_twin: 'TwinRegionModel', circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionValidationSuite'"
+    "prepare_region_validation_suite": "(region_twin: 'TwinRegionModel', circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionValidationSuite'",
+    "build_region_validation_history": "(observations: 'Sequence[tuple[TwinRegionModel, TwinRegionSuiteEvaluation]]') -> 'TwinRegionValidationHistory'",
+    "dump_region_validation_history": "(history: 'TwinRegionValidationHistory', path: 'str | PathLike[str]') -> 'None'",
+    "load_region_validation_history": "(path: 'str | PathLike[str]') -> 'TwinRegionValidationHistory'"
   },
   "public_class_signatures": {
     "QPUDigitalTwin": "(snapshot: 'TwinSnapshot', noise_model: 'NoiseModel') -> None",
@@ -140,7 +147,8 @@
     "TwinSubmission": "(experiment: 'TwinExperiment', receipt: 'ProviderTaskHandle', schema: 'str' = 'flagquantum.twin_submission.v1') -> None",
     "TwinValidationReport": "(snapshot_identity: 'str', circuit_identity: 'str', hardware_probabilities: 'tuple[float, ...]', ideal_hardware_total_variation: 'float', twin_hardware_total_variation: 'float', total_variation_improvement: 'float', shots: 'int', schema: 'str' = 'flagquantum.twin_validation_report.v1') -> None",
     "TwinValidationHistory": "(provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', circuit_identity: 'str', snapshot_identities: 'tuple[str, ...]', captured_at: 'tuple[str, ...]', validation_series: 'tuple[TwinValidationSeries, ...]', schema: 'str' = 'flagquantum.twin_validation_history.v1') -> None",
-    "TwinValidationSeries": "(snapshot_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', report_identities: 'tuple[str, ...]', repetitions: 'int', total_shots: 'int', mean_twin_hardware_total_variation: 'float', maximum_twin_hardware_total_variation: 'float', mean_ideal_hardware_total_variation: 'float', maximum_ideal_hardware_total_variation: 'float', mean_hardware_repeatability_total_variation: 'float | None', maximum_hardware_repeatability_total_variation: 'float | None', simultaneous_finite_shot_tv_radius: 'float', verified_tv_error_bound: 'float', confidence_level: 'float', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', schema: 'str' = 'flagquantum.twin_validation_series.v1') -> None"
+    "TwinValidationSeries": "(snapshot_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', report_identities: 'tuple[str, ...]', repetitions: 'int', total_shots: 'int', mean_twin_hardware_total_variation: 'float', maximum_twin_hardware_total_variation: 'float', mean_ideal_hardware_total_variation: 'float', maximum_ideal_hardware_total_variation: 'float', mean_hardware_repeatability_total_variation: 'float | None', maximum_hardware_repeatability_total_variation: 'float | None', simultaneous_finite_shot_tv_radius: 'float', verified_tv_error_bound: 'float', confidence_level: 'float', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', schema: 'str' = 'flagquantum.twin_validation_series.v1') -> None",
+    "TwinRegionValidationHistory": "(provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', circuit_identities: 'tuple[str, ...]', directed_couplers: 'tuple[tuple[int, int], ...]', snapshot_identities: 'tuple[str, ...]', region_identities: 'tuple[str, ...]', captured_at: 'tuple[str, ...]', evaluations: 'tuple[TwinRegionSuiteEvaluation, ...]', schema: 'str' = 'flagquantum.twin_region_validation_history.v1') -> None"
   },
   "public_method_signatures": {
     "QPUDigitalTwin.evidence_report": "(self, circuit: 'Any', *, evidence: 'TwinEvidenceEnvelope | None' = None) -> 'TwinEvidenceReport'",
@@ -201,59 +209,416 @@
     "TwinValidationHistory.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinValidationSeries.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinValidationSeries'",
     "TwinValidationSeries.to_dict": "(self) -> 'dict[str, Any]'",
-    "TwinValidationSeries.to_evidence": "(self) -> 'TwinEvidenceEnvelope'"
+    "TwinValidationSeries.to_evidence": "(self) -> 'TwinEvidenceEnvelope'",
+    "TwinRegionValidationHistory.append": "(self, region_twin: 'TwinRegionModel', evaluation: 'TwinRegionSuiteEvaluation') -> 'TwinRegionValidationHistory'",
+    "TwinRegionValidationHistory.to_dict": "(self) -> 'dict[str, Any]'"
   },
   "public_dataclass_fields": {
-    "QPUDigitalTwin": ["snapshot", "noise_model"],
-    "TwinCalibrationDrift": ["reference_snapshot_identity", "current_snapshot_identity", "provider", "backend_name", "physical_qubits", "elapsed_seconds", "qubit_drifts", "gate_duration_drifts", "channel_model_changed", "schema"],
-    "TwinCalibrationHistory": ["provider", "backend_name", "physical_qubits", "snapshot_identities", "captured_at", "baseline_drifts", "interval_drifts", "schema"],
-    "TwinCandidateEvaluation": ["trial_identity", "hardware_report", "incumbent_validation", "finite_shot_tv_radius", "candidate_improvement_error_radius", "confidence_level", "decision", "schema"],
-    "TwinCandidateSubmission": ["trial", "submission", "schema"],
-    "TwinCandidateSuite": ["trials", "schema"],
-    "TwinCandidateSuiteEvaluation": ["suite_identity", "evaluations", "confidence_level", "decision", "schema"],
-    "TwinCandidateTrial": ["incumbent_snapshot", "candidate_snapshot", "incumbent_prediction", "experiment", "schema"],
-    "TwinCircuitSupport": ["evidence", "directed_couplers", "maximum_circuit_depth", "schema"],
-    "TwinConnectedRegion": ["provider", "backend_name", "captured_at", "physical_qubits", "directed_couplers", "supported_operations", "maximum_instruction_count", "maximum_circuit_depth", "source_snapshot_identities", "source_support_identities", "schema"],
-    "TwinEvidenceEnvelope": ["snapshot_identity", "physical_qubits", "supported_operations", "maximum_instruction_count", "verified_circuit_identities", "evidence_identity", "verified_tv_error_bound", "estimated_tv_error_bound", "confidence_level", "schema"],
-    "TwinEvidenceReport": ["status", "prediction", "evidence_envelope_identity", "evidence_identity", "exact_circuit_verified", "structurally_supported", "tv_error_bound", "confidence_level", "reasons", "schema"],
-    "TwinEvolutionHistory": ["calibration_history", "validation_history", "schema"],
-    "TwinExperiment": ["snapshot_identity", "prediction", "name", "backend_name", "target_qubits", "submitted_qasm", "submitted_qasm_identity", "shots", "schema"],
-    "TwinHardwareReport": ["experiment_identity", "provider", "backend_name", "task_id", "submitted_qasm_identity", "executed_qasm_identity", "counts", "validation", "result_metadata", "schema"],
-    "TwinGateDurationDrift": ["gate_name", "physical_qubits", "reference_duration_seconds", "current_duration_seconds", "absolute_duration_delta_seconds", "relative_duration_delta", "schema"],
-    "TwinPrediction": ["snapshot_identity", "circuit_identity", "n_wires", "ideal_probabilities", "twin_probabilities", "total_variation_from_ideal", "schema"],
-    "TwinQubitCalibrationDrift": ["physical_qubit", "reference_t1_seconds", "current_t1_seconds", "relative_t1_delta", "reference_t2_seconds", "current_t2_seconds", "relative_t2_delta", "maximum_readout_row_tv_distance", "schema"],
-    "TwinRegionCoverage": ["status", "physical_qubits", "required_directed_couplers", "covered_qubits", "covered_directed_couplers", "missing_qubits", "missing_directed_couplers", "unsupported_operations", "circuit_depth", "maximum_circuit_depth", "source_support_identities", "reasons", "tv_error_bound", "confidence_level", "schema"],
-    "TwinRegionModel": ["region", "twin", "schema"],
-    "TwinRegionSuiteEvaluation": ["suite_identity", "region_identity", "snapshot_identity", "physical_qubits", "validation_series", "directed_couplers", "maximum_circuit_depth", "confidence_level", "schema"],
-    "TwinRegionValidationSuite": ["region_identity", "snapshot_identity", "physical_qubits", "experiments", "repetitions", "directed_couplers", "maximum_circuit_depth", "schema"],
-    "TwinSnapshot": ["provider", "backend_name", "captured_at", "physical_qubits", "calibration_identity", "noise_model_identity", "schema"],
-    "TwinSubmission": ["experiment", "receipt", "schema"],
-    "TwinValidationReport": ["snapshot_identity", "circuit_identity", "hardware_probabilities", "ideal_hardware_total_variation", "twin_hardware_total_variation", "total_variation_improvement", "shots", "schema"],
-    "TwinValidationHistory": ["provider", "backend_name", "physical_qubits", "circuit_identity", "snapshot_identities", "captured_at", "validation_series", "schema"],
-    "TwinValidationSeries": ["snapshot_identity", "circuit_identity", "physical_qubits", "report_identities", "repetitions", "total_shots", "mean_twin_hardware_total_variation", "maximum_twin_hardware_total_variation", "mean_ideal_hardware_total_variation", "maximum_ideal_hardware_total_variation", "mean_hardware_repeatability_total_variation", "maximum_hardware_repeatability_total_variation", "simultaneous_finite_shot_tv_radius", "verified_tv_error_bound", "confidence_level", "supported_operations", "maximum_instruction_count", "schema"]
+    "QPUDigitalTwin": [
+      "snapshot",
+      "noise_model"
+    ],
+    "TwinCalibrationDrift": [
+      "reference_snapshot_identity",
+      "current_snapshot_identity",
+      "provider",
+      "backend_name",
+      "physical_qubits",
+      "elapsed_seconds",
+      "qubit_drifts",
+      "gate_duration_drifts",
+      "channel_model_changed",
+      "schema"
+    ],
+    "TwinCalibrationHistory": [
+      "provider",
+      "backend_name",
+      "physical_qubits",
+      "snapshot_identities",
+      "captured_at",
+      "baseline_drifts",
+      "interval_drifts",
+      "schema"
+    ],
+    "TwinCandidateEvaluation": [
+      "trial_identity",
+      "hardware_report",
+      "incumbent_validation",
+      "finite_shot_tv_radius",
+      "candidate_improvement_error_radius",
+      "confidence_level",
+      "decision",
+      "schema"
+    ],
+    "TwinCandidateSubmission": [
+      "trial",
+      "submission",
+      "schema"
+    ],
+    "TwinCandidateSuite": [
+      "trials",
+      "schema"
+    ],
+    "TwinCandidateSuiteEvaluation": [
+      "suite_identity",
+      "evaluations",
+      "confidence_level",
+      "decision",
+      "schema"
+    ],
+    "TwinCandidateTrial": [
+      "incumbent_snapshot",
+      "candidate_snapshot",
+      "incumbent_prediction",
+      "experiment",
+      "schema"
+    ],
+    "TwinCircuitSupport": [
+      "evidence",
+      "directed_couplers",
+      "maximum_circuit_depth",
+      "schema"
+    ],
+    "TwinConnectedRegion": [
+      "provider",
+      "backend_name",
+      "captured_at",
+      "physical_qubits",
+      "directed_couplers",
+      "supported_operations",
+      "maximum_instruction_count",
+      "maximum_circuit_depth",
+      "source_snapshot_identities",
+      "source_support_identities",
+      "schema"
+    ],
+    "TwinEvidenceEnvelope": [
+      "snapshot_identity",
+      "physical_qubits",
+      "supported_operations",
+      "maximum_instruction_count",
+      "verified_circuit_identities",
+      "evidence_identity",
+      "verified_tv_error_bound",
+      "estimated_tv_error_bound",
+      "confidence_level",
+      "schema"
+    ],
+    "TwinEvidenceReport": [
+      "status",
+      "prediction",
+      "evidence_envelope_identity",
+      "evidence_identity",
+      "exact_circuit_verified",
+      "structurally_supported",
+      "tv_error_bound",
+      "confidence_level",
+      "reasons",
+      "schema"
+    ],
+    "TwinEvolutionHistory": [
+      "calibration_history",
+      "validation_history",
+      "schema"
+    ],
+    "TwinExperiment": [
+      "snapshot_identity",
+      "prediction",
+      "name",
+      "backend_name",
+      "target_qubits",
+      "submitted_qasm",
+      "submitted_qasm_identity",
+      "shots",
+      "schema"
+    ],
+    "TwinHardwareReport": [
+      "experiment_identity",
+      "provider",
+      "backend_name",
+      "task_id",
+      "submitted_qasm_identity",
+      "executed_qasm_identity",
+      "counts",
+      "validation",
+      "result_metadata",
+      "schema"
+    ],
+    "TwinGateDurationDrift": [
+      "gate_name",
+      "physical_qubits",
+      "reference_duration_seconds",
+      "current_duration_seconds",
+      "absolute_duration_delta_seconds",
+      "relative_duration_delta",
+      "schema"
+    ],
+    "TwinPrediction": [
+      "snapshot_identity",
+      "circuit_identity",
+      "n_wires",
+      "ideal_probabilities",
+      "twin_probabilities",
+      "total_variation_from_ideal",
+      "schema"
+    ],
+    "TwinQubitCalibrationDrift": [
+      "physical_qubit",
+      "reference_t1_seconds",
+      "current_t1_seconds",
+      "relative_t1_delta",
+      "reference_t2_seconds",
+      "current_t2_seconds",
+      "relative_t2_delta",
+      "maximum_readout_row_tv_distance",
+      "schema"
+    ],
+    "TwinRegionCoverage": [
+      "status",
+      "physical_qubits",
+      "required_directed_couplers",
+      "covered_qubits",
+      "covered_directed_couplers",
+      "missing_qubits",
+      "missing_directed_couplers",
+      "unsupported_operations",
+      "circuit_depth",
+      "maximum_circuit_depth",
+      "source_support_identities",
+      "reasons",
+      "tv_error_bound",
+      "confidence_level",
+      "schema"
+    ],
+    "TwinRegionModel": [
+      "region",
+      "twin",
+      "schema"
+    ],
+    "TwinRegionSuiteEvaluation": [
+      "suite_identity",
+      "region_identity",
+      "snapshot_identity",
+      "physical_qubits",
+      "validation_series",
+      "directed_couplers",
+      "maximum_circuit_depth",
+      "confidence_level",
+      "schema"
+    ],
+    "TwinRegionValidationSuite": [
+      "region_identity",
+      "snapshot_identity",
+      "physical_qubits",
+      "experiments",
+      "repetitions",
+      "directed_couplers",
+      "maximum_circuit_depth",
+      "schema"
+    ],
+    "TwinSnapshot": [
+      "provider",
+      "backend_name",
+      "captured_at",
+      "physical_qubits",
+      "calibration_identity",
+      "noise_model_identity",
+      "schema"
+    ],
+    "TwinSubmission": [
+      "experiment",
+      "receipt",
+      "schema"
+    ],
+    "TwinValidationReport": [
+      "snapshot_identity",
+      "circuit_identity",
+      "hardware_probabilities",
+      "ideal_hardware_total_variation",
+      "twin_hardware_total_variation",
+      "total_variation_improvement",
+      "shots",
+      "schema"
+    ],
+    "TwinValidationHistory": [
+      "provider",
+      "backend_name",
+      "physical_qubits",
+      "circuit_identity",
+      "snapshot_identities",
+      "captured_at",
+      "validation_series",
+      "schema"
+    ],
+    "TwinValidationSeries": [
+      "snapshot_identity",
+      "circuit_identity",
+      "physical_qubits",
+      "report_identities",
+      "repetitions",
+      "total_shots",
+      "mean_twin_hardware_total_variation",
+      "maximum_twin_hardware_total_variation",
+      "mean_ideal_hardware_total_variation",
+      "maximum_ideal_hardware_total_variation",
+      "mean_hardware_repeatability_total_variation",
+      "maximum_hardware_repeatability_total_variation",
+      "simultaneous_finite_shot_tv_radius",
+      "verified_tv_error_bound",
+      "confidence_level",
+      "supported_operations",
+      "maximum_instruction_count",
+      "schema"
+    ],
+    "TwinRegionValidationHistory": [
+      "provider",
+      "backend_name",
+      "physical_qubits",
+      "circuit_identities",
+      "directed_couplers",
+      "snapshot_identities",
+      "region_identities",
+      "captured_at",
+      "evaluations",
+      "schema"
+    ]
   },
   "public_properties": {
-    "TwinCalibrationDrift": ["has_observed_drift", "maximum_readout_tv_distance", "maximum_relative_gate_duration_change", "maximum_relative_t1_change", "maximum_relative_t2_change"],
-    "TwinCalibrationHistory": ["latest_baseline_drift", "latest_interval_drift", "observation_count"],
-    "TwinCandidateEvaluation": ["candidate_hardware_total_variation", "candidate_improvement", "candidate_improvement_lower_bound", "candidate_improvement_upper_bound", "candidate_snapshot_identity", "ideal_hardware_total_variation", "incumbent_hardware_total_variation", "incumbent_snapshot_identity"],
-    "TwinCandidateSubmission": ["identity", "receipt"],
-    "TwinCandidateSuite": ["circuit_count", "identity", "total_shots"],
-    "TwinCandidateSuiteEvaluation": ["candidate_improvement_error_radius", "candidate_improvement_lower_bound", "candidate_improvement_upper_bound", "circuit_count", "mean_candidate_hardware_total_variation", "mean_candidate_improvement", "mean_candidate_qpu_agreement", "mean_ideal_hardware_total_variation", "mean_ideal_qpu_agreement", "mean_incumbent_hardware_total_variation", "mean_incumbent_qpu_agreement", "total_shots"],
-    "TwinCandidateTrial": ["identity"],
-    "TwinCircuitSupport": ["identity"],
-    "TwinConnectedRegion": ["identity", "target"],
-    "TwinRegionModel": ["identity", "physical_qubits", "target"],
-    "TwinRegionSuiteEvaluation": ["circuit_count", "identity", "mean_ideal_qpu_agreement", "mean_qpu_repeatability", "mean_twin_qpu_agreement", "simultaneous_finite_shot_tv_radius", "simultaneous_tv_error_bound", "task_count", "total_shots"],
-    "TwinRegionValidationSuite": ["circuit_count", "identity", "planned_shots", "planned_task_count"],
-    "TwinEvidenceEnvelope": ["identity"],
-    "TwinEvolutionHistory": ["ideal_qpu_agreement_changes", "latest_calibration_drift", "latest_ideal_agreement_change", "latest_qpu_repeatability_change", "latest_twin_agreement_change", "latest_verified_bound_change", "observation_count", "qpu_repeatability_changes", "twin_qpu_agreement_changes", "verified_tv_error_bound_changes"],
-    "TwinExperiment": ["identity"],
-    "TwinHardwareReport": ["executed_program_matches_submission", "identity", "validation_scope"],
-    "TwinSnapshot": ["identity"],
-    "TwinSubmission": ["identity"],
-    "TwinValidationReport": ["outperforms_ideal_baseline"],
-    "TwinValidationHistory": ["confidence_levels", "mean_ideal_qpu_agreements", "mean_qpu_repeatabilities", "mean_twin_qpu_agreements", "observation_count", "simultaneous_finite_shot_tv_radii", "verified_tv_error_bounds"],
-    "TwinValidationSeries": ["identity", "mean_ideal_qpu_agreement", "mean_qpu_repeatability", "mean_twin_qpu_agreement"]
+    "TwinCalibrationDrift": [
+      "has_observed_drift",
+      "maximum_readout_tv_distance",
+      "maximum_relative_gate_duration_change",
+      "maximum_relative_t1_change",
+      "maximum_relative_t2_change"
+    ],
+    "TwinCalibrationHistory": [
+      "latest_baseline_drift",
+      "latest_interval_drift",
+      "observation_count"
+    ],
+    "TwinCandidateEvaluation": [
+      "candidate_hardware_total_variation",
+      "candidate_improvement",
+      "candidate_improvement_lower_bound",
+      "candidate_improvement_upper_bound",
+      "candidate_snapshot_identity",
+      "ideal_hardware_total_variation",
+      "incumbent_hardware_total_variation",
+      "incumbent_snapshot_identity"
+    ],
+    "TwinCandidateSubmission": [
+      "identity",
+      "receipt"
+    ],
+    "TwinCandidateSuite": [
+      "circuit_count",
+      "identity",
+      "total_shots"
+    ],
+    "TwinCandidateSuiteEvaluation": [
+      "candidate_improvement_error_radius",
+      "candidate_improvement_lower_bound",
+      "candidate_improvement_upper_bound",
+      "circuit_count",
+      "mean_candidate_hardware_total_variation",
+      "mean_candidate_improvement",
+      "mean_candidate_qpu_agreement",
+      "mean_ideal_hardware_total_variation",
+      "mean_ideal_qpu_agreement",
+      "mean_incumbent_hardware_total_variation",
+      "mean_incumbent_qpu_agreement",
+      "total_shots"
+    ],
+    "TwinCandidateTrial": [
+      "identity"
+    ],
+    "TwinCircuitSupport": [
+      "identity"
+    ],
+    "TwinConnectedRegion": [
+      "identity",
+      "target"
+    ],
+    "TwinRegionModel": [
+      "identity",
+      "physical_qubits",
+      "target"
+    ],
+    "TwinRegionSuiteEvaluation": [
+      "circuit_count",
+      "identity",
+      "mean_ideal_qpu_agreement",
+      "mean_qpu_repeatability",
+      "mean_twin_qpu_agreement",
+      "simultaneous_finite_shot_tv_radius",
+      "simultaneous_tv_error_bound",
+      "task_count",
+      "total_shots"
+    ],
+    "TwinRegionValidationSuite": [
+      "circuit_count",
+      "identity",
+      "planned_shots",
+      "planned_task_count"
+    ],
+    "TwinEvidenceEnvelope": [
+      "identity"
+    ],
+    "TwinEvolutionHistory": [
+      "ideal_qpu_agreement_changes",
+      "latest_calibration_drift",
+      "latest_ideal_agreement_change",
+      "latest_qpu_repeatability_change",
+      "latest_twin_agreement_change",
+      "latest_verified_bound_change",
+      "observation_count",
+      "qpu_repeatability_changes",
+      "twin_qpu_agreement_changes",
+      "verified_tv_error_bound_changes"
+    ],
+    "TwinExperiment": [
+      "identity"
+    ],
+    "TwinHardwareReport": [
+      "executed_program_matches_submission",
+      "identity",
+      "validation_scope"
+    ],
+    "TwinSnapshot": [
+      "identity"
+    ],
+    "TwinSubmission": [
+      "identity"
+    ],
+    "TwinValidationReport": [
+      "outperforms_ideal_baseline"
+    ],
+    "TwinValidationHistory": [
+      "confidence_levels",
+      "mean_ideal_qpu_agreements",
+      "mean_qpu_repeatabilities",
+      "mean_twin_qpu_agreements",
+      "observation_count",
+      "simultaneous_finite_shot_tv_radii",
+      "verified_tv_error_bounds"
+    ],
+    "TwinValidationSeries": [
+      "identity",
+      "mean_ideal_qpu_agreement",
+      "mean_qpu_repeatability",
+      "mean_twin_qpu_agreement"
+    ],
+    "TwinRegionValidationHistory": [
+      "confidence_levels",
+      "mean_ideal_qpu_agreements",
+      "mean_qpu_repeatabilities",
+      "mean_twin_qpu_agreements",
+      "observation_count",
+      "simultaneous_finite_shot_tv_radii",
+      "simultaneous_tv_error_bounds",
+      "task_counts",
+      "total_shots"
+    ]
   },
   "public_schema_defaults": {
     "TwinCalibrationDrift": "flagquantum.twin_calibration_drift.v1",
@@ -281,7 +646,8 @@
     "TwinSubmission": "flagquantum.twin_submission.v1",
     "TwinValidationReport": "flagquantum.twin_validation_report.v1",
     "TwinValidationHistory": "flagquantum.twin_validation_history.v1",
-    "TwinValidationSeries": "flagquantum.twin_validation_series.v1"
+    "TwinValidationSeries": "flagquantum.twin_validation_series.v1",
+    "TwinRegionValidationHistory": "flagquantum.twin_region_validation_history.v1"
   },
   "public_literal_values": {
     "TwinCandidateDecision": [

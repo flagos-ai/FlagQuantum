@@ -23,6 +23,8 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 - `TwinValidationReport`: comparison with one hardware observation;
 - `TwinValidationHistory`: fixed-circuit validation across chronological Twins;
 - `TwinValidationSeries`: conservative summary of distinct repeated results.
+- `TwinRegionValidationHistory`: one fixed regional circuit suite across
+  chronological calibration snapshots.
 
 ## Ten-minute path
 
@@ -186,6 +188,32 @@ fq.twin.dump_validation_history(updated, "validation-history-state-03.json")
 The method reruns the complete history invariants and never mutates the model,
 the previous history, or its persisted artifact. The framework does not decide
 when to collect the next observation.
+
+Align repeated evaluations of the same fixed regional circuit suite:
+
+```python
+region_history = fq.twin.build_region_validation_history(
+    [
+        (reference_region_twin, reference_evaluation),
+        (current_region_twin, current_evaluation),
+    ]
+)
+fq.twin.dump_region_validation_history(
+    region_history,
+    "region-validation-history.json",
+)
+region_history = fq.twin.load_region_validation_history(
+    "region-validation-history.json"
+)
+print(region_history.mean_twin_qpu_agreements)
+print(region_history.simultaneous_tv_error_bounds)
+```
+
+The target, mapping, full topology, ordered circuit suite, exercised couplers,
+and maximum circuit depth remain fixed while calibration snapshots advance in
+strict time order. Hardware reports cannot be reused across observations.
+This is an offline observational record, not arbitrary-circuit evidence, a
+trust window, a model update, or a scheduling policy.
 
 Align the two independently audited timelines by exact snapshot identity:
 
