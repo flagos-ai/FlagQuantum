@@ -806,6 +806,14 @@ evaluation = study.validate_results(
     confidence_level=0.95,
 )
 
+fq.twin.dump_region_holdout_evaluation(
+    evaluation,
+    "region-holdout-evaluation.json",
+)
+evaluation = fq.twin.load_region_holdout_evaluation(
+    "region-holdout-evaluation.json",
+)
+
 print(evaluation.reference_twin_qpu_agreement)
 print(evaluation.holdout_twin_qpu_agreement)
 print(evaluation.holdout_twin_qpu_tv_increase)
@@ -820,6 +828,10 @@ were harder for the Twin. Confidence is simultaneous across both groups,
 their circuits, and every repetition. The result supports only the exact
 predeclared circuits. It is not arbitrary-circuit accuracy, state fidelity, a
 training-generalization claim, or permission to route production workloads.
+Loading the evaluation reconstructs both nested suite evaluations and every
+validation series, then rejects any changed derived metric or non-canonical
+version-1 payload. Files are private, create-once checkpoints; writing the
+identical evaluation again is idempotent.
 The complete checkpointed workflow is
 `examples/remote/quafu_twin_region_holdout.py`.
 

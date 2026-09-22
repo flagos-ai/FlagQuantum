@@ -12,8 +12,7 @@ from typing import Any
 
 from ._atomic import write_once
 from .region_model import TwinRegionModel
-from .region_suite import TwinRegionSuiteEvaluation
-from .series import TwinValidationSeries
+from .region_suite import TwinRegionSuiteEvaluation, _evaluation_from_dict
 
 _HISTORY_SCHEMA = "flagquantum.twin_region_validation_history.v1"
 _HISTORY_FIELDS = {
@@ -37,64 +36,12 @@ _HISTORY_FIELDS = {
     "total_shots",
     "evaluations",
 }
-_EVALUATION_FIELDS = {
-    "schema",
-    "suite_identity",
-    "region_identity",
-    "snapshot_identity",
-    "physical_qubits",
-    "validation_series",
-    "directed_couplers",
-    "maximum_circuit_depth",
-    "confidence_level",
-    "circuit_count",
-    "task_count",
-    "total_shots",
-    "mean_twin_qpu_agreement",
-    "mean_ideal_qpu_agreement",
-    "mean_qpu_repeatability",
-    "simultaneous_finite_shot_tv_radius",
-    "simultaneous_tv_error_bound",
-}
 
 
 def _canonical(payload: Mapping[str, Any]) -> str:
     return json.dumps(
         dict(payload), sort_keys=True, separators=(",", ":"), allow_nan=False
     )
-
-
-def _evaluation_from_dict(payload: Mapping[str, Any]) -> TwinRegionSuiteEvaluation:
-    if not isinstance(payload, Mapping):
-        raise TypeError("Twin region-suite evaluation must be a mapping")
-    actual = set(payload)
-    if actual != _EVALUATION_FIELDS:
-        raise ValueError(
-            "Twin region-suite evaluation fields do not match the v1 schema: "
-            f"missing={sorted(_EVALUATION_FIELDS - actual)}, "
-            f"unexpected={sorted(actual - _EVALUATION_FIELDS)}"
-        )
-    series_payloads = payload["validation_series"]
-    if not isinstance(series_payloads, list) or any(
-        not isinstance(item, Mapping) for item in series_payloads
-    ):
-        raise ValueError("Twin region-suite series must be JSON objects")
-    evaluation = TwinRegionSuiteEvaluation(
-        schema=str(payload["schema"]),
-        suite_identity=str(payload["suite_identity"]),
-        region_identity=str(payload["region_identity"]),
-        snapshot_identity=str(payload["snapshot_identity"]),
-        physical_qubits=tuple(payload["physical_qubits"]),
-        validation_series=tuple(
-            TwinValidationSeries.from_dict(item) for item in series_payloads
-        ),
-        directed_couplers=tuple(tuple(item) for item in payload["directed_couplers"]),
-        maximum_circuit_depth=int(payload["maximum_circuit_depth"]),
-        confidence_level=float(payload["confidence_level"]),
-    )
-    if _canonical(evaluation.to_dict()) != _canonical(payload):
-        raise ValueError("Twin region-suite evaluation is not in canonical v1 form")
-    return evaluation
 
 
 @dataclass(frozen=True)
@@ -139,8 +86,7 @@ class TwinRegionValidationHistory:
             or any(type(qubit) is not int or qubit < 0 for qubit in qubits)
         ):
             raise ValueError(
-                "region-validation physical qubits must be unique "
-                "non-negative integers"
+                "region-validation physical qubits must be unique non-negative integers"
             )
         circuits = tuple(self.circuit_identities)
         if len(circuits) < 2 or len(circuits) != len(set(circuits)):

@@ -33,6 +33,7 @@
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_region_holdout_evaluation",
     "dump_region_holdout_study",
     "dump_region_validation_suite",
     "dump_region_validation_history",
@@ -45,6 +46,7 @@
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_region_holdout_evaluation",
     "load_region_holdout_study",
     "load_region_validation_suite",
     "load_region_validation_history",
@@ -125,7 +127,9 @@
     "dump_region_validation_history": "(history: 'TwinRegionValidationHistory', path: 'str | PathLike[str]') -> 'None'",
     "load_region_validation_history": "(path: 'str | PathLike[str]') -> 'TwinRegionValidationHistory'",
     "prepare_region_holdout_study": "(region_twin: 'TwinRegionModel', reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionHoldoutStudy'",
+    "dump_region_holdout_evaluation": "(evaluation: 'TwinRegionHoldoutEvaluation', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_holdout_study": "(study: 'TwinRegionHoldoutStudy', path: 'str | PathLike[str]') -> 'None'",
+    "load_region_holdout_evaluation": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutEvaluation'",
     "load_region_holdout_study": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutStudy'"
   },
   "public_class_signatures": {

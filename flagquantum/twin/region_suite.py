@@ -23,6 +23,25 @@ from .submission import TwinSubmission, _experiment_from_dict, _require_fields
 
 _SUITE_SCHEMA = "flagquantum.twin_region_validation_suite.v1"
 _EVALUATION_SCHEMA = "flagquantum.twin_region_suite_evaluation.v1"
+_EVALUATION_FIELDS = {
+    "schema",
+    "suite_identity",
+    "region_identity",
+    "snapshot_identity",
+    "physical_qubits",
+    "validation_series",
+    "directed_couplers",
+    "maximum_circuit_depth",
+    "confidence_level",
+    "circuit_count",
+    "task_count",
+    "total_shots",
+    "mean_twin_qpu_agreement",
+    "mean_ideal_qpu_agreement",
+    "mean_qpu_repeatability",
+    "simultaneous_finite_shot_tv_radius",
+    "simultaneous_tv_error_bound",
+}
 
 
 def _identity(payload: Mapping[str, Any]) -> str:
@@ -223,6 +242,43 @@ class TwinRegionSuiteEvaluation:
             ),
             "simultaneous_tv_error_bound": self.simultaneous_tv_error_bound,
         }
+
+
+def _evaluation_from_dict(
+    payload: Mapping[str, Any],
+) -> TwinRegionSuiteEvaluation:
+    """Restore one suite evaluation for trusted package persistence code."""
+
+    if not isinstance(payload, Mapping):
+        raise TypeError("Twin region-suite evaluation must be a mapping")
+    actual = set(payload)
+    if actual != _EVALUATION_FIELDS:
+        raise ValueError(
+            "Twin region-suite evaluation fields do not match the v1 schema: "
+            f"missing={sorted(_EVALUATION_FIELDS - actual)}, "
+            f"unexpected={sorted(actual - _EVALUATION_FIELDS)}"
+        )
+    series_payloads = payload["validation_series"]
+    if not isinstance(series_payloads, list) or any(
+        not isinstance(item, Mapping) for item in series_payloads
+    ):
+        raise ValueError("Twin region-suite series must be JSON objects")
+    evaluation = TwinRegionSuiteEvaluation(
+        schema=str(payload["schema"]),
+        suite_identity=str(payload["suite_identity"]),
+        region_identity=str(payload["region_identity"]),
+        snapshot_identity=str(payload["snapshot_identity"]),
+        physical_qubits=tuple(payload["physical_qubits"]),
+        validation_series=tuple(
+            TwinValidationSeries.from_dict(item) for item in series_payloads
+        ),
+        directed_couplers=tuple(tuple(item) for item in payload["directed_couplers"]),
+        maximum_circuit_depth=int(payload["maximum_circuit_depth"]),
+        confidence_level=float(payload["confidence_level"]),
+    )
+    if _identity(evaluation.to_dict()) != _identity(payload):
+        raise ValueError("Twin region-suite evaluation is not in canonical v1 form")
+    return evaluation
 
 
 @dataclass(frozen=True)

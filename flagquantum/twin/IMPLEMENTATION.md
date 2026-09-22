@@ -233,6 +233,15 @@ study = fq.twin.prepare_region_holdout_study(
 )
 fq.twin.dump_region_holdout_study(study, "region-holdout-study.json")
 study = fq.twin.load_region_holdout_study("region-holdout-study.json")
+
+# After explicit submission, terminal-result fetching, and validation:
+fq.twin.dump_region_holdout_evaluation(
+    evaluation,
+    "region-holdout-evaluation.json",
+)
+evaluation = fq.twin.load_region_holdout_evaluation(
+    "region-holdout-evaluation.json",
+)
 ```
 
 The two groups share one snapshot, mapping, shot count, and repetition count,
@@ -240,6 +249,9 @@ while circuit identities and later QPU task identities must be disjoint. One
 Bonferroni allocation covers both groups, every circuit, and every repetition.
 The resulting holdout TV-error increase is an observation for the frozen
 circuits, not an arbitrary-circuit, training, trust, or routing claim.
+Evaluation loading reconstructs its nested suite and validation-series records
+and verifies every serialized derived metric. Evaluation checkpoints use the
+same private, create-once behavior as the frozen study.
 
 Align the two independently audited timelines by exact snapshot identity:
 

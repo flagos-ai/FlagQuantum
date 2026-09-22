@@ -17,12 +17,33 @@ from .region_model import TwinRegionModel
 from .region_suite import (
     TwinRegionSuiteEvaluation,
     TwinRegionValidationSuite,
+    _evaluation_from_dict,
     prepare_region_validation_suite,
 )
 from .submission import TwinSubmission
 
 _STUDY_SCHEMA = "flagquantum.twin_region_holdout_study.v1"
 _EVALUATION_SCHEMA = "flagquantum.twin_region_holdout_evaluation.v1"
+_EVALUATION_FIELDS = {
+    "schema",
+    "study_identity",
+    "reference_evaluation",
+    "holdout_evaluation",
+    "confidence_level",
+    "reference_circuit_count",
+    "holdout_circuit_count",
+    "task_count",
+    "total_shots",
+    "reference_twin_qpu_agreement",
+    "holdout_twin_qpu_agreement",
+    "holdout_twin_qpu_tv_increase",
+    "reference_ideal_qpu_agreement",
+    "holdout_ideal_qpu_agreement",
+    "reference_qpu_repeatability",
+    "holdout_qpu_repeatability",
+    "simultaneous_finite_shot_tv_radius",
+    "holdout_simultaneous_tv_error_bound",
+}
 
 
 def _identity(payload: Mapping[str, Any]) -> str:
@@ -410,6 +431,48 @@ def load_region_holdout_study(path: str | PathLike[str]) -> TwinRegionHoldoutStu
     return study
 
 
+def load_region_holdout_evaluation(
+    path: str | PathLike[str],
+) -> TwinRegionHoldoutEvaluation:
+    """Load a holdout evaluation and recompute every derived metric."""
+
+    source = Path(path)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"Cannot load Twin region holdout evaluation from {source}"
+        ) from error
+    if not isinstance(payload, Mapping):
+        raise ValueError(
+            "Twin region holdout-evaluation file must contain a JSON object"
+        )
+    actual = set(payload)
+    if actual != _EVALUATION_FIELDS:
+        raise ValueError(
+            "Twin region holdout-evaluation fields do not match the v1 schema: "
+            f"missing={sorted(_EVALUATION_FIELDS - actual)}, "
+            f"unexpected={sorted(actual - _EVALUATION_FIELDS)}"
+        )
+    reference = payload["reference_evaluation"]
+    holdout = payload["holdout_evaluation"]
+    if not isinstance(reference, Mapping) or not isinstance(holdout, Mapping):
+        raise ValueError("Twin region holdout evaluations must be JSON objects")
+    try:
+        evaluation = TwinRegionHoldoutEvaluation(
+            schema=str(payload["schema"]),
+            study_identity=str(payload["study_identity"]),
+            reference_evaluation=_evaluation_from_dict(reference),
+            holdout_evaluation=_evaluation_from_dict(holdout),
+            confidence_level=float(payload["confidence_level"]),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Invalid Twin region holdout evaluation") from error
+    if evaluation.to_dict() != payload:
+        raise ValueError("Twin region holdout evaluation is not in canonical v1 form")
+    return evaluation
+
+
 def dump_region_holdout_study(
     study: TwinRegionHoldoutStudy,
     path: str | PathLike[str],
@@ -432,8 +495,37 @@ def dump_region_holdout_study(
     )
 
 
+def dump_region_holdout_evaluation(
+    evaluation: TwinRegionHoldoutEvaluation,
+    path: str | PathLike[str],
+) -> None:
+    """Write one private evaluation without replacing different content."""
+
+    if not isinstance(evaluation, TwinRegionHoldoutEvaluation):
+        raise TypeError("evaluation must be a TwinRegionHoldoutEvaluation")
+    encoded = (
+        json.dumps(
+            evaluation.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    )
+    write_once(
+        Path(path),
+        encoded,
+        label="Twin region holdout evaluation",
+        matches=lambda destination: (
+            load_region_holdout_evaluation(destination) == evaluation
+        ),
+    )
+
+
 __all__ = (
+    "dump_region_holdout_evaluation",
     "dump_region_holdout_study",
+    "load_region_holdout_evaluation",
     "load_region_holdout_study",
     "prepare_region_holdout_study",
     "TwinRegionHoldoutEvaluation",
