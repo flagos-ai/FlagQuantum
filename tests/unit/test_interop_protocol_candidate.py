@@ -71,8 +71,9 @@ def test_interop_errors_join_stable_error_boundary() -> None:
 
 
 def test_experimental_interop_contains_implementations_not_protocol_aliases() -> None:
-    assert fq.experimental.interop.__all__ == ("cirq", "pennylane", "qiskit")
+    assert fq.experimental.interop.__all__ == ("cirq", "cudaq", "pennylane", "qiskit")
     assert fq.experimental.interop.cirq is fqi.cirq
+    assert fq.experimental.interop.cudaq is fqi.cudaq
     assert fq.experimental.interop.qiskit is fqi.qiskit
     assert fq.experimental.interop.pennylane is fqi.pennylane
     with pytest.raises(AttributeError):

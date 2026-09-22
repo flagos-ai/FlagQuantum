@@ -3,6 +3,7 @@ omit =
     flagquantum/benchmarking/*
     flagquantum/runtime/executors/statevector/triton.py
     flagquantum/simulation/triton_kernels/*
+    flagquantum/ecosystem/cudaq/*
 
 [report]
 exclude_also =

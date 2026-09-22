@@ -124,6 +124,12 @@ QISKIT_ADAPTER_SPEC = InteropAdapterSpec(
     attribute="QISKIT_ADAPTER",
     dependency_extra="qiskit",
 )
+CUDAQ_ADAPTER_SPEC = InteropAdapterSpec(
+    name="cudaq",
+    module="flagquantum.ecosystem.cudaq.adapter",
+    attribute="CUDAQ_ADAPTER",
+    dependency_extra="cudaq",
+)
 CIRQ_ADAPTER_SPEC = InteropAdapterSpec(
     name="cirq",
     module="flagquantum.ecosystem.cirq.adapter",
@@ -139,6 +145,7 @@ PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
 DEFAULT_INTEROP_REGISTRY = InteropRegistry(
     {
         "cirq": CIRQ_ADAPTER_SPEC,
+        "cudaq": CUDAQ_ADAPTER_SPEC,
         "pennylane": PENNYLANE_ADAPTER_SPEC,
         "qiskit": QISKIT_ADAPTER_SPEC,
     }
@@ -160,6 +167,7 @@ def get_adapter(name: str) -> InteropAdapter:
 __all__ = (
     "DEFAULT_INTEROP_REGISTRY",
     "CIRQ_ADAPTER_SPEC",
+    "CUDAQ_ADAPTER_SPEC",
     "PENNYLANE_ADAPTER_SPEC",
     "QISKIT_ADAPTER_SPEC",
     "InteropAdapterSpec",

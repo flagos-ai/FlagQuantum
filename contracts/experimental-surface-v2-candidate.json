@@ -38,7 +38,7 @@
       "run_dynamic"
     ],
     "execution": [],
-    "interop": ["cirq", "pennylane", "qiskit"],
+    "interop": ["cirq", "cudaq", "pennylane", "qiskit"],
     "mps": [],
     "numerics": [
       "execute_split_real_imag_expectation",
@@ -54,9 +54,14 @@
       "proposal": "docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md",
       "namespace": "artifacts",
       "discoverable_feature_exports": 6
+    },
+    {
+      "proposal": "docs/development/CUDAQ_EXPORT_CONTRACT.md",
+      "namespace": "interop",
+      "discoverable_feature_exports": 1
     }
   ],
-  "current_total_discoverable_feature_exports": 17,
+  "current_total_discoverable_feature_exports": 18,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,

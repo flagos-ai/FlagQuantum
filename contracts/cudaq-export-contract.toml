@@ -2,12 +2,12 @@
 schema = "flagquantum_cudaq_export_contract_v1"
 ir_version = "1.0"
 maturity = "experimental"
-implementation_status = "contract_only"
-public_api_available = false
+implementation_status = "implemented"
+public_api_available = true
 dependency_extra = "cudaq"
 cudaq_versions = ["0.15.1", "0.16.0.post1"]
 python_minimum = "3.11"
-supported_platforms = ["linux_x86_64", "linux_aarch64", "macos_arm64_cpu_only"]
+supported_platforms = ["linux_x86_64", "linux_aarch64"]
 core_import_allowed = false
 runtime_execution_allowed = false
 autograd_bridge_allowed = false
@@ -27,14 +27,14 @@ loss_policy = "fail_closed_without_lossy_export"
 [unsupported]
 flagquantum_opcodes = ["i", "sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "ccx", "cswap", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 cudaq_features = ["arbitrary_kernel_import", "classical_control_flow", "decorated_kernel_import", "kernel_arguments", "kernel_composition", "measurements", "noise_channels", "qudit_operations", "remote_or_hardware_execution", "state_initialization", "symbolic_parameters"]
-planned_issue_codes = ["global_phase_not_represented", "measurement_not_supported", "non_finite_parameter", "non_real_parameter", "reverse_conversion_not_supported", "runtime_execution_not_supported", "symbolic_parameter_not_supported", "unsupported_operation"]
+issue_codes = ["measurement_not_supported", "non_finite_parameter", "non_real_parameter", "reverse_conversion_not_supported", "symbolic_parameter_not_supported", "unsupported_operation"]
 
 [verification]
 policy = "tests/unit/test_cudaq_export_contract.py"
-planned_integration = "tests/test_cudaq_export.py"
-planned_conformance = "tests/test_cudaq_export_conformance.py"
-planned_core_isolation = "tests/unit/test_cudaq_export_boundary.py"
-sdk_lane_deferred_until_implementation = true
+integration = "tests/test_cudaq_export.py"
+conformance = "tests/test_cudaq_export_conformance.py"
+core_isolation = "tests/unit/test_cudaq_export_boundary.py"
+sdk_lane = ".github/workflows/ci.yml#cudaq-optional"
 
 [[operations]]
 cudaq_builder_method = "x"

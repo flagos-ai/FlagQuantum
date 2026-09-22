@@ -51,6 +51,7 @@ jax = ["0.10"]
 cirq = ["1.6.1", "1.7.0"]
 qiskit = ["2.0", "2.5"]
 pennylane = ["0.44.1", "0.45.1"]
+cudaq = ["0.15.1", "0.16.0.post1"]
 
 [updates]
 cadence = "monthly"

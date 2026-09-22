@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -14,12 +15,13 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.ecosystem.cudaq._version import installed_cudaq_version
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "cudaq-export-contract.toml"
 POLICY = ROOT / "dependency-policy.toml"
 EXPECTED_VERSIONS = ["0.15.1", "0.16.0.post1"]
-EXPECTED_PLATFORMS = ["linux_x86_64", "linux_aarch64", "macos_arm64_cpu_only"]
+EXPECTED_PLATFORMS = ["linux_x86_64", "linux_aarch64"]
 EXPECTED_SEMANTICS = {
     "artifact": "cudaq.Kernel",
     "direction": "flagquantum_ir_to_cudaq_kernel_only",
@@ -47,10 +49,10 @@ def contract_errors(
         errors.append("CUDA-Q export schema drifted")
     if contract.get("ir_version") != IR_VERSION:
         errors.append("CUDA-Q contract must target current IR")
-    if contract.get("implementation_status") != "contract_only":
-        errors.append("CUDA-Q v1 must remain contract-only until its exporter lands")
-    if contract.get("public_api_available") is not False:
-        errors.append("CUDA-Q public API must remain unavailable before implementation")
+    if contract.get("implementation_status") != "implemented":
+        errors.append("CUDA-Q v1 implementation status must remain implemented")
+    if contract.get("public_api_available") is not True:
+        errors.append("CUDA-Q public API must remain available after implementation")
     if contract.get("dependency_extra") != "cudaq":
         errors.append("CUDA-Q must use only its optional extra")
     if policy.get("extras", {}).get("cudaq") != [EXPECTED_REQUIREMENT]:
@@ -73,26 +75,26 @@ def contract_errors(
         errors.append("CUDA-Q autograd must remain outside export v1")
 
     semantics = contract.get("semantics", {})
-    for name, expected in EXPECTED_SEMANTICS.items():
-        if semantics.get(name) != expected:
+    for name, expected_semantic in EXPECTED_SEMANTICS.items():
+        if semantics.get(name) != expected_semantic:
             errors.append(f"CUDA-Q semantic {name!r} drifted")
 
     unsupported = contract.get("unsupported", {})
     excluded = set(unsupported.get("flagquantum_opcodes", ()))
     operations = contract.get("operations", ())
     mapped = [
-        operation.get("flagquantum")
+        operation["flagquantum"]
         for operation in operations
-        if isinstance(operation, dict)
+        if isinstance(operation, dict) and isinstance(operation.get("flagquantum"), str)
     ]
     if len(mapped) != len(set(mapped)):
         errors.append("CUDA-Q operation mappings must be unique")
-    expected = set(OPERATOR_SCHEMAS) - excluded
-    if set(mapped) != expected:
+    expected_opcodes = set(OPERATOR_SCHEMAS) - excluded
+    if set(mapped) != expected_opcodes:
         errors.append(
             "CUDA-Q opcode coverage drifted: "
-            f"missing={sorted(expected-set(mapped))}, "
-            f"unexpected={sorted(set(mapped)-expected)}"
+            f"missing={sorted(expected_opcodes-set(mapped))}, "
+            f"unexpected={sorted(set(mapped)-expected_opcodes)}"
         )
     for operation in operations:
         if not isinstance(operation, dict):
@@ -106,16 +108,43 @@ def contract_errors(
     policy_path = verification.get("policy")
     if not isinstance(policy_path, str) or not (ROOT / policy_path).is_file():
         errors.append("CUDA-Q policy verification path does not exist")
-    if verification.get("sdk_lane_deferred_until_implementation") is not True:
-        errors.append("CUDA-Q SDK lane must remain explicitly deferred")
-    if (ROOT / "flagquantum" / "ecosystem" / "cudaq").exists():
-        errors.append("CUDA-Q adapter exists while contract declares contract-only")
+    for name in ("policy", "integration", "conformance", "core_isolation"):
+        path = verification.get(name)
+        if not isinstance(path, str) or not (ROOT / path).is_file():
+            errors.append(f"CUDA-Q {name} verification path does not exist")
+    if verification.get("sdk_lane") != ".github/workflows/ci.yml#cudaq-optional":
+        errors.append("CUDA-Q SDK lane reference drifted")
+    if not (ROOT / "flagquantum" / "ecosystem" / "cudaq").is_dir():
+        errors.append("CUDA-Q adapter implementation is missing")
+    return tuple(errors)
+
+
+def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
+    try:
+        cudaq = import_module("cudaq")
+    except ImportError:
+        return ("CUDA-Q SDK is not installed",)
+    version = installed_cudaq_version(cudaq)
+    if version not in contract.get("cudaq_versions", ()):
+        return (f"uncertified CUDA-Q SDK version {version}",)
+    kernel = cudaq.make_kernel()
+    kernel.qalloc(2)
+    errors = []
+    for operation in contract.get("operations", ()):
+        method = operation.get("cudaq_builder_method")
+        if not callable(getattr(kernel, str(method), None)):
+            errors.append(f"CUDA-Q kernel builder method {method!r} is unavailable")
     return tuple(errors)
 
 
 def main(argv: list[str] | None = None) -> int:
-    argparse.ArgumentParser().parse_args(argv)
-    errors = contract_errors(load_toml(CONTRACT), load_toml(POLICY))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verify-sdk", action="store_true")
+    args = parser.parse_args(argv)
+    contract = load_toml(CONTRACT)
+    errors = contract_errors(contract, load_toml(POLICY))
+    if args.verify_sdk:
+        errors += sdk_errors(contract)
     if errors:
         print("\n".join(errors))
         return 1

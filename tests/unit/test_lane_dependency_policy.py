@@ -821,12 +821,13 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
         {"dev", "jax", "viz", "cirq", "pennylane", "cotengra"}
     )
     assert coverage.expressions == (
-        "(smoke or unit or integration or jax) and not qiskit and not triton",
+        "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton",
     )
     # A conjunction stays a conjunction: `and not qiskit` must not read as "any
     # of these names", which is what would hand a skipped test a clean bill.
     assert coverage.selects({"smoke"}, "tests/unrelated.py")
     assert not coverage.selects({"qiskit", "integration"}, "tests/unrelated.py")
+    assert not coverage.selects({"cudaq", "integration"}, "tests/unrelated.py")
     assert not coverage.selects({"triton", "unit"}, "tests/unrelated.py")
     # The coverage lane does select a device-marked test, and cannot run it.
     assert coverage.selects({"gpu", "integration"}, "tests/unrelated.py")
