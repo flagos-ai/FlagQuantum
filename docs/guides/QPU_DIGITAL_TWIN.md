@@ -765,6 +765,50 @@ even if it uses the same qubits and operations. See
 `examples/remote/quafu_twin_region_validation_suite.py` for the checkpointed
 `prepare`, single-task `submit`, and all-results `evaluate` commands.
 
+### Track one regional suite across calibration snapshots
+
+After the same frozen circuit suite has been evaluated against distinct later
+hardware tasks at two or more calibration snapshots, align those evaluations
+into one offline history:
+
+```python
+history = fq.twin.build_region_validation_history(
+    [
+        (reference_region_twin, reference_evaluation),
+        (current_region_twin, current_evaluation),
+    ]
+)
+
+print(history.mean_twin_qpu_agreements)
+print(history.mean_ideal_qpu_agreements)
+print(history.mean_qpu_repeatabilities)
+print(history.simultaneous_finite_shot_tv_radii)
+print(history.simultaneous_tv_error_bounds)
+print(history.task_counts)
+print(history.total_shots)
+
+fq.twin.dump_region_validation_history(
+    history,
+    "twin-region-validation-history.json",
+)
+restored = fq.twin.load_region_validation_history(
+    "twin-region-validation-history.json"
+)
+
+updated = restored.append(later_region_twin, later_evaluation)
+```
+
+The target, ordered physical mapping, full directed topology, ordered fixed
+circuit identities, exercised couplers, and maximum circuit depth must remain
+the same. Calibration and regional-model identities change at each strictly
+later observation, and every hardware report may appear only once.
+
+Construction, loading, and appending are offline. The history does not submit
+or poll hardware, update the Twin, infer a trust window, or promote the model.
+Agreement and bounds apply to classical measurement distributions for the
+fixed suite only; they are neither quantum-state fidelity nor evidence for an
+arbitrary circuit on the same region.
+
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an
   externally supplied estimated bound exists.

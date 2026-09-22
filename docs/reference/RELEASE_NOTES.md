@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added immutable regional Twin validation histories. Applications can align
+  the same fixed regional circuit suite across chronological calibration
+  snapshots and persist chart-ready Twin-QPU agreement, ideal-QPU agreement,
+  QPU repeatability, uncertainty, task, and shot sequences. Changed targets,
+  mappings, topologies, suites, or reused reports fail closed; the history
+  performs no provider operation and defines no trust or promotion policy. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added fixed regional Twin validation suites. Applications can predeclare
   distinct connected-region circuits and repeated task counts, checkpoint each
   explicit submission, and validate the complete result collection under one

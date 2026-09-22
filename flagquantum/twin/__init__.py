@@ -62,6 +62,12 @@ from .region_suite import (
     load_region_validation_suite,
     prepare_region_validation_suite,
 )
+from .region_validation_history import (
+    TwinRegionValidationHistory,
+    build_region_validation_history,
+    dump_region_validation_history,
+    load_region_validation_history,
+)
 from .series import (
     TwinValidationSeries,
     dump_validation_series,
@@ -80,6 +86,7 @@ __all__ = (
     "QPUDigitalTwin",
     "align_histories",
     "build_calibration_history",
+    "build_region_validation_history",
     "build_validation_history",
     "compare_calibrations",
     "compose_connected_region",
@@ -92,6 +99,7 @@ __all__ = (
     "dump_circuit_support",
     "dump_evidence",
     "dump_region_validation_suite",
+    "dump_region_validation_history",
     "dump_submission",
     "dump_twin",
     "dump_validation_history",
@@ -102,6 +110,7 @@ __all__ = (
     "load_circuit_support",
     "load_evidence",
     "load_region_validation_suite",
+    "load_region_validation_history",
     "load_submission",
     "load_twin",
     "load_validation_history",
@@ -132,6 +141,7 @@ __all__ = (
     "TwinRegionCoverageStatus",
     "TwinRegionModel",
     "TwinRegionSuiteEvaluation",
+    "TwinRegionValidationHistory",
     "TwinRegionValidationSuite",
     "TwinSnapshot",
     "TwinSubmission",
