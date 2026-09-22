@@ -1,0 +1,86 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_cudaq_export_contract_v1"
+ir_version = "1.0"
+maturity = "experimental"
+implementation_status = "contract_only"
+public_api_available = false
+dependency_extra = "cudaq"
+cudaq_versions = ["0.15.1", "0.16.0.post1"]
+python_minimum = "3.11"
+supported_platforms = ["linux_x86_64", "linux_aarch64", "macos_arm64_cpu_only"]
+core_import_allowed = false
+runtime_execution_allowed = false
+autograd_bridge_allowed = false
+
+[semantics]
+artifact = "cudaq.Kernel"
+direction = "flagquantum_ir_to_cudaq_kernel_only"
+construction = "cudaq.make_kernel_dynamic_builder"
+qubit_mapping = "qalloc_index_equals_flagquantum_wire"
+operation_order = "flagquantum_ir_operation_order"
+statevector_order = "cudaq_wire_zero_is_lsb_and_requires_explicit_conformance_reordering"
+parameters = "bound_finite_real_scalars_only"
+global_phase = "not_represented"
+measurements = "rejected_from_static_unitary_export_v1"
+loss_policy = "fail_closed_without_lossy_export"
+
+[unsupported]
+flagquantum_opcodes = ["i", "sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "ccx", "cswap", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+cudaq_features = ["arbitrary_kernel_import", "classical_control_flow", "decorated_kernel_import", "kernel_arguments", "kernel_composition", "measurements", "noise_channels", "qudit_operations", "remote_or_hardware_execution", "state_initialization", "symbolic_parameters"]
+planned_issue_codes = ["global_phase_not_represented", "measurement_not_supported", "non_finite_parameter", "non_real_parameter", "reverse_conversion_not_supported", "runtime_execution_not_supported", "symbolic_parameter_not_supported", "unsupported_operation"]
+
+[verification]
+policy = "tests/unit/test_cudaq_export_contract.py"
+planned_integration = "tests/test_cudaq_export.py"
+planned_conformance = "tests/test_cudaq_export_conformance.py"
+planned_core_isolation = "tests/unit/test_cudaq_export_boundary.py"
+sdk_lane_deferred_until_implementation = true
+
+[[operations]]
+cudaq_builder_method = "x"
+cudaq_form = "kernel.x(qubits[target])"
+flagquantum = "x"
+[[operations]]
+cudaq_builder_method = "y"
+cudaq_form = "kernel.y(qubits[target])"
+flagquantum = "y"
+[[operations]]
+cudaq_builder_method = "z"
+cudaq_form = "kernel.z(qubits[target])"
+flagquantum = "z"
+[[operations]]
+cudaq_builder_method = "h"
+cudaq_form = "kernel.h(qubits[target])"
+flagquantum = "h"
+[[operations]]
+cudaq_builder_method = "s"
+cudaq_form = "kernel.s(qubits[target])"
+flagquantum = "s"
+[[operations]]
+cudaq_builder_method = "t"
+cudaq_form = "kernel.t(qubits[target])"
+flagquantum = "t"
+[[operations]]
+cudaq_builder_method = "rx"
+cudaq_form = "kernel.rx(theta, qubits[target])"
+flagquantum = "rx"
+[[operations]]
+cudaq_builder_method = "ry"
+cudaq_form = "kernel.ry(theta, qubits[target])"
+flagquantum = "ry"
+[[operations]]
+cudaq_builder_method = "rz"
+cudaq_form = "kernel.rz(theta, qubits[target])"
+flagquantum = "rz"
+[[operations]]
+cudaq_builder_method = "cx"
+cudaq_form = "kernel.cx(qubits[control], qubits[target])"
+flagquantum = "cx"
+[[operations]]
+cudaq_builder_method = "cz"
+cudaq_form = "kernel.cz(qubits[control], qubits[target])"
+flagquantum = "cz"
+[[operations]]
+cudaq_builder_method = "swap"
+cudaq_form = "kernel.swap(qubits[left], qubits[right])"
+flagquantum = "swap"

@@ -14,13 +14,19 @@ adapters; it is not part of the historical `all` development/runtime bundle.
 Installing core FlagQuantum therefore never installs an external quantum
 framework.
 
-External framework imports are also namespace-governed. Qiskit and PennyLane
-imports belong only under their matching `flagquantum.ecosystem` namespaces; the
-architecture check rejects either dependency in core IR, compilers, runtimes,
-kernels, and distributed workers. Existing experimental Aer entry points are
-compatibility wrappers over the Qiskit adapter. The common registry stores only
-module paths and adapter metadata; listing or resolving an adapter must not
-import its external framework.
+CUDA-Q is a separate `cudaq` heterogeneous-toolchain extra. It is deliberately
+outside `interop-all`: its platform-specific compiler and simulator distribution
+is materially heavier than the portable circuit-model adapters. The first
+contract exposes no public adapter and permits no CUDA-Q import outside
+`flagquantum.ecosystem.cudaq`.
+
+External framework imports are also namespace-governed. Cirq, CUDA-Q, Qiskit,
+and PennyLane imports belong only under their matching `flagquantum.ecosystem`
+namespaces; the architecture check rejects those dependencies in core IR,
+compilers, runtimes, kernels, and distributed workers. Existing experimental Aer
+entry points are compatibility wrappers over the Qiskit adapter. The common
+registry stores only module paths and adapter metadata; listing or resolving an
+adapter must not import its external framework.
 
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as

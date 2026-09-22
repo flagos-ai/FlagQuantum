@@ -304,6 +304,9 @@ def architecture_errors() -> tuple[str, ...]:
     cirq_import_allowed_prefixes = tuple(
         interop_boundaries.get("cirq_import_allowed_prefixes", ())
     )
+    cudaq_import_allowed_prefixes = tuple(
+        interop_boundaries.get("cudaq_import_allowed_prefixes", ())
+    )
     qiskit_import_allowed_prefixes = tuple(
         interop_boundaries.get("qiskit_import_allowed_prefixes", ())
     )
@@ -446,6 +449,13 @@ def architecture_errors() -> tuple[str, ...]:
                 errors.append(
                     f"{relative}: Cirq imports are isolated to "
                     "flagquantum.ecosystem.cirq"
+                )
+            if (
+                module == "cudaq" or module.startswith("cudaq.")
+            ) and not relative.startswith(cudaq_import_allowed_prefixes):
+                errors.append(
+                    f"{relative}: CUDA-Q imports are isolated to "
+                    "flagquantum.ecosystem.cudaq"
                 )
             if (
                 module == "qiskit"

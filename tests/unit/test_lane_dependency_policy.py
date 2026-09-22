@@ -77,6 +77,7 @@ MANUAL = ROOT / "docs/development/TESTING.md"
 IMPORT_ALIASES = {
     "braket": "amazon-braket-sdk",
     "cirq": "cirq-core",
+    "cudaq": "cudaq",
     "jaxlib": "jax",
     "quark": "quarkcircuit",
 }

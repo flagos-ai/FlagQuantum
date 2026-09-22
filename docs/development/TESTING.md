@@ -399,7 +399,7 @@ The checked-in `ci.yml` defines twelve jobs:
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
-  capability-maturity, and repository-hygiene checks;
+  capability-maturity, CUDA-Q export-contract, and repository-hygiene checks;
 - `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
   only, including proof that importing and differentiating a native circuit
   does not import JAX;
@@ -425,6 +425,11 @@ The checked-in `ci.yml` defines twelve jobs:
   with the floors in `contracts/coverage-policy.toml` enforced by
   `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
+
+The `cudaq` extra has no SDK job while its exporter remains contract-only. The
+quality job validates its machine-readable boundary without installing CUDA-Q.
+The implementation change must add isolated 0.15.1 and 0.16.0.post1 lanes before
+claiming those versions as tested or exposing the adapter publicly.
 
 Two further items are not jobs but placement rules for tests that run inside the
 CPU tiers: Double-Single primitives run in the ordinary CPU unit/integration
