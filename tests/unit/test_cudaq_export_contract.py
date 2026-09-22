@@ -57,3 +57,6 @@ def test_ci_checks_contract_and_real_sdk_lane() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_cudaq_export_contract.py" in workflow
     assert "cudaq-optional:" in workflow
+    assert 'OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"' in workflow
+    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert '"cudaq==${version}"' in workflow

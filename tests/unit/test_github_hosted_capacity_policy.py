@@ -273,6 +273,27 @@ def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
     assert "and not slow" not in steps["github.event_name != 'pull_request'"]
 
 
+def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:
+    jobs = _github_hosted_jobs("ci.yml")
+    expected = {
+        "qiskit-optional": "2.0.* 2.5.*",
+        "cirq-optional": "1.6.1 1.7.0",
+        "braket-optional": "1.117.0 1.127.1",
+        "cudaq-optional": "0.15.1 0.16.0.post1",
+        "pennylane-optional": "0.44.1 0.45.1",
+    }
+    for name, versions in expected.items():
+        job = jobs[name]
+        assert "strategy" not in job
+        env = job.get("env")
+        assert isinstance(env, dict)
+        assert env.get("OPTIONAL_VERSIONS") == versions
+        commands = "\n".join(
+            str(step.get("run", "")) for step in _steps("ci.yml", name)
+        )
+        assert "for version in ${OPTIONAL_VERSIONS}" in commands
+
+
 def test_no_github_hosted_lane_uses_unbounded_auto_workers() -> None:
     for workflow in BUCKETED_WORKFLOWS:
         text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
