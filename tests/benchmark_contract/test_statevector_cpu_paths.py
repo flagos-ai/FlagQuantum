@@ -136,7 +136,7 @@ def test_fused_rotation_regions_are_attributed_and_reduce_to_one_apply_each():
     rotation = by_case["rotation_chain"]["runtime_statistics"]
     assert rotation["fused_gate_regions"] == 6
     assert rotation["fused_gate_count"] == 12
-    assert rotation["statevector_apply_count"] == 6
+    assert rotation["statevector_apply_count"] == 2
 
     # A diagonal chain fuses exactly like a rotation chain, and the region it
     # forms is a product of diagonal matrices, so it is diagonal as a whole. The
@@ -173,6 +173,19 @@ def test_two_wire_diagonal_matching_fusion_can_be_disabled(monkeypatch):
             "statevector_apply_count"
         ]
         == 5
+    )
+
+
+def test_disjoint_single_wire_fusion_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+
+    by_case = {
+        item["case"]: item
+        for item in _small_run(layers=2, n_wires=6, cases=["rotation_chain"])["cases"]
+    }
+
+    assert (
+        by_case["rotation_chain"]["runtime_statistics"]["statevector_apply_count"] == 6
     )
 
 
@@ -419,7 +432,6 @@ def test_cpu_paths_records_the_kernel_switches_its_numbers_depend_on(monkeypatch
         "source": "code_default",
         "raw": None,
     }
-
     monkeypatch.setenv("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", "1")
     flags = _small_run(cases=["rotation_chain"])["execution_flags"]
     assert flags["FQ_CPU_SINGLE_WIRE_ELEMENTWISE"]["effective"] is True
