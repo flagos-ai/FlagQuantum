@@ -22,6 +22,7 @@ CELL_A_SUPPORT = Path("cell-a-support.json")
 CELL_B_TWIN = Path("cell-b-twin.json")
 CELL_B_SUPPORT = Path("cell-b-support.json")
 STUDY_PATH = Path("regional-twin-holdout-study.json")
+EVALUATION_PATH = Path("regional-twin-holdout-evaluation.json")
 REFERENCE_SUPPORT_PATH = Path("regional-twin-reference-support.json")
 HOLDOUT_SUPPORT_PATH = Path("regional-twin-holdout-support.json")
 SUBMISSION_PREFIX = "regional-twin-holdout-submission"
@@ -119,6 +120,7 @@ def evaluate(provider: QuafuProvider) -> None:
         holdout_circuits=holdout_circuits(),
         confidence_level=0.95,
     )
+    fq.twin.dump_region_holdout_evaluation(evaluation, EVALUATION_PATH)
     fq.twin.dump_circuit_support(
         evaluation.reference_evaluation.to_circuit_support(),
         REFERENCE_SUPPORT_PATH,
@@ -155,6 +157,7 @@ def evaluate(provider: QuafuProvider) -> None:
         f"{evaluation.holdout_simultaneous_tv_error_bound:.2%}",
     )
     print("confidence level:", f"{evaluation.confidence_level:.2%}")
+    print("evaluation:", EVALUATION_PATH)
     print("reference support:", REFERENCE_SUPPORT_PATH)
     print("holdout support:", HOLDOUT_SUPPORT_PATH)
 

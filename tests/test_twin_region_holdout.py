@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import replace
 
 import pytest
@@ -94,6 +95,29 @@ def _study() -> fq.twin.TwinRegionHoldoutStudy:
         name="regional-holdout",
         shots=1024,
         repetitions=2,
+    )
+
+
+def _evaluation() -> fq.twin.TwinRegionHoldoutEvaluation:
+    study = _study()
+    reference_submissions, reference_results = _suite_inputs(
+        study.reference_suite,
+        prefix="reference",
+        offset_step=8,
+    )
+    holdout_submissions, holdout_results = _suite_inputs(
+        study.holdout_suite,
+        prefix="holdout",
+        offset_step=16,
+    )
+    return study.validate_results(
+        reference_submissions,
+        reference_results,
+        holdout_submissions,
+        holdout_results,
+        reference_circuits=_reference_circuits(),
+        holdout_circuits=_holdout_circuits(),
+        confidence_level=0.95,
     )
 
 
@@ -258,6 +282,62 @@ def test_holdout_study_round_trip_is_private_and_create_once(tmp_path) -> None:
     assert destination.stat().st_mode & 0o777 == 0o600
 
 
+def test_holdout_evaluation_round_trip_is_private_and_create_once(tmp_path) -> None:
+    evaluation = _evaluation()
+    destination = tmp_path / "holdout-evaluation.json"
+
+    fq.twin.dump_region_holdout_evaluation(evaluation, destination)
+    original = destination.read_bytes()
+    restored = fq.twin.load_region_holdout_evaluation(destination)
+    fq.twin.dump_region_holdout_evaluation(evaluation, destination)
+
+    assert restored == evaluation
+    assert restored.identity == evaluation.identity
+    assert destination.read_bytes() == original
+    assert destination.stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("holdout_twin_qpu_agreement", 1.0),
+        ("holdout_twin_qpu_tv_increase", 0.0),
+        ("task_count", 999),
+        ("total_shots", 999),
+    ),
+)
+def test_holdout_evaluation_rejects_changed_derived_metrics(
+    tmp_path,
+    field,
+    replacement,
+) -> None:
+    payload = _evaluation().to_dict()
+    payload[field] = replacement
+    destination = tmp_path / "tampered-holdout-evaluation.json"
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not in canonical v1 form"):
+        fq.twin.load_region_holdout_evaluation(destination)
+
+
+def test_holdout_evaluation_rejects_changed_nested_series(tmp_path) -> None:
+    payload = _evaluation().to_dict()
+    payload["holdout_evaluation"]["validation_series"][0]["total_shots"] = 1
+    destination = tmp_path / "tampered-nested-evaluation.json"
+    destination.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid Twin region holdout evaluation"):
+        fq.twin.load_region_holdout_evaluation(destination)
+
+
+def test_holdout_evaluation_refuses_invalid_existing_content(tmp_path) -> None:
+    destination = tmp_path / "holdout-evaluation.json"
+    destination.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Refusing to replace invalid"):
+        fq.twin.dump_region_holdout_evaluation(_evaluation(), destination)
+
+
 def test_holdout_study_rejects_changed_repetition_count() -> None:
     study = _study()
     changed = replace(
@@ -284,6 +364,7 @@ def test_complete_holdout_example_is_checkpointed_and_executable(
         "CELL_B_TWIN": tmp_path / "cell-b-twin.json",
         "CELL_B_SUPPORT": tmp_path / "cell-b-support.json",
         "STUDY_PATH": tmp_path / "holdout-study.json",
+        "EVALUATION_PATH": tmp_path / "holdout-evaluation.json",
         "REFERENCE_SUPPORT_PATH": tmp_path / "reference-support.json",
         "HOLDOUT_SUPPORT_PATH": tmp_path / "holdout-support.json",
     }
@@ -355,7 +436,9 @@ def test_complete_holdout_example_is_checkpointed_and_executable(
 
     quafu_twin_region_holdout.evaluate(provider)
 
+    evaluation = fq.twin.load_region_holdout_evaluation(paths["EVALUATION_PATH"])
     reference = fq.twin.load_circuit_support(paths["REFERENCE_SUPPORT_PATH"])
     holdout = fq.twin.load_circuit_support(paths["HOLDOUT_SUPPORT_PATH"])
+    assert evaluation.task_count == 8
     assert len(reference.evidence.verified_circuit_identities) == 2
     assert len(holdout.evidence.verified_circuit_identities) == 2

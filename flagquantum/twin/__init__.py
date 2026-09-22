@@ -57,7 +57,9 @@ from .region import (
 from .region_holdout import (
     TwinRegionHoldoutEvaluation,
     TwinRegionHoldoutStudy,
+    dump_region_holdout_evaluation,
     dump_region_holdout_study,
+    load_region_holdout_evaluation,
     load_region_holdout_study,
     prepare_region_holdout_study,
 )
@@ -105,6 +107,7 @@ __all__ = (
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_region_holdout_evaluation",
     "dump_region_holdout_study",
     "dump_region_validation_suite",
     "dump_region_validation_history",
@@ -117,6 +120,7 @@ __all__ = (
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_region_holdout_evaluation",
     "load_region_holdout_study",
     "load_region_validation_suite",
     "load_region_validation_history",
