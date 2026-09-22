@@ -192,15 +192,22 @@ def _initial_runtime_metrics(
             else (step,)
         )
     )
+    diagonal_metric_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(step, _StatevectorCrossWireDiagonalStep)
+            else (step,)
+        )
+    )
     loop_steps = tuple(
         step for step in metric_steps if isinstance(step, _StatevectorRXRZLoopStep)
     )
-    # A diagonal gate that was fused into a region is still a diagonal gate, so
-    # it is counted, at one per gate rather than one per region: the regions are
-    # reported by ``diagonal_fused_regions``, and this field answers "how many
-    # gates of this program are diagonal", which is what a reader sums against
-    # ``fused_gate_count``. Before this the fused ones were counted by neither
-    # field, so a rotation column of RZ reported zero diagonal gates.
+    # Only flatten the dedicated diagonal wrapper for diagonal-path metrics.
+    # A diagonal region inside a mixed single-wire group is materialized in the
+    # group's dense Kronecker matrix and does not execute the elementwise path.
+    # Counting it here would misreport which kernel actually ran.
     #
     # The predicate is the one the dispatch routes on, deliberately, including
     # its treatment of a supplied matrix: a gate named ``rz`` that carries a
@@ -208,11 +215,11 @@ def _initial_runtime_metrics(
     # would make the field disagree with the run it describes.
     diagonal_unfused_gates = sum(
         isinstance(step, _StatevectorGateStep) and _diagonal_region((step.instruction,))
-        for step in metric_steps
+        for step in diagonal_metric_steps
     )
     diagonal_fused_regions = tuple(
         step
-        for step in metric_steps
+        for step in diagonal_metric_steps
         if isinstance(step, _StatevectorFusedGateStep) and step.diagonal
     )
     return {
@@ -234,7 +241,7 @@ def _initial_runtime_metrics(
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
-            for step in metric_steps
+            for step in program
         )
         + sum(
             len(step.controls)
@@ -247,7 +254,7 @@ def _initial_runtime_metrics(
         "fixed_single_qubit_specialized_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) == "y"
-            for step in metric_steps
+            for step in program
         ),
         "fused_gate_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
