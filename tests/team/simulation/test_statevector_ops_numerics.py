@@ -304,6 +304,79 @@ def test_cpu_single_qubit_direct_kernel_preserves_state_and_matrix_gradients():
         torch.testing.assert_close(actual_gradient, expected_gradient)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batched_matrix", (False, True))
+def test_cpu_reversed_trailing_two_qubit_kernel_matches_layout_reference(
+    dtype, batched_matrix
+):
+    generator = torch.Generator().manual_seed(1739)
+    state = torch.randn((3, 32), dtype=dtype, generator=generator)
+    matrix_shape = (3, 4, 4) if batched_matrix else (4, 4)
+    matrix = torch.randn(matrix_shape, dtype=dtype, generator=generator)
+
+    actual = _apply_matrix(state, matrix, (4, 3), 5)
+    expected = _apply_matrix_layout(state, matrix, (4, 3), 5)
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_reversed_trailing_two_qubit_kernel_bypasses_layout(monkeypatch):
+    state = torch.randn((2, 32), dtype=torch.complex128)
+    matrix = torch.randn((4, 4), dtype=torch.complex128)
+
+    def reject_layout(*args, **kwargs):
+        raise AssertionError("reversed trailing two-qubit fast path must bypass layout")
+
+    monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", reject_layout)
+
+    result = _apply_matrix(state, matrix, (4, 3), 5)
+
+    assert result.shape == state.shape
+
+
+def test_cpu_other_two_qubit_orders_keep_layout_path(monkeypatch):
+    state = torch.randn((2, 32), dtype=torch.complex128)
+    matrix = torch.randn((4, 4), dtype=torch.complex128)
+    observed = []
+
+    def recording_layout(state, matrix, wires, n_wires, layout=None):
+        observed.append(tuple(wires))
+        return state.clone()
+
+    monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", recording_layout)
+
+    _apply_matrix(state, matrix, (3, 4), 5)
+    _apply_matrix(state, matrix, (2, 1), 5)
+
+    assert observed == [(3, 4), (2, 1)]
+
+
+def test_cpu_reversed_trailing_two_qubit_kernel_preserves_gradients():
+    generator = torch.Generator().manual_seed(1741)
+    state = torch.randn(
+        (2, 16), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    matrix = torch.randn(
+        (2, 4, 4), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+
+    actual = _apply_matrix(state, matrix, (3, 2), 4)
+    expected = _apply_matrix_layout(state, matrix, (3, 2), 4)
+    actual_gradients = torch.autograd.grad(
+        torch.abs(actual).square().sum(), (state, matrix), retain_graph=True
+    )
+    expected_gradients = torch.autograd.grad(
+        torch.abs(expected).square().sum(), (state, matrix)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
 @pytest.mark.parametrize("wires", ((0,), (2,), (0, 2), (2, 0)))
 def test_cpu_diagonal_kernel_matches_layout_reference(wires):
     generator = torch.Generator().manual_seed(1741 + sum(wires))
