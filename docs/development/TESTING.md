@@ -463,6 +463,13 @@ workflow steps on Python 3.12 so xdist never creates a second process topology
 inside a launched rank. Both parallel phases report their fifty slowest tests
 to keep the next optimization grounded in measured durations.
 
+The full P5 optimizer-trajectory and autograd conformance tests carry both
+`integration` and `slow`. On pull requests they run once in the Python 3.12
+`cpu-core` integration tier; the instrumented coverage phase excludes `slow`
+to avoid repeating the same 96-119 second proofs. A push to `main` runs the
+complete coverage selector, including those tests, so the post-merge coverage
+artifact and package floors still measure their production paths.
+
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a

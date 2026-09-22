@@ -247,15 +247,30 @@ def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
 
 
 def test_coverage_uses_the_same_bounded_worker_policy() -> None:
-    commands = [
-        str(step.get("run", ""))
+    steps = [
+        step
         for step in _steps("ci.yml", "coverage")
         if "python -m pytest" in str(step.get("run", ""))
     ]
-    assert len(commands) == 1
-    command = commands[0]
-    for token in ("-n 2", "--dist=loadscope", "--durations=50"):
-        assert token in command
+    assert len(steps) == 2
+    for step in steps:
+        command = str(step.get("run", ""))
+        for token in ("-n 2", "--dist=loadscope", "--durations=50"):
+            assert token in command
+
+
+def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
+    steps = {
+        str(step.get("if", "")): str(step.get("run", ""))
+        for step in _steps("ci.yml", "coverage")
+        if "python -m pytest" in str(step.get("run", ""))
+    }
+    assert set(steps) == {
+        "github.event_name == 'pull_request'",
+        "github.event_name != 'pull_request'",
+    }
+    assert "and not slow" in steps["github.event_name == 'pull_request'"]
+    assert "and not slow" not in steps["github.event_name != 'pull_request'"]
 
 
 def test_no_github_hosted_lane_uses_unbounded_auto_workers() -> None:
