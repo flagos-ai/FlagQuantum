@@ -54,6 +54,13 @@ from .region import (
     TwinRegionCoverageStatus,
     compose_connected_region,
 )
+from .region_candidate_holdout import (
+    TwinRegionCandidateHoldoutEvaluation,
+    TwinRegionCandidateHoldoutStudy,
+    dump_region_candidate_holdout_study,
+    load_region_candidate_holdout_study,
+    prepare_region_candidate_holdout,
+)
 from .region_holdout import (
     TwinRegionHoldoutEvaluation,
     TwinRegionHoldoutStudy,
@@ -120,6 +127,7 @@ __all__ = (
     "dump_circuit_support",
     "dump_evidence",
     "dump_region_holdout_evaluation",
+    "dump_region_candidate_holdout_study",
     "dump_region_holdout_history",
     "dump_region_holdout_study",
     "dump_region_validation_suite",
@@ -134,6 +142,7 @@ __all__ = (
     "load_circuit_support",
     "load_evidence",
     "load_region_holdout_evaluation",
+    "load_region_candidate_holdout_study",
     "load_region_holdout_history",
     "load_region_holdout_study",
     "load_region_validation_suite",
@@ -144,6 +153,7 @@ __all__ = (
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
     "TwinCalibrationDrift",
@@ -167,6 +177,8 @@ __all__ = (
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
+    "TwinRegionCandidateHoldoutEvaluation",
+    "TwinRegionCandidateHoldoutStudy",
     "TwinRegionHoldoutEvaluation",
     "TwinRegionHoldoutEvolution",
     "TwinRegionHoldoutHistory",

@@ -835,6 +835,92 @@ identical evaluation again is idempotent.
 The complete checkpointed workflow is
 `examples/remote/quafu_twin_region_holdout.py`.
 
+### Gate a later regional candidate on held-out circuits
+
+Use future QPU results to compare a later regional candidate with the current
+regional Twin. One candidate-bound task is submitted per circuit; the same
+result is compared with both predictions, so the incumbent does not consume a
+second hardware task.
+
+```python
+import flagquantum as fq
+
+
+def compose_region(cell_artifacts):
+    return fq.twin.compose_region_twin(
+        [
+            (
+                fq.twin.load_twin(twin_path),
+                fq.twin.load_circuit_support(support_path),
+            )
+            for twin_path, support_path in cell_artifacts
+        ]
+    )
+
+
+incumbent_region = compose_region(
+    [
+        ("incumbent-q20-q27-twin.json", "incumbent-q20-q27-support.json"),
+        ("incumbent-q27-q34-twin.json", "incumbent-q27-q34-support.json"),
+    ]
+)
+candidate_region = compose_region(
+    [
+        ("candidate-q20-q27-twin.json", "candidate-q20-q27-support.json"),
+        ("candidate-q27-q34-twin.json", "candidate-q27-q34-support.json"),
+    ]
+)
+
+reference_circuits = (
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    fq.Circuit(3).x(0).cx(0, 1),
+)
+holdout_circuits = (
+    fq.Circuit(3).h(1).cx(1, 2),
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2).x(2),
+)
+
+study = fq.twin.prepare_region_candidate_holdout(
+    incumbent_region,
+    candidate_region,
+    reference_circuits,
+    holdout_circuits,
+    physical_qubits=(20, 27, 34),
+    name="shenglian-region-candidate",
+    shots=1024,
+)
+fq.twin.dump_region_candidate_holdout_study(
+    study,
+    "region-candidate-holdout.json",
+)
+
+# Applications explicitly call trial.experiment.submit(provider), checkpoint
+# each TwinCandidateSubmission, and fetch each terminal result. They then pass
+# those ordered records back to the frozen study:
+evaluation = study.validate_results(
+    reference_submissions,
+    reference_results,
+    holdout_submissions,
+    holdout_results,
+    reference_circuits=reference_circuits,
+    holdout_circuits=holdout_circuits,
+    confidence_level=0.95,
+)
+
+print(evaluation.decision)
+print(evaluation.reference_evaluation.mean_candidate_improvement)
+print(evaluation.holdout_evaluation.mean_candidate_improvement)
+print(evaluation.holdout_evaluation.candidate_improvement_lower_bound)
+```
+
+The regional target, ordered mapping, complete directed topology, operations,
+and structural limits must remain identical. The candidate snapshot must be
+later, and reference/holdout circuits and task identities must be disjoint.
+Confidence covers both groups and every circuit. `improved` requires holdout
+improvement while reference degradation vetoes the upgrade; `degraded` or
+`inconclusive` never replaces a model. The framework reports this decision but
+does not submit automatically, retry, promote a candidate, or route workloads.
+
 ### Track holdout agreement across calibration snapshots
 
 After the same predeclared reference and holdout circuits have been evaluated
@@ -1009,7 +1095,9 @@ The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_region_holdout_study.v1`, and
 `flagquantum.twin_region_holdout_evaluation.v1`, and
 `flagquantum.twin_region_holdout_history.v1`, and
-`flagquantum.twin_region_holdout_evolution.v1` are frozen compatibility
+`flagquantum.twin_region_holdout_evolution.v1`,
+`flagquantum.twin_region_candidate_holdout_study.v1`, and
+`flagquantum.twin_region_candidate_holdout_evaluation.v1` are frozen compatibility
 contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a
