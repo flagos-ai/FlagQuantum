@@ -429,6 +429,25 @@ The checked-in `ci.yml` defines thirteen jobs:
   `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
 
+The GitHub-hosted jobs are partitioned across eight concurrency buckets per
+pull request or pushed branch. The scope is part of every bucket name: it keeps
+one run at eight concurrent jobs without forcing a new pull request to wait for
+an older pull request's coverage or interpreter lane. The organisation-level
+20-runner pool remains the aggregate admission limit. Superseding a run of the
+same branch still cancels the older run.
+
+Optional integration jobs name the test files they own and retain the marker
+selector inside that file set. This prevents an unrelated module-level
+collection error elsewhere in the repository from making every Cirq, CUDA-Q,
+PennyLane, Qiskit, and Triton lane fail before its own tests start. The broad
+CPU and coverage lanes remain responsible for repository-wide collection.
+
+The pull-request `pre-commit` workflow runs only source-hygiene hooks. Ruff,
+Black, mypy, architecture, generated-contract, and repository-wide policy
+checks are owned by the `quality` job and are not repeated in a second full
+project environment. The local pre-commit configuration remains broader so a
+developer still gets those checks before pushing.
+
 The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a

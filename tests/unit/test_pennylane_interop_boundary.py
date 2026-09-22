@@ -47,4 +47,6 @@ def test_ci_has_minimum_and_latest_pennylane_lanes() -> None:
     assert "pennylane-optional:" in workflow
     assert 'pennylane-version: ["0.44.1", "0.45.1"]' in workflow
     assert "python tools/check_pennylane_interop_contract.py" in workflow
-    assert "python -m pytest -m pennylane -q" in workflow
+    assert "tests/test_pennylane_interop.py" in workflow
+    assert "tests/test_pennylane_interop_conformance.py" in workflow
+    assert "-m pennylane -q" in workflow

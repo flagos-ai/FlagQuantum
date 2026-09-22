@@ -1,4 +1,4 @@
-"""The GitHub-hosted share this repository is allowed to hold.
+"""The GitHub-hosted share one FlagQuantum workflow run is allowed to hold.
 
 flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
 jobs. A job that joins no concurrency group holds a slot of that pool for as
@@ -6,10 +6,12 @@ long as it runs, so a workflow that is unconstrained here is a workflow that
 queues every other repository in the organisation behind it.
 
 The ceiling is expressed the way GitHub expresses it. A concurrency group
-admits one job at a time, so the number of distinct groups the per-push
-workflows use *is* the number of GitHub-hosted runners this repository can
-hold at once. `ci.yml` and `pre-commit.yaml` partition their jobs across the
-eight buckets below, and this module holds that partition still.
+admits one job at a time, so the number of distinct groups one workflow run
+uses *is* the number of GitHub-hosted runners that run can hold at once.
+`ci.yml` and `pre-commit.yaml` partition their jobs across the eight scoped
+buckets below, and this module holds that partition still. The pull-request or
+branch scope prevents an unrelated older run from serializing a newer run;
+the organisation's 20-runner pool remains the aggregate ceiling.
 
 Five invariants:
 
@@ -47,19 +49,19 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The per-push workflows: every job in them runs on a GitHub-hosted runner.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these eight names are a ceiling of
-# eight concurrent GitHub-hosted runners -- the rest of the pool's twenty is
-# left to the other repositories in the organisation.
+# One concurrency group admits one job, so these eight scoped names are a
+# ceiling of eight concurrent GitHub-hosted runners for one run.
+RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
-        "flagquantum-gh-cpucore-3.10",
-        "flagquantum-gh-cpucore-3.11",
-        "flagquantum-gh-cpucore-3.12",
-        "flagquantum-gh-coverage",
-        "flagquantum-gh-distributed",
-        "flagquantum-gh-light-a",
-        "flagquantum-gh-light-b",
-        "flagquantum-gh-light-c",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage",
+        f"flagquantum-gh-{RUN_SCOPE}-distributed",
+        f"flagquantum-gh-{RUN_SCOPE}-light-a",
+        f"flagquantum-gh-{RUN_SCOPE}-light-b",
+        f"flagquantum-gh-{RUN_SCOPE}-light-c",
     }
 )
 
@@ -90,10 +92,11 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
 def _groups(job: dict[str, object]) -> set[str]:
     """The group names a job can produce, with its matrix reference resolved.
 
-    `flagquantum-gh-cpucore-${{ matrix.python-version }}` is one bucket per
-    interpreter, so the name in the workflow is not the name GitHub sees. The
-    reference is resolved against the matrix the same job declares, which is
-    also what makes a widened matrix show up here as a widened ceiling.
+    The cpucore group is one bucket per interpreter, so the name in the
+    workflow is not the name GitHub sees. The matrix reference is resolved
+    against the values the same job declares, which is also what makes a
+    widened matrix show up here as a widened ceiling. The run scope is retained
+    verbatim because it is the boundary this policy is asserting.
     """
 
     concurrency = job.get("concurrency")
@@ -147,8 +150,8 @@ def test_every_github_hosted_job_joins_a_bucket() -> None:
         for group in sorted(groups - BUCKETS):
             offenders.append(f"{key} joins {group!r}")
     assert not offenders, (
-        "every GitHub-hosted job must join one of the buckets, so that this "
-        "repository's share of the organisation's runner pool stays bounded:\n"
+        "every GitHub-hosted job must join one of the scoped buckets, so that "
+        "one run's share of the organisation's runner pool stays bounded:\n"
         + "\n".join(offenders)
     )
 
