@@ -6,9 +6,9 @@ FlagQuantum will export immutable FlagQuantum IR to a dynamically constructed
 Core, compiler, runtime, simulation, and distributed worker modules must not
 import CUDA-Q or expose CUDA-Q types.
 
-The first change establishes the boundary before implementation. It does not
-add a public adapter, execute a CUDA-Q kernel, select a CUDA-Q target, or claim
-GPU or QPU support. The machine-readable contract fixes a small static-unitary
+The implemented adapter constructs kernels but does not execute them, select a
+CUDA-Q target, or claim GPU or QPU support. The machine-readable contract fixes
+a small static-unitary
 gate subset, wire mapping, operation order, concrete-real parameter policy, and
 fail-closed handling of unsupported operations.
 
@@ -23,19 +23,19 @@ while CUDA-Q-to-FlagQuantum conversion is rejected.
 
 The adapter uses the `cudaq` distribution through its own optional extra and
 targets the current 0.15.1 and 0.16.0.post1 release lines on Python 3.11 or
-newer. CUDA-Q supports Linux on x86-64 and ARM64 and macOS on Apple silicon;
-macOS execution is CPU-only. The dependency is deliberately excluded from the
+newer. The certified package lanes run on Linux x86-64; Linux ARM64 remains a
+declared distribution target. The current `cudaq` releases do not provide a
+compatible macOS wheel, so macOS is not claimed. The dependency is deliberately excluded from the
 portable `interop-all` aggregate because it installs a platform-specific
 compiler and simulator toolchain.
 
-No SDK lane is claimed by this contract-only change. The implementation PR must
-install and exercise both declared versions before moving them into the tested
-dependency matrix or calling them certified. Removing the adapter and its extra
-must leave FlagQuantum IR and Stable Core APIs unchanged.
+The isolated `cudaq-optional` SDK lane installs and exercises both declared
+versions. Removing the adapter and its extra must leave FlagQuantum IR and
+Stable Core APIs unchanged.
 
 ## Semantic boundary
 
-The exporter will allocate one CUDA-Q qubit per FlagQuantum wire and preserve
+The exporter allocates one CUDA-Q qubit per FlagQuantum wire and preserves
 operation order. CUDA-Q numbers wire zero as the least-significant statevector
 index bit, while FlagQuantum's current statevector convention places wire zero
 as the most-significant axis. Conformance must reorder the CUDA-Q statevector
@@ -47,9 +47,9 @@ adjoint-only gates, general unitaries, controlled rotations, multi-controlled
 gates, channels, measurements, kernel arguments, control flow, composition,
 state initialization, and remote execution remain outside version 1.
 
-## Implementation acceptance
+## Verified implementation
 
-The implementation PR must:
+The implementation provides:
 
 1. export the supported FlagQuantum IR subset through `cudaq.make_kernel()`;
 2. reject every unsupported opcode and semantic feature with stable diagnostics;

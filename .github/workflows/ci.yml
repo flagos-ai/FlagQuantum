@@ -18,7 +18,7 @@ on:
 # Every job below then joins one of eight named buckets -- `cpucore-3.1x`,
 # `coverage`, `distributed`, and `light-a`/`b`/`c` -- chosen to keep the run's
 # wall time where it was: the three required cpu-core checks are ~10 minutes
-# each and get a bucket each rather than sharing one, and the twelve jobs under
+# each and get a bucket each rather than sharing one, and the thirteen jobs under
 # ~3 minutes are spread across three. A concurrency group admits one job at a
 # time, so the eight bucket names are the repository's ceiling of eight
 # concurrent GitHub-hosted runners.
@@ -262,6 +262,35 @@ jobs:
           assert not any(name == 'cirq' or name.startswith('cirq.')
           for name in sys.modules)"
 
+  cudaq-optional:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-light-c
+      queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        cudaq-version: ["0.15.1", "0.16.0.post1"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - name: Install the certified CUDA-Q lane
+        run: python -m pip install 'cudaq==${{ matrix.cudaq-version }}'
+      - name: Verify the machine-readable contract and CUDA-Q SDK surface
+        run: python tools/check_cudaq_export_contract.py --verify-sdk
+      - name: Verify CUDA-Q kernel and statevector conformance
+        run: python -m pytest -m cudaq -q
+      - name: Prove the stable root still does not import CUDA-Q
+        run: >-
+          python -c "import sys, flagquantum;
+          assert not any(name == 'cudaq' or name.startswith('cudaq.')
+          for name in sys.modules)"
+
   pennylane-optional:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
@@ -391,7 +420,7 @@ jobs:
       - run: python -m pip install -e '.[dev,jax,viz,cirq,pennylane,cotengra]'
       - name: Run maintained-runtime tests with coverage
         run: >-
-          python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not triton"
+          python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
           --cov=flagquantum
           --cov-report=term-missing
           --cov-report=xml

@@ -17,8 +17,9 @@ framework.
 CUDA-Q is a separate `cudaq` heterogeneous-toolchain extra. It is deliberately
 outside `interop-all`: its platform-specific compiler and simulator distribution
 is materially heavier than the portable circuit-model adapters. The first
-contract exposes no public adapter and permits no CUDA-Q import outside
-`flagquantum.ecosystem.cudaq`.
+public adapter provides kernel export only and permits no CUDA-Q import outside
+`flagquantum.ecosystem.cudaq`. CUDA-Q is verified in isolated Linux lanes and
+remains outside portable aggregate installations.
 
 External framework imports are also namespace-governed. Cirq, CUDA-Q, Qiskit,
 and PennyLane imports belong only under their matching `flagquantum.ecosystem`

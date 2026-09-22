@@ -21,12 +21,12 @@ def test_cudaq_export_contract_is_current() -> None:
     assert contract_errors(*_inputs()) == ()
 
 
-def test_contract_rejects_premature_public_api_and_bidirectional_claim() -> None:
+def test_contract_rejects_hidden_public_api_and_bidirectional_claim() -> None:
     contract, policy = _inputs()
-    contract["public_api_available"] = True
+    contract["public_api_available"] = False
     contract["semantics"]["direction"] = "bidirectional"
     errors = contract_errors(contract, policy)
-    assert "CUDA-Q public API must remain unavailable before implementation" in errors
+    assert "CUDA-Q public API must remain available after implementation" in errors
     assert "CUDA-Q semantic 'direction' drifted" in errors
 
 
@@ -53,7 +53,7 @@ def test_contract_rejects_incomplete_opcode_partition() -> None:
     assert any("CUDA-Q opcode coverage drifted" in error for error in errors)
 
 
-def test_ci_checks_contract_without_claiming_an_sdk_lane() -> None:
+def test_ci_checks_contract_and_real_sdk_lane() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_cudaq_export_contract.py" in workflow
-    assert "cudaq-optional:" not in workflow
+    assert "cudaq-optional:" in workflow

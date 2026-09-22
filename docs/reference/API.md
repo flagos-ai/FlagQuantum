@@ -458,7 +458,7 @@ descriptors and loads an adapter implementation only when requested:
 ```python
 from flagquantum.ecosystem import available_adapters, get_adapter
 
-assert available_adapters() == ("cirq", "pennylane", "qiskit")
+assert available_adapters() == ("cirq", "cudaq", "pennylane", "qiskit")
 adapter = get_adapter("qiskit")
 result = adapter.import_program(external_circuit)
 flagquantum_ir = result.ir
@@ -524,6 +524,27 @@ measurements, global phase operations, symbolic parameters, tags, classical
 controls, noise, and unsupported gates fail closed with machine-readable
 diagnostics. Cirq objects remain inside `flagquantum.ecosystem.cirq` and never
 enter the compiler or runtime.
+
+### CUDA-Q kernel export
+
+CUDA-Q is an optional, Linux-only heterogeneous toolchain. Install it with
+`pip install 'flagquantum[cudaq]'`, then export a bound static-unitary program:
+
+```python
+from flagquantum.ecosystem.cudaq import export_cudaq, to_cudaq
+
+kernel = to_cudaq(circuit)
+result = export_cudaq(circuit)
+assert result.report.lossless
+```
+
+The v1 boundary is deliberately one-way and does not execute the kernel.
+Reverse conversion, symbolic or non-finite parameters, measurements, noise,
+control flow, kernel arguments, unsupported gates, and lossy export fail closed
+with machine-readable diagnostics. CUDA-Q objects remain inside
+`flagquantum.ecosystem.cudaq`. Statevector conformance explicitly reverses bit
+axes because CUDA-Q wire zero is least-significant while FlagQuantum wire zero
+is most-significant.
 
 ### Qiskit IR interoperability
 

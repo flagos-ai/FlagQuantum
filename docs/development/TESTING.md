@@ -117,6 +117,7 @@ so the check is per test rather than per file.
 | `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional differential programs, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract plus golden and fixed-seed differential complex128 QuantumScript semantics described in [PennyLane Differential Conformance](PENNYLANE_DIFFERENTIAL_CONFORMANCE.md). | Hardware submission, dynamic execution, differentiation, or that PennyLane is a core dependency. |
 | `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, and seeded bidirectional statevector conformance. | Cirq runtime execution, devices, or that Cirq is a core dependency. |
+| `cudaq` | The isolated `cudaq` heterogeneous-toolchain extra installed; selected by the `cudaq-optional` Linux job on the 0.15.1 and 0.16.0.post1 lanes. | One-way static kernel construction, fail-closed diagnostics, explicit bit-order conversion, and seeded statevector conformance. | Reverse import, runtime execution, targets, GPU/QPU support, or that CUDA-Q is a core dependency. |
 | `braket` | No extra required: the provider surface is exercised against fakes, and the nightly tier selects these tests. | The Amazon Braket provider and dynamic-deployment surface. | Hardware submission, or any real SDK or device behavior. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
@@ -394,7 +395,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twelve jobs:
+The checked-in `ci.yml` defines thirteen jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -409,6 +410,8 @@ The checked-in `ci.yml` defines twelve jobs:
 - `cirq-optional`: static circuit conversion, fail-closed diagnostics, and
   seeded bidirectional statevector conformance against the certified Cirq Core
   1.6.1 and 1.7.0 lanes, isolated from the core environment;
+- `cudaq-optional`: one-way kernel export and seeded statevector conformance
+  against CUDA-Q 0.15.1 and 0.16.0.post1 on Linux;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit
@@ -426,10 +429,10 @@ The checked-in `ci.yml` defines twelve jobs:
   `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
 
-The `cudaq` extra has no SDK job while its exporter remains contract-only. The
-quality job validates its machine-readable boundary without installing CUDA-Q.
-The implementation change must add isolated 0.15.1 and 0.16.0.post1 lanes before
-claiming those versions as tested or exposing the adapter publicly.
+The `cudaq` extra has its own Linux SDK matrix because its platform-specific
+toolchain is intentionally absent from portable and coverage environments.
+The lane is the evidence for the two declared tested versions; macOS is not a
+supported package target in this boundary.
 
 Two further items are not jobs but placement rules for tests that run inside the
 CPU tiers: Double-Single primitives run in the ordinary CPU unit/integration

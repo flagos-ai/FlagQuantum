@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-_ADAPTER_NAMES = ("cirq", "pennylane", "qiskit")
+_ADAPTER_NAMES = ("cirq", "cudaq", "pennylane", "qiskit")
 __all__ = _ADAPTER_NAMES
 
 

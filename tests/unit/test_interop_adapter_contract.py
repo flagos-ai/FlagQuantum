@@ -71,8 +71,8 @@ def test_framework_neutral_report_is_machine_readable_and_fail_closed() -> None:
 
 
 def test_default_registry_is_immutable_and_lazy() -> None:
-    assert available_adapters() == ("cirq", "pennylane", "qiskit")
-    assert DEFAULT_INTEROP_REGISTRY.names == ("cirq", "pennylane", "qiskit")
+    assert available_adapters() == ("cirq", "cudaq", "pennylane", "qiskit")
+    assert DEFAULT_INTEROP_REGISTRY.names == ("cirq", "cudaq", "pennylane", "qiskit")
     with pytest.raises(TypeError):
         DEFAULT_INTEROP_REGISTRY.specs["other"] = DEFAULT_INTEROP_REGISTRY.spec(
             "qiskit"
@@ -90,6 +90,7 @@ def test_default_registry_is_immutable_and_lazy() -> None:
     assert payload["schema"] == "flagquantum_interop_registry_v1"
     assert payload["adapters"] == [
         DEFAULT_INTEROP_REGISTRY.spec("cirq").to_dict(),
+        DEFAULT_INTEROP_REGISTRY.spec("cudaq").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("pennylane").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("qiskit").to_dict(),
     ]
@@ -99,11 +100,13 @@ def test_default_registry_is_immutable_and_lazy() -> None:
 
 def test_registered_adapter_extras_are_dependency_governed() -> None:
     policy = _dependency_policy()
-    interop_extras = set(policy["classes"]["interop"])
+    governed_extras = set(policy["classes"]["interop"]) | set(
+        policy["classes"]["heterogeneous_toolchain"]
+    )
 
     for spec in DEFAULT_INTEROP_REGISTRY.specs.values():
         assert spec.dependency_extra in policy["extras"]
-        assert spec.dependency_extra in interop_extras
+        assert spec.dependency_extra in governed_extras
         assert spec.module.startswith(f"flagquantum.ecosystem.{spec.name}")
 
 
@@ -147,8 +150,9 @@ def test_importing_and_resolving_adapter_does_not_import_qiskit() -> None:
     code = """
 import sys
 from flagquantum.ecosystem import available_adapters, get_adapter
-assert available_adapters() == ('cirq', 'pennylane', 'qiskit')
+assert available_adapters() == ('cirq', 'cudaq', 'pennylane', 'qiskit')
 assert get_adapter('cirq').name == 'cirq'
+assert get_adapter('cudaq').name == 'cudaq'
 assert get_adapter('qiskit').name == 'qiskit'
 assert get_adapter('pennylane').name == 'pennylane'
 loaded = [
@@ -157,6 +161,7 @@ loaded = [
     or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
     or name == 'pennylane' or name.startswith('pennylane.')
     or name == 'cirq' or name.startswith('cirq.')
+    or name == 'cudaq' or name.startswith('cudaq.')
 ]
 assert not loaded, loaded
 """
