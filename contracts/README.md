@@ -23,6 +23,7 @@ must validate the resulting behavior directly.
 | Family | Purpose |
 | --- | --- |
 | `*-interop-contract.toml` | Version lanes and semantic mappings for external frameworks. |
+| `interop-capability-gap-matrix.toml` | Evidence-linked comparison of adapter coverage and prioritized gaps. |
 | `split-real-imag-statevector-*-contract.toml` | Statevector representation, precision, device, and training acceptance boundaries. |
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
