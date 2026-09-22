@@ -278,6 +278,39 @@ jobs:
           assert not any(name == 'cirq' or name.startswith('cirq.')
           for name in sys.modules)"
 
+  braket-optional:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        braket-version: ["1.117.0", "1.127.1"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - name: Install the certified Amazon Braket SDK lane
+        run: python -m pip install 'amazon-braket-sdk==${{ matrix.braket-version }}'
+      - name: Verify the machine-readable contract and Braket SDK surface
+        run: python tools/check_braket_interop_contract.py --verify-sdk
+      - name: Verify Braket circuit and statevector conformance
+        run: >-
+          python -m pytest
+          tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py
+          tests/test_braket_interop.py tests/test_braket_interop_conformance.py
+          -m braket -q
+      - name: Prove the stable root still does not import Braket
+        run: >-
+          python -c "import sys, flagquantum;
+          assert not any(name == 'braket' or name.startswith('braket.')
+          for name in sys.modules)"
+
   cudaq-optional:
     runs-on: ubuntu-latest
     concurrency:
@@ -433,7 +466,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax,viz,cirq,pennylane,cotengra]'
+      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra]'
       - name: Run maintained-runtime tests with coverage
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"

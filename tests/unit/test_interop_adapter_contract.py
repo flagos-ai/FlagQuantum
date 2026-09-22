@@ -27,6 +27,7 @@ from flagquantum.ecosystem import (
     run_adapter_conformance,
     semantic_fingerprint,
 )
+from flagquantum.ecosystem.braket import BRAKET_ADAPTER
 from flagquantum.ecosystem.cirq import CIRQ_ADAPTER
 from flagquantum.ecosystem.pennylane import PENNYLANE_ADAPTER
 from flagquantum.ecosystem.qiskit import (
@@ -71,8 +72,9 @@ def test_framework_neutral_report_is_machine_readable_and_fail_closed() -> None:
 
 
 def test_default_registry_is_immutable_and_lazy() -> None:
-    assert available_adapters() == ("cirq", "cudaq", "pennylane", "qiskit")
-    assert DEFAULT_INTEROP_REGISTRY.names == ("cirq", "cudaq", "pennylane", "qiskit")
+    expected = ("braket", "cirq", "cudaq", "pennylane", "qiskit")
+    assert available_adapters() == expected
+    assert DEFAULT_INTEROP_REGISTRY.names == expected
     with pytest.raises(TypeError):
         DEFAULT_INTEROP_REGISTRY.specs["other"] = DEFAULT_INTEROP_REGISTRY.spec(
             "qiskit"
@@ -89,11 +91,13 @@ def test_default_registry_is_immutable_and_lazy() -> None:
     payload = DEFAULT_INTEROP_REGISTRY.to_dict()
     assert payload["schema"] == "flagquantum_interop_registry_v1"
     assert payload["adapters"] == [
+        DEFAULT_INTEROP_REGISTRY.spec("braket").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("cirq").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("cudaq").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("pennylane").to_dict(),
         DEFAULT_INTEROP_REGISTRY.spec("qiskit").to_dict(),
     ]
+    assert get_adapter("braket") is BRAKET_ADAPTER
     assert get_adapter("pennylane") is PENNYLANE_ADAPTER
     assert get_adapter("cirq") is CIRQ_ADAPTER
 
@@ -150,7 +154,8 @@ def test_importing_and_resolving_adapter_does_not_import_qiskit() -> None:
     code = """
 import sys
 from flagquantum.ecosystem import available_adapters, get_adapter
-assert available_adapters() == ('cirq', 'cudaq', 'pennylane', 'qiskit')
+assert available_adapters() == ('braket', 'cirq', 'cudaq', 'pennylane', 'qiskit')
+assert get_adapter('braket').name == 'braket'
 assert get_adapter('cirq').name == 'cirq'
 assert get_adapter('cudaq').name == 'cudaq'
 assert get_adapter('qiskit').name == 'qiskit'
@@ -162,6 +167,7 @@ loaded = [
     or name == 'pennylane' or name.startswith('pennylane.')
     or name == 'cirq' or name.startswith('cirq.')
     or name == 'cudaq' or name.startswith('cudaq.')
+    or name == 'braket' or name.startswith('braket.')
 ]
 assert not loaded, loaded
 """
