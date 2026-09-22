@@ -55,6 +55,13 @@ from .region import (
     compose_connected_region,
 )
 from .region_model import TwinRegionModel, compose_region_twin
+from .region_suite import (
+    TwinRegionSuiteEvaluation,
+    TwinRegionValidationSuite,
+    dump_region_validation_suite,
+    load_region_validation_suite,
+    prepare_region_validation_suite,
+)
 from .series import (
     TwinValidationSeries,
     dump_validation_series,
@@ -84,6 +91,7 @@ __all__ = (
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_region_validation_suite",
     "dump_submission",
     "dump_twin",
     "dump_validation_history",
@@ -93,12 +101,14 @@ __all__ = (
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_region_validation_suite",
     "load_submission",
     "load_twin",
     "load_validation_history",
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_region_validation_suite",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
@@ -121,6 +131,8 @@ __all__ = (
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
     "TwinRegionModel",
+    "TwinRegionSuiteEvaluation",
+    "TwinRegionValidationSuite",
     "TwinSnapshot",
     "TwinSubmission",
     "TwinValidationReport",
