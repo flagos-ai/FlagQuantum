@@ -32,9 +32,70 @@ def clear_statevector_layout_cache() -> None:
     _STATEVECTOR_LAYOUT_CACHE.clear()
 
 
+# A CX sequence acts on basis indices as an affine map over GF(2), so the whole
+# sequence can be applied as one gather instead of one pass per gate. The table
+# costs one int32 per amplitude, which is half the size of a complex64 state, and
+# it is addressed by its content rather than by a Circuit, so it cannot go stale
+# when a Circuit is mutated. The budget bounds what distinct sequences may keep
+# resident; the entries are dropped in insertion order once it is exceeded.
+_CX_SEQUENCE_INDEX_CACHE_BYTES = 128 * 1024 * 1024
+_CX_SEQUENCE_INDEX_CACHE: dict[
+    tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype], torch.Tensor
+] = {}
+
+
+def clear_statevector_cx_index_cache() -> None:
+    """Clear the cached CX-sequence permutation tables."""
+
+    _CX_SEQUENCE_INDEX_CACHE.clear()
+
+
+def _cx_sequence_index_cache_bytes() -> int:
+    return sum(
+        int(table.numel()) * int(table.element_size())
+        for table in _CX_SEQUENCE_INDEX_CACHE.values()
+    )
+
+
+def _store_cx_sequence_index(
+    key: tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype],
+    table: torch.Tensor,
+) -> torch.Tensor:
+    _CX_SEQUENCE_INDEX_CACHE[key] = table
+    while (
+        len(_CX_SEQUENCE_INDEX_CACHE) > 1
+        and _cx_sequence_index_cache_bytes() > _CX_SEQUENCE_INDEX_CACHE_BYTES
+    ):
+        oldest = next(iter(_CX_SEQUENCE_INDEX_CACHE))
+        del _CX_SEQUENCE_INDEX_CACHE[oldest]
+    return table
+
+
 _DIAGONAL_STATEVECTOR_GATES = frozenset(
     {"z", "s", "sdg", "t", "tdg", "rz", "p", "phase", "u1", "cz", "cphase", "rzz"}
 )
+
+
+def _diagonal_region(instructions: Sequence[Instruction]) -> bool:
+    """Whether a whole fused region provably applies a diagonal matrix.
+
+    A product of diagonal matrices is diagonal, so it is enough that every
+    member is one, and a member is only known to be one when it is a named
+    diagonal gate carrying no matrix of its own. ``gate_matrix`` returns a
+    supplied ``matrix`` in preference to the gate the name denotes, so for an
+    instruction that carries one the name says nothing about the operator and
+    the region is called non-diagonal. That is the conservative answer and the
+    one the caller needs, because this decides which kernel runs.
+
+    The classification is a property of the program, so it is made once here
+    rather than per execution: a region cannot become diagonal later.
+    """
+
+    return bool(instructions) and all(
+        instruction.matrix is None
+        and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+        for instruction in instructions
+    )
 
 
 @dataclass(frozen=True)
@@ -55,6 +116,9 @@ class _StatevectorFusedGateStep:
     wires: tuple[int, ...]
     layout: tuple[tuple[int, ...], tuple[int, ...]]
     dependency_reordered: bool = False
+    # Decided when the region is formed, not when it runs, because which kernel
+    # the region may take is a property of the program.
+    diagonal: bool = False
 
 
 @dataclass(frozen=True)
@@ -116,6 +180,45 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
     return _environment_flag(
         "FQ_TRITON_PARAMETERIZED_SINGLE_QUBIT_MATRIX", default=False
     )
+
+
+# Sequence lengths at or above this one apply as a single gather. The table has
+# to be built before it can be used, and measured against the per-gate loop on
+# this host the build costs about as much as six to eight gates, so a shorter
+# sequence is left on the loop. The threshold is a floor for the *unreused* case:
+# a region executed more than once finds the table already cached.
+_CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
+
+
+def _cpu_cx_sequence_gather_enabled() -> bool:
+    """Whether a CPU CX sequence may be applied as one gather.
+
+    On by default, like the other statevector fast-path switches. A gather is an
+    exact permutation of amplitudes, so it cannot move a result even in the last
+    bit; the switch exists to restore the per-gate loop if the table's memory or
+    its build time is unwanted.
+    """
+
+    return _environment_flag("FQ_CPU_CX_SEQUENCE_GATHER", default=True)
+
+
+def _cpu_single_wire_elementwise_enabled() -> bool:
+    """Whether a CPU one-wire gate is applied by combining the wire's two halves.
+
+    Off by default, unlike the other statevector fast-path switches, because this
+    kernel is *not* bitwise equal to the ``bmm`` it replaces. ``bmm`` on a 2x2
+    complex matrix accumulates the real and imaginary parts as separate sums over
+    the two terms, while this kernel forms each complex product first and then
+    adds, so the last bit can differ. Measured across both dtypes and four wires
+    per width, the difference is zero up to seven wires - below that size ``bmm``
+    takes the same path - and below 0.1 ulp of the real dtype above it: 1.1e-8 on
+    a normalized complex64 state at eight wires, 3.3e-10 at twenty, and 6.9e-18
+    on complex128 at twelve. That is small but it is not nothing, and the tests
+    compare states with ``torch.equal``, so the switch stays opt-in rather than
+    changing what the default path returns.
+    """
+
+    return _environment_flag("FQ_CPU_SINGLE_WIRE_ELEMENTWISE", default=False)
 
 
 def _compile_statevector_program(
@@ -232,11 +335,12 @@ def _fuse_gate_sequences(
                     fused_program.append(positioned_steps[0][1])
                 else:
                     positions = tuple(position for position, _ in positioned_steps)
+                    instructions = tuple(
+                        item.instruction for _, item in positioned_steps
+                    )
                     fused_program.append(
                         _StatevectorFusedGateStep(
-                            instructions=tuple(
-                                item.instruction for _, item in positioned_steps
-                            ),
+                            instructions=instructions,
                             wires=(wire,),
                             layout=positioned_steps[0][1].layout,
                             dependency_reordered=any(
@@ -245,6 +349,7 @@ def _fuse_gate_sequences(
                                     positions, positions[1:], strict=False
                                 )
                             ),
+                            diagonal=_diagonal_region(instructions),
                         )
                     )
             index = cursor
@@ -263,11 +368,13 @@ def _fuse_gate_sequences(
         if len(group) == 1:
             fused_program.append(step)
         else:
+            instructions = tuple(item.instruction for item in group)
             fused_program.append(
                 _StatevectorFusedGateStep(
-                    instructions=tuple(item.instruction for item in group),
+                    instructions=instructions,
                     wires=tuple(step.instruction.wires),
                     layout=step.layout,
+                    diagonal=_diagonal_region(instructions),
                 )
             )
         index = cursor
@@ -362,6 +469,49 @@ def _apply_matrix(
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
 
 
+def _apply_single_wire_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wire: int,
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply a one-wire gate by combining the two halves of that wire's axis.
+
+    ``state`` is contiguous and wire ``w`` carries the bit of weight
+    ``2 ** (n_wires - 1 - w)``, so ``reshape(bsz, 2 ** w, 2, 2 ** (n_wires - 1 - w))``
+    is a view whose size-2 axis *is* that wire. The gate is then two scaled sums
+    over that axis, which needs neither of the two layout permutations
+    ``_apply_matrix`` performs and only one output allocation.
+
+    This stands in for ``_apply_matrix`` and not for ``_apply_diagonal_matrix``:
+    the two shipped kernels disagree with each other in the last bit, so a gate
+    that would have been dispatched to the diagonal kernel keeps it. Even against
+    ``_apply_matrix`` the agreement is not bitwise, for the reason recorded on
+    ``_cpu_single_wire_elementwise_enabled``.
+    """
+
+    bsz = state.shape[0]
+    wire = int(wire)
+    if matrix.dtype != state.dtype or matrix.device != state.device:
+        matrix = matrix.to(device=state.device, dtype=state.dtype)
+    tensor = state.reshape(bsz, 2**wire, 2, 2 ** (n_wires - 1 - wire))
+    low = tensor[:, :, 0, :]
+    high = tensor[:, :, 1, :]
+    if matrix.ndim == 2:
+        a, b = matrix[0, 0], matrix[0, 1]
+        c, d = matrix[1, 0], matrix[1, 1]
+    else:
+        entries = matrix.reshape(-1, 2, 2)
+        if entries.shape[0] == 1:
+            entries = entries.expand(bsz, -1, -1)
+        a = entries[:, 0, 0].reshape(bsz, 1, 1)
+        b = entries[:, 0, 1].reshape(bsz, 1, 1)
+        c = entries[:, 1, 0].reshape(bsz, 1, 1)
+        d = entries[:, 1, 1].reshape(bsz, 1, 1)
+    combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
+    return combined.reshape(bsz, -1)
+
+
 def _apply_diagonal_matrix(
     state: torch.Tensor,
     matrix: torch.Tensor,
@@ -402,6 +552,85 @@ def _apply_cx_permutation(
         target_axis -= 1
     one = torch.flip(one, dims=(target_axis,))
     return torch.stack((zero, one), dim=control_axis).reshape(state.shape)
+
+
+def _cx_sequence_index_dtype(n_wires: int) -> torch.dtype:
+    """Index dtype for a permutation table over ``2 ** n_wires`` amplitudes.
+
+    ``index_select`` takes int32, and an int32 index addresses every amplitude up
+    to 31 wires, so the wider dtype is only needed past that point - where the
+    state itself would already be 32 GiB per batch row.
+    """
+
+    return torch.int32 if n_wires <= 31 else torch.int64
+
+
+def _cx_sequence_permutation_index(
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_wires: int,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Build the gather table for one CX sequence.
+
+    ``index_select(state, 1, table)`` sends ``state[:, source]`` to position
+    ``destination`` where ``table[destination] == source``, so the table is the
+    *inverse* of the map the sequence applies. A single CX is an involution and
+    hides the difference; a longer sequence does not, so the transvections are
+    composed in reverse here.
+
+    The inverse map is affine over GF(2), so the table is built from the images
+    of the ``n_wires`` basis vectors by doubling: entry ``i`` is the XOR of the
+    images of the wires set in ``i``. That is ``n_wires`` vector operations on
+    the whole table rather than one pass per basis index.
+    """
+
+    canonical_controls = tuple(int(wire) for wire in controls)
+    canonical_targets = tuple(int(wire) for wire in targets)
+    if len(canonical_controls) != len(canonical_targets):
+        raise ValueError("a CX sequence needs one target per control")
+    table_dtype = _cx_sequence_index_dtype(n_wires)
+    key = (n_wires, canonical_controls, canonical_targets, str(device), table_dtype)
+    cached = _CX_SEQUENCE_INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    images = torch.tensor(
+        [1 << (n_wires - 1 - wire) for wire in range(n_wires)],
+        dtype=torch.int64,
+        device=device,
+    )
+    for control, target in zip(
+        reversed(canonical_controls), reversed(canonical_targets), strict=True
+    ):
+        control_mask = 1 << (n_wires - 1 - control)
+        target_mask = 1 << (n_wires - 1 - target)
+        hit = (images & control_mask) != 0
+        images = torch.where(hit, images ^ target_mask, images)
+    # Doubling appends the new bit at the high end of the offset, so the first
+    # step fixes the state index's least significant bit, which belongs to the
+    # last wire. Consuming the wires in reverse is what keeps the bit order.
+    table = torch.zeros(1, dtype=torch.int64, device=device)
+    for wire in reversed(range(n_wires)):
+        table = torch.cat((table, table ^ images[wire]))
+    return _store_cx_sequence_index(key, table.to(table_dtype))
+
+
+def _apply_cx_sequence_gather(
+    state: torch.Tensor,
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply a whole CX sequence as one gather over the amplitude axis."""
+
+    index = _cx_sequence_permutation_index(
+        controls, targets, n_wires, device=state.device, dtype=state.dtype
+    )
+    gathered = torch.index_select(state.reshape(state.shape[0], -1), 1, index)
+    return gathered.reshape(state.shape)
 
 
 def _apply_fixed_permutation(

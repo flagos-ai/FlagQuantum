@@ -129,6 +129,7 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     triton_ry_rz_pair_executed: int
     triton_single_qubit_matrix_regions: int
     diagonal_elementwise_gates: int
+    diagonal_fused_regions: int
     permutation_gates: int
     triton_cx_sequence_regions: int
     fixed_single_qubit_specialized_gates: int

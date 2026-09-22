@@ -24,6 +24,11 @@ _SUPPORTED_KINDS = {
     "sample_ps",
 }
 _DEFAULT_MAX_MARGINAL_WIRES = 8
+# How far a reduced total may sit from one before it is divided out. The gap is
+# wide on purpose: it has to absorb the rounding a normalised state accumulates
+# through many gates, which is orders of magnitude below this, while still
+# catching a state that was never normalised in the first place.
+_TRACE_TOLERANCE = 1e-4
 
 
 def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
@@ -56,34 +61,95 @@ def _statevector_target(output: Any, n_wires: int) -> Any:
     )
 
 
-def _density_matrix_probabilities(
-    output: torch.Tensor,
+def _reduced_joint_marginal(
+    probabilities: torch.Tensor,
     wires: tuple[int, ...],
     *,
     n_wires: int,
-    noise_model: Any | None,
-) -> torch.Tensor | None:
-    dimension = 2**n_wires
-    if (
-        not output.is_complex()
-        or output.ndim != 3
-        or output.shape[-2:] != (dimension, dimension)
-    ):
-        return None
-    probabilities = torch.real(torch.diagonal(output, dim1=-2, dim2=-1))
-    if noise_model is not None:
-        probabilities = noise_model.apply_readout_probabilities(
-            probabilities,
-            n_wires=n_wires,
-        )
-    shaped = probabilities.reshape((output.shape[0],) + (2,) * n_wires)
-    unselected_axes = tuple(wire + 1 for wire in range(n_wires) if wire not in wires)
+) -> torch.Tensor:
+    """Sum a full probability distribution down to the requested wires.
+
+    ``probabilities`` is one value per basis state, ``(batch, 2 ** n_wires)`` and
+    big-endian per wire, which is the convention a density matrix's diagonal and
+    a statevector's squared amplitudes already share. Reducing that tensor is a
+    reshape and a sum, so the cost is one pass over a distribution that is
+    already in memory rather than one full-state contraction per parity term.
+
+    The axes that survive come out in wire order, so a request that named its
+    wires out of order is permuted back before the reshape. Getting that wrong
+    would silently transpose the marginal rather than fail, which is why the
+    order is restored here, in the one place every caller goes through.
+
+    A total other than one is divided out. Every state the engine produces is
+    normalised, so this leaves those runs untouched -- the division is skipped
+    unless the total is off by more than ``_TRACE_TOLERANCE``, and dividing by an
+    exact one is the identity anyway. It is here because a caller can hand a raw
+    tensor to ``execute_measurements``, and the statevector arm used to reach
+    such a state through ``expectation_ps``, which normalises as a side effect;
+    without this the same call would return a scaled marginal instead of a
+    distribution. Keeping the two arms on one rule is the point of the helper.
+    """
+
+    shaped = probabilities.reshape((probabilities.shape[0],) + (2,) * n_wires)
+    unselected_axes = tuple(
+        wire + 1 for wire in range(n_wires) if wire not in set(wires)
+    )
     marginal = shaped.sum(dim=unselected_axes) if unselected_axes else shaped
     current_order = tuple(sorted(wires))
     if wires != current_order:
         permutation = (0,) + tuple(current_order.index(wire) + 1 for wire in wires)
         marginal = marginal.permute(permutation)
-    return marginal.reshape(output.shape[0], 2 ** len(wires))
+    marginal = marginal.reshape(probabilities.shape[0], 2 ** len(wires))
+
+    total = marginal.sum(dim=-1, keepdim=True)
+    if bool(((total - 1).abs() > _TRACE_TOLERANCE).any()) and bool((total > 0).all()):
+        marginal = marginal / total
+    return marginal
+
+
+def _ideal_probabilities(output: Any, n_wires: int) -> torch.Tensor | None:
+    """The distribution a dense result already carries, or ``None``.
+
+    A density matrix carries it on its diagonal and a statevector in its squared
+    amplitudes. Both are read here, and neither is reconstructed: the point of
+    the two tests is that the tensor in hand is already the distribution, so
+    reducing it costs one sum.
+
+    A target that is not a dense tensor -- an MPS or tensor-network result --
+    returns ``None`` and keeps the parity path. That is not a preference but a
+    boundary: those targets can answer ``probabilities()`` by materialising a
+    dense state of ``2 ** n_wires`` amplitudes, which is the cost they exist to
+    avoid, and at 24 wires that made a 0.5 ms marginal take 330 ms.
+    """
+
+    if not isinstance(output, torch.Tensor) or not output.is_complex():
+        return None
+    dimension = 2**n_wires
+    if output.ndim == 3 and output.shape[-2:] == (dimension, dimension):
+        return torch.real(torch.diagonal(output, dim1=-2, dim2=-1))
+    if output.ndim == 2 and output.shape[-1] == dimension:
+        return torch.abs(output) ** 2
+    return None
+
+
+def _joint_marginal_probabilities(
+    output: Any,
+    wires: tuple[int, ...],
+    *,
+    n_wires: int,
+    noise_model: Any | None,
+) -> torch.Tensor | None:
+    """Reduce a dense result to one joint marginal, or ``None`` if it is not one."""
+
+    probabilities = _ideal_probabilities(output, n_wires)
+    if probabilities is None:
+        return None
+    if noise_model is not None:
+        probabilities = noise_model.apply_readout_probabilities(
+            probabilities,
+            n_wires=n_wires,
+        )
+    return _reduced_joint_marginal(probabilities, wires, n_wires=n_wires)
 
 
 def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
@@ -136,13 +202,15 @@ def _validate_sampling_request(
         return
     if kind == "probabilities":
         raise ValueError(
-            f"marginal probabilities over {len(wires)} wires require "
-            f"2**{len(wires)} Pauli contractions; increase "
-            "max_marginal_wires explicitly to accept that cost"
+            f"marginal probabilities over {len(wires)} wires exceed the "
+            f"supported limit of {limit}; increase max_marginal_wires "
+            "explicitly to raise it"
         )
     raise ValueError(
-        f"Pauli-basis sampling over {len(wires)} wires requires "
-        f"2**{len(wires)} contractions; the supported limit is {limit}"
+        f"Pauli-basis sampling over {len(wires)} wires exceeds the supported "
+        f"limit of {limit}; a request that reads any wire in X or Y needs one "
+        "contraction per subset of those wires, so increase max_marginal_wires "
+        "explicitly to accept that cost"
     )
 
 
@@ -312,29 +380,18 @@ def _sample_pauli_product(
     shots: int,
     wires: tuple[int, ...],
     metadata: dict[str, Any],
+    state_output: Any,
+    n_wires: int,
 ) -> torch.Tensor:
-    expectation = getattr(target, "expectation_ps", None)
-    if not callable(expectation):
-        raise CapabilityError(
-            f"{type(target).__name__} does not support Pauli-basis sampling"
-        )
     axes_by_wire = {
         wire: axis for axis, wires in _pauli_axes(metadata).items() for wire in wires
     }
-    subset_expectations: list[torch.Tensor] = []
-    for mask in range(1, 1 << len(wires)):
-        axes = {
-            axis: tuple(
-                wire
-                for index, wire in enumerate(wires)
-                if mask & (1 << index) and axes_by_wire[wire] == axis
-            )
-            for axis in ("x", "y", "z")
-        }
-        subset_expectations.append(expectation(**axes))
-    distribution = _probabilities_from_parity_expectations(
-        subset_expectations,
-        n_wires=len(wires),
+    distribution = _pauli_basis_distribution(
+        target,
+        wires=wires,
+        axes_by_wire=axes_by_wire,
+        state_output=state_output,
+        n_wires=n_wires,
     )
     distribution = torch.clamp(distribution, min=0)
     distribution = distribution / distribution.sum(dim=-1, keepdim=True)
@@ -346,6 +403,58 @@ def _sample_pauli_product(
     )
     shifts = torch.arange(len(wires) - 1, -1, -1, device=indices.device)
     return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
+
+
+def _pauli_basis_distribution(
+    target: Any,
+    *,
+    wires: tuple[int, ...],
+    axes_by_wire: dict[int, str],
+    state_output: Any,
+    n_wires: int,
+) -> torch.Tensor:
+    """The joint distribution of a Pauli-basis readout over ``wires``.
+
+    When every requested wire is read in the Z basis the distribution *is* the
+    computational-basis marginal, so a dense result gives it by reduction. Each
+    bit then carries the same meaning on both sides: ``+1`` is an even number of
+    set bits, which is a Z eigenvalue of ``+1`` and therefore the computational
+    bit ``0``.
+
+    A request that reads any wire in X or Y is a genuinely different measurement
+    and keeps the parity reconstruction, which needs one full-state contraction
+    per non-empty subset of ``wires``.
+    """
+
+    if wires and all(axes_by_wire.get(wire) == "z" for wire in wires):
+        reduced = _joint_marginal_probabilities(
+            state_output,
+            wires,
+            n_wires=n_wires,
+            noise_model=None,
+        )
+        if reduced is not None:
+            return reduced
+    expectation = getattr(target, "expectation_ps", None)
+    if not callable(expectation):
+        raise CapabilityError(
+            f"{type(target).__name__} does not support Pauli-basis sampling"
+        )
+    subset_expectations: list[torch.Tensor] = []
+    for mask in range(1, 1 << len(wires)):
+        axes = {
+            axis: tuple(
+                wire
+                for index, wire in enumerate(wires)
+                if mask & (1 << index) and axes_by_wire[wire] == axis
+            )
+            for axis in ("x", "y", "z")
+        }
+        subset_expectations.append(expectation(**axes))
+    return _probabilities_from_parity_expectations(
+        subset_expectations,
+        n_wires=len(wires),
+    )
 
 
 def _shot_statistics(
@@ -381,6 +490,24 @@ def _marginal_probabilities(
     target: Any,
     wires: tuple[int, ...],
 ) -> torch.Tensor:
+    """Recover a marginal from ``2 ** len(wires) - 1`` parity expectations.
+
+    This is the fallback for a result that is not a dense tensor, which is where
+    the MPS and tensor-network targets land, and for a target that exposes
+    ``expectation_ps`` without carrying a distribution at all. It is kept rather
+    than removed because the expectation surface is duck-typed and narrower than
+    the dense-result surface, so deleting it would withdraw a capability instead
+    of replacing an implementation.
+
+    The cost is exponential in the number of wires because each of those
+    expectations is a separate contraction over the whole state, and the
+    arithmetic is reconstructed rather than read: one term per non-empty subset,
+    summed with alternating signs and divided by ``2 ** len(wires)``. Because
+    that sum is evaluated in floating point it can return a small negative entry
+    for an outcome the state gives probability zero, which is the other reason
+    the reduction is preferred where it is available.
+    """
+
     expectation = getattr(target, "expectation_ps", None)
     if not callable(expectation):
         raise CapabilityError(
@@ -397,6 +524,7 @@ def _marginal_probabilities(
 
 
 def _execute_shot_measurement(
+    output: Any,
     target: Any,
     request: MeasurementNode,
     kind: str,
@@ -411,6 +539,8 @@ def _execute_shot_measurement(
             shots=request.shots,
             wires=wires,
             metadata=metadata,
+            state_output=output,
+            n_wires=n_wires,
         )
         sampling_statistics: dict[str, Any] = {}
     else:
@@ -480,21 +610,15 @@ def _execute_analytic_measurement(
             axes["z"] = wires
         return method(**axes)
 
-    probabilities = (
-        _density_matrix_probabilities(
-            output,
-            wires,
-            n_wires=n_wires,
-            noise_model=noise_model,
-        )
-        if isinstance(output, torch.Tensor)
-        else None
+    probabilities = _joint_marginal_probabilities(
+        output,
+        wires,
+        n_wires=n_wires,
+        noise_model=noise_model,
     )
-    return (
-        _marginal_probabilities(measurement_target(), wires)
-        if probabilities is None
-        else probabilities
-    )
+    if probabilities is not None:
+        return probabilities
+    return _marginal_probabilities(measurement_target(), wires)
 
 
 def execute_measurements(
@@ -546,6 +670,7 @@ def execute_measurements(
         else:
             target = measurement_target()
             value, statistics = _execute_shot_measurement(
+                output,
                 target,
                 request,
                 kind,
