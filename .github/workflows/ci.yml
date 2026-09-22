@@ -15,13 +15,14 @@ on:
 # matrix behind it. `github.ref` is the pull request's merge ref for a pull
 # request and the branch for a push, which is the granularity wanted here.
 #
-# Every job below then joins one of eight named buckets -- `cpucore-3.1x`,
-# `coverage`, `distributed`, and `light-a`/`b`/`c` -- chosen to keep the run's
-# wall time where it was: the three required cpu-core checks are ~10 minutes
-# each and get a bucket each rather than sharing one, and the thirteen jobs under
-# ~3 minutes are spread across three. A concurrency group admits one job at a
-# time, so the eight bucket names are the repository's ceiling of eight
-# concurrent GitHub-hosted runners.
+# Every job below then joins one of eight named buckets scoped to this pull
+# request or pushed branch -- `cpucore-3.1x`, `coverage`, `distributed`, and
+# `light-a`/`b`/`c`. The scope is essential: repository-global buckets made an
+# unrelated pull request wait behind every older run in the same bucket, so a
+# healthy 15-minute matrix regularly took an hour to report. A concurrency
+# group admits one job at a time, so the eight bucket suffixes remain the
+# per-run ceiling while the organisation's 20-runner pool remains the aggregate
+# ceiling across repositories and pull requests.
 #
 # `queue: max` is what makes a bucket a cap instead of a drop: the default
 # keeps only the newest waiting job and cancels the ones behind it, which would
@@ -35,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-a
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -135,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-cpucore-${{ matrix.python-version }}
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
     strategy:
       fail-fast: false
@@ -170,7 +171,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-a
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -186,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-b
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -197,13 +198,13 @@ jobs:
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
-        run: python -m pytest -m triton -q -rs
+        run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
 
   qiskit-optional:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-b
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     strategy:
       fail-fast: false
@@ -226,7 +227,7 @@ jobs:
       - name: Verify the machine-readable interoperability contract
         run: python tools/check_qiskit_interop_contract.py
       - name: Verify Qiskit IR, statevector, and Aer conformance
-        run: python -m pytest -m qiskit -q
+        run: python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py -m qiskit -q
       - name: Prove the stable root still does not import Qiskit
         run: >-
           python -c "import sys, flagquantum;
@@ -238,7 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-b
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     strategy:
       fail-fast: false
@@ -257,7 +258,7 @@ jobs:
       - name: Verify the machine-readable contract and Cirq SDK surface
         run: python tools/check_cirq_interop_contract.py --verify-sdk
       - name: Verify the contract policy tests
-        run: python -m pytest -m cirq -q
+        run: python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
       - name: Prove the stable root still does not import Cirq
         run: >-
           python -c "import sys, flagquantum;
@@ -267,7 +268,7 @@ jobs:
   cudaq-optional:
     runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-gh-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     strategy:
       fail-fast: false
@@ -286,7 +287,7 @@ jobs:
       - name: Verify the machine-readable contract and CUDA-Q SDK surface
         run: python tools/check_cudaq_export_contract.py --verify-sdk
       - name: Verify CUDA-Q kernel and statevector conformance
-        run: python -m pytest -m cudaq -q
+        run: python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
       - name: Prove the stable root still does not import CUDA-Q
         run: >-
           python -c "import sys, flagquantum;
@@ -297,7 +298,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-b
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     strategy:
       fail-fast: false
@@ -316,7 +317,7 @@ jobs:
       - name: Verify the machine-readable interoperability contract
         run: python tools/check_pennylane_interop_contract.py
       - name: Verify PennyLane QuantumScript and complex128 conformance
-        run: python -m pytest -m pennylane -q
+        run: python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py -m pennylane -q
       - name: Prove the stable root still does not import PennyLane
         run: >-
           python -c "import sys, flagquantum;
@@ -327,7 +328,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     strategy:
       matrix:
@@ -350,7 +351,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-a
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -395,7 +396,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-distributed
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -410,7 +411,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-coverage
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage
       queue: max
     steps:
       - uses: actions/checkout@v4
@@ -437,7 +438,7 @@ jobs:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     permissions:
       contents: read
