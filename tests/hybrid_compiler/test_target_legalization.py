@@ -16,7 +16,12 @@ from flagquantum.compiler.target_legalization import (
     circuit_target_requirements,
     legalize_circuit_for_target,
 )
-from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from flagquantum.core.ir import (
+    CircuitIR,
+    Instruction,
+    IRValidationError,
+    MeasurementNode,
+)
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,
@@ -207,9 +212,20 @@ def cost(theta):
 
 
 def test_unknown_circuit_precision_fails_closed() -> None:
-    circuit = CircuitIR(1, (Instruction("h", (0,)),), dtype="complex256")
+    # Refused twice over. ``CircuitIR`` now owns the dtype field and refuses a name
+    # that is not an amplitude dtype at construction...
+    with pytest.raises(IRValidationError, match="complex256"):
+        CircuitIR(1, (Instruction("h", (0,)),), dtype="complex256")
+    # ...and target legalization keeps its own check, because a ``CircuitIR`` can still
+    # reach it without passing through ``__post_init__``: unpickling a compatible
+    # dataclass builds the record from its state and not through the constructor, so a
+    # program saved before this rule existed carries whatever dtype it was saved with.
+    # The check is what stops such a program from being legalized as though the
+    # precision it names were available.
+    stale = CircuitIR(1, (Instruction("h", (0,)),), dtype="complex64")
+    object.__setattr__(stale, "dtype", "complex256")
     with pytest.raises(TargetLegalizationError, match="complex256"):
-        circuit_target_requirements(circuit)
+        circuit_target_requirements(stale)
 
 
 def test_decomposition_operation_count_is_checked_against_target_limit() -> None:
