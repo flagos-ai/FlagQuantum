@@ -12,6 +12,7 @@ from flagquantum.ecosystem import available_adapters, get_adapter
 from flagquantum.ecosystem.cudaq import (
     CudaqConversionError,
     CudaqDependencyError,
+    _version,
     conversion,
     export_cudaq,
 )
@@ -54,6 +55,20 @@ def test_export_builds_supported_kernel_in_ir_order(
     assert kernel.calls == [("h", 0), ("ry", 0.25, 1), ("cx", 0, 1)]
     assert result.report.lossless
     assert result.report.framework_version == "0.16.0.post1"
+
+
+def test_export_reports_distribution_version_instead_of_verbose_module_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    kernel = _Kernel()
+    sdk = _sdk(kernel)
+    sdk.__version__ = "CUDA-Q Version 0.15.1 (https://github.com/NVIDIA/cuda-quantum)"
+    monkeypatch.setattr(conversion, "import_module", lambda name: sdk)
+    monkeypatch.setattr(_version.metadata, "version", lambda name: "0.15.1")
+
+    result = export_cudaq(Circuit(1).x(0))
+
+    assert result.report.framework_version == "0.15.1"
 
 
 def test_missing_dependency_fails_only_when_export_is_requested(

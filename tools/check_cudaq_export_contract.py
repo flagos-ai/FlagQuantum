@@ -15,6 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.ecosystem.cudaq._version import installed_cudaq_version
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "cudaq-export-contract.toml"
@@ -123,7 +124,7 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         cudaq = import_module("cudaq")
     except ImportError:
         return ("CUDA-Q SDK is not installed",)
-    version = str(getattr(cudaq, "__version__", "unknown"))
+    version = installed_cudaq_version(cudaq)
     if version not in contract.get("cudaq_versions", ()):
         return (f"uncertified CUDA-Q SDK version {version}",)
     kernel = cudaq.make_kernel()

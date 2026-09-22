@@ -10,6 +10,7 @@ from typing import Any
 from ...core.ir import Instruction, ensure_circuit_ir
 from ...core.operator_schema import get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
+from ._version import installed_cudaq_version
 from .models import (
     CudaqConversionError,
     CudaqConversionIssue,
@@ -158,7 +159,7 @@ def export_cudaq(program: Any, *, allow_lossy: bool = False) -> CudaqExportResul
 
     del allow_lossy
     cudaq = _cudaq()
-    version = str(getattr(cudaq, "__version__", "unknown"))
+    version = installed_cudaq_version(cudaq)
     ir, lowered, report = _validate(program, version)
     kernel = cudaq.make_kernel()
     qubits = kernel.qalloc(ir.n_wires)
