@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import operator
+import sys
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Real
@@ -176,6 +178,99 @@ def _dtype_holds_real_numbers(dtype: Any) -> bool:
     return getattr(dtype, "kind", None) not in _NON_REAL_DTYPE_KINDS
 
 
+def _is_being_traced(value: Any) -> bool:
+    """Return whether ``value`` denotes a magnitude that is not known yet.
+
+    ``Module`` compiles a circuit builder with ``make_fx``, which hands the builder a
+    real tensor and refuses to let it be read: ``bool(tensor)`` fails so that a value
+    cannot be baked into the traced program as a branch.  ``compile_quantum_kernel``
+    does the same under ``jax.jit``, which hands the builder a tracer.  An angle
+    written either way has no magnitude to check while the program is built -- the
+    value that will be used is bound when the program runs, and ``Module`` and the JAX
+    executor own that boundary -- so this check defers rather than reading a sample of
+    it.
+
+    Each framework is asked the way it can be asked.  Torch is asked about its
+    *mode*, which is what makes a tensor a proxy.  JAX has no equivalent mode question
+    left to ask, so the *value* is asked instead, and JAX's tracer class is read out of
+    ``sys.modules``: a tracer cannot exist unless JAX has already been imported, so
+    that reads the class without this module importing JAX, which is an optional extra.
+
+    A mode is asked, instead of a failed read being caught and treated as this case,
+    because a read that fails outside tracing is a defect of its own and must not be
+    waved through as an unknown magnitude.
+    """
+
+    try:
+        from torch.fx.experimental.proxy_tensor import get_proxy_mode
+    except ImportError:
+        # A torch without ``fx`` has no tracing to detect, and refusing every angle
+        # over a missing optional module would be a worse failure than this check.
+        pass
+    else:
+        if get_proxy_mode() is not None:
+            return True
+    jax = sys.modules.get("jax")
+    tracer = getattr(getattr(jax, "core", None), "Tracer", None)
+    return tracer is not None and isinstance(value, tracer)
+
+
+def _holds_only_finite_values(value: Any) -> bool:
+    """Return whether every real number ``value`` carries is finite.
+
+    ``math.isfinite`` answers for a scalar.  A value too large for a float raises
+    ``OverflowError`` instead of answering, and that is its own answer: it is finite
+    and merely outside float range, so a range check would be reading a different
+    question into this one.
+
+    An array-like is asked in whichever of two generic ways it offers rather than by
+    type, so no import is needed for any of them.  ``isfinite()`` covers a torch tensor
+    and this package's own carrier, and a zero-dimensional value of any other array
+    library is read as the scalar it is, through ``item()`` -- that is how a NumPy
+    array and a JAX array are read without importing either.
+
+    Walking as a sequence is the last way, and it is the only one a zero-dimensional
+    value cannot take: ``iter`` over one raises ``TypeError`` rather than yielding it,
+    so a value that reports ``ndim == 0`` must not reach that branch.  A lane that
+    installs ``torch`` and little else still has to collect this module, which is why
+    the ways are asked for rather than looked up by type.
+
+    A traced carrier is not asked at all: see :func:`_is_being_traced`.
+    """
+
+    if isinstance(value, Real):
+        try:
+            return math.isfinite(value)
+        except OverflowError:
+            return True
+    if _is_being_traced(value):
+        return True
+    isfinite = getattr(value, "isfinite", None)
+    if callable(isfinite):
+        return bool(isfinite().all())
+    if getattr(value, "ndim", None) == 0:
+        scalar = getattr(value, "item", None)
+        if callable(scalar):
+            try:
+                return math.isfinite(scalar())
+            except OverflowError:
+                return True
+    return all(_holds_only_finite_values(item) for item in value)
+
+
+def _require_finite_angle(value: Any, *, owner: str) -> None:
+    """Refuse a gate angle that is not a finite real number."""
+
+    if _holds_only_finite_values(value):
+        return
+    if isinstance(value, Real):
+        raise IRValidationError(f"{owner} must be a finite real number, got {value!r}")
+    raise IRValidationError(
+        f"{owner} must be a finite real number, got a non-finite "
+        f"{type(value).__name__}"
+    )
+
+
 def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     """Check that a gate parameter is a real angle, without rewriting it.
 
@@ -198,6 +293,18 @@ def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     :func:`_normalize_count` gives -- it is a flag rather than an angle.  ``str``,
     ``bytes`` and ``bytearray`` are refused before the sequence branch, so that
     ``b"0"`` cannot iterate into ``48`` and be read as one.
+
+    A real number of the wrong *magnitude* is a different mistake and gets the class
+    the boundary reserves for a value: ``nan``, ``inf`` and ``-inf`` are not angles,
+    and they used to be stored and executed, so ``ry(0, nan)`` returned a NaN
+    distribution as its result while ``ry(0, nan).counts(64)`` failed a layer below
+    the mistake in ``torch.multinomial``, naming neither the gate nor the parameter.
+    That is an :class:`IRValidationError`, which is what :func:`_normalize_shots`
+    raises for a magnitude in this same file.
+
+    The magnitude is the one thing here that can be a fact about a *traced* value, and
+    a traced angle has none yet, so :func:`_is_being_traced` defers it.  The type
+    rules above are untouched by that: a type is static, so they hold on every path.
     """
 
     owner = f"gate {opcode!r} parameter {parameter!r}"
@@ -206,6 +313,7 @@ def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     if isinstance(value, bool):
         raise TypeError(f"{owner} must be a real number, not a bool")
     if isinstance(value, Real):
+        _require_finite_angle(value, owner=owner)
         return
     if isinstance(value, (str, bytes, bytearray)):
         raise TypeError(f"{owner} must be a real number, got {type(value).__name__}")
@@ -218,6 +326,7 @@ def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
                 f"{owner} must be a real number, got a {dtype} "
                 f"{type(value).__name__}"
             )
+        _require_finite_angle(value, owner=owner)
         return
     if isinstance(value, (list, tuple)):
         for item in value:

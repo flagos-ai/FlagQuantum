@@ -150,6 +150,19 @@ class DoubleSingleTensor:
 
         return torch.float32
 
+    def isfinite(self) -> torch.Tensor:
+        """Return which of the numbers this carrier holds are finite.
+
+        The counterpart of :attr:`dtype` for the same reader. A gate parameter has
+        to be a finite real angle, so the check asks the value whether every number
+        it carries is finite; a torch tensor answers for itself and this carrier
+        answers here, which is what keeps a pair reaching the P4 executor from being
+        the one shape the check cannot read. ``_require_pair`` does not already
+        refuse a non-finite word, so the answer is not a formality.
+        """
+
+        return torch.isfinite(self.high) & torch.isfinite(self.low)
+
     @classmethod
     def from_float32(cls, value: torch.Tensor) -> "DoubleSingleTensor":
         _require_float32(value, name="value")
