@@ -22,6 +22,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
     ) in commands
     assert ("python", "tools/check_dependency_policy.py") in commands
     assert ("python", "tools/check_qiskit_interop_contract.py") in commands
+    assert ("python", "tools/check_cudaq_export_contract.py") in commands
     assert ("python", "tools/check_pennylane_interop_contract.py") in commands
     assert ("python", "tools/check_double_single_contract.py") in commands
     assert ("python", "tools/check_split_real_imag_contract.py") in commands

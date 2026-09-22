@@ -57,6 +57,10 @@ cirq = [
     "cirq-core>=1.6.1,<1.8; python_version >= '3.11'",
 ]
 
+cudaq = [
+    "cudaq>=0.15.1,<0.17; python_version >= '3.11'",
+]
+
 quafu = [
     "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'",
 ]

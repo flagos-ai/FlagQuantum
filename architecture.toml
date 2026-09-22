@@ -45,6 +45,9 @@ direct_cuda_allowed = [
 cirq_import_allowed_prefixes = [
     "flagquantum/ecosystem/cirq/",
 ]
+cudaq_import_allowed_prefixes = [
+    "flagquantum/ecosystem/cudaq/",
+]
 qiskit_import_allowed_prefixes = [
     "flagquantum/ecosystem/qiskit/",
 ]

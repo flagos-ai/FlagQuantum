@@ -70,6 +70,8 @@ jobs:
         run: python tools/check_dependency_policy.py
       - name: Verify Cirq interoperability contract
         run: python tools/check_cirq_interop_contract.py
+      - name: Verify CUDA-Q export contract
+        run: python tools/check_cudaq_export_contract.py
       - name: Verify Qiskit interoperability contract
         run: python tools/check_qiskit_interop_contract.py
       - name: Verify PennyLane interoperability contract
@@ -154,7 +156,7 @@ jobs:
         run: >-
           python -c "import importlib.util;
           assert all(importlib.util.find_spec(name) is None
-          for name in ('cirq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
+          for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Prove native distributed runtime does not require JAX
@@ -342,7 +344,7 @@ jobs:
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "from flagquantum.runtime.capabilities import load_operator_profile; assert load_operator_profile('statevector_local_p0').name == 'statevector_local_p0'"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
-          /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'cirq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
+          /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
           rm -rf /tmp/fq-wheel
       - name: Clean-install sdist and run quick start
         run: |

@@ -25,6 +25,8 @@ Dependency groups are intentionally separated:
 - `cuda`: optional Triton kernels without changing native PyTorch CUDA support;
 - `braket`, `cirq`, `pennylane`, `quafu`, `qiskit`: isolated provider and interop SDKs;
 - `interop-all`: the exact aggregate of those five interop groups;
+- `cudaq`: an isolated heterogeneous compiler toolchain, excluded from the
+  portable `interop-all` aggregate;
 - `examples`: datasets and transformer examples;
 - `viz`: Matplotlib circuit rendering;
 - `all`: the historical development/runtime aggregate, excluding providers;
