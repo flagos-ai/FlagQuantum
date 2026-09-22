@@ -94,8 +94,9 @@ def test_architecture_isolates_qiskit_imports_to_interop_namespace() -> None:
 def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "qiskit-optional:" in workflow
-    assert 'qiskit-version: ["2.0.*", "2.5.*"]' in workflow
-    assert "'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'" in workflow
+    assert 'OPTIONAL_VERSIONS: "2.0.* 2.5.*"' in workflow
+    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert '"qiskit[qasm3-import]==${version}"' in workflow
     assert "python tools/check_qiskit_interop_contract.py" in workflow
     assert "tests/test_qiskit_interop.py" in workflow
     assert "tests/test_qiskit_interop_conformance.py" in workflow

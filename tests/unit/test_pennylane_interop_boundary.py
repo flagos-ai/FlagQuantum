@@ -45,7 +45,9 @@ def test_architecture_isolates_pennylane_imports() -> None:
 def test_ci_has_minimum_and_latest_pennylane_lanes() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "pennylane-optional:" in workflow
-    assert 'pennylane-version: ["0.44.1", "0.45.1"]' in workflow
+    assert 'OPTIONAL_VERSIONS: "0.44.1 0.45.1"' in workflow
+    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert '"pennylane==${version}"' in workflow
     assert "python tools/check_pennylane_interop_contract.py" in workflow
     assert "tests/test_pennylane_interop.py" in workflow
     assert "tests/test_pennylane_interop_conformance.py" in workflow

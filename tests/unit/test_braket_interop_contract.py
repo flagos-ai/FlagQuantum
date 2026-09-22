@@ -65,4 +65,5 @@ def test_ci_checks_contract_and_certified_sdk_lanes() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_braket_interop_contract.py" in workflow
     assert "braket-optional:" in workflow
-    assert 'braket-version: ["1.117.0", "1.127.1"]' in workflow
+    assert 'OPTIONAL_VERSIONS: "1.117.0 1.127.1"' in workflow
+    assert '"amazon-braket-sdk==${version}"' in workflow

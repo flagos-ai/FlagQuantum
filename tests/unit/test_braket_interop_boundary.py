@@ -46,7 +46,9 @@ def test_architecture_isolates_braket_imports() -> None:
 def test_ci_runs_both_braket_versions_and_the_braket_suite() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "braket-optional:" in workflow
-    assert 'braket-version: ["1.117.0", "1.127.1"]' in workflow
+    assert 'OPTIONAL_VERSIONS: "1.117.0 1.127.1"' in workflow
+    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert '"amazon-braket-sdk==${version}"' in workflow
     assert "python tools/check_braket_interop_contract.py --verify-sdk" in workflow
     assert (
         "tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py"

@@ -45,7 +45,9 @@ def test_architecture_isolates_cirq_imports() -> None:
 def test_ci_runs_both_cirq_versions_and_the_cirq_suite() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "cirq-optional:" in workflow
-    assert 'cirq-version: ["1.6.1", "1.7.0"]' in workflow
+    assert 'OPTIONAL_VERSIONS: "1.6.1 1.7.0"' in workflow
+    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert '"cirq-core==${version}"' in workflow
     assert "python tools/check_cirq_interop_contract.py --verify-sdk" in workflow
     assert "tests/test_cirq_interop.py" in workflow
     assert "tests/test_cirq_interop_conformance.py" in workflow

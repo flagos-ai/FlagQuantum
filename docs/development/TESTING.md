@@ -436,6 +436,13 @@ The checked-in `ci.yml` defines fourteen jobs:
   `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
 
+Each two-version ecosystem compatibility job reuses one runner for its minimum
+and latest SDK checks. The versions still execute in separate Python and pytest
+processes, but checkout, Python setup, the PyTorch wheel, and the editable
+FlagQuantum install happen once per framework instead of once per version. This
+preserves the certified compatibility matrix while reducing runner cold starts
+and the serial queue behind the `light-b` and `light-c` capacity buckets.
+
 The GitHub-hosted jobs are partitioned across eight concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
 one run at eight concurrent jobs without forcing a new pull request to wait for

@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 # flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
-# jobs, and this workflow's matrix asks for 16 at once. Two constraints bound
-# this repository's share of it.
+# jobs, and this workflow fans out beyond the share one repository should hold.
+# Two constraints bound this repository's share of it.
 #
 # The block below cancels a superseded run of the same branch, so a push that
 # lands while an earlier one is still running does not queue a second full
@@ -219,10 +219,8 @@ jobs:
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        qiskit-version: ["2.0.*", "2.5.*"]
+    env:
+      OPTIONAL_VERSIONS: "2.0.* 2.5.*"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -231,22 +229,18 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev]'
-      - name: Install the certified Qiskit and Aer lane
-        run: >-
-          python -m pip install
-          'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'
-          'qiskit-aer==0.17.*'
-          'sympy>=1.13,<2'
-      - name: Verify the machine-readable interoperability contract
-        run: python tools/check_qiskit_interop_contract.py
-      - name: Verify Qiskit IR, statevector, and Aer conformance
-        run: python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py -m qiskit -q
-      - name: Prove the stable root still does not import Qiskit
-        run: >-
-          python -c "import sys, flagquantum;
-          assert not any(name == 'qiskit' or name.startswith('qiskit.')
-          or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
-          for name in sys.modules)"
+      - name: Verify both certified Qiskit and Aer versions
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade \
+              "qiskit[qasm3-import]==${version}" \
+              'qiskit-aer==0.17.*' \
+              'sympy>=1.13,<2'
+            python tools/check_qiskit_interop_contract.py
+            python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py -m qiskit -q
+            python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
+          done
 
   cirq-optional:
     runs-on: ubuntu-latest
@@ -254,10 +248,8 @@ jobs:
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        cirq-version: ["1.6.1", "1.7.0"]
+    env:
+      OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -266,27 +258,23 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev]'
-      - name: Install the certified Cirq Core lane
-        run: python -m pip install 'cirq-core==${{ matrix.cirq-version }}'
-      - name: Verify the machine-readable contract and Cirq SDK surface
-        run: python tools/check_cirq_interop_contract.py --verify-sdk
-      - name: Verify the contract policy tests
-        run: python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
-      - name: Prove the stable root still does not import Cirq
-        run: >-
-          python -c "import sys, flagquantum;
-          assert not any(name == 'cirq' or name.startswith('cirq.')
-          for name in sys.modules)"
+      - name: Verify both certified Cirq Core versions
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade "cirq-core==${version}"
+            python tools/check_cirq_interop_contract.py --verify-sdk
+            python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
+            python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
+          done
 
   braket-optional:
     runs-on: ubuntu-latest
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        braket-version: ["1.117.0", "1.127.1"]
+    env:
+      OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -295,31 +283,23 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev]'
-      - name: Install the certified Amazon Braket SDK lane
-        run: python -m pip install 'amazon-braket-sdk==${{ matrix.braket-version }}'
-      - name: Verify the machine-readable contract and Braket SDK surface
-        run: python tools/check_braket_interop_contract.py --verify-sdk
-      - name: Verify Braket circuit and statevector conformance
-        run: >-
-          python -m pytest
-          tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py
-          tests/test_braket_interop.py tests/test_braket_interop_conformance.py
-          -m braket -q
-      - name: Prove the stable root still does not import Braket
-        run: >-
-          python -c "import sys, flagquantum;
-          assert not any(name == 'braket' or name.startswith('braket.')
-          for name in sys.modules)"
+      - name: Verify both certified Amazon Braket SDK versions
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade "amazon-braket-sdk==${version}"
+            python tools/check_braket_interop_contract.py --verify-sdk
+            python -m pytest tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py tests/test_braket_interop.py tests/test_braket_interop_conformance.py -m braket -q
+            python -c "import sys, flagquantum; assert not any(name == 'braket' or name.startswith('braket.') for name in sys.modules)"
+          done
 
   cudaq-optional:
     runs-on: ubuntu-latest
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        cudaq-version: ["0.15.1", "0.16.0.post1"]
+    env:
+      OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -328,17 +308,15 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev]'
-      - name: Install the certified CUDA-Q lane
-        run: python -m pip install 'cudaq==${{ matrix.cudaq-version }}'
-      - name: Verify the machine-readable contract and CUDA-Q SDK surface
-        run: python tools/check_cudaq_export_contract.py --verify-sdk
-      - name: Verify CUDA-Q kernel and statevector conformance
-        run: python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
-      - name: Prove the stable root still does not import CUDA-Q
-        run: >-
-          python -c "import sys, flagquantum;
-          assert not any(name == 'cudaq' or name.startswith('cudaq.')
-          for name in sys.modules)"
+      - name: Verify both certified CUDA-Q versions
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade "cudaq==${version}"
+            python tools/check_cudaq_export_contract.py --verify-sdk
+            python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
+            python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
+          done
 
   pennylane-optional:
     runs-on: ubuntu-latest
@@ -346,10 +324,8 @@ jobs:
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        pennylane-version: ["0.44.1", "0.45.1"]
+    env:
+      OPTIONAL_VERSIONS: "0.44.1 0.45.1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -358,17 +334,15 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev]'
-      - name: Install the certified PennyLane lane
-        run: python -m pip install 'pennylane==${{ matrix.pennylane-version }}'
-      - name: Verify the machine-readable interoperability contract
-        run: python tools/check_pennylane_interop_contract.py
-      - name: Verify PennyLane QuantumScript and complex128 conformance
-        run: python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py -m pennylane -q
-      - name: Prove the stable root still does not import PennyLane
-        run: >-
-          python -c "import sys, flagquantum;
-          assert not any(name == 'pennylane' or name.startswith('pennylane.')
-          for name in sys.modules)"
+      - name: Verify both certified PennyLane versions
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade "pennylane==${version}"
+            python tools/check_pennylane_interop_contract.py
+            python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py -m pennylane -q
+            python -c "import sys, flagquantum; assert not any(name == 'pennylane' or name.startswith('pennylane.') for name in sys.modules)"
+          done
 
   dependency-bounds:
     runs-on: ubuntu-latest
