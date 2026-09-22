@@ -613,7 +613,7 @@ def test_a_two_dimensional_matrix_matches_its_expanded_form(dtype: torch.dtype) 
 def test_a_single_row_batched_matrix_broadcasts_over_the_batch(
     dtype: torch.dtype,
 ) -> None:
-    """A (1, 2, 2) matrix is expanded, which is more than ``_apply_matrix`` does."""
+    """A (1, 2, 2) matrix is expanded by both CPU single-wire kernels."""
 
     n_wires = 10
     bsz = 4
@@ -625,10 +625,11 @@ def test_a_single_row_batched_matrix_broadcasts_over_the_batch(
     explicit = _apply_single_wire_matrix(state, one_row.expand(bsz, -1, -1), 3, n_wires)
 
     assert torch.equal(broadcast, explicit)
-    # Pinning why the branch exists at all: the kernel it stands in for cannot
-    # take this shape, so the two are not interchangeable on this input.
-    with pytest.raises(RuntimeError):
-        _apply_matrix(state, one_row, (3,), n_wires)
+    dispatched = _apply_matrix(state, one_row, (3,), n_wires)
+    dispatched_explicit = _apply_matrix(
+        state, one_row.expand(bsz, -1, -1), (3,), n_wires
+    )
+    assert torch.equal(dispatched, dispatched_explicit)
 
 
 @pytest.mark.parametrize("dtype", _COMPLEX_DTYPES)

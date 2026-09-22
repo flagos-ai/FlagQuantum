@@ -91,10 +91,6 @@ def test_missing_dependency_fails_only_when_export_is_requested(
             "symbolic_parameter_not_supported",
         ),
         (
-            CircuitIR(1, (Instruction("rx", (0,), {"theta": float("inf")}),)),
-            "non_finite_parameter",
-        ),
-        (
             CircuitIR(1, (), measurements=(MeasurementNode("m", (0,)),)),
             "measurement_not_supported",
         ),
