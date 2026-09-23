@@ -61,3 +61,19 @@ def rank_for_wire(wire: int, wire_shards: Sequence[Sequence[int]]) -> int:
         if int(wire) in wires:
             return rank
     return 0
+
+
+def validate_observable_wires(
+    wires: Sequence[int], n_wires: int, *, message: str
+) -> None:
+    """Refuse an observable wire that the executed state does not have.
+
+    A Z sign is selected from bit ``n_wires - 1 - wire`` of the basis index. A
+    wire outside the state makes that bit position negative during a shift, and
+    a negative shift silently selects the wrong bit instead of failing, so the
+    range must be checked before any sign is computed.
+    """
+
+    for wire in wires:
+        if not 0 <= int(wire) < int(n_wires):
+            raise ValueError(message)
