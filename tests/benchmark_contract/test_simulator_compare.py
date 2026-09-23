@@ -30,7 +30,12 @@ def test_simulator_evaluation_contract_matches_runner() -> None:
     assert contract["runner"] == RUNNER
     assert contract["result_schema"] == SCHEMA
     assert contract["correctness"]["absolute_tolerance"] == ABSOLUTE_TOLERANCE
-    assert contract["engines"] == ["flagquantum_native", "qiskit_aer"]
+    assert contract["engines"] == [
+        "flagquantum_native",
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit",
+    ]
     assert contract["hidden_fallback_allowed"] is False
     assert contract["scalability_claim_allowed"] is False
     assert contract["matrix"] == {
@@ -41,6 +46,19 @@ def test_simulator_evaluation_contract_matches_runner() -> None:
         "capacity_probe_minimum_n_wires": 26,
         "capacity_probe_release_gating": False,
         "small_width_only_claims_whole_simulator_performance": False,
+    }
+    assert contract["external_measurement"] == {
+        "performance_scope": "external_engine_only",
+        "flagquantum_performance_reuse_allowed": True,
+        "flagquantum_correctness_reference_required": True,
+        "flagquantum_correctness_reference_timed": False,
+        "same_workload_required": True,
+        "optional_dependencies_fail_closed": True,
+        "thread_environment": [
+            "OMP_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+        ],
     }
 
 

@@ -401,6 +401,28 @@ def test_symbolic_rotation_parameters_round_trip_and_bind_equivalently() -> None
     )
 
 
+def test_symbolic_rzz_parameter_round_trips_and_binds_equivalently() -> None:
+    theta = sympy.Symbol("theta")
+    qubits = cirq.LineQubit.range(2)
+    source = cirq.Circuit(
+        cirq.ZZPowGate(exponent=theta / sympy.pi, global_shift=-0.5).on(*qubits)
+    )
+
+    imported = from_cirq(source)
+    exported = to_cirq(imported)
+    assignment = {"theta": -0.317}
+    expected = Circuit.from_ir(imported, dtype=torch.complex128).bind_parameters(
+        assignment
+    )
+
+    torch.testing.assert_close(
+        _cirq_state(cirq.resolve_parameters(exported, assignment), 2),
+        expected.state()[0],
+        atol=1e-10,
+        rtol=1e-10,
+    )
+
+
 @pytest.mark.parametrize(
     "expression",
     [

@@ -76,6 +76,32 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output benchmarks/results/comparison/simulators.json"
         ),
     ),
+    "simulator_compare_cirq": RunnerSpec(
+        name="simulator_compare_cirq",
+        module="flagquantum.benchmarking.external_simulator_compare",
+        attribute="cirq_main",
+        category="interop",
+        summary="Measure Cirq Simulator on the shared exact-statevector workload.",
+        hardware="CPU; Cirq optional dependency required",
+        example=(
+            "flagquantum-benchmark run simulator_compare_cirq "
+            "--n-wires 10 14 18 22 24 --layers 2 --threads 1 "
+            "--json-output benchmarks/results/comparison/cirq.json"
+        ),
+    ),
+    "simulator_compare_pennylane": RunnerSpec(
+        name="simulator_compare_pennylane",
+        module="flagquantum.benchmarking.external_simulator_compare",
+        attribute="pennylane_main",
+        category="interop",
+        summary="Measure PennyLane Lightning on the shared statevector workload.",
+        hardware="CPU; PennyLane optional dependency required",
+        example=(
+            "flagquantum-benchmark run simulator_compare_pennylane "
+            "--n-wires 10 14 18 22 24 --layers 2 --threads 1 "
+            "--json-output benchmarks/results/comparison/pennylane.json"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",

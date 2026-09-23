@@ -98,7 +98,7 @@ rejection_issue_codes = ["custom_unitary_width_exceeds_limit", "custom_unitary_q
 acceptance_criteria = ["one_two_and_three_qubit_matrix_gates_round_trip", "asymmetric_two_and_three_qubit_matrices_preserve_local_basis_order", "reordered_sparse_wires_preserve_operation_qubit_order", "each_rejected_form_fails_closed_with_its_recorded_issue_code", "imported_matrix_is_an_owned_detached_cpu_complex128_tensor", "cirq_and_numpy_objects_remain_outside_core_ir", "no_second_registry_or_public_api_is_introduced"]
 
 [unsupported]
-flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
+flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
 cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "matrix_gates", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags"]
 issue_codes = ["duplicate_measurement_key", "global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_confusion_map_not_representable", "measurement_invert_mask_not_representable", "measurement_key_empty", "measurement_not_representable", "measurement_not_represented", "measurement_not_terminal", "measurement_qid_dimension_not_representable", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "unsupported_operation", "unsupported_parameter_expression", "unsupported_parameter_value"]
 
@@ -159,6 +159,11 @@ cirq_symbol = "rz"
 cirq_gate_type = "Rz"
 cirq_form = "rads=theta"
 flagquantum = "rz"
+[[operations]]
+cirq_symbol = "ZZPowGate"
+cirq_gate_type = "ZZPowGate"
+cirq_form = "exponent=theta/pi;global_shift=-0.5"
+flagquantum = "rzz"
 [[operations]]
 cirq_symbol = "CNOT"
 cirq_gate_type = "CXPowGate"

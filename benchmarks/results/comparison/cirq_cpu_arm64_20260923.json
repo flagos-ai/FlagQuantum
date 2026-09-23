@@ -1,0 +1,426 @@
+{
+  "all_measurements_stable": false,
+  "artifact_class": "measured_external_engine_run",
+  "benchmark": "interoperable_simulator_comparison",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 1.6184142622847344e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "cirq_simulator": {
+          "backend": "cirq.Simulator",
+          "cold_execution_seconds": 0.007846791995689273,
+          "compilation": {
+            "applicable": false,
+            "note": "Cirq simulator preparation is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.20862963603949192,
+            "max_seconds": 0.0007888749823905528,
+            "mean_seconds": 0.0006403196409034232,
+            "median_seconds": 0.0006671249866485596,
+            "min_seconds": 0.00046495895367115736,
+            "relative_median_absolute_deviation": 0.18249952884185838,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0007888749823905528,
+              0.00046495895367115736,
+              0.0006671249866485596
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_cirq",
+            "framework_version": "1.7.0",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_cirq_conversion_report_v1"
+          },
+          "first_result_seconds": 0.008513916982337832,
+          "steady_state": {
+            "coefficient_of_variation": 0.48414109498264973,
+            "max_seconds": 0.017044600000372157,
+            "mean_seconds": 0.008047251843769724,
+            "median_seconds": 0.006519104196922853,
+            "min_seconds": 0.004088241700083017,
+            "relative_median_absolute_deviation": 0.2961993148743698,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.017044600000372157,
+              0.008171649998985231,
+              0.010110808297758922,
+              0.006519104196922853,
+              0.004088241700083017,
+              0.004588150000199675,
+              0.010829337500035762,
+              0.006265883299056441,
+              0.004807491600513458
+            ]
+          },
+          "version": "1.7.0"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": false
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 82,
+        "layers": 2,
+        "n_wires": 10,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 7.2377686124476805e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "cirq_simulator": {
+          "backend": "cirq.Simulator",
+          "cold_execution_seconds": 0.026893000002019107,
+          "compilation": {
+            "applicable": false,
+            "note": "Cirq simulator preparation is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.3976891436573641,
+            "max_seconds": 0.0009802919812500477,
+            "mean_seconds": 0.0006322913298693796,
+            "median_seconds": 0.0005216659628786147,
+            "min_seconds": 0.00039491604547947645,
+            "relative_median_absolute_deviation": 0.24297141546233367,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0009802919812500477,
+              0.00039491604547947645,
+              0.0005216659628786147
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_cirq",
+            "framework_version": "1.7.0",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_cirq_conversion_report_v1"
+          },
+          "first_result_seconds": 0.027414665964897722,
+          "steady_state": {
+            "coefficient_of_variation": 0.20092559567206353,
+            "max_seconds": 0.02620572500163689,
+            "mean_seconds": 0.01819761017751363,
+            "median_seconds": 0.017390829196665437,
+            "min_seconds": 0.012166725000133738,
+            "relative_median_absolute_deviation": 0.10592627765981084,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.020510049996664746,
+              0.01703124580089934,
+              0.019232974998885766,
+              0.012166725000133738,
+              0.02620572500163689,
+              0.017390829196665437,
+              0.01567531659966335,
+              0.016252637503203004,
+              0.01931298749987036
+            ]
+          },
+          "version": "1.7.0"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": false
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 114,
+        "layers": 2,
+        "n_wires": 14,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 8.95090418262362e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "cirq_simulator": {
+          "backend": "cirq.Simulator",
+          "cold_execution_seconds": 0.15338958299253136,
+          "compilation": {
+            "applicable": false,
+            "note": "Cirq simulator preparation is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.17525303768339173,
+            "max_seconds": 0.0019106250256299973,
+            "mean_seconds": 0.001664694359836479,
+            "median_seconds": 0.001828625041525811,
+            "min_seconds": 0.0012548330123536289,
+            "relative_median_absolute_deviation": 0.04484242654566582,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.001828625041525811,
+              0.0012548330123536289,
+              0.0019106250256299973
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_cirq",
+            "framework_version": "1.7.0",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_cirq_conversion_report_v1"
+          },
+          "first_result_seconds": 0.15521820803405717,
+          "steady_state": {
+            "coefficient_of_variation": 0.7514349313795774,
+            "max_seconds": 0.2996141417010222,
+            "mean_seconds": 0.11286404212393489,
+            "median_seconds": 0.06917833330226131,
+            "min_seconds": 0.05219835829921067,
+            "relative_median_absolute_deviation": 0.24380947754053467,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.2996141417010222,
+              0.2321737333026249,
+              0.07224575420259498,
+              0.0653744583018124,
+              0.05231200000271201,
+              0.05219835829921067,
+              0.06335387920262292,
+              0.10932572080055251,
+              0.06917833330226131
+            ]
+          },
+          "version": "1.7.0"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": false
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 146,
+        "layers": 2,
+        "n_wires": 18,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 1.7139231553684086e-13,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "cirq_simulator": {
+          "backend": "cirq.Simulator",
+          "cold_execution_seconds": 1.0530118749593385,
+          "compilation": {
+            "applicable": false,
+            "note": "Cirq simulator preparation is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.564535066470156,
+            "max_seconds": 0.0018279170035384595,
+            "mean_seconds": 0.0010165696730837226,
+            "median_seconds": 0.0006285000126808882,
+            "min_seconds": 0.0005932920030318201,
+            "relative_median_absolute_deviation": 0.05601910730102797,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0018279170035384595,
+              0.0006285000126808882,
+              0.0005932920030318201
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_cirq",
+            "framework_version": "1.7.0",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_cirq_conversion_report_v1"
+          },
+          "first_result_seconds": 1.0536403749720193,
+          "steady_state": {
+            "coefficient_of_variation": 0.020512639796544226,
+            "max_seconds": 0.880535704200156,
+            "mean_seconds": 0.8527448065113277,
+            "median_seconds": 0.8590032666979823,
+            "min_seconds": 0.8298484625003766,
+            "relative_median_absolute_deviation": 0.021603352070167947,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.880535704200156,
+              0.8590032666979823,
+              0.8383457958989311,
+              0.8710111666994635,
+              0.865237408404937,
+              0.8300721250008791,
+              0.8298484625003766,
+              0.8404459166980814,
+              0.8602034125011414
+            ]
+          },
+          "version": "1.7.0"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 178,
+        "layers": 2,
+        "n_wires": 22,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 1.4558838812983594e-12,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "cirq_simulator": {
+          "backend": "cirq.Simulator",
+          "cold_execution_seconds": 3.4270310839638114,
+          "compilation": {
+            "applicable": false,
+            "note": "Cirq simulator preparation is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.2142717343097612,
+            "max_seconds": 0.0009025830077007413,
+            "mean_seconds": 0.000693569309078157,
+            "median_seconds": 0.0006081249448470771,
+            "min_seconds": 0.0005699999746866524,
+            "relative_median_absolute_deviation": 0.06269265959812231,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0009025830077007413,
+              0.0006081249448470771,
+              0.0005699999746866524
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_cirq",
+            "framework_version": "1.7.0",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_cirq_conversion_report_v1"
+          },
+          "first_result_seconds": 3.4276392089086585,
+          "steady_state": {
+            "coefficient_of_variation": 0.06198476149389018,
+            "max_seconds": 4.4035481375001835,
+            "mean_seconds": 3.9626041962784564,
+            "median_seconds": 3.923549395799637,
+            "min_seconds": 3.6705190833017696,
+            "relative_median_absolute_deviation": 0.05235069812666371,
+            "sample_count": 9,
+            "samples_seconds": [
+              3.7181488457950764,
+              4.102527570800158,
+              4.4035481375001835,
+              3.923549395799637,
+              3.715518541604979,
+              3.6705190833017696,
+              4.297584045800614,
+              3.8672506792005152,
+              3.964791466703173
+            ]
+          },
+          "version": "1.7.0"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 194,
+        "layers": 2,
+        "n_wires": 24,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_process_single_device",
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "hostname": "redacted",
+  "measured_engine": "cirq_simulator",
+  "methodology": {
+    "calls_per_sample": 10,
+    "compilation_included_in_steady_state": false,
+    "conversion_included_in_steady_state": false,
+    "flagquantum_correctness_reference_executions_per_case": 1,
+    "flagquantum_performance_measured": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 9,
+    "measurement_scope": "external_engine_only",
+    "output_basis_normalization_included_in_execution": false,
+    "result_retrieval_included_in_execution": true,
+    "setup_iterations": 3,
+    "warmup": 3
+  },
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "simulator_compare_cirq",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.simulator_comparison.v1",
+  "world_size": 1
+}
