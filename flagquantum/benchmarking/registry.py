@@ -102,6 +102,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output benchmarks/results/comparison/pennylane.json"
         ),
     ),
+    "simulator_comparison_report": RunnerSpec(
+        name="simulator_comparison_report",
+        module="flagquantum.benchmarking.simulator_comparison_report",
+        attribute="main",
+        category="interop",
+        summary="Generate validated JSON and Markdown simulator comparisons.",
+        hardware="No simulator execution required",
+        example=(
+            "flagquantum-benchmark run simulator_comparison_report "
+            "benchmarks/results/comparison/*.json "
+            "--json-output comparison.json --markdown-output comparison.md"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",
