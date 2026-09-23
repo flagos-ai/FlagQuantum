@@ -327,7 +327,7 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 - **Distribution semantics:** `manual_sliced_tensor_contraction`
 - **Start:** [quick example](../../examples/vqe_switch_sv_mps_tn.py)
 - **Documentation:** [guide](../../docs/reference/KNOWN_LIMITATIONS.md)
-- **Known boundary:** General reverse contraction and production distributed transport are not certified.
+- **Known boundary:** General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector.
 
 ### Exact and trajectory-based noisy simulation
 
