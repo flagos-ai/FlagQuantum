@@ -504,6 +504,43 @@ computed internally from the release, the model, and the circuit. An assessment
 states no per-circuit confidence level and no total-variation error bound, and
 it never routes work, submits or polls tasks, or mutates the release or model.
 
+## Persist a composed regional model
+
+A composed `TwinRegionModel` can be stored once and restored in another
+process, so a released regional Twin does not have to be recomposed from every
+source cell artifact:
+
+```python
+import flagquantum as fq
+
+fq.twin.dump_region_twin(region_twin, "region-twin.json")
+restored = fq.twin.load_region_twin("region-twin.json")
+assert restored.identity == region_twin.identity
+
+release = fq.twin.load_region_release("region-release.json")
+assessment = release.assess(restored, circuit, physical_qubits=(20, 27, 34))
+print(assessment.status)
+print(assessment.prediction)
+print(assessment.reasons)
+```
+
+The artifact is a model artifact: one canonical JSON object holding the
+authoritative `TwinConnectedRegion` representation and the frozen composed Twin
+(snapshot plus complete provider-neutral noise model). No duplicate region or
+noise representation is introduced. Loading reconstructs the real
+`TwinRegionModel`, reruns its invariants, and rejects missing, extra, malformed,
+noncanonical, contradictory, or identity-changing content, including a
+reordered physical mapping, a retargeted region, a changed capture time,
+tampered source identities, and a tampered noise model. Unknown schema versions
+are refused rather than accepted forward.
+
+Writes follow the shared Twin create-once policy: the file is created with mode
+`0600`, saving the same model twice is a no-op, and an existing file holding a
+different or invalid artifact is left untouched. The artifact carries no
+hardware task receipt, credential, raw provider response, validation evidence,
+confidence or error claim, release decision, routing authorization, or
+application state.
+
 ## Verify a change
 
 From the repository root:
@@ -515,6 +552,7 @@ python -m pytest \
   tests/test_twin_experiment.py \
   tests/test_twin_candidate.py \
   tests/test_twin_region_release_assessment.py \
+  tests/test_twin_region_model_persistence.py \
   tests/test_twin_validation_series.py -q
 ```
 

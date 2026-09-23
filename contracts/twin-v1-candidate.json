@@ -41,6 +41,7 @@
     "dump_region_holdout_history",
     "dump_region_holdout_study",
     "dump_region_release",
+    "dump_region_twin",
     "dump_region_validation_suite",
     "dump_region_validation_history",
     "dump_submission",
@@ -58,6 +59,7 @@
     "load_region_holdout_history",
     "load_region_holdout_study",
     "load_region_release",
+    "load_region_twin",
     "load_region_validation_suite",
     "load_region_validation_history",
     "load_submission",
@@ -161,7 +163,9 @@
     "load_region_holdout_evaluation": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutEvaluation'",
     "load_region_holdout_study": "(path: 'str | PathLike[str]') -> 'TwinRegionHoldoutStudy'",
     "load_region_release": "(path: 'str | PathLike[str]') -> 'TwinRegionRelease'",
-    "release_region_candidate": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', *, study: 'TwinRegionCandidateHoldoutStudy', evaluation: 'TwinRegionCandidateHoldoutEvaluation') -> 'TwinRegionRelease'"
+    "release_region_candidate": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', *, study: 'TwinRegionCandidateHoldoutStudy', evaluation: 'TwinRegionCandidateHoldoutEvaluation') -> 'TwinRegionRelease'",
+    "dump_region_twin": "(region_twin: 'TwinRegionModel', path: 'str | PathLike[str]') -> 'None'",
+    "load_region_twin": "(path: 'str | PathLike[str]') -> 'TwinRegionModel'"
   },
   "public_class_signatures": {
     "QPUDigitalTwin": "(snapshot: 'TwinSnapshot', noise_model: 'NoiseModel') -> None",
