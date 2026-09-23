@@ -67,6 +67,23 @@ flagquantum-benchmark run simulator_compare_pennylane \
   --json-output benchmarks/results/comparison/pennylane.json
 ```
 
+Generate a validated JSON and Markdown report from compatible raw artifacts
+without rerunning any simulator:
+
+```bash
+flagquantum-benchmark run simulator_comparison_report \
+  benchmarks/results/comparison/flagquantum_qiskit_aer_cpu_arm64_20260923.json \
+  benchmarks/results/comparison/cirq_cpu_arm64_20260923.json \
+  benchmarks/results/comparison/pennylane_lightning_cpu_arm64_20260923.json \
+  --json-output comparison.json --markdown-output comparison.md
+```
+
+The report generator rejects mismatched workload matrices, hosts, devices,
+thread counts, sampling settings, tolerances, and reference semantics. Pass an
+earlier generated report with `--baseline` to classify timing changes against
+`--regression-threshold-percent`. Historical classifications are informational;
+they do not become a CI performance gate.
+
 The runner reports conversion, compilation, cold execution, and steady-state
 execution separately. Steady-state samples alternate engine order inside one
 process. Every case must pass exact-statevector parity before the payload passes;
