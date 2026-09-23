@@ -5,12 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from os import PathLike
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ._atomic import write_once
 from .candidate import TwinCandidateDecision, _matches_canonical_payload
@@ -19,6 +19,9 @@ from .region_candidate_holdout import (
     TwinRegionCandidateHoldoutStudy,
 )
 from .region_model import TwinRegionModel
+
+if TYPE_CHECKING:
+    from .release_assessment import TwinReleaseAssessment
 
 _RELEASE_SCHEMA = "flagquantum.twin_region_release.v1"
 _EXACT_CIRCUIT_SCOPE = "exact_circuits"
@@ -233,6 +236,42 @@ class TwinRegionRelease:
         """Return every exact circuit covered by this release."""
 
         return (*self.reference_circuit_identities, *self.holdout_circuit_identities)
+
+    def assess(
+        self,
+        region_twin: TwinRegionModel,
+        circuit: Any,
+        *,
+        physical_qubits: Sequence[int],
+    ) -> TwinReleaseAssessment:
+        """Assess one exact circuit against this release and one regional Twin.
+
+        The verdict binds the release identity, candidate regional model,
+        snapshot, target, ordered physical mapping, structural coverage, and the
+        exact frozen circuit identity. A prediction is returned only when all of
+        them match; every other case fails closed with deterministic reasons and
+        no prediction. This method performs no provider I/O and never mutates
+        the release or the model.
+
+        ``region_twin`` is a composed regional model, for example from
+        :func:`compose_region_twin` or the application's own regional-model
+        loader. Its ordered mapping must equal the release mapping.
+
+        Examples:
+            release = fq.twin.load_region_release("region-release.json")
+            assessment = release.assess(
+                candidate_region_twin,
+                fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+                physical_qubits=(20, 27, 34),
+            )
+            assert assessment.release_identity == release.identity
+        """
+
+        from .release_assessment import assess_release
+
+        return assess_release(
+            self, region_twin, circuit, physical_qubits=physical_qubits
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return the canonical version-1 release payload."""

@@ -332,6 +332,34 @@ This is an application-triggered qualification artifact, not an automatic
 model replacement. It performs no provider operation and grants no routing or
 arbitrary-circuit authority.
 
+Ask whether one exact circuit is covered by that release:
+
+```python
+release = fq.twin.load_region_release("region-release.json")
+assessment = release.assess(
+    candidate_region_twin,
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    physical_qubits=(20, 27, 34),
+)
+
+print(assessment.status)
+print(assessment.prediction)
+print(assessment.reasons)
+print(assessment.release_identity)
+```
+
+The status is `released_exact_circuit` only when the release identity, the
+candidate regional model identity, the candidate snapshot, the provider/backend
+target, the ordered physical mapping, the regional structural coverage, and the
+frozen content hash of that exact circuit all match. That status returns a
+`TwinPrediction` from the released model; `outside_release` returns no
+prediction plus deterministic reason tokens, including the regional coverage
+tokens. Every identity is derived internally, so no fingerprint is a user
+input. An assessment claims no per-circuit confidence level and no
+total-variation error bound from aggregate candidate-improvement evidence, and
+it performs no provider operation, routing, or mutation of the release or the
+model.
+
 Align the two independently audited timelines by exact snapshot identity:
 
 ```python
