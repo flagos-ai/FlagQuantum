@@ -37,6 +37,12 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
+from .two_qubit_cpu import (
+    _apply_adjacent_two_qubit_matrix_cpu as _apply_adjacent_two_qubit_matrix_cpu,
+)
+from .two_qubit_cpu import (
+    _apply_reversed_trailing_two_qubit_matrix_cpu as _apply_reversed_trailing_two_qubit_matrix_cpu,
+)
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -607,19 +613,17 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
-    if state.device.type == "cpu" and state.is_contiguous() and len(wires) == 1:
-        return _apply_single_qubit_matrix_cpu(
-            state,
-            matrix,
-            wire=wires[0],
-            n_wires=n_wires,
-        )
-    if (
-        state.device.type == "cpu"
-        and state.is_contiguous()
-        and wires == (int(n_wires) - 1, int(n_wires) - 2)
-    ):
-        return _apply_reversed_trailing_two_qubit_matrix_cpu(state, matrix)
+    if state.device.type == "cpu" and state.is_contiguous():
+        if len(wires) == 1:
+            return _apply_single_qubit_matrix_cpu(
+                state, matrix, wire=wires[0], n_wires=n_wires
+            )
+        if len(wires) == 2 and wires[1] == wires[0] + 1 and wires[1] < int(n_wires):
+            return _apply_adjacent_two_qubit_matrix_cpu(
+                state, matrix, first_wire=wires[0], n_wires=n_wires
+            )
+        if wires == (int(n_wires) - 1, int(n_wires) - 2):
+            return _apply_reversed_trailing_two_qubit_matrix_cpu(state, matrix)
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
 
 
@@ -652,33 +656,6 @@ def _apply_single_qubit_matrix_cpu(
     out_one = zero * matrix[:, 1, 0].reshape(coefficient_shape)
     out_one = out_one + one * matrix[:, 1, 1].reshape(coefficient_shape)
     return torch.stack((out_zero, out_one), dim=2).reshape(state.shape)
-
-
-def _apply_reversed_trailing_two_qubit_matrix_cpu(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-) -> torch.Tensor:
-    """Apply a CPU gate whose ordered wires are the two trailing state bits.
-
-    Four amplitudes for those wires are already contiguous. Reordering the
-    small gate matrix into memory-bit order therefore avoids permuting and
-    materializing the full statevector around the matrix multiplication.
-    """
-
-    bsz = state.shape[0]
-    matrix = matrix.to(device=state.device, dtype=state.dtype)
-    if matrix.ndim == 2:
-        matrix = matrix.unsqueeze(0).expand(bsz, -1, -1)
-    elif matrix.ndim == 3 and matrix.shape[0] == 1 and bsz != 1:
-        matrix = matrix.expand(bsz, -1, -1)
-    if matrix.shape != (bsz, 4, 4):
-        raise ValueError("two-qubit matrix must have shape [4, 4] or [batch, 4, 4]")
-
-    reordered = (
-        matrix.reshape(bsz, 2, 2, 2, 2).permute(0, 2, 1, 4, 3).reshape(bsz, 1, 4, 4)
-    )
-    blocks = state.reshape(bsz, -1, 4, 1)
-    return torch.matmul(reordered, blocks).reshape(state.shape)
 
 
 def _apply_matrix_layout(

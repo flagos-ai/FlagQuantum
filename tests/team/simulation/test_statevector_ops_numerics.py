@@ -11,6 +11,7 @@ from flagquantum.simulation.statevector.local import (
     _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
+    _apply_adjacent_two_qubit_matrix_cpu,
     _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
@@ -526,10 +527,13 @@ def test_cpu_other_two_qubit_orders_keep_layout_path(monkeypatch):
 
     monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", recording_layout)
 
-    _apply_matrix(state, matrix, (3, 4), 5)
+    # A pair with a gap between its wires, and a descending adjacent pair that
+    # is not trailing: neither has a contiguous four-amplitude block in the
+    # order the gate matrix expects.
+    _apply_matrix(state, matrix, (1, 3), 5)
     _apply_matrix(state, matrix, (2, 1), 5)
 
-    assert observed == [(3, 4), (2, 1)]
+    assert observed == [(1, 3), (2, 1)]
 
 
 def test_cpu_reversed_trailing_two_qubit_kernel_preserves_gradients():
@@ -549,6 +553,216 @@ def test_cpu_reversed_trailing_two_qubit_kernel_preserves_gradients():
     expected_gradients = torch.autograd.grad(
         torch.abs(expected).square().sum(), (state, matrix)
     )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batched_matrix", (False, True))
+@pytest.mark.parametrize("wires", ((0, 1), (1, 2), (2, 3), (3, 4)))
+def test_cpu_adjacent_two_qubit_kernel_matches_layout_reference(
+    dtype, batched_matrix, wires
+):
+    generator = torch.Generator().manual_seed(1801 + sum(wires))
+    state = torch.randn((3, 32), dtype=dtype, generator=generator)
+    matrix_shape = (3, 4, 4) if batched_matrix else (4, 4)
+    matrix = torch.randn(matrix_shape, dtype=dtype, generator=generator)
+
+    actual = _apply_matrix(state, matrix, wires, 5)
+    expected = _apply_matrix_layout(state, matrix, wires, 5)
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_adjacent_two_qubit_kernel_bypasses_layout(monkeypatch):
+    state = torch.randn((2, 32), dtype=torch.complex128)
+    matrix = torch.randn((4, 4), dtype=torch.complex128)
+
+    def reject_layout(*args, **kwargs):
+        raise AssertionError("adjacent two-qubit fast path must bypass layout")
+
+    monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", reject_layout)
+
+    result = _apply_matrix(state, matrix, (1, 2), 5)
+
+    assert result.shape == state.shape
+
+
+def test_non_cpu_adjacent_pair_keeps_the_layout_path(monkeypatch):
+    """The contiguous kernel is CPU-only; another device keeps the layout route.
+
+    ``meta`` stands in for a device this host cannot allocate: the routing
+    predicate is a device-type test, so a meta tensor exercises the same branch
+    an accelerator would take without needing a CUDA device.
+    """
+
+    observed = []
+
+    def recording_layout(state, matrix, wires, n_wires, layout=None):
+        observed.append((tuple(wires), state.device.type))
+        return state
+
+    monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", recording_layout)
+    state = torch.empty((1, 32), dtype=torch.complex128, device="meta")
+    matrix = torch.empty((4, 4), dtype=torch.complex128, device="meta")
+
+    _apply_matrix(state, matrix, (1, 2), 5)
+
+    assert observed == [((1, 2), "meta")]
+
+
+def test_cpu_ascending_trailing_pair_uses_the_adjacent_kernel(monkeypatch):
+    """The pair ``(n - 2, n - 1)`` is index-adjacent and takes the shared kernel.
+
+    Its block stride is one, so it runs the same multiplication sequence the
+    dedicated trailing kernel used to own, while the descending trailing pair
+    keeps that dedicated kernel.
+    """
+
+    observed = []
+    adjacent_kernel = statevector_ops._apply_adjacent_two_qubit_matrix_cpu
+
+    def recording_kernel(state, matrix, *, first_wire, n_wires):
+        observed.append((int(first_wire), int(n_wires)))
+        return adjacent_kernel(state, matrix, first_wire=first_wire, n_wires=n_wires)
+
+    monkeypatch.setattr(
+        statevector_ops, "_apply_adjacent_two_qubit_matrix_cpu", recording_kernel
+    )
+    state = torch.randn((2, 32), dtype=torch.complex128)
+    matrix = torch.randn((4, 4), dtype=torch.complex128)
+
+    _apply_matrix(state, matrix, (3, 4), 5)
+    _apply_matrix(state, matrix, (4, 3), 5)
+
+    assert observed == [(3, 5)]
+
+
+def test_cpu_adjacent_two_qubit_kernel_preserves_gradients():
+    generator = torch.Generator().manual_seed(1805)
+    state = torch.randn(
+        (2, 32), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    matrix = torch.randn(
+        (2, 4, 4), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+
+    actual = _apply_matrix(state, matrix, (1, 2), 5)
+    expected = _apply_matrix_layout(state, matrix, (1, 2), 5)
+    actual_gradients = torch.autograd.grad(
+        torch.abs(actual).square().sum(), (state, matrix), retain_graph=True
+    )
+    expected_gradients = torch.autograd.grad(
+        torch.abs(expected).square().sum(), (state, matrix)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+def test_cpu_adjacent_two_qubit_kernel_refuses_wires_outside_the_statevector():
+    state = torch.randn((1, 32), dtype=torch.complex128)
+    matrix = torch.randn((4, 4), dtype=torch.complex128)
+
+    with pytest.raises(ValueError, match="outside the statevector"):
+        _apply_adjacent_two_qubit_matrix_cpu(state, matrix, first_wire=4, n_wires=5)
+
+
+def _adjacent_two_wire_circuit(
+    batch: int,
+    dtype: torch.dtype,
+    *,
+    requires_grad: bool = False,
+) -> tuple[Circuit, torch.Tensor, torch.Tensor]:
+    """Build a circuit whose dense two-wire gates sit on adjacent wire pairs."""
+
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(1811)
+    inputs = torch.randn(
+        (batch, 32),
+        dtype=dtype,
+        generator=generator,
+        requires_grad=requires_grad,
+    )
+    angles = torch.linspace(-0.5, 0.6, 4, dtype=real_dtype, requires_grad=requires_grad)
+    circuit = Circuit(5, dtype=dtype, inputs=inputs)
+    circuit.rxx(0, 1, theta=angles[0])
+    circuit.ryy(1, 2, theta=angles[1])
+    circuit.rzz(2, 3, theta=angles[2])
+    circuit.rxx(3, 4, theta=angles[3])
+    return circuit, inputs, angles
+
+
+def _route_adjacent_kernel_through_layout(monkeypatch) -> None:
+    """Send the adjacent pairs back to the layout path.
+
+    The kernel has no environment switch, so this substitution is the rollback
+    reference for the tests below: it is the same circuit, the same gate order,
+    and the same number of applies, differing only in the two-wire arithmetic.
+    """
+
+    def layout_only(state, matrix, *, first_wire, n_wires):
+        return _apply_matrix_layout(
+            state,
+            matrix,
+            (first_wire, first_wire + 1),
+            n_wires,
+        )
+
+    monkeypatch.setattr(
+        statevector_ops, "_apply_adjacent_two_qubit_matrix_cpu", layout_only
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batch", (1, 3))
+def test_cpu_adjacent_two_wire_circuit_matches_layout_execution(
+    monkeypatch, dtype: torch.dtype, batch: int
+) -> None:
+    reference_circuit, _, _ = _adjacent_two_wire_circuit(batch, dtype)
+    expected = reference_circuit.state(refresh=True)
+    expected_applies = reference_circuit._last_statevector_runtime[
+        "statevector_apply_count"
+    ]
+
+    _route_adjacent_kernel_through_layout(monkeypatch)
+    layout_circuit, _, _ = _adjacent_two_wire_circuit(batch, dtype)
+    actual = layout_circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected)
+    # The gain is a cheaper kernel per apply, not fewer statevector passes.
+    assert (
+        layout_circuit._last_statevector_runtime["statevector_apply_count"]
+        == expected_applies
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_adjacent_two_wire_circuit_preserves_parameter_autograd(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    reference_circuit, reference_inputs, reference_angles = _adjacent_two_wire_circuit(
+        2, dtype, requires_grad=True
+    )
+    expected = reference_circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(),
+        (reference_inputs, reference_angles),
+        retain_graph=True,
+    )
+
+    _route_adjacent_kernel_through_layout(monkeypatch)
+    circuit, inputs, angles = _adjacent_two_wire_circuit(2, dtype, requires_grad=True)
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
 
     torch.testing.assert_close(actual, expected)
     for actual_gradient, expected_gradient in zip(
