@@ -456,17 +456,21 @@ def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monke
     reference_loss = reference_state.real.sum()
     reference_loss.backward()
 
-    # With the set emptied the same circuit must reach the dense kernel, which
-    # is what makes the reference a dense-matmul reference rather than a second
-    # run of the kernel under test.
+    # With the set emptied the same circuit must reach the dense entry point,
+    # which is what makes the reference a dense reference rather than a second
+    # run of the kernel under test. The check counts the dense entry rather than
+    # one of its kernels: the CPU dense route is the layout path for most wire
+    # orders and the contiguous blocked kernel for an index-adjacent pair, and
+    # this circuit contains both orders.
     dense_calls = []
-    dense_bmm = statevector_runtime.torch.bmm
+    dense_apply = statevector_runtime._apply_matrix
 
-    def counting_bmm(*args, **kwargs):
-        dense_calls.append(1)
-        return dense_bmm(*args, **kwargs)
+    def counting_dense_apply(state, matrix, wires, n_wires, layout=None):
+        if len(tuple(wires)) == 2:
+            dense_calls.append(tuple(wires))
+        return dense_apply(state, matrix, wires, n_wires, layout=layout)
 
-    monkeypatch.setattr(statevector_runtime.torch, "bmm", counting_bmm)
+    monkeypatch.setattr(statevector_runtime, "_apply_matrix", counting_dense_apply)
     circuit.state()
     assert (
         dense_calls

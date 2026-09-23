@@ -8,6 +8,9 @@ evidence.
   dense observables, and sampling.
 - Start in `operations.py` for gate application, layout, matrix composition,
   fusion, and rank-local tensor operations.
+- Start in `two_qubit_cpu.py` for the CPU kernels that apply a dense two-qubit
+  gate directly to the contiguous four-amplitude blocks of an index-adjacent
+  wire pair.
 - Start in `adjoint.py` for local adjoint and gradient primitives.
 - Start in `noisy.py` for one already-lowered batch of noisy trajectories.
 - Start in `split_real_imag.py` for split-storage FP32 and selective
