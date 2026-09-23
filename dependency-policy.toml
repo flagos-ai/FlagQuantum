@@ -7,6 +7,7 @@ dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0
 jax = ["jax>=0.10,<0.11"]
 cotengra = ["cotengra>=0.8,<0.9"]
 cuda = ["triton>=3.1,<4"]
+azure = ["qdk[azure]>=1.32.3,<2"]
 braket = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"]
 cirq = ["cirq-core>=1.6.1,<1.8; python_version >= '3.11'"]
 cudaq = ["cudaq>=0.15.1,<0.17; python_version >= '3.11'"]
@@ -25,6 +26,10 @@ accelerator_kernel = ["cuda"]
 optional_runtime = ["jax", "cotengra"]
 heterogeneous_toolchain = ["cudaq"]
 interop = ["braket", "cirq", "pennylane", "quafu", "qiskit"]
+# A remote QPU provider SDK is neither an interop translation of a circuit
+# object nor an aggregate member: it only ever runs inside `flagquantum.remote`,
+# and the core install must stay without it.
+remote_provider = ["azure"]
 user_experience = ["examples", "viz"]
 compatibility = ["invertible"]
 aggregate = ["all", "interop-all"]
@@ -43,11 +48,12 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch"]
-core_forbidden_imports = ["braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "qiskit", "qiskit_aer", "quark", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "qdk", "qiskit", "qiskit_aer", "quark", "torch_fl", "transformers", "triton"]
 
 [tested]
 torch = ["2.5", "2.13"]
 jax = ["0.10"]
+azure = ["1.32.3"]
 braket = ["1.117.0", "1.127.1"]
 cirq = ["1.6.1", "1.7.0"]
 qiskit = ["2.0", "2.5"]

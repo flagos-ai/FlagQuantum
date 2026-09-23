@@ -43,7 +43,16 @@ sealed OpenQASM 3 deployment package to QIR, and normalizes returned counts or
 probabilities. Generic HTTP transport components support concrete provider
 adapters; they are not a separate execution product.
 
-The stable Azure counts path uses environment-owned workspace configuration:
+The Azure route needs the optional Microsoft QDK client, and nothing else in
+FlagQuantum does. It is opt-in, so a default install stays without it:
+
+```bash
+python -m pip install -e '.[azure]'   # adds qdk[azure]
+```
+
+Only a real run reaches an Azure workspace; the offline provider tests pass a
+fake workspace and target and never read a credential. Azure configuration is
+required at that point and not before, through environment-owned values:
 
 ```bash
 export AZURE_QUANTUM_RESOURCE_ID="<workspace-resource-id>"
