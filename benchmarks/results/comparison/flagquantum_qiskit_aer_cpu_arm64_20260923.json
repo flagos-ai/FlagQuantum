@@ -1,0 +1,617 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "interoperable_simulator_comparison",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "first_result_qiskit_over_flagquantum": 0.8888082155775315,
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this workload",
+        "steady_state_qiskit_over_flagquantum": 1.1576592465431044
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "max_abs_error": 6.280369834735101e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "cold_execution_seconds": 0.026445666968356818,
+          "compilation": {
+            "applicable": false,
+            "note": "internal preparation is included in cold execution"
+          },
+          "conversion": {
+            "applicable": false
+          },
+          "first_result_seconds": 0.026445666968356818,
+          "steady_state": {
+            "coefficient_of_variation": 0.061486218431398974,
+            "max_seconds": 0.0006841499998699874,
+            "mean_seconds": 0.0005896277667488902,
+            "median_seconds": 0.0005772208038251847,
+            "min_seconds": 0.0005639375012833625,
+            "relative_median_absolute_deviation": 0.020305563272991507,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.000588941597379744,
+              0.0005704250012058765,
+              0.0005783792003057897,
+              0.0005772208038251847,
+              0.0005677791021298617,
+              0.0005639375012833625,
+              0.0005644374992698431,
+              0.0006113791954703629,
+              0.0006841499998699874
+            ]
+          },
+          "version": "0.2.0"
+        },
+        "qiskit_aer": {
+          "cold_execution_seconds": 0.004004499991424382,
+          "compilation": {
+            "coefficient_of_variation": 0.1763818599624155,
+            "max_seconds": 0.026954541041050106,
+            "mean_seconds": 0.021581055693483602,
+            "median_seconds": 0.01917445904109627,
+            "min_seconds": 0.018614166998304427,
+            "relative_median_absolute_deviation": 0.029220748371100308,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.026954541041050106,
+              0.01917445904109627,
+              0.018614166998304427
+            ]
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.4285164068887923,
+            "max_seconds": 0.000722791999578476,
+            "mean_seconds": 0.00045027801146109897,
+            "median_seconds": 0.000326167035382241,
+            "min_seconds": 0.00030187499942258,
+            "relative_median_absolute_deviation": 0.07447728717033815,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.000722791999578476,
+              0.000326167035382241,
+              0.00030187499942258
+            ]
+          },
+          "first_result_seconds": 0.023505126067902893,
+          "qiskit_version": "2.5.2",
+          "steady_state": {
+            "coefficient_of_variation": 0.13523625490403177,
+            "max_seconds": 0.0009570750000420958,
+            "mean_seconds": 0.0006952884225433485,
+            "median_seconds": 0.0006682250008452683,
+            "min_seconds": 0.0006321624969132245,
+            "relative_median_absolute_deviation": 0.02368842955047254,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.0006840542017016559,
+              0.0006682250008452683,
+              0.0006834707979578525,
+              0.0006321624969132245,
+              0.0006517375004477799,
+              0.0006535375025123358,
+              0.0006492333021014928,
+              0.0006781000003684313,
+              0.0009570750000420958
+            ]
+          },
+          "version": "0.17.2"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 82,
+        "layers": 2,
+        "n_wires": 10,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "first_result_qiskit_over_flagquantum": 11.386155106630262,
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this workload",
+        "steady_state_qiskit_over_flagquantum": 1.8989961612032702
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "max_abs_error": 7.065416064076988e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "cold_execution_seconds": 0.0022918329923413694,
+          "compilation": {
+            "applicable": false,
+            "note": "internal preparation is included in cold execution"
+          },
+          "conversion": {
+            "applicable": false
+          },
+          "first_result_seconds": 0.0022918329923413694,
+          "steady_state": {
+            "coefficient_of_variation": 0.06292292944282289,
+            "max_seconds": 0.0014924374991096556,
+            "mean_seconds": 0.0013184143450214632,
+            "median_seconds": 0.0013067167019471526,
+            "min_seconds": 0.0012117584003135562,
+            "relative_median_absolute_deviation": 0.047861636363166614,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.0013537124963477255,
+              0.0014924374991096556,
+              0.0013692583015654236,
+              0.0012601083028130234,
+              0.0012117584003135562,
+              0.0012701999978162349,
+              0.0012301833019591867,
+              0.0013713541033212096,
+              0.0013067167019471526
+            ]
+          },
+          "version": "0.2.0"
+        },
+        "qiskit_aer": {
+          "cold_execution_seconds": 0.002716040995437652,
+          "compilation": {
+            "coefficient_of_variation": 0.36749097286529425,
+            "max_seconds": 0.04611129203112796,
+            "mean_seconds": 0.030349013997086633,
+            "median_seconds": 0.02296454197494313,
+            "min_seconds": 0.021971207985188812,
+            "relative_median_absolute_deviation": 0.043255118732093895,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.02296454197494313,
+              0.021971207985188812,
+              0.04611129203112796
+            ]
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.13032713049003042,
+            "max_seconds": 0.0005358750349842012,
+            "mean_seconds": 0.0004525693172278504,
+            "median_seconds": 0.00041458295891061425,
+            "min_seconds": 0.00040724995778873563,
+            "relative_median_absolute_deviation": 0.017687656871250342,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0005358750349842012,
+              0.00041458295891061425,
+              0.00040724995778873563
+            ]
+          },
+          "first_result_seconds": 0.026095165929291397,
+          "qiskit_version": "2.5.2",
+          "steady_state": {
+            "coefficient_of_variation": 0.052024867070458836,
+            "max_seconds": 0.002821470802882686,
+            "mean_seconds": 0.0024990935117885885,
+            "median_seconds": 0.0024814500007778405,
+            "min_seconds": 0.002328825002769008,
+            "relative_median_absolute_deviation": 0.019907716702515742,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.0024814500007778405,
+              0.0025044000009074806,
+              0.002821470802882686,
+              0.00244078750256449,
+              0.0024130249978043137,
+              0.002328825002769008,
+              0.0025573708000592886,
+              0.002432049997150898,
+              0.0025124625011812896
+            ]
+          },
+          "version": "0.17.2"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 114,
+        "layers": 2,
+        "n_wires": 14,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "first_result_qiskit_over_flagquantum": 2.3203980797794093,
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this workload",
+        "steady_state_qiskit_over_flagquantum": 2.0474778115114027
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "max_abs_error": 4.742874840267547e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "cold_execution_seconds": 0.020312624983489513,
+          "compilation": {
+            "applicable": false,
+            "note": "internal preparation is included in cold execution"
+          },
+          "conversion": {
+            "applicable": false
+          },
+          "first_result_seconds": 0.020312624983489513,
+          "steady_state": {
+            "coefficient_of_variation": 0.008692104610754677,
+            "max_seconds": 0.013362770801177249,
+            "mean_seconds": 0.013176223154490192,
+            "median_seconds": 0.013124554097885266,
+            "min_seconds": 0.012984179198974743,
+            "relative_median_absolute_deviation": 0.005950366204597104,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.013329829199938104,
+              0.013252874999307097,
+              0.012984179198974743,
+              0.013202650001039729,
+              0.013124554097885266,
+              0.013098358397837729,
+              0.013362770801177249,
+              0.013121316698379815,
+              0.013109474995872006
+            ]
+          },
+          "version": "0.2.0"
+        },
+        "qiskit_aer": {
+          "cold_execution_seconds": 0.027505666948854923,
+          "compilation": {
+            "coefficient_of_variation": 0.043305382949882634,
+            "max_seconds": 0.02032883302308619,
+            "mean_seconds": 0.019233416358474642,
+            "median_seconds": 0.019060750026255846,
+            "min_seconds": 0.01831066602608189,
+            "relative_median_absolute_deviation": 0.039352281475845845,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.02032883302308619,
+              0.019060750026255846,
+              0.01831066602608189
+            ]
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.08540132571185537,
+            "max_seconds": 0.0006349159521050751,
+            "mean_seconds": 0.0005724723256813983,
+            "median_seconds": 0.0005669590318575501,
+            "min_seconds": 0.0005155419930815697,
+            "relative_median_absolute_deviation": 0.09068916074503798,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0006349159521050751,
+              0.0005669590318575501,
+              0.0005155419930815697
+            ]
+          },
+          "first_result_seconds": 0.04713337600696832,
+          "qiskit_version": "2.5.2",
+          "steady_state": {
+            "coefficient_of_variation": 0.0028697487769412115,
+            "max_seconds": 0.026936591597041114,
+            "mean_seconds": 0.026847885156490114,
+            "median_seconds": 0.02687223330140114,
+            "min_seconds": 0.026705679204314946,
+            "relative_median_absolute_deviation": 0.0017260678689264826,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.02689272499992512,
+              0.02687223330140114,
+              0.02685568329761736,
+              0.026705679204314946,
+              0.026781929103890434,
+              0.026753387501230463,
+              0.026936591597041114,
+              0.02691412080312148,
+              0.026918616599868984
+            ]
+          },
+          "version": "0.17.2"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 146,
+        "layers": 2,
+        "n_wires": 18,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "first_result_qiskit_over_flagquantum": 1.425521308444782,
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this workload",
+        "steady_state_qiskit_over_flagquantum": 1.7796221272227417
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "max_abs_error": 1.6829500065255886e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "cold_execution_seconds": 0.3679405420552939,
+          "compilation": {
+            "applicable": false,
+            "note": "internal preparation is included in cold execution"
+          },
+          "conversion": {
+            "applicable": false
+          },
+          "first_result_seconds": 0.3679405420552939,
+          "steady_state": {
+            "coefficient_of_variation": 0.034220828107244944,
+            "max_seconds": 0.31454559999983756,
+            "mean_seconds": 0.301163499067641,
+            "median_seconds": 0.3002971250039991,
+            "min_seconds": 0.28893622090108695,
+            "relative_median_absolute_deviation": 0.034208133706395465,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.31454559999983756,
+              0.3120669958007056,
+              0.31305154170258903,
+              0.30847565829753876,
+              0.3002971250039991,
+              0.28893622090108695,
+              0.29285951250349174,
+              0.29021431659930386,
+              0.2900245208002161
+            ]
+          },
+          "version": "0.2.0"
+        },
+        "qiskit_aer": {
+          "cold_execution_seconds": 0.5043187499977648,
+          "compilation": {
+            "coefficient_of_variation": 0.017161725267071055,
+            "max_seconds": 0.019870791991706938,
+            "mean_seconds": 0.019471235980745405,
+            "median_seconds": 0.019489999976940453,
+            "min_seconds": 0.019052915973588824,
+            "relative_median_absolute_deviation": 0.019537815044485256,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.019052915973588824,
+              0.019489999976940453,
+              0.019870791991706938
+            ]
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.04889381768764383,
+            "max_seconds": 0.0007532919989898801,
+            "mean_seconds": 0.0007072083147553107,
+            "median_seconds": 0.0006983329658396542,
+            "min_seconds": 0.0006699999794363976,
+            "relative_median_absolute_deviation": 0.04057231691645824,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0007532919989898801,
+              0.0006699999794363976,
+              0.0006983329658396542
+            ]
+          },
+          "first_result_seconds": 0.5245070829405449,
+          "qiskit_version": "2.5.2",
+          "steady_state": {
+            "coefficient_of_variation": 0.04873253264514461,
+            "max_seconds": 0.5977047374995891,
+            "mean_seconds": 0.5352753865881823,
+            "median_seconds": 0.5344154083984904,
+            "min_seconds": 0.5039167624956462,
+            "relative_median_absolute_deviation": 0.02697212014385453,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.5039167624956462,
+              0.5153861749975477,
+              0.516719541704515,
+              0.5204638916999101,
+              0.5977047374995891,
+              0.5488297250005416,
+              0.5344154083984904,
+              0.5452377500012517,
+              0.5348044874961488
+            ]
+          },
+          "version": "0.17.2"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 178,
+        "layers": 2,
+        "n_wires": 22,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "first_result_qiskit_over_flagquantum": 1.583235431003213,
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this workload",
+        "steady_state_qiskit_over_flagquantum": 1.9580142679566142
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "max_abs_error": 4.90457592513324e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "cold_execution_seconds": 1.5058588749961928,
+          "compilation": {
+            "applicable": false,
+            "note": "internal preparation is included in cold execution"
+          },
+          "conversion": {
+            "applicable": false
+          },
+          "first_result_seconds": 1.5058588749961928,
+          "steady_state": {
+            "coefficient_of_variation": 0.0406219150588475,
+            "max_seconds": 1.2589819458022249,
+            "mean_seconds": 1.1728478050881272,
+            "median_seconds": 1.1646358207974117,
+            "min_seconds": 1.1169250125007237,
+            "relative_median_absolute_deviation": 0.03273664257576115,
+            "sample_count": 9,
+            "samples_seconds": [
+              1.2589819458022249,
+              1.1646358207974117,
+              1.1169250125007237,
+              1.1265095542010386,
+              1.2295744790986647,
+              1.2110696624964477,
+              1.178229000000283,
+              1.1408844124991446,
+              1.1288203583972063
+            ]
+          },
+          "version": "0.2.0"
+        },
+        "qiskit_aer": {
+          "cold_execution_seconds": 2.362496750021819,
+          "compilation": {
+            "coefficient_of_variation": 0.274819290146659,
+            "max_seconds": 0.034790500008966774,
+            "mean_seconds": 0.025067416310776025,
+            "median_seconds": 0.02073870797175914,
+            "min_seconds": 0.01967304095160216,
+            "relative_median_absolute_deviation": 0.05138541039336432,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.034790500008966774,
+              0.02073870797175914,
+              0.01967304095160216
+            ]
+          },
+          "conversion": {
+            "coefficient_of_variation": 1.0039452609677435,
+            "max_seconds": 0.006842833012342453,
+            "mean_seconds": 0.0028282220009714365,
+            "median_seconds": 0.00089366699103266,
+            "min_seconds": 0.0007481659995391965,
+            "relative_median_absolute_deviation": 0.16281343381087915,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.006842833012342453,
+              0.00089366699103266,
+              0.0007481659995391965
+            ]
+          },
+          "first_result_seconds": 2.384129124984611,
+          "qiskit_version": "2.5.2",
+          "steady_state": {
+            "coefficient_of_variation": 0.03128460774356004,
+            "max_seconds": 2.4317931542056614,
+            "mean_seconds": 2.278170459255085,
+            "median_seconds": 2.2803735540946946,
+            "min_seconds": 2.1959570999955758,
+            "relative_median_absolute_deviation": 0.021090661837981747,
+            "sample_count": 9,
+            "samples_seconds": [
+              2.2322789666010068,
+              2.1982625500007997,
+              2.1959570999955758,
+              2.2803735540946946,
+              2.2332572707964573,
+              2.2838308792037423,
+              2.4317931542056614,
+              2.341665087500587,
+              2.3061155708972363
+            ]
+          },
+          "version": "0.17.2"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 194,
+        "layers": 2,
+        "n_wires": 24,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_process_single_device",
+  "environment": {
+    "device": "cpu",
+    "flagquantum_large_state_source_revision": "4d976abe5c415414846c857616ffce6cbadeeefc",
+    "machine": "arm64",
+    "processor": "arm",
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "hostname": "redacted",
+  "methodology": {
+    "calls_per_sample": 10,
+    "compilation_included_in_steady_state": false,
+    "conversion_included_in_steady_state": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 9,
+    "large_state_flagquantum_update_order": "native_only_after_warmup",
+    "large_state_qiskit_aer_measurements_reused": true,
+    "output_basis_normalization_included_in_execution": false,
+    "qiskit_transpile_optimization_level": 0,
+    "result_retrieval_included_in_execution": true,
+    "setup_iterations": 3,
+    "steady_state_order": "alternating_within_one_process",
+    "warmup": 3
+  },
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "simulator_compare",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.simulator_comparison.v1",
+  "world_size": 1
+}

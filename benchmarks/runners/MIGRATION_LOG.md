@@ -3,6 +3,7 @@
 | Adapter | Historical implementation | Status | Contract test |
 | --- | --- | --- | --- |
 | `environment_probe` | new | active | `test_benchmark_environment_probe.py` |
+| `simulator_compare` | new | active | `test_simulator_compare.py` |
 | `statevector_strong_scaling` | `statevector_scaling_report.py` | dual-entry | `test_statevector_strong_scaling_runner.py` |
 | `statevector_weak_scaling` | `statevector_weak_scaling_report.py` | dual-entry | `test_statevector_weak_scaling_runner.py` |
 | `statevector_training_scaling` | `statevector_training_scaling_report.py` | adapter registered | `test_scaling_runner_script_entrypoints.py` |

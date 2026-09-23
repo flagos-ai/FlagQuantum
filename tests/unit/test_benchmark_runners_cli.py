@@ -92,6 +92,7 @@ def test_every_registered_runner_declares_an_integer_exit_code(name: str) -> Non
 def test_runner_registry_is_lazy_and_sorted() -> None:
     assert names() == (
         "environment_probe",
+        "simulator_compare",
         "statevector_cpu_paths",
         "statevector_local",
         "statevector_strong_scaling",
@@ -148,6 +149,7 @@ def test_runner_package_lists_available_runner() -> None:
         timeout=30,
     )
     assert "environment_probe" in result.stdout
+    assert "simulator_compare" in result.stdout
     assert "statevector_local" in result.stdout
 
 
