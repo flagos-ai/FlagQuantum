@@ -229,8 +229,18 @@ def run_checks(
         str(Path(tempfile.gettempdir()) / "flagquantum-black-cache"),
     )
     if python_executable:
-        python_bin = str(Path(python_executable).resolve().parent)
-        environment["PATH"] = os.pathsep.join((python_bin, environment.get("PATH", "")))
+        # Prepend the directory that holds the interpreter as invoked.
+        # Resolving the path first would follow a virtual environment's
+        # ``python`` symlink into the base interpreter's ``bin``, put that
+        # directory first on ``PATH``, and shadow the environment's own console
+        # scripts. A bare command name has no directory of its own, so it is
+        # left to the ambient ``PATH`` rather than resolving to the working
+        # directory.
+        python_bin = Path(python_executable).parent
+        if python_bin.name:
+            environment["PATH"] = os.pathsep.join(
+                (str(python_bin), environment.get("PATH", ""))
+            )
     for index, check in enumerate(selected, start=1):
         rendered = " ".join(check.command)
         print(
