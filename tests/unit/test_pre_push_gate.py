@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -80,6 +81,93 @@ def test_pre_push_gate_resolves_tools_next_to_active_python(tmp_path: Path) -> N
 
     assert environment_executable(str(python), "mypy") == str(mypy)
     assert environment_executable(str(python), "missing") == "missing"
+
+
+def test_pre_push_gate_keeps_the_active_environment_first_on_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A virtual environment interpreter is a symlink to its base interpreter.
+
+    The gate must prepend the directory holding the interpreter as invoked. If
+    it resolved that symlink first, the base interpreter's ``bin`` would come
+    first on ``PATH`` and shadow the environment's console scripts, so the
+    checked-in tools would run without the project's dependencies.
+    """
+
+    base_bin = tmp_path / "base" / "bin"
+    environment_bin = tmp_path / "env" / "bin"
+    base_bin.mkdir(parents=True)
+    environment_bin.mkdir(parents=True)
+    base_python = base_bin / "python"
+    base_python.touch()
+    environment_python = environment_bin / "python"
+    environment_python.symlink_to(base_python)
+
+    captured: list[dict[str, str]] = []
+    monkeypatch.setattr(
+        "tools.pre_push.shutil.which",
+        lambda executable, *, path: executable,
+    )
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        cwd: Path,
+        check: bool,
+        env: dict[str, str],
+    ) -> subprocess.CompletedProcess[bytes]:
+        captured.append(env)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.pre_push.subprocess.run", fake_run)
+
+    assert (
+        run_checks(
+            (Check("ok", ("python", "check.py")),),
+            root=tmp_path,
+            dry_run=False,
+            python_executable=str(environment_python),
+        )
+        == 0
+    )
+    assert captured[0]["PATH"].split(os.pathsep)[0] == str(environment_bin)
+
+
+def test_pre_push_gate_leaves_bare_command_names_to_the_ambient_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A bare command name carries no directory and must not prepend the cwd."""
+
+    captured: list[dict[str, str]] = []
+    monkeypatch.setattr(
+        "tools.pre_push.shutil.which",
+        lambda executable, *, path: executable,
+    )
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        cwd: Path,
+        check: bool,
+        env: dict[str, str],
+    ) -> subprocess.CompletedProcess[bytes]:
+        captured.append(env)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.pre_push.subprocess.run", fake_run)
+
+    assert (
+        run_checks(
+            (Check("ok", ("python", "check.py")),),
+            root=tmp_path,
+            dry_run=False,
+            python_executable="python",
+        )
+        == 0
+    )
+    assert captured[0]["PATH"] == os.environ.get("PATH", "")
 
 
 def test_pre_push_gate_stops_at_first_failure(
