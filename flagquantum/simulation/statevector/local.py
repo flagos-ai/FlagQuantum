@@ -712,6 +712,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and _cpu_disjoint_single_wire_fusion_enabled()
             and not _cpu_single_wire_elementwise_enabled()
         )
+        max_cpu_two_wire_regions = (
+            2 if enable_cpu_disjoint_single_wire and output.shape[0] >= 2 else 1
+        )
         program_key = (
             "statevector",
             "triton_rx_rz_loop",
@@ -720,6 +723,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_cross_wire_diagonal,
             "cpu_disjoint_single_wire",
             enable_cpu_disjoint_single_wire,
+            "cpu_disjoint_dense_max_two_wire_regions",
+            max_cpu_two_wire_regions,
         )
         program = circuit._backend_programs.get(program_key)
         if program is None:
@@ -729,6 +734,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
+                max_two_wire_regions=max_cpu_two_wire_regions,
             )
             circuit._backend_programs[program_key] = program
         circuit._last_statevector_runtime = _initial_runtime_metrics(

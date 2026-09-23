@@ -900,3 +900,271 @@ def test_single_fixed_gate_keeps_its_specialized_cpu_path(
 
     assert circuit._last_statevector_runtime["statevector_apply_count"] == 1
     assert circuit._last_statevector_runtime[counter] == 1
+
+
+def _two_disjoint_dense_two_wire_circuit(
+    batch: int,
+    dtype: torch.dtype,
+    *,
+    requires_grad: bool = False,
+) -> tuple[Circuit, torch.Tensor, torch.Tensor]:
+    """Build a batched circuit whose first layer holds two disjoint 2-wire gates."""
+
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(1783)
+    inputs = torch.randn(
+        (batch, 16),
+        dtype=dtype,
+        generator=generator,
+        requires_grad=requires_grad,
+    )
+    angles = torch.linspace(-0.4, 0.5, 4, dtype=real_dtype, requires_grad=requires_grad)
+    circuit = Circuit(4, dtype=dtype, inputs=inputs)
+    circuit.rxx(0, 1, theta=angles[0])
+    circuit.ryy(2, 3, theta=angles[1])
+    circuit.ry(0, theta=angles[2])
+    circuit.rz(3, theta=angles[3])
+    return circuit, inputs, angles
+
+
+def _disjoint_dense_region_shapes(circuit: Circuit) -> tuple[tuple[int, ...], ...]:
+    """Return the region widths of every cached disjoint dense step."""
+
+    program = list(circuit._backend_programs.values())[-1]
+    return tuple(
+        tuple(len(statevector_ops._region_wires(region)) for region in step.regions)
+        for step in program
+        if isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+    )
+
+
+def test_batched_plan_groups_two_disjoint_dense_two_wire_regions() -> None:
+    instructions = (
+        Instruction("rxx", (0, 1), params={"theta": 0.1}),
+        Instruction("ryy", (2, 3), params={"theta": 0.2}),
+    )
+
+    program = statevector_ops._compile_statevector_program(
+        instructions,
+        4,
+        enable_triton_loop=False,
+        enable_cpu_disjoint_single_wire=True,
+        max_two_wire_regions=2,
+    )
+
+    assert len(program) == 1
+    step = program[0]
+    assert isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+    assert tuple(
+        tuple(statevector_ops._region_wires(region) for region in step.regions)
+    ) == ((0, 1), (2, 3))
+
+
+def test_single_state_plan_keeps_two_dense_two_wire_regions_separate() -> None:
+    instructions = (
+        Instruction("rxx", (0, 1), params={"theta": 0.1}),
+        Instruction("ryy", (2, 3), params={"theta": 0.2}),
+    )
+
+    program = statevector_ops._compile_statevector_program(
+        instructions,
+        4,
+        enable_triton_loop=False,
+        enable_cpu_disjoint_single_wire=True,
+        max_two_wire_regions=1,
+    )
+
+    assert [(type(step).__name__, step.instruction.name) for step in program] == [
+        ("_StatevectorGateStep", "rxx"),
+        ("_StatevectorGateStep", "ryy"),
+    ]
+
+
+@pytest.mark.parametrize("gate", ("cx", "swap"))
+def test_batched_plan_keeps_standalone_permutation_gates_as_barriers(gate: str) -> None:
+    instructions = (
+        Instruction("rxx", (0, 1), params={"theta": 0.1}),
+        Instruction(gate, (2, 3)),
+        Instruction("ryy", (0, 1), params={"theta": 0.2}),
+    )
+
+    program = statevector_ops._compile_statevector_program(
+        instructions,
+        4,
+        enable_triton_loop=False,
+        enable_cpu_disjoint_single_wire=True,
+        max_two_wire_regions=2,
+    )
+
+    assert not any(
+        isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+        for step in program
+    )
+    assert [step.instruction.name for step in program] == ["rxx", gate, "ryy"]
+
+
+def test_batched_plan_keeps_cx_sequence_compilation() -> None:
+    instructions = (
+        Instruction("rxx", (0, 2), params={"theta": 0.1}),
+        Instruction("ryy", (1, 3), params={"theta": 0.2}),
+        *(Instruction("cx", (wire, wire + 4)) for wire in range(4)),
+    )
+
+    program = statevector_ops._compile_statevector_program(
+        instructions,
+        8,
+        enable_triton_loop=False,
+        enable_cpu_disjoint_single_wire=True,
+        max_two_wire_regions=2,
+    )
+
+    assert isinstance(program[0], statevector_ops._StatevectorDisjointDenseStep)
+    assert program[1] == statevector_ops._StatevectorCXSequenceStep(
+        controls=(0, 1, 2, 3),
+        targets=(4, 5, 6, 7),
+    )
+
+
+def test_batch_one_execution_plan_keeps_the_single_state_grouping(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    circuit, _, _ = _two_disjoint_dense_two_wire_circuit(1, torch.complex128)
+    circuit.state(refresh=True)
+
+    key = list(circuit._backend_programs)[-1]
+    compiled = statevector_ops._compile_statevector_program(
+        circuit._instructions,
+        circuit.n_wires,
+        enable_triton_loop=False,
+        enable_cpu_cross_wire_diagonal=True,
+        enable_cpu_disjoint_single_wire=True,
+        max_two_wire_regions=1,
+    )
+
+    assert key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 1)
+    assert circuit._backend_programs[key] == compiled
+    assert _disjoint_dense_region_shapes(circuit) == ((2, 1),)
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    rolled_back_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(
+        1, torch.complex128
+    )
+    rolled_back = rolled_back_circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    fused_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(1, torch.complex128)
+
+    torch.testing.assert_close(fused_circuit.state(refresh=True), rolled_back)
+
+
+def test_batched_grouping_reduces_applies_only_at_batch_two_or_more(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    plans = {}
+    for batch in (1, 2, 4):
+        circuit, _, _ = _two_disjoint_dense_two_wire_circuit(batch, torch.complex64)
+        circuit.state(refresh=True)
+        plans[batch] = (
+            circuit._last_statevector_runtime["statevector_apply_count"],
+            _disjoint_dense_region_shapes(circuit),
+        )
+
+    assert plans[1] == (3, ((2, 1),))
+    assert plans[2] == (2, ((2, 2), (1, 1)))
+    assert plans[4] == (2, ((2, 2), (1, 1)))
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_batched_grouped_two_wire_regions_match_sequential_state(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    reference_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(2, dtype)
+    expected = reference_circuit.state(refresh=True)
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    fused_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(2, dtype)
+    actual = fused_circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_batched_grouped_two_wire_regions_preserve_gradients(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+    reference_circuit, reference_inputs, reference_angles = (
+        _two_disjoint_dense_two_wire_circuit(2, dtype, requires_grad=True)
+    )
+    expected = reference_circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(),
+        (reference_inputs, reference_angles),
+        retain_graph=True,
+    )
+
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    fused_circuit, fused_inputs, fused_angles = _two_disjoint_dense_two_wire_circuit(
+        2, dtype, requires_grad=True
+    )
+    actual = fused_circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(
+        actual.real.sum(), (fused_inputs, fused_angles)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+def test_batched_program_cache_key_distinguishes_batch_dependent_plans(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+    circuit, batch_inputs, _ = _two_disjoint_dense_two_wire_circuit(4, torch.complex128)
+    circuit.state(refresh=True)
+    batched_plan = _disjoint_dense_region_shapes(circuit)
+
+    # Reusing one circuit at a different batch size must not reuse its plan.
+    circuit._inputs = batch_inputs[:1].clone()
+    circuit.state(refresh=True)
+    single_state_plan = _disjoint_dense_region_shapes(circuit)
+
+    assert batched_plan == ((2, 2), (1, 1))
+    assert single_state_plan == ((2, 1),)
+    assert len(circuit._backend_programs) == 2
+    batched_key, single_state_key = circuit._backend_programs
+    assert batched_key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 2)
+    assert single_state_key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 1)
+
+
+def test_batched_two_wire_grouping_rolls_back_with_environment_switch(
+    monkeypatch,
+) -> None:
+    for batch in (2, 4):
+        monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
+        fused_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(
+            batch, torch.complex64
+        )
+        fused = fused_circuit.state(refresh=True)
+        fused_applies = fused_circuit._last_statevector_runtime[
+            "statevector_apply_count"
+        ]
+
+        monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
+        rolled_back_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(
+            batch, torch.complex64
+        )
+        rolled_back = rolled_back_circuit.state(refresh=True)
+        rolled_back_applies = rolled_back_circuit._last_statevector_runtime[
+            "statevector_apply_count"
+        ]
+
+        assert fused_applies < rolled_back_applies
+        assert rolled_back_applies == 4
+        assert _disjoint_dense_region_shapes(rolled_back_circuit) == ()
+        torch.testing.assert_close(fused, rolled_back)

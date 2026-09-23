@@ -169,9 +169,8 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
 # a region executed more than once finds the table already cached.
 _CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
 
-# A wider product reduces state passes further but grows its dense matrix by
-# 4x per wire. On the reference 20-wire CPU path, four wires took 11.8 ms,
-# while five took 12.0 ms, so four is the measured bound rather than a knob.
+# A wider product cuts state passes but grows its matrix 4x per wire. On the
+# reference 20-wire CPU path, four wires took 11.8 ms vs five at 12.0 ms.
 _CPU_DISJOINT_DENSE_MAX_WIRES = 4
 _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS = 1
 
@@ -231,6 +230,7 @@ def _compile_statevector_program(
     enable_triton_loop: bool,
     enable_cpu_cross_wire_diagonal: bool = False,
     enable_cpu_disjoint_single_wire: bool = False,
+    max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
 ) -> tuple[_StatevectorProgramStep, ...]:
     program = _fuse_rx_rz_loops(
         instructions,
@@ -241,7 +241,7 @@ def _compile_statevector_program(
     if enable_cpu_cross_wire_diagonal:
         optimized = _fuse_cross_wire_diagonal_regions(optimized)
     if enable_cpu_disjoint_single_wire:
-        optimized = _fuse_disjoint_dense_regions(optimized)
+        optimized = _fuse_disjoint_dense_regions(optimized, max_two_wire_regions)
     return tuple(_fuse_cx_sequences(optimized))
 
 
@@ -472,8 +472,9 @@ def _fuse_cross_wire_diagonal_regions(
 
 def _fuse_disjoint_dense_regions(
     program: Sequence[_StatevectorPreCXStep],
+    max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
 ) -> list[_StatevectorPreCXStep]:
-    """Pack disjoint one- and two-wire dense regions into a bounded apply."""
+    """Pack bounded dense regions with a limit on two-wire regions per group."""
 
     optimized: list[_StatevectorPreCXStep] = []
     group: list[_StatevectorDenseRegion] = []
@@ -500,10 +501,7 @@ def _fuse_disjoint_dense_regions(
         if (
             len(occupied_wires) + len(wires) > _CPU_DISJOINT_DENSE_MAX_WIRES
             or not occupied_wires.isdisjoint(wires)
-            or (
-                len(wires) == 2
-                and two_wire_regions == _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS
-            )
+            or (len(wires) == 2 and two_wire_regions >= max_two_wire_regions)
         ):
             flush()
         group.append(region)
@@ -518,15 +516,14 @@ def _bounded_dense_region(
 ) -> _StatevectorDenseRegion | None:
     """Return a small region that a bounded dense group may absorb.
 
-    Dedicated diagonal matchings are formed before this pass, so only diagonal
-    singletons reach here. Fixed ``x`` and ``y`` gates likewise keep their
+    Dedicated diagonal matchings run first, so only singletons reach here.
+    Fixed ``x`` and ``y`` gates likewise keep their
     specialized kernels when alone because ``flush`` unwraps a one-item group.
     Standalone ``cx`` and ``swap`` gates remain barriers so their permutation
     kernels and adjacent CX sequence compilation remain available. Other
     one- and two-wire regions may share a dense Kronecker apply when their total
     width stays within the measured four-wire bound. A group contains at most
-    one two-wire region: combining two of them creates a 16x16 product that
-    regressed the reference batch-one workload despite saving a state pass.
+    the compiled two-wire-region limit because its product regressed batch one.
     """
 
     if isinstance(step, _StatevectorFusedGateStep):
