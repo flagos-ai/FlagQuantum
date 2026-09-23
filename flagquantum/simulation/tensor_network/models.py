@@ -186,24 +186,20 @@ class TensorNetworkSlicingPlan:
         }
 
 
-@dataclass(frozen=True)
-class TensorNetworkContractionPlan:
-    """Tensor network contraction plan generated from a circuit IR."""
+class _TensorNetworkPathPlan:
+    """Shared contraction-path and slicing surface for tensor-network plans.
 
-    n_wires: int
-    bsz: int
+    ``TensorNetworkContractionPlan`` and ``TensorNetworkExpectationPlan`` select
+    contraction paths, estimate their cost, and plan slicing over the same
+    ``nodes`` and ``output_labels``. Only the network being contracted differs,
+    so those methods are defined once here. Subclasses remain frozen dataclasses
+    that declare their own fields, and each defines its own ``contract`` and
+    ``summary`` because a state network returns amplitudes while a direct
+    expectation network returns an observable expectation tensor.
+    """
+
     nodes: tuple[TensorNetworkNode, ...]
     output_labels: tuple[int, ...]
-    path: tuple[ContractionPathStep, ...]
-    program_cache: dict[tuple[Any, ...], Any] | None = None
-
-    @property
-    def n_nodes(self) -> int:
-        return len(self.nodes)
-
-    @property
-    def n_edges(self) -> int:
-        return len({label for node in self.nodes for label in node.labels})
 
     def greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return the native greedy pairwise contraction path."""
@@ -375,6 +371,26 @@ class TensorNetworkContractionPlan:
             slicing,
             target_slices=target_slices,
         )
+
+
+@dataclass(frozen=True)
+class TensorNetworkContractionPlan(_TensorNetworkPathPlan):
+    """Tensor network contraction plan generated from a circuit IR."""
+
+    n_wires: int
+    bsz: int
+    nodes: tuple[TensorNetworkNode, ...]
+    output_labels: tuple[int, ...]
+    path: tuple[ContractionPathStep, ...]
+    program_cache: dict[tuple[Any, ...], Any] | None = None
+
+    @property
+    def n_nodes(self) -> int:
+        return len(self.nodes)
+
+    @property
+    def n_edges(self) -> int:
+        return len({label for node in self.nodes for label in node.labels})
 
     def contract(
         self,
@@ -623,7 +639,7 @@ class CompiledTNObservableProgram:
 
 
 @dataclass(frozen=True)
-class TensorNetworkExpectationPlan:
+class TensorNetworkExpectationPlan(_TensorNetworkPathPlan):
     """Direct bra-operator-ket tensor-network expectation plan."""
 
     n_wires: int
@@ -632,177 +648,6 @@ class TensorNetworkExpectationPlan:
     output_labels: tuple[int, ...]
     observable_wires: tuple[int, ...]
     path: tuple[ContractionPathStep, ...]
-
-    def greedy_path(self) -> tuple[PairContractionStep, ...]:
-        """Return the native greedy pairwise contraction path."""
-
-        from .path_search import _contract_nodes_greedy
-
-        _, steps = _contract_nodes_greedy(self.nodes, self.output_labels, dry_run=True)
-        return steps
-
-    def memory_greedy_path(self) -> tuple[PairContractionStep, ...]:
-        """Return a memory-first greedy path for direct expectation contraction."""
-
-        from .path_search import _contract_nodes_greedy
-
-        _, steps = _contract_nodes_greedy(
-            self.nodes, self.output_labels, dry_run=True, objective="memory"
-        )
-        return steps
-
-    def quality_greedy_path(self) -> tuple[PairContractionStep, ...]:
-        """Return a connected-first path for direct expectation contraction."""
-
-        from .path_search import _contract_nodes_greedy
-
-        _, steps = _contract_nodes_greedy(
-            self.nodes, self.output_labels, dry_run=True, objective="quality"
-        )
-        return steps
-
-    def quality_multistart_path(self) -> tuple[PairContractionStep, ...]:
-        """Return the best deterministic expectation multi-start path."""
-
-        from .path_search import _contract_nodes_quality_multistart
-
-        return _contract_nodes_quality_multistart(self.nodes, self.output_labels)
-
-    def quality_reconfigured_path(self) -> tuple[PairContractionStep, ...]:
-        """Return an expectation path with bounded exact subtree replacement."""
-
-        from .path_search import _contract_nodes_quality_reconfigured
-
-        return _contract_nodes_quality_reconfigured(self.nodes, self.output_labels)
-
-    def beam_path(self, *, beam_width: int = 8) -> tuple[PairContractionStep, ...]:
-        """Return a beam-search path for direct expectation contraction."""
-
-        from .path_search import _contract_nodes_beam
-
-        _, steps = _contract_nodes_beam(
-            self.nodes, self.output_labels, dry_run=True, beam_width=beam_width
-        )
-        return steps
-
-    def optimal_path(self, *, max_nodes: int = 7) -> tuple[PairContractionStep, ...]:
-        """Return an exact small-network expectation path, falling back to beam."""
-
-        from .path_search import _contract_nodes_optimal
-
-        _, steps = _contract_nodes_optimal(
-            self.nodes, self.output_labels, dry_run=True, max_nodes=max_nodes
-        )
-        return steps
-
-    def contraction_profile(
-        self,
-        strategy: str = "greedy",
-        *,
-        max_intermediate_size: int | None = None,
-        max_intermediate_bytes: int | None = None,
-        sliced_labels: Sequence[int] | None = None,
-        beam_width: int = 8,
-    ) -> TensorNetworkContractionProfile:
-        """Return a detailed native expectation contraction profile."""
-
-        from .contraction import _contraction_profile
-
-        return _contraction_profile(
-            self.nodes,
-            self.output_labels,
-            strategy=strategy,
-            max_intermediate_size=max_intermediate_size,
-            max_intermediate_bytes=max_intermediate_bytes,
-            sliced_labels=sliced_labels,
-            beam_width=beam_width,
-        )
-
-    def contraction_cost(self, strategy: str = "greedy") -> dict[str, int]:
-        """Estimate expectation-network contraction cost."""
-
-        profile = self.contraction_profile(strategy)
-        out = {
-            "estimated_cost": profile.estimated_cost,
-            "peak_size": profile.peak_size,
-        }
-        if profile.n_slices != 1:
-            out["n_slices"] = profile.n_slices
-        return out
-
-    def slicing_plan(
-        self,
-        *,
-        max_intermediate_size: int | None = None,
-        max_intermediate_bytes: int | None = None,
-        sliced_labels: Sequence[int] | None = None,
-        contraction_strategy: str = "quality_multistart",
-    ) -> TensorNetworkSlicingPlan:
-        """Plan internal-edge slicing for direct expectation contraction."""
-
-        from .contraction import _build_slicing_plan
-
-        return _build_slicing_plan(
-            self.nodes,
-            self.output_labels,
-            max_intermediate_size=max_intermediate_size,
-            max_intermediate_bytes=max_intermediate_bytes,
-            sliced_labels=sliced_labels,
-            contraction_strategy=contraction_strategy,
-        )
-
-    def cotengra_slicing_plan(
-        self,
-        *,
-        target_peak_elements: int,
-        max_repeats: int = 16,
-        minimize: str = "write",
-        parallel: bool | str = False,
-        methods: Sequence[str] | None = None,
-        seed: int = 0,
-        target_slices: int | None = None,
-    ) -> TensorNetworkSlicingPlan:
-        """Jointly plan expectation contraction and slicing with cotengra."""
-
-        from .contraction import _cotengra_slicing_plan
-
-        return _cotengra_slicing_plan(
-            self.nodes,
-            self.output_labels,
-            target_peak_elements=target_peak_elements,
-            max_repeats=max_repeats,
-            minimize=minimize,
-            parallel=parallel,
-            methods=methods,
-            seed=seed,
-            target_slices=target_slices,
-        )
-
-    def contract_slicing_plan(self, slicing: TensorNetworkSlicingPlan) -> torch.Tensor:
-        """Execute a precomputed native or external slicing plan."""
-
-        from .contraction import _contract_nodes_with_slicing_plan
-
-        return _contract_nodes_with_slicing_plan(
-            self.nodes, self.output_labels, slicing
-        )
-
-    def reslice_external_plan(
-        self,
-        slicing: TensorNetworkSlicingPlan,
-        *,
-        target_slices: int,
-    ) -> TensorNetworkSlicingPlan:
-        """Add low-cost slice axes to an imported expectation path."""
-
-        from .contraction import _reslice_external_slicing_plan
-
-        return _reslice_external_slicing_plan(
-            self.nodes,
-            self.output_labels,
-            slicing,
-            target_slices=target_slices,
-        )
 
     def contract(
         self,
