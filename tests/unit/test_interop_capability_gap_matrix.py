@@ -76,6 +76,9 @@ def test_report_derives_exact_operation_gaps_from_adapter_contracts() -> None:
         "partial"
     )
     assert frameworks["cirq"]["capabilities"]["measurements"]["status"] == "partial"
+    assert frameworks["cirq"]["capabilities"]["custom_unitary"]["status"] == (
+        "unsupported"
+    )
 
 
 def test_operation_coverage_status_cannot_overstate_contract() -> None:
