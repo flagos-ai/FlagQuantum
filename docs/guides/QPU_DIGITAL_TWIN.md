@@ -1009,6 +1009,41 @@ confidence level or total-variation error bound, performs no provider I/O, and
 mutates neither the release nor the model. The release scope remains
 `exact_circuits` and never authorizes routing.
 
+### Classify an unseen circuit against the released envelope
+
+Use `assess_support(...)` when the question is structural compatibility rather
+than exact-circuit release status:
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.load_region_twin("region-twin.json")
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+
+assessment = release.assess_support(
+    region_twin,
+    circuit,
+    physical_qubits=(20, 27, 34),
+)
+
+if assessment.status == "released_exact_circuit":
+    assert assessment.prediction is not None
+elif assessment.status == "within_envelope_unvalidated":
+    assert assessment.prediction is None
+    assert assessment.reasons == ("circuit_identity_not_validated",)
+else:
+    assert assessment.status == "outside_envelope"
+    assert assessment.prediction is None and assessment.reasons
+```
+
+The frozen envelope is already part of the release: ordered physical mapping,
+directed couplers, supported operations, maximum instruction count, and maximum
+depth. `within_envelope_unvalidated` means only that those structural checks
+passed. It is not an accuracy statement and deliberately returns no prediction,
+confidence level, or TV-error bound. The call is offline and read-only; it does
+not submit hardware tasks or authorize routing.
+
 ### Persist a composed regional model
 
 A composed regional Twin is normally rebuilt from every source cell artifact.

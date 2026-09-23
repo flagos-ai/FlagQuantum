@@ -504,6 +504,38 @@ computed internally from the release, the model, and the circuit. An assessment
 states no per-circuit confidence level and no total-variation error bound, and
 it never routes work, submits or polls tasks, or mutates the release or model.
 
+## Classify an unseen circuit against the release envelope
+
+`assess_support(...)` separates exact validation from structural compatibility:
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.load_region_twin("region-twin.json")
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+
+assessment = release.assess_support(
+    region_twin,
+    circuit,
+    physical_qubits=(20, 27, 34),
+)
+
+if assessment.status == "released_exact_circuit":
+    assert assessment.prediction is not None
+elif assessment.status == "within_envelope_unvalidated":
+    assert assessment.prediction is None
+    assert assessment.reasons == ("circuit_identity_not_validated",)
+else:
+    assert assessment.status == "outside_envelope"
+    assert assessment.prediction is None and assessment.reasons
+```
+
+The middle status means the circuit fits the release's frozen mapping,
+directed couplers, operations, instruction count, and depth. It does not mean
+the unseen circuit is accurate, and it carries no prediction, confidence, error
+bound, routing authority, or provider action.
+
 ## Persist a composed regional model
 
 A composed `TwinRegionModel` can be stored once and restored in another

@@ -101,6 +101,8 @@
     "TwinRegionHoldoutStudy",
     "TwinRegionModel",
     "TwinRegionRelease",
+    "TwinRegionSupportAssessment",
+    "TwinRegionSupportAssessmentStatus",
     "TwinReleaseAssessment",
     "TwinReleaseAssessmentStatus",
     "TwinRegionSuiteEvaluation",
@@ -203,7 +205,8 @@
     "TwinRegionCandidateHoldoutEvaluation": "(study_identity: 'str', reference_evaluation: 'TwinCandidateSuiteEvaluation', holdout_evaluation: 'TwinCandidateSuiteEvaluation', confidence_level: 'float', decision: 'TwinCandidateDecision', schema: 'str' = 'flagquantum.twin_region_candidate_holdout_evaluation.v1') -> None",
     "TwinRegionCandidateHoldoutStudy": "(incumbent_region_identity: 'str', candidate_region_identity: 'str', physical_qubits: 'tuple[int, ...]', reference_suite: 'TwinCandidateSuite', holdout_suite: 'TwinCandidateSuite', schema: 'str' = 'flagquantum.twin_region_candidate_holdout_study.v1') -> None",
     "TwinRegionRelease": "(incumbent_region_identity: 'str', candidate_region_identity: 'str', incumbent_snapshot_identity: 'str', candidate_snapshot_identity: 'str', candidate_captured_at: 'str', study_identity: 'str', evaluation_identity: 'str', provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', directed_couplers: 'tuple[tuple[int, int], ...]', supported_operations: 'tuple[str, ...]', maximum_instruction_count: 'int', maximum_circuit_depth: 'int', source_snapshot_identities: 'tuple[str, ...]', source_support_identities: 'tuple[str, ...]', reference_circuit_identities: 'tuple[str, ...]', holdout_circuit_identities: 'tuple[str, ...]', confidence_level: 'float', reference_decision: 'TwinCandidateDecision', holdout_decision: 'TwinCandidateDecision', reference_candidate_improvement_lower_bound: 'float', reference_candidate_improvement_upper_bound: 'float', holdout_candidate_improvement_lower_bound: 'float', holdout_candidate_improvement_upper_bound: 'float', scope: 'str' = 'exact_circuits', routing_authorized: 'bool' = False, schema: 'str' = 'flagquantum.twin_region_release.v1') -> None",
-    "TwinReleaseAssessment": "(status: 'TwinReleaseAssessmentStatus', release_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', prediction: 'TwinPrediction | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_release_assessment.v1') -> None"
+    "TwinReleaseAssessment": "(status: 'TwinReleaseAssessmentStatus', release_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', prediction: 'TwinPrediction | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_release_assessment.v1') -> None",
+    "TwinRegionSupportAssessment": "(status: 'TwinRegionSupportAssessmentStatus', release_identity: 'str', circuit_identity: 'str', physical_qubits: 'tuple[int, ...]', prediction: 'TwinPrediction | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_region_support_assessment.v1') -> None"
   },
   "public_method_signatures": {
     "QPUDigitalTwin.evidence_report": "(self, circuit: 'Any', *, evidence: 'TwinEvidenceEnvelope | None' = None) -> 'TwinEvidenceReport'",
@@ -280,7 +283,8 @@
     "TwinRegionCandidateHoldoutStudy.validate_results": "(self, reference_submissions: 'Sequence[TwinCandidateSubmission]', reference_results: 'Sequence[DeploymentResult]', holdout_submissions: 'Sequence[TwinCandidateSubmission]', holdout_results: 'Sequence[DeploymentResult]', *, reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', confidence_level: 'float' = 0.95) -> 'TwinRegionCandidateHoldoutEvaluation'",
     "TwinRegionRelease.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinRegionRelease'",
     "TwinRegionRelease.to_dict": "(self) -> 'dict[str, Any]'",
-    "TwinRegionRelease.assess": "(self, region_twin: 'TwinRegionModel', circuit: 'Any', *, physical_qubits: 'Sequence[int]') -> 'TwinReleaseAssessment'"
+    "TwinRegionRelease.assess": "(self, region_twin: 'TwinRegionModel', circuit: 'Any', *, physical_qubits: 'Sequence[int]') -> 'TwinReleaseAssessment'",
+    "TwinRegionRelease.assess_support": "(self, region_twin: 'TwinRegionModel', circuit: 'Any', *, physical_qubits: 'Sequence[int]') -> 'TwinRegionSupportAssessment'"
   },
   "public_dataclass_fields": {
     "QPUDigitalTwin": [
@@ -636,6 +640,15 @@
       "prediction",
       "reasons",
       "schema"
+    ],
+    "TwinRegionSupportAssessment": [
+      "status",
+      "release_identity",
+      "circuit_identity",
+      "physical_qubits",
+      "prediction",
+      "reasons",
+      "schema"
     ]
   },
   "public_properties": {
@@ -881,7 +894,8 @@
     "TwinRegionCandidateHoldoutEvaluation": "flagquantum.twin_region_candidate_holdout_evaluation.v1",
     "TwinRegionCandidateHoldoutStudy": "flagquantum.twin_region_candidate_holdout_study.v1",
     "TwinRegionRelease": "flagquantum.twin_region_release.v1",
-    "TwinReleaseAssessment": "flagquantum.twin_release_assessment.v1"
+    "TwinReleaseAssessment": "flagquantum.twin_release_assessment.v1",
+    "TwinRegionSupportAssessment": "flagquantum.twin_region_support_assessment.v1"
   },
   "public_literal_values": {
     "TwinCandidateDecision": [
@@ -902,6 +916,11 @@
     "TwinReleaseAssessmentStatus": [
       "released_exact_circuit",
       "outside_release"
+    ],
+    "TwinRegionSupportAssessmentStatus": [
+      "released_exact_circuit",
+      "within_envelope_unvalidated",
+      "outside_envelope"
     ]
   },
   "forbidden_responsibilities": [

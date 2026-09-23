@@ -103,7 +103,12 @@ from .region_validation_history import (
     dump_region_validation_history,
     load_region_validation_history,
 )
-from .release_assessment import TwinReleaseAssessment, TwinReleaseAssessmentStatus
+from .release_assessment import (
+    TwinRegionSupportAssessment,
+    TwinRegionSupportAssessmentStatus,
+    TwinReleaseAssessment,
+    TwinReleaseAssessmentStatus,
+)
 from .series import (
     TwinValidationSeries,
     dump_validation_series,
@@ -202,6 +207,8 @@ __all__ = (
     "TwinRegionHoldoutStudy",
     "TwinRegionModel",
     "TwinRegionRelease",
+    "TwinRegionSupportAssessment",
+    "TwinRegionSupportAssessmentStatus",
     "TwinReleaseAssessment",
     "TwinReleaseAssessmentStatus",
     "TwinRegionSuiteEvaluation",

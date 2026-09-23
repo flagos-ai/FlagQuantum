@@ -360,6 +360,26 @@ total-variation error bound from aggregate candidate-improvement evidence, and
 it performs no provider operation, routing, or mutation of the release or the
 model.
 
+Classify structural support separately without widening that exact-circuit
+claim:
+
+```python
+assessment = release.assess_support(
+    candidate_region_twin,
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    physical_qubits=(20, 27, 34),
+)
+
+if assessment.status != "released_exact_circuit":
+    assert assessment.prediction is None
+```
+
+`within_envelope_unvalidated` means only that the frozen mapping, directed
+couplers, operations, instruction count and depth accept the circuit. It carries
+`circuit_identity_not_validated`, not a prediction or statistical bound.
+`outside_envelope` carries the existing identity, mapping, or structural
+coverage blockers. This path is offline, provider-neutral, and read-only.
+
 Persist the composed regional model once so a released regional Twin can be
 restored in another process without recomposing its source cells:
 

@@ -17,6 +17,15 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `TwinRegionRelease.assess_support(...)` to distinguish exact released
+  circuits from unseen circuits that only fit a regional release's frozen
+  mapping, topology, operation, instruction-count, and depth envelope. Only an
+  exact released circuit returns a prediction; structurally compatible but
+  unvalidated circuits and out-of-envelope circuits return no prediction,
+  confidence, or error bound. The check is provider-neutral, offline, and does
+  not route or submit work. See
+  [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
+
 - Added prospective regional Twin holdout studies. Applications can freeze
   disjoint reference and holdout circuit suites before hardware work, persist
   that split, and validate both groups under one simultaneous confidence
