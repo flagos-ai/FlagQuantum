@@ -29,6 +29,9 @@ from .models import (
 )
 
 __all__ = (
+    "QiskitAerBackend",
+    "QiskitAerDependencyError",
+    "QiskitAerExecutionError",
     "QiskitConversionError",
     "QiskitConversionIssue",
     "QiskitConversionReport",
@@ -44,6 +47,7 @@ __all__ = (
     "from_qiskit",
     "import_qiskit",
     "qiskit_statevector_to_flagquantum",
+    "run",
     "run_qiskit_aer_dynamic",
     "run_qiskit_aer_qasm3_round_trip",
     "run_qiskit_conformance",
@@ -53,6 +57,13 @@ __all__ = (
 
 
 def __getattr__(name: str) -> Any:
+    if name in {
+        "QiskitAerBackend",
+        "QiskitAerDependencyError",
+        "QiskitAerExecutionError",
+        "run",
+    }:
+        return getattr(import_module(".aer", __name__), name)
     if name in {"run_qiskit_aer_dynamic", "run_qiskit_aer_qasm3_round_trip"}:
         return getattr(import_module(".execution", __name__), name)
     raise AttributeError(name)

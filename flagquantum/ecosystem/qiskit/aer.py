@@ -10,8 +10,9 @@ from __future__ import annotations
 import operator
 from collections import Counter
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from importlib import import_module, metadata
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import torch
 
@@ -22,7 +23,8 @@ from flagquantum.ecosystem.extensions import (
     ExtensionConfig,
     ExtensionManifest,
 )
-from flagquantum.runtime import ExecutionResult, MeasurementResult
+from flagquantum.observables import OutputRequest
+from flagquantum.runtime import ExecutionOptions, ExecutionResult, MeasurementResult
 
 OutputKind = Literal["statevector", "samples", "counts"]
 
@@ -167,25 +169,22 @@ def _provenance(
 def run(
     program: Any,
     *,
-    output: OutputKind = "statevector",
-    wires: Sequence[int] | None = None,
+    options: ExecutionOptions | None = None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
     shots: int | None = None,
-    seed: int | None = None,
-    threads: int = 1,
 ) -> ExecutionResult:
     """Execute one FlagQuantum program explicitly on local Qiskit Aer.
 
-    This path never replaces or falls back to FlagQuantum's native runtime.
-    Statevector execution is exact and shot execution supports computational-
-    basis samples or counts on an ordered wire selection.
+    The expression mirrors ``fq.run``: result selection uses ``fq.samples`` or
+    ``fq.counts``, while shots and seed use ``fq.ExecutionOptions``. This path
+    never replaces or falls back to FlagQuantum's native runtime.
 
     Args:
         program: A FlagQuantum circuit or unbatched, fully bound ``CircuitIR``.
-        output: ``"statevector"``, ``"samples"``, or ``"counts"``.
-        wires: Ordered sampled wires. Omit to sample every wire.
-        shots: Positive shot count for samples or counts.
-        seed: Optional Aer simulator and transpiler seed.
-        threads: Positive Aer CPU thread limit.
+        options: Backend-neutral FlagQuantum execution options.
+        outputs: One ``fq.samples`` or ``fq.counts`` request. Omit for an exact
+            statevector.
+        shots: Optional native-style shorthand for the shot count.
 
     Returns:
         A FlagQuantum ``ExecutionResult`` with explicit backend provenance.
@@ -196,40 +195,142 @@ def run(
 
     Examples:
         >>> import flagquantum as fq
-        >>> from flagquantum_qiskit_aer import run
-        >>> result = run(fq.Circuit(2).h(0).cx(0, 1))
-        >>> result.state.shape
+        >>> from flagquantum.ecosystem.qiskit import run
+        >>> result = run(fq.Circuit(2).h(0).cx(0, 1))  # doctest: +SKIP
+        >>> result.state.shape  # doctest: +SKIP
         torch.Size([1, 4])
     """
 
-    if output not in {"statevector", "samples", "counts"}:
-        raise ValueError("output must be 'statevector', 'samples', or 'counts'")
-    thread_count = _positive_integer(threads, name="threads")
+    return _run_with_resources(
+        program,
+        options=options,
+        outputs=outputs,
+        shots=shots,
+        threads=None,
+    )
+
+
+def _normalize_request(
+    *,
+    options: ExecutionOptions | None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+    shots: int | None,
+) -> tuple[OutputKind, Sequence[int] | None, int | None, int | None]:
+    if options is not None and not isinstance(options, ExecutionOptions):
+        raise TypeError("options must be an ExecutionOptions instance or None")
+    if shots is not None and options is not None and options.shots is not None:
+        raise TypeError("shots was specified both directly and in ExecutionOptions")
+    if outputs is None:
+        if shots is not None:
+            raise TypeError(
+                "local shots requires fq.samples(...) or fq.counts(...) output"
+            )
+        seed = options.seed if options is not None else None
+        return "statevector", None, None, seed
+    requests: tuple[OutputRequest, ...]
+    if isinstance(outputs, OutputRequest):
+        requests = (outputs,)
+    elif isinstance(outputs, Sequence) and not isinstance(outputs, (str, bytes)):
+        requests = tuple(outputs)
+    else:
+        raise TypeError("outputs must be an OutputRequest, a sequence, or None")
+    if len(requests) != 1:
+        raise QiskitAerExecutionError(
+            "the Qiskit Aer bridge currently accepts exactly one output request"
+        )
+    request = requests[0]
+    if not isinstance(request, OutputRequest):
+        raise TypeError("outputs must contain only OutputRequest instances")
+    if request.kind not in {"samples", "counts"}:
+        raise QiskitAerExecutionError(
+            "the Qiskit Aer bridge currently supports fq.samples or fq.counts"
+        )
+    if request.observable is not None:
+        raise QiskitAerExecutionError(
+            "the Qiskit Aer bridge currently supports computational-basis outputs"
+        )
+    selected_shots = (
+        shots if shots is not None else options.shots if options is not None else None
+    )
+    if selected_shots is None:
+        raise ValueError("samples and counts require shots")
+    return (
+        cast(OutputKind, request.kind),
+        request.wires or None,
+        selected_shots,
+        options.seed if options is not None else None,
+    )
+
+
+def _validate_options(options: ExecutionOptions | None, ir: CircuitIR) -> None:
+    if options is None:
+        return
+    if options.backend not in {None, "qiskit_aer"}:
+        raise QiskitAerExecutionError("options.backend must be 'qiskit_aer'")
+    if options.device not in {None, "cpu"}:
+        raise QiskitAerExecutionError("Qiskit Aer execution requires device='cpu'")
+    if options.mode not in {None, "auto", "statevector"}:
+        raise QiskitAerExecutionError(
+            "Qiskit Aer execution supports mode='auto' or 'statevector'"
+        )
+    if options.precision is not None and options.precision != ir.dtype:
+        raise QiskitAerExecutionError(
+            f"options.precision {options.precision!r} does not match {ir.dtype!r}"
+        )
+    if options.batch_size not in {None, 1}:
+        raise QiskitAerExecutionError("Qiskit Aer execution accepts one batch item")
+    if options.target is not None or options.memory_limit_bytes is not None:
+        raise QiskitAerExecutionError(
+            "options.target and memory_limit_bytes are unsupported"
+        )
+    if options.require_gradients:
+        raise QiskitAerExecutionError("Qiskit Aer bridge does not support gradients")
+    if options.allow_approximate:
+        raise QiskitAerExecutionError(
+            "Qiskit Aer bridge does not support approximate execution"
+        )
+    if options.allow_backend_fallback:
+        raise QiskitAerExecutionError("Qiskit Aer bridge does not support fallback")
+
+
+def _run_with_resources(
+    program: Any,
+    *,
+    options: ExecutionOptions | None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+    shots: int | None,
+    threads: int | None,
+) -> ExecutionResult:
+    output, wires, requested_shots, seed = _normalize_request(
+        options=options,
+        outputs=outputs,
+        shots=shots,
+    )
+    thread_count = (
+        None if threads is None else _positive_integer(threads, name="threads")
+    )
     normalized_seed = _optional_seed(seed)
     ir = _validate_program(program)
+    _validate_options(options, ir)
     selected: tuple[int, ...] | None = None
     shot_count: int | None = None
-    if output == "statevector":
-        if shots is not None:
-            raise ValueError("shots is only valid for samples or counts")
-        if wires is not None:
-            raise ValueError("wires is only valid for samples or counts")
-    else:
-        if shots is None:
-            raise ValueError("samples and counts require shots")
-        shot_count = _positive_integer(shots, name="shots")
+    if output != "statevector":
+        assert requested_shots is not None
+        shot_count = _positive_integer(requested_shots, name="shots")
         selected = _selected_wires(wires, ir.n_wires)
 
     qiskit, simulator_type, export_qiskit, convert_statevector = _dependencies()
     exported = export_qiskit(ir)
     circuit = exported.circuit.copy()
     precision = "single" if ir.dtype == "complex64" else "double"
-    simulator = simulator_type(
-        method="statevector",
-        device="CPU",
-        precision=precision,
-        max_parallel_threads=thread_count,
-    )
+    simulator_options: dict[str, Any] = {
+        "method": "statevector",
+        "device": "CPU",
+        "precision": precision,
+    }
+    if thread_count is not None:
+        simulator_options["max_parallel_threads"] = thread_count
+    simulator = simulator_type(**simulator_options)
     runtime = {
         "backend": "qiskit_aer",
         "device": "cpu",
@@ -389,12 +490,36 @@ class QiskitAerBackend:
         if not self._active:
             raise RuntimeError("Qiskit Aer backend is not active")
         if parameters is None:
-            options: dict[str, Any] = {}
+            request: dict[str, Any] = {}
         elif isinstance(parameters, Mapping):
-            options = dict(parameters)
+            request = dict(parameters)
         else:
             raise TypeError("execution parameters must be a mapping or None")
-        return run(program, **{**self._defaults, **options})
+        unknown = set(request) - {"options", "outputs", "shots"}
+        if unknown:
+            raise ValueError(
+                "unsupported Qiskit Aer execution parameter(s): "
+                + ", ".join(sorted(unknown))
+            )
+        execution_options = request.get("options")
+        if execution_options is not None and not isinstance(
+            execution_options, ExecutionOptions
+        ):
+            raise TypeError("options must be an ExecutionOptions instance or None")
+        configured_seed = self._defaults.get("seed")
+        if configured_seed is not None and (
+            execution_options is None or execution_options.seed is None
+        ):
+            execution_options = replace(
+                execution_options or ExecutionOptions(), seed=configured_seed
+            )
+        return _run_with_resources(
+            program,
+            options=execution_options,
+            outputs=request.get("outputs"),
+            shots=request.get("shots"),
+            threads=self._defaults.get("threads"),
+        )
 
     def close(self) -> None:
         self._defaults.clear()

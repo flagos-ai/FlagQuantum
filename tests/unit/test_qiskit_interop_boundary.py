@@ -89,9 +89,13 @@ def test_architecture_isolates_qiskit_imports_to_owned_edge_namespaces() -> None
     prefixes = CONFIG["interop_boundaries"]["qiskit_import_allowed_prefixes"]
     assert prefixes == [
         "flagquantum/ecosystem/qiskit/",
-        "flagquantum_qiskit_aer/",
     ]
     assert architecture_errors() == ()
+
+
+def test_qiskit_aer_bridge_has_no_parallel_top_level_package() -> None:
+    assert not (ROOT / "flagquantum_qiskit_aer").exists()
+    assert (ROOT / "flagquantum/ecosystem/qiskit/aer.py").is_file()
 
 
 def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:

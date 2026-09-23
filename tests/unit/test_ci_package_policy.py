@@ -56,13 +56,10 @@ def test_distribution_quarantine_rejects_repo_only_members():
     assert not _forbidden("flagquantum/core/ir.py")
 
 
-def test_distribution_allows_only_core_and_qiskit_aer_package_roots() -> None:
-    assert ALLOWED_WHEEL_PACKAGE_ROOTS == (
-        "flagquantum/",
-        "flagquantum_qiskit_aer/",
-    )
+def test_distribution_allows_only_flagquantum_package_root() -> None:
+    assert ALLOWED_WHEEL_PACKAGE_ROOTS == ("flagquantum/",)
     assert _allowed_wheel_member("flagquantum/core/ir.py")
-    assert _allowed_wheel_member("flagquantum_qiskit_aer/__init__.py")
+    assert _allowed_wheel_member("flagquantum/ecosystem/qiskit/aer.py")
     assert _allowed_wheel_member("flagquantum-0.2.0.dist-info/METADATA")
     assert not _allowed_wheel_member("unrelated_plugin/__init__.py")
 

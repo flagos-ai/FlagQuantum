@@ -16,7 +16,7 @@ from flagquantum.ecosystem.extensions import (
     ExtensionConfig,
     ExtensionRegistry,
 )
-from flagquantum_qiskit_aer import QiskitAerBackend, run
+from flagquantum.ecosystem.qiskit import QiskitAerBackend, run
 
 pytestmark = [
     pytest.mark.qiskit,
@@ -32,7 +32,8 @@ def test_import_is_lazy() -> None:
         [
             sys.executable,
             "-c",
-            "import sys; import flagquantum_qiskit_aer; "
+            "import sys; from flagquantum.ecosystem.qiskit import run; "
+            "assert callable(run); "
             "assert 'qiskit' not in sys.modules; "
             "assert 'qiskit_aer' not in sys.modules",
         ],
@@ -47,7 +48,7 @@ def test_import_is_lazy() -> None:
 def test_statevector_matches_native_wire_order(dtype: torch.dtype) -> None:
     circuit = fq.Circuit(3, dtype=dtype).h(0).ry(1, 0.37).cx(0, 2).cz(2, 1)
 
-    result = run(circuit, seed=13, threads=1)
+    result = run(circuit, options=fq.ExecutionOptions(seed=13))
 
     expected = circuit.state(refresh=True)
     assert result.state is not None
@@ -64,17 +65,13 @@ def test_seeded_samples_and_counts_use_requested_wire_order() -> None:
 
     samples = run(
         circuit,
-        output="samples",
-        wires=(2, 1, 0),
-        shots=8,
-        seed=7,
+        outputs=fq.samples(qubits=(2, 1, 0)),
+        options=fq.ExecutionOptions(shots=8, seed=7),
     )
     counts = run(
         circuit,
-        output="counts",
-        wires=(2, 1, 0),
-        shots=8,
-        seed=7,
+        outputs=fq.counts(qubits=(2, 1, 0)),
+        options=fq.ExecutionOptions(shots=8, seed=7),
     )
 
     assert samples.samples is not None
@@ -110,12 +107,14 @@ def test_extension_lifecycle_executes_owned_program_and_result() -> None:
 
 
 def test_unsupported_requests_fail_before_aer_execution() -> None:
-    with pytest.raises(ValueError, match="shots is only valid"):
+    with pytest.raises(TypeError, match=r"requires fq\.samples"):
         run(fq.Circuit(1), shots=10)
     with pytest.raises(ValueError, match="require shots"):
-        run(fq.Circuit(1), output="counts")
+        run(fq.Circuit(1), outputs=fq.counts())
     with pytest.raises(ValueError, match="must be unique"):
-        run(fq.Circuit(2), output="samples", wires=(0, 0), shots=4)
+        run(fq.Circuit(2), outputs=fq.samples(qubits=(0, 0)), shots=4)
+    with pytest.raises(RuntimeError, match=r"supports fq\.samples or fq\.counts"):
+        run(fq.Circuit(2), outputs=fq.probabilities())
     with pytest.raises(RuntimeError, match="dynamic circuit"):
         run(
             CircuitIR(
