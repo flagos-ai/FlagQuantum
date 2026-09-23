@@ -733,11 +733,14 @@ class MPSState(MPSPlanningMixin):
         generator: torch.Generator | None = None,
         format: str = "bits",
     ) -> torch.Tensor:
+        # Validate the format before sampling. Checking it afterwards spends the
+        # whole shot budget and then refuses a request that was always going to
+        # be refused; `Circuit.sample` already checks first.
+        if format not in {"bits", "index"}:
+            raise ValueError("sample format must be 'bits' or 'index'.")
         samples = self._sample_indices(shots, generator=generator)
         if format == "index":
             return samples
-        if format != "bits":
-            raise ValueError("sample format must be 'bits' or 'index'.")
         return _bits_from_indices(samples, self.n_wires)
 
     def _sample_indices(
