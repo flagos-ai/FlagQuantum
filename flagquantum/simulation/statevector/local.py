@@ -821,6 +821,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
 def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
     """Evaluate per-wire Z expectations for a local statevector circuit."""
 
+    # The sign of a wire is read from bit ``n_wires - 1 - wire``.  A wire outside
+    # the statevector makes that shift negative, and torch yields all ones for a
+    # negative shift, so the wire silently reported +1 at every step instead of
+    # being refused.  The range is knowable here, before the state is built.
+    for wire in wires:
+        if not 0 <= wire < circuit.n_wires:
+            raise ValueError("wire is outside the statevector")
     probabilities = torch.abs(state(circuit)) ** 2
     key = (wires, str(probabilities.device), probabilities.dtype)
     signs = circuit._statevector_z_signs.get(key)
