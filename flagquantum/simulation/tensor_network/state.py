@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 import torch
@@ -168,6 +168,19 @@ class TensorNetworkState:
     def probabilities(self) -> torch.Tensor:
         return torch.abs(self.state()) ** 2
 
+    def _validate_observable_wires(self, wires: Iterable[int]) -> None:
+        """Refuse an observable wire that the state does not have.
+
+        A wire outside ``range(n_wires)`` addresses no open leg of the network,
+        and the contraction of an operator on a nonexistent leg still returns a
+        finite number instead of failing. The dense sign-weight path is worse
+        still: a negative shift makes ``>>`` select the wrong bit or none at
+        all, so the reported expectation belongs to a different operator than
+        the caller named.
+        """
+        if any(wire < 0 or wire >= self.n_wires for wire in wires):
+            raise ValueError("observable wire index out of range")
+
     def expectation_z(self, wires: int | Sequence[int] | None = None) -> torch.Tensor:
         """Return the Z expectation on the named wires, one per wire.
 
@@ -186,6 +199,7 @@ class TensorNetworkState:
             wire_tuple = (wires,)
         else:
             wire_tuple = tuple(int(wire) for wire in wires)
+        self._validate_observable_wires(wire_tuple)
         if self.n_wires <= self.dense_observable_wires:
             self._last_observable_execution = "dense_state"
             self._last_observable_program_cache_hit = False
@@ -272,6 +286,7 @@ class TensorNetworkState:
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
             raise ValueError("A wire can appear in only one of x, y, or z.")
+        self._validate_observable_wires(x_set | y_set | z_set)
 
         strategy, budget = self._observable_contraction()
         return tensor_network_expectation_ps(
