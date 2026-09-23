@@ -534,6 +534,24 @@ controls, noise, and unsupported gates fail closed with machine-readable
 diagnostics. Cirq objects remain inside `flagquantum.ecosystem.cirq` and never
 enter the compiler or runtime.
 
+To execute a supported FlagQuantum circuit explicitly on local Cirq Simulator,
+use the same result expressions as native execution:
+
+```python
+import flagquantum as fq
+from flagquantum.ecosystem.cirq import run
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+options = fq.ExecutionOptions(shots=1_000, seed=7)
+state = run(circuit)
+counts = run(circuit, outputs=fq.counts(), options=options)
+```
+
+This explicit bridge returns a FlagQuantum `ExecutionResult`; it does not alter
+the default `fq.run` route. See
+[Explicit Cirq Simulator execution](../guides/CIRQ_SIMULATOR_EXECUTION.md) for
+its support boundary and provenance contract.
+
 ### CUDA-Q kernel export
 
 CUDA-Q is an optional, Linux-only heterogeneous toolchain. Install it with

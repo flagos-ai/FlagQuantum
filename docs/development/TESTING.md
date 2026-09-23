@@ -116,7 +116,7 @@ so the check is per test rather than per file.
 | `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
 | `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional differential programs, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
 | `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract plus golden and fixed-seed differential complex128 QuantumScript semantics described in [PennyLane Differential Conformance](PENNYLANE_DIFFERENTIAL_CONFORMANCE.md). | Hardware submission, dynamic execution, differentiation, or that PennyLane is a core dependency. |
-| `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, and seeded bidirectional statevector conformance. | Cirq runtime execution, devices, or that Cirq is a core dependency. |
+| `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, seeded bidirectional statevector conformance, and explicit local Simulator statevector/shot execution. | Cirq devices, automatic backend routing, or that Cirq is a core dependency. |
 | `cudaq` | The isolated `cudaq` heterogeneous-toolchain extra installed; selected by the `cudaq-optional` Linux job on the 0.15.1 and 0.16.0.post1 lanes. | One-way static kernel construction, fail-closed diagnostics, explicit bit-order conversion, and seeded statevector conformance. | Reverse import, runtime execution, targets, GPU/QPU support, or that CUDA-Q is a core dependency. |
 | `braket` | The `braket` extra installed for static-circuit tests; selected by the `braket-optional` job on the 1.117.0 and 1.127.1 lanes, and by coverage. Provider tests still use fakes. | Static `braket.circuits.Circuit` conversion, explicit qubit and statevector order, fail-closed diagnostics, seeded bidirectional conformance, and fake-based provider orchestration. | AWS task submission, credentials, QPU behavior, or that Braket is a core dependency. |
 | `azure` | The `azure` extra installed (`.[dev,azure]`); selected by the `azure-optional` job on the certified QDK 1.32.3 lane, outside the coverage expression. | The fake workspace and target provider path, the optional `qdk[azure]` import surface and its fail-closed diagnostics, and that the core import loads no part of the Azure stack. | An Azure credential or workspace, network submission, QPU behavior, or that QDK is a core dependency. |
@@ -412,9 +412,10 @@ The checked-in `ci.yml` defines fifteen jobs:
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
-- `cirq-optional`: static circuit conversion, fail-closed diagnostics, and
-  seeded bidirectional statevector conformance against the certified Cirq Core
-  1.6.1 and 1.7.0 lanes, isolated from the core environment;
+- `cirq-optional`: static circuit conversion, fail-closed diagnostics, seeded
+  bidirectional statevector conformance, and explicit local Simulator
+  statevector/shot execution against the certified Cirq Core 1.6.1 and 1.7.0
+  lanes, isolated from the core environment;
 - `braket-optional`: static circuit conversion, fail-closed diagnostics, and
   seeded bidirectional statevector conformance against Amazon Braket SDK
   1.117.0 and 1.127.1, without credentials or cloud submission;

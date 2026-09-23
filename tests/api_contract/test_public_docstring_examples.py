@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.runtime import planner
 
@@ -24,6 +25,7 @@ ENTRIES = (
     fq.run,
     fq.train,
     planner.plan,
+    run_cirq,
     run_qiskit,
 )
 
