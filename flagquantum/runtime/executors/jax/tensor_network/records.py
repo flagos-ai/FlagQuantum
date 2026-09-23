@@ -8,6 +8,7 @@ from typing import Any
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
+from ..common import validate_observable_wires as _validate_observable_wires
 from ..planning_core import JAXDistributedQuantumPlan
 from ..release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
@@ -102,9 +103,16 @@ class JAXShardedTensorNetworkResult:
 
     def expectation_z(self, wire: int | None = None) -> Any:
         torch = _require_torch()
+        wires = tuple(range(self.n_wires)) if wire is None else (int(wire),)
+        # A negative wire makes the shift below negative, which silently selects
+        # the wrong basis bit instead of failing, so the range is checked first.
+        _validate_observable_wires(
+            wires,
+            self.n_wires,
+            message="observable wire index out of range",
+        )
         state = self.state()
         probabilities = torch.abs(state) ** 2
-        wires = tuple(range(self.n_wires)) if wire is None else (int(wire),)
         values = []
         indices = torch.arange(2**self.n_wires, device=state.device)
         for target in wires:
