@@ -27,6 +27,9 @@ Dependency groups are intentionally separated:
 - `interop-all`: the exact aggregate of those five interop groups;
 - `cudaq`: an isolated heterogeneous compiler toolchain, excluded from the
   portable `interop-all` aggregate;
+- `azure`: the optional Microsoft QDK Azure Quantum client (`qdk[azure]`),
+  excluded from `all` and `interop-all`; the core install and the core import
+  path stay without it, and only a real remote run reaches an Azure workspace;
 - `examples`: datasets and transformer examples;
 - `viz`: Matplotlib circuit rendering;
 - `all`: the historical development/runtime aggregate, excluding providers;

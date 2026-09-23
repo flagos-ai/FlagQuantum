@@ -119,6 +119,7 @@ so the check is per test rather than per file.
 | `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, and seeded bidirectional statevector conformance. | Cirq runtime execution, devices, or that Cirq is a core dependency. |
 | `cudaq` | The isolated `cudaq` heterogeneous-toolchain extra installed; selected by the `cudaq-optional` Linux job on the 0.15.1 and 0.16.0.post1 lanes. | One-way static kernel construction, fail-closed diagnostics, explicit bit-order conversion, and seeded statevector conformance. | Reverse import, runtime execution, targets, GPU/QPU support, or that CUDA-Q is a core dependency. |
 | `braket` | The `braket` extra installed for static-circuit tests; selected by the `braket-optional` job on the 1.117.0 and 1.127.1 lanes, and by coverage. Provider tests still use fakes. | Static `braket.circuits.Circuit` conversion, explicit qubit and statevector order, fail-closed diagnostics, seeded bidirectional conformance, and fake-based provider orchestration. | AWS task submission, credentials, QPU behavior, or that Braket is a core dependency. |
+| `azure` | The `azure` extra installed (`.[dev,azure]`); selected by the `azure-optional` job on the certified QDK 1.32.3 lane, outside the coverage expression. | The fake workspace and target provider path, the optional `qdk[azure]` import surface and its fail-closed diagnostics, and that the core import loads no part of the Azure stack. | An Azure credential or workspace, network submission, QPU behavior, or that QDK is a core dependency. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, and `cotengra` because its marker
@@ -395,7 +396,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines fourteen jobs:
+The checked-in `ci.yml` defines fifteen jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -417,6 +418,9 @@ The checked-in `ci.yml` defines fourteen jobs:
 - `braket-optional`: static circuit conversion, fail-closed diagnostics, and
   seeded bidirectional statevector conformance against Amazon Braket SDK
   1.117.0 and 1.127.1, without credentials or cloud submission;
+- `azure-optional`: the `azure` extra and the offline Azure provider suite
+  against the certified QDK 1.32.x line, with a fake workspace and target only —
+  no credential, no workspace resource id, and no submission;
 - `cudaq-optional`: one-way kernel export and seeded statevector conformance
   against CUDA-Q 0.15.1 and 0.16.0.post1 on Linux;
 - `qiskit-optional`: the machine-readable interoperability contract plus real

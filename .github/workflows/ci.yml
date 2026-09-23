@@ -198,6 +198,36 @@ jobs:
       - run: python -m pip install -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
+  azure-optional:
+    runs-on: ubuntu-latest
+    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      queue: max
+    env:
+      OPTIONAL_VERSIONS: "1.32.3 1.32.*"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - name: Install the declared Azure extra
+        run: python -m pip install -e '.[dev,azure]'
+      - name: Verify the certified QDK Azure versions and the offline provider suite
+        # No Azure credential, workspace resource id, or network submission is
+        # used here. The suite exercises the fake workspace and target path plus
+        # the fail-closed diagnostics, and proves the extra stays out of the
+        # core import.
+        run: |
+          set -euxo pipefail
+          for version in ${OPTIONAL_VERSIONS}; do
+            python -m pip install --upgrade "qdk[azure]==${version}"
+            python -m pytest tests/test_azure_quantum_provider.py -m azure -q
+            python -c "import sys, flagquantum; assert not any(name == 'qdk' or name.startswith('qdk.') or name == 'azure' or name.startswith('azure.') for name in sys.modules)"
+          done
+
   triton-optional:
     runs-on: ubuntu-latest
     # One of the eight GitHub-hosted buckets -- see the capacity note above.

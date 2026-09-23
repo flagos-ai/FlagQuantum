@@ -49,6 +49,14 @@ cuda = [
     "triton>=3.1,<4",
 ]
 
+azure = [
+    # The Azure Quantum workspace client and the OpenQASM 3 to QIR compiler both
+    # arrive through the QDK `azure` extra. The QDK distribution and
+    # `azure-quantum` behind it both declare `>=3.10`, which is the whole
+    # supported range here, so this extra needs no interpreter marker.
+    "qdk[azure]>=1.32.3,<2",
+]
+
 braket = [
     "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'",
 ]
