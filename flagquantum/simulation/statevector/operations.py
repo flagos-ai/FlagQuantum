@@ -38,7 +38,16 @@ from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .two_qubit_cpu import (
+    _BLOCKED_TWO_QUBIT_COST_MODEL_MIN_AMPLITUDES as _BLOCKED_TWO_QUBIT_COST_MODEL_MIN_AMPLITUDES,
+)
+from .two_qubit_cpu import (
+    _BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES as _BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES,
+)
+from .two_qubit_cpu import (
     _apply_adjacent_two_qubit_matrix_cpu as _apply_adjacent_two_qubit_matrix_cpu,
+)
+from .two_qubit_cpu import (
+    _apply_preferred_adjacent_two_qubit_matrix_cpu as _apply_preferred_adjacent_two_qubit_matrix_cpu,
 )
 from .two_qubit_cpu import (
     _apply_reversed_trailing_two_qubit_matrix_cpu as _apply_reversed_trailing_two_qubit_matrix_cpu,
@@ -618,12 +627,29 @@ def _apply_matrix(
             return _apply_single_qubit_matrix_cpu(
                 state, matrix, wire=wires[0], n_wires=n_wires
             )
-        if len(wires) == 2 and wires[1] == wires[0] + 1 and wires[1] < int(n_wires):
-            return _apply_adjacent_two_qubit_matrix_cpu(
-                state, matrix, first_wire=wires[0], n_wires=n_wires
-            )
         if wires == (int(n_wires) - 1, int(n_wires) - 2):
             return _apply_reversed_trailing_two_qubit_matrix_cpu(state, matrix)
+        if len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
+            ascending = wires[1] == wires[0] + 1
+            if (
+                ascending
+                and state.shape[-1] < _BLOCKED_TWO_QUBIT_COST_MODEL_MIN_AMPLITUDES
+            ):
+                return _apply_adjacent_two_qubit_matrix_cpu(
+                    state, matrix, first_wire=wires[0], n_wires=n_wires
+                )
+            if (
+                not ascending
+                and state.shape[-1] < _BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES
+            ):
+                return _apply_matrix_layout(
+                    state, matrix, wires, n_wires, layout=layout
+                )
+            adjacent = _apply_preferred_adjacent_two_qubit_matrix_cpu(
+                state, matrix, wires, n_wires
+            )
+            if adjacent is not None:
+                return adjacent
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
 
 

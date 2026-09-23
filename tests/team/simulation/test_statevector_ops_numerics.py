@@ -4,6 +4,7 @@ import pytest
 import torch
 
 import flagquantum.simulation.statevector.operations as statevector_ops
+import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.statevector.local import (
@@ -11,7 +12,6 @@ from flagquantum.simulation.statevector.local import (
     _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
-    _apply_adjacent_two_qubit_matrix_cpu,
     _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
@@ -26,6 +26,9 @@ from flagquantum.simulation.statevector.operations import (
     _instruction_matrix,
     _wire_mask,
     _zero_basis_local_indices,
+)
+from flagquantum.simulation.statevector.two_qubit_cpu import (
+    _apply_adjacent_two_qubit_matrix_cpu,
 )
 
 pytestmark = pytest.mark.unit
@@ -516,7 +519,7 @@ def test_cpu_reversed_trailing_two_qubit_kernel_bypasses_layout(monkeypatch):
     assert result.shape == state.shape
 
 
-def test_cpu_other_two_qubit_orders_keep_layout_path(monkeypatch):
+def test_cpu_nonadjacent_two_qubit_orders_keep_layout_path(monkeypatch):
     state = torch.randn((2, 32), dtype=torch.complex128)
     matrix = torch.randn((4, 4), dtype=torch.complex128)
     observed = []
@@ -527,13 +530,11 @@ def test_cpu_other_two_qubit_orders_keep_layout_path(monkeypatch):
 
     monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", recording_layout)
 
-    # A pair with a gap between its wires, and a descending adjacent pair that
-    # is not trailing: neither has a contiguous four-amplitude block in the
-    # order the gate matrix expects.
+    # Neither ordering of a pair with a wire gap belongs to an adjacent kernel.
     _apply_matrix(state, matrix, (1, 3), 5)
-    _apply_matrix(state, matrix, (2, 1), 5)
+    _apply_matrix(state, matrix, (3, 1), 5)
 
-    assert observed == [(1, 3), (2, 1)]
+    assert observed == [(1, 3), (3, 1)]
 
 
 def test_cpu_reversed_trailing_two_qubit_kernel_preserves_gradients():
@@ -580,7 +581,7 @@ def test_cpu_adjacent_two_qubit_kernel_matches_layout_reference(
 
 
 def test_cpu_adjacent_two_qubit_kernel_bypasses_layout(monkeypatch):
-    state = torch.randn((2, 32), dtype=torch.complex128)
+    state = torch.randn((2, 1 << 14), dtype=torch.complex128)
     matrix = torch.randn((4, 4), dtype=torch.complex128)
 
     def reject_layout(*args, **kwargs):
@@ -588,7 +589,7 @@ def test_cpu_adjacent_two_qubit_kernel_bypasses_layout(monkeypatch):
 
     monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", reject_layout)
 
-    result = _apply_matrix(state, matrix, (1, 2), 5)
+    result = _apply_matrix(state, matrix, (0, 1), 14)
 
     assert result.shape == state.shape
 
@@ -614,6 +615,110 @@ def test_non_cpu_adjacent_pair_keeps_the_layout_path(monkeypatch):
     _apply_matrix(state, matrix, (1, 2), 5)
 
     assert observed == [((1, 2), "meta")]
+
+
+@pytest.mark.parametrize(
+    ("dtype", "threads", "n_wires", "first_wire", "expected"),
+    (
+        (torch.complex64, 1, 10, 4, True),
+        (torch.complex64, 1, 16, 0, True),
+        (torch.complex64, 1, 16, 5, False),
+        (torch.complex64, 1, 16, 13, True),
+        (torch.complex64, 1, 20, 16, False),
+        (torch.complex64, 4, 20, 16, True),
+        (torch.complex128, 1, 16, 5, True),
+        (torch.complex128, 1, 16, 9, False),
+        (torch.complex128, 1, 16, 12, True),
+    ),
+)
+def test_cpu_adjacent_two_qubit_cost_model_selects_measured_shape_classes(
+    monkeypatch, dtype, threads, n_wires, first_wire, expected
+):
+    monkeypatch.setattr(torch, "get_num_threads", lambda: threads)
+    state = torch.empty((1, 1 << n_wires), dtype=dtype)
+
+    assert (
+        two_qubit_cpu._prefer_blocked_two_qubit_matrix_cpu(
+            state,
+            first_wire=first_wire,
+            n_wires=n_wires,
+        )
+        is expected
+    )
+
+
+def test_cpu_reversed_adjacent_two_qubit_cost_model_keeps_tiny_states_on_layout():
+    state = torch.empty((1, 32), dtype=torch.complex128)
+
+    assert not two_qubit_cpu._prefer_blocked_two_qubit_matrix_cpu(
+        state,
+        first_wire=1,
+        n_wires=5,
+        matrix_is_bit_reversed=True,
+    )
+
+
+def test_cpu_adjacent_two_qubit_middle_stride_keeps_layout_path(monkeypatch):
+    monkeypatch.setattr(torch, "get_num_threads", lambda: 1)
+    state = torch.randn((2, 1 << 16), dtype=torch.complex64)
+    matrix = torch.randn((4, 4), dtype=torch.complex64)
+    observed = []
+
+    def recording_layout(state, matrix, wires, n_wires, layout=None):
+        observed.append(tuple(wires))
+        return state.clone()
+
+    monkeypatch.setattr(statevector_ops, "_apply_matrix_layout", recording_layout)
+
+    _apply_matrix(state, matrix, (5, 6), 16)
+    _apply_matrix(state, matrix, (6, 5), 16)
+
+    assert observed == [(5, 6), (6, 5)]
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batched_matrix", (False, True))
+def test_cpu_reversed_adjacent_two_qubit_kernel_matches_layout_reference(
+    dtype, batched_matrix
+):
+    generator = torch.Generator().manual_seed(1807)
+    state = torch.randn((2, 1 << 14), dtype=dtype, generator=generator)
+    matrix_shape = (2, 4, 4) if batched_matrix else (4, 4)
+    matrix = torch.randn(matrix_shape, dtype=dtype, generator=generator)
+
+    actual = _apply_matrix(state, matrix, (1, 0), 14)
+    expected = _apply_matrix_layout(state, matrix, (1, 0), 14)
+
+    torch.testing.assert_close(actual, expected)
+    assert actual.is_contiguous()
+
+
+def test_cpu_reversed_adjacent_two_qubit_kernel_preserves_gradients():
+    generator = torch.Generator().manual_seed(1809)
+    state = torch.randn(
+        (2, 1 << 10),
+        dtype=torch.complex128,
+        generator=generator,
+        requires_grad=True,
+    )
+    matrix = torch.randn(
+        (2, 4, 4), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+
+    actual = _apply_matrix(state, matrix, (2, 1), 10)
+    expected = _apply_matrix_layout(state, matrix, (2, 1), 10)
+    actual_gradients = torch.autograd.grad(
+        torch.abs(actual).square().sum(), (state, matrix), retain_graph=True
+    )
+    expected_gradients = torch.autograd.grad(
+        torch.abs(expected).square().sum(), (state, matrix)
+    )
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
 
 
 def test_cpu_ascending_trailing_pair_uses_the_adjacent_kernel(monkeypatch):
