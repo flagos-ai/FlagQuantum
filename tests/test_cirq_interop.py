@@ -112,7 +112,6 @@ def test_parallel_moment_and_noncanonical_qubits_require_explicit_loss() -> None
 def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
     q0, q1 = cirq.LineQubit.range(2)
     cases = (
-        (cirq.Circuit(cirq.measure(q0)), "measurement_not_represented"),
         (
             cirq.Circuit(cirq.X(q0), cirq.global_phase_operation(1j)),
             "global_phase_not_represented",
@@ -128,6 +127,193 @@ def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
         with pytest.raises(CirqConversionError) as caught:
             from_cirq(circuit)
         assert issue_code in {issue.code for issue in caught.value.report.issues}
+
+
+def test_terminal_measurements_round_trip_keys_order_and_classical_bits() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    source = cirq.Circuit(
+        [
+            cirq.Moment([cirq.H(q0)]),
+            cirq.Moment([cirq.CNOT(q0, q1)]),
+            cirq.Moment(
+                [
+                    cirq.measure(q2, q0, key="readout"),
+                    cirq.measure(q1, key="aux"),
+                ]
+            ),
+        ]
+    )
+
+    imported = from_cirq(source)
+    measurements = [
+        instruction
+        for instruction in imported.instructions
+        if instruction.name == "measure"
+    ]
+    assert [instruction.wires for instruction in measurements] == [(2,), (0,), (1,)]
+    assert [
+        instruction.metadata["measurement_key"] for instruction in measurements
+    ] == [
+        "readout",
+        "readout",
+        "aux",
+    ]
+    assert [instruction.metadata["classical_bit"] for instruction in measurements] == [
+        0,
+        1,
+        2,
+    ]
+    assert all(
+        instruction.metadata["is_dynamic"] is True for instruction in measurements
+    )
+    assert not any(
+        type(value).__module__.startswith(("cirq", "sympy"))
+        for instruction in measurements
+        for value in instruction.metadata.values()
+    )
+
+    exported = to_cirq(imported)
+    exported_measurements = [
+        operation
+        for operation in exported.all_operations()
+        if isinstance(operation.gate, cirq.MeasurementGate)
+    ]
+    assert [operation.gate.key for operation in exported_measurements] == [
+        "readout",
+        "aux",
+    ]
+    assert [operation.qubits for operation in exported_measurements] == [
+        (q2, q0),
+        (q1,),
+    ]
+    restored = from_cirq(exported)
+    assert restored.instructions == imported.instructions
+
+
+@pytest.mark.parametrize(
+    ("circuit_factory", "issue_code"),
+    [
+        (
+            lambda q0, q1: cirq.Circuit(cirq.measure(q0, key="early"), cirq.X(q1)),
+            "measurement_not_terminal",
+        ),
+        (
+            lambda q0, _q1: cirq.Circuit(
+                cirq.measure(q0, key="m", invert_mask=(True,))
+            ),
+            "measurement_invert_mask_not_representable",
+        ),
+        (
+            lambda q0, _q1: cirq.Circuit(
+                cirq.MeasurementGate(
+                    1,
+                    key="m",
+                    confusion_map={(0,): np.eye(2)},
+                ).on(q0)
+            ),
+            "measurement_confusion_map_not_representable",
+        ),
+        (
+            lambda q0, q1: cirq.Circuit(
+                [
+                    cirq.Moment([cirq.measure(q0, key="same")]),
+                    cirq.Moment([cirq.measure(q1, key="same")]),
+                ]
+            ),
+            "duplicate_measurement_key",
+        ),
+        (
+            lambda q0, _q1: cirq.Circuit(cirq.MeasurementGate(1, key="").on(q0)),
+            "measurement_key_empty",
+        ),
+    ],
+)
+def test_unsupported_measurement_forms_fail_closed(
+    circuit_factory, issue_code: str
+) -> None:
+    q0, q1 = cirq.LineQubit.range(2)
+    with pytest.raises(CirqConversionError) as caught:
+        from_cirq(circuit_factory(q0, q1))
+    assert issue_code in {issue.code for issue in caught.value.report.issues}
+
+
+def test_non_qubit_measurement_fails_closed() -> None:
+    qid = cirq.LineQid(0, dimension=3)
+    with pytest.raises(CirqConversionError) as caught:
+        from_cirq(cirq.Circuit(cirq.measure(qid, key="trit")))
+    assert "measurement_qid_dimension_not_representable" in {
+        issue.code for issue in caught.value.report.issues
+    }
+
+
+def test_owned_measurement_metadata_fails_closed_when_not_representable() -> None:
+    malformed = CircuitIR(
+        2,
+        (
+            Instruction("x", (0,)),
+            Instruction(
+                "measure",
+                (0, 1),
+                metadata={
+                    "is_dynamic": True,
+                    "classical_bit": 1,
+                    "measurement_key": "m",
+                },
+            ),
+        ),
+        dtype="complex128",
+    )
+    with pytest.raises(CirqConversionError) as caught:
+        to_cirq(malformed)
+    assert "measurement_not_representable" in {
+        issue.code for issue in caught.value.report.issues
+    }
+
+
+@pytest.mark.parametrize(
+    ("instructions", "issue_code"),
+    [
+        (
+            (
+                Instruction("x", (0,)),
+                Instruction(
+                    "measure",
+                    (0,),
+                    metadata={
+                        "is_dynamic": True,
+                        "classical_bit": 0,
+                        "measurement_key": "m",
+                    },
+                ),
+                Instruction("x", (1,)),
+            ),
+            "measurement_not_terminal",
+        ),
+        (
+            tuple(
+                Instruction(
+                    "measure",
+                    (wire,),
+                    metadata={
+                        "is_dynamic": True,
+                        "classical_bit": classical_bit,
+                        "measurement_key": key,
+                    },
+                )
+                for classical_bit, (wire, key) in enumerate(
+                    ((0, "first"), (1, "second"), (0, "first"))
+                )
+            ),
+            "duplicate_measurement_key",
+        ),
+    ],
+)
+def test_owned_terminal_and_unique_key_requirements_fail_closed(
+    instructions: tuple[Instruction, ...], issue_code: str
+) -> None:
+    with pytest.raises(CirqConversionError) as caught:
+        to_cirq(CircuitIR(2, instructions, dtype="complex128"))
+    assert issue_code in {issue.code for issue in caught.value.report.issues}
 
 
 def test_idle_extent_and_execution_requests_fail_closed() -> None:

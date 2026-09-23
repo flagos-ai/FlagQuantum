@@ -41,10 +41,10 @@ binding_equivalence = "cirq_resolve_parameters_matches_flagquantum_bind_paramete
 external_object_retention = false
 
 [measurement_contract]
-implementation_status = "contract_only"
+implementation_status = "implemented"
 public_api_change = false
 runtime_execution = "out_of_scope"
-capability_gap_status = "unsupported"
+capability_gap_status = "partial"
 current_rejection_issue_code = "measurement_not_represented"
 source_artifact = "cirq.MeasurementGate"
 target_instruction = "flagquantum_measure_instruction"
@@ -72,8 +72,8 @@ acceptance_criteria = ["terminal_only_measurement_rejection_is_enforced", "measu
 
 [unsupported]
 flagquantum_opcodes = ["sdg", "tdg", "sx", "sxdg", "phase", "u1", "u2", "u3", "cy", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz", "bit_flip", "phase_flip", "depolarizing", "amplitude_damping"]
-cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "measurements", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags"]
-issue_codes = ["global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_not_represented", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "unsupported_operation", "unsupported_parameter_expression", "unsupported_parameter_value"]
+cirq_features = ["arbitrary_qid_dimensions", "circuit_operations", "classical_controls", "global_phase_operations", "noise_channels", "non_contiguous_line_qubits", "non_line_qubits", "operation_tags"]
+issue_codes = ["duplicate_measurement_key", "global_phase_not_represented", "idle_wire_extent_not_represented", "measurement_confusion_map_not_representable", "measurement_invert_mask_not_representable", "measurement_key_empty", "measurement_not_representable", "measurement_not_represented", "measurement_not_terminal", "measurement_qid_dimension_not_representable", "moment_structure_flattened", "non_contiguous_line_qubits", "non_line_qubit", "unsupported_operation", "unsupported_parameter_expression", "unsupported_parameter_value"]
 
 [verification]
 policy = "tests/unit/test_cirq_interop_contract.py"

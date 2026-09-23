@@ -58,10 +58,10 @@ EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
     "external_object_retention": False,
 }
 EXPECTED_MEASUREMENT_CONTRACT = {
-    "implementation_status": "contract_only",
+    "implementation_status": "implemented",
     "public_api_change": False,
     "runtime_execution": "out_of_scope",
-    "capability_gap_status": "unsupported",
+    "capability_gap_status": "partial",
     "current_rejection_issue_code": "measurement_not_represented",
     "source_artifact": "cirq.MeasurementGate",
     "target_instruction": "flagquantum_measure_instruction",
@@ -169,8 +169,8 @@ def contract_errors(
     measurement = contract.get("measurement_contract", {})
     if measurement != EXPECTED_MEASUREMENT_CONTRACT:
         errors.append("Cirq measurement extension contract drifted")
-    if "measurements" not in contract.get("unsupported", {}).get("cirq_features", ()):
-        errors.append("Cirq measurements must remain unsupported until implemented")
+    if "measurements" in contract.get("unsupported", {}).get("cirq_features", ()):
+        errors.append("Implemented Cirq measurements must not remain unsupported")
 
     unsupported = contract.get("unsupported", {})
     if "symbolic_parameters" in unsupported.get("cirq_features", ()):

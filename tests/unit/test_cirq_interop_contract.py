@@ -73,16 +73,16 @@ def test_contract_requires_symbolic_parameter_implementation_evidence() -> None:
     assert "Cirq must declare its symbolic-expression rejection code" in errors
 
 
-def test_measurement_extension_is_contract_only_and_unsupported() -> None:
+def test_measurement_extension_is_implemented_for_static_conversion() -> None:
     contract, policy = _inputs()
     measurement = contract["measurement_contract"]
-    assert measurement["implementation_status"] == "contract_only"
+    assert measurement["implementation_status"] == "implemented"
     assert measurement["runtime_execution"] == "out_of_scope"
-    assert measurement["capability_gap_status"] == "unsupported"
+    assert measurement["capability_gap_status"] == "partial"
     assert measurement["current_rejection_issue_code"] == "measurement_not_represented"
     assert measurement["metadata_fields"] == ["classical_bit", "measurement_key"]
     assert measurement["external_object_retention"] is False
-    assert "measurements" in contract["unsupported"]["cirq_features"]
+    assert "measurements" not in contract["unsupported"]["cirq_features"]
     assert contract_errors(contract, policy) == ()
 
 
@@ -111,7 +111,7 @@ def test_measurement_contract_rejects_requested_unsupported_forms() -> None:
 def test_contract_rejects_measurement_scope_drift() -> None:
     contract, policy = _inputs()
     measurement = contract["measurement_contract"]
-    measurement["implementation_status"] = "implemented"
+    measurement["implementation_status"] = "contract_only"
     measurement["runtime_execution"] = "in_scope"
     measurement["capability_gap_status"] = "supported"
     measurement["rejected_forms"].remove("mid_circuit_measurement")
@@ -119,8 +119,8 @@ def test_contract_rejects_measurement_scope_drift() -> None:
     assert "Cirq measurement extension contract drifted" in errors
 
 
-def test_contract_requires_measurement_to_stay_unsupported() -> None:
+def test_contract_rejects_measurement_remaining_globally_unsupported() -> None:
     contract, policy = _inputs()
-    contract["unsupported"]["cirq_features"].remove("measurements")
+    contract["unsupported"]["cirq_features"].append("measurements")
     errors = contract_errors(contract, policy)
-    assert "Cirq measurements must remain unsupported until implemented" in errors
+    assert "Implemented Cirq measurements must not remain unsupported" in errors
