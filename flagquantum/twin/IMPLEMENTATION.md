@@ -360,6 +360,34 @@ total-variation error bound from aggregate candidate-improvement evidence, and
 it performs no provider operation, routing, or mutation of the release or the
 model.
 
+Persist the composed regional model once so a released regional Twin can be
+restored in another process without recomposing its source cells:
+
+```python
+fq.twin.dump_region_twin(candidate_region_twin, "region-twin.json")
+restored = fq.twin.load_region_twin("region-twin.json")
+
+assert restored.identity == candidate_region_twin.identity
+
+release = fq.twin.load_region_release("region-release.json")
+assessment = release.assess(restored, circuit, physical_qubits=(20, 27, 34))
+```
+
+The artifact is one canonical JSON object with two members: the authoritative
+`TwinConnectedRegion` representation and the frozen composed Twin, written
+through the existing `TwinSnapshot`, `NoiseModel`, and `DeviceNoiseProfile`
+serializers. Loading rebuilds the real `TwinRegionModel` and reruns its
+invariants, so a reordered mapping, a retargeted region, a changed capture time,
+a rewritten source identity, or a tampered noise model fails closed even when
+the payload stays canonical. The composed device profile is bound to
+`flagquantum:twin-region:<region identity>`, which is what makes those identity
+changes detectable; that provenance field is part of the composed calibration,
+so it is part of the calibration identity as well. Unknown schema versions are
+refused. The file is created with mode `0600`, an identical repeated write is a
+no-op, and a different or invalid existing artifact is never replaced. The
+artifact holds model data only: no task receipt, credential, provider response,
+validation evidence, release decision, confidence claim, or routing authority.
+
 Align the two independently audited timelines by exact snapshot identity:
 
 ```python

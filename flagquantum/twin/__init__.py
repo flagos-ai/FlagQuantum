@@ -83,6 +83,7 @@ from .region_holdout_history import (
     load_region_holdout_history,
 )
 from .region_model import TwinRegionModel, compose_region_twin
+from .region_persistence import dump_region_twin, load_region_twin
 from .region_release import (
     TwinRegionRelease,
     dump_region_release,
@@ -141,6 +142,7 @@ __all__ = (
     "dump_region_holdout_history",
     "dump_region_holdout_study",
     "dump_region_release",
+    "dump_region_twin",
     "dump_region_validation_suite",
     "dump_region_validation_history",
     "dump_submission",
@@ -158,6 +160,7 @@ __all__ = (
     "load_region_holdout_history",
     "load_region_holdout_study",
     "load_region_release",
+    "load_region_twin",
     "load_region_validation_suite",
     "load_region_validation_history",
     "load_submission",

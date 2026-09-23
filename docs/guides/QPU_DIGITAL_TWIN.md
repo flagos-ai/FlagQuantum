@@ -1009,6 +1009,61 @@ confidence level or total-variation error bound, performs no provider I/O, and
 mutates neither the release nor the model. The release scope remains
 `exact_circuits` and never authorizes routing.
 
+### Persist a composed regional model
+
+A composed regional Twin is normally rebuilt from every source cell artifact.
+When a released regional Twin is needed in another process, store the composed
+model itself once and restore it directly:
+
+```python
+import flagquantum as fq
+
+fq.twin.dump_region_twin(candidate_region, "region-twin.json")
+restored = fq.twin.load_region_twin("region-twin.json")
+
+assert restored.identity == candidate_region.identity
+assert restored.physical_qubits == (20, 27, 34)
+
+release = fq.twin.load_region_release("region-release.json")
+assessment = release.assess(
+    restored,
+    fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+    physical_qubits=(20, 27, 34),
+)
+print(assessment.status)
+print(assessment.prediction)
+print(assessment.reasons)
+```
+
+The artifact is one canonical JSON object with exactly two members: the region
+through its authoritative `TwinConnectedRegion` representation, and the frozen
+composed Twin through the existing `TwinSnapshot`, `NoiseModel`, and
+`DeviceNoiseProfile` serializers. No second representation of a region, of a
+snapshot, or of a noise model is introduced, and no source cell artifact has to
+be retained.
+
+Loading rebuilds the real `TwinRegionModel` and reruns its invariants. A missing
+or extra field, a malformed member, a noncanonical payload, an unsupported
+schema version, a target or capture mismatch, a reordered physical-qubit
+mapping, a redirected coupler, a rewritten source snapshot or support identity,
+or a tampered composed noise model is refused instead of repaired. The composed
+device profile carries the provenance `flagquantum:twin-region:<region
+identity>`, which is how a region whose identity no longer matches its
+calibration is detected: reordering the mapping or rewriting a source identity
+changes the region identity, so the calibration no longer belongs to it.
+
+Writes follow the shared Twin create-once policy: the file is created with mode
+`0600`, writing the identical model twice is a no-op, and an existing file that
+holds a different or invalid artifact is left exactly as it was. A round trip
+preserves `TwinRegionModel.identity` and produces identical predictions for a
+supported circuit.
+
+The artifact is a model artifact. It carries no hardware task receipt,
+credential, raw provider response, validation evidence, confidence or error
+claim, release decision, routing authorization, or application state. It is
+provider-neutral: the target is a plain provider/backend string, and Quafu
+appears only where a source cell came from a Quafu calibration fixture.
+
 ### Track holdout agreement across calibration snapshots
 
 After the same predeclared reference and holdout circuits have been evaluated
@@ -1018,7 +1073,7 @@ at two or more calibration snapshots, build one offline longitudinal record:
 import flagquantum as fq
 
 
-def load_region_twin(cell_artifacts):
+def compose_region_from_cells(cell_artifacts):
     return fq.twin.compose_region_twin(
         [
             (
@@ -1030,13 +1085,13 @@ def load_region_twin(cell_artifacts):
     )
 
 
-state_01_twin = load_region_twin(
+state_01_twin = compose_region_from_cells(
     [
         ("state-01-q20-q27-twin.json", "state-01-q20-q27-support.json"),
         ("state-01-q27-q34-twin.json", "state-01-q27-q34-support.json"),
     ]
 )
-state_02_twin = load_region_twin(
+state_02_twin = compose_region_from_cells(
     [
         ("state-02-q20-q27-twin.json", "state-02-q20-q27-support.json"),
         ("state-02-q27-q34-twin.json", "state-02-q27-q34-support.json"),

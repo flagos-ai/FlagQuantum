@@ -38,6 +38,12 @@ def _identity(payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _region_profile_source(region_identity: str) -> str:
+    """Return the device-profile provenance bound to one composed region."""
+
+    return f"flagquantum:twin-region:{region_identity}"
+
+
 def _same_qubit_calibration(
     left: QubitNoiseCalibration,
     right: QubitNoiseCalibration,
@@ -142,7 +148,7 @@ def _compose_device_profile(
                 ),
             )
         ),
-        source=f"flagquantum:twin-region:{region.identity}",
+        source=_region_profile_source(region.identity),
         captured_at=region.captured_at,
         time_unit=time_unit or "ns",
     )
