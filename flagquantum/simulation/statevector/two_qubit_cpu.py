@@ -16,7 +16,64 @@ state's memory layout rather than by the compiler's program steps.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import torch
+
+_BLOCKED_TWO_QUBIT_MIN_HEAD_STRIDE = 1 << 12
+_BLOCKED_TWO_QUBIT_MAX_MULTITHREADED_TAIL_STRIDE = 1 << 4
+_BLOCKED_TWO_QUBIT_COMPLEX64_TAIL_STRIDE = 1 << 1
+_BLOCKED_TWO_QUBIT_COMPLEX128_LAYOUT_STRIDE = 1 << 5
+_BLOCKED_TWO_QUBIT_COST_MODEL_MIN_AMPLITUDES = 1 << 15
+_BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES = 1 << 8
+_BLOCKED_TWO_QUBIT_MULTITHREADED_MIN_AMPLITUDES = 1 << 20
+
+
+def _prefer_blocked_two_qubit_matrix_cpu(
+    state: torch.Tensor,
+    *,
+    first_wire: int,
+    n_wires: int,
+    matrix_is_bit_reversed: bool = False,
+) -> bool:
+    """Choose the adjacent-pair shape classes that favor blocked matmul.
+
+    The blocked kernel avoids two full-state layout copies, but its complex64
+    ``[batch, outer, 4, stride]`` matmul is slower than the layout path for the
+    middle stride classes once the state is large enough for those copies to
+    dominate. Small ascending states keep the existing route. Newly supported
+    reversed pairs start at eight wires, where avoiding layout copies repays
+    the small matrix reorder. Complex128 only excludes its reproducible
+    stride-32 trough.
+    """
+
+    first_wire = int(first_wire)
+    n_wires = int(n_wires)
+    if not 0 <= first_wire < n_wires - 1:
+        raise ValueError("adjacent two-qubit wires are outside the statevector")
+    stride = 1 << (n_wires - first_wire - 2)
+    if matrix_is_bit_reversed and (
+        state.shape[-1] < _BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES
+    ):
+        return False
+    if (
+        not matrix_is_bit_reversed
+        and state.shape[-1] < _BLOCKED_TWO_QUBIT_COST_MODEL_MIN_AMPLITUDES
+    ):
+        return True
+    if state.dtype == torch.complex128:
+        return stride != _BLOCKED_TWO_QUBIT_COMPLEX128_LAYOUT_STRIDE
+    if stride >= _BLOCKED_TWO_QUBIT_MIN_HEAD_STRIDE:
+        return True
+    if state.dtype != torch.complex64:
+        return False
+    if stride == _BLOCKED_TWO_QUBIT_COMPLEX64_TAIL_STRIDE:
+        return True
+    return (
+        stride <= _BLOCKED_TWO_QUBIT_MAX_MULTITHREADED_TAIL_STRIDE
+        and state.shape[-1] >= _BLOCKED_TWO_QUBIT_MULTITHREADED_MIN_AMPLITUDES
+        and torch.get_num_threads() > 1
+    )
 
 
 def _apply_blocked_two_qubit_matrix_cpu(
@@ -74,3 +131,59 @@ def _apply_adjacent_two_qubit_matrix_cpu(
         stride=1 << (n_wires - first_wire - 2),
         matrix_is_bit_reversed=False,
     )
+
+
+def _apply_reversed_adjacent_two_qubit_matrix_cpu(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    first_wire: int,
+    n_wires: int,
+) -> torch.Tensor:
+    """Apply a CPU gate whose ordered wires are ``(w + 1, w)``."""
+
+    first_wire = int(first_wire)
+    n_wires = int(n_wires)
+    if not 0 <= first_wire < n_wires - 1:
+        raise ValueError("adjacent two-qubit wires are outside the statevector")
+    return _apply_blocked_two_qubit_matrix_cpu(
+        state,
+        matrix,
+        stride=1 << (n_wires - first_wire - 2),
+        matrix_is_bit_reversed=True,
+    )
+
+
+def _apply_preferred_adjacent_two_qubit_matrix_cpu(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+) -> torch.Tensor | None:
+    """Apply an adjacent-pair kernel when its measured shape class favors it."""
+
+    wires = tuple(wires)
+    if len(wires) != 2:
+        return None
+    if wires[1] == wires[0] + 1 and wires[1] < int(n_wires):
+        if _prefer_blocked_two_qubit_matrix_cpu(
+            state, first_wire=wires[0], n_wires=n_wires
+        ):
+            return _apply_adjacent_two_qubit_matrix_cpu(
+                state, matrix, first_wire=wires[0], n_wires=n_wires
+            )
+        return None
+    if (
+        wires[0] == wires[1] + 1
+        and state.shape[-1] >= _BLOCKED_TWO_QUBIT_REVERSED_MIN_AMPLITUDES
+        and _prefer_blocked_two_qubit_matrix_cpu(
+            state,
+            first_wire=wires[1],
+            n_wires=n_wires,
+            matrix_is_bit_reversed=True,
+        )
+    ):
+        return _apply_reversed_adjacent_two_qubit_matrix_cpu(
+            state, matrix, first_wire=wires[1], n_wires=n_wires
+        )
+    return None
