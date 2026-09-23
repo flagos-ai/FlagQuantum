@@ -407,7 +407,7 @@ quick_start = "examples/vqe_switch_sv_mps_tn.py"
 documentation = "docs/reference/KNOWN_LIMITATIONS.md"
 level = "experimental"
 owner = "tensor-network maintainers"
-limitations = "General reverse contraction and production distributed transport are not certified."
+limitations = "General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector."
 focused_tests = "tests/test_tensor_network.py"
 
 [capabilities.noisy_simulation]
