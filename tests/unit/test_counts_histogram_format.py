@@ -1,9 +1,15 @@
-"""The ``counts`` histogram contract shared by the MPS and TN states.
+"""The ``counts`` histogram contract shared by circuits, MPS, and TN states.
 
-Both states accept ``format="bin"`` and ``format="int"`` and refuse anything
-else. The refusal has to happen before sampling: the reference implementation
-validated the format while formatting each sampled row, so a request that
-sampled no rows returned an empty histogram instead of an error.
+All three entry points accept ``format="bin"`` and ``format="int"`` and refuse
+anything else. The refusal has to happen before sampling: the reference
+implementation validated the format while formatting each sampled row, so a
+request that sampled no rows returned an empty histogram instead of an error.
+
+``Circuit.counts`` kept that late check after the MPS and tensor-network states
+were moved ahead of sampling, so it spent the whole shot budget and then refused
+a request it could have refused for free. It is listed here rather than in a
+separate file because the contract, the supported formats, and the histogram
+values are the same.
 """
 
 from __future__ import annotations
@@ -22,6 +28,12 @@ pytestmark = pytest.mark.unit
 State = object
 
 
+def _circuit() -> State:
+    circuit = fq.Circuit(3)
+    circuit.x(0).x(2)
+    return circuit
+
+
 def _mps_state() -> State:
     circuit = fq.Circuit(3)
     circuit.x(0).x(2)
@@ -35,6 +47,7 @@ def _tensor_network_state() -> State:
 
 
 STATES: tuple[tuple[str, Callable[[], State]], ...] = (
+    ("circuit", _circuit),
     ("mps", _mps_state),
     ("tensor_network", _tensor_network_state),
 )

@@ -596,6 +596,15 @@ class Circuit:
     ) -> list[dict[str | int, int]]:
         """Return batched sample counts."""
 
+        # Validate the format before sampling. The loop below only sees a
+        # sampled row, so a request that sampled no rows — or one whose budget
+        # is spent before the first row is formatted — spent the whole shot
+        # budget and then refused the request it was always going to refuse.
+        # The MPS and tensor-network states check this first for the same
+        # reason; see tests/unit/test_counts_histogram_format.py.
+        if format not in ("bin", "int"):
+            raise ValidationError("counts format must be 'bin' or 'int'.")
+
         samples = self.sample(shots, generator=generator, format="index")
         outputs: list[dict[str | int, int]] = []
         for row in samples:
@@ -604,10 +613,8 @@ class Circuit:
             for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 if format == "int":
                     out_key: str | int = int(key)
-                elif format == "bin":
-                    out_key = f"{int(key):0{self.n_wires}b}"
                 else:
-                    raise ValidationError("counts format must be 'bin' or 'int'.")
+                    out_key = f"{int(key):0{self.n_wires}b}"
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)
         return outputs
