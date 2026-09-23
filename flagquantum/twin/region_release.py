@@ -21,7 +21,10 @@ from .region_candidate_holdout import (
 from .region_model import TwinRegionModel
 
 if TYPE_CHECKING:
-    from .release_assessment import TwinReleaseAssessment
+    from .release_assessment import (
+        TwinRegionSupportAssessment,
+        TwinReleaseAssessment,
+    )
 
 _RELEASE_SCHEMA = "flagquantum.twin_region_release.v1"
 _EXACT_CIRCUIT_SCOPE = "exact_circuits"
@@ -270,6 +273,39 @@ class TwinRegionRelease:
         from .release_assessment import assess_release
 
         return assess_release(
+            self, region_twin, circuit, physical_qubits=physical_qubits
+        )
+
+    def assess_support(
+        self,
+        region_twin: TwinRegionModel,
+        circuit: Any,
+        *,
+        physical_qubits: Sequence[int],
+    ) -> TwinRegionSupportAssessment:
+        """Classify a circuit against this release's frozen support envelope.
+
+        ``released_exact_circuit`` is the only status that carries a
+        prediction. ``within_envelope_unvalidated`` means the mapping,
+        operations, couplers, instruction count, and depth fit the released
+        region, but later hardware has not validated this exact circuit.
+        ``outside_envelope`` reports deterministic blockers. The method is
+        provider-neutral, read-only, and performs no task submission or
+        routing.
+
+        Examples:
+            assessment = release.assess_support(
+                region_twin,
+                fq.Circuit(3).h(0).cx(0, 1).cx(1, 2),
+                physical_qubits=(20, 27, 34),
+            )
+            if assessment.status != "released_exact_circuit":
+                assert assessment.prediction is None
+        """
+
+        from .release_assessment import assess_region_support
+
+        return assess_region_support(
             self, region_twin, circuit, physical_qubits=physical_qubits
         )
 

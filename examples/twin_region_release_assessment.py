@@ -37,6 +37,22 @@ else:
     assert assessment.prediction is None
     assert assessment.reasons
 
+# Ask the separate structural question without borrowing release accuracy.
+unseen = fq.Circuit(3).x(0).cx(0, 1).cx(1, 2)
+support = release.assess_support(
+    region_twin,
+    unseen,
+    physical_qubits=(20, 27, 34),
+)
+
+print(support.status)
+print(support.prediction)
+print(support.reasons)
+
+if support.status == "within_envelope_unvalidated":
+    assert support.prediction is None
+    assert support.reasons == ("circuit_identity_not_validated",)
+
 # A release states no per-circuit confidence level and authorizes no routing.
 assert release.scope == "exact_circuits"
 assert release.routing_authorized is False

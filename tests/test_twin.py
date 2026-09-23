@@ -130,6 +130,8 @@ def test_twin_namespace_is_small_and_domain_named():
         "TwinRegionHoldoutStudy",
         "TwinRegionModel",
         "TwinRegionRelease",
+        "TwinRegionSupportAssessment",
+        "TwinRegionSupportAssessmentStatus",
         "TwinReleaseAssessment",
         "TwinReleaseAssessmentStatus",
         "TwinRegionSuiteEvaluation",

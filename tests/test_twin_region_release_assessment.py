@@ -7,7 +7,12 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 
 import flagquantum as fq
-from flagquantum.twin import TwinPrediction, TwinRegionModel, TwinReleaseAssessment
+from flagquantum.twin import (
+    TwinPrediction,
+    TwinRegionModel,
+    TwinRegionSupportAssessment,
+    TwinReleaseAssessment,
+)
 from tests.test_twin_region_candidate_holdout import (
     _evaluate,
     _holdout_circuits,
@@ -104,6 +109,114 @@ def test_unknown_circuit_returns_reasons_instead_of_a_prediction(released) -> No
     assert assessment.reasons == ("circuit_identity_outside_release",)
     assert assessment.circuit_identity == circuit.to_ir().content_hash
     assert assessment.release_identity == release.identity
+
+
+def test_support_assessment_distinguishes_an_unseen_covered_circuit(released) -> None:
+    _, candidate, release = released
+    circuit = fq.Circuit(3).h(2).cx(0, 1)
+
+    assessment = release.assess_support(
+        candidate, circuit, physical_qubits=_REGION_MAPPING
+    )
+
+    assert assessment.status == "within_envelope_unvalidated"
+    assert assessment.prediction is None
+    assert assessment.reasons == ("circuit_identity_not_validated",)
+    assert assessment.circuit_identity == circuit.to_ir().content_hash
+    assert assessment.release_identity == release.identity
+    assert not hasattr(assessment, "confidence_level")
+    assert not hasattr(assessment, "tv_error_bound")
+
+
+def test_support_assessment_returns_a_prediction_only_for_an_exact_release(
+    released,
+) -> None:
+    _, candidate, release = released
+    circuit = _holdout_circuits()[0]
+
+    support = release.assess_support(
+        candidate, circuit, physical_qubits=_REGION_MAPPING
+    )
+    exact = release.assess(candidate, circuit, physical_qubits=_REGION_MAPPING)
+
+    assert support.status == "released_exact_circuit"
+    assert support.prediction == exact.prediction
+    assert support.reasons == ()
+
+
+def test_support_assessment_refuses_structural_and_identity_mismatches(
+    released,
+) -> None:
+    incumbent, candidate, release = released
+    unsupported = fq.Circuit(3).h(0).cx(0, 2)
+
+    structural = release.assess_support(
+        candidate, unsupported, physical_qubits=_REGION_MAPPING
+    )
+    foreign = release.assess_support(
+        incumbent, _holdout_circuits()[0], physical_qubits=_REGION_MAPPING
+    )
+
+    assert structural.status == "outside_envelope"
+    assert structural.prediction is None
+    assert structural.reasons == ("physical_couplers_outside_region",)
+    assert foreign.status == "outside_envelope"
+    assert foreign.prediction is None
+    assert "candidate_region_identity_mismatch" in foreign.reasons
+    assert "snapshot_identity_mismatch" in foreign.reasons
+
+
+def test_support_assessment_refuses_a_tampered_frozen_envelope(released) -> None:
+    _, candidate, release = released
+    tampered = replace(
+        release,
+        maximum_circuit_depth=release.maximum_circuit_depth + 1,
+    )
+
+    assessment = tampered.assess_support(
+        candidate, _holdout_circuits()[0], physical_qubits=_REGION_MAPPING
+    )
+
+    assert assessment.status == "outside_envelope"
+    assert assessment.prediction is None
+    assert assessment.reasons == ("support_envelope_mismatch",)
+
+
+def test_support_assessment_result_rejects_contradictory_states(released) -> None:
+    _, candidate, release = released
+    circuit = _holdout_circuits()[0]
+    released_assessment = release.assess_support(
+        candidate, circuit, physical_qubits=_REGION_MAPPING
+    )
+    prediction = released_assessment.prediction
+    assert prediction is not None
+    common = {
+        "release_identity": release.identity,
+        "circuit_identity": circuit.to_ir().content_hash,
+        "physical_qubits": _REGION_MAPPING,
+    }
+
+    with pytest.raises(ValueError, match="requires deterministic reasons"):
+        TwinRegionSupportAssessment(
+            status="within_envelope_unvalidated",
+            prediction=prediction,
+            reasons=("circuit_identity_not_validated",),
+            **common,
+        )
+    with pytest.raises(ValueError, match="requires only"):
+        TwinRegionSupportAssessment(
+            status="within_envelope_unvalidated",
+            prediction=None,
+            reasons=("target_mismatch",),
+            **common,
+        )
+    with pytest.raises(ValueError, match="requires deterministic reasons"):
+        TwinRegionSupportAssessment(
+            status="outside_envelope",
+            prediction=None,
+            reasons=(),
+            **common,
+        )
 
 
 def test_incumbent_model_cannot_borrow_a_candidate_release(released) -> None:

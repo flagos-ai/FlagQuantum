@@ -87,6 +87,14 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "released_exact_circuit",
         "outside_release",
     ]
+    assert contract["public_schema_defaults"]["TwinRegionSupportAssessment"] == (
+        "flagquantum.twin_region_support_assessment.v1"
+    )
+    assert contract["public_literal_values"]["TwinRegionSupportAssessmentStatus"] == [
+        "released_exact_circuit",
+        "within_envelope_unvalidated",
+        "outside_envelope",
+    ]
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
@@ -97,6 +105,29 @@ def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
     fields = {field.name for field in dataclasses.fields(fq.twin.TwinReleaseAssessment)}
 
     assert fq.twin.TwinReleaseAssessment.__dataclass_params__.frozen is True
+    assert fields == {
+        "status",
+        "release_identity",
+        "circuit_identity",
+        "physical_qubits",
+        "prediction",
+        "reasons",
+        "schema",
+    }
+    assert not fields & {"confidence_level", "tv_error_bound", "routing_authorized"}
+
+
+def test_region_support_assessment_vocabulary_is_evidence_qualified() -> None:
+    assert set(get_args(fq.twin.TwinRegionSupportAssessmentStatus)) == {
+        "released_exact_circuit",
+        "within_envelope_unvalidated",
+        "outside_envelope",
+    }
+    fields = {
+        field.name for field in dataclasses.fields(fq.twin.TwinRegionSupportAssessment)
+    }
+
+    assert fq.twin.TwinRegionSupportAssessment.__dataclass_params__.frozen is True
     assert fields == {
         "status",
         "release_identity",
