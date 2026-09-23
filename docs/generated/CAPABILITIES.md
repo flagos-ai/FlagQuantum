@@ -98,6 +98,9 @@ This catalog is generated from the machine-validated
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Execute FlagQuantum code on Qiskit Aer | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
+| Compare an external simulator without changing the native default | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
+| Inspect external-backend provenance and fallback status | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
 | Prototype mid-circuit measurement and feed-forward | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
 | Assess backend support before execution | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
 | Exercise a fixed-round QEC control workflow | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
@@ -671,6 +674,20 @@ Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQ
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through an executable operation, wire-order, statevector, classical-bit, arithmetic-parameter-expression, custom-unitary, and round-trip contract. Six fixed-seed differential programs exercise both conversion directions across three to five wires, mixed one- to three-wire operations, reordered wires, and asymmetric custom unitaries. ParameterExpression import supports the FlagQuantum v1 add/multiply/negate arithmetic subset after Qiskit symbolic simplification; functions, powers, and other operations fail closed. One- to three-qubit custom unitary matrices are converted with explicit local basis-order normalization and validated before export. Qiskit control flow is rejected; named or multiple registers require explicit lossy flattening; custom unitary matrices above three qubits are rejected. Conversion does not make Qiskit a runtime dependency or certify any provider hardware.
+
+### Qiskit Aer execution bridge
+
+Execute a FlagQuantum circuit explicitly on local Qiskit Aer while preserving FlagQuantum-owned result and evidence contracts.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.extensions.ExecutionBackendExtension`
+- **Runtime modes:** `external_local_statevector`, `external_local_shots`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/QISKIT_AER_EXECUTION.md)
+- **Documentation:** [guide](../../docs/guides/QISKIT_AER_EXECUTION.md)
+- **Known boundary:** The separately named flagquantum_qiskit_aer plugin executes one fully bound, single-batch FlagQuantum circuit on local CPU Aer and returns an owned ExecutionResult. It supports exact statevectors and computational-basis samples or counts with explicit wire order, seed, and CPU thread controls. It does not support gradients, noise models, dynamic circuits, automatic routing, provider hardware, or fallback. Native fq.run remains unchanged.
 
 ### Dynamic circuits and backend assessment
 

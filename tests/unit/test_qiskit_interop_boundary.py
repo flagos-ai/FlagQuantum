@@ -85,9 +85,12 @@ def test_conversion_report_is_machine_readable_and_fail_closed() -> None:
     }
 
 
-def test_architecture_isolates_qiskit_imports_to_interop_namespace() -> None:
+def test_architecture_isolates_qiskit_imports_to_owned_edge_namespaces() -> None:
     prefixes = CONFIG["interop_boundaries"]["qiskit_import_allowed_prefixes"]
-    assert prefixes == ["flagquantum/ecosystem/qiskit/"]
+    assert prefixes == [
+        "flagquantum/ecosystem/qiskit/",
+        "flagquantum_qiskit_aer/",
+    ]
     assert architecture_errors() == ()
 
 
@@ -100,5 +103,6 @@ def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     assert "python tools/check_qiskit_interop_contract.py" in workflow
     assert "tests/test_qiskit_interop.py" in workflow
     assert "tests/test_qiskit_interop_conformance.py" in workflow
+    assert "tests/optional/test_qiskit_aer_backend.py" in workflow
     assert "-m qiskit -q" in workflow
     assert "external quantum frameworks are absent from core" in workflow
