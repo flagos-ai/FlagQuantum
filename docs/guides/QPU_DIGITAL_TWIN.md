@@ -962,6 +962,53 @@ all agree. It records only the exact reference and holdout circuits. It does
 not establish arbitrary-circuit accuracy, mutate an active Twin, contact a
 provider, or authorize workload routing; the application still owns deployment.
 
+### Ask whether one exact circuit is covered by a release
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.compose_region_twin(
+    [
+        (fq.twin.load_twin(twin_path), fq.twin.load_circuit_support(support_path))
+        for twin_path, support_path in (
+            ("cell-a-twin.json", "cell-a-support.json"),
+            ("cell-b-twin.json", "cell-b-support.json"),
+        )
+    ]
+)
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+
+assessment = release.assess(region_twin, circuit, physical_qubits=(20, 27, 34))
+print(assessment.status)
+print(assessment.prediction)
+print(assessment.reasons)
+print(assessment.release_identity)
+
+assert assessment.release_identity == release.identity
+if assessment.status == "outside_release":
+    assert assessment.prediction is None and assessment.reasons
+```
+
+The status vocabulary is exactly two values. `released_exact_circuit` returns a
+`TwinPrediction` bound to the released snapshot and the frozen circuit hash.
+`outside_release` returns no prediction and deterministic reason tokens such as
+`circuit_identity_outside_release`, `candidate_region_identity_mismatch`,
+`snapshot_identity_mismatch`, `target_mismatch`, `physical_mapping_mismatch`,
+or the regional coverage tokens (`physical_qubits_outside_region`,
+`physical_couplers_outside_region`, `operations_outside_region_support`,
+`maximum_instruction_count_exceeded`, `maximum_circuit_depth_exceeded`).
+
+An assessment binds the release identity, candidate regional model, snapshot,
+provider/backend target, ordered physical mapping, structural coverage, and the
+exact frozen circuit identity, and it fails closed when any one of them
+differs. Identities are computed internally, so the caller supplies only the
+circuit and the ordered mapping, which must equal the release mapping. The
+assessment makes no arbitrary-circuit accuracy claim, reports no per-circuit
+confidence level or total-variation error bound, performs no provider I/O, and
+mutates neither the release nor the model. The release scope remains
+`exact_circuits` and never authorizes routing.
+
 ### Track holdout agreement across calibration snapshots
 
 After the same predeclared reference and holdout circuits have been evaluated

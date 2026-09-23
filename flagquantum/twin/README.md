@@ -458,6 +458,52 @@ fidelity or a per-shot success probability. Constructing an envelope does not
 create evidence. Its identities and bounds must come from a frozen validation
 workflow.
 
+## Assess a released exact circuit
+
+A `TwinRegionRelease` records which exact circuits one validated regional
+candidate was qualified on. `assess(...)` answers whether one concrete circuit
+is covered by that release, and returns a prediction only when every identity
+matches:
+
+```python
+import flagquantum as fq
+
+release = fq.twin.load_region_release("region-release.json")
+region_twin = fq.twin.compose_region_twin(
+    [
+        (
+            fq.twin.load_twin("cell-a-twin.json"),
+            fq.twin.load_circuit_support("cell-a-support.json"),
+        ),
+        (
+            fq.twin.load_twin("cell-b-twin.json"),
+            fq.twin.load_circuit_support("cell-b-support.json"),
+        ),
+    ]
+)
+circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+
+assessment = release.assess(region_twin, circuit, physical_qubits=(20, 27, 34))
+print(assessment.status)
+print(assessment.prediction)
+print(assessment.reasons)
+print(assessment.release_identity)
+
+assert assessment.release_identity == release.identity
+if assessment.status == "outside_release":
+    assert assessment.prediction is None and assessment.reasons
+```
+
+The status vocabulary is exactly two values. `released_exact_circuit` returns a
+`TwinPrediction` bound to the released snapshot and the frozen circuit;
+`outside_release` returns no prediction and deterministic reason tokens. The
+release identity, candidate regional model, snapshot, provider/backend target,
+ordered physical mapping, structural coverage, and exact frozen circuit
+identity must all match. No fingerprint is a user input; every identity is
+computed internally from the release, the model, and the circuit. An assessment
+states no per-circuit confidence level and no total-variation error bound, and
+it never routes work, submits or polls tasks, or mutates the release or model.
+
 ## Verify a change
 
 From the repository root:
@@ -468,6 +514,7 @@ python -m pytest \
   tests/test_twin_evidence.py \
   tests/test_twin_experiment.py \
   tests/test_twin_candidate.py \
+  tests/test_twin_region_release_assessment.py \
   tests/test_twin_validation_series.py -q
 ```
 

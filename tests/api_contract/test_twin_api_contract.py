@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
@@ -78,6 +80,33 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "covered",
         "out_of_scope",
     ]
+    assert contract["public_schema_defaults"]["TwinReleaseAssessment"] == (
+        "flagquantum.twin_release_assessment.v1"
+    )
+    assert contract["public_literal_values"]["TwinReleaseAssessmentStatus"] == [
+        "released_exact_circuit",
+        "outside_release",
+    ]
+
+
+def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
+    assert set(get_args(fq.twin.TwinReleaseAssessmentStatus)) == {
+        "released_exact_circuit",
+        "outside_release",
+    }
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinReleaseAssessment)}
+
+    assert fq.twin.TwinReleaseAssessment.__dataclass_params__.frozen is True
+    assert fields == {
+        "status",
+        "release_identity",
+        "circuit_identity",
+        "physical_qubits",
+        "prediction",
+        "reasons",
+        "schema",
+    }
+    assert not fields & {"confidence_level", "tv_error_bound", "routing_authorized"}
 
 
 def _device_noise_model() -> NoiseModel:
