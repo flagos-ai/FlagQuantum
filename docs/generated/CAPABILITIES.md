@@ -680,14 +680,14 @@ Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQ
 Execute a FlagQuantum circuit explicitly on local Qiskit Aer while preserving FlagQuantum-owned result and evidence contracts.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.ecosystem.extensions.ExecutionBackendExtension`
+- **Public API:** `flagquantum.ecosystem.qiskit.run`, `flagquantum.ecosystem.extensions.ExecutionBackendExtension`
 - **Runtime modes:** `external_local_statevector`, `external_local_shots`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../docs/guides/QISKIT_AER_EXECUTION.md)
 - **Documentation:** [guide](../../docs/guides/QISKIT_AER_EXECUTION.md)
-- **Known boundary:** The separately named flagquantum_qiskit_aer plugin executes one fully bound, single-batch FlagQuantum circuit on local CPU Aer and returns an owned ExecutionResult. It supports exact statevectors and computational-basis samples or counts with explicit wire order, seed, and CPU thread controls. It does not support gradients, noise models, dynamic circuits, automatic routing, provider hardware, or fallback. Native fq.run remains unchanged.
+- **Known boundary:** The flagquantum.ecosystem.qiskit Aer bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU Aer and returns an owned ExecutionResult. It supports exact statevectors and computational-basis samples or counts with explicit wire order, seed, and CPU thread controls. It does not support gradients, noise models, dynamic circuits, automatic routing, provider hardware, or fallback. Native fq.run remains unchanged.
 
 ### Dynamic circuits and backend assessment
 

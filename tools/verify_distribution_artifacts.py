@@ -28,7 +28,7 @@ FORBIDDEN_SUFFIXES = {
     ".pth",
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
-ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/", "flagquantum_qiskit_aer/")
+ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/",)
 REQUIRED_MEMBER_SUFFIXES = (
     "flagquantum/simulation/numerics/double-single-contract.toml",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",

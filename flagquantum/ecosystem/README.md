@@ -5,10 +5,12 @@ from optional external frameworks into FlagQuantum-owned `CircuitIR` and
 translates owned programs back only when explicitly requested. Conversion
 reports make every unsupported or lossy semantic difference visible.
 
-Interop does not define a second canonical IR, compile programs, select or
-execute backends, implement numerical kernels, or let framework objects enter
-Core, Compiler, Runtime, or Simulation. Importing this package and listing its
-adapters must not import an optional framework.
+Interop does not define a second canonical IR, compile programs, implement
+numerical kernels, or let framework objects enter Core, Compiler, Runtime, or
+Simulation. An explicitly selected local external simulator may execute an
+owned program inside its framework package and must return a FlagQuantum-owned
+result. Importing this package and listing its adapters must not import an
+optional framework.
 
 ## Where to start
 
@@ -19,10 +21,14 @@ adapters must not import an optional framework.
 - `<framework>/conversion.py`: external object to/from `CircuitIR` conversion.
 - `<framework>/models.py`: adapter-local results and errors.
 - `<framework>/adapter.py`: the small implementation of the common protocol.
+- `<framework>.run`: the consistent explicit entry point when that framework
+  has a qualified local execution bridge.
 
-`qiskit/execution.py` is recorded migration debt, not an example for new
-adapters: external target execution belongs to Remote once the owning
-contract is available. Do not add more execution behavior under Interop.
+Framework-specific local execution entry points use
+`flagquantum.ecosystem.<framework>.run` and reuse native `fq.run` vocabulary:
+`outputs`, `ExecutionOptions`, `samples`, and `counts`. Remote services and
+provider hardware remain owned by Remote; an Ecosystem runner must not become
+an implicit router or fallback path.
 
 ## Ten-minute change path
 

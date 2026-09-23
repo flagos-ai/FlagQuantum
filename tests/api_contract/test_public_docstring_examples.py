@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.runtime import planner
 
 pytestmark = pytest.mark.unit
@@ -23,6 +24,7 @@ ENTRIES = (
     fq.run,
     fq.train,
     planner.plan,
+    run_qiskit,
 )
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

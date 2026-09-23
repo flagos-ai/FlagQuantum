@@ -10,18 +10,31 @@ pip install "flagquantum[qiskit]"
 
 ```python
 import flagquantum as fq
-from flagquantum_qiskit_aer import run
+from flagquantum.ecosystem.qiskit import run
 
 circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)
+shot_options = fq.ExecutionOptions(shots=1_000, seed=7)
 
-state = run(circuit, threads=2)
-samples = run(circuit, output="samples", shots=1_000, seed=7, threads=2)
-counts = run(circuit, output="counts", shots=1_000, seed=7, threads=2)
+state = run(circuit)
+samples = run(
+    circuit,
+    outputs=fq.samples(qubits=(2, 1, 0)),
+    options=shot_options,
+)
+counts = run(
+    circuit,
+    outputs=fq.counts(qubits=(2, 1, 0)),
+    options=shot_options,
+)
 ```
+
+These are the same `outputs`, `ExecutionOptions`, `samples`, and `counts`
+expressions used by native `fq.run`; selecting the framework changes only the
+imported `run` implementation.
 
 Every result is a FlagQuantum `ExecutionResult`. The `runtime`, `provenance`,
 and `compatibility` mappings identify Qiskit Aer, the Qiskit and Aer versions,
-the source IR hash, the conversion report, the CPU thread limit, and that no
+the source IR hash, the conversion report, the CPU thread policy, and that no
 fallback occurred. Qiskit circuits, jobs, and result objects do not cross the
 plugin boundary.
 

@@ -133,7 +133,7 @@ Issues = "https://github.com/flagos-ai/FlagQuantum/issues"
 flagquantum-benchmark = "flagquantum.benchmarking.__main__:main"
 
 [project.entry-points."flagquantum.extensions"]
-"backend.qiskit_aer" = "flagquantum_qiskit_aer:create_extension"
+"backend.qiskit_aer" = "flagquantum.ecosystem.qiskit.aer:create_extension"
 
 [tool.setuptools.packages.find]
 where = ["."]
