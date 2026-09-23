@@ -788,18 +788,21 @@ class MPSState(MPSPlanningMixin):
         generator: torch.Generator | None = None,
         format: str = "bin",
     ) -> list[dict[str | int, int]]:
+        # Validate the format before sampling. Checking it per sample row would
+        # let an unsupported format return an empty histogram for zero shots
+        # instead of refusing the request.
+        if format not in ("bin", "int"):
+            raise ValueError("counts format must be 'bin' or 'int'.")
         samples = self.sample(shots, generator=generator, format="index")
         outputs: list[dict[str | int, int]] = []
         for row in samples:
             unique, counts = torch.unique(row, return_counts=True)
             batch_counts: dict[str | int, int] = {}
             for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
-                if format == "int":
-                    out_key: str | int = int(key)
-                elif format == "bin":
-                    out_key = f"{int(key):0{self.n_wires}b}"
-                else:
-                    raise ValueError("counts format must be 'bin' or 'int'.")
+                index = int(key)
+                out_key: str | int = (
+                    index if format == "int" else f"{index:0{self.n_wires}b}"
+                )
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)
         return outputs
