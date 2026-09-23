@@ -34,6 +34,41 @@ python benchmarks/dynamic_trajectory.py \
   --json-output benchmarks/results/smoke/dynamic-trajectory.json
 ```
 
+### Interoperable simulator comparison
+
+Compare equivalent exact-statevector execution from the same FlagQuantum IR:
+
+```bash
+pip install -e '.[qiskit]'
+flagquantum-benchmark run simulator_compare \
+  --n-wires 10 14 18 22 24 --layers 2 --threads 1 \
+  --warmup 3 --iterations 9 --setup-iterations 3 --calls-per-sample 5 \
+  --json-output benchmarks/results/comparison/simulators.json
+```
+
+The runner reports conversion, compilation, cold execution, and steady-state
+execution separately. Steady-state samples alternate engine order inside one
+process. Every case must pass exact-statevector parity before the payload passes;
+unsupported conversion or a missing engine fails closed. The ratio is Qiskit Aer
+time divided by FlagQuantum native time, so a value above one means FlagQuantum
+is faster for that case.
+
+These are local comparison results, not scalability or release evidence. A
+result must retain `scalability_claim_allowed=false` and the comparison evidence
+blocker documented in `benchmarks/results/comparison/README.md`.
+Steady-state stability uses relative median absolute deviation so a single host
+interrupt remains visible in the raw samples without invalidating an otherwise
+resolved median.
+
+The standard width matrix intentionally spans three regimes: 10 and 14 qubits
+expose fixed and interactive-latency overheads, 18 and 22 qubits expose the
+transition toward statevector-kernel cost, and 24 qubits provides a practical
+memory-pressure point for a 4 GiB-class host. Results from only the small-width
+regime must not be extrapolated into whole-simulator performance claims. Widths
+of 26 qubits and above are separate, non-gating capacity probes because the two
+engines and their working buffers can exceed 4 GiB even though one complex128
+statevector is smaller than that limit.
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash
