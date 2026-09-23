@@ -19,6 +19,7 @@ from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
+    _CPU_DISJOINT_DENSE_MAX_WIRES,
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
     _apply_cx_permutation,
     _apply_cx_sequence_gather,
@@ -56,6 +57,32 @@ from .operations import (
 
 if TYPE_CHECKING:
     from ...circuit import Circuit, _StatevectorExecutionStatistics
+
+
+_CPU_DISJOINT_DENSE_LARGE_STATE_MIN_WIRES = 22
+_CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES = 6
+
+
+def _cpu_disjoint_dense_max_wires(
+    n_wires: int,
+    batch_size: int,
+    dtype: torch.dtype,
+) -> int:
+    """Choose the dense fusion width without regressing smaller CPU states.
+
+    A wider product grows its matrix 4x per wire. At 20 wires the narrower
+    product wins, but memory traffic dominates a complex128 state from 22 wires:
+    six-wire groups reduced a representative workload from 18 state applies to
+    14 and improved its median runtime by 1.57x at 22 wires and 1.44x at 24.
+    """
+
+    if (
+        n_wires >= _CPU_DISJOINT_DENSE_LARGE_STATE_MIN_WIRES
+        and batch_size == 1
+        and dtype == torch.complex128
+    ):
+        return _CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES
+    return _CPU_DISJOINT_DENSE_MAX_WIRES
 
 
 def _initial_state(circuit: Circuit) -> torch.Tensor:
@@ -715,6 +742,15 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         max_cpu_two_wire_regions = (
             2 if enable_cpu_disjoint_single_wire and output.shape[0] >= 2 else 1
         )
+        max_cpu_dense_wires = (
+            _cpu_disjoint_dense_max_wires(
+                circuit.n_wires,
+                output.shape[0],
+                output.dtype,
+            )
+            if enable_cpu_disjoint_single_wire
+            else _CPU_DISJOINT_DENSE_MAX_WIRES
+        )
         program_key = (
             "statevector",
             "triton_rx_rz_loop",
@@ -725,6 +761,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_disjoint_single_wire,
             "cpu_disjoint_dense_max_two_wire_regions",
             max_cpu_two_wire_regions,
+            "cpu_disjoint_dense_max_wires",
+            max_cpu_dense_wires,
         )
         program = circuit._backend_programs.get(program_key)
         if program is None:
@@ -735,6 +773,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
                 max_two_wire_regions=max_cpu_two_wire_regions,
+                max_dense_wires=max_cpu_dense_wires,
             )
             circuit._backend_programs[program_key] = program
         circuit._last_statevector_runtime = _initial_runtime_metrics(

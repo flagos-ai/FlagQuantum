@@ -232,6 +232,7 @@ def _compile_statevector_program(
     enable_cpu_cross_wire_diagonal: bool = False,
     enable_cpu_disjoint_single_wire: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
+    max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
     program = _fuse_rx_rz_loops(
         instructions,
@@ -242,7 +243,11 @@ def _compile_statevector_program(
     if enable_cpu_cross_wire_diagonal:
         optimized = _fuse_cross_wire_diagonal_regions(optimized)
     if enable_cpu_disjoint_single_wire:
-        optimized = _fuse_disjoint_dense_regions(optimized, max_two_wire_regions)
+        optimized = _fuse_disjoint_dense_regions(
+            optimized,
+            max_two_wire_regions,
+            max_wires=max_dense_wires,
+        )
     return tuple(_fuse_cx_sequences(optimized))
 
 
@@ -474,6 +479,8 @@ def _fuse_cross_wire_diagonal_regions(
 def _fuse_disjoint_dense_regions(
     program: Sequence[_StatevectorPreCXStep],
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
+    *,
+    max_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> list[_StatevectorPreCXStep]:
     """Pack bounded dense regions with a limit on two-wire regions per group."""
 
@@ -500,7 +507,7 @@ def _fuse_disjoint_dense_regions(
             continue
         wires = set(_region_wires(region))
         if (
-            len(occupied_wires) + len(wires) > _CPU_DISJOINT_DENSE_MAX_WIRES
+            len(occupied_wires) + len(wires) > max_wires
             or not occupied_wires.isdisjoint(wires)
             or (len(wires) == 2 and two_wire_regions >= max_two_wire_regions)
         ):
