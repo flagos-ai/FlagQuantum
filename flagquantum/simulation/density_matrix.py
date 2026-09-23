@@ -125,6 +125,10 @@ def apply_kraus_density(
     if rho.ndim == 2:
         rho = rho.reshape(1, *rho.shape)
     ops = kraus.kraus if isinstance(kraus, KrausChannel) else tuple(kraus)
+    if not ops:
+        # `out` starts at zero, so an empty channel returned the zero map: a
+        # trace-0 "state" that silently zeroed every later expectation.
+        raise ValueError("Kraus channel must contain at least one operator")
     out = torch.zeros_like(rho)
     for op in ops:
         full = expand_operator(op, wires, n_wires, dtype=rho.dtype, device=rho.device)
