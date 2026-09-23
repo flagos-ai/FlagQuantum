@@ -474,8 +474,8 @@ def architecture_errors() -> tuple[str, ...]:
                 or module.startswith("qiskit_aer.")
             ) and not relative.startswith(qiskit_import_allowed_prefixes):
                 errors.append(
-                    f"{relative}: Qiskit imports are isolated to "
-                    "flagquantum.ecosystem.qiskit"
+                    f"{relative}: Qiskit imports are isolated to an approved "
+                    "Qiskit adapter or backend plugin"
                 )
             if (
                 module == "pennylane" or module.startswith("pennylane.")

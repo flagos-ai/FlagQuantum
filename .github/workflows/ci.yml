@@ -270,7 +270,7 @@ jobs:
               'qiskit-aer==0.17.*' \
               'sympy>=1.13,<2'
             python tools/check_qiskit_interop_contract.py
-            python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py -m qiskit -q
+            python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
             python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
           done
 

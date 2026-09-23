@@ -28,6 +28,7 @@ FORBIDDEN_SUFFIXES = {
     ".pth",
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
+ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/", "flagquantum_qiskit_aer/")
 REQUIRED_MEMBER_SUFFIXES = (
     "flagquantum/simulation/numerics/double-single-contract.toml",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",
@@ -74,6 +75,10 @@ def _wheel_metadata(path: Path) -> tuple[str, ...]:
     return tuple(message.get_all("Requires-Dist", ()))
 
 
+def _allowed_wheel_member(name: str) -> bool:
+    return name.startswith(ALLOWED_WHEEL_PACKAGE_ROOTS) or ".dist-info/" in name
+
+
 def artifact_errors(path: Path) -> tuple[str, ...]:
     members = _members(path)
     errors = [f"forbidden member: {name}" for name in members if _forbidden(name)]
@@ -86,11 +91,7 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
     if not any(Path(name).name.startswith("LICENSE") for name in members):
         errors.append("license file is missing")
     if path.suffix == ".whl":
-        invalid_roots = [
-            name
-            for name in members
-            if not (name.startswith("flagquantum/") or ".dist-info/" in name)
-        ]
+        invalid_roots = [name for name in members if not _allowed_wheel_member(name)]
         errors.extend(f"unexpected wheel member: {name}" for name in invalid_roots)
         core_requirements = tuple(
             requirement

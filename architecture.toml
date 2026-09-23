@@ -54,6 +54,7 @@ cudaq_import_allowed_prefixes = [
 ]
 qiskit_import_allowed_prefixes = [
     "flagquantum/ecosystem/qiskit/",
+    "flagquantum_qiskit_aer/",
 ]
 pennylane_import_allowed_prefixes = [
     "flagquantum/ecosystem/pennylane/",

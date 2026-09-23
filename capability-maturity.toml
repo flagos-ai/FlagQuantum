@@ -514,6 +514,23 @@ owner = "interop maintainers"
 limitations = "Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through an executable operation, wire-order, statevector, classical-bit, arithmetic-parameter-expression, custom-unitary, and round-trip contract. Six fixed-seed differential programs exercise both conversion directions across three to five wires, mixed one- to three-wire operations, reordered wires, and asymmetric custom unitaries. ParameterExpression import supports the FlagQuantum v1 add/multiply/negate arithmetic subset after Qiskit symbolic simplification; functions, powers, and other operations fail closed. One- to three-qubit custom unitary matrices are converted with explicit local basis-order normalization and validated before export. Qiskit control flow is rejected; named or multiple registers require explicit lossy flattening; custom unitary matrices above three qubits are rejected. Conversion does not make Qiskit a runtime dependency or certify any provider hardware."
 focused_tests = "tests/test_qiskit_interop_conformance.py"
 
+[capabilities.qiskit_aer_execution]
+title = "Qiskit Aer execution bridge"
+summary = "Execute a FlagQuantum circuit explicitly on local Qiskit Aer while preserving FlagQuantum-owned result and evidence contracts."
+category = "deployment_and_extension"
+user_goals = ["Execute FlagQuantum code on Qiskit Aer", "Compare an external simulator without changing the native default", "Inspect external-backend provenance and fallback status"]
+public_apis = ["flagquantum.ecosystem.extensions.ExecutionBackendExtension"]
+runtime_modes = ["external_local_statevector", "external_local_shots"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/QISKIT_AER_EXECUTION.md"
+documentation = "docs/guides/QISKIT_AER_EXECUTION.md"
+level = "experimental"
+owner = "execution backend extension maintainers"
+limitations = "The separately named flagquantum_qiskit_aer plugin executes one fully bound, single-batch FlagQuantum circuit on local CPU Aer and returns an owned ExecutionResult. It supports exact statevectors and computational-basis samples or counts with explicit wire order, seed, and CPU thread controls. It does not support gradients, noise models, dynamic circuits, automatic routing, provider hardware, or fallback. Native fq.run remains unchanged."
+focused_tests = "tests/optional/test_qiskit_aer_backend.py"
+
 [capabilities.dynamic_circuits]
 title = "Dynamic circuits and backend assessment"
 summary = "Execute dynamic circuits locally, including a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features."
