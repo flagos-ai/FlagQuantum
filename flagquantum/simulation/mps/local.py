@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import torch
@@ -59,9 +60,28 @@ def run_local_mps(
         if program_cache is not None:
             program_cache[program_key] = program
 
+    warned_dense_fallback = False
     for operation in program.operations:
         group = operation.instruction_indices
         instruction = instructions[group[0]]
+        if operation.kind == "dense_fallback":
+            # The program labelled this operation before execution, and the state
+            # applies it by expanding to the full dense state vector and
+            # re-factorising, so the cost is 2**n rather than chi**3. Rule 3
+            # requires that fallback to be reported rather than silent; warn once
+            # per program so a long circuit does not flood the caller.
+            if not warned_dense_fallback:
+                warnings.warn(
+                    f"MPS execution applies {len(instruction.wires)}-wire "
+                    f"instruction {instruction.name!r} by expanding the state to "
+                    f"the full 2**{mps.n_wires} dense vector and re-factorising; "
+                    "bond dimension does not bound this step.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                warned_dense_fallback = True
+            mps.apply_instruction(instruction, parameter_bindings)
+            continue
         if operation.kind == "adjacent_two_bucket":
             if not spatial_bucket:
                 for index in group:
