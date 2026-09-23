@@ -9,6 +9,7 @@ from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
+    _cpu_disjoint_dense_max_wires,
     _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
@@ -121,6 +122,36 @@ def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
         )
         for step in optimized
     ) == (4, 4, 1)
+
+
+def test_large_complex128_state_uses_wider_dense_groups() -> None:
+    assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(21, 1, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(22, 2, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex64) == 4
+
+
+def test_dense_single_wire_regions_accept_wider_large_state_bound() -> None:
+    layout = ((), ())
+    regions = tuple(
+        statevector_ops._StatevectorFusedGateStep(
+            instructions=(Instruction("ry", (wire,), params={"theta": 0.1}),),
+            wires=(wire,),
+            layout=layout,
+        )
+        for wire in range(13)
+    )
+
+    optimized = statevector_ops._fuse_disjoint_dense_regions(regions, max_wires=6)
+
+    assert tuple(
+        (
+            len(step.regions)
+            if isinstance(step, statevector_ops._StatevectorDisjointDenseStep)
+            else 1
+        )
+        for step in optimized
+    ) == (6, 6, 1)
 
 
 def test_dense_single_wire_grouping_includes_diagonal_regions() -> None:
@@ -1452,7 +1483,8 @@ def test_batch_one_execution_plan_keeps_the_single_state_grouping(
         max_two_wire_regions=1,
     )
 
-    assert key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 1)
+    assert key[-4:-2] == ("cpu_disjoint_dense_max_two_wire_regions", 1)
+    assert key[-2:] == ("cpu_disjoint_dense_max_wires", 4)
     assert circuit._backend_programs[key] == compiled
     assert _disjoint_dense_region_shapes(circuit) == ((2, 1),)
 
@@ -1548,8 +1580,16 @@ def test_batched_program_cache_key_distinguishes_batch_dependent_plans(
     assert single_state_plan == ((2, 1),)
     assert len(circuit._backend_programs) == 2
     batched_key, single_state_key = circuit._backend_programs
-    assert batched_key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 2)
-    assert single_state_key[-2:] == ("cpu_disjoint_dense_max_two_wire_regions", 1)
+    assert batched_key[-4:-2] == (
+        "cpu_disjoint_dense_max_two_wire_regions",
+        2,
+    )
+    assert single_state_key[-4:-2] == (
+        "cpu_disjoint_dense_max_two_wire_regions",
+        1,
+    )
+    assert batched_key[-2:] == ("cpu_disjoint_dense_max_wires", 4)
+    assert single_state_key[-2:] == ("cpu_disjoint_dense_max_wires", 4)
 
 
 def test_batched_two_wire_grouping_rolls_back_with_environment_switch(
