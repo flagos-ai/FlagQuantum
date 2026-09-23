@@ -291,30 +291,33 @@ def assess_region_support(
             )
         )
     )
-    common = {
-        "release_identity": release.identity,
-        "circuit_identity": ir.content_hash,
-        "physical_qubits": mapping,
-    }
+    release_identity = release.identity
+    circuit_identity = ir.content_hash
     if blockers:
         return TwinRegionSupportAssessment(
             status=_OUTSIDE_ENVELOPE,
+            release_identity=release_identity,
+            circuit_identity=circuit_identity,
+            physical_qubits=mapping,
             prediction=None,
             reasons=blockers,
-            **common,
         )
-    if ir.content_hash not in release.verified_circuit_identities:
+    if circuit_identity not in release.verified_circuit_identities:
         return TwinRegionSupportAssessment(
             status=_WITHIN_ENVELOPE,
+            release_identity=release_identity,
+            circuit_identity=circuit_identity,
+            physical_qubits=mapping,
             prediction=None,
             reasons=(_CIRCUIT_NOT_VALIDATED,),
-            **common,
         )
     return TwinRegionSupportAssessment(
         status=_SUPPORT_RELEASED,
+        release_identity=release_identity,
+        circuit_identity=circuit_identity,
+        physical_qubits=mapping,
         prediction=region_twin.predict(circuit, physical_qubits=mapping),
         reasons=(),
-        **common,
     )
 
 
