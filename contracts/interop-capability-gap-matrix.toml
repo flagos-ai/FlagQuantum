@@ -86,7 +86,7 @@ reason = "Local Qiskit Aer conformance helpers exist, but execution is not the a
 name = "cirq"
 contract = "contracts/cirq-interop-contract.toml"
 direction = "bidirectional"
-next_gap = "Define loss-aware Cirq MatrixGate custom-unitary conversion before admitting noise or runtime execution."
+next_gap = "Implement the contract-only Cirq MatrixGate mapping with owned matrices, bounded width, identity basis order, and fail-closed validation."
 
 [[frameworks.capabilities]]
 name = "circuit_conversion"
@@ -133,8 +133,8 @@ reason = "Classical controls are outside the Cirq v1 contract."
 [[frameworks.capabilities]]
 name = "custom_unitary"
 status = "unsupported"
-evidence = ["unsupported.cirq_features"]
-reason = "The v1 gate mapping does not admit arbitrary matrix gates."
+evidence = ["custom_unitary_contract", "unsupported.cirq_features"]
+reason = "A bounded static MatrixGate mapping is contract_only; the adapter still rejects arbitrary matrix gates until implementation evidence lands."
 
 [[frameworks.capabilities]]
 name = "autograd_bridge"

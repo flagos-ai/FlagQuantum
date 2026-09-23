@@ -124,3 +124,65 @@ def test_contract_rejects_measurement_remaining_globally_unsupported() -> None:
     contract["unsupported"]["cirq_features"].append("measurements")
     errors = contract_errors(contract, policy)
     assert "Implemented Cirq measurements must not remain unsupported" in errors
+
+
+def test_custom_unitary_extension_is_contract_only_and_unsupported() -> None:
+    contract, policy = _inputs()
+    custom_unitary = contract["custom_unitary_contract"]
+    assert custom_unitary["implementation_status"] == "contract_only"
+    assert custom_unitary["runtime_execution"] == "out_of_scope"
+    assert custom_unitary["capability_gap_status"] == "unsupported"
+    assert custom_unitary["current_rejection_issue_code"] == "unsupported_operation"
+    assert custom_unitary["source_artifact"] == "cirq.MatrixGate"
+    assert custom_unitary["source_matrix_protocol"] == "cirq.unitary"
+    assert custom_unitary["supported_width_qubits"] == [1, 2, 3]
+    assert custom_unitary["matrix_basis_order"] == (
+        "identity_first_operation_qubit_is_most_significant"
+    )
+    assert custom_unitary["external_object_retention"] is False
+    assert "matrix_gates" in contract["unsupported"]["cirq_features"]
+    assert contract_errors(contract, policy) == ()
+
+
+def test_custom_unitary_contract_rejects_requested_unsupported_forms() -> None:
+    contract, _ = _inputs()
+    custom_unitary = contract["custom_unitary_contract"]
+    assert {
+        "custom_unitary_above_three_qubits",
+        "custom_unitary_qid_dimension_above_two",
+        "invalid_custom_unitary_shape",
+        "invalid_custom_unitary_values",
+        "non_unitary_custom_matrix",
+        "unavailable_custom_unitary_matrix",
+    } == set(custom_unitary["rejected_forms"])
+    assert {
+        "custom_unitary_width_exceeds_limit",
+        "custom_unitary_qid_dimension_not_representable",
+        "invalid_custom_unitary_shape",
+        "invalid_custom_unitary_values",
+        "non_unitary_custom_matrix",
+        "custom_unitary_not_representable",
+    } == set(custom_unitary["rejection_issue_codes"])
+    assert custom_unitary["matrix_target"] == (
+        "detached_cpu_torch_complex128_owned_copy"
+    )
+    assert custom_unitary["unitarity_check"] == "u_dagger_u_equals_identity"
+    assert custom_unitary["finite_values_required"] is True
+
+
+def test_contract_rejects_custom_unitary_scope_drift() -> None:
+    contract, policy = _inputs()
+    custom_unitary = contract["custom_unitary_contract"]
+    custom_unitary["implementation_status"] = "implemented"
+    custom_unitary["supported_width_qubits"].append(4)
+    custom_unitary["matrix_basis_order"] = "unspecified"
+    custom_unitary["external_object_retention"] = True
+    errors = contract_errors(contract, policy)
+    assert "Cirq custom-unitary extension contract drifted" in errors
+
+
+def test_contract_requires_matrix_gates_to_stay_unsupported() -> None:
+    contract, policy = _inputs()
+    contract["unsupported"]["cirq_features"].remove("matrix_gates")
+    errors = contract_errors(contract, policy)
+    assert "Cirq matrix gates must remain unsupported until implemented" in errors

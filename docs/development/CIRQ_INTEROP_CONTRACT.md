@@ -126,3 +126,54 @@ The integration suite demonstrates these acceptance criteria:
 3. each rejected form fails closed with its recorded issue code;
 4. the classical-bit counter never reuses an index within a circuit; and
 5. no Cirq or SymPy object is retained in core IR.
+
+## Custom-unitary extension contract
+
+The custom-unitary extension is `contract_only`: it defines a bounded static
+mapping for `cirq.MatrixGate`, while the current adapter continues to reject
+matrix gates with `unsupported_operation`. The capability matrix therefore
+keeps Cirq `custom_unitary` at `unsupported` until implementation and
+conformance evidence land. Runtime execution remains outside this adapter.
+
+The first implementation will admit one-, two-, and three-qubit matrix gates.
+It will obtain the source matrix through Cirq's public `cirq.unitary` protocol,
+require a two-dimensional square shape of `(2**width, 2**width)`, require every
+qid dimension to equal two, reject non-finite entries, and verify
+`U†U = I` with fixed relative and absolute tolerances. The three-qubit limit
+bounds validation and copy cost to an `8 x 8` matrix and matches the existing
+Qiskit custom-unitary boundary.
+
+Cirq orders a gate matrix against the operation's `qubits` tuple: the first
+qubit is the earlier factor in the Kronecker product. That is the same
+most-significant-first convention used by FlagQuantum instruction wires, so
+the matrix crosses this boundary unchanged. No local bit-axis reversal is
+allowed. The adapter preserves the operation's source qubit order as the
+instruction wire order, including reordered sparse wires.
+
+An imported matrix becomes a detached, CPU-resident, `torch.complex128` owned
+copy before it enters core IR. NumPy arrays and Cirq objects must remain inside
+`flagquantum.ecosystem.cirq`. A display name supplied to `MatrixGate` is not
+part of the unitary semantics and is not preserved. The imported instruction
+uses the stable private opcode `unitary`; this adds no public API or registry.
+
+The implementation must reject widths above three qubits, non-qubit qid
+shapes, invalid matrix shapes, non-finite values, non-unitary matrices, and
+unavailable unitary matrices with the dedicated codes in
+`[custom_unitary_contract].rejection_issue_codes`. `allow_lossy=True` may omit a
+rejected operation and report it, but it may not admit an invalid matrix into
+IR.
+
+The acceptance suite must demonstrate:
+
+1. one-, two-, and three-qubit asymmetric matrix gates round-trip;
+2. local basis order and global statevector semantics match Cirq on reordered
+   sparse wires;
+3. every rejected form fails closed with its recorded issue code;
+4. imported matrices are detached owned CPU `torch.complex128` tensors; and
+5. no Cirq or NumPy object is retained in core IR.
+
+The contract relies on Cirq's public matrix and ordering protocols:
+
+- <https://quantumai.google/reference/python/cirq/MatrixGate>
+- <https://quantumai.google/reference/python/cirq/SupportsUnitary>
+- <https://quantumai.google/cirq/simulate/simulation#qubit_and_amplitude_ordering>

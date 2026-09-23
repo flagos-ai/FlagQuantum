@@ -114,6 +114,55 @@ EXPECTED_MEASUREMENT_CONTRACT = {
         "no_second_registry_or_public_api_is_introduced",
     ],
 }
+EXPECTED_CUSTOM_UNITARY_CONTRACT = {
+    "implementation_status": "contract_only",
+    "public_api_change": False,
+    "runtime_execution": "out_of_scope",
+    "capability_gap_status": "unsupported",
+    "current_rejection_issue_code": "unsupported_operation",
+    "source_artifact": "cirq.MatrixGate",
+    "source_matrix_protocol": "cirq.unitary",
+    "target_instruction": "flagquantum_instruction_with_matrix",
+    "target_opcode": "unitary",
+    "supported_width_qubits": [1, 2, 3],
+    "qid_shape": "all_dimensions_equal_two",
+    "matrix_shape": "two_dimensional_square_2_pow_n",
+    "matrix_target": "detached_cpu_torch_complex128_owned_copy",
+    "matrix_basis_order": "identity_first_operation_qubit_is_most_significant",
+    "wire_order": "cirq_operation_qubits_source_order",
+    "global_phase": "preserved_in_matrix",
+    "unitarity_check": "u_dagger_u_equals_identity",
+    "unitarity_rtol": 1e-5,
+    "unitarity_atol": 1e-8,
+    "finite_values_required": True,
+    "cirq_name_handling": "non_semantic_and_not_preserved",
+    "external_object_retention": False,
+    "rejected_forms": [
+        "custom_unitary_above_three_qubits",
+        "custom_unitary_qid_dimension_above_two",
+        "invalid_custom_unitary_shape",
+        "invalid_custom_unitary_values",
+        "non_unitary_custom_matrix",
+        "unavailable_custom_unitary_matrix",
+    ],
+    "rejection_issue_codes": [
+        "custom_unitary_width_exceeds_limit",
+        "custom_unitary_qid_dimension_not_representable",
+        "invalid_custom_unitary_shape",
+        "invalid_custom_unitary_values",
+        "non_unitary_custom_matrix",
+        "custom_unitary_not_representable",
+    ],
+    "acceptance_criteria": [
+        "one_two_and_three_qubit_matrix_gates_round_trip",
+        "asymmetric_two_and_three_qubit_matrices_preserve_local_basis_order",
+        "reordered_sparse_wires_preserve_operation_qubit_order",
+        "each_rejected_form_fails_closed_with_its_recorded_issue_code",
+        "imported_matrix_is_an_owned_detached_cpu_complex128_tensor",
+        "cirq_and_numpy_objects_remain_outside_core_ir",
+        "no_second_registry_or_public_api_is_introduced",
+    ],
+}
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -172,6 +221,12 @@ def contract_errors(
     if "measurements" in contract.get("unsupported", {}).get("cirq_features", ()):
         errors.append("Implemented Cirq measurements must not remain unsupported")
 
+    custom_unitary = contract.get("custom_unitary_contract", {})
+    if custom_unitary != EXPECTED_CUSTOM_UNITARY_CONTRACT:
+        errors.append("Cirq custom-unitary extension contract drifted")
+    if "matrix_gates" not in contract.get("unsupported", {}).get("cirq_features", ()):
+        errors.append("Cirq matrix gates must remain unsupported until implemented")
+
     unsupported = contract.get("unsupported", {})
     if "symbolic_parameters" in unsupported.get("cirq_features", ()):
         errors.append("Cirq symbolic parameters must not remain globally unsupported")
@@ -229,6 +284,20 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     installed = str(cirq.__version__)
     if installed not in contract.get("cirq_core_versions", ()):
         errors.append(f"Cirq SDK version {installed!r} is not a certified lane")
+    matrix_gate = getattr(cirq, "MatrixGate", None)
+    unitary_protocol = getattr(cirq, "unitary", None)
+    qid_shape_protocol = getattr(cirq, "qid_shape", None)
+    if matrix_gate is None or not callable(unitary_protocol):
+        errors.append("Cirq MatrixGate or unitary protocol is unavailable")
+    elif not callable(qid_shape_protocol):
+        errors.append("Cirq qid_shape protocol is unavailable")
+    else:
+        numpy = importlib.import_module("numpy")
+        probe = matrix_gate(numpy.eye(2, dtype=numpy.complex128))
+        if tuple(qid_shape_protocol(probe)) != (2,):
+            errors.append("Cirq MatrixGate qubit qid shape drifted")
+        if tuple(unitary_protocol(probe).shape) != (2, 2):
+            errors.append("Cirq MatrixGate unitary protocol shape drifted")
     constructors = {"rx": cirq.rx(0.5), "ry": cirq.ry(0.5), "rz": cirq.rz(0.5)}
     for operation in contract.get("operations", ()):
         symbol = operation["cirq_symbol"]
