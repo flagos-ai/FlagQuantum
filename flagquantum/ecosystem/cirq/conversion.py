@@ -309,15 +309,6 @@ def _lower_gate(
     index: int,
 ) -> tuple[str, dict[str, Any]] | None:
     name = type(gate).__name__
-    if isinstance(gate, cirq.MeasurementGate):
-        _issue(
-            issues,
-            "measurement_not_represented",
-            "Cirq measurements require a separate execution plan.",
-            index=index,
-            name=name,
-        )
-        return None
     if isinstance(gate, cirq.GlobalPhaseGate):
         _issue(
             issues,
@@ -360,6 +351,98 @@ def _lower_gate(
     return None
 
 
+def _lower_measurement(
+    cirq: Any,
+    operation: Any,
+    wires: dict[Any, int],
+    issues: list[CirqConversionIssue],
+    index: int,
+    *,
+    seen_keys: set[str],
+    first_classical_bit: int,
+) -> tuple[Instruction, ...]:
+    """Lower one terminal Cirq measurement without retaining Cirq objects."""
+
+    gate = operation.gate
+    name = type(gate).__name__
+    key = gate.key
+    blocked = False
+    if not isinstance(key, str) or not key:
+        _issue(
+            issues,
+            "measurement_key_empty",
+            "Cirq measurement keys must be non-empty strings.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    elif key in seen_keys:
+        _issue(
+            issues,
+            "duplicate_measurement_key",
+            f"Cirq measurement key {key!r} is used by more than one gate.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    if tuple(gate.invert_mask):
+        _issue(
+            issues,
+            "measurement_invert_mask_not_representable",
+            "Cirq measurement invert masks are not represented in FlagQuantum IR.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    if dict(gate.confusion_map):
+        _issue(
+            issues,
+            "measurement_confusion_map_not_representable",
+            "Cirq measurement confusion maps are not represented in FlagQuantum IR.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    qid_shape = tuple(cirq.qid_shape(operation))
+    if any(dimension != 2 for dimension in qid_shape):
+        _issue(
+            issues,
+            "measurement_qid_dimension_not_representable",
+            "Cirq measurements are limited to two-dimensional qids.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    if (
+        len(operation.qubits) == 0
+        or gate.num_qubits() != len(operation.qubits)
+        or len(qid_shape) != len(operation.qubits)
+    ):
+        _issue(
+            issues,
+            "measurement_not_representable",
+            "Cirq measurement gate shape or arity is not representable.",
+            index=index,
+            name=name,
+        )
+        blocked = True
+    if blocked:
+        return ()
+    seen_keys.add(key)
+    return tuple(
+        Instruction(
+            "measure",
+            (wires[qubit],),
+            metadata={
+                "is_dynamic": True,
+                "classical_bit": first_classical_bit + offset,
+                "measurement_key": key,
+            },
+        )
+        for offset, qubit in enumerate(operation.qubits)
+    )
+
+
 def import_cirq(circuit: Any, *, allow_lossy: bool = False) -> CirqImportResult:
     """Convert a static Cirq ``Circuit`` to canonical FlagQuantum IR."""
 
@@ -369,9 +452,26 @@ def import_cirq(circuit: Any, *, allow_lossy: bool = False) -> CirqImportResult:
     issues: list[CirqConversionIssue] = []
     wires = _qubit_map(cirq, circuit, issues)
     instructions: list[Instruction] = []
+    indexed_operations = tuple(
+        operation for moment in circuit for operation in moment.operations
+    )
+    last_non_measurement = max(
+        (
+            index
+            for index, operation in enumerate(indexed_operations)
+            if not isinstance(getattr(operation, "gate", None), cirq.MeasurementGate)
+        ),
+        default=-1,
+    )
+    seen_measurement_keys: set[str] = set()
+    classical_bit = 0
     operation_index = 0
     for moment in circuit:
-        if len(moment.operations) > 1:
+        measurement_only = all(
+            isinstance(getattr(operation, "gate", None), cirq.MeasurementGate)
+            for operation in moment.operations
+        )
+        if len(moment.operations) > 1 and not measurement_only:
             _issue(
                 issues,
                 "moment_structure_flattened",
@@ -394,6 +494,29 @@ def import_cirq(circuit: Any, *, allow_lossy: bool = False) -> CirqImportResult:
                     index=operation_index,
                     name=name,
                 )
+                operation_index += 1
+                continue
+            if isinstance(gate, cirq.MeasurementGate):
+                if operation_index < last_non_measurement:
+                    _issue(
+                        issues,
+                        "measurement_not_terminal",
+                        "Cirq measurements must follow every non-measurement operation.",
+                        index=operation_index,
+                        name=name,
+                    )
+                else:
+                    lowered_measurement = _lower_measurement(
+                        cirq,
+                        operation,
+                        wires,
+                        issues,
+                        operation_index,
+                        seen_keys=seen_measurement_keys,
+                        first_classical_bit=classical_bit,
+                    )
+                    instructions.extend(lowered_measurement)
+                    classical_bit += len(lowered_measurement)
                 operation_index += 1
                 continue
             lowered = _lower_gate(cirq, gate, issues, operation_index)
@@ -478,7 +601,90 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
     qubits = cirq.LineQubit.range(ir.n_wires)
     operations: list[Any] = []
     parameter_cache: dict[str, Any] = {}
+    measurement_started = False
+    completed_measurement_keys: set[str] = set()
+    current_measurement_key: str | None = None
+    current_measurement_qubits: list[Any] = []
+    next_classical_bit = 0
+
+    def flush_measurement() -> None:
+        nonlocal current_measurement_key, current_measurement_qubits
+        if current_measurement_key is not None and current_measurement_qubits:
+            operations.append(
+                cirq.measure(
+                    *current_measurement_qubits,
+                    key=current_measurement_key,
+                )
+            )
+            completed_measurement_keys.add(current_measurement_key)
+        current_measurement_key = None
+        current_measurement_qubits = []
+
     for index, instruction in enumerate(ir.instructions):
+        if instruction.name == "measure":
+            measurement_started = True
+            key = instruction.metadata.get("measurement_key")
+            classical_bit = instruction.metadata.get("classical_bit")
+            blocked = False
+            if not isinstance(key, str) or not key:
+                _issue(
+                    issues,
+                    "measurement_key_empty",
+                    "FlagQuantum measurement keys must be non-empty strings.",
+                    index=index,
+                    name=instruction.name,
+                )
+                blocked = True
+            if len(instruction.wires) != 1:
+                _issue(
+                    issues,
+                    "measurement_not_representable",
+                    "Each FlagQuantum measure instruction must own exactly one wire.",
+                    index=index,
+                    name=instruction.name,
+                )
+                blocked = True
+            if (
+                not isinstance(classical_bit, int)
+                or isinstance(classical_bit, bool)
+                or classical_bit != next_classical_bit
+            ):
+                _issue(
+                    issues,
+                    "measurement_not_representable",
+                    "FlagQuantum measurement classical bits must be circuit-global, "
+                    "zero-based, contiguous, and ordered.",
+                    index=index,
+                    name=instruction.name,
+                )
+                blocked = True
+            if blocked:
+                continue
+            if key != current_measurement_key:
+                flush_measurement()
+                if key in completed_measurement_keys:
+                    _issue(
+                        issues,
+                        "duplicate_measurement_key",
+                        f"FlagQuantum measurement key {key!r} forms multiple gates.",
+                        index=index,
+                        name=instruction.name,
+                    )
+                    continue
+                current_measurement_key = key
+            current_measurement_qubits.append(qubits[instruction.wires[0]])
+            next_classical_bit += 1
+            continue
+        if measurement_started:
+            flush_measurement()
+            _issue(
+                issues,
+                "measurement_not_terminal",
+                "FlagQuantum measurements must follow every non-measurement operation.",
+                index=index,
+                name=instruction.name,
+            )
+            continue
         if (
             instruction.name not in _CIRQ_SYMBOL_TO_FLAGQUANTUM.values()
             or instruction.matrix is not None
@@ -531,6 +737,7 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
             continue
         gate = _export_gate(cirq, instruction, params)
         operations.append(gate.on(*(qubits[wire] for wire in instruction.wires)))
+    flush_measurement()
     report = _report("to_cirq", str(cirq.__version__), issues)
     circuit = cirq.Circuit(cirq.Moment([operation]) for operation in operations)
     _raise_if_lossy(report, allow_lossy=allow_lossy)

@@ -79,13 +79,12 @@ The boundary relies only on Cirq's public parameter protocols:
 
 ## Measurement conversion contract
 
-The measurement extension is `contract_only`: it fixes the static mapping that a
-later adapter implementation must satisfy, and it does not change the current
-adapter, which still rejects every Cirq measurement with the
-`measurement_not_represented` issue code. The capability matrix therefore keeps
-Cirq `measurements` at `unsupported`, and runtime measurement execution and
+The measurement extension implements a deliberately narrow static mapping. The
+capability matrix records Cirq `measurements` as `partial`: terminal measurement
+gates convert in both directions, while runtime measurement execution and
 sampling remain `out_of_scope` because they require an execution plan rather
-than a circuit conversion.
+than a circuit conversion. IR `MeasurementNode` execution requests continue to
+fail closed with `measurement_not_represented`.
 
 The first version admits only terminal measurement:
 
@@ -110,9 +109,7 @@ The same first version rejects every measurement form that FlagQuantum IR cannot
 represent losslessly: `invert_mask`, `confusion_map`, empty keys, duplicate keys,
 measured qids whose dimension is not two, and any `MeasurementGate` form the
 adapter does not recognize. Rejection is fail-closed with the dedicated issue
-codes recorded in `[measurement_contract].rejection_issue_codes`; the
-pre-existing `measurement_not_represented` code remains the required behavior
-until an implementation PR lands.
+codes recorded in `[measurement_contract].rejection_issue_codes`.
 
 Cirq gate and qubit objects stop at `flagquantum.ecosystem.cirq`, so the key,
 qubit order, and classical-bit assignment are converted to FlagQuantum strings,
@@ -121,8 +118,7 @@ no second registry and no public API: it extends the existing
 `[measurement_contract]` table of `contracts/cirq-interop-contract.toml` and is
 enforced by the existing Cirq contract checker.
 
-The later implementation must demonstrate these acceptance criteria before the
-capability status changes:
+The integration suite demonstrates these acceptance criteria:
 
 1. terminal measurement round-trips with its key, qubit order, and classical
    bits;
