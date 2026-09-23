@@ -42,6 +42,22 @@ def _bits_to_index(bits: Sequence[int]) -> int:
     return value
 
 
+def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
+    """Refuse a wire the Hilbert space does not have, and normalize the rest.
+
+    Every function here addresses wires by indexing a size-``2**n_wires`` axis,
+    and a negative index is a valid Python index, so ``-1`` silently addressed
+    the last wire: ``apply_unitary_density`` returned a density matrix identical
+    to the one for the wire the caller did not name. An index past the last wire
+    raised a bare ``IndexError`` from the indexing expression instead of naming
+    the offending wire.
+    """
+    normalized = tuple(int(wire) for wire in wires)
+    if any(wire < 0 or wire >= n_wires for wire in normalized):
+        raise ValueError("wire index out of range")
+    return normalized
+
+
 def expand_operator(
     matrix: torch.Tensor,
     wires: Sequence[int],
@@ -52,7 +68,7 @@ def expand_operator(
 ) -> torch.Tensor:
     """Expand a k-wire operator into the full Hilbert space."""
 
-    wires = tuple(int(wire) for wire in wires)
+    wires = _validate_wires(wires, n_wires)
     matrix = torch.as_tensor(matrix, dtype=_complex_dtype(dtype), device=device)
     if matrix.ndim == 3:
         return torch.stack(
@@ -174,7 +190,7 @@ def expectation_z_density(
     probs = torch.real(torch.diagonal(rho, dim1=-2, dim2=-1))
     shaped = probs.reshape((rho.shape[0],) + (2,) * n_wires)
     values = []
-    for wire in target_wires:
+    for wire in _validate_wires(target_wires, n_wires):
         axes = tuple(axis for axis in range(1, n_wires + 1) if axis != wire + 1)
         marginal = shaped.sum(dim=axes) if axes else shaped
         values.append(marginal[:, 0] - marginal[:, 1])
