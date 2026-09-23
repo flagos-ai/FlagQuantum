@@ -76,3 +76,57 @@ The boundary relies only on Cirq's public parameter protocols:
 - <https://quantumai.google/reference/python/cirq/parameter_symbols>
 - <https://quantumai.google/reference/python/cirq/resolve_parameters>
 - <https://quantumai.google/reference/python/cirq/ParamResolver>
+
+## Measurement conversion contract
+
+The measurement extension is `contract_only`: it fixes the static mapping that a
+later adapter implementation must satisfy, and it does not change the current
+adapter, which still rejects every Cirq measurement with the
+`measurement_not_represented` issue code. The capability matrix therefore keeps
+Cirq `measurements` at `unsupported`, and runtime measurement execution and
+sampling remain `out_of_scope` because they require an execution plan rather
+than a circuit conversion.
+
+The first version admits only terminal measurement:
+
+- a `cirq.MeasurementGate` is expanded into one FlagQuantum `measure`
+  instruction per measured qubit, so every measured qubit owns exactly one
+  classical bit;
+- the measured qubit order is the gate's own `qubits` source order, and the
+  expanded instructions for one key keep that order;
+- the Cirq measurement key is preserved verbatim as a non-empty string without
+  rewriting, and the key must be unique in the circuit: two measurement gates
+  that share a key are rejected because the resulting instruction metadata would
+  be ambiguous;
+- every admitted measurement must follow all non-measurement operations of the
+  circuit, so mid-circuit measurement is rejected;
+- the FlagQuantum instruction carries the key and the assigned classical bit in
+  FlagQuantum IR instruction metadata, which is the metadata owner; and
+- the adapter owns the classical-bit assignment: indices start at zero, the
+  measured qubits of one key receive a contiguous block in source order, the
+  counter is circuit-global and monotonic, and no index is ever reused.
+
+The same first version rejects every measurement form that FlagQuantum IR cannot
+represent losslessly: `invert_mask`, `confusion_map`, empty keys, duplicate keys,
+measured qids whose dimension is not two, and any `MeasurementGate` form the
+adapter does not recognize. Rejection is fail-closed with the dedicated issue
+codes recorded in `[measurement_contract].rejection_issue_codes`; the
+pre-existing `measurement_not_represented` code remains the required behavior
+until an implementation PR lands.
+
+Cirq gate and qubit objects stop at `flagquantum.ecosystem.cirq`, so the key,
+qubit order, and classical-bit assignment are converted to FlagQuantum strings,
+integers, and tuples before an instruction enters IR. The extension introduces
+no second registry and no public API: it extends the existing
+`[measurement_contract]` table of `contracts/cirq-interop-contract.toml` and is
+enforced by the existing Cirq contract checker.
+
+The later implementation must demonstrate these acceptance criteria before the
+capability status changes:
+
+1. terminal measurement round-trips with its key, qubit order, and classical
+   bits;
+2. a multi-qubit gate expands to one instruction per qubit in source order;
+3. each rejected form fails closed with its recorded issue code;
+4. the classical-bit counter never reuses an index within a circuit; and
+5. no Cirq or SymPy object is retained in core IR.

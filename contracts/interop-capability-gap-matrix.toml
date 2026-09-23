@@ -86,7 +86,7 @@ reason = "Local Qiskit Aer conformance helpers exist, but execution is not the a
 name = "cirq"
 contract = "contracts/cirq-interop-contract.toml"
 direction = "bidirectional"
-next_gap = "Expand measurement conversion without weakening the symbolic-expression or static-runtime boundary."
+next_gap = "Implement the contract-only Cirq measurement mapping: terminal one-to-one measurement with preserved keys, deterministic classical-bit assignment, and fail-closed rejection of mid-circuit, invert-mask, confusion-map, and duplicate-key forms."
 
 [[frameworks.capabilities]]
 name = "circuit_conversion"
@@ -115,8 +115,8 @@ reason = "Named add, multiply, and negation expressions round-trip for rx, ry, a
 [[frameworks.capabilities]]
 name = "measurements"
 status = "unsupported"
-evidence = ["semantics.measurements", "unsupported.cirq_features"]
-reason = "Measurements require a separate execution plan and are not represented by the static adapter."
+evidence = ["measurement_contract", "unsupported.cirq_features"]
+reason = "The static MeasurementGate mapping is defined as contract_only; the adapter still rejects Cirq measurements, so no measurement conversion is available yet."
 
 [[frameworks.capabilities]]
 name = "noise_channels"

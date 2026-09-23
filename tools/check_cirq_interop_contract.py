@@ -57,6 +57,63 @@ EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
     ),
     "external_object_retention": False,
 }
+EXPECTED_MEASUREMENT_CONTRACT = {
+    "implementation_status": "contract_only",
+    "public_api_change": False,
+    "runtime_execution": "out_of_scope",
+    "capability_gap_status": "unsupported",
+    "current_rejection_issue_code": "measurement_not_represented",
+    "source_artifact": "cirq.MeasurementGate",
+    "target_instruction": "flagquantum_measure_instruction",
+    "target_encoding": (
+        "one_measure_instruction_per_measured_qubit_with_shared_key_metadata"
+    ),
+    "supported_form": "terminal_measurement_gates_with_distinct_non_empty_keys",
+    "quantum_to_classical_cardinality": "one_classical_bit_per_measured_qubit",
+    "measurement_key_source": "cirq.MeasurementGate.key",
+    "measurement_key_identity": "non_empty_exact_string_without_rewrite",
+    "measurement_key_uniqueness": "required_per_circuit_across_measurement_gates",
+    "measurement_key_owner": (
+        "flagquantum_ecosystem_cirq_adapter_preserving_the_cirq_key"
+    ),
+    "qubit_order_source": "cirq.MeasurementGate.qubits",
+    "qubit_order_target": "per_key_instruction_sequence_in_source_qubit_order",
+    "classical_bit_assignment": "contiguous_block_per_key_in_source_qubit_order",
+    "classical_bit_counter_scope": "circuit_global_monotonic",
+    "classical_bit_index_base": 0,
+    "classical_bit_reuse": "forbidden",
+    "classical_bit_owner": "flagquantum_ecosystem_cirq_adapter",
+    "metadata_owner": "flagquantum_ir_instruction_metadata",
+    "metadata_fields": ["classical_bit", "measurement_key"],
+    "terminal_requirement": "every_measurement_follows_all_non_measurement_operations",
+    "external_object_retention": False,
+    "rejected_forms": [
+        "mid_circuit_measurement",
+        "measurement_invert_mask",
+        "measurement_confusion_map",
+        "duplicate_measurement_key",
+        "empty_measurement_key",
+        "measured_qid_dimension_above_two",
+        "unrecognized_measurement_gate_form",
+    ],
+    "rejection_issue_codes": [
+        "measurement_not_terminal",
+        "measurement_invert_mask_not_representable",
+        "measurement_confusion_map_not_representable",
+        "duplicate_measurement_key",
+        "measurement_key_empty",
+        "measurement_qid_dimension_not_representable",
+        "measurement_not_representable",
+    ],
+    "acceptance_criteria": [
+        "terminal_only_measurement_rejection_is_enforced",
+        "measurement_key_qubit_order_and_classical_bits_round_trip",
+        "multi_qubit_gate_expands_to_one_instruction_per_qubit_in_source_order",
+        "classical_bit_counter_is_circuit_global_and_never_reused",
+        "cirq_and_sympy_objects_remain_outside_core_ir",
+        "no_second_registry_or_public_api_is_introduced",
+    ],
+}
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -108,6 +165,12 @@ def contract_errors(
     symbolic_parameters = contract.get("symbolic_parameter_contract", {})
     if symbolic_parameters != EXPECTED_SYMBOLIC_PARAMETER_CONTRACT:
         errors.append("Cirq symbolic-parameter extension contract drifted")
+
+    measurement = contract.get("measurement_contract", {})
+    if measurement != EXPECTED_MEASUREMENT_CONTRACT:
+        errors.append("Cirq measurement extension contract drifted")
+    if "measurements" not in contract.get("unsupported", {}).get("cirq_features", ()):
+        errors.append("Cirq measurements must remain unsupported until implemented")
 
     unsupported = contract.get("unsupported", {})
     if "symbolic_parameters" in unsupported.get("cirq_features", ()):
