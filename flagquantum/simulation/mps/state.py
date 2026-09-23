@@ -863,7 +863,21 @@ class MPSState(MPSPlanningMixin):
             self.orthogonality_center = rebuilt.orthogonality_center
         return self
 
+    def _validate_wire(self, wire: int) -> None:
+        """Refuse a wire the state does not have.
+
+        A negative index is otherwise a valid Python index that selects a
+        different site, so the gate would land on the wrong wire and the state
+        would stay well formed and normalized: no exception to catch and no
+        flag to inspect. An index past the last site reached a raw list
+        ``IndexError`` instead of the ``ValueError`` this class already raises
+        for an out-of-range observable wire.
+        """
+        if wire < 0 or wire >= self.n_wires:
+            raise ValueError("wire index out of range")
+
     def apply_one(self, matrix: torch.Tensor, wire: int) -> None:
+        self._validate_wire(int(wire))
         tensor = self.tensors[int(wire)]
         equation = "pq,blqr->blpr" if matrix.ndim == 2 else "bpq,blqr->blpr"
         self.tensors[int(wire)] = complex_einsum_pair(equation, matrix, tensor)
@@ -897,6 +911,7 @@ class MPSState(MPSPlanningMixin):
             raise ValueError(f"Gate {name!r} requires parameters.")
         angle = parameters[:, 0]
 
+        self._validate_wire(int(wire))
         tensor = self.tensors[int(wire)]
         view_shape = (self.bsz, 1, 1)
         if name == "rz":
@@ -1012,6 +1027,8 @@ class MPSState(MPSPlanningMixin):
         `reverse` swaps the two physical indices so the same routine serves the
         backward sweep.
         """
+        self._validate_wire(int(left_wire))
+        self._validate_wire(int(left_wire) + 1)
         left = self.tensors[int(left_wire)]
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
