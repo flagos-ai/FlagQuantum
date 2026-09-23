@@ -1,7 +1,7 @@
 schema = "flagquantum_simulator_evaluation_contract_v1"
 runner = "simulator_compare"
 result_schema = "flagquantum.simulator_comparison.v1"
-engines = ["flagquantum_native", "qiskit_aer"]
+engines = ["flagquantum_native", "qiskit_aer", "cirq_simulator", "pennylane_lightning_qubit"]
 workload = "same_flagquantum_ir_exact_statevector"
 dtype = "complex128"
 device = "cpu"
@@ -29,6 +29,7 @@ conversion_reported_separately = true
 compilation_reported_separately = true
 cold_execution_reported_separately = true
 steady_state_order = "alternating_within_one_process"
+external_engine_order = "external_engine_only"
 minimum_iterations = 3
 minimum_calls_per_sample = 1
 stability_metric = "relative_median_absolute_deviation"
@@ -36,8 +37,17 @@ maximum_relative_median_absolute_deviation = 0.10
 result_retrieval_included = true
 output_basis_normalization_included = false
 
+[external_measurement]
+performance_scope = "external_engine_only"
+flagquantum_performance_reuse_allowed = true
+flagquantum_correctness_reference_required = true
+flagquantum_correctness_reference_timed = false
+same_workload_required = true
+optional_dependencies_fail_closed = true
+thread_environment = ["OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"]
+
 [claims]
-ratio = "qiskit_aer_seconds / flagquantum_native_seconds"
+ratio = "external_engine_seconds / flagquantum_native_seconds"
 ratio_above_one = "flagquantum_native_faster"
 benchmark_evidence_class = "comparison_non_release"
 claim_evidence_type = "unknown"

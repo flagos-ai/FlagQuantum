@@ -30,6 +30,7 @@ _CIRQ_SYMBOL_TO_FLAGQUANTUM = {
     "rx": "rx",
     "ry": "ry",
     "rz": "rz",
+    "ZZPowGate": "rzz",
     "CNOT": "cx",
     "CZ": "cz",
     "SWAP": "swap",
@@ -243,6 +244,7 @@ def _pow_gate(
             (cirq.XPowGate, "rx"),
             (cirq.YPowGate, "ry"),
             (cirq.ZPowGate, "rz"),
+            (cirq.ZZPowGate, "rzz"),
         )
         for gate_type, opcode in rotations:
             if isinstance(gate, gate_type) and _close(shift, -0.5):
@@ -264,7 +266,7 @@ def _pow_gate(
         _issue(
             issues,
             "unsupported_parameter_expression",
-            "Only symbolic rx, ry, and rz rotation angles preserve Cirq semantics.",
+            "Only symbolic rx, ry, rz, and rzz rotation angles preserve Cirq semantics.",
             index=index,
             name=name,
         )
@@ -289,6 +291,8 @@ def _pow_gate(
                     return opcode, {}
         if _close(shift, -0.5):
             return "rz", {"theta": math.pi * exponent}
+    if isinstance(gate, cirq.ZZPowGate) and _close(shift, -0.5):
+        return "rzz", {"theta": math.pi * exponent}
     fixed_types = (
         (cirq.HPowGate, "h"),
         (cirq.CXPowGate, "cx"),
@@ -328,6 +332,7 @@ def _lower_gate(
             cirq.XPowGate,
             cirq.YPowGate,
             cirq.ZPowGate,
+            cirq.ZZPowGate,
             cirq.HPowGate,
             cirq.CXPowGate,
             cirq.CZPowGate,
@@ -576,6 +581,8 @@ def _export_gate(cirq: Any, instruction: Instruction, params: list[Any]) -> Any:
         return cirq.ry(params[0])
     if instruction.name == "rz":
         return cirq.rz(params[0])
+    if instruction.name == "rzz":
+        return cirq.ZZPowGate(exponent=params[0] / math.pi, global_shift=-0.5)
     return gates[instruction.name]
 
 

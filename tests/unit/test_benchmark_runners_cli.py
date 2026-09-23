@@ -93,6 +93,8 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
     assert names() == (
         "environment_probe",
         "simulator_compare",
+        "simulator_compare_cirq",
+        "simulator_compare_pennylane",
         "statevector_cpu_paths",
         "statevector_local",
         "statevector_strong_scaling",

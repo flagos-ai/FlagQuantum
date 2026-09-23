@@ -38,12 +38,33 @@ python benchmarks/dynamic_trajectory.py \
 
 Compare equivalent exact-statevector execution from the same FlagQuantum IR:
 
+The executable implementations are
+[`simulator_compare.py`](../flagquantum/benchmarking/simulator_compare.py) for
+FlagQuantum/Qiskit Aer and
+[`external_simulator_compare.py`](../flagquantum/benchmarking/external_simulator_compare.py)
+for Cirq/PennyLane Lightning. They are installed through the
+`flagquantum-benchmark` CLI; the commands below execute those source files and
+write the complete raw samples, not a manually assembled summary.
+
 ```bash
 pip install -e '.[qiskit]'
 flagquantum-benchmark run simulator_compare \
   --n-wires 10 14 18 22 24 --layers 2 --threads 1 \
   --warmup 3 --iterations 9 --setup-iterations 3 --calls-per-sample 5 \
   --json-output benchmarks/results/comparison/simulators.json
+
+pip install -e '.[cirq,pennylane]'
+# Exact versions used by the checked-in Apple arm64 result:
+pip install 'cirq-core==1.7.0' 'pennylane==0.45.1' \
+  'pennylane-lightning==0.45.0'
+flagquantum-benchmark run simulator_compare_cirq \
+  --n-wires 10 14 18 22 24 --layers 2 --threads 1 \
+  --warmup 3 --iterations 9 --setup-iterations 3 --calls-per-sample 10 \
+  --json-output benchmarks/results/comparison/cirq.json
+flagquantum-benchmark run simulator_compare_pennylane \
+  --n-wires 10 14 18 22 24 --layers 2 --threads 1 \
+  --warmup 3 --iterations 9 --setup-iterations 3 --calls-per-sample 10 \
+  --json-output benchmarks/results/comparison/pennylane.json
 ```
 
 The runner reports conversion, compilation, cold execution, and steady-state
@@ -52,6 +73,12 @@ process. Every case must pass exact-statevector parity before the payload passes
 unsupported conversion or a missing engine fails closed. The ratio is Qiskit Aer
 time divided by FlagQuantum native time, so a value above one means FlagQuantum
 is faster for that case.
+
+The Cirq and PennyLane runners time only the selected external simulator. They
+execute FlagQuantum once per case as an untimed correctness reference, allowing
+a report to reuse a compatible measured FlagQuantum result rather than distort
+it with a second run. Their payload records that measurement scope explicitly;
+it must not be presented as a fresh FlagQuantum measurement.
 
 These are local comparison results, not scalability or release evidence. A
 result must retain `scalability_claim_allowed=false` and the comparison evidence

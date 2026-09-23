@@ -298,7 +298,14 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append("Cirq MatrixGate qubit qid shape drifted")
         if tuple(unitary_protocol(probe).shape) != (2, 2):
             errors.append("Cirq MatrixGate unitary protocol shape drifted")
-    constructors = {"rx": cirq.rx(0.5), "ry": cirq.ry(0.5), "rz": cirq.rz(0.5)}
+    constructors = {
+        "rx": cirq.rx(0.5),
+        "ry": cirq.ry(0.5),
+        "rz": cirq.rz(0.5),
+        # The public class object uses a compatibility metaclass in certified
+        # Cirq releases; validate the concrete gate produced for execution.
+        "ZZPowGate": cirq.ZZPowGate(exponent=0.5, global_shift=-0.5),
+    }
     for operation in contract.get("operations", ()):
         symbol = operation["cirq_symbol"]
         gate = constructors.get(symbol, getattr(cirq, symbol, None))

@@ -1,0 +1,431 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_external_engine_run",
+  "benchmark": "interoperable_simulator_comparison",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 1.3279418682041632e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "pennylane_lightning_qubit": {
+          "backend": "lightning.qubit",
+          "backend_version": "0.45.0",
+          "cold_execution_seconds": 0.0017952079651877284,
+          "compilation": {
+            "applicable": false,
+            "note": "PennyLane device preprocessing is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.26731393429018935,
+            "max_seconds": 0.0005328750121407211,
+            "mean_seconds": 0.00039691666218762595,
+            "median_seconds": 0.0003839169512502849,
+            "min_seconds": 0.0002739580231718719,
+            "relative_median_absolute_deviation": 0.2864133186104827,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0003839169512502849,
+              0.0002739580231718719,
+              0.0005328750121407211
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_pennylane",
+            "framework_version": "0.45.1",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_pennylane_conversion_report_v1"
+          },
+          "first_result_seconds": 0.0021791249164380133,
+          "steady_state": {
+            "coefficient_of_variation": 0.03353142494165151,
+            "max_seconds": 0.0005786333000287414,
+            "mean_seconds": 0.0005529458220634195,
+            "median_seconds": 0.000554479198763147,
+            "min_seconds": 0.0005261207988951355,
+            "relative_median_absolute_deviation": 0.03634041121302801,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.0005786333000287414,
+              0.000528329098597169,
+              0.000554479198763147,
+              0.0005758000013884157,
+              0.0005261207988951355,
+              0.0005645500030368566,
+              0.0005629457999020814,
+              0.0005343291966710239,
+              0.0005513250012882054
+            ]
+          },
+          "version": "0.45.1"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 82,
+        "layers": 2,
+        "n_wires": 10,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 5.715222817774257e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "pennylane_lightning_qubit": {
+          "backend": "lightning.qubit",
+          "backend_version": "0.45.0",
+          "cold_execution_seconds": 0.0017767079989425838,
+          "compilation": {
+            "applicable": false,
+            "note": "PennyLane device preprocessing is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.08416333642622104,
+            "max_seconds": 0.0004147500148974359,
+            "mean_seconds": 0.0003720276678601901,
+            "median_seconds": 0.0003607500111684203,
+            "min_seconds": 0.000340582977514714,
+            "relative_median_absolute_deviation": 0.055903071460449934,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0004147500148974359,
+              0.0003607500111684203,
+              0.000340582977514714
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_pennylane",
+            "framework_version": "0.45.1",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_pennylane_conversion_report_v1"
+          },
+          "first_result_seconds": 0.002137458010111004,
+          "steady_state": {
+            "coefficient_of_variation": 0.018746455406225482,
+            "max_seconds": 0.0015680000011343508,
+            "mean_seconds": 0.0014930171335840391,
+            "median_seconds": 0.001487791701219976,
+            "min_seconds": 0.001463562500430271,
+            "relative_median_absolute_deviation": 0.004721763872698544,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.0014764874998945744,
+              0.0015680000011343508,
+              0.001487791701219976,
+              0.0014892041974235326,
+              0.0014918208005838096,
+              0.001463562500430271,
+              0.0014837375027127564,
+              0.001495783298742026,
+              0.0014807667001150548
+            ]
+          },
+          "version": "0.45.1"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 114,
+        "layers": 2,
+        "n_wires": 14,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 4.002966042486721e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "pennylane_lightning_qubit": {
+          "backend": "lightning.qubit",
+          "backend_version": "0.45.0",
+          "cold_execution_seconds": 0.016599291004240513,
+          "compilation": {
+            "applicable": false,
+            "note": "PennyLane device preprocessing is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.09054792645324342,
+            "max_seconds": 0.0005385829717852175,
+            "mean_seconds": 0.00047851398509616655,
+            "median_seconds": 0.00045895896619185805,
+            "min_seconds": 0.000438000017311424,
+            "relative_median_absolute_deviation": 0.045666280483280926,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0005385829717852175,
+              0.00045895896619185805,
+              0.000438000017311424
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_pennylane",
+            "framework_version": "0.45.1",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_pennylane_conversion_report_v1"
+          },
+          "first_result_seconds": 0.01705824997043237,
+          "steady_state": {
+            "coefficient_of_variation": 0.03658808616955124,
+            "max_seconds": 0.017783674999373035,
+            "mean_seconds": 0.01649392871121462,
+            "median_seconds": 0.016483575000893324,
+            "min_seconds": 0.015657020802609622,
+            "relative_median_absolute_deviation": 0.01987634986980641,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.016361079202033578,
+              0.016155941697070374,
+              0.01668517499929294,
+              0.017000258399639277,
+              0.016483575000893324,
+              0.015795324998907744,
+              0.016523308301111685,
+              0.017783674999373035,
+              0.015657020802609622
+            ]
+          },
+          "version": "0.45.1"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 146,
+        "layers": 2,
+        "n_wires": 18,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 7.108895957933346e-16,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "pennylane_lightning_qubit": {
+          "backend": "lightning.qubit",
+          "backend_version": "0.45.0",
+          "cold_execution_seconds": 0.3553298329934478,
+          "compilation": {
+            "applicable": false,
+            "note": "PennyLane device preprocessing is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.054884049293827286,
+            "max_seconds": 0.0006078750011511147,
+            "mean_seconds": 0.0005640969999755422,
+            "median_seconds": 0.0005428330041468143,
+            "min_seconds": 0.0005415829946286976,
+            "relative_median_absolute_deviation": 0.0023027515065731628,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0006078750011511147,
+              0.0005415829946286976,
+              0.0005428330041468143
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_pennylane",
+            "framework_version": "0.45.1",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_pennylane_conversion_report_v1"
+          },
+          "first_result_seconds": 0.3558726659975946,
+          "steady_state": {
+            "coefficient_of_variation": 0.0435265323064255,
+            "max_seconds": 0.37569737919839097,
+            "mean_seconds": 0.34543348842222865,
+            "median_seconds": 0.34113924580160526,
+            "min_seconds": 0.3300362749956548,
+            "relative_median_absolute_deviation": 0.02631843158320086,
+            "sample_count": 9,
+            "samples_seconds": [
+              0.33296010000049137,
+              0.3333369957981631,
+              0.332160995900631,
+              0.3300362749956548,
+              0.34113924580160526,
+              0.35928318750229665,
+              0.3449585791036952,
+              0.3593286374991294,
+              0.37569737919839097
+            ]
+          },
+          "version": "0.45.1"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 178,
+        "layers": 2,
+        "n_wires": 22,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "flagquantum_reference_timed": false,
+        "max_abs_error": 1.5548697241856944e-15,
+        "passed": true,
+        "reference_semantics": "same_flagquantum_ir_exact_statevector"
+      },
+      "engines": {
+        "pennylane_lightning_qubit": {
+          "backend": "lightning.qubit",
+          "backend_version": "0.45.0",
+          "cold_execution_seconds": 1.5678413339774124,
+          "compilation": {
+            "applicable": false,
+            "note": "PennyLane device preprocessing is included in execution"
+          },
+          "conversion": {
+            "coefficient_of_variation": 0.2205293495066776,
+            "max_seconds": 0.0010531250154599547,
+            "mean_seconds": 0.0008275973377749324,
+            "median_seconds": 0.0008235419518314302,
+            "min_seconds": 0.0006061250460334122,
+            "relative_median_absolute_deviation": 0.2640022227337859,
+            "sample_count": 3,
+            "samples_seconds": [
+              0.0010531250154599547,
+              0.0008235419518314302,
+              0.0006061250460334122
+            ]
+          },
+          "conversion_report": {
+            "direction": "to_pennylane",
+            "framework_version": "0.45.1",
+            "issues": [],
+            "lossless": true,
+            "schema": "flagquantum_pennylane_conversion_report_v1"
+          },
+          "first_result_seconds": 1.5686648759292439,
+          "steady_state": {
+            "coefficient_of_variation": 0.035561261666372974,
+            "max_seconds": 1.7392953458998819,
+            "mean_seconds": 1.6345997958554006,
+            "median_seconds": 1.6104889291978908,
+            "min_seconds": 1.5657443500007502,
+            "relative_median_absolute_deviation": 0.02778322681139185,
+            "sample_count": 9,
+            "samples_seconds": [
+              1.5765278874954674,
+              1.5657443500007502,
+              1.5840170834038871,
+              1.6559759499970823,
+              1.6048908959026449,
+              1.6104889291978908,
+              1.6615723499970045,
+              1.7128853708039968,
+              1.7392953458998819
+            ]
+          },
+          "version": "0.45.1"
+        }
+      },
+      "stability": {
+        "maximum_relative_median_absolute_deviation": 0.1,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 194,
+        "layers": 2,
+        "n_wires": 24,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_process_single_device",
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "hostname": "redacted",
+  "measured_engine": "pennylane_lightning_qubit",
+  "methodology": {
+    "calls_per_sample": 10,
+    "compilation_included_in_steady_state": false,
+    "conversion_included_in_steady_state": false,
+    "flagquantum_correctness_reference_executions_per_case": 1,
+    "flagquantum_performance_measured": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 9,
+    "measurement_scope": "external_engine_only",
+    "output_basis_normalization_included_in_execution": false,
+    "result_retrieval_included_in_execution": true,
+    "setup_iterations": 3,
+    "warmup": 3
+  },
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "simulator_compare_pennylane",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.simulator_comparison.v1",
+  "world_size": 1
+}
