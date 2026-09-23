@@ -80,6 +80,10 @@ def expand_operator(
             ]
         )
     dim = 2**n_wires
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("operator matrix must be square")
+    if matrix.shape[0] != 2 ** len(wires):
+        raise ValueError("operator dimension does not match the target wires")
     full = torch.zeros(dim, dim, dtype=matrix.dtype, device=matrix.device)
     for col in range(dim):
         bits = _basis_bits(col, n_wires)
