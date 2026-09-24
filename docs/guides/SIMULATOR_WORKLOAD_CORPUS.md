@@ -13,7 +13,7 @@ pip install -e '.[qiskit,cirq,pennylane]'
 flagquantum-benchmark run simulator_workload_corpus \
   --workloads hardware_efficient_statevector truncated_qft_statevector \
     random_clifford_statevector local_brickwork_statevector \
-    dense_nonlocal_statevector \
+    dense_nonlocal_statevector swap_routing_statevector \
   --n-wires 10 14 18 22 \
   --engines flagquantum_native qiskit_aer cirq_simulator \
     pennylane_lightning_qubit \
@@ -24,6 +24,17 @@ flagquantum-benchmark run simulator_workload_corpus \
 Use `--workloads`, `--n-wires`, or `--engines` to run a smaller matrix. Missing
 optional dependencies, unsupported conversions, and statevector mismatches fail
 closed instead of silently removing an engine.
+
+For the 22-qubit low-entanglement SWAP-routing case with reduced timing noise:
+
+```bash
+flagquantum-benchmark run simulator_workload_corpus \
+  --workloads swap_routing_statevector --n-wires 22 \
+  --engines flagquantum_native qiskit_aer cirq_simulator \
+    pennylane_lightning_qubit \
+  --threads 1 --warmup 2 --iterations 7 --calls-per-sample 5 \
+  --json-output swap-routing.json
+```
 
 ## What is measured
 
@@ -60,6 +71,7 @@ overheads and must not be extrapolated to memory-pressure regimes.
 | `random_clifford_statevector` | Shallow deterministic Clifford layers with shuffled two-qubit pairs |
 | `local_brickwork_statevector` | Fixed-depth parameterized nearest-neighbor circuit |
 | `dense_nonlocal_statevector` | All-to-all CZ connectivity between two single-qubit layers |
+| `swap_routing_statevector` | Independent Bell pairs moved through cross-component SWAP layers without increasing entanglement |
 
 The feature schema is deliberately backend-neutral. A later evidence-based
 advisor can match a user's circuit to measured cases without claiming that this

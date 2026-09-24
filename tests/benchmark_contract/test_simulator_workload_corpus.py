@@ -61,6 +61,17 @@ def test_workload_corpus_is_deterministic_and_structurally_distinct() -> None:
     assert len(set(first_hashes.values())) == len(WORKLOAD_NAMES)
 
 
+def test_swap_routing_workload_has_declared_structure() -> None:
+    ir = build_workload("swap_routing_statevector", n_wires=22).to_ir()
+
+    histogram: dict[str, int] = {}
+    for instruction in ir.instructions:
+        histogram[instruction.name] = histogram.get(instruction.name, 0) + 1
+
+    assert len(ir.instructions) == 150
+    assert histogram == {"cx": 11, "h": 11, "ry": 88, "swap": 40}
+
+
 def test_native_only_corpus_smoke_records_real_timings() -> None:
     payload = run_benchmark(
         workloads=WORKLOAD_NAMES,
@@ -98,7 +109,7 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
 
     assert payload["schema"] == SCHEMA
     assert payload["passed"] is True
-    assert payload["workloads"] == list(WORKLOAD_NAMES)
+    assert payload["workloads"] == list(WORKLOAD_NAMES[:-1])
     assert payload["n_wires"] == [10, 14, 18, 22]
     assert len(payload["cases"]) == 20
     assert payload["all_measurements_stable"] is False
@@ -117,6 +128,36 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
         for engine in case["engines"].values():
             assert engine["end_to_end"]["sample_count"] == 9
             assert engine["end_to_end"]["median_seconds"] > 0
+
+
+def test_checked_in_swap_routing_case_is_complete_and_correct() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "simulator_swap_routing_cpu_arm64_20260924.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == SCHEMA
+    assert payload["passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["workloads"] == ["swap_routing_statevector"]
+    assert payload["n_wires"] == [22]
+    assert len(payload["cases"]) == 1
+    case = payload["cases"][0]
+    assert case["workload"]["gate_count"] == 150
+    assert case["correctness"]["passed"] is True
+    assert set(case["engines"]) == {
+        "flagquantum_native",
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit",
+    }
+    for engine in case["engines"].values():
+        assert engine["end_to_end"]["sample_count"] == 7
+        assert engine["end_to_end"]["median_seconds"] > 0
 
 
 @pytest.mark.parametrize(

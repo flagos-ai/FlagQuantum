@@ -39,6 +39,7 @@ WorkloadName = Literal[
     "random_clifford_statevector",
     "local_brickwork_statevector",
     "dense_nonlocal_statevector",
+    "swap_routing_statevector",
 ]
 EngineName = Literal[
     "flagquantum_native",
@@ -53,6 +54,7 @@ WORKLOAD_NAMES: tuple[WorkloadName, ...] = (
     "random_clifford_statevector",
     "local_brickwork_statevector",
     "dense_nonlocal_statevector",
+    "swap_routing_statevector",
 )
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native",
@@ -121,6 +123,18 @@ def _dense_nonlocal(n_wires: int) -> fq.Circuit:
     return circuit
 
 
+def _swap_routing(n_wires: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
+    for wire in range(0, n_wires - 1, 2):
+        circuit.h(wire).cx(wire, wire + 1)
+    for layer in range(4):
+        for wire in range(1, n_wires - 1, 2):
+            circuit.swap(wire, wire + 1)
+        for wire in range(n_wires):
+            circuit.ry(wire, 0.01 * (layer + 1) * (wire + 1))
+    return circuit
+
+
 def build_workload(
     name: WorkloadName,
     *,
@@ -141,6 +155,8 @@ def build_workload(
         return _local_brickwork(n_wires)
     if name == "dense_nonlocal_statevector":
         return _dense_nonlocal(n_wires)
+    if name == "swap_routing_statevector":
+        return _swap_routing(n_wires)
     raise ValueError(f"unsupported workload: {name}")
 
 
