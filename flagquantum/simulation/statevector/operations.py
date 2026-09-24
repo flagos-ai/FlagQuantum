@@ -18,13 +18,14 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
-from . import two_qubit_cpu
+from . import controlled_phase, two_qubit_cpu
 from .diagonal_cpu import (
     _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
 )
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
 )
+from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
 )
@@ -231,14 +232,18 @@ def _compile_statevector_program(
     enable_triton_loop: bool,
     enable_cpu_cross_wire_diagonal: bool = False,
     enable_cpu_disjoint_single_wire: bool = False,
+    enable_cpu_controlled_phase_decomposition: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
-    program = _fuse_rx_rz_loops(
+    base_program = _fuse_rx_rz_loops(
         instructions,
         n_wires,
         enable_triton_loop=enable_triton_loop,
     )
+    program: Sequence[controlled_phase._ControlledPhaseStep] = base_program
+    if enable_cpu_controlled_phase_decomposition:
+        program = controlled_phase._fuse_controlled_phase_decompositions(base_program)
     optimized: list[_StatevectorPreCXStep] = list(_fuse_gate_sequences(program))
     if enable_cpu_cross_wire_diagonal:
         optimized = _fuse_cross_wire_diagonal_regions(optimized)
@@ -322,10 +327,22 @@ def _fuse_rx_rz_loops(
 
 
 def _fuse_gate_sequences(
-    program: Sequence[_StatevectorGateStep | _StatevectorRXRZLoopStep],
-) -> list[_StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep]:
+    program: Sequence[
+        _StatevectorGateStep
+        | _StatevectorRXRZLoopStep
+        | _StatevectorControlledPhaseDecompositionStep
+    ],
+) -> list[
+    _StatevectorGateStep
+    | _StatevectorRXRZLoopStep
+    | _StatevectorFusedGateStep
+    | _StatevectorControlledPhaseDecompositionStep
+]:
     fused_program: list[
-        _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
+        _StatevectorGateStep
+        | _StatevectorRXRZLoopStep
+        | _StatevectorFusedGateStep
+        | _StatevectorControlledPhaseDecompositionStep
     ] = []
     index = 0
     while index < len(program):

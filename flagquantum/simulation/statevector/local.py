@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
@@ -39,6 +39,7 @@ from .operations import (
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
     _diagonal_region,
+    _environment_flag,
     _fused_gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCrossWireDiagonalStep,
@@ -54,6 +55,11 @@ from .operations import (
     _triton_single_qubit_loop_enabled,
     _triton_single_qubit_matrix_enabled,
 )
+from .product_state import (
+    execute_product_state_program,
+    product_state_execution_is_beneficial,
+)
+from .program import _StatevectorControlledPhaseDecompositionStep
 
 if TYPE_CHECKING:
     from ...circuit import Circuit, _StatevectorExecutionStatistics
@@ -61,6 +67,20 @@ if TYPE_CHECKING:
 
 _CPU_DISJOINT_DENSE_LARGE_STATE_MIN_WIRES = 22
 _CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES = 6
+
+
+def _cpu_controlled_phase_decomposition_fusion_enabled() -> bool:
+    """Whether CPU execution may replace an exact QFT phase decomposition."""
+
+    return _environment_flag(
+        "FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", default=True
+    )
+
+
+def _cpu_product_state_execution_enabled() -> bool:
+    """Whether eligible CPU circuits may keep product components separate."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_EXECUTION", default=True)
 
 
 def _cpu_disjoint_dense_max_wires(
@@ -204,6 +224,29 @@ def _fused_constant_matrix(
     return cached
 
 
+def _controlled_phase_decomposition_matrix(
+    circuit: Circuit,
+    step: _StatevectorControlledPhaseDecompositionStep,
+    state: torch.Tensor,
+) -> torch.Tensor:
+    """Materialize and cache the exact diagonal of the fused five-gate region."""
+
+    key = (id(step), str(state.device), state.dtype, int(state.shape[0]))
+    cached = circuit._statevector_fused_matrices.get(key)
+    if cached is None:
+        real_dtype = torch.float32 if state.dtype == torch.complex64 else torch.float64
+        angle = torch.tensor(
+            step.half_angle / 2,
+            device=state.device,
+            dtype=real_dtype,
+        )
+        phases = torch.stack((-angle, -angle, -angle, 3 * angle))
+        diagonal = torch.polar(torch.ones_like(phases), phases).to(dtype=state.dtype)
+        cached = torch.diag(diagonal).detach()
+        circuit._statevector_fused_matrices[key] = cached
+    return cached
+
+
 def _initial_runtime_metrics(
     program: Sequence[_StatevectorProgramStep], *, enable_triton_loop: bool
 ) -> _StatevectorExecutionStatistics:
@@ -249,6 +292,11 @@ def _initial_runtime_metrics(
         for step in diagonal_metric_steps
         if isinstance(step, _StatevectorFusedGateStep) and step.diagonal
     )
+    controlled_phase_regions = tuple(
+        step
+        for step in metric_steps
+        if isinstance(step, _StatevectorControlledPhaseDecompositionStep)
+    )
     return {
         "triton_single_qubit_loop_enabled": enable_triton_loop,
         "triton_single_qubit_loop_regions": len(loop_steps),
@@ -263,8 +311,10 @@ def _initial_runtime_metrics(
         "triton_ry_rz_pair_executed": 0,
         "triton_single_qubit_matrix_regions": 0,
         "diagonal_elementwise_gates": diagonal_unfused_gates
-        + sum(len(step.instructions) for step in diagonal_fused_regions),
-        "diagonal_fused_regions": len(diagonal_fused_regions),
+        + sum(len(step.instructions) for step in diagonal_fused_regions)
+        + 5 * len(controlled_phase_regions),
+        "diagonal_fused_regions": len(diagonal_fused_regions)
+        + len(controlled_phase_regions),
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
@@ -285,12 +335,14 @@ def _initial_runtime_metrics(
         ),
         "fused_gate_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
-        ),
+        )
+        + len(controlled_phase_regions),
         "fused_gate_count": sum(
             len(step.instructions)
             for step in metric_steps
             if isinstance(step, _StatevectorFusedGateStep)
-        ),
+        )
+        + 5 * len(controlled_phase_regions),
         "dependency_reordered_single_qubit_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
             for step in metric_steps
@@ -723,9 +775,60 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     if circuit._state_cache is not None and not refresh:
         return circuit._state_cache
     with runtime_config(circuit.runtime_config):
-        output = circuit.initial_state()
         binding_source = getattr(circuit, "_parameter_bindings", None)
         parameter_bindings = None if binding_source is None else binding_source.values()
+        device = torch.device(circuit.device)
+        enable_cpu_controlled_phase_decomposition = (
+            device.type == "cpu"
+            and _cpu_controlled_phase_decomposition_fusion_enabled()
+        )
+        product_state_candidate = (
+            _cpu_product_state_execution_enabled()
+            and circuit._inputs is None
+            and circuit.bsz == 1
+            and device.type == "cpu"
+            and circuit.n_wires >= 16
+        )
+        product_program: tuple[_StatevectorProgramStep, ...] = ()
+        if product_state_candidate:
+            product_program_key = (
+                "cpu_product_state",
+                enable_cpu_controlled_phase_decomposition,
+            )
+            cached_product_program = cast(
+                tuple[_StatevectorProgramStep, ...] | None,
+                circuit._backend_programs.get(product_program_key),
+            )
+            if cached_product_program is None:
+                product_program = _compile_statevector_program(
+                    circuit._instructions,
+                    circuit.n_wires,
+                    enable_triton_loop=False,
+                    enable_cpu_controlled_phase_decomposition=(
+                        enable_cpu_controlled_phase_decomposition
+                    ),
+                )
+                circuit._backend_programs[product_program_key] = product_program
+            else:
+                product_program = cached_product_program
+        if product_state_candidate and product_state_execution_is_beneficial(
+            product_program, circuit.n_wires
+        ):
+            output = execute_product_state_program(
+                product_program,
+                n_wires=circuit.n_wires,
+                device=device,
+                dtype=circuit.dtype,
+                parameter_bindings=parameter_bindings,
+            )
+            circuit._last_statevector_runtime = _initial_runtime_metrics(
+                product_program, enable_triton_loop=False
+            )
+            circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = 0
+            circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
+            circuit._state_cache = output
+            return output
+        output = circuit.initial_state()
         enable_triton_loop = (
             _triton_single_qubit_loop_enabled()
             and output.is_cuda
@@ -759,6 +862,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_cross_wire_diagonal,
             "cpu_disjoint_single_wire",
             enable_cpu_disjoint_single_wire,
+            "cpu_controlled_phase_decomposition",
+            enable_cpu_controlled_phase_decomposition,
             "cpu_disjoint_dense_max_two_wire_regions",
             max_cpu_two_wire_regions,
             "cpu_disjoint_dense_max_wires",
@@ -772,6 +877,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
+                enable_cpu_controlled_phase_decomposition=(
+                    enable_cpu_controlled_phase_decomposition
+                ),
                 max_two_wire_regions=max_cpu_two_wire_regions,
                 max_dense_wires=max_cpu_dense_wires,
             )
@@ -794,6 +902,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
+            if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
+                output = _apply_diagonal_matrix(
+                    output,
+                    _controlled_phase_decomposition_matrix(circuit, step, output),
+                    (step.control, step.target),
+                    circuit.n_wires,
+                )
+                continue
             if isinstance(step, _StatevectorDisjointDenseStep):
                 output = _apply_disjoint_dense_step(
                     circuit,
