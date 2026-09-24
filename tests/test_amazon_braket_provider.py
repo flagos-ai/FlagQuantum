@@ -67,7 +67,7 @@ def test_braket_device_properties_build_dynamic_backend_profile() -> None:
 
     assert profile.provider == "amazon-braket"
     assert profile.name == "IQM Fake"
-    assert profile.n_wires == 4
+    assert profile.n_qubits == 4
     assert profile.basis_gates == ("prx", "cz")
     assert profile.coupling_map.edges == ((0, 1), (1, 2), (2, 3))
     assert profile.supports_dynamic_circuits is True

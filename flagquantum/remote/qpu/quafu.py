@@ -236,7 +236,7 @@ class QuafuProvider(HttpQuantumProvider):
                 CloudBackendProfile(
                     provider="quafu",
                     name=name,
-                    n_wires=capacity,
+                    n_qubits=capacity,
                     basis_gates=tuple(map(str, row.get("basis_gates", ()))),
                     is_simulator=name == "sim",
                     metadata={
@@ -268,7 +268,7 @@ class QuafuProvider(HttpQuantumProvider):
                 CloudBackendProfile(
                     provider="quafu",
                     name=str(name),
-                    n_wires=n_wires or self.default_n_wires,
+                    n_qubits=n_wires or self.default_n_wires,
                     metadata={
                         "source": "quafu-task-status",
                         "queue_status": queue_status,

@@ -66,7 +66,7 @@ provider = QuafuProvider()
 for backend in provider.discover_backends():
     print(
         backend.name,
-        backend.n_wires,
+        backend.n_qubits,
         backend.metadata.get("status"),
         backend.metadata.get("queue"),
     )

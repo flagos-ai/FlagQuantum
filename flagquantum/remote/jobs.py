@@ -326,7 +326,7 @@ def _submit_quafu(
             "backend": CloudBackendProfile(
                 provider="quafu",
                 name=target.partition(":")[2].strip(),
-                n_wires=ir.n_wires,
+                n_qubits=ir.n_wires,
             ),
             "optimize": False,
             "metadata": {

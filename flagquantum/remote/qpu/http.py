@@ -171,7 +171,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_wires=n_wires or self.default_n_wires,
+                    n_qubits=n_wires or self.default_n_wires,
                     metadata={"source": "fallback"},
                 ),
             )
@@ -194,7 +194,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=str(row.get("name", row.get("backend", self.default_backend))),
-                    n_wires=qubits,
+                    n_qubits=qubits,
                     basis_gates=tuple(row.get("basis_gates", ())),
                     is_simulator=bool(row.get("is_simulator", False)),
                     metadata=dict(row),
@@ -205,7 +205,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_wires=n_wires or self.default_n_wires,
+                    n_qubits=n_wires or self.default_n_wires,
                     metadata={"source": "empty-list-fallback"},
                 )
             )

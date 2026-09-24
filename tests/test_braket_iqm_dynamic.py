@@ -19,7 +19,7 @@ def _iqm_backend(**overrides) -> CloudBackendProfile:
     values = {
         "provider": "amazon-braket",
         "name": "iqm-test",
-        "n_wires": 4,
+        "n_qubits": 4,
         "supports_openqasm": True,
         "supports_dynamic_circuits": True,
         "max_classical_bits": 8,
@@ -37,7 +37,7 @@ def test_braket_iqm_export_lowers_feedback_and_active_reset() -> None:
     circuit.conditional("x", 1, classical_bit=3)
     circuit.reset(1)
 
-    qasm = export_dynamic_qasm3_for_backend(circuit, _iqm_backend(n_wires=2))
+    qasm = export_dynamic_qasm3_for_backend(circuit, _iqm_backend(n_qubits=2))
 
     assert "#pragma braket verbatim" in qasm
     assert f"prx({pi!r}, 0.0) $0;" in qasm
@@ -59,7 +59,7 @@ def test_braket_iqm_reuses_latest_unique_feedback_key() -> None:
 
     qasm = export_dynamic_qasm3_for_backend(
         circuit,
-        _iqm_backend(n_wires=3, metadata={"dynamic_qubit_groups": ((0, 1, 2),)}),
+        _iqm_backend(n_qubits=3, metadata={"dynamic_qubit_groups": ((0, 1, 2),)}),
     )
 
     assert "measure_ff(0) $0;" in qasm
@@ -121,7 +121,7 @@ def test_braket_iqm_rejects_mid_circuit_measurement_without_feed_forward() -> No
     report = fq.experimental.dynamic.assess_dynamic_backend(
         circuit,
         _iqm_backend(
-            n_wires=1,
+            n_qubits=1,
             metadata={"dynamic_qubit_groups": ((0,),)},
         ),
     )
@@ -133,7 +133,7 @@ def test_braket_iqm_deployment_is_dialect_sealed() -> None:
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
     package = create_dynamic_deployment_package(
-        circuit, backend=_iqm_backend(n_wires=2), shots=25
+        circuit, backend=_iqm_backend(n_qubits=2), shots=25
     )
 
     assert deployment.validate_deployment_package(package) is package

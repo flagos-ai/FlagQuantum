@@ -98,7 +98,7 @@ def test_azure_target_builds_explicit_fail_closed_profile() -> None:
 
     assert profile.provider == "azure-quantum"
     assert profile.name == target.name
-    assert profile.n_wires == 32
+    assert profile.n_qubits == 32
     assert profile.basis_gates == ("rz", "rzz")
     assert profile.supports_dynamic_circuits is False
     assert profile.metadata["device_provider"] == "quantinuum"

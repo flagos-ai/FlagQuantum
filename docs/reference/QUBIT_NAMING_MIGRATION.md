@@ -4,7 +4,8 @@ Implementation candidate on `qubit-naming-migration`; pending API/release review
 
 New code uses `fq.Circuit(n_qubits=2)`, `fq.probabilities(qubits=(0,))`,
 `fq.samples(qubits=(0,))`, `fq.counts(qubits=(0,))` and
-`fq.RuntimePolicy(observable_qubits=(0,))`.
+`fq.RuntimePolicy(observable_qubits=(0,))`. Cloud deployment profiles use
+`CloudBackendProfile(n_qubits=...)` and expose `profile.n_qubits`.
 
 Old count aliases and `wires` / `observable_wires` keywords emit
 DeprecationWarning. Supplying both selection keywords is an error, including
@@ -19,6 +20,9 @@ fields and unsupported versions are rejected. Older package versions do not
 understand the new writer; checkpoint compatibility is backward-reading, not
 forward-reading.
 
-IR and backend-native fields are unchanged. The deprecated observable_wires
-property remains available on RuntimePolicy for callers migrating gradually.
-The four affected candidate signatures are updated for this explicitly requested migration; the historical baseline and checker remain unchanged.
+IR and backend-native payload fields are unchanged. The deprecated
+`observable_wires` property remains available on RuntimePolicy, while
+`CloudBackendProfile.n_wires` and its constructor keyword remain compatibility
+aliases during the same migration window. The affected candidate signatures
+are updated for this explicitly requested migration; the historical baseline
+and checker remain unchanged.

@@ -11,7 +11,7 @@ this proposal and PR; it does not record a completed API-owner review.
 New users encounter `n_qubits` alongside `wires` and `observable_wires`. Documentation
 must not invent unsupported keyword replacements, but should teach one vocabulary.
 This PR renames the quick-start indices and implements the public keyword aliases
-and policy schema reader/writer described below. The historical baseline remains unchanged; the four affected candidate signatures
+and policy schema reader/writer described below. The historical baseline remains unchanged; the affected candidate signatures
 are updated with this user-authorized migration.
 
 ## Proposed public spelling
@@ -22,10 +22,11 @@ are updated with this user-authorized migration.
 | probabilities(wires=...) | probabilities(qubits=...) | Preserve positional selection; deprecated keyword alias |
 | samples(wires=...) / counts(wires=...) | samples(qubits=...) / counts(qubits=...) | Preserve Observable overload and positional selection |
 | RuntimePolicy(observable_wires=...) | RuntimePolicy(observable_qubits=...) | Constructor alias plus explicit old-payload reader |
+| CloudBackendProfile(n_wires=...) / profile.n_wires | CloudBackendProfile(n_qubits=...) / profile.n_qubits | Deprecated constructor keyword and read-only property aliases |
 | Example local variable wire | qubit | Rename now; no compatibility obligation |
 
 The implementation uses an OMITTED sentinel to distinguish omitted arguments
-from explicit None. The four candidate signature updates are included for review. Both old and new keywords together must
+from explicit None. The candidate signature updates are included for review. Both old and new keywords together must
 raise an actionable TypeError; do not guess precedence. Preserve validation of
 indices, batch semantics, output ordering, observable selection and gradients.
 
@@ -37,9 +38,10 @@ and keep an old-payload reader. Existing payloads containing observable_wires
 must retain their meaning. Reject conflicting duplicate fields. Preserve
 historical fixtures rather than regenerating them to hide the transition.
 
-This proposal does not rename IR fields, backend-native adapter vocabulary,
-plan identity inputs, or every internal occurrence. Those require a separately
-inventoried contract migration; a global string replacement is unsafe.
+This proposal does not rename IR fields, backend-native adapter payload keys,
+plan identity inputs, or every internal occurrence. Provider-neutral
+`CloudBackendProfile` uses `n_qubits`; adapters continue reading vendor payload
+names and translate them at the boundary.
 
 ## Schedule and ownership
 

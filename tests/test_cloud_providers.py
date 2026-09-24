@@ -56,7 +56,7 @@ class FakeTransport:
 def _package(provider, n_wires=2, *, metadata=None):
     circuit = fq.Circuit(n_wires)
     circuit.h(0).cx(0, 1)
-    backend = CloudBackendProfile(provider=provider, name="chip", n_wires=8)
+    backend = CloudBackendProfile(provider=provider, name="chip", n_qubits=8)
     if provider == "quafu" and metadata is None:
         metadata = {"provider_options": {"compiler": None, "target_qubits": [3, 4]}}
     return fqd.create_deployment_package(
@@ -137,7 +137,7 @@ def test_http_provider_discovery_fallback_without_network():
 
     assert backends[0].provider == "offline"
     assert backends[0].name == "offline_sim"
-    assert backends[0].n_wires == 3
+    assert backends[0].n_qubits == 3
 
 
 def test_quafu_provider_uses_platform_endpoint_and_token_header():
@@ -359,7 +359,7 @@ def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch
     backends = provider.discover_backends(5)
 
     assert [backend.name for backend in backends] == ["Dongling", "Miaofeng"]
-    assert all(backend.n_wires == 5 for backend in backends)
+    assert all(backend.n_qubits == 5 for backend in backends)
     assert backends[0].metadata["queue_status"] == 0
     assert transport.gets[0][0] == "https://quafu.com.cn/api/v1/devices"
     assert transport.gets[-1][1] == {"token": "env-secret"}
@@ -396,7 +396,7 @@ def test_quafu_provider_prefers_task_api_device_discovery():
 
     backends = provider.discover_backends()
 
-    assert [(backend.name, backend.n_wires) for backend in backends] == [
+    assert [(backend.name, backend.n_qubits) for backend in backends] == [
         ("Shenglian", 84),
         ("sim", 24),
     ]

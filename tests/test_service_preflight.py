@@ -43,7 +43,7 @@ def test_deployment_preflight_rejects_backend_capacity() -> None:
 
 def test_deployment_preflight_rejects_unsupported_backend_gate() -> None:
     backend = CloudBackendProfile(
-        provider="test", name="restricted", n_wires=2, basis_gates=("x", "cx")
+        provider="test", name="restricted", n_qubits=2, basis_gates=("x", "cx")
     )
 
     report = preflight_deployment(fq.Circuit(2).h(0).cx(0, 1), backend=backend)
