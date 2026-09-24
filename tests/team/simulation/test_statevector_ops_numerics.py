@@ -1723,6 +1723,18 @@ def _product_state_qft_circuit(
     return circuit
 
 
+def _product_state_swap_routing_circuit(n_wires: int) -> Circuit:
+    circuit = Circuit(n_wires, dtype=torch.complex128)
+    for wire in range(0, n_wires - 1, 2):
+        circuit.h(wire).cx(wire, wire + 1)
+    for layer in range(4):
+        for wire in range(1, n_wires - 1, 2):
+            circuit.swap(wire, wire + 1)
+        for wire in range(n_wires):
+            circuit.ry(wire, theta=0.01 * (layer + 1) * (wire + 1))
+    return circuit
+
+
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_cpu_product_state_execution_matches_dense_statevector(
     monkeypatch, dtype: torch.dtype
@@ -1764,6 +1776,22 @@ def test_cpu_product_state_execution_preserves_parameter_autograd(monkeypatch) -
     torch.testing.assert_close(actual, expected)
     torch.testing.assert_close(actual_gradient, expected_gradient)
     assert product_circuit._initial_state_workspace is None
+
+
+def test_cpu_product_state_swap_remapping_preserves_independent_components(
+    monkeypatch,
+) -> None:
+    rollback_circuit = _product_state_swap_routing_circuit(18)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "0")
+    expected = rollback_circuit.state(refresh=True)
+    assert rollback_circuit._initial_state_workspace is not None
+
+    remapped_circuit = _product_state_swap_routing_circuit(18)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "1")
+    actual = remapped_circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected)
+    assert remapped_circuit._initial_state_workspace is None
 
 
 def test_cpu_product_state_execution_declines_custom_inputs(monkeypatch) -> None:

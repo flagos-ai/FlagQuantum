@@ -127,10 +127,13 @@ flagquantum-benchmark run simulator_workload_corpus \
 ```
 
 The corpus records deterministic IR hashes and backend-neutral features beside
-the raw timing samples. Its five families cover hardware-efficient, truncated
-QFT, random Clifford, nearest-neighbor brickwork, and dense nonlocal circuits.
+the raw timing samples. Its six families cover hardware-efficient, truncated
+QFT, random Clifford, nearest-neighbor brickwork, dense nonlocal, and
+low-entanglement SWAP-routing circuits.
 See [the workload corpus guide](../docs/guides/SIMULATOR_WORKLOAD_CORPUS.md) and
 the [checked-in Apple arm64 measurement](results/comparison/SIMULATOR_WORKLOAD_CORPUS_CPU_ARM64_20260924.md).
+The focused 22-qubit SWAP-routing run is available as a
+[raw comparison artifact](results/comparison/simulator_swap_routing_cpu_arm64_20260924.json).
 These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing routing question, not isolated kernel throughput.
 

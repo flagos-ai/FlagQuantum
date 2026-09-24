@@ -83,6 +83,12 @@ def _cpu_product_state_execution_enabled() -> bool:
     return _environment_flag("FQ_CPU_PRODUCT_STATE_EXECUTION", default=True)
 
 
+def _cpu_product_state_swap_remapping_enabled() -> bool:
+    """Whether product components treat SWAP as wire remapping."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", default=True)
+
+
 def _cpu_disjoint_dense_max_wires(
     n_wires: int,
     batch_size: int,
@@ -789,6 +795,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and device.type == "cpu"
             and circuit.n_wires >= 16
         )
+        enable_product_state_swap_remapping = (
+            _cpu_product_state_swap_remapping_enabled()
+        )
         product_program: tuple[_StatevectorProgramStep, ...] = ()
         if product_state_candidate:
             product_program_key = (
@@ -812,7 +821,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             else:
                 product_program = cached_product_program
         if product_state_candidate and product_state_execution_is_beneficial(
-            product_program, circuit.n_wires
+            product_program,
+            circuit.n_wires,
+            enable_swap_remapping=enable_product_state_swap_remapping,
         ):
             output = execute_product_state_program(
                 product_program,
@@ -820,6 +831,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 device=device,
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
+                enable_swap_remapping=enable_product_state_swap_remapping,
             )
             circuit._last_statevector_runtime = _initial_runtime_metrics(
                 product_program, enable_triton_loop=False

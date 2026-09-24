@@ -51,35 +51,67 @@ def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], .
     return ()
 
 
+def _swap_wires(step: _StatevectorProgramStep) -> tuple[int, int] | None:
+    if not isinstance(step, _StatevectorGateStep):
+        return None
+    if canonical_opcode(step.instruction.name) != "swap":
+        return None
+    left, right = step.instruction.wires
+    return left, right
+
+
 def product_state_execution_is_beneficial(
-    program: Sequence[_StatevectorProgramStep], n_wires: int
+    program: Sequence[_StatevectorProgramStep],
+    n_wires: int,
+    *,
+    enable_swap_remapping: bool = True,
 ) -> bool:
     """Select plans whose component work is far below dense execution work."""
 
     if n_wires < _PRODUCT_STATE_MIN_WIRES or not program:
         return False
-    parents = list(range(n_wires))
-    sizes = [1] * n_wires
+    component_by_wire = list(range(n_wires))
+    component_members = {wire: {wire} for wire in range(n_wires)}
 
-    def root(wire: int) -> int:
-        while parents[wire] != wire:
-            parents[wire] = parents[parents[wire]]
-            wire = parents[wire]
-        return wire
+    def merge(wires: Sequence[int]) -> int:
+        component_ids = tuple(dict.fromkeys(component_by_wire[wire] for wire in wires))
+        merged_id = component_ids[0]
+        for component_id in component_ids[1:]:
+            moved_wires = component_members.pop(component_id)
+            component_members[merged_id].update(moved_wires)
+            for wire in moved_wires:
+                component_by_wire[wire] = merged_id
+        return len(component_members[merged_id])
+
+    def remap_swap(left: int, right: int) -> tuple[int, ...]:
+        left_id = component_by_wire[left]
+        right_id = component_by_wire[right]
+        if left_id == right_id:
+            return (len(component_members[left_id]),)
+        component_members[left_id].remove(left)
+        component_members[left_id].add(right)
+        component_members[right_id].remove(right)
+        component_members[right_id].add(left)
+        component_by_wire[left], component_by_wire[right] = right_id, left_id
+        return (
+            len(component_members[left_id]),
+            len(component_members[right_id]),
+        )
 
     estimated_work = 2**n_wires
     operation_count = 0
     for step in program:
+        swap_wires = _swap_wires(step)
+        if enable_swap_remapping and swap_wires is not None:
+            left, right = swap_wires
+            estimated_work += sum(2**size for size in remap_swap(left, right))
+            operation_count += 1
+            continue
         groups = _step_wire_groups(step)
         if not groups:
             return False
         for wires in groups:
-            roots = tuple(dict.fromkeys(root(wire) for wire in wires))
-            merged_root = roots[0]
-            for other in roots[1:]:
-                parents[other] = merged_root
-                sizes[merged_root] += sizes[other]
-            estimated_work += 2 ** sizes[merged_root]
+            estimated_work += 2 ** merge(wires)
             operation_count += 1
     dense_work = max(len(program), operation_count) * 2**n_wires
     return bool(estimated_work <= _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO * dense_work)
@@ -116,6 +148,42 @@ def _merge_components(
     for wire in ordered_wires:
         components[wire] = component
     return component
+
+
+def _relabel_component(
+    component: _ProductComponent, substitutions: dict[int, int]
+) -> _ProductComponent:
+    relabeled_wires = tuple(substitutions.get(wire, wire) for wire in component.wires)
+    ordered_wires = tuple(sorted(relabeled_wires))
+    state = component.state
+    if relabeled_wires != ordered_wires:
+        axes = {wire: index + 1 for index, wire in enumerate(relabeled_wires)}
+        state = (
+            state.reshape((1,) + (2,) * len(relabeled_wires))
+            .permute((0,) + tuple(axes[wire] for wire in ordered_wires))
+            .reshape(1, -1)
+            .contiguous()
+        )
+    return _ProductComponent(ordered_wires, state)
+
+
+def _remap_swap_components(
+    components: dict[int, _ProductComponent], left: int, right: int
+) -> None:
+    left_component = components[left]
+    right_component = components[right]
+    substitutions = {left: right, right: left}
+    updated_components: tuple[_ProductComponent, ...]
+    if left_component is right_component:
+        updated_components = (_relabel_component(left_component, substitutions),)
+    else:
+        updated_components = (
+            _relabel_component(left_component, substitutions),
+            _relabel_component(right_component, substitutions),
+        )
+    for component in updated_components:
+        for wire in component.wires:
+            components[wire] = component
 
 
 def _controlled_phase_matrix(
@@ -191,6 +259,7 @@ def execute_product_state_program(
     device: torch.device,
     dtype: torch.dtype,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
+    enable_swap_remapping: bool = True,
 ) -> torch.Tensor:
     """Execute an exact program while merging components only when required."""
 
@@ -200,6 +269,11 @@ def execute_product_state_program(
         wire: _ProductComponent((wire,), zero.clone()) for wire in range(n_wires)
     }
     for step in program:
+        swap_wires = _swap_wires(step)
+        if enable_swap_remapping and swap_wires is not None:
+            left, right = swap_wires
+            _remap_swap_components(components, left, right)
+            continue
         if isinstance(step, _StatevectorCXSequenceStep):
             for control, target in zip(step.controls, step.targets, strict=True):
                 component = _merge_components(components, (control, target))
