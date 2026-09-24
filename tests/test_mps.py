@@ -919,7 +919,7 @@ def test_wide_noisy_mps_counts_do_not_use_int64_basis_indices():
         native.sample(1, format="index")
 
 
-@pytest.mark.parametrize("n_qubits", (16, 20, 24))
+@pytest.mark.parametrize("n_qubits", (16, 20, 24, 1000))
 def test_cpu_noisy_mps_counts_scale_past_dense_service_limit(n_qubits: int):
     circuit = fq.Circuit(n_qubits).h(0)
     for wire in range(n_qubits - 1):

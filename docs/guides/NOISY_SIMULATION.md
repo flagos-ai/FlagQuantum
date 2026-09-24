@@ -175,10 +175,10 @@ The implementation now verifies full-register counts on a 100-qubit CPU
 product-state circuit without materializing an integer basis index. Explicit
 `format="index"` samples remain limited to 63 qubits because they use signed
 `int64`; ordinary `fq.counts()` and `format="bits"` do not have that artificial
-limit. The checked-in performance benchmark remains the stronger noisy,
-entangled evidence: 16, 20, and 24-qubit GHZ chains with bond cap 8.
+limit. The checked-in performance benchmark provides noisy, entangled evidence
+from 16 through 1,000 qubits for a low-bond GHZ chain with bond cap 8.
 
-The 100-qubit check is a width test, not a general 100-qubit performance or
+The 1,000-qubit check is a width test, not a general 1,000-qubit performance or
 accuracy guarantee. Required Schmidt rank can grow as `2**(n_qubits / 2)` for
 highly entangled circuits. Once the required rank exceeds `chi`, MPS truncates;
 the result reports maximum observed bond, truncation error, and discarded
@@ -191,17 +191,28 @@ For a managed `quafu:<device>-sim` target, the usable qubit count is additionall
 bounded by the logical wires covered by the selected physical-device
 calibration and by the service's admission policy. FlagQuantum rejects a
 profile that does not cover every logical wire. Consequently the honest
-capacity statement is: 100 qubits are verified for a low-bond CPU counts smoke
-test; 24 qubits are timed for the documented noisy GHZ workload; every other
-circuit must be admitted by memory and calibration checks and judged from its
-reported truncation evidence.
+capacity statement is: up to 1,000 qubits are timed for this low-bond noisy GHZ
+workload; every other circuit must be admitted by memory and calibration checks
+and judged from its reported bond dimension and truncation evidence.
 
 The 2026-09-24 arm64 CPU smoke run used a GHZ chain, `cx`
 depolarizing probability 0.01, four trajectories, bond cap 8, cutoff `1e-10`,
-and 1,000 output shots. Median end-to-end times over three runs were 0.370 s at
-16 qubits, 0.509 s at 20 qubits, and 0.703 s at 24 qubits. These timings include
-planning, noisy evolution, and counts. They are workload-specific capacity
-evidence, not a general performance promise. The raw record is
+and 1,000 output shots. Median end-to-end times over three runs were:
+
+| Qubits | Median time | Observed max bond | Counts |
+|---:|---:|---:|---:|
+| 16 | 0.053 s | 2 | 1,000 |
+| 20 | 0.062 s | 2 | 1,000 |
+| 24 | 0.099 s | 2 | 1,000 |
+| 50 | 0.183 s | 2 | 1,000 |
+| 100 | 0.298 s | 2 | 1,000 |
+| 200 | 0.553 s | 2 | 1,000 |
+| 500 | 1.408 s | 2 | 1,000 |
+| 1,000 | 3.026 s | 2 | 1,000 |
+
+These timings include planning, noisy evolution, and counts. No truncation was
+observed for this particular rank-2 workload. They are workload-specific
+capacity evidence, not a general performance promise. The raw record is
 [`cpu_noisy_mps_counts_20260924.json`](../../benchmarks/results/local/cpu_noisy_mps_counts_20260924.json).
 
 For dense circuits that fit statevector memory, trajectories can be processed

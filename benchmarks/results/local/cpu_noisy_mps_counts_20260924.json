@@ -1,5 +1,5 @@
 {
-  "benchmark": "cpu_noisy_mps_counts_20260924",
+  "benchmark": "cpu_noisy_mps_counts_width",
   "benchmark_evidence_class": "local_non_release",
   "claim_evidence_type": "development_smoke",
   "distribution_semantics": "single_device_fast_path",
@@ -10,10 +10,10 @@
     "local CPU benchmark is not release-certified scalability evidence"
   ],
   "schema": "flagquantum.benchmark.cpu_noisy_mps_counts",
-  "version": "1.0",
+  "version": "1.1",
   "recorded_at": "2026-09-24",
   "environment": {
-    "os": "Darwin 27.0.0",
+    "os": "macOS-27.0-arm64-arm-64bit",
     "architecture": "arm64",
     "python": "3.12.14",
     "torch": "2.13.0",
@@ -31,19 +31,108 @@
   "results": [
     {
       "n_qubits": 16,
-      "seconds": [0.37871675001224503, 0.36993358295876533, 0.3452316249604337],
-      "median_seconds": 0.36993358295876533
+      "seconds": [
+        0.06972095801029354,
+        0.05224008404184133,
+        0.053120916010811925
+      ],
+      "median_seconds": 0.053120916010811925,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 16384,
+      "counts_total": 1000
     },
     {
       "n_qubits": 20,
-      "seconds": [0.5251774159842171, 0.5091208330122754, 0.46358516602776945],
-      "median_seconds": 0.5091208330122754
+      "seconds": [
+        0.06532633397728205,
+        0.061627791030332446,
+        0.05871591699542478
+      ],
+      "median_seconds": 0.061627791030332446,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 20480,
+      "counts_total": 1000
     },
     {
       "n_qubits": 24,
-      "seconds": [0.7028839999693446, 0.679801583988592, 0.7759300830075517],
-      "median_seconds": 0.7028839999693446
+      "seconds": [
+        0.08735704200807959,
+        0.09906183299608529,
+        0.10180762497475371
+      ],
+      "median_seconds": 0.09906183299608529,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 24576,
+      "counts_total": 1000
+    },
+    {
+      "n_qubits": 50,
+      "seconds": [
+        0.18347399996127933,
+        0.19221929198829457,
+        0.1607582499855198
+      ],
+      "median_seconds": 0.18347399996127933,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 51200,
+      "counts_total": 1000
+    },
+    {
+      "n_qubits": 100,
+      "seconds": [
+        0.3072212910046801,
+        0.2882595830014907,
+        0.29844883299665526
+      ],
+      "median_seconds": 0.29844883299665526,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 102400,
+      "counts_total": 1000
+    },
+    {
+      "n_qubits": 200,
+      "seconds": [
+        0.5786466249846853,
+        0.5532722090138122,
+        0.5490894999820739
+      ],
+      "median_seconds": 0.5532722090138122,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 204800,
+      "counts_total": 1000
+    },
+    {
+      "n_qubits": 500,
+      "seconds": [
+        1.407540499989409,
+        1.377483749995008,
+        1.5332397500169463
+      ],
+      "median_seconds": 1.407540499989409,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 512000,
+      "counts_total": 1000
+    },
+    {
+      "n_qubits": 1000,
+      "seconds": [
+        2.8724707079818472,
+        3.115888250002172,
+        3.0257082079770043
+      ],
+      "median_seconds": 3.0257082079770043,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "maximum_planned_state_bytes": 1024000,
+      "counts_total": 1000
     }
   ],
-  "scope": "CPU smoke evidence for this workload; not a general simulator throughput claim"
+  "scope": "Low-bond CPU width evidence for this workload; not a general simulator throughput or arbitrary-circuit capacity claim"
 }

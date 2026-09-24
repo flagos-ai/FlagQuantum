@@ -38,6 +38,7 @@ def sample_mps_bits(
             [tensor.repeat_interleave(count, dim=0) for tensor in state.tensors],
             config=state.config,
         )
+        work.orthogonality_center = state.orthogonality_center
         for wire in range(state.n_wires):
             probabilities = work._wire_probabilities(wire)
             bit = torch.multinomial(

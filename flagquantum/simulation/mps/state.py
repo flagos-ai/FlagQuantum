@@ -312,35 +312,65 @@ class MPSState(MPSPlanningMixin):
             raise ValueError(
                 f"Orthogonality center must be in [0, {self.n_wires - 1}], got {site}."
             )
-        if self.bsz != 1:
-            rebuilt = type(self).from_statevector(
-                self.to_statevector(),
-                self.n_wires,
-                config=self.config,
-            )
-            self.tensors = rebuilt.tensors
-            self.truncation_errors.extend(rebuilt.truncation_errors)
-            self.truncation_records.extend(rebuilt.truncation_records)
-            self.orthogonality_center = rebuilt.orthogonality_center
-        if self.orthogonality_center is None or self.orthogonality_center < site:
+        if self.orthogonality_center is None:
             self.orthogonalize_left()
-        self._sweep_center_left(site)
+        center = self.orthogonality_center
+        if center is None:
+            raise RuntimeError("MPS orthogonalization did not establish a center")
+        if center < site:
+            self._sweep_center_right(site)
+        elif center > site:
+            self._sweep_center_left(site)
         return self
 
-    def _sweep_center_left(self, target_site: int) -> None:
-        for wire in range(self.n_wires - 1, int(target_site), -1):
+    def _sweep_center_right(self, target_site: int) -> None:
+        center = self.orthogonality_center
+        if center is None:
+            center = 0
+        for wire in range(int(center), int(target_site)):
             tensor = self.tensors[wire]
-            _, left_dim, physical_dim, right_dim = tensor.shape
-            matrix = tensor[0].reshape(left_dim, physical_dim * right_dim)
+            batch, left_dim, physical_dim, right_dim = tensor.shape
+            matrix = tensor.reshape(batch, left_dim * physical_dim, right_dim)
+            q, r = torch.linalg.qr(matrix, mode="reduced")
+            new_right_dim = q.shape[-1]
+            self.tensors[wire] = q.reshape(
+                batch,
+                left_dim,
+                physical_dim,
+                new_right_dim,
+            )
+            next_tensor = self.tensors[wire + 1]
+            self.tensors[wire + 1] = torch.einsum(
+                "bij,bjsk->bisk",
+                r,
+                next_tensor,
+            )
+        self.orthogonality_center = int(target_site)
+
+    def _sweep_center_left(self, target_site: int) -> None:
+        center = self.orthogonality_center
+        if center is None:
+            center = self.n_wires - 1
+        for wire in range(int(center), int(target_site), -1):
+            tensor = self.tensors[wire]
+            batch, left_dim, physical_dim, right_dim = tensor.shape
+            matrix = tensor.reshape(batch, left_dim, physical_dim * right_dim)
             q, r = torch.linalg.qr(matrix.transpose(-1, -2), mode="reduced")
             right_orthogonal = q.transpose(-1, -2)
             transfer = r.transpose(-1, -2)
-            new_left_dim = right_orthogonal.shape[0]
+            new_left_dim = right_orthogonal.shape[1]
             self.tensors[wire] = right_orthogonal.reshape(
-                1, new_left_dim, physical_dim, right_dim
+                batch,
+                new_left_dim,
+                physical_dim,
+                right_dim,
             )
             previous = self.tensors[wire - 1]
-            self.tensors[wire - 1] = torch.einsum("blpa,ac->blpc", previous, transfer)
+            self.tensors[wire - 1] = torch.einsum(
+                "blpa,bac->blpc",
+                previous,
+                transfer,
+            )
         self.orthogonality_center = int(target_site)
 
     @torch.no_grad()
@@ -756,23 +786,35 @@ class MPSState(MPSPlanningMixin):
         return sample_mps_indices(self, shots, generator=generator)
 
     def _wire_probabilities(self, wire: int) -> torch.Tensor:
-        z_value = self._expectation_product_ops(
-            {int(wire): self._fixed_gate_matrix("z")}
-        )
-        probs = torch.stack(((1 + z_value) / 2, (1 - z_value) / 2), dim=-1)
+        self.move_orthogonality_center(int(wire))
+        tensor = self.tensors[int(wire)]
+        probs = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
         probs = torch.clamp(probs, min=0)
         norm = probs.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(probs))) or bool(torch.any(norm <= 1e-12)):
+            raise RuntimeError("MPS measurement probabilities are not finite")
         return probs / torch.clamp(norm, min=1e-12)
 
     def _project_wire(self, wire: int, bits: torch.Tensor) -> None:
+        self.move_orthogonality_center(int(wire))
         tensor = self.tensors[int(wire)].clone()
         mask = torch.zeros(self.bsz, 2, dtype=self.dtype, device=self.device)
         mask.scatter_(1, bits.reshape(-1, 1), 1)
         self.tensors[int(wire)] = tensor * mask[:, None, :, None]
 
     def _normalize(self) -> None:
-        norm = torch.sqrt(torch.clamp(self._expectation_product_ops({}), min=1e-24))
-        self.tensors[0] = self.tensors[0] / norm.reshape(-1, 1, 1, 1).to(self.dtype)
+        center = self.orthogonality_center
+        if center is None:
+            self.move_orthogonality_center(0)
+            center = 0
+        tensor = self.tensors[int(center)]
+        norm_squared = torch.sum(torch.abs(tensor) ** 2, dim=(1, 2, 3))
+        if bool(torch.any(~torch.isfinite(norm_squared))) or bool(
+            torch.any(norm_squared <= 1e-24)
+        ):
+            raise RuntimeError("MPS state norm is not finite and positive")
+        norm = torch.sqrt(norm_squared)
+        self.tensors[int(center)] = tensor / norm.reshape(-1, 1, 1, 1).to(self.dtype)
 
     def counts(
         self,
@@ -985,8 +1027,13 @@ class MPSState(MPSPlanningMixin):
             branch_probs.append(
                 torch.clamp(self._local_effect_probability(op, wire), min=0)
             )
-        probs = torch.stack(branch_probs, dim=-1)
-        probs = probs / torch.clamp(probs.sum(dim=-1, keepdim=True), min=1e-12)
+        branch_weights = torch.stack(branch_probs, dim=-1)
+        totals = branch_weights.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(branch_weights))) or bool(
+            torch.any(totals <= 1e-12)
+        ):
+            raise RuntimeError("Kraus branch probabilities are not finite and positive")
+        probs = branch_weights / totals
         choices = torch.multinomial(
             probs,
             num_samples=1,
@@ -994,18 +1041,29 @@ class MPSState(MPSPlanningMixin):
             generator=generator,
         ).squeeze(-1)
         for batch in range(self.bsz):
-            op = ops[int(choices[batch].item())]
+            choice = int(choices[batch].item())
+            op = ops[choice]
             tensor = self.tensors[wire][batch : batch + 1]
-            self.tensors[wire][batch : batch + 1] = torch.einsum(
+            updated = torch.einsum(
                 "pq,blqr->blpr",
                 op,
                 tensor,
             )
-        self._normalize()
+            branch_norm = torch.sqrt(branch_weights[batch, choice])
+            self.tensors[wire][batch : batch + 1] = updated / branch_norm.to(self.dtype)
 
     def _local_effect_probability(self, op: torch.Tensor, wire: int) -> torch.Tensor:
+        self.move_orthogonality_center(int(wire))
         effect = torch.conj(op).transpose(-1, -2) @ op
-        return self._expectation_product_ops({int(wire): effect})
+        tensor = self.tensors[int(wire)]
+        return torch.real(
+            torch.einsum(
+                "blpr,pq,blqr->b",
+                torch.conj(tensor),
+                effect,
+                tensor,
+            )
+        )
 
     def apply_two(
         self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
@@ -1025,6 +1083,20 @@ class MPSState(MPSPlanningMixin):
         """
         self._validate_wire(int(left_wire))
         self._validate_wire(int(left_wire) + 1)
+        # A local split only leaves a valid mixed-canonical state when the
+        # incoming two-site region contains the current center.  Keeping that
+        # invariant makes subsequent local measurement and Kraus probabilities
+        # both stable and independent of the total chain length.
+        # QR center moves through rank-deficient product-state tensors can have
+        # undefined derivatives.  The established differentiable path therefore
+        # keeps its original SVD-only behavior; execution/sampling paths maintain
+        # the stronger canonical invariant used by local probabilities.
+        if not (
+            matrix.requires_grad
+            or self.tensors[int(left_wire)].requires_grad
+            or self.tensors[int(left_wire) + 1].requires_grad
+        ):
+            self.move_orthogonality_center(int(left_wire))
         left = self.tensors[int(left_wire)]
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
