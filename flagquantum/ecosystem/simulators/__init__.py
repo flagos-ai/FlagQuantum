@@ -1,6 +1,7 @@
 """Evidence-scoped simulator recommendations without automatic routing."""
 
 from .advisor import (
+    EvidenceLevel,
     RecommendationStatus,
     SimulatorAdvisorEvidenceError,
     SimulatorCandidate,
@@ -9,6 +10,7 @@ from .advisor import (
 )
 
 __all__ = (
+    "EvidenceLevel",
     "RecommendationStatus",
     "SimulatorAdvisorEvidenceError",
     "SimulatorCandidate",

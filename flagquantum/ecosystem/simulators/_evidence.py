@@ -9,6 +9,10 @@ SOURCE_PATH = (
     "benchmarks/results/comparison/simulator_comparison_cpu_arm64_20260923.json"
 )
 SOURCE_SHA256 = "e2cc3d087a620b1c9dcf08401eb79a915ac39d156fc23da29c9ff532c407bb06"
+WORKLOAD_MANIFEST_PATH = "benchmarks/manifests/simulator_workload_ir_v1.json"
+WORKLOAD_MANIFEST_SHA256 = (
+    "0e8d5ec9797b43c65e1c668abc90e7190e93510ef6633f0c9c744dfa7a0147d0"
+)
 
 _IDENTITY = {
     "calls_per_sample": 10,
@@ -35,6 +39,7 @@ _ROWS = (
         10,
         82,
         "649aeba239b1fd06d25eb5eaf3637ecd5d962943dd6c4b22c051b19abd7d42b2",
+        "255726a8a31f9b38cdc12674422b476a96c119ebae4303b8389848b2fd3796f9",
         {
             "flagquantum_native": (
                 "FlagQuantum",
@@ -70,6 +75,7 @@ _ROWS = (
         14,
         114,
         "b0989ab5f38dd830e03accbe16ed8cf6dad3c2d1b78fc606d9e001dc182b43aa",
+        "9e694b13fd7189e728b9ac688dcdf489c5eac9d1653c4148129ddd1b95080121",
         {
             "flagquantum_native": (
                 "FlagQuantum",
@@ -105,6 +111,7 @@ _ROWS = (
         18,
         146,
         "7679c254999c4522f9f99090c2a8ce1ad6fc64eab887758617b08986a09167f4",
+        "ec19f1ff0bcab30ea7a9db81f03c2b501d5d8d93af774f27739ef59974dc72de",
         {
             "flagquantum_native": (
                 "FlagQuantum",
@@ -140,6 +147,7 @@ _ROWS = (
         22,
         178,
         "042ea9c5850a1f1f4a681074b8811163796fb04aeb14327d2a4553db392f502a",
+        "bde728e3d94982379a5092b2ad804e3481de1c6c89e7a6f8fc1b8a3ee11c6659",
         {
             "flagquantum_native": (
                 "FlagQuantum",
@@ -175,6 +183,7 @@ _ROWS = (
         24,
         194,
         "1c86cd82d2e89171b1784d9a95ffd22facfee0f76dd31e770506bf87df187a22",
+        "2808ec5cd1b9c929c2a54dc1ed06d91694c064b8cd5dbe80a3098b2a7dfeac26",
         {
             "flagquantum_native": (
                 "FlagQuantum",
@@ -219,7 +228,7 @@ def bundled_report() -> dict[str, Any]:
         "pennylane_lightning_qubit",
     )
     rows = []
-    for n_wires, gate_count, fingerprint, measurements in _ROWS:
+    for n_wires, gate_count, fingerprint, ir_content_hash, measurements in _ROWS:
         engines = {}
         native_seconds = measurements["flagquantum_native"][2]
         for engine in engine_order:
@@ -244,6 +253,7 @@ def bundled_report() -> dict[str, Any]:
                     "seed": 7319,
                 },
                 "workload_fingerprint": fingerprint,
+                "ir_content_hash": ir_content_hash,
                 "engines": engines,
                 "ratios_to_flagquantum": {
                     engine: measurements[engine][2] / native_seconds
@@ -262,9 +272,21 @@ def bundled_report() -> dict[str, Any]:
             "engine_order": list(engine_order),
             "comparison_identity": _IDENTITY,
             "rows": rows,
-            "sources": [{"path": SOURCE_PATH, "sha256": SOURCE_SHA256}],
+            "sources": [
+                {"path": SOURCE_PATH, "sha256": SOURCE_SHA256},
+                {
+                    "path": WORKLOAD_MANIFEST_PATH,
+                    "sha256": WORKLOAD_MANIFEST_SHA256,
+                },
+            ],
         }
     )
 
 
-__all__ = ("SOURCE_PATH", "SOURCE_SHA256", "bundled_report")
+__all__ = (
+    "SOURCE_PATH",
+    "SOURCE_SHA256",
+    "WORKLOAD_MANIFEST_PATH",
+    "WORKLOAD_MANIFEST_SHA256",
+    "bundled_report",
+)

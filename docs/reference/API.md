@@ -487,21 +487,29 @@ export list.
 ### Evidence-based simulator advice
 
 The experimental advisor ranks explicit local simulator choices only when a
-checked-in comparison row matches the requested workload and environment:
+checked-in comparison row matches the requested circuit, workload, and
+environment:
 
 ```python
+from flagquantum.benchmarking.simulator_compare import build_workload
 from flagquantum.ecosystem.simulators import recommend
 
-decision = recommend(n_wires=22)
+decision = recommend(build_workload(n_wires=22, layers=2))
 if decision.status == "recommended":
     print(decision.recommended_engine)
 ```
 
 `SimulatorRecommendation` exposes the measured candidates, timing ratios,
-stability and availability exclusions, workload fingerprint, evidence source,
-checksum, and limitations. It never executes a circuit, changes `fq.run`, or
-automatically falls back. An unmeasured qubit count, workload, CPU environment,
-or dependency set returns a structured `insufficient_evidence` decision. See
+stability and availability exclusions, canonical circuit hash, workload
+fingerprint, manifest and evidence sources, checksums, and limitations. It
+does not execute by default, change `fq.run`, automatically route, or fall back.
+A different circuit with the same width and gate count, an unmeasured workload
+or CPU environment, or an ineligible dependency set returns a structured
+`insufficient_evidence` decision. Applications can explicitly set
+`calibration_budget_seconds` to run the exact unknown circuit on installed
+bridges, verify statevector equality, rank stable live medians, and cache that
+decision for the current process. Profile-only `recommend(n_wires=22)` queries
+remain available for table inspection but are explicitly not circuit-bound. See
 [Evidence-based simulator advisor](../guides/SIMULATOR_ADVISOR.md) for the
 initial ARM64 evidence scope and conservative native tie policy.
 

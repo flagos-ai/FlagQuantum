@@ -1,0 +1,79 @@
+{
+  "schema": "flagquantum.simulator_workload_ir_manifest.v1",
+  "benchmark_report": {
+    "path": "benchmarks/results/comparison/simulator_comparison_cpu_arm64_20260923.json",
+    "sha256": "e2cc3d087a620b1c9dcf08401eb79a915ac39d156fc23da29c9ff532c407bb06"
+  },
+  "builder": "flagquantum.benchmarking.simulator_compare.build_workload",
+  "entries": [
+    {
+      "workload": {
+        "name": "hardware_efficient_statevector",
+        "n_wires": 10,
+        "layers": 2,
+        "gate_count": 82,
+        "batch_size": 1,
+        "dtype": "complex128",
+        "seed": 7319
+      },
+      "workload_fingerprint": "649aeba239b1fd06d25eb5eaf3637ecd5d962943dd6c4b22c051b19abd7d42b2",
+      "ir_content_hash": "255726a8a31f9b38cdc12674422b476a96c119ebae4303b8389848b2fd3796f9"
+    },
+    {
+      "workload": {
+        "name": "hardware_efficient_statevector",
+        "n_wires": 14,
+        "layers": 2,
+        "gate_count": 114,
+        "batch_size": 1,
+        "dtype": "complex128",
+        "seed": 7319
+      },
+      "workload_fingerprint": "b0989ab5f38dd830e03accbe16ed8cf6dad3c2d1b78fc606d9e001dc182b43aa",
+      "ir_content_hash": "9e694b13fd7189e728b9ac688dcdf489c5eac9d1653c4148129ddd1b95080121"
+    },
+    {
+      "workload": {
+        "name": "hardware_efficient_statevector",
+        "n_wires": 18,
+        "layers": 2,
+        "gate_count": 146,
+        "batch_size": 1,
+        "dtype": "complex128",
+        "seed": 7319
+      },
+      "workload_fingerprint": "7679c254999c4522f9f99090c2a8ce1ad6fc64eab887758617b08986a09167f4",
+      "ir_content_hash": "ec19f1ff0bcab30ea7a9db81f03c2b501d5d8d93af774f27739ef59974dc72de"
+    },
+    {
+      "workload": {
+        "name": "hardware_efficient_statevector",
+        "n_wires": 22,
+        "layers": 2,
+        "gate_count": 178,
+        "batch_size": 1,
+        "dtype": "complex128",
+        "seed": 7319
+      },
+      "workload_fingerprint": "042ea9c5850a1f1f4a681074b8811163796fb04aeb14327d2a4553db392f502a",
+      "ir_content_hash": "bde728e3d94982379a5092b2ad804e3481de1c6c89e7a6f8fc1b8a3ee11c6659"
+    },
+    {
+      "workload": {
+        "name": "hardware_efficient_statevector",
+        "n_wires": 24,
+        "layers": 2,
+        "gate_count": 194,
+        "batch_size": 1,
+        "dtype": "complex128",
+        "seed": 7319
+      },
+      "workload_fingerprint": "1c86cd82d2e89171b1784d9a95ffd22facfee0f76dd31e770506bf87df187a22",
+      "ir_content_hash": "2808ec5cd1b9c929c2a54dc1ed06d91694c064b8cd5dbe80a3098b2a7dfeac26"
+    }
+  ],
+  "limitations": [
+    "This manifest binds current deterministic builder output to pre-existing timing rows; the original timing artifact did not record CircuitIR hashes.",
+    "A matching hash establishes workload identity only and does not expand the measured environment or version scope."
+  ]
+}

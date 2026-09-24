@@ -101,9 +101,10 @@ This catalog is generated from the machine-validated
 | Execute FlagQuantum code on Cirq Simulator | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Compare an external simulator without changing the native default | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Inspect external-backend provenance and fallback status | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
-| Choose among measured local simulators | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
-| Inspect the timing and stability evidence behind a recommendation | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
-| Reject recommendations outside the measured workload or environment | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Choose among simulators measured for an exact FlagQuantum circuit | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Calibrate an arbitrary circuit under an explicit budget | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Inspect timing, stability, correctness, circuit identity, and confidence | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Reject unsupported inference outside measured evidence | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
@@ -700,17 +701,17 @@ Execute a FlagQuantum circuit explicitly on local Cirq Simulator while preservin
 
 ### Evidence-based simulator advisor
 
-Rank explicit local simulator choices from environment-matched, workload-matched comparison evidence without changing runtime routing.
+Rank explicit local simulator choices from exact checked-in evidence or opt-in live calibration without changing runtime routing.
 
 - **Maturity:** Experimental
 - **Public API:** `flagquantum.ecosystem.simulators.recommend`
-- **Runtime modes:** `offline_evidence_advice`
-- **Hardware:** `recorded_cpu_environment_only`
+- **Runtime modes:** `offline_evidence_advice`, `opt_in_live_cpu_calibration`
+- **Hardware:** `recorded_cpu_environment`, `current_local_cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../docs/guides/SIMULATOR_ADVISOR.md)
 - **Documentation:** [guide](../../docs/guides/SIMULATOR_ADVISOR.md)
-- **Known boundary:** The advisor uses non-release comparison evidence for exact measured workload and environment matches. It filters unavailable, incorrect, and unstable engines, prefers native execution inside a configurable tie margin, and returns insufficient evidence instead of interpolating or extrapolating. It does not execute circuits, change fq.run, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to one complex128 hardware-efficient statevector workload on the recorded single-process ARM64 CPU environment.
+- **Known boundary:** The default path is non-executing: circuit-bound advice requires the canonical FlagQuantum CircuitIR hash, workload fields, and recorded environment to match versioned non-release evidence exactly. A profile-only query is not circuit-bound. For an unknown circuit, a caller may explicitly provide a positive calibration budget; this executes native and installed external statevector bridges, verifies outputs against native, filters unavailable, incorrect, undersampled, and unstable engines, applies the native tie margin, and caches the exact result in-process. The budget is soft because an in-flight framework import or backend call is not interrupted. The advisor does not infer performance from qubit or gate count, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to five exact complex128 hardware-efficient circuits on one ARM64 CPU environment, and no similarity model is claimed from that narrow corpus.
 
 ### Qiskit IR interoperability
 
