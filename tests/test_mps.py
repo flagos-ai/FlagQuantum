@@ -871,6 +871,10 @@ def test_stable_run_selects_cpu_noisy_mps_when_density_exceeds_budget():
     assert result.plan.state_mode == "mps"
     assert result.plan.noisy_execution_plan.representation == "mps"
     assert result.plan.noisy_execution_plan.trajectory.count == 32
+    assert result.plan.noisy_execution_plan.memory.estimated_bytes == (
+        result.plan.state_bytes * 32
+    )
+    assert result.plan.noisy_execution_plan.memory.fits
     assert result.counts == [{"0" * n_qubits: 32}]
 
 
@@ -884,6 +888,32 @@ def test_noisy_mps_sampling_requires_retained_trajectory_states():
 
     with pytest.raises(RuntimeError, match="retain_trajectories=True"):
         result.sample(1)
+
+
+def test_wide_noisy_mps_counts_do_not_use_int64_basis_indices():
+    n_qubits = 100
+    result = run_advanced(
+        fq.Circuit(n_qubits).x(0),
+        mode="noisy_mps",
+        noise_model=fqn.NoiseModel(),
+        device="cpu",
+        trajectories=2,
+        max_bond=1,
+        seed=19,
+        measurements=(
+            MeasurementNode(
+                "counts",
+                tuple(range(n_qubits)),
+                shots=16,
+                metadata={"seed": 23},
+            ),
+        ),
+    )
+
+    assert result.counts == [{"1" + "0" * 99: 16}]
+    native = result.native()
+    with pytest.raises(ValueError, match="at most 63 qubits"):
+        native.sample(1, format="index")
 
 
 @pytest.mark.parametrize("n_qubits", (16, 20, 24))

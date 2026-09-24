@@ -12,18 +12,19 @@ if TYPE_CHECKING:
 _DEFAULT_ELEMENT_BUDGET = 4_000_000
 
 
-def sample_mps_indices(
+def sample_mps_bits(
     state: MPSState,
     shots: int,
     *,
     generator: torch.Generator | None = None,
     element_budget: int = _DEFAULT_ELEMENT_BUDGET,
 ) -> torch.Tensor:
-    """Sample shots in bounded tensor batches without dense materialization."""
+    """Sample bit strings in bounded batches without dense materialization."""
 
     outputs = torch.zeros(
         state.bsz,
         shots,
+        state.n_wires,
         dtype=torch.int64,
         device=state.device,
     )
@@ -37,11 +38,6 @@ def sample_mps_indices(
             [tensor.repeat_interleave(count, dim=0) for tensor in state.tensors],
             config=state.config,
         )
-        indices = torch.zeros(
-            state.bsz * count,
-            dtype=torch.int64,
-            device=state.device,
-        )
         for wire in range(state.n_wires):
             probabilities = work._wire_probabilities(wire)
             bit = torch.multinomial(
@@ -50,11 +46,34 @@ def sample_mps_indices(
                 replacement=True,
                 generator=generator,
             ).squeeze(-1)
-            indices = (indices << 1) | bit
+            outputs[:, start : start + count, wire] = bit.reshape(state.bsz, count)
             work._project_wire(wire, bit)
             work._normalize()
-        outputs[:, start : start + count] = indices.reshape(state.bsz, count)
     return outputs
 
 
-__all__ = ("sample_mps_indices",)
+def sample_mps_indices(
+    state: MPSState,
+    shots: int,
+    *,
+    generator: torch.Generator | None = None,
+    element_budget: int = _DEFAULT_ELEMENT_BUDGET,
+) -> torch.Tensor:
+    """Sample integer basis indices when they fit in signed int64."""
+
+    if state.n_wires > 63:
+        raise ValueError(
+            "integer-index MPS samples support at most 63 qubits; "
+            "request format='bits' for wider circuits"
+        )
+    bits = sample_mps_bits(
+        state,
+        shots,
+        generator=generator,
+        element_budget=element_budget,
+    )
+    shifts = torch.arange(state.n_wires - 1, -1, -1, device=state.device)
+    return torch.sum(bits << shifts, dim=-1)
+
+
+__all__ = ("sample_mps_bits", "sample_mps_indices")

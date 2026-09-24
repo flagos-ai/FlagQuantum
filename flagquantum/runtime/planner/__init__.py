@@ -708,6 +708,7 @@ def plan(
             f"target={resolved.target!r} requires a measurement embedded in the program"
         )
     world_size = resolve_distributed_backend_policy().effective_world_size
+    stable_trajectory_count = 32
     stable_mps_max_bond: int | None = None
     complex_bytes = 16 if resolved.precision == "complex128" else 8
     if (
@@ -722,7 +723,13 @@ def plan(
         )
         > resolved.memory_limit_bytes
     ):
-        denominator = resolved.batch_size * source_ir.n_wires * 2 * complex_bytes
+        denominator = (
+            resolved.batch_size
+            * source_ir.n_wires
+            * 2
+            * complex_bytes
+            * stable_trajectory_count
+        )
         stable_mps_max_bond = max(
             1,
             isqrt(resolved.memory_limit_bytes // denominator),
@@ -749,9 +756,14 @@ def plan(
                 internal_plan,
                 representation="mps" if noisy_mps else "density_matrix",
                 evolution="quantum_trajectory" if noisy_mps else "exact_channel",
-                trajectories=32 if noisy_mps else None,
+                trajectories=stable_trajectory_count if noisy_mps else None,
                 seed=resolved.seed,
                 memory_limit_bytes=resolved.memory_limit_bytes,
+                estimated_memory_bytes=(
+                    internal_plan.state_bytes * stable_trajectory_count
+                    if noisy_mps
+                    else internal_plan.state_bytes
+                ),
                 noise_model_identity=noise_model.identity,
             ),
         )

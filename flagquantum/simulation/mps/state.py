@@ -13,7 +13,7 @@ from ...core.runtime_config import get_runtime_config
 from ..gate_matrix import gate_matrix, parameter_tensor
 from ..matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
-from ..statevector.operations import _apply_matrix, _bits_from_indices
+from ..statevector.operations import _apply_matrix
 from .factorization import (
     _discarded_weight,
     _select_rank,
@@ -739,10 +739,11 @@ class MPSState(MPSPlanningMixin):
             raise ValueError("sample format must be 'bits' or 'index'.")
         if type(shots) is not int or shots <= 0:
             raise ValueError("sample shots must be a positive integer")
-        samples = self._sample_indices(shots, generator=generator)
         if format == "index":
-            return samples
-        return _bits_from_indices(samples, self.n_wires)
+            return self._sample_indices(shots, generator=generator)
+        from .sampling import sample_mps_bits
+
+        return sample_mps_bits(self, shots, generator=generator)
 
     def _sample_indices(
         self,

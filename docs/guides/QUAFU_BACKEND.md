@@ -168,6 +168,13 @@ CPU noisy-MPS workflow removes the dense-memory bottleneck in FlagQuantum, but
 the public target limit changes only after the Quafu service deploys this
 handler and updates its own admission policy.
 
+The engine itself has no fixed MPS qubit constant for ordinary counts. Its
+capacity depends on bond dimension, calibration width, trajectories, memory,
+and acceptable truncation error. See [MPS capacity and limits](NOISY_SIMULATION.md#capacity-and-limits)
+for the memory formula, the verified 100-qubit low-bond width test, the
+24-qubit noisy timing evidence, and the conditions under which no qubit-count
+guarantee is possible.
+
 ## Run on a real device
 
 Inspect the current device list before choosing a target. Python discovery uses

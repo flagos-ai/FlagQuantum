@@ -254,6 +254,9 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
                 trajectories=32 if noisy_mps else None,
                 seed=resolved["seed"],
                 memory_limit_bytes=decision["memory_limit_bytes"],
+                estimated_memory_bytes=(
+                    plan.state_bytes * 32 if noisy_mps else plan.state_bytes
+                ),
                 noise_model_identity=str(extension["identity"]),
             ),
         )

@@ -112,6 +112,51 @@ circuit will be fast or accurate: highly entangled circuits may require a larger
 memory budget, and trajectory plus truncation errors must be evaluated for the
 workload.
 
+### Capacity and limits
+
+There is no fixed MPS qubit constant in the counts path. Capacity is controlled
+by the bond dimension `chi`, not by qubit count alone. For the stable route,
+which retains 32 trajectories so it can produce shot samples, the planned MPS
+state memory is approximately:
+
+```text
+32 * batch_size * n_qubits * 2 * chi**2 * complex_bytes
+```
+
+`complex_bytes` is 8 for `complex64` and 16 for `complex128`. The planner
+chooses the largest integer `chi` whose estimate fits `memory_limit_bytes`.
+For example, with one circuit, `complex64`, 100 qubits, and a 512 MiB limit,
+the current policy caps the bond at 102. Shot sampling has a separate bounded
+workspace of at most 4,000,000 complex elements (about 30.5 MiB for
+`complex64` or 61 MiB for `complex128`), plus PyTorch and factorization
+workspace. The declared MPS-state estimate is therefore not a process-RSS
+upper bound.
+
+The implementation now verifies full-register counts on a 100-qubit CPU
+product-state circuit without materializing an integer basis index. Explicit
+`format="index"` samples remain limited to 63 qubits because they use signed
+`int64`; ordinary `fq.counts()` and `format="bits"` do not have that artificial
+limit. The checked-in performance benchmark remains the stronger noisy,
+entangled evidence: 16, 20, and 24-qubit GHZ chains with bond cap 8.
+
+The 100-qubit check is a width test, not a general 100-qubit performance or
+accuracy guarantee. Required Schmidt rank can grow as `2**(n_qubits / 2)` for
+highly entangled circuits. Once the required rank exceeds `chi`, MPS truncates;
+the result reports maximum observed bond, truncation error, and discarded
+weight. Dominant two-qubit split work can grow cubically with `chi`, while
+memory grows quadratically. Runtime also grows with circuit depth, non-local
+gate routing, trajectory count, and shots. The stable route uses one CPU process
+and 32 trajectories; public distributed noisy-MPS reduction is not implemented.
+
+For a managed `quafu:<device>-sim` target, the usable qubit count is additionally
+bounded by the logical wires covered by the selected physical-device
+calibration and by the service's admission policy. FlagQuantum rejects a
+profile that does not cover every logical wire. Consequently the honest
+capacity statement is: 100 qubits are verified for a low-bond CPU counts smoke
+test; 24 qubits are timed for the documented noisy GHZ workload; every other
+circuit must be admitted by memory and calibration checks and judged from its
+reported truncation evidence.
+
 The 2026-09-24 arm64 CPU smoke run used a GHZ chain, `cx`
 depolarizing probability 0.01, four trajectories, bond cap 8, cutoff `1e-10`,
 and 1,000 output shots. Median end-to-end times over three runs were 0.370 s at

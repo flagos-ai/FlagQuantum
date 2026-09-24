@@ -163,6 +163,11 @@ class MPSMonteCarloResult:
 
         if format == "bits":
             return samples
+        if n_wires > 63:
+            raise ValueError(
+                "integer-index noisy MPS samples support at most 63 qubits; "
+                "request format='bits' for wider circuits"
+            )
         shifts = torch.arange(n_wires - 1, -1, -1, device=device)
         return torch.sum(samples << shifts, dim=-1)
 

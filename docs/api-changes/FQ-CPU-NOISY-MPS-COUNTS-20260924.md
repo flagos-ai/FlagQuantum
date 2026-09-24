@@ -62,6 +62,9 @@ no serialized field is added or reinterpreted incompatibly.
 - Two-qubit noisy counts agree with the exact density oracle within statistical
   tolerance.
 - CPU noisy-MPS count smoke tests at 16, 20, and 24 qubits.
+- A 100-qubit low-bond full-register counts test that avoids the former
+  signed-`int64` basis-index limitation; explicit integer-index samples still
+  fail clearly above 63 qubits.
 - Stable 24-qubit `fq.run(...)` selection and ExecutionPlan JSON round trip.
 - Executable target-binding tests for Baihua-sim, Shenglian-sim, and
   Dongling-sim, plus exact-to-MPS routing and mismatched-calibration rejection.
