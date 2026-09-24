@@ -497,6 +497,23 @@ owner = "interop maintainers"
 limitations = "Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers."
 focused_tests = "tests/test_pennylane_interop.py"
 
+[capabilities.pennylane_lightning_execution]
+title = "PennyLane Lightning execution bridge"
+summary = "Execute a FlagQuantum circuit explicitly on local PennyLane lightning.qubit while preserving FlagQuantum-owned result and evidence contracts."
+category = "deployment_and_extension"
+user_goals = ["Execute FlagQuantum code on PennyLane Lightning", "Compare an external simulator without changing the native default", "Inspect external-backend provenance and fallback status"]
+public_apis = ["flagquantum.ecosystem.pennylane.run"]
+runtime_modes = ["external_local_statevector", "external_local_shots"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md"
+documentation = "docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "The flagquantum.ecosystem.pennylane bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU lightning.qubit and returns an owned ExecutionResult. It supports exact complex64 and complex128 statevectors and computational-basis samples or counts with explicit wire order and seed. Explicit device wires preserve idle FlagQuantum wire extent. It does not support gradients, QNodes, noise models, dynamic circuits, automatic routing, GPU, alternative PennyLane devices, or fallback. Native fq.run remains unchanged."
+focused_tests = "tests/test_pennylane_interop.py"
+
 [capabilities.cirq_simulator_execution]
 title = "Cirq Simulator execution bridge"
 summary = "Execute a FlagQuantum circuit explicitly on local Cirq Simulator while preserving FlagQuantum-owned result and evidence contracts."

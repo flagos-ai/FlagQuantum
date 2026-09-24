@@ -95,6 +95,9 @@ This catalog is generated from the machine-validated
 | Import a supported PennyLane QuantumScript | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export static FlagQuantum IR to PennyLane | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at the boundary | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Execute FlagQuantum code on PennyLane Lightning | PennyLane Lightning execution bridge | Experimental | [Run example](../../docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md) |
+| Compare an external simulator without changing the native default | PennyLane Lightning execution bridge | Experimental | [Run example](../../docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md) |
+| Inspect external-backend provenance and fallback status | PennyLane Lightning execution bridge | Experimental | [Run example](../../docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md) |
 | Execute FlagQuantum code on Cirq Simulator | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Compare an external simulator without changing the native default | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Inspect external-backend provenance and fallback status | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
@@ -663,6 +666,20 @@ Translate supported immutable PennyLane QuantumScript programs to versioned Flag
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers.
+
+### PennyLane Lightning execution bridge
+
+Execute a FlagQuantum circuit explicitly on local PennyLane lightning.qubit while preserving FlagQuantum-owned result and evidence contracts.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.pennylane.run`
+- **Runtime modes:** `external_local_statevector`, `external_local_shots`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md)
+- **Documentation:** [guide](../../docs/guides/PENNYLANE_LIGHTNING_EXECUTION.md)
+- **Known boundary:** The flagquantum.ecosystem.pennylane bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU lightning.qubit and returns an owned ExecutionResult. It supports exact complex64 and complex128 statevectors and computational-basis samples or counts with explicit wire order and seed. Explicit device wires preserve idle FlagQuantum wire extent. It does not support gradients, QNodes, noise models, dynamic circuits, automatic routing, GPU, alternative PennyLane devices, or fallback. Native fq.run remains unchanged.
 
 ### Cirq Simulator execution bridge
 
