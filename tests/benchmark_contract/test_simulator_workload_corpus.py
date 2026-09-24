@@ -197,6 +197,39 @@ def test_checked_in_dense_nonlocal_case_is_complete_stable_and_correct() -> None
         assert engine["end_to_end"]["median_seconds"] > 0
 
 
+def test_checked_in_random_clifford_case_is_complete_stable_and_correct() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "simulator_random_clifford_cpu_arm64_20260924.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == SCHEMA
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["hostname"] == "redacted"
+    assert payload["workloads"] == ["random_clifford_statevector"]
+    assert payload["n_wires"] == [18, 22]
+    assert len(payload["cases"]) == 2
+    cases = {case["workload"]["n_wires"]: case for case in payload["cases"]}
+    assert cases[18]["workload"]["gate_count"] == 108
+    assert cases[22]["workload"]["gate_count"] == 132
+    assert all(case["correctness"]["passed"] for case in cases.values())
+    assert all(
+        engine["end_to_end"]["sample_count"] == 9
+        for case in cases.values()
+        for engine in case["engines"].values()
+    )
+    assert all(
+        ratio > 1
+        for ratio in cases[22]["comparison"]["engine_over_flagquantum_median"].values()
+    )
+
+
 @pytest.mark.parametrize(
     "kwargs, message",
     (
