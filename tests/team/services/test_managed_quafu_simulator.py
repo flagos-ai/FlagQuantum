@@ -15,6 +15,8 @@ from flagquantum.services import (
     run_managed_quafu_simulator,
 )
 
+pytestmark = pytest.mark.unit
+
 TARGETS = (
     ("quafu:Baihua-sim", "Baihua"),
     ("quafu:Shenglian-sim", "Shenglian"),
