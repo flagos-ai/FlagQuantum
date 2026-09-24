@@ -243,12 +243,16 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         from .planner import build_noisy_execution_plan
 
         extension = normalized["extensions"][0]
+        noisy_mps = plan.state_mode == "mps"
+        resolved = normalized["resolved_options"]
         plan = replace(
             plan,
             noisy_execution_plan=build_noisy_execution_plan(
                 plan,
-                representation="density_matrix",
-                evolution="exact_channel",
+                representation="mps" if noisy_mps else "density_matrix",
+                evolution="quantum_trajectory" if noisy_mps else "exact_channel",
+                trajectories=32 if noisy_mps else None,
+                seed=resolved["seed"],
                 memory_limit_bytes=decision["memory_limit_bytes"],
                 noise_model_identity=str(extension["identity"]),
             ),

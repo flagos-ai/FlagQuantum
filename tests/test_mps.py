@@ -11,8 +11,14 @@ import flagquantum.noise as fqn
 import flagquantum.runtime as fqr
 import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.mps.models as mps_models
-from flagquantum.core.ir import Instruction
-from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
+from flagquantum.core.ir import Instruction, MeasurementNode
+from flagquantum.noise import (
+    ReadoutError,
+    amplitude_damping_channel,
+    bit_flip_channel,
+    depolarizing_channel,
+)
+from flagquantum.runtime.execution import run_advanced
 from flagquantum.runtime.executors.mps.compiled_training import (
     MPSTrainingStep,
     compile_mps_training_step,
@@ -28,6 +34,7 @@ from flagquantum.simulation.mps.models import (
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
 )
+from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit
 
@@ -425,6 +432,19 @@ def test_mps_sampling_uses_conditional_contraction():
     assert counts == [{"101": 4}]
 
 
+def test_mps_sampling_batches_shots_without_mixing_circuit_batches():
+    state = torch.zeros(2, 4, dtype=torch.complex64)
+    state[0, 0] = 1
+    state[1, 3] = 1
+    mps = MPSState.from_statevector(state, 2)
+
+    samples = mps.sample(513, generator=torch.Generator().manual_seed(9))
+
+    assert samples.shape == (2, 513, 2)
+    assert torch.all(samples[0] == 0)
+    assert torch.all(samples[1] == 1)
+
+
 def test_mps_counts_int_format():
     circuit = fq.Circuit(2)
     circuit.x(1)
@@ -753,6 +773,148 @@ def test_noisy_mps_monte_carlo_aggregates_deterministic_channel():
     assert torch.allclose(result.expectation_z_mean, torch.ones(1, 1), atol=1e-6)
     assert torch.allclose(result.expectation_z_variance, torch.zeros(1, 1), atol=1e-6)
     assert result.summary()["state_mode"] == "mps_trajectory"
+
+
+def test_noisy_mps_counts_sample_the_retained_trajectory_mixture():
+    circuit = fq.Circuit(1).x(0)
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
+
+    result = run_advanced(
+        circuit,
+        mode="noisy_mps",
+        noise_model=model,
+        trajectories=4,
+        seed=7,
+        measurements=(
+            MeasurementNode("counts", (0,), shots=32, metadata={"seed": 11}),
+        ),
+    )
+
+    assert result.counts == [{"0": 32}]
+    assert result.measurements[0].statistics["trajectory_count"] == 4
+    assert (
+        result.measurements[0].statistics["sampling_semantics"]
+        == "empirical_noisy_trajectory_mixture"
+    )
+    assert result.measurements[0].statistics["observed_max_bond"] == 1
+    assert result.measurements[0].statistics["max_trajectory_truncation_error"] == 0
+    assert result.measurements[0].statistics["max_discarded_weight"] is None
+
+
+def test_noisy_mps_counts_apply_readout_error_after_trajectory_sampling():
+    model = fqn.NoiseModel().add_readout(
+        0,
+        ReadoutError(((0.0, 1.0), (1.0, 0.0))),
+    )
+
+    result = run_advanced(
+        fq.Circuit(1),
+        mode="noisy_mps",
+        noise_model=model,
+        trajectories=3,
+        seed=13,
+        measurements=(
+            MeasurementNode("counts", (0,), shots=24, metadata={"seed": 17}),
+        ),
+    )
+
+    assert result.counts == [{"1": 24}]
+
+
+def test_noisy_mps_counts_match_small_density_matrix_oracle():
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
+
+    result = run_advanced(
+        circuit,
+        mode="noisy_mps",
+        noise_model=model,
+        trajectories=256,
+        seed=29,
+        measurements=(
+            MeasurementNode("counts", (0, 1), shots=4096, metadata={"seed": 31}),
+        ),
+    )
+    counts = result.counts[0]
+    observed = torch.tensor(
+        [counts.get(f"{outcome:02b}", 0) / 4096 for outcome in range(4)]
+    )
+    density = fqn.noisy_density_matrix(circuit, model)
+    expected = torch.real(torch.diagonal(density, dim1=-2, dim2=-1))[0]
+
+    torch.testing.assert_close(observed, expected, atol=0.06, rtol=0)
+
+
+def test_stable_run_selects_cpu_noisy_mps_when_density_exceeds_budget():
+    n_qubits = 24
+    circuit = fq.Circuit(n_qubits).x(0)
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
+
+    first = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(
+            mode="auto",
+            device="cpu",
+            shots=32,
+            seed=37,
+            memory_limit_bytes=64 * 1024 * 1024,
+            allow_approximate=True,
+        ),
+        outputs=fq.counts(),
+        noise_model=model,
+    )
+    plan = first.plan
+    restored = type(plan).from_json(plan.to_json())
+    result = fq.run(restored)
+
+    assert result.plan.identity == plan.identity
+    assert result.plan.state_mode == "mps"
+    assert result.plan.noisy_execution_plan.representation == "mps"
+    assert result.plan.noisy_execution_plan.trajectory.count == 32
+    assert result.counts == [{"0" * n_qubits: 32}]
+
+
+def test_noisy_mps_sampling_requires_retained_trajectory_states():
+    result = fqr.run_noisy_mps(
+        fq.Circuit(1),
+        fqn.NoiseModel(),
+        trajectories=2,
+        retain_trajectories=False,
+    )
+
+    with pytest.raises(RuntimeError, match="retain_trajectories=True"):
+        result.sample(1)
+
+
+@pytest.mark.parametrize("n_qubits", (16, 20, 24))
+def test_cpu_noisy_mps_counts_scale_past_dense_service_limit(n_qubits: int):
+    circuit = fq.Circuit(n_qubits).h(0)
+    for wire in range(n_qubits - 1):
+        circuit.cx(wire, wire + 1)
+    model = fqn.NoiseModel().add("cx", depolarizing_channel(0.01))
+
+    result = run_advanced(
+        circuit,
+        mode="noisy_mps",
+        noise_model=model,
+        device="cpu",
+        trajectories=4,
+        max_bond=8,
+        cutoff=1e-10,
+        seed=19,
+        measurements=(
+            MeasurementNode(
+                "counts",
+                tuple(range(n_qubits)),
+                shots=32,
+                metadata={"seed": 23},
+            ),
+        ),
+    )
+
+    assert sum(result.counts[0].values()) == 32
+    assert all(len(bitstring) == n_qubits for bitstring in result.counts[0])
+    assert result.plan.noisy_execution_plan.representation == "mps"
 
 
 def test_run_native_noisy_mps_mode():

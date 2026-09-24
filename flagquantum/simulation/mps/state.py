@@ -750,21 +750,9 @@ class MPSState(MPSPlanningMixin):
         *,
         generator: torch.Generator | None = None,
     ) -> torch.Tensor:
-        outputs = torch.zeros(self.bsz, shots, dtype=torch.int64, device=self.device)
-        for shot in range(int(shots)):
-            work = self.copy()
-            for wire in range(self.n_wires):
-                probs = work._wire_probabilities(wire)
-                bit = torch.multinomial(
-                    probs,
-                    num_samples=1,
-                    replacement=True,
-                    generator=generator,
-                ).squeeze(-1)
-                outputs[:, shot] = (outputs[:, shot] << 1) | bit
-                work._project_wire(wire, bit)
-                work._normalize()
-        return outputs
+        from .sampling import sample_mps_indices
+
+        return sample_mps_indices(self, shots, generator=generator)
 
     def _wire_probabilities(self, wire: int) -> torch.Tensor:
         z_value = self._expectation_product_ops(

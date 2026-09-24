@@ -50,6 +50,76 @@ print(sampled.statistics.standard_error)
 print(sampled.converged, sampled.stopped_early)
 ```
 
+## CPU counts beyond the dense-memory limit
+
+The stable `fq.run(...)` entry point can select noisy MPS trajectories when the
+exact density matrix exceeds an explicit memory budget. The caller must opt in
+to approximation; otherwise planning fails rather than silently changing
+semantics. This example is directly runnable on CPU:
+
+```python
+import flagquantum as fq
+import flagquantum.noise as fqn
+
+n_qubits = 24
+circuit = fq.Circuit(n_qubits).h(0)
+for wire in range(n_qubits - 1):
+    circuit.cx(wire, wire + 1)
+
+noise = (
+    fqn.NoiseModel()
+    .add("cx", fqn.depolarizing_channel(0.01))
+    .add_readout(0, fqn.ReadoutError(((0.98, 0.02), (0.03, 0.97))))
+)
+
+result = fq.run(
+    circuit,
+    options=fq.ExecutionOptions(
+        mode="auto",
+        device="cpu",
+        shots=1_000,
+        seed=42,
+        memory_limit_bytes=512 * 1024**2,
+        allow_approximate=True,
+    ),
+    outputs=fq.counts(),
+    noise_model=noise,
+)
+
+print(result.counts[0])
+print(result.plan.noisy_execution_plan.summary())
+print(result.measurement("counts").statistics)
+```
+
+The planner keeps exact density-matrix evolution when it fits. If it does not,
+the memory budget determines a bounded MPS bond dimension and the serialized
+plan records MPS representation, quantum-trajectory evolution, the noise-model
+identity, and the trajectory policy. Restoring the plan from JSON executes the
+same route without replanning.
+
+`shots` and trajectory count are different error sources. Shots control the
+final measurement histogram. The stable auto route currently uses 32 noise
+trajectories and samples the empirical mixture of their retained MPS states;
+measurement statistics report `sampling_semantics`, `trajectory_count`, and
+`retained_trajectory_count`, plus the observed maximum bond, maximum trajectory
+truncation error, and maximum discarded weight. Use the expert
+`run_noisy_mps(...)` interface when the trajectory count, adaptive stopping
+threshold, bond dimension, or cutoff must be controlled directly.
+
+This raises capacity only for workloads whose entanglement remains compressible
+at the selected bond dimension. It is not a promise that every 24-qubit noisy
+circuit will be fast or accurate: highly entangled circuits may require a larger
+memory budget, and trajectory plus truncation errors must be evaluated for the
+workload.
+
+The 2026-09-24 arm64 CPU smoke run used a GHZ chain, `cx`
+depolarizing probability 0.01, four trajectories, bond cap 8, cutoff `1e-10`,
+and 1,000 output shots. Median end-to-end times over three runs were 0.370 s at
+16 qubits, 0.509 s at 20 qubits, and 0.703 s at 24 qubits. These timings include
+planning, noisy evolution, and counts. They are workload-specific capacity
+evidence, not a general performance promise. The raw record is
+[`cpu_noisy_mps_counts_20260924.json`](../../benchmarks/results/local/cpu_noisy_mps_counts_20260924.json).
+
 For dense circuits that fit statevector memory, trajectories can be processed
 in true tensor batches:
 

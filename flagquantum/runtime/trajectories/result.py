@@ -70,6 +70,129 @@ class MPSMonteCarloResult:
     stopped_early: bool = False
     noise_model_identity: str | None = None
 
+    @property
+    def device(self) -> torch.device:
+        """Device shared by the retained trajectory states."""
+
+        self._require_retained_trajectories()
+        return torch.device(self.trajectories[0].device)
+
+    @property
+    def n_wires(self) -> int:
+        """Qubit count shared by the retained trajectory states."""
+
+        self._require_retained_trajectories()
+        return int(self.trajectories[0].n_wires)
+
+    @property
+    def bsz(self) -> int:
+        """Batch size shared by the retained trajectory states."""
+
+        self._require_retained_trajectories()
+        return int(self.trajectories[0].bsz)
+
+    def _require_retained_trajectories(self) -> None:
+        if not self.trajectories:
+            raise RuntimeError(
+                "noisy MPS sampling requires retained trajectory states; "
+                "run with retain_trajectories=True"
+            )
+
+    def sample(
+        self,
+        shots: int = 1,
+        *,
+        generator: torch.Generator | None = None,
+        format: str = "bits",
+    ) -> torch.Tensor:
+        """Sample the empirical mixture of retained noisy MPS trajectories.
+
+        Every requested shot first selects one retained noise trajectory
+        uniformly and then performs a computational-basis measurement of that
+        trajectory.  This keeps the measurement memory linear in the qubit
+        count and avoids materialising a dense state or density matrix.
+        """
+
+        if format not in {"bits", "index"}:
+            raise ValueError("sample format must be 'bits' or 'index'.")
+        if type(shots) is not int or shots <= 0:
+            raise ValueError("sample shots must be a positive integer")
+        self._require_retained_trajectories()
+
+        first = self.trajectories[0]
+        n_wires = int(first.n_wires)
+        bsz = int(first.bsz)
+        device = torch.device(first.device)
+        for state in self.trajectories[1:]:
+            if (
+                int(state.n_wires) != n_wires
+                or int(state.bsz) != bsz
+                or torch.device(state.device) != device
+            ):
+                raise ValueError("retained noisy MPS trajectories are incompatible")
+
+        selected = torch.randint(
+            len(self.trajectories),
+            (bsz, shots),
+            device=device,
+            generator=generator,
+        )
+        samples = torch.empty(
+            bsz,
+            shots,
+            n_wires,
+            dtype=torch.int64,
+            device=device,
+        )
+        for trajectory_index, state in enumerate(self.trajectories):
+            per_batch = [
+                torch.nonzero(
+                    selected[row] == trajectory_index, as_tuple=False
+                ).flatten()
+                for row in range(bsz)
+            ]
+            draw_count = max(
+                (int(positions.numel()) for positions in per_batch), default=0
+            )
+            if draw_count == 0:
+                continue
+            draws = state.sample(draw_count, generator=generator, format="bits")
+            for row, positions in enumerate(per_batch):
+                if positions.numel():
+                    samples[row, positions] = draws[row, : positions.numel()]
+
+        if format == "bits":
+            return samples
+        shifts = torch.arange(n_wires - 1, -1, -1, device=device)
+        return torch.sum(samples << shifts, dim=-1)
+
+    def sampling_summary(self) -> dict[str, Any]:
+        """Describe the approximation used for shot sampling."""
+
+        trajectory_errors = tuple(
+            float(sum(state.truncation_errors)) for state in self.trajectories
+        )
+        discarded_weights = tuple(
+            float(error)
+            for state in self.trajectories
+            for error in state.truncation_errors
+        )
+        return {
+            "sampling_semantics": "empirical_noisy_trajectory_mixture",
+            "trajectory_count": self.n_trajectories,
+            "retained_trajectory_count": len(self.trajectories),
+            "noise_model_identity": self.noise_model_identity,
+            "observed_max_bond": max(
+                (int(state.max_bond) for state in self.trajectories),
+                default=None,
+            ),
+            "max_trajectory_truncation_error": max(
+                trajectory_errors,
+                default=None,
+            ),
+            "max_discarded_weight": max(discarded_weights, default=None),
+        }
+
     def summary(self) -> dict[str, Any]:
         return {
             "state_mode": "mps_trajectory",
