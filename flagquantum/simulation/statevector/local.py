@@ -18,6 +18,10 @@ from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
+from .controlled_phase import (
+    _apply_controlled_phase_graph_cpu,
+    _controlled_phase_graph_factors_cpu,
+)
 from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
@@ -62,6 +66,7 @@ from .product_state import (
 )
 from .program import (
     _StatevectorControlledPhaseDecompositionStep,
+    _StatevectorControlledPhaseGraphStep,
     _StatevectorCZGraphStep,
 )
 
@@ -79,6 +84,12 @@ def _cpu_controlled_phase_decomposition_fusion_enabled() -> bool:
     return _environment_flag(
         "FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", default=True
     )
+
+
+def _cpu_controlled_phase_graph_fusion_enabled() -> bool:
+    """Whether consecutive static CPU controlled phases may share one pass."""
+
+    return _environment_flag("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", default=True)
 
 
 def _cpu_product_state_execution_enabled() -> bool:
@@ -281,6 +292,34 @@ def _controlled_phase_decomposition_matrix(
     return cached
 
 
+def _controlled_phase_graph_factors(
+    circuit: Circuit,
+    step: _StatevectorControlledPhaseGraphStep,
+    state: torch.Tensor,
+) -> tuple[torch.Tensor, tuple[int, ...]]:
+    """Return cached factors for one compiled static controlled-phase graph."""
+
+    key = (id(step), str(state.device), state.dtype, circuit.n_wires)
+    cached = circuit._statevector_fused_matrices.get(key)
+    graph_wires = tuple(
+        sorted(
+            {wire for control, target, _ in step.edges for wire in (control, target)}
+        )
+    )
+    if cached is None:
+        cached, built_wires = _controlled_phase_graph_factors_cpu(
+            step.edges,
+            device=state.device,
+            dtype=state.dtype,
+        )
+        if built_wires != graph_wires:
+            raise RuntimeError(
+                "compiled controlled-phase graph wire order changed unexpectedly"
+            )
+        circuit._statevector_fused_matrices[key] = cached
+    return cached, graph_wires
+
+
 def _initial_runtime_metrics(
     program: Sequence[_StatevectorProgramStep], *, enable_triton_loop: bool
 ) -> _StatevectorExecutionStatistics:
@@ -331,6 +370,11 @@ def _initial_runtime_metrics(
         for step in metric_steps
         if isinstance(step, _StatevectorControlledPhaseDecompositionStep)
     )
+    controlled_phase_graph_regions = tuple(
+        step
+        for step in metric_steps
+        if isinstance(step, _StatevectorControlledPhaseGraphStep)
+    )
     cz_graph_regions = tuple(
         step for step in metric_steps if isinstance(step, _StatevectorCZGraphStep)
     )
@@ -350,9 +394,11 @@ def _initial_runtime_metrics(
         "diagonal_elementwise_gates": diagonal_unfused_gates
         + sum(len(step.instructions) for step in diagonal_fused_regions)
         + 5 * len(controlled_phase_regions)
+        + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
         + sum(len(step.edges) for step in cz_graph_regions),
         "diagonal_fused_regions": len(diagonal_fused_regions)
         + len(controlled_phase_regions)
+        + len(controlled_phase_graph_regions)
         + len(cz_graph_regions),
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
@@ -376,6 +422,7 @@ def _initial_runtime_metrics(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
         )
         + len(controlled_phase_regions)
+        + len(controlled_phase_graph_regions)
         + len(cz_graph_regions),
         "fused_gate_count": sum(
             len(step.instructions)
@@ -383,6 +430,7 @@ def _initial_runtime_metrics(
             if isinstance(step, _StatevectorFusedGateStep)
         )
         + 5 * len(controlled_phase_regions)
+        + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
         + sum(len(step.edges) for step in cz_graph_regions),
         "dependency_reordered_single_qubit_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
@@ -823,6 +871,10 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             device.type == "cpu"
             and _cpu_controlled_phase_decomposition_fusion_enabled()
         )
+        enable_cpu_controlled_phase_graph = (
+            enable_cpu_controlled_phase_decomposition
+            and _cpu_controlled_phase_graph_fusion_enabled()
+        )
         product_state_candidate = (
             _cpu_product_state_execution_enabled()
             and circuit._inputs is None
@@ -838,6 +890,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             product_program_key = (
                 "cpu_product_state",
                 enable_cpu_controlled_phase_decomposition,
+                enable_cpu_controlled_phase_graph,
             )
             cached_product_program = cast(
                 tuple[_StatevectorProgramStep, ...] | None,
@@ -850,6 +903,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_triton_loop=False,
                     enable_cpu_controlled_phase_decomposition=(
                         enable_cpu_controlled_phase_decomposition
+                    ),
+                    enable_cpu_controlled_phase_graph=(
+                        enable_cpu_controlled_phase_graph
                     ),
                 )
                 circuit._backend_programs[product_program_key] = product_program
@@ -867,6 +923,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
                 enable_swap_remapping=enable_product_state_swap_remapping,
+                constant_cache=circuit._statevector_fused_matrices,
             )
             circuit._last_statevector_runtime = _initial_runtime_metrics(
                 product_program, enable_triton_loop=False
@@ -916,6 +973,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_disjoint_single_wire,
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
+            "cpu_controlled_phase_graph",
+            enable_cpu_controlled_phase_graph,
             "cpu_disjoint_dense_max_two_wire_regions",
             max_cpu_two_wire_regions,
             "cpu_disjoint_dense_max_wires",
@@ -933,6 +992,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition
                 ),
+                enable_cpu_controlled_phase_graph=enable_cpu_controlled_phase_graph,
                 max_two_wire_regions=max_cpu_two_wire_regions,
                 max_dense_wires=max_cpu_dense_wires,
             )
@@ -955,6 +1015,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
+            if isinstance(step, _StatevectorControlledPhaseGraphStep):
+                factors, wires = _controlled_phase_graph_factors(circuit, step, output)
+                output = _apply_controlled_phase_graph_cpu(
+                    output, factors, wires, circuit.n_wires
+                )
+                continue
             if isinstance(step, _StatevectorCZGraphStep):
                 signs, wires = _cz_graph_signs(circuit, step, output.device)
                 output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)

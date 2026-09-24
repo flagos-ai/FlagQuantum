@@ -39,6 +39,13 @@ class _StatevectorControlledPhaseDecompositionStep:
 
 
 @dataclass(frozen=True)
+class _StatevectorControlledPhaseGraphStep:
+    """One phase application for consecutive static controlled-phase edges."""
+
+    edges: tuple[tuple[int, int, float], ...]
+
+
+@dataclass(frozen=True)
 class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
@@ -69,6 +76,7 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorRXRZLoopStep
     | _StatevectorFusedGateStep
     | _StatevectorControlledPhaseDecompositionStep
+    | _StatevectorControlledPhaseGraphStep
     | _StatevectorCrossWireDiagonalStep
     | _StatevectorCZGraphStep
     | _StatevectorDisjointDenseStep

@@ -164,11 +164,8 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
     )
 
 
-# Sequence lengths at or above this one apply as a single gather. The table has
-# to be built before it can be used, and measured against the per-gate loop on
-# this host the build costs about as much as six to eight gates, so a shorter
-# sequence is left on the loop. The threshold is a floor for the *unreused* case:
-# a region executed more than once finds the table already cached.
+# Sequence lengths at or above this one apply as a single gather. Its table build
+# costs about six to eight gates here; repeated regions reuse the cached table.
 _CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
 
 # A wider product cuts state passes but grows its matrix 4x per wire. On the
@@ -234,6 +231,7 @@ def _compile_statevector_program(
     enable_cpu_cz_graph: bool = False,
     enable_cpu_disjoint_single_wire: bool = False,
     enable_cpu_controlled_phase_decomposition: bool = False,
+    enable_cpu_controlled_phase_graph: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -246,6 +244,8 @@ def _compile_statevector_program(
     if enable_cpu_controlled_phase_decomposition:
         program = controlled_phase._fuse_controlled_phase_decompositions(base_program)
     optimized: list[_StatevectorPreCXStep] = list(_fuse_gate_sequences(program))
+    if enable_cpu_controlled_phase_graph:
+        optimized = controlled_phase._fuse_controlled_phase_graphs(optimized)
     if enable_cpu_cz_graph:
         optimized = cz_graph._fuse_cz_graphs(optimized)
     if enable_cpu_cross_wire_diagonal:

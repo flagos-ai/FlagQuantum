@@ -25,8 +25,8 @@ those groups should be treated as exploratory host-noise-limited evidence.
 | Hardware-efficient | 22 | 178 | 50 | 0.401835 | 0.718561 | 1.043863 | 0.476849 | 1.79× | 2.60× | 1.19× |
 | Truncated QFT | 10 | 135 | 71 | 0.000714 | 0.024871 | 0.004211 | 0.003298 | 34.82× | 5.89× | 4.62× |
 | Truncated QFT | 14 | 201 | 103 | 0.003037 | 0.030667 | 0.008379 | 0.007009 | 10.10× | 2.76× | 2.31× |
-| Truncated QFT | 18 | 267 | 135 | 0.013894 | 0.075421 | 0.015606 | 0.050151 | 5.43× | 1.12× | 3.61× |
-| Truncated QFT | 22 | 333 | 167 | 0.259814 | 0.940726 | 0.154574 | 1.040753 | 3.62× | 0.59× | 4.01× |
+| Truncated QFT | 18 | 267 | 135 | 0.008044 | 0.075421 | 0.015606 | 0.050151 | 9.38× | 1.94× | 6.23× |
+| Truncated QFT | 22 | 333 | 167 | 0.151352 | 0.940726 | 0.154574 | 1.040753 | 6.22× | 1.02× | 6.88× |
 | Random Clifford | 10 | 60 | 8 | 0.000955 | 0.024117 | 0.002348 | 0.001865 | 25.24× | 2.46× | 1.95× |
 | Random Clifford | 14 | 84 | 8 | 0.003643 | 0.028257 | 0.004249 | 0.002884 | 7.76× | 1.17× | 0.79× |
 | Random Clifford | 18 | 108 | 8 | 0.036785 | 0.056273 | 0.015780 | 0.013661 | 1.53× | 0.43× | 0.37× |
@@ -46,7 +46,7 @@ qubit count alone: circuit depth, connectivity, and gate family materially
 change the crossover. These numbers are reproducible local comparison evidence,
 not a universal framework ranking or release/scalability evidence.
 
-The truncated-QFT native path now combines two exact optimizations. First, it
+The truncated-QFT native path now combines three exact optimizations. First, it
 recognizes the portable `RZ-RZ-CX-RZ-CX` controlled-phase decomposition and
 applies its equivalent two-qubit diagonal in one statevector pass. A dedicated
 22-qubit rollback A/B (`threads=1`, two warmups, five retained calls) measured
@@ -63,10 +63,19 @@ circuits, and entanglement-dense workloads retain the established dense path.
 A dedicated 22-qubit rollback A/B measured 0.190328 seconds with product
 components and 0.528505 seconds with `FQ_CPU_PRODUCT_STATE_EXECUTION=0`, a
 2.78× speedup over the already fused dense path. Compared with the original
-no-fusion rollback median, the two layers together are 8.10× faster. The full
-rotating-engine corpus above measured 0.259814 seconds for FlagQuantum versus
-0.154574 seconds for Cirq on the same QFT case; Cirq remains 1.68× faster there,
-down from 3.95× in the pre-optimization artifact.
+no-fusion rollback median, the two layers together are 8.10× faster.
+
+Third, consecutive static controlled-phase decompositions that may share wires
+are compiled into one weighted phase graph per segment. The graph preserves the
+exact global phase while replacing several component-state applications with
+one broadcast multiply. A separate native-only rollback A/B using two warmups,
+nine retained samples, and five calls per sample measured 0.007589 seconds
+versus 0.012042 at 18 qubits (1.59×) and 0.135640 seconds versus 0.198294 at
+22 qubits (1.46×). The 18-qubit compiled product-state plan fell from 75 state
+applications to 44. The corpus now records 0.151352 seconds for FlagQuantum
+versus the unchanged 0.154574-second Cirq measurement at 22 qubits. External
+measurements were not rerun; only FlagQuantum was remeasured with the original
+corpus methodology.
 
 Reproduce the artifact from the repository root:
 

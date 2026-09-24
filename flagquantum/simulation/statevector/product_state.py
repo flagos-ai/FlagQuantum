@@ -10,6 +10,10 @@ import torch
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix as _gate_matrix
+from .controlled_phase import (
+    _apply_controlled_phase_graph_cpu,
+    _controlled_phase_graph_factors_cpu,
+)
 from .operations import (
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
@@ -20,6 +24,7 @@ from .operations import (
 )
 from .program import (
     _StatevectorControlledPhaseDecompositionStep,
+    _StatevectorControlledPhaseGraphStep,
     _StatevectorCXSequenceStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
@@ -36,6 +41,10 @@ _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO = 0.30
 # estimated ratios 0.350 and 0.317. Keep the evidence-bound extension narrow;
 # every other program retains the established conservative ceiling.
 _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO = 0.36
+# Weighted phase-graph plans measured faster than dense graph execution at
+# estimated ratios below 0.45 on 18 and 22 wires. This extension is selected
+# only when the compiled plan contains that exact static graph step.
+_PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO = 0.45
 _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
 
 
@@ -52,6 +61,18 @@ def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], .
         return (step.wires,)
     if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
         return ((step.control, step.target),)
+    if isinstance(step, _StatevectorControlledPhaseGraphStep):
+        return (
+            tuple(
+                sorted(
+                    {
+                        wire
+                        for control, target, _ in step.edges
+                        for wire in (control, target)
+                    }
+                )
+            ),
+        )
     if isinstance(step, _StatevectorCXSequenceStep):
         return tuple(zip(step.controls, step.targets, strict=True))
     return ()
@@ -127,8 +148,12 @@ def product_state_execution_is_beneficial(
     estimated_work = 2**n_wires
     operation_count = 0
     static_clifford = True
+    contains_controlled_phase_graph = False
     for step in program:
         static_clifford = static_clifford and _is_static_clifford_step(step)
+        contains_controlled_phase_graph = contains_controlled_phase_graph or isinstance(
+            step, _StatevectorControlledPhaseGraphStep
+        )
         swap_wires = _swap_wires(step)
         if enable_swap_remapping and swap_wires is not None:
             left, right = swap_wires
@@ -142,11 +167,12 @@ def product_state_execution_is_beneficial(
             estimated_work += 2 ** merge(wires)
             operation_count += 1
     dense_work = max(len(program), operation_count) * 2**n_wires
-    maximum_ratio = (
-        _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO
-        if static_clifford
-        else _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO
-    )
+    if contains_controlled_phase_graph:
+        maximum_ratio = _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO
+    elif static_clifford:
+        maximum_ratio = _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO
+    else:
+        maximum_ratio = _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO
     return bool(estimated_work <= maximum_ratio * dense_work)
 
 
@@ -236,10 +262,48 @@ def _apply_step(
         _StatevectorGateStep
         | _StatevectorFusedGateStep
         | _StatevectorControlledPhaseDecompositionStep
+        | _StatevectorControlledPhaseGraphStep
     ),
     parameter_bindings: tuple[torch.Tensor, ...] | None,
+    constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None,
 ) -> torch.Tensor:
     global_wires: tuple[int, ...]
+    if isinstance(step, _StatevectorControlledPhaseGraphStep):
+        global_wires = tuple(
+            sorted(
+                {
+                    wire
+                    for control, target, _ in step.edges
+                    for wire in (control, target)
+                }
+            )
+        )
+        key = (
+            id(step),
+            str(component.state.device),
+            component.state.dtype,
+            len(global_wires),
+        )
+        factors = None if constant_cache is None else constant_cache.get(key)
+        if factors is None:
+            factors, built_wires = _controlled_phase_graph_factors_cpu(
+                step.edges,
+                device=component.state.device,
+                dtype=component.state.dtype,
+            )
+            if built_wires != global_wires:
+                raise RuntimeError(
+                    "compiled controlled-phase graph wire order changed unexpectedly"
+                )
+            if constant_cache is not None:
+                constant_cache[key] = factors
+        local_wires = tuple(component.wires.index(wire) for wire in global_wires)
+        return _apply_controlled_phase_graph_cpu(
+            component.state,
+            factors,
+            local_wires,
+            len(component.wires),
+        )
     if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
         global_wires = (step.control, step.target)
         matrix = _controlled_phase_matrix(step, component.state)
@@ -293,6 +357,7 @@ def execute_product_state_program(
     dtype: torch.dtype,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     enable_swap_remapping: bool = True,
+    constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None = None,
 ) -> torch.Tensor:
     """Execute an exact program while merging components only when required."""
 
@@ -328,13 +393,14 @@ def execute_product_state_program(
                 _StatevectorGateStep,
                 _StatevectorFusedGateStep,
                 _StatevectorControlledPhaseDecompositionStep,
+                _StatevectorControlledPhaseGraphStep,
             ),
         ):
             raise TypeError(f"unsupported product-state program step: {type(step)!r}")
         component = _merge_components(components, groups[0])
         updated = _ProductComponent(
             component.wires,
-            _apply_step(component, step, parameter_bindings),
+            _apply_step(component, step, parameter_bindings, constant_cache),
         )
         for wire in updated.wires:
             components[wire] = updated
