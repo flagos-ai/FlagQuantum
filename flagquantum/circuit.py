@@ -683,7 +683,7 @@ class Circuit:
         return len(self._instructions)
 
     def __repr__(self) -> str:
-        return f"Circuit(n_wires={self.n_wires}, instructions={len(self)})"
+        return f"Circuit(n_qubits={self.n_qubits}, instructions={len(self)})"
 
 
 def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Tensor:
