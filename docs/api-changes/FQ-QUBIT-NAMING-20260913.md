@@ -23,6 +23,7 @@ are updated with this user-authorized migration.
 | samples(wires=...) / counts(wires=...) | samples(qubits=...) / counts(qubits=...) | Preserve Observable overload and positional selection |
 | RuntimePolicy(observable_wires=...) | RuntimePolicy(observable_qubits=...) | Constructor alias plus explicit old-payload reader |
 | CloudBackendProfile(n_wires=...) / profile.n_wires | CloudBackendProfile(n_qubits=...) / profile.n_qubits | Deprecated constructor keyword and read-only property aliases |
+| provider.discover_backends(n_wires=...) | provider.list_devices(n_qubits=...) | Deprecated method alias delegates to the provider-neutral device API |
 | Example local variable wire | qubit | Rename now; no compatibility obligation |
 
 The implementation uses an OMITTED sentinel to distinguish omitted arguments

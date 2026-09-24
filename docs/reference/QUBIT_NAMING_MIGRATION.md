@@ -5,7 +5,8 @@ Implementation candidate on `qubit-naming-migration`; pending API/release review
 New code uses `fq.Circuit(n_qubits=2)`, `fq.probabilities(qubits=(0,))`,
 `fq.samples(qubits=(0,))`, `fq.counts(qubits=(0,))` and
 `fq.RuntimePolicy(observable_qubits=(0,))`. Cloud deployment profiles use
-`CloudBackendProfile(n_qubits=...)` and expose `profile.n_qubits`.
+`CloudBackendProfile(n_qubits=...)` and expose `profile.n_qubits`. Remote
+providers list hardware and simulators with `list_devices(n_qubits=...)`.
 
 Old count aliases and `wires` / `observable_wires` keywords emit
 DeprecationWarning. Supplying both selection keywords is an error, including
@@ -23,6 +24,8 @@ forward-reading.
 IR and backend-native payload fields are unchanged. The deprecated
 `observable_wires` property remains available on RuntimePolicy, while
 `CloudBackendProfile.n_wires` and its constructor keyword remain compatibility
-aliases during the same migration window. The affected candidate signatures
+aliases during the same migration window. `discover_backends(n_wires=...)`
+likewise delegates to `list_devices(n_qubits=...)` with a deprecation warning.
+The affected candidate signatures
 are updated for this explicitly requested migration; the historical baseline
 and checker remain unchanged.

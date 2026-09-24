@@ -157,8 +157,8 @@ class HttpQuantumProvider(QuantumProvider):
             headers.setdefault("X-User-Id", self.credentials.user_id)
         return headers
 
-    def discover_backends(
-        self, n_wires: int | None = None
+    def list_devices(
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
         try:
             payload = self.transport.get_json(
@@ -171,7 +171,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_qubits=n_wires or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_wires,
                     metadata={"source": "fallback"},
                 ),
             )
@@ -184,11 +184,11 @@ class HttpQuantumProvider(QuantumProvider):
                 row.get(
                     "n_wires",
                     row.get(
-                        "nqubits", row.get("qubits", n_wires or self.default_n_wires)
+                        "nqubits", row.get("qubits", n_qubits or self.default_n_wires)
                     ),
                 )
             )
-            if n_wires is not None and qubits < n_wires:
+            if n_qubits is not None and qubits < n_qubits:
                 continue
             profiles.append(
                 CloudBackendProfile(
@@ -205,7 +205,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_qubits=n_wires or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_wires,
                     metadata={"source": "empty-list-fallback"},
                 )
             )

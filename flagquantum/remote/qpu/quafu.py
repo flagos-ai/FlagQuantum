@@ -192,8 +192,8 @@ class QuafuProvider(HttpQuantumProvider):
             headers["token"] = self.credentials.token
         return headers
 
-    def discover_backends(
-        self, n_wires: int | None = None
+    def list_devices(
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
         """Discover current task-API devices, with legacy SQC fallback.
 
@@ -206,12 +206,12 @@ class QuafuProvider(HttpQuantumProvider):
             response = self.transport.get_json(
                 self._task_api_url("/devices"), {}, self.timeout
             )
-            return self._task_api_backends(response, n_wires=n_wires)
+            return self._task_api_backends(response, n_qubits=n_qubits)
         except Exception:
-            return self._legacy_backends(n_wires=n_wires)
+            return self._legacy_backends(n_qubits=n_qubits)
 
     def _task_api_backends(
-        self, response: Mapping[str, Any], *, n_wires: int | None
+        self, response: Mapping[str, Any], *, n_qubits: int | None
     ) -> tuple[CloudBackendProfile, ...]:
         raw_devices = response.get("devices")
         if not isinstance(raw_devices, Sequence) or isinstance(
@@ -231,7 +231,7 @@ class QuafuProvider(HttpQuantumProvider):
             if not isinstance(name, str) or not name.strip():
                 raise RuntimeError("quafu task API device has no name")
             if type(capacity) is not int or capacity <= 0:
-                capacity = n_wires or self.default_n_wires
+                capacity = n_qubits or self.default_n_wires
             profiles.append(
                 CloudBackendProfile(
                     provider="quafu",
@@ -252,7 +252,7 @@ class QuafuProvider(HttpQuantumProvider):
         return tuple(profiles)
 
     def _legacy_backends(
-        self, *, n_wires: int | None
+        self, *, n_qubits: int | None
     ) -> tuple[CloudBackendProfile, ...]:
         response = self.transport.get_json(
             self._url("/task/status/0"), self._headers(), self.timeout
@@ -268,7 +268,7 @@ class QuafuProvider(HttpQuantumProvider):
                 CloudBackendProfile(
                     provider="quafu",
                     name=str(name),
-                    n_qubits=n_wires or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_wires,
                     metadata={
                         "source": "quafu-task-status",
                         "queue_status": queue_status,

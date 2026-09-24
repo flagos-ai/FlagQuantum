@@ -66,7 +66,7 @@ This should be corrected without inventing a universal Provider abstraction:
 
 The shared behavior currently consists of:
 
-1. `discover_backends(n_wires)`;
+1. `list_devices(n_qubits)` (`discover_backends(n_wires)` remains a deprecated alias);
 2. `submit(package) -> ProviderTaskHandle`;
 3. `query_status(handle) -> str`;
 4. `fetch_result(handle) -> DeploymentResult`;

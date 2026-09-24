@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -95,12 +96,26 @@ class QuantumProvider:
 
     provider: str = "provider"
 
+    def list_devices(
+        self, n_qubits: int | None = None
+    ) -> tuple[CloudBackendProfile, ...]:
+        legacy_method = type(self).discover_backends
+        if legacy_method is not QuantumProvider.discover_backends:
+            return legacy_method(self, n_wires=n_qubits)
+        raise NotImplementedError(f"{self.provider} list_devices is not implemented")
+
     def discover_backends(
         self, n_wires: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        raise NotImplementedError(
-            f"{self.provider} discover_backends is not implemented"
+        """Deprecated compatibility alias for :meth:`list_devices`."""
+
+        warnings.warn(
+            "discover_backends() is deprecated; use list_devices(). Removal is "
+            "planned for 0.4.0 after the 0.3.x migration window.",
+            DeprecationWarning,
+            stacklevel=2,
         )
+        return self.list_devices(n_qubits=n_wires)
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         raise NotImplementedError(f"{self.provider} submit is not implemented")

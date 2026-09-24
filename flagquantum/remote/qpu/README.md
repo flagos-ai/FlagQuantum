@@ -12,7 +12,7 @@ from flagquantum.remote.qpu import QuafuProvider
 
 provider = QuafuProvider()
 provider.verify()
-backends = provider.discover_backends(n_wires=2)
+devices = provider.list_devices(n_qubits=2)
 ```
 
 For the shortest supported user path, let the public runtime own the complete

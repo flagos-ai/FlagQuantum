@@ -63,7 +63,7 @@ the new `/devices` endpoint first and falls back to legacy SQC discovery:
 from flagquantum.remote import QuafuProvider
 
 provider = QuafuProvider()
-for backend in provider.discover_backends():
+for backend in provider.list_devices():
     print(
         backend.name,
         backend.n_qubits,

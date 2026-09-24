@@ -247,7 +247,7 @@ def test_local_provider_runs_packaged_circuit():
     circuit = fq.Circuit(2)
     circuit.x(0).x(1)
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
 
     result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=32)
 
@@ -382,7 +382,7 @@ def test_deployment_subsystem_is_top_level_easy_to_use():
 @pytest.mark.parametrize("field", ("qasm", "shots", "routing_evidence"))
 def test_provider_rejects_tampered_deployment_package(field):
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
     package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
         backend=backend,
@@ -424,7 +424,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
 @pytest.mark.parametrize("field", ("identity", "shots"))
 def test_deployment_result_rejects_broken_receipt_chain(field):
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
     result = fqd.deploy_circuit(
         fq.Circuit(2).x(0),
         provider,

@@ -12,6 +12,7 @@ from flagquantum.remote import (
     ProviderCredentials,
     QuafuProvider,
 )
+from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration
 
@@ -89,7 +90,7 @@ def test_http_provider_submit_status_and_result():
     )
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
     package = fqd.create_deployment_package(circuit, backend=backend, shots=8)
 
     result = provider.run(package)
@@ -133,11 +134,32 @@ def test_http_provider_discovery_fallback_without_network():
         default_backend="offline_sim",
     )
 
-    backends = provider.discover_backends(3)
+    backends = provider.list_devices(n_qubits=3)
 
     assert backends[0].provider == "offline"
     assert backends[0].name == "offline_sim"
     assert backends[0].n_qubits == 3
+
+
+def test_discover_backends_remains_a_deprecated_list_devices_alias():
+    provider = HttpQuantumProvider(
+        provider="fake",
+        base_url="https://example.test",
+        transport=FakeTransport(),
+    )
+
+    with pytest.warns(DeprecationWarning, match="list_devices"):
+        legacy = provider.discover_backends(2)
+
+    current = provider.list_devices(n_qubits=2)
+    assert legacy == current
+
+
+def test_list_devices_supports_legacy_provider_implementations():
+    devices = InMemoryRemoteTarget().list_devices(n_qubits=3)
+
+    assert len(devices) == 1
+    assert devices[0].n_qubits == 3
 
 
 def test_quafu_provider_uses_platform_endpoint_and_token_header():
@@ -356,7 +378,7 @@ def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch
     transport = StatusTransport()
     provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
 
-    backends = provider.discover_backends(5)
+    backends = provider.list_devices(n_qubits=5)
 
     assert [backend.name for backend in backends] == ["Dongling", "Miaofeng"]
     assert all(backend.n_qubits == 5 for backend in backends)
@@ -394,7 +416,7 @@ def test_quafu_provider_prefers_task_api_device_discovery():
         task_server_url="https://quafu.test/api/v1", transport=transport
     )
 
-    backends = provider.discover_backends()
+    backends = provider.list_devices()
 
     assert [(backend.name, backend.n_qubits) for backend in backends] == [
         ("Shenglian", 84),

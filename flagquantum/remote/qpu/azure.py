@@ -203,10 +203,10 @@ class AzureQuantumProvider(QuantumProvider):
     def target_id(self) -> str:
         return str(self.backend.metadata["target_id"])
 
-    def discover_backends(
-        self, n_wires: int | None = None
+    def list_devices(
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        if n_wires is not None and self.backend.n_qubits < int(n_wires):
+        if n_qubits is not None and self.backend.n_qubits < int(n_qubits):
             return ()
         return (self.backend,)
 
