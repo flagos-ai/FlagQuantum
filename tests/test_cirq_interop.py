@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from importlib import import_module
 from pathlib import Path
 
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
@@ -13,8 +16,10 @@ from flagquantum.core.parameters import Parameter, ParameterExpression
 from flagquantum.ecosystem import get_adapter
 from flagquantum.ecosystem.cirq import (
     CirqConversionError,
+    CirqSimulatorExecutionError,
     from_cirq,
     import_cirq,
+    run,
     to_cirq,
 )
 
@@ -39,6 +44,94 @@ def _cirq_state(circuit: cirq.Circuit, n_wires: int) -> torch.Tensor:
         circuit, qubit_order=cirq.LineQubit.range(n_wires)
     )
     return torch.as_tensor(result.final_state_vector.copy())
+
+
+def test_cirq_execution_import_is_lazy() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from flagquantum.ecosystem.cirq import run; "
+            "assert callable(run); assert 'cirq' not in sys.modules",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cirq_execution_statevector_matches_native(dtype: torch.dtype) -> None:
+    circuit = Circuit(3, dtype=dtype).h(0).ry(1, 0.37).cx(0, 2).cz(2, 1)
+
+    result = run(circuit, options=fq.ExecutionOptions(seed=13))
+
+    assert result.state is not None
+    assert result.state.dtype == dtype
+    torch.testing.assert_close(
+        result.state,
+        circuit.state(refresh=True),
+        rtol=1e-5,
+        atol=1e-6,
+    )
+    assert result.runtime["backend"] == "cirq_simulator"
+    assert result.runtime["fallback_used"] is False
+    assert result.compatibility["external_backend_explicit"] is True
+    assert result.provenance["flagquantum_ir_hash"] == circuit.to_ir().content_hash
+
+
+def test_cirq_execution_preserves_idle_wire_extent() -> None:
+    circuit = Circuit(3, dtype=torch.complex128).x(2)
+
+    result = run(circuit)
+
+    assert result.state is not None
+    torch.testing.assert_close(result.state, circuit.state(refresh=True))
+    assert result.provenance["idle_wire_extent_preserved"] is True
+
+
+def test_cirq_execution_samples_and_counts_use_requested_wire_order() -> None:
+    circuit = Circuit(3).x(0).x(2)
+    options = fq.ExecutionOptions(shots=8, seed=7)
+
+    samples = run(
+        circuit,
+        outputs=fq.samples(qubits=(2, 1, 0)),
+        options=options,
+    )
+    counts = run(
+        circuit,
+        outputs=fq.counts(qubits=(2, 1, 0)),
+        options=options,
+    )
+
+    assert samples.samples is not None
+    assert samples.samples.shape == (1, 8, 3)
+    assert samples.samples.unique(dim=1).tolist() == [[[1, 0, 1]]]
+    assert counts.counts == [{"101": 8}]
+
+
+def test_cirq_execution_unsupported_requests_fail_before_simulation() -> None:
+    with pytest.raises(TypeError, match=r"requires fq\.samples"):
+        run(Circuit(1), shots=10)
+    with pytest.raises(ValueError, match="require shots"):
+        run(Circuit(1), outputs=fq.counts())
+    with pytest.raises(ValueError, match="must be unique"):
+        run(Circuit(2), outputs=fq.samples(qubits=(0, 0)), shots=4)
+    with pytest.raises(CirqSimulatorExecutionError, match=r"supports fq\.samples"):
+        run(Circuit(2), outputs=fq.probabilities())
+    with pytest.raises(CirqSimulatorExecutionError, match="dynamic circuit"):
+        run(
+            CircuitIR(
+                1,
+                (Instruction("x", (0,), metadata={"conditions": ((0, 1),)}),),
+            )
+        )
+    with pytest.raises(CirqSimulatorExecutionError, match="does not support autograd"):
+        run(Circuit(1).rx(0, torch.tensor(0.2, requires_grad=True)))
+    with pytest.raises(CirqSimulatorExecutionError, match="options.backend"):
+        run(Circuit(1), options=fq.ExecutionOptions(backend="qiskit_aer"))
 
 
 def test_cirq_round_trip_preserves_complex128_semantics_and_order() -> None:
