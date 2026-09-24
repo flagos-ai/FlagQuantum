@@ -164,11 +164,25 @@ def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
     ) == (4, 4, 1)
 
 
-def test_large_complex128_state_uses_wider_dense_groups() -> None:
-    assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex128) == 6
-    assert _cpu_disjoint_dense_max_wires(21, 1, torch.complex128) == 4
+def test_large_complex128_state_uses_measured_wider_dense_groups() -> None:
+    assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex128) == 8
+    assert _cpu_disjoint_dense_max_wires(21, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(20, 1, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(19, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(18, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(17, 1, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(24, 1, torch.complex128) == 6
     assert _cpu_disjoint_dense_max_wires(22, 2, torch.complex128) == 4
     assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex64) == 4
+
+
+def test_adaptive_dense_fusion_width_can_be_disabled(monkeypatch) -> None:
+    monkeypatch.setenv("FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH", "0")
+
+    assert _cpu_disjoint_dense_max_wires(18, 1, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(20, 1, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(24, 1, torch.complex128) == 6
 
 
 def test_dense_single_wire_regions_accept_wider_large_state_bound() -> None:

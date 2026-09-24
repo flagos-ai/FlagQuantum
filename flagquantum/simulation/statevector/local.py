@@ -75,8 +75,11 @@ if TYPE_CHECKING:
     from ...circuit import Circuit, _StatevectorExecutionStatistics
 
 
-_CPU_DISJOINT_DENSE_LARGE_STATE_MIN_WIRES = 22
-_CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES = 6
+_CPU_DISJOINT_DENSE_MEDIUM_STATE_MIN_WIRES = 18
+_CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES = 6
+_CPU_DISJOINT_DENSE_FOUR_WIRE_CROSSOVER = 20
+_CPU_DISJOINT_DENSE_EIGHT_WIRE_STATE_WIRES = 22
+_CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES = 8
 
 
 def _cpu_controlled_phase_decomposition_fusion_enabled() -> bool:
@@ -97,6 +100,12 @@ def _cpu_product_state_execution_enabled() -> bool:
     """Whether eligible CPU circuits may keep product components separate."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_EXECUTION", default=True)
+
+
+def _cpu_adaptive_dense_fusion_width_enabled() -> bool:
+    """Whether unbatched complex128 states use measured fusion widths."""
+
+    return _environment_flag("FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH", default=True)
 
 
 def _cpu_product_state_swap_remapping_enabled() -> bool:
@@ -136,18 +145,24 @@ def _cpu_disjoint_dense_max_wires(
 ) -> int:
     """Choose the dense fusion width without regressing smaller CPU states.
 
-    A wider product grows its matrix 4x per wire. At 20 wires the narrower
-    product wins, but memory traffic dominates a complex128 state from 22 wires:
-    six-wire groups reduced a representative workload from 18 state applies to
-    14 and improved its median runtime by 1.57x at 22 wires and 1.44x at 24.
+    Paired rotation-layer measurements favor six fused wires from 18 qubits,
+    except at the 20-qubit crossover where four remains faster. Eight wins at
+    22 qubits but regresses at 24, so it stays local to the measured state size.
+    Batches and complex64 retain the conservative four-wire product.
     """
 
-    if (
-        n_wires >= _CPU_DISJOINT_DENSE_LARGE_STATE_MIN_WIRES
-        and batch_size == 1
-        and dtype == torch.complex128
-    ):
-        return _CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES
+    if batch_size == 1 and dtype == torch.complex128:
+        if not _cpu_adaptive_dense_fusion_width_enabled():
+            if n_wires >= _CPU_DISJOINT_DENSE_EIGHT_WIRE_STATE_WIRES:
+                return _CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES
+            return _CPU_DISJOINT_DENSE_MAX_WIRES
+        if n_wires == _CPU_DISJOINT_DENSE_EIGHT_WIRE_STATE_WIRES:
+            return _CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES
+        if (
+            n_wires >= _CPU_DISJOINT_DENSE_MEDIUM_STATE_MIN_WIRES
+            and n_wires != _CPU_DISJOINT_DENSE_FOUR_WIRE_CROSSOVER
+        ):
+            return _CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES
     return _CPU_DISJOINT_DENSE_MAX_WIRES
 
 

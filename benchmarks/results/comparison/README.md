@@ -16,3 +16,7 @@ Aer, Cirq, and PennyLane artifacts. Its machine-readable companion is
 [`simulator_comparison_cpu_arm64_20260923.json`](simulator_comparison_cpu_arm64_20260923.json).
 Contract tests regenerate both files and fail if either view drifts from the
 raw measurements.
+
+[`SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md`](SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md)
+records the native rollback A/B and refreshed cross-framework evidence for the
+measured complex128 dense-fusion width policy.

@@ -252,7 +252,7 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
     ]["end_to_end"]["median_seconds"] == pytest.approx(0.01334287493955344)
     assert refreshed_cases[("dense_nonlocal_statevector", 22)]["engines"][
         "flagquantum_native"
-    ]["end_to_end"]["median_seconds"] == pytest.approx(0.3745365421054885)
+    ]["end_to_end"]["median_seconds"] == pytest.approx(0.23688520805444568)
     assert refreshed_cases[("dense_nonlocal_statevector", 22)]["engines"]["qiskit_aer"][
         "end_to_end"
     ]["median_seconds"] == pytest.approx(1.9517207079916261)
