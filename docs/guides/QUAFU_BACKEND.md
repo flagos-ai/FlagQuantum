@@ -56,11 +56,20 @@ the task. A successful fallback reports `sqc_legacy` instead.
 
 ## Run on a real device
 
-Inspect the current device list before choosing a target. This endpoint does not
-require authentication:
+Inspect the current device list before choosing a target. Python discovery uses
+the new `/devices` endpoint first and falls back to legacy SQC discovery:
 
-```bash
-curl "$QUAFU_TASK_SERVER_URL/devices"
+```python
+from flagquantum.remote import QuafuProvider
+
+provider = QuafuProvider()
+for backend in provider.discover_backends():
+    print(
+        backend.name,
+        backend.n_wires,
+        backend.metadata.get("status"),
+        backend.metadata.get("queue"),
+    )
 ```
 
 Choose a device whose status is `online`, then use its case-sensitive name after

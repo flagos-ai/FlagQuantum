@@ -361,7 +361,55 @@ def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch
     assert [backend.name for backend in backends] == ["Dongling", "Miaofeng"]
     assert all(backend.n_wires == 5 for backend in backends)
     assert backends[0].metadata["queue_status"] == 0
-    assert transport.gets[0][1] == {"token": "env-secret"}
+    assert transport.gets[0][0] == "https://quafu.com.cn/api/v1/devices"
+    assert transport.gets[-1][1] == {"token": "env-secret"}
+
+
+def test_quafu_provider_prefers_task_api_device_discovery():
+    class DeviceTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            self.gets.append((url, headers, timeout))
+            if url.endswith("/devices"):
+                return {
+                    "devices": [
+                        {
+                            "name": "Shenglian",
+                            "status": "online",
+                            "n_qubits": 84,
+                            "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+                            "queue": 4,
+                            "calibration_id": "calibration-1",
+                        }
+                    ],
+                    "simulator": {
+                        "name": "sim",
+                        "status": "online",
+                        "max_qubits": 24,
+                    },
+                }
+            raise AssertionError(url)
+
+    transport = DeviceTransport()
+    provider = QuafuProvider(
+        task_server_url="https://quafu.test/api/v1", transport=transport
+    )
+
+    backends = provider.discover_backends()
+
+    assert [(backend.name, backend.n_wires) for backend in backends] == [
+        ("Shenglian", 84),
+        ("sim", 24),
+    ]
+    assert backends[0].basis_gates == ("h", "rx", "ry", "rz", "cz")
+    assert backends[0].metadata == {
+        "source": "quafu-task-api-devices",
+        "status": "online",
+        "queue": 4,
+        "calibration_id": "calibration-1",
+    }
+    assert transport.gets == [
+        ("https://quafu.test/api/v1/devices", {}, provider.timeout)
+    ]
 
 
 def test_quafu_provider_run_polls_until_finished():

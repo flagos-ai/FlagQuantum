@@ -195,13 +195,65 @@ class QuafuProvider(HttpQuantumProvider):
     def discover_backends(
         self, n_wires: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        """Discover chips through ``Task.status(0)``.
+        """Discover current task-API devices, with legacy SQC fallback.
 
-        The SQC status response reports queue availability but not qubit counts,
-        so the requested width (or the configured conservative fallback) is
-        retained in each profile and the limitation is exposed in metadata.
+        The current API reports device capacity and status directly. The legacy
+        SQC response has no qubit counts, so fallback profiles retain the
+        requested width or configured conservative default.
         """
 
+        try:
+            response = self.transport.get_json(
+                self._task_api_url("/devices"), {}, self.timeout
+            )
+            return self._task_api_backends(response, n_wires=n_wires)
+        except Exception:
+            return self._legacy_backends(n_wires=n_wires)
+
+    def _task_api_backends(
+        self, response: Mapping[str, Any], *, n_wires: int | None
+    ) -> tuple[CloudBackendProfile, ...]:
+        raw_devices = response.get("devices")
+        if not isinstance(raw_devices, Sequence) or isinstance(
+            raw_devices, (str, bytes)
+        ):
+            raise RuntimeError("quafu task API devices response is not a sequence")
+        rows = list(raw_devices)
+        simulator = response.get("simulator")
+        if isinstance(simulator, Mapping):
+            rows.append(simulator)
+        profiles = []
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise RuntimeError("quafu task API device is not a mapping")
+            name = row.get("name")
+            capacity = row.get("n_qubits", row.get("max_qubits"))
+            if not isinstance(name, str) or not name.strip():
+                raise RuntimeError("quafu task API device has no name")
+            if type(capacity) is not int or capacity <= 0:
+                capacity = n_wires or self.default_n_wires
+            profiles.append(
+                CloudBackendProfile(
+                    provider="quafu",
+                    name=name,
+                    n_wires=capacity,
+                    basis_gates=tuple(map(str, row.get("basis_gates", ()))),
+                    is_simulator=name == "sim",
+                    metadata={
+                        "source": "quafu-task-api-devices",
+                        "status": row.get("status"),
+                        "queue": row.get("queue"),
+                        "calibration_id": row.get("calibration_id"),
+                    },
+                )
+            )
+        if not profiles:
+            raise RuntimeError("quafu task API devices response contains no devices")
+        return tuple(profiles)
+
+    def _legacy_backends(
+        self, *, n_wires: int | None
+    ) -> tuple[CloudBackendProfile, ...]:
         response = self.transport.get_json(
             self._url("/task/status/0"), self._headers(), self.timeout
         )
