@@ -12,6 +12,40 @@ if TYPE_CHECKING:
 _DEFAULT_ELEMENT_BUDGET = 4_000_000
 
 
+def _collapse_sampled_wire(state: MPSState, wire: int, bits: torch.Tensor) -> None:
+    """Collapse one left-to-right sample step without rank-deficient QR."""
+
+    tensor = state.tensors[wire]
+    if tensor.shape[1] != 1:
+        raise RuntimeError("sequential MPS sampling requires a unit left bond")
+    batches = torch.arange(state.bsz, device=state.device)
+    boundary = tensor[batches, 0, bits, :]
+    norms = torch.linalg.vector_norm(boundary, dim=-1)
+    if bool(torch.any(~torch.isfinite(norms))) or bool(torch.any(norms <= 1e-12)):
+        raise RuntimeError("sampled MPS branch is not finite and positive")
+    boundary = boundary / norms[:, None]
+
+    basis = torch.zeros(
+        state.bsz,
+        1,
+        2,
+        1,
+        dtype=state.dtype,
+        device=state.device,
+    )
+    basis[batches, 0, bits, 0] = 1
+    state.tensors[wire] = basis
+    if wire + 1 < state.n_wires:
+        state.tensors[wire + 1] = torch.einsum(
+            "bl,blsr->bsr",
+            boundary,
+            state.tensors[wire + 1],
+        ).unsqueeze(1)
+        state.orthogonality_center = wire + 1
+    else:
+        state.orthogonality_center = wire
+
+
 def sample_mps_bits(
     state: MPSState,
     shots: int,
@@ -48,8 +82,7 @@ def sample_mps_bits(
                 generator=generator,
             ).squeeze(-1)
             outputs[:, start : start + count, wire] = bit.reshape(state.bsz, count)
-            work._project_wire(wire, bit)
-            work._normalize()
+            _collapse_sampled_wire(work, wire, bit)
     return outputs
 
 

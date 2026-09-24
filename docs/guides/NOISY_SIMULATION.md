@@ -201,14 +201,14 @@ and 1,000 output shots. Median end-to-end times over three runs were:
 
 | Qubits | Median time | Observed max bond | Counts |
 |---:|---:|---:|---:|
-| 16 | 0.053 s | 2 | 1,000 |
-| 20 | 0.062 s | 2 | 1,000 |
-| 24 | 0.099 s | 2 | 1,000 |
-| 50 | 0.183 s | 2 | 1,000 |
-| 100 | 0.298 s | 2 | 1,000 |
-| 200 | 0.553 s | 2 | 1,000 |
-| 500 | 1.408 s | 2 | 1,000 |
-| 1,000 | 3.026 s | 2 | 1,000 |
+| 16 | 0.037 s | 2 | 1,000 |
+| 20 | 0.045 s | 2 | 1,000 |
+| 24 | 0.065 s | 2 | 1,000 |
+| 50 | 0.133 s | 2 | 1,000 |
+| 100 | 0.221 s | 2 | 1,000 |
+| 200 | 0.440 s | 2 | 1,000 |
+| 500 | 1.231 s | 2 | 1,000 |
+| 1,000 | 2.366 s | 2 | 1,000 |
 
 These timings include planning, noisy evolution, and counts. No truncation was
 observed for this particular rank-2 workload. They are workload-specific

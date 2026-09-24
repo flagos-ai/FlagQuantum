@@ -14,6 +14,8 @@ from ..gate_matrix import gate_matrix, parameter_tensor
 from ..matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix
+from .canonical import move_orthogonality_center as _move_orthogonality_center
+from .canonical import sweep_center_left as _sweep_center_left
 from .factorization import (
     _discarded_weight,
     _select_rank,
@@ -301,77 +303,14 @@ class MPSState(MPSPlanningMixin):
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
             return self
-        self._sweep_center_left(0)
+        _sweep_center_left(self, 0)
         return self
 
     def move_orthogonality_center(self, site: int) -> "MPSState":
         """Move the mixed-canonical orthogonality center to ``site``."""
 
-        site = int(site)
-        if site < 0 or site >= self.n_wires:
-            raise ValueError(
-                f"Orthogonality center must be in [0, {self.n_wires - 1}], got {site}."
-            )
-        if self.orthogonality_center is None:
-            self.orthogonalize_left()
-        center = self.orthogonality_center
-        if center is None:
-            raise RuntimeError("MPS orthogonalization did not establish a center")
-        if center < site:
-            self._sweep_center_right(site)
-        elif center > site:
-            self._sweep_center_left(site)
+        _move_orthogonality_center(self, site)
         return self
-
-    def _sweep_center_right(self, target_site: int) -> None:
-        center = self.orthogonality_center
-        if center is None:
-            center = 0
-        for wire in range(int(center), int(target_site)):
-            tensor = self.tensors[wire]
-            batch, left_dim, physical_dim, right_dim = tensor.shape
-            matrix = tensor.reshape(batch, left_dim * physical_dim, right_dim)
-            q, r = torch.linalg.qr(matrix, mode="reduced")
-            new_right_dim = q.shape[-1]
-            self.tensors[wire] = q.reshape(
-                batch,
-                left_dim,
-                physical_dim,
-                new_right_dim,
-            )
-            next_tensor = self.tensors[wire + 1]
-            self.tensors[wire + 1] = torch.einsum(
-                "bij,bjsk->bisk",
-                r,
-                next_tensor,
-            )
-        self.orthogonality_center = int(target_site)
-
-    def _sweep_center_left(self, target_site: int) -> None:
-        center = self.orthogonality_center
-        if center is None:
-            center = self.n_wires - 1
-        for wire in range(int(center), int(target_site), -1):
-            tensor = self.tensors[wire]
-            batch, left_dim, physical_dim, right_dim = tensor.shape
-            matrix = tensor.reshape(batch, left_dim, physical_dim * right_dim)
-            q, r = torch.linalg.qr(matrix.transpose(-1, -2), mode="reduced")
-            right_orthogonal = q.transpose(-1, -2)
-            transfer = r.transpose(-1, -2)
-            new_left_dim = right_orthogonal.shape[1]
-            self.tensors[wire] = right_orthogonal.reshape(
-                batch,
-                new_left_dim,
-                physical_dim,
-                right_dim,
-            )
-            previous = self.tensors[wire - 1]
-            self.tensors[wire - 1] = torch.einsum(
-                "blpa,bac->blpc",
-                previous,
-                transfer,
-            )
-        self.orthogonality_center = int(target_site)
 
     @torch.no_grad()
     def left_canonical_residual(self) -> float:
@@ -794,13 +733,6 @@ class MPSState(MPSPlanningMixin):
         if bool(torch.any(~torch.isfinite(probs))) or bool(torch.any(norm <= 1e-12)):
             raise RuntimeError("MPS measurement probabilities are not finite")
         return probs / torch.clamp(norm, min=1e-12)
-
-    def _project_wire(self, wire: int, bits: torch.Tensor) -> None:
-        self.move_orthogonality_center(int(wire))
-        tensor = self.tensors[int(wire)].clone()
-        mask = torch.zeros(self.bsz, 2, dtype=self.dtype, device=self.device)
-        mask.scatter_(1, bits.reshape(-1, 1), 1)
-        self.tensors[int(wire)] = tensor * mask[:, None, :, None]
 
     def _normalize(self) -> None:
         center = self.orthogonality_center

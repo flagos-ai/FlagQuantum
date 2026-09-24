@@ -32,11 +32,11 @@
     {
       "n_qubits": 16,
       "seconds": [
-        0.06972095801029354,
-        0.05224008404184133,
-        0.053120916010811925
+        0.05001062498195097,
+        0.03663116705138236,
+        0.03601745801279321
       ],
-      "median_seconds": 0.053120916010811925,
+      "median_seconds": 0.03663116705138236,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 16384,
@@ -45,11 +45,11 @@
     {
       "n_qubits": 20,
       "seconds": [
-        0.06532633397728205,
-        0.061627791030332446,
-        0.05871591699542478
+        0.04468083300162107,
+        0.04520479199709371,
+        0.04469845799030736
       ],
-      "median_seconds": 0.061627791030332446,
+      "median_seconds": 0.04469845799030736,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 20480,
@@ -58,11 +58,11 @@
     {
       "n_qubits": 24,
       "seconds": [
-        0.08735704200807959,
-        0.09906183299608529,
-        0.10180762497475371
+        0.05549783300375566,
+        0.06576233403757215,
+        0.06479966698680073
       ],
-      "median_seconds": 0.09906183299608529,
+      "median_seconds": 0.06479966698680073,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 24576,
@@ -71,11 +71,11 @@
     {
       "n_qubits": 50,
       "seconds": [
-        0.18347399996127933,
-        0.19221929198829457,
-        0.1607582499855198
+        0.14429295901209116,
+        0.1331666670157574,
+        0.12274108297424391
       ],
-      "median_seconds": 0.18347399996127933,
+      "median_seconds": 0.1331666670157574,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 51200,
@@ -84,11 +84,11 @@
     {
       "n_qubits": 100,
       "seconds": [
-        0.3072212910046801,
-        0.2882595830014907,
-        0.29844883299665526
+        0.22135766700375825,
+        0.2387257090304047,
+        0.21783875004621223
       ],
-      "median_seconds": 0.29844883299665526,
+      "median_seconds": 0.22135766700375825,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 102400,
@@ -97,11 +97,11 @@
     {
       "n_qubits": 200,
       "seconds": [
-        0.5786466249846853,
-        0.5532722090138122,
-        0.5490894999820739
+        0.4675455419928767,
+        0.4399858340038918,
+        0.4348689159960486
       ],
-      "median_seconds": 0.5532722090138122,
+      "median_seconds": 0.4399858340038918,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 204800,
@@ -110,11 +110,11 @@
     {
       "n_qubits": 500,
       "seconds": [
-        1.407540499989409,
-        1.377483749995008,
-        1.5332397500169463
+        1.3849226250313222,
+        1.2077784160501324,
+        1.2310897909919731
       ],
-      "median_seconds": 1.407540499989409,
+      "median_seconds": 1.2310897909919731,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 512000,
@@ -123,11 +123,11 @@
     {
       "n_qubits": 1000,
       "seconds": [
-        2.8724707079818472,
-        3.115888250002172,
-        3.0257082079770043
+        2.365904790989589,
+        2.577474332996644,
+        2.2726063749869354
       ],
-      "median_seconds": 3.0257082079770043,
+      "median_seconds": 2.365904790989589,
       "maximum_observed_bond": 2,
       "maximum_truncation_error": 0.0,
       "maximum_planned_state_bytes": 1024000,
