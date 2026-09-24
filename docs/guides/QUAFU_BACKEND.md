@@ -92,6 +92,15 @@ print(result.provenance["deployment"]["quafu_protocol"])
 This PR treats `Baihua-sim` as a task-API target and does not claim that the
 client downloads, caches, or trains its device-noise model locally.
 
+The current task API limits device-noise simulations to 12 participating
+qubits, independently of the physical device's full qubit count. It rejects a
+larger circuit with `precheck.simTooLarge`. The circuit must also compile onto
+the usable couplers in the selected calibration snapshot; for example, an
+otherwise valid multi-qubit circuit may fail with `precheck.edgeUnusable` when
+the required connected topology is unavailable. Treat
+`simulator_available=True` as target availability, not as a guarantee that
+every circuit up to the device's physical `n_qubits` is routable.
+
 ## Run on a real device
 
 Inspect the current device list before choosing a target. Python discovery uses
