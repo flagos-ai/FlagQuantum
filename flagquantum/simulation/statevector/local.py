@@ -18,6 +18,7 @@ from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
+from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
@@ -59,7 +60,10 @@ from .product_state import (
     execute_product_state_program,
     product_state_execution_is_beneficial,
 )
-from .program import _StatevectorControlledPhaseDecompositionStep
+from .program import (
+    _StatevectorControlledPhaseDecompositionStep,
+    _StatevectorCZGraphStep,
+)
 
 if TYPE_CHECKING:
     from ...circuit import Circuit, _StatevectorExecutionStatistics
@@ -87,6 +91,30 @@ def _cpu_product_state_swap_remapping_enabled() -> bool:
     """Whether product components treat SWAP as wire remapping."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", default=True)
+
+
+def _cpu_cz_graph_fusion_enabled() -> bool:
+    """Whether consecutive CPU CZ gates may share one phase application."""
+
+    return _environment_flag("FQ_CPU_CZ_GRAPH_FUSION", default=True)
+
+
+def _cz_graph_signs(
+    circuit: Circuit,
+    step: _StatevectorCZGraphStep,
+    device: torch.device,
+) -> tuple[torch.Tensor, tuple[int, ...]]:
+    """Return cached compact signs for one compiled CZ graph."""
+
+    key = (id(step), str(device), torch.int8, circuit.n_wires)
+    cached = circuit._statevector_fused_matrices.get(key)
+    graph_wires = tuple(sorted({wire for edge in step.edges for wire in edge}))
+    if cached is None:
+        cached, built_wires = _cz_graph_signs_cpu(step.edges, device=device)
+        if built_wires != graph_wires:
+            raise RuntimeError("compiled CZ graph wire order changed unexpectedly")
+        circuit._statevector_fused_matrices[key] = cached
+    return cached, graph_wires
 
 
 def _cpu_disjoint_dense_max_wires(
@@ -303,6 +331,9 @@ def _initial_runtime_metrics(
         for step in metric_steps
         if isinstance(step, _StatevectorControlledPhaseDecompositionStep)
     )
+    cz_graph_regions = tuple(
+        step for step in metric_steps if isinstance(step, _StatevectorCZGraphStep)
+    )
     return {
         "triton_single_qubit_loop_enabled": enable_triton_loop,
         "triton_single_qubit_loop_regions": len(loop_steps),
@@ -318,9 +349,11 @@ def _initial_runtime_metrics(
         "triton_single_qubit_matrix_regions": 0,
         "diagonal_elementwise_gates": diagonal_unfused_gates
         + sum(len(step.instructions) for step in diagonal_fused_regions)
-        + 5 * len(controlled_phase_regions),
+        + 5 * len(controlled_phase_regions)
+        + sum(len(step.edges) for step in cz_graph_regions),
         "diagonal_fused_regions": len(diagonal_fused_regions)
-        + len(controlled_phase_regions),
+        + len(controlled_phase_regions)
+        + len(cz_graph_regions),
         "permutation_gates": sum(
             isinstance(step, _StatevectorGateStep)
             and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
@@ -342,13 +375,15 @@ def _initial_runtime_metrics(
         "fused_gate_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
         )
-        + len(controlled_phase_regions),
+        + len(controlled_phase_regions)
+        + len(cz_graph_regions),
         "fused_gate_count": sum(
             len(step.instructions)
             for step in metric_steps
             if isinstance(step, _StatevectorFusedGateStep)
         )
-        + 5 * len(controlled_phase_regions),
+        + 5 * len(controlled_phase_regions)
+        + sum(len(step.edges) for step in cz_graph_regions),
         "dependency_reordered_single_qubit_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
             for step in metric_steps
@@ -849,6 +884,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_cross_wire_diagonal = (
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
+        enable_cpu_cz_graph = (
+            output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
+        )
         enable_cpu_disjoint_single_wire = (
             output.device.type == "cpu"
             and _cpu_disjoint_single_wire_fusion_enabled()
@@ -872,6 +910,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_triton_loop,
             "cpu_cross_wire_diagonal",
             enable_cpu_cross_wire_diagonal,
+            "cpu_cz_graph",
+            enable_cpu_cz_graph,
             "cpu_disjoint_single_wire",
             enable_cpu_disjoint_single_wire,
             "cpu_controlled_phase_decomposition",
@@ -888,6 +928,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 circuit.n_wires,
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
+                enable_cpu_cz_graph=enable_cpu_cz_graph,
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition
@@ -914,6 +955,10 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             batched_rotation_matrices
         )
         for step in program:
+            if isinstance(step, _StatevectorCZGraphStep):
+                signs, wires = _cz_graph_signs(circuit, step, output.device)
+                output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
+                continue
             if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
                 output = _apply_diagonal_matrix(
                     output,

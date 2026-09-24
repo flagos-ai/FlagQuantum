@@ -43,6 +43,13 @@ class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
 
+@dataclass(frozen=True)
+class _StatevectorCZGraphStep:
+    """One exact phase application for a consecutive graph of CZ gates."""
+
+    edges: tuple[tuple[int, int], ...]
+
+
 _StatevectorDenseRegion: TypeAlias = _StatevectorGateStep | _StatevectorFusedGateStep
 
 
@@ -63,6 +70,7 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorFusedGateStep
     | _StatevectorControlledPhaseDecompositionStep
     | _StatevectorCrossWireDiagonalStep
+    | _StatevectorCZGraphStep
     | _StatevectorDisjointDenseStep
 )
 _StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep

@@ -36,6 +36,17 @@ flagquantum-benchmark run simulator_workload_corpus \
   --json-output swap-routing.json
 ```
 
+For a focused 22-qubit dense nonlocal comparison:
+
+```bash
+flagquantum-benchmark run simulator_workload_corpus \
+  --workloads dense_nonlocal_statevector --n-wires 22 \
+  --engines flagquantum_native qiskit_aer cirq_simulator \
+    pennylane_lightning_qubit \
+  --threads 1 --warmup 2 --iterations 7 --calls-per-sample 7 \
+  --json-output dense-nonlocal.json
+```
+
 ## What is measured
 
 Every case contains:

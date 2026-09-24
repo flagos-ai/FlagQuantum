@@ -9,6 +9,11 @@ import flagquantum.simulation.statevector.operations as statevector_ops
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
+from flagquantum.simulation.statevector.cz_graph import (
+    _apply_cz_graph_cpu,
+    _cz_graph_signs_cpu,
+    _fuse_cz_graphs,
+)
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
     _cpu_disjoint_dense_max_wires,
@@ -30,6 +35,7 @@ from flagquantum.simulation.statevector.operations import (
     _wire_mask,
     _zero_basis_local_indices,
 )
+from flagquantum.simulation.statevector.program import _StatevectorCZGraphStep
 from flagquantum.simulation.statevector.two_qubit_cpu import (
     _apply_adjacent_two_qubit_matrix_cpu,
     _apply_strided_two_qubit_matrix_cpu,
@@ -100,6 +106,37 @@ def test_non_diagonal_region_ends_a_diagonal_matching_segment() -> None:
     assert isinstance(optimized[0], statevector_ops._StatevectorCrossWireDiagonalStep)
     assert isinstance(optimized[1], statevector_ops._StatevectorGateStep)
     assert isinstance(optimized[2], statevector_ops._StatevectorCrossWireDiagonalStep)
+
+
+def test_consecutive_cz_gates_compile_to_one_graph_step() -> None:
+    layout = ((), ())
+    program = tuple(
+        statevector_ops._StatevectorGateStep(Instruction(name, wires), layout)
+        for name, wires in (
+            ("cz", (0, 1)),
+            ("cz", (2, 0)),
+            ("cz", (0, 1)),
+            ("cz", (1, 2)),
+            ("h", (0,)),
+            ("cz", (2, 3)),
+        )
+    )
+
+    optimized = _fuse_cz_graphs(program)
+
+    assert optimized[0] == _StatevectorCZGraphStep(edges=((0, 2), (1, 2)))
+    assert optimized[1:] == list(program[4:])
+
+
+def test_cz_graph_compilation_respects_custom_matrix_barriers() -> None:
+    layout = ((), ())
+    custom = statevector_ops._StatevectorGateStep(
+        Instruction("cz", (0, 1), matrix=torch.eye(4, dtype=torch.complex128)),
+        layout,
+    )
+    exact = statevector_ops._StatevectorGateStep(Instruction("cz", (1, 2)), layout)
+
+    assert _fuse_cz_graphs((custom, exact)) == [custom, exact]
 
 
 def test_dense_single_wire_regions_are_packed_in_bounded_groups() -> None:
@@ -1069,6 +1106,31 @@ def test_cpu_cross_wire_diagonal_kernel_preserves_gradients():
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_cz_graph_kernel_matches_sequential_application_and_gradient(dtype):
+    generator = torch.Generator().manual_seed(1760)
+    state = torch.randn((2, 64), dtype=dtype, generator=generator, requires_grad=True)
+    edges = ((0, 5), (1, 3), (5, 2), (3, 0), (4, 2))
+    signs, wires = _cz_graph_signs_cpu(edges, device=state.device)
+
+    actual = _apply_cz_graph_cpu(state, signs, wires, n_wires=6)
+    expected = state
+    diagonal = torch.tensor((1, 1, 1, -1), dtype=dtype)
+    for edge in edges:
+        expected = _apply_diagonal_matrix(
+            expected, torch.diag(diagonal), edge, n_wires=6
+        )
+    actual_gradient = torch.autograd.grad(actual.real.sum(), state, retain_graph=True)[
+        0
+    ]
+    expected_gradient = torch.autograd.grad(expected.real.sum(), state)[0]
+
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert signs.dtype == torch.int8
+    assert signs.numel() == 2 ** len(wires)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_cpu_disjoint_diagonal_regions_match_sequential_application(dtype):
     generator = torch.Generator().manual_seed(1761)
     state = torch.randn((2, 32), dtype=dtype, generator=generator)
@@ -1182,6 +1244,44 @@ def test_cpu_two_wire_diagonal_matchings_preserve_parameter_autograd(monkeypatch
     ):
         torch.testing.assert_close(actual_gradient, expected_gradient)
     assert circuit._last_statevector_runtime["statevector_apply_count"] == 2
+
+
+def test_cpu_cz_graph_circuit_preserves_state_and_parameter_autograd(monkeypatch):
+    generator = torch.Generator().manual_seed(1769)
+    inputs = torch.randn(
+        (2, 64), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    angles = torch.linspace(-0.3, 0.4, 6, dtype=torch.float64, requires_grad=True)
+    circuit = Circuit(6, dtype=torch.complex128, inputs=inputs)
+    for left in range(6):
+        for right in range(left + 1, 6):
+            circuit.cz(left, right)
+    for wire in range(6):
+        circuit.ry(wire, theta=angles[wire])
+
+    monkeypatch.setenv("FQ_CPU_CZ_GRAPH_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradients = torch.autograd.grad(
+        expected.real.sum(), (inputs, angles), retain_graph=True
+    )
+    rollback_apply_count = circuit._last_statevector_runtime["statevector_apply_count"]
+    monkeypatch.setenv("FQ_CPU_CZ_GRAPH_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradients = torch.autograd.grad(actual.real.sum(), (inputs, angles))
+
+    torch.testing.assert_close(actual, expected)
+    for actual_gradient, expected_gradient in zip(
+        actual_gradients, expected_gradients, strict=True
+    ):
+        torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 3
+    assert circuit._last_statevector_runtime["diagonal_fused_regions"] == 1
+    assert circuit._last_statevector_runtime["diagonal_elementwise_gates"] == 15
+    assert rollback_apply_count > 3
+    assert any(
+        value.dtype == torch.int8 and value.numel() == 64
+        for value in circuit._statevector_fused_matrices.values()
+    )
 
 
 def test_cpu_disjoint_single_wire_fusion_preserves_parameter_autograd(monkeypatch):
