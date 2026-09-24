@@ -30,6 +30,15 @@ class _StatevectorFusedGateStep:
 
 
 @dataclass(frozen=True)
+class _StatevectorControlledPhaseDecompositionStep:
+    """Exact diagonal replacement for the five-gate QFT phase sequence."""
+
+    control: int
+    target: int
+    half_angle: float
+
+
+@dataclass(frozen=True)
 class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
@@ -52,6 +61,7 @@ _StatevectorPreCXStep: TypeAlias = (
     _StatevectorGateStep
     | _StatevectorRXRZLoopStep
     | _StatevectorFusedGateStep
+    | _StatevectorControlledPhaseDecompositionStep
     | _StatevectorCrossWireDiagonalStep
     | _StatevectorDisjointDenseStep
 )

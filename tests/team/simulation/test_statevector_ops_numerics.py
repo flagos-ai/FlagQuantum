@@ -1,5 +1,7 @@
 """Ownership tests for Runtime-independent statevector tensor operations."""
 
+import math
+
 import pytest
 import torch
 
@@ -1618,3 +1620,175 @@ def test_batched_two_wire_grouping_rolls_back_with_environment_switch(
         assert rolled_back_applies == 4
         assert _disjoint_dense_region_shapes(rolled_back_circuit) == ()
         torch.testing.assert_close(fused, rolled_back)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_controlled_phase_decomposition_fusion_matches_sequential_execution(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    generator = torch.Generator().manual_seed(1789)
+    inputs = torch.randn((2, 8), dtype=dtype, generator=generator, requires_grad=True)
+    circuit = Circuit(3, dtype=dtype, inputs=inputs)
+    half_angle = 0.185
+    circuit.rz(0, theta=half_angle)
+    circuit.rz(2, theta=half_angle)
+    circuit.cx(0, 2)
+    circuit.rz(2, theta=-half_angle)
+    circuit.cx(0, 2)
+
+    monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    expected_gradient = torch.autograd.grad(
+        expected.real.sum(), inputs, retain_graph=True
+    )[0]
+    baseline_statistics = dict(circuit._last_statevector_runtime)
+
+    monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    actual_gradient = torch.autograd.grad(actual.real.sum(), inputs)[0]
+    fused_statistics = circuit._last_statevector_runtime
+
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert baseline_statistics["statevector_apply_count"] == 4
+    assert fused_statistics["statevector_apply_count"] == 1
+    assert fused_statistics["diagonal_fused_regions"] == 1
+    assert fused_statistics["fused_gate_count"] == 5
+
+
+def test_cpu_controlled_phase_decomposition_declines_trainable_angles(
+    monkeypatch,
+) -> None:
+    generator = torch.Generator().manual_seed(1793)
+    inputs = torch.randn(
+        (1, 8), dtype=torch.complex128, generator=generator, requires_grad=True
+    )
+    angle = torch.tensor(0.37, dtype=torch.float64, requires_grad=True)
+    circuit = Circuit(3, dtype=torch.complex128, inputs=inputs)
+    circuit.rz(0, theta=angle / 2)
+    circuit.rz(2, theta=angle / 2)
+    circuit.cx(0, 2)
+    circuit.rz(2, theta=-angle / 2)
+    circuit.cx(0, 2)
+
+    monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", "1")
+    state = circuit.state(refresh=True)
+    input_gradient, angle_gradient = torch.autograd.grad(
+        state.real.sum(), (inputs, angle)
+    )
+
+    assert input_gradient is not None
+    assert angle_gradient is not None
+    assert circuit._last_statevector_runtime["fused_gate_count"] == 0
+
+
+def test_cpu_controlled_phase_decomposition_declines_near_match(
+    monkeypatch,
+) -> None:
+    half_angle = 0.185
+    circuit = Circuit(2, dtype=torch.complex128)
+    circuit.rz(0, theta=half_angle)
+    circuit.rz(1, theta=half_angle)
+    circuit.cx(0, 1)
+    circuit.rz(1, theta=-half_angle + 1e-12)
+    circuit.cx(0, 1)
+
+    monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", "1")
+    circuit.state(refresh=True)
+
+    assert circuit._last_statevector_runtime["fused_gate_count"] == 0
+
+
+def _product_state_qft_circuit(
+    n_wires: int,
+    *,
+    dtype: torch.dtype,
+    prefix_angle: torch.Tensor | None = None,
+) -> Circuit:
+    circuit = Circuit(n_wires, dtype=dtype)
+    if prefix_angle is not None:
+        circuit.ry(0, theta=prefix_angle)
+    for target in range(n_wires):
+        circuit.h(target)
+        for distance in range(1, min(3, n_wires - target - 1) + 1):
+            control = target + distance
+            half_angle = math.pi / (2 ** (distance + 1))
+            circuit.rz(control, theta=half_angle)
+            circuit.rz(target, theta=half_angle)
+            circuit.cx(control, target)
+            circuit.rz(target, theta=-half_angle)
+            circuit.cx(control, target)
+    for left in range(n_wires // 2):
+        circuit.swap(left, n_wires - left - 1)
+    return circuit
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_product_state_execution_matches_dense_statevector(
+    monkeypatch, dtype: torch.dtype
+) -> None:
+    dense_circuit = _product_state_qft_circuit(18, dtype=dtype)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
+    expected = dense_circuit.state(refresh=True)
+    assert dense_circuit._initial_state_workspace is not None
+
+    product_circuit = _product_state_qft_circuit(18, dtype=dtype)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    actual = product_circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected)
+    assert product_circuit._initial_state_workspace is None
+    assert any(
+        key[0] == "cpu_product_state" for key in product_circuit._backend_programs
+    )
+
+
+def test_cpu_product_state_execution_preserves_parameter_autograd(monkeypatch) -> None:
+    angle = torch.tensor(0.17, dtype=torch.float64, requires_grad=True)
+    dense_circuit = _product_state_qft_circuit(
+        18, dtype=torch.complex128, prefix_angle=angle
+    )
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
+    expected = dense_circuit.state(refresh=True)
+    expected_gradient = torch.autograd.grad(
+        expected.real.sum(), angle, retain_graph=True
+    )[0]
+
+    product_circuit = _product_state_qft_circuit(
+        18, dtype=torch.complex128, prefix_angle=angle
+    )
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    actual = product_circuit.state(refresh=True)
+    actual_gradient = torch.autograd.grad(actual.real.sum(), angle)[0]
+
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(actual_gradient, expected_gradient)
+    assert product_circuit._initial_state_workspace is None
+
+
+def test_cpu_product_state_execution_declines_custom_inputs(monkeypatch) -> None:
+    generator = torch.Generator().manual_seed(1801)
+    inputs = torch.randn((1, 2**18), dtype=torch.complex128, generator=generator)
+    circuit = Circuit(18, dtype=torch.complex128, inputs=inputs)
+    circuit.h(0).cx(0, 1)
+
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    circuit.state(refresh=True)
+
+    assert not any(key[0] == "cpu_product_state" for key in circuit._backend_programs)
+
+
+def test_cpu_product_state_execution_declines_entanglement_dense_plan(
+    monkeypatch,
+) -> None:
+    circuit = Circuit(18, dtype=torch.complex128)
+    for wire in range(circuit.n_wires):
+        circuit.h(wire)
+    for control in range(circuit.n_wires):
+        for target in range(control + 1, circuit.n_wires):
+            circuit.cx(control, target)
+
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    circuit.state(refresh=True)
+
+    assert circuit._initial_state_workspace is not None

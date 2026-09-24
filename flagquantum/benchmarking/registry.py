@@ -115,6 +115,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output comparison.json --markdown-output comparison.md"
         ),
     ),
+    "simulator_workload_corpus": RunnerSpec(
+        name="simulator_workload_corpus",
+        module="flagquantum.benchmarking.simulator_workload_corpus",
+        attribute="main",
+        category="interop",
+        summary="Measure a feature-labelled workload corpus across simulators.",
+        hardware="CPU; Qiskit, Cirq, and PennyLane optional dependencies required",
+        example=(
+            "flagquantum-benchmark run simulator_workload_corpus "
+            "--n-wires 10 14 18 22 --threads 1 --warmup 1 --iterations 5 "
+            "--json-output benchmarks/results/comparison/workload-corpus.json"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",

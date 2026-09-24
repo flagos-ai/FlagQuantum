@@ -113,6 +113,27 @@ of 26 qubits and above are separate, non-gating capacity probes because the two
 engines and their working buffers can exceed 4 GiB even though one complex128
 statevector is smaller than that limit.
 
+The single hardware-efficient circuit above is useful for longitudinal
+regression tracking, but it is not representative of every simulator workload.
+Run the feature-labelled workload corpus to compare several circuit structures
+through the same user-facing FlagQuantum execution paths:
+
+```bash
+pip install -e '.[qiskit,cirq,pennylane]'
+flagquantum-benchmark run simulator_workload_corpus \
+  --n-wires 10 14 18 22 --threads 1 --warmup 1 --iterations 5 \
+  --calls-per-sample 1 \
+  --json-output benchmarks/results/comparison/workload-corpus.json
+```
+
+The corpus records deterministic IR hashes and backend-neutral features beside
+the raw timing samples. Its five families cover hardware-efficient, truncated
+QFT, random Clifford, nearest-neighbor brickwork, and dense nonlocal circuits.
+See [the workload corpus guide](../docs/guides/SIMULATOR_WORKLOAD_CORPUS.md) and
+the [checked-in Apple arm64 measurement](results/comparison/SIMULATOR_WORKLOAD_CORPUS_CPU_ARM64_20260924.md).
+These end-to-end timings include external conversion and backend preparation;
+they answer the user-facing routing question, not isolated kernel throughput.
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash
