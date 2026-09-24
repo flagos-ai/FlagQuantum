@@ -79,6 +79,51 @@ def test_quafu_submit_result_and_restore(quafu, tmp_path):
     assert len(quafu.posts) == 1
 
 
+def test_new_quafu_task_api_protocol_survives_receipt_restore(monkeypatch, tmp_path):
+    class TaskApiTransport:
+        def __init__(self):
+            self.posts = []
+
+        def post_json(self, url, payload, headers, timeout):
+            self.posts.append(url)
+            return {"job_id": "u-job-123", "status": "Queued"}
+
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                return {"healthy": True}
+            if url.endswith("/status"):
+                return {"status": "Finished"}
+            if url.endswith("/results"):
+                return {
+                    "counts": [{"01": 1024}],
+                    "shots_returned": [1024],
+                    "bit_order": "c0_rightmost",
+                }
+            raise AssertionError(url)
+
+    transport = TaskApiTransport()
+
+    class Client(QuafuProvider):
+        def __init__(self, **kwargs):
+            super().__init__(
+                api_key="qf_test",
+                task_server_url="https://quafu.test/api/v1",
+                transport=transport,
+                **kwargs,
+            )
+
+    monkeypatch.setattr(jobs, "QuafuProvider", Client)
+    job = fq.submit(fq.Circuit(2).x(0), target="quafu:Baihua", shots=1024)
+    path = tmp_path / "task-api-job.json"
+    job.save(path)
+
+    receipt = json.loads(path.read_text())
+    assert receipt["submission_identity"]["quafu_protocol"] == "task_api_v1"
+    restored = fq.restore_job(path)
+    assert restored.result().counts == [{"10": 1024}]
+    assert transport.posts == ["https://quafu.test/api/v1/jobs"]
+
+
 def test_wait_cancel_and_unknown_state(quafu):
     job = fq.submit(fq.Circuit(2), target="quafu:Baihua", shots=1024)
     quafu.state = "UnrecognizedProviderState"

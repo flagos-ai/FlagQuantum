@@ -1,32 +1,131 @@
-# Quafu SQC backend
+# Quafu backend
 
-FlagQuantum talks directly to the HTTP contract implemented by
-`quafusqc.Task`; installing `quafusqc` is not required.
+FlagQuantum prefers Quafu's current task API and falls back to the legacy SQC
+HTTP contract when the new platform is unavailable before submission.
+Installing `quafusqc` is not required.
 
-## Direct submission (service compilation)
+## Configure credentials
 
-The development version supports Quafu submission without a local compiler:
+Keep credentials outside source control. `QUAFU_API_KEY` authenticates the
+current task API. `QUAFU_API_TOKEN` is optional, but is required for an
+authenticated fallback to the legacy SQC platform.
+
+```bash
+export QUAFU_API_KEY=qf_replace_with_your_api_key
+export QUAFU_TASK_SERVER_URL=https://quafu.com.cn/api/v1
+export QUAFU_API_TOKEN=replace_with_your_legacy_token
+```
+
+`QUAFU_TASK_SERVER_URL` is optional and defaults to the production URL above.
+The provider requires HTTPS and never includes either credential in task
+receipts, result metadata, or exception text.
+
+To use a local `.env` file:
+
+```bash
+cp .env.example .env
+# Add QUAFU_API_KEY and QUAFU_TASK_SERVER_URL, and replace the legacy token.
+set -a
+. ./.env
+set +a
+```
+
+`.env` is ignored by Git. Keep `.env.example` public and never put a real
+credential in it. Loading is explicit so importing FlagQuantum does not modify
+process-wide environment variables.
+
+## Run on the ideal simulator
+
+Use `quafu:sim` to exercise the current HTTP path without consuming real-device
+capacity:
 
 ```python
 import flagquantum as fq
 
 result = fq.run(
     fq.Circuit(2).h(0).cx(0, 1),
-    target="quafu:Baihua",
+    target="quafu:sim",
     shots=1024,
 )
 print(result.counts)
+print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
-Configure `QUAFU_API_TOKEN` as described below. This path sends logical OpenQASM
-with `options.compiler="quarkcircuit"` and does not require local QSteed or
-QuarkCircuit installation. The service handles compilation and physical routing. Direct-path counts are
-returned in logical-wire order (wire 0 on the left), including before expectation
-aggregation; raw provider metadata retains the original response.
-`outputs=fq.expectation(...)` remains supported through grouped basis measurements.
-Optional `target_qubits` selects an ordered physical mapping; its size and
-uniqueness are checked locally, while chip availability/topology are checked by
-the service. Shots must be a positive multiple of 1024.
+`quafu_protocol == "task_api_v1"` confirms that the preferred platform handled
+the task. A successful fallback reports `sqc_legacy` instead.
+
+## Run on a real device
+
+Inspect the current device list before choosing a target. This endpoint does not
+require authentication:
+
+```bash
+curl "$QUAFU_TASK_SERVER_URL/devices"
+```
+
+Choose a device whose status is `online`, then use its case-sensitive name after
+`quafu:`. Real-device execution consumes quota and may wait in a queue.
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Shenglian",
+    shots=1024,
+)
+
+deployment = result.provenance["deployment"]
+print(result.counts)
+print(deployment["job_id"])
+print(deployment["quafu_protocol"])
+```
+
+This direct path sends logical OpenQASM 2.0 and does not require local QSteed or
+QuarkCircuit installation. The platform performs compilation and physical
+routing. Counts are returned in logical-wire order (wire 0 on the left), while
+raw provider metadata retains the original response. Hardware shots must be a
+positive multiple of 1024.
+
+`outputs=fq.expectation(...)` is also supported through grouped basis
+measurements:
+
+```python
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Shenglian",
+    shots=1024,
+    outputs=fq.expectation(fq.Z(0) @ fq.Z(1)),
+)
+print(result.expectation())
+```
+
+## Submit without blocking and restore later
+
+Use `fq.submit` when a notebook or process must detach while a real-device job
+is queued. Saving a receipt never saves credentials.
+
+```python
+import flagquantum as fq
+
+job = fq.submit(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Shenglian",
+    shots=1024,
+    name="bell-hardware-check",
+)
+print(job.id)
+job.save("quafu-job.json")
+
+# This can run in a later process after credentials are configured again.
+restored = fq.restore_job("quafu-job.json")
+print(restored.status())
+result = restored.wait(timeout=1800, poll_interval=3)
+print(result.counts)
+```
+
+Call `job.cancel()` to request cancellation. A task already sent to hardware may
+stop being observed without refunding consumed capacity.
 
 The published 0.2.0 release predates this direct-submission feature. Use a source
 checkout containing this change until the next release is published.
@@ -71,30 +170,40 @@ This checks offline compilation only. Selecting `target="quafu:Baihua"` also
 requires access to the selected chip's calibration; executing `fq.run` with
 that target submits a real task.
 
-## Configure and run
+## Protocol selection and fallback
 
-Create a local `.env` file without putting the token in source code:
+The preferred task API uses `QUAFU_TASK_SERVER_URL` (default
+`https://quafu.com.cn/api/v1`) and these endpoints:
 
-```bash
-cp .env.example .env
-# Edit .env and replace the placeholder, then load it into this shell.
-set -a
-. ./.env
-set +a
-python examples/remote/quafu_bell.py
-```
+- `GET /healthz` before submission;
+- `POST /jobs` for idempotent OpenQASM 2.0 submission;
+- `GET /jobs/{job_id}/status` and `GET /jobs/{job_id}/results`;
+- `POST /jobs/{job_id}/cancel`.
 
-`.env` is ignored by Git. Keep `.env.example` as the public template and never
-put a real token in that file. Loading is explicit so importing FlagQuantum
-does not unexpectedly modify process-wide environment variables.
-
-The provider uses these Quafu SQC endpoints:
+Each authenticated request uses `Authorization: Bearer $QUAFU_API_KEY`. A UUID4
+`client_ref` is generated for every submission. If the health check fails, or
+the submission receives a definite 4xx rejection, FlagQuantum falls back
+to these legacy Quafu SQC endpoints:
 
 - `GET /task/verify` for token verification;
 - `GET /task/status/0` for chip availability and queue depth;
 - `POST /task/run/` for OpenQASM 2.0 submission;
 - `GET /task/status/{tid}` and `GET /task/result/{tid}` for asynchronous jobs;
 - `GET /task/cancel/{tid}` for cancellation.
+
+Submissions with an explicit `target_qubits` mapping continue to use the legacy
+contract because the new logical-circuit task API has no equivalent mapping
+field. A timeout after `POST /jobs` is not retried against the legacy endpoint:
+the server may already have accepted the idempotent task, so a cross-platform
+retry could create a second hardware job.
+
+| Submission | Selected protocol |
+|---|---|
+| Logical circuit, no explicit physical mapping, healthy task API | `task_api_v1` |
+| Task API health check fails | `sqc_legacy` |
+| Task API returns a definite 4xx rejection | `sqc_legacy` |
+| `POST /jobs` has a 5xx response or ambiguous transport failure | Raise without resubmitting |
+| Explicit `target_qubits` or locally precompiled mapped circuit | `sqc_legacy` |
 
 These endpoints do not expose a compile-only request that returns the
 authoritative final circuit before submission. QuarkCircuit and QSteed can

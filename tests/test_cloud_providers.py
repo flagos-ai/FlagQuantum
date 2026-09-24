@@ -1,5 +1,7 @@
 """Tests for quantum cloud provider adapters."""
 
+from urllib.error import HTTPError
+
 import pytest
 
 import flagquantum as fq
@@ -158,6 +160,157 @@ def test_quafu_provider_uses_platform_endpoint_and_token_header():
         "target_qubits": [3, 4],
     }
     assert headers == {"token": "secret"}
+
+
+def test_quafu_provider_prefers_task_api_and_keeps_lifecycle_on_it():
+    class TaskApiTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            self.gets.append((url, headers, timeout))
+            if url.endswith("/healthz"):
+                return {"healthy": True}
+            if url.endswith("/status"):
+                return {"status": "Finished"}
+            if url.endswith("/results"):
+                return {
+                    "bit_order": "c0_rightmost",
+                    "counts": [{"00": 3, "11": 5}],
+                    "shots_returned": [8],
+                }
+            raise AssertionError(url)
+
+        def post_json(self, url, payload, headers, timeout):
+            self.posts.append((url, payload, headers, timeout))
+            if url.endswith("/cancel"):
+                return {"status": "Cancelled"}
+            return {"job_id": "u-task-1", "status": "Queued"}
+
+    transport = TaskApiTransport()
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        task_server_url="https://quafu.test/api/v1",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=transport,
+    )
+    package = _package(
+        "quafu",
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    handle = provider.submit(package)
+
+    assert handle.task_id == "u-task-1"
+    assert handle.payload["quafu_protocol"] == "task_api_v1"
+    assert transport.gets[0][0] == "https://quafu.test/api/v1/healthz"
+    url, payload, headers, _ = transport.posts[0]
+    assert url == "https://quafu.test/api/v1/jobs"
+    assert payload["mode"] == "single"
+    assert payload["target"] == "chip"
+    assert payload["circuits"] == [{"qasm": package.qasm}]
+    assert len(payload["client_ref"]) == 36
+    assert headers == {"Authorization": "Bearer qf_test"}
+    assert provider.query_status(handle) == "Finished"
+    result = provider.fetch_result(handle)
+    assert result.counts == {"00": 3, "11": 5}
+    assert result.metadata["quafu_protocol"] == "task_api_v1"
+    provider.cancel(handle)
+    assert transport.posts[-1][0] == "https://quafu.test/api/v1/jobs/u-task-1/cancel"
+
+
+def test_quafu_provider_falls_back_when_task_api_health_check_fails():
+    class OfflineTaskApiTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                raise OSError("task API unavailable")
+            return super().get_json(url, headers, timeout)
+
+    transport = OfflineTaskApiTransport()
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        task_server_url="https://quafu.test/api/v1",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=transport,
+    )
+    package = _package(
+        "quafu",
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    handle = provider.submit(package)
+
+    assert handle.payload["quafu_protocol"] == "sqc_legacy"
+    assert transport.posts[0][0].startswith("https://legacy.test/task/run/?")
+    assert transport.posts[0][2] == {"token": "legacy-secret"}
+
+
+def test_quafu_provider_falls_back_after_definite_task_api_http_error():
+    class RejectedTaskApiTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                return {"healthy": True}
+            return super().get_json(url, headers, timeout)
+
+        def post_json(self, url, payload, headers, timeout):
+            if url.endswith("/jobs"):
+                raise HTTPError(url, 401, "invalid_api_key", {}, None)
+            return super().post_json(url, payload, headers, timeout)
+
+    transport = RejectedTaskApiTransport()
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=transport,
+    )
+    package = _package(
+        "quafu",
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    handle = provider.submit(package)
+
+    assert handle.payload["quafu_protocol"] == "sqc_legacy"
+    assert len(transport.posts) == 1
+    assert transport.posts[0][0].startswith("https://legacy.test/task/run/?")
+
+
+def test_quafu_provider_does_not_duplicate_ambiguous_task_api_submission():
+    class AmbiguousTaskApiTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                return {"healthy": True}
+            return super().get_json(url, headers, timeout)
+
+        def post_json(self, url, payload, headers, timeout):
+            raise TimeoutError("response lost")
+
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=AmbiguousTaskApiTransport(),
+    )
+    package = _package(
+        "quafu",
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    with pytest.raises(TimeoutError, match="response lost"):
+        provider.submit(package)
+
+
+def test_quafu_provider_rejects_insecure_task_api_url():
+    with pytest.raises(ValueError, match="HTTPS"):
+        QuafuProvider(task_server_url="http://quafu.test/api/v1")
 
 
 def test_quafu_provider_preserves_returned_bit_order_by_default():

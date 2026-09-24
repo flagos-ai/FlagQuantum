@@ -351,6 +351,10 @@ def _submit_quafu(
     )
     client = QuafuProvider(reverse_result_bits=compiler is None)
     handle = client.submit(package)
+    submission_identity = build_result_metadata(handle)
+    protocol = handle.payload.get("quafu_protocol")
+    if isinstance(protocol, str):
+        submission_identity["quafu_protocol"] = protocol
     return RemoteJob(
         _Receipt(
             handle.task_id,
@@ -360,7 +364,7 @@ def _submit_quafu(
             mapping,
             name,
             output.name,
-            submission_identity=build_result_metadata(handle),
+            submission_identity=submission_identity,
         ),
         client,
     )
