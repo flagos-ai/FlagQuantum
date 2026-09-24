@@ -47,3 +47,23 @@ baseline, distribution semantics, and claim eligibility explicit. CPU or
 single-device results must not be promoted to multi-card, multi-node, domestic
 accelerator, QPU, or release-grade evidence without the separately required
 hardware run and audit.
+
+## Refreshing native comparison evidence
+
+When a FlagQuantum optimization changes only the native timing, refresh that
+engine without rerunning or rewriting external framework evidence:
+
+```bash
+flagquantum-benchmark run simulator_workload_corpus \
+  --workloads random_clifford_statevector dense_nonlocal_statevector \
+  --n-wires 18 22 --engines flagquantum_native \
+  --threads 1 --warmup 1 --iterations 9 --calls-per-sample 1 \
+  --refresh-from benchmarks/results/comparison/workload-corpus.json \
+  --json-output benchmarks/results/comparison/workload-corpus.json \
+  --markdown-output benchmarks/results/comparison/WORKLOAD_CORPUS.md
+```
+
+The refresh fails closed if the workload identity, methodology, platform, or
+runtime environment differs from the baseline. It records refresh provenance,
+preserves every unmeasured engine payload, and recomputes derived ratios and the
+Markdown table.

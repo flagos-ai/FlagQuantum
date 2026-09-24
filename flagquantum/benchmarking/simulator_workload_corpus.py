@@ -15,8 +15,10 @@ import statistics
 import time
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
+from copy import deepcopy
 from importlib import import_module, metadata
 from pathlib import Path
+from textwrap import wrap
 from typing import Any, Literal, cast
 
 import torch
@@ -62,6 +64,21 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "cirq_simulator",
     "pennylane_lightning_qubit",
 )
+
+_ENGINE_LABELS: dict[EngineName, str] = {
+    "flagquantum_native": "FlagQuantum",
+    "qiskit_aer": "Qiskit Aer",
+    "cirq_simulator": "Cirq",
+    "pennylane_lightning_qubit": "PennyLane",
+}
+_WORKLOAD_LABELS: dict[WorkloadName, str] = {
+    "hardware_efficient_statevector": "Hardware-efficient",
+    "truncated_qft_statevector": "Truncated QFT",
+    "random_clifford_statevector": "Random Clifford",
+    "local_brickwork_statevector": "Local brickwork",
+    "dense_nonlocal_statevector": "Dense nonlocal",
+    "swap_routing_statevector": "SWAP routing",
+}
 
 
 def _truncated_qft(n_wires: int) -> fq.Circuit:
@@ -497,6 +514,280 @@ def run_benchmark(
     )
 
 
+def _case_key(case: Mapping[str, Any]) -> tuple[str, int]:
+    workload = case.get("workload")
+    if not isinstance(workload, Mapping):
+        raise ValueError("corpus case requires workload metadata")
+    name = workload.get("name")
+    n_wires = workload.get("n_wires")
+    if not isinstance(name, str) or not isinstance(n_wires, int):
+        raise ValueError("corpus case requires workload name and integer n_wires")
+    return name, n_wires
+
+
+def _recompute_case_summary(case: dict[str, Any]) -> None:
+    engines = case["engines"]
+    native_seconds = engines["flagquantum_native"]["end_to_end"]["median_seconds"]
+    if not isinstance(native_seconds, (int, float)) or native_seconds <= 0:
+        raise ValueError("refreshed native median must be positive")
+    case["comparison"]["engine_over_flagquantum_median"] = {
+        engine: payload["end_to_end"]["median_seconds"] / native_seconds
+        for engine, payload in engines.items()
+        if engine != "flagquantum_native"
+    }
+    correctness = case["correctness"]["engines"]
+    case["correctness"]["passed"] = all(
+        bool(payload["passed"]) for payload in correctness.values()
+    )
+    stability = case["stability"]["engines"]
+    case["stability"]["passed"] = all(bool(value) for value in stability.values())
+
+
+def _refresh_benchmark(
+    baseline: Mapping[str, Any], measured: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Merge native-only measurements into a compatible corpus artifact.
+
+    The baseline remains authoritative for every unmeasured engine. Workload
+    identity, methodology, platform, and runtime environment must match before
+    any timing is replaced.
+    """
+
+    for label, payload in (("baseline", baseline), ("measured", measured)):
+        if payload.get("runner") != RUNNER or payload.get("schema") != SCHEMA:
+            raise ValueError(f"{label} is not a compatible workload corpus")
+    if measured.get("engines") != ["flagquantum_native"] and measured.get(
+        "engines"
+    ) != ("flagquantum_native",):
+        raise ValueError("refresh measurements must contain only flagquantum_native")
+    baseline_engines = baseline.get("engines")
+    if (
+        not isinstance(baseline_engines, Sequence)
+        or isinstance(baseline_engines, (str, bytes))
+        or "flagquantum_native" not in baseline_engines
+        or len(baseline_engines) < 2
+    ):
+        raise ValueError("baseline must contain native and external engines")
+    for field in ("methodology", "environment", "platform", "python"):
+        if baseline.get(field) != measured.get(field):
+            raise ValueError(f"refresh {field} does not match the baseline")
+
+    baseline_cases = baseline.get("cases")
+    measured_cases = measured.get("cases")
+    if not isinstance(baseline_cases, Sequence) or not isinstance(
+        measured_cases, Sequence
+    ):
+        raise ValueError("corpus artifacts require case sequences")
+    result = deepcopy(dict(baseline))
+    result_cases = result["cases"]
+    indexed = {_case_key(case): case for case in result_cases}
+    if len(indexed) != len(result_cases):
+        raise ValueError("baseline contains duplicate workload cases")
+
+    refreshed_keys: list[tuple[str, int]] = []
+    for measured_case in measured_cases:
+        key = _case_key(measured_case)
+        if key in refreshed_keys:
+            raise ValueError("refresh measurements contain duplicate workload cases")
+        baseline_case = indexed.get(key)
+        if baseline_case is None:
+            raise ValueError(f"refresh case is absent from baseline: {key[0]} {key[1]}")
+        for field in ("workload", "features"):
+            if baseline_case[field] != measured_case[field]:
+                raise ValueError(f"refresh case {field} does not match baseline: {key}")
+        if set(baseline_case["engines"]) != set(baseline_engines):
+            raise ValueError(f"baseline case engine set is inconsistent: {key}")
+        measured_engines = measured_case["engines"]
+        if set(measured_engines) != {"flagquantum_native"}:
+            raise ValueError("each refresh case must contain only flagquantum_native")
+        baseline_case["engines"]["flagquantum_native"] = deepcopy(
+            measured_engines["flagquantum_native"]
+        )
+        baseline_case["correctness"]["engines"]["flagquantum_native"] = deepcopy(
+            measured_case["correctness"]["engines"]["flagquantum_native"]
+        )
+        baseline_case["stability"]["engines"]["flagquantum_native"] = bool(
+            measured_case["stability"]["engines"]["flagquantum_native"]
+        )
+        _recompute_case_summary(baseline_case)
+        refreshed_keys.append(key)
+
+    if not refreshed_keys:
+        raise ValueError("refresh measurements contain no cases")
+    result["correctness_passed"] = all(
+        bool(case["correctness"]["passed"]) for case in result_cases
+    )
+    result["passed"] = result["correctness_passed"]
+    result["all_measurements_stable"] = all(
+        bool(case["stability"]["passed"]) for case in result_cases
+    )
+    history = list(result.get("refresh_history", ()))
+    history.append(
+        {
+            "engines": ["flagquantum_native"],
+            "preserved_engines": [
+                engine for engine in baseline_engines if engine != "flagquantum_native"
+            ],
+            "cases": [
+                {"workload": workload, "n_wires": n_wires}
+                for workload, n_wires in refreshed_keys
+            ],
+            "workloads": list(measured["workloads"]),
+            "n_wires": list(measured["n_wires"]),
+            "platform": measured["platform"],
+            "python": measured["python"],
+            "environment": deepcopy(measured["environment"]),
+            "methodology": deepcopy(measured["methodology"]),
+        }
+    )
+    result["refresh_history"] = history
+    return result
+
+
+def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
+    """Render a self-contained comparison table from a corpus artifact."""
+
+    cases = payload["cases"]
+    engines = tuple(payload["engines"])
+    methodology = payload["methodology"]
+    stable_groups = sum(
+        bool(stable)
+        for case in cases
+        for stable in case["stability"]["engines"].values()
+    )
+    total_groups = sum(len(case["engines"]) for case in cases)
+    warmup_label = "warmup run" if methodology["warmup"] == 1 else "warmup runs"
+    call_label = "call" if methodology["calls_per_sample"] == 1 else "calls"
+    methodology_summary = (
+        f"Each median uses {methodology['iterations']} retained samples after "
+        f"{methodology['warmup']} {warmup_label}, with "
+        f"{methodology['calls_per_sample']} measured {call_label} per sample."
+    )
+    stability_summary = (
+        f"{stable_groups} of {total_groups} timing groups meet the declared 20% "
+        "RMAD threshold; unstable measurements remain visible in the raw artifact."
+    )
+    version_summary = ", ".join(
+        f"{package} {version}"
+        for engine in engines
+        for package, version in cases[0]["engines"][engine]["versions"].items()
+    )
+    lines = [
+        "# Cross-framework simulator workload corpus (Apple arm64 CPU)",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}).",
+        "All workloads use exact complex128 statevectors on one CPU thread. Timings",
+        "include conversion, backend preparation, execution, and result retrieval.",
+        *wrap(methodology_summary, width=88),
+        *wrap(stability_summary, width=88),
+        *wrap(
+            f"Environment: {payload['platform']}; Python {payload['python']}; "
+            f"{version_summary}.",
+            width=88,
+        ),
+        "",
+    ]
+    if payload.get("refresh_history"):
+        refreshed = payload["refresh_history"][-1]
+        preserved_labels = [
+            _ENGINE_LABELS[cast(EngineName, engine)]
+            for engine in refreshed["preserved_engines"]
+        ]
+        preserved = (
+            preserved_labels[0]
+            if len(preserved_labels) == 1
+            else ", ".join(preserved_labels[:-1]) + ", and " + preserved_labels[-1]
+        )
+        refresh_summary = (
+            "The latest refresh remeasured only FlagQuantum native. Existing "
+            f"{preserved} measurements were preserved unchanged; comparison ratios "
+            "were recomputed from the refreshed native medians."
+        )
+        lines.extend(
+            (
+                *wrap(refresh_summary, width=88),
+                "",
+            )
+        )
+
+    external = tuple(engine for engine in engines if engine != "flagquantum_native")
+    header = ["Workload", "Qubits", "Gates", "Depth"]
+    header.extend(
+        f"{_ENGINE_LABELS[cast(EngineName, engine)]} (s)" for engine in engines
+    )
+    header.extend(
+        f"{_ENGINE_LABELS[cast(EngineName, engine)]} / FQ" for engine in external
+    )
+    lines.append("| " + " | ".join(header) + " |")
+    lines.append("| " + " | ".join(("---", *("---:" for _ in header[1:]))) + " |")
+    for case in cases:
+        workload = cast(WorkloadName, case["workload"]["name"])
+        row = [
+            _WORKLOAD_LABELS[workload],
+            str(case["workload"]["n_wires"]),
+            str(case["features"]["gate_count"]),
+            str(case["features"]["logical_depth"]),
+        ]
+        row.extend(
+            f"{case['engines'][engine]['end_to_end']['median_seconds']:.6f}"
+            for engine in engines
+        )
+        ratios = case["comparison"]["engine_over_flagquantum_median"]
+        row.extend(f"{ratios[engine]:.2f}x" for engine in external)
+        lines.append("| " + " | ".join(row) + " |")
+    latest_refresh = payload.get("refresh_history", [{}])[-1]
+    reproduced_workloads = latest_refresh.get("workloads", payload["workloads"])
+    reproduced_widths = latest_refresh.get("n_wires", payload["n_wires"])
+    reproduction = [
+        "flagquantum-benchmark run simulator_workload_corpus \\",
+        f"  --workloads {' '.join(reproduced_workloads)} \\",
+        f"  --n-wires {' '.join(str(value) for value in reproduced_widths)} \\",
+    ]
+    if payload.get("refresh_history"):
+        reproduction_intro = (
+            "Refresh only FlagQuantum while preserving the checked-in external data:"
+        )
+        reproduction.extend(
+            (
+                "  --engines flagquantum_native --threads 1 \\",
+                f"  --warmup {methodology['warmup']} \\",
+                f"  --iterations {methodology['iterations']} \\",
+                f"  --calls-per-sample {methodology['calls_per_sample']} \\",
+                f"  --refresh-from {artifact_name} \\",
+                f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            )
+        )
+    else:
+        reproduction_intro = "Reproduce the complete cross-framework corpus:"
+        reproduction.extend(
+            (
+                f"  --engines {' '.join(engines)} --threads 1 \\",
+                f"  --warmup {methodology['warmup']} \\",
+                f"  --iterations {methodology['iterations']} \\",
+                f"  --calls-per-sample {methodology['calls_per_sample']} \\",
+                f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            )
+        )
+    lines.extend(
+        (
+            "",
+            "Ratios above one mean FlagQuantum was faster for that measured case.",
+            "These results are local comparison evidence, not a universal framework",
+            "ranking or release/scalability evidence.",
+            "",
+            "## Reproduction",
+            "",
+            reproduction_intro,
+            "",
+            "```bash",
+            *reproduction,
+            "```",
+            "",
+        )
+    )
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -511,9 +802,13 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--calls-per-sample", type=int, default=1)
     parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--refresh-from", type=Path)
     parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()
-    payload = run_benchmark(
+    if args.refresh_from is not None and tuple(args.engines) != ("flagquantum_native",):
+        parser.error("--refresh-from requires --engines flagquantum_native")
+    measured = run_benchmark(
         workloads=tuple(args.workloads),
         n_wires=tuple(args.n_wires),
         engines=tuple(args.engines),
@@ -523,8 +818,26 @@ def main() -> int:
         calls_per_sample=args.calls_per_sample,
         seed=args.seed,
     )
+    payload = measured
+    if args.refresh_from is not None:
+        baseline = json.loads(args.refresh_from.read_text(encoding="utf-8"))
+        payload = _refresh_benchmark(baseline, measured)
     if args.json_output is not None:
         write_json_atomic(args.json_output, payload)
+    if args.markdown_output is not None:
+        artifact_name = (
+            args.json_output.name
+            if args.json_output is not None
+            else (
+                args.refresh_from.name
+                if args.refresh_from is not None
+                else "simulator-workload-corpus.json"
+            )
+        )
+        args.markdown_output.parent.mkdir(parents=True, exist_ok=True)
+        args.markdown_output.write_text(
+            _render_markdown(payload, artifact_name=artifact_name), encoding="utf-8"
+        )
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0 if payload["passed"] else 1
 

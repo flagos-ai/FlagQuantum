@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import pytest
 import torch
@@ -11,6 +13,8 @@ from flagquantum.benchmarking.simulator_workload_corpus import (
     FEATURE_SCHEMA,
     SCHEMA,
     WORKLOAD_NAMES,
+    _refresh_benchmark,
+    _render_markdown,
     build_workload,
     extract_features,
     run_benchmark,
@@ -97,6 +101,97 @@ def test_native_only_corpus_smoke_records_real_timings() -> None:
         assert case["features"]["feature_fingerprint"]
 
 
+def _comparison_baseline() -> tuple[dict[str, Any], dict[str, Any]]:
+    measured = run_benchmark(
+        workloads=("random_clifford_statevector",),
+        n_wires=(4,),
+        engines=("flagquantum_native",),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+    )
+    baseline = deepcopy(measured)
+    baseline["engines"] = [
+        "flagquantum_native",
+        "qiskit_aer",
+        "cirq_simulator",
+    ]
+    case = baseline["cases"][0]
+    native = case["engines"]["flagquantum_native"]
+    native_median = native["end_to_end"]["median_seconds"]
+    for multiplier, engine in ((2.0, "qiskit_aer"), (3.0, "cirq_simulator")):
+        external = deepcopy(native)
+        external["end_to_end"]["median_seconds"] = native_median * multiplier
+        case["engines"][engine] = external
+        case["correctness"]["engines"][engine] = {
+            "passed": True,
+            "max_abs_error": 0.0,
+        }
+        case["stability"]["engines"][engine] = True
+    case["comparison"]["engine_over_flagquantum_median"] = {
+        "qiskit_aer": 2.0,
+        "cirq_simulator": 3.0,
+    }
+    return baseline, measured
+
+
+def test_native_refresh_preserves_external_payloads_and_recomputes_ratios() -> None:
+    baseline, measured = _comparison_baseline()
+    original_external = {
+        engine: deepcopy(baseline["cases"][0]["engines"][engine])
+        for engine in ("qiskit_aer", "cirq_simulator")
+    }
+    measured["cases"][0]["engines"]["flagquantum_native"]["end_to_end"][
+        "median_seconds"
+    ] /= 2
+
+    refreshed = _refresh_benchmark(baseline, measured)
+    case = refreshed["cases"][0]
+
+    assert baseline.get("refresh_history") is None
+    assert {
+        engine: case["engines"][engine] for engine in ("qiskit_aer", "cirq_simulator")
+    } == original_external
+    assert case["comparison"]["engine_over_flagquantum_median"] == pytest.approx(
+        {"qiskit_aer": 4.0, "cirq_simulator": 6.0}
+    )
+    assert refreshed["refresh_history"][-1]["preserved_engines"] == [
+        "qiskit_aer",
+        "cirq_simulator",
+    ]
+
+
+def test_native_refresh_rejects_methodology_or_workload_drift() -> None:
+    baseline, measured = _comparison_baseline()
+    measured["methodology"]["iterations"] = 5
+    with pytest.raises(ValueError, match="methodology"):
+        _refresh_benchmark(baseline, measured)
+
+    baseline, measured = _comparison_baseline()
+    measured["cases"][0]["workload"]["ir_content_hash"] = "changed"
+    with pytest.raises(ValueError, match="workload does not match"):
+        _refresh_benchmark(baseline, measured)
+
+
+def test_rendered_corpus_report_discloses_native_only_refresh() -> None:
+    baseline, measured = _comparison_baseline()
+    refreshed = _refresh_benchmark(baseline, measured)
+
+    markdown = _render_markdown(refreshed, artifact_name="corpus.json")
+
+    assert "remeasured only FlagQuantum native" in markdown
+    assert "Qiskit Aer, and Cirq" in markdown
+    assert "measurements were preserved unchanged" in markdown
+    assert "--refresh-from corpus.json" in markdown
+    assert "--workloads random_clifford_statevector" in markdown
+    assert "| Random Clifford | 4 |" in markdown
+
+    complete_markdown = _render_markdown(baseline, artifact_name="corpus.json")
+    assert "Reproduce the complete cross-framework corpus" in complete_markdown
+    assert "--refresh-from" not in complete_markdown
+
+
 def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
     path = (
         ROOT
@@ -147,6 +242,29 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
         ratio > 1
         for case in qft_cases.values()
         for ratio in case["comparison"]["engine_over_flagquantum_median"].values()
+    )
+    refreshed_cases = {
+        (case["workload"]["name"], case["workload"]["n_wires"]): case
+        for case in payload["cases"]
+    }
+    assert refreshed_cases[("random_clifford_statevector", 18)]["engines"][
+        "flagquantum_native"
+    ]["end_to_end"]["median_seconds"] == pytest.approx(0.02002929092850536)
+    assert refreshed_cases[("dense_nonlocal_statevector", 22)]["engines"][
+        "flagquantum_native"
+    ]["end_to_end"]["median_seconds"] == pytest.approx(0.3745365421054885)
+    assert refreshed_cases[("dense_nonlocal_statevector", 22)]["engines"]["qiskit_aer"][
+        "end_to_end"
+    ]["median_seconds"] == pytest.approx(1.9517207079916261)
+    assert payload["refresh_history"][-1]["preserved_engines"] == [
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit",
+    ]
+
+    report_path = path.with_name("SIMULATOR_WORKLOAD_CORPUS_CPU_ARM64_20260924.md")
+    assert report_path.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
     )
 
 
