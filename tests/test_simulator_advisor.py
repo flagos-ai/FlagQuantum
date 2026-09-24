@@ -4,15 +4,22 @@ import hashlib
 import json
 import subprocess
 import sys
+import time
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import torch
 
+import flagquantum as fq
+from flagquantum.benchmarking.simulator_compare import build_workload
 from flagquantum.ecosystem.simulators import (
     SimulatorAdvisorEvidenceError,
+    _calibration,
     recommend,
 )
+from flagquantum.ecosystem.simulators._evidence import bundled_report
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +30,7 @@ REPORT = (
     / "comparison"
     / "simulator_comparison_cpu_arm64_20260923.json"
 )
+WORKLOAD_MANIFEST = ROOT / "benchmarks" / "manifests" / "simulator_workload_ir_v1.json"
 ALL_ENGINES = {
     "flagquantum_native",
     "qiskit_aer",
@@ -87,6 +95,256 @@ def test_bundled_advisor_evidence_tracks_the_measured_report() -> None:
                 candidate.relative_to_flagquantum
                 == measured_row["ratios_to_flagquantum"][engine]
             )
+
+
+def test_workload_manifest_binds_builder_ir_to_existing_timing_rows() -> None:
+    report = _report()
+    raw = WORKLOAD_MANIFEST.read_bytes()
+    manifest = json.loads(raw)
+
+    assert manifest["schema"] == "flagquantum.simulator_workload_ir_manifest.v1"
+    assert manifest["benchmark_report"] == {
+        "path": REPORT.relative_to(ROOT).as_posix(),
+        "sha256": hashlib.sha256(REPORT.read_bytes()).hexdigest(),
+    }
+    assert hashlib.sha256(raw).hexdigest() == (
+        "0e8d5ec9797b43c65e1c668abc90e7190e93510ef6633f0c9c744dfa7a0147d0"
+    )
+
+    measured_by_fingerprint = {
+        row["workload_fingerprint"]: row for row in report["rows"]
+    }
+    for entry in manifest["entries"]:
+        workload = entry["workload"]
+        circuit = build_workload(n_wires=workload["n_wires"], layers=workload["layers"])
+        measured = measured_by_fingerprint[entry["workload_fingerprint"]]
+
+        assert entry["ir_content_hash"] == circuit.to_ir().content_hash
+        assert entry["workload"] == measured["workload"]
+
+
+def test_advisor_recommends_only_for_an_exact_manifest_circuit() -> None:
+    report = _report()
+    circuit = build_workload(n_wires=22, layers=2)
+
+    decision = recommend(
+        circuit,
+        environment=_environment(report),
+        available_engines=ALL_ENGINES,
+    )
+
+    assert decision.status == "recommended"
+    assert decision.recommended_engine == "flagquantum_native"
+    assert decision.circuit_matches is True
+    assert decision.circuit_ir_hash == circuit.to_ir().content_hash
+    assert (
+        decision.workload_manifest_source
+        == WORKLOAD_MANIFEST.relative_to(ROOT).as_posix()
+    )
+    assert (
+        decision.workload_manifest_sha256
+        == hashlib.sha256(WORKLOAD_MANIFEST.read_bytes()).hexdigest()
+    )
+
+
+def test_advisor_rejects_same_width_and_gate_count_with_different_ir() -> None:
+    report = _report()
+    measured = build_workload(n_wires=22, layers=2).to_ir()
+    first = measured.instructions[0]
+    changed_first = replace(
+        first,
+        params={**first.params, "theta": float(first.params["theta"]) + 0.001},
+    )
+    changed = replace(
+        measured,
+        instructions=(changed_first, *measured.instructions[1:]),
+    )
+
+    assert changed.n_wires == measured.n_wires
+    assert len(changed.instructions) == len(measured.instructions)
+    assert changed.content_hash != measured.content_hash
+
+    decision = recommend(
+        changed,
+        environment=_environment(report),
+        available_engines=ALL_ENGINES,
+    )
+
+    assert decision.status == "insufficient_evidence"
+    assert decision.recommended_engine is None
+    assert decision.reason == "circuit_not_measured"
+    assert decision.circuit_matches is False
+    assert decision.workload_matches is False
+    assert all(
+        "circuit_not_measured" in candidate.exclusion_reasons
+        for candidate in decision.candidates
+    )
+
+
+def test_advisor_live_calibrates_an_unmeasured_circuit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
+
+    def fake_runner(engine: str):
+        delay = 0.002 if engine == "flagquantum_native" else 0.0002
+
+        def execute(ir):
+            time.sleep(delay)
+            state = torch.zeros(ir.shape, dtype=torch.complex128)
+            state[..., 0] = 2**-0.5
+            state[..., -1] = 2**-0.5
+            return state
+
+        return execute
+
+    monkeypatch.setattr(_calibration, "_runner", fake_runner)
+    decision = recommend(
+        circuit,
+        available_engines={
+            "flagquantum_native": "0.2.0",
+            "qiskit_aer": "0.17.2",
+        },
+        calibration_budget_seconds=0.2,
+        calibration_warmup=0,
+        calibration_repeats=3,
+        calibration_use_cache=False,
+    )
+
+    assert decision.status == "recommended"
+    assert decision.recommended_engine == "qiskit_aer"
+    assert decision.reason == "fastest_live_calibrated_engine"
+    assert decision.evidence_level == "live_calibration"
+    assert decision.circuit_matches is True
+    assert decision.confidence == pytest.approx(0.9)
+    assert decision.calibration_cache_hit is False
+    assert decision.calibration_elapsed_seconds is not None
+    assert decision.calibration_elapsed_seconds > 0.0
+    assert all(
+        candidate.median_seconds is not None
+        for candidate in decision.candidates
+        if candidate.eligible
+    )
+
+
+def test_advisor_reuses_an_exact_process_local_calibration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = fq.Circuit(3, dtype=torch.complex128).h(0).cx(0, 2)
+    calls = 0
+
+    def fake_runner(engine: str):
+        del engine
+
+        def execute(ir):
+            nonlocal calls
+            calls += 1
+            state = torch.zeros(ir.shape, dtype=torch.complex128)
+            state[..., 0] = 2**-0.5
+            state[..., 5] = 2**-0.5
+            return state
+
+        return execute
+
+    monkeypatch.setattr(_calibration, "_runner", fake_runner)
+    kwargs = {
+        "available_engines": {"flagquantum_native": "0.2.0"},
+        "calibration_budget_seconds": 0.2,
+        "calibration_warmup": 0,
+        "calibration_repeats": 2,
+    }
+
+    first = recommend(circuit, **kwargs)
+    calls_after_first = calls
+    second = recommend(circuit, **kwargs)
+
+    assert first.calibration_cache_hit is False
+    assert second.calibration_cache_hit is True
+    assert calls == calls_after_first
+    assert second.evidence_sha256 == first.evidence_sha256
+
+
+def test_live_calibration_excludes_a_faster_incorrect_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
+
+    def fake_runner(engine: str):
+        def execute(ir):
+            time.sleep(0.001 if engine == "flagquantum_native" else 0.0001)
+            state = torch.zeros(ir.shape, dtype=torch.complex128)
+            if engine == "flagquantum_native":
+                state[..., 0] = 2**-0.5
+                state[..., -1] = 2**-0.5
+            else:
+                state[..., 0] = 1.0
+            return state
+
+        return execute
+
+    monkeypatch.setattr(_calibration, "_runner", fake_runner)
+    decision = recommend(
+        circuit,
+        available_engines={
+            "flagquantum_native": "0.2.0",
+            "qiskit_aer": "0.17.2",
+        },
+        calibration_budget_seconds=0.2,
+        calibration_warmup=0,
+        calibration_repeats=3,
+        calibration_use_cache=False,
+    )
+
+    qiskit = next(item for item in decision.candidates if item.engine == "qiskit_aer")
+    assert decision.recommended_engine == "flagquantum_native"
+    assert qiskit.eligible is False
+    assert "correctness_not_passed" in qiskit.exclusion_reasons
+
+
+def test_exact_evidence_does_not_execute_live_calibration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report = _report()
+
+    def unexpected_runner(engine: str):
+        raise AssertionError(f"unexpected calibration for {engine}")
+
+    monkeypatch.setattr(_calibration, "_runner", unexpected_runner)
+    decision = recommend(
+        build_workload(n_wires=10, layers=2),
+        environment=_environment(report),
+        available_engines=ALL_ENGINES,
+        calibration_budget_seconds=0.2,
+    )
+
+    assert decision.evidence_level == "exact"
+    assert decision.confidence == 1.0
+
+
+def test_profile_query_cannot_request_live_calibration() -> None:
+    with pytest.raises(ValueError, match="requires a program"):
+        recommend(n_wires=22, calibration_budget_seconds=1.0)
+
+
+def test_advisor_rejects_malformed_ir_hash_evidence() -> None:
+    report = bundled_report()
+    report["rows"][0]["ir_content_hash"] = "not-a-sha256"
+
+    with pytest.raises(SimulatorAdvisorEvidenceError, match="ir_content_hash"):
+        recommend(build_workload(n_wires=10, layers=2), evidence=report)
+
+
+def test_advisor_rejects_ir_hash_bound_to_inconsistent_metadata() -> None:
+    report = bundled_report()
+    report["rows"][0]["workload"]["gate_count"] = 81
+
+    with pytest.raises(SimulatorAdvisorEvidenceError, match="inconsistent"):
+        recommend(build_workload(n_wires=10, layers=2), evidence=report)
+
+
+def test_advisor_rejects_mixed_circuit_and_profile_selectors() -> None:
+    with pytest.raises(ValueError, match="cannot be combined"):
+        recommend(build_workload(n_wires=10, layers=2), n_wires=10)
 
 
 def test_advisor_prefers_native_when_external_gain_is_inside_tie_margin() -> None:

@@ -533,19 +533,19 @@ focused_tests = "tests/test_cirq_interop.py"
 
 [capabilities.simulator_advisor]
 title = "Evidence-based simulator advisor"
-summary = "Rank explicit local simulator choices from environment-matched, workload-matched comparison evidence without changing runtime routing."
+summary = "Rank explicit local simulator choices from exact checked-in evidence or opt-in live calibration without changing runtime routing."
 category = "deployment_and_extension"
-user_goals = ["Choose among measured local simulators", "Inspect the timing and stability evidence behind a recommendation", "Reject recommendations outside the measured workload or environment"]
+user_goals = ["Choose among simulators measured for an exact FlagQuantum circuit", "Calibrate an arbitrary circuit under an explicit budget", "Inspect timing, stability, correctness, circuit identity, and confidence", "Reject unsupported inference outside measured evidence"]
 public_apis = ["flagquantum.ecosystem.simulators.recommend"]
-runtime_modes = ["offline_evidence_advice"]
-hardware = ["recorded_cpu_environment_only"]
+runtime_modes = ["offline_evidence_advice", "opt_in_live_cpu_calibration"]
+hardware = ["recorded_cpu_environment", "current_local_cpu"]
 gradient_support = "not_applicable"
 distribution_semantics = "not_applicable"
 quick_start = "docs/guides/SIMULATOR_ADVISOR.md"
 documentation = "docs/guides/SIMULATOR_ADVISOR.md"
 level = "experimental"
 owner = "interop maintainers"
-limitations = "The advisor uses non-release comparison evidence for exact measured workload and environment matches. It filters unavailable, incorrect, and unstable engines, prefers native execution inside a configurable tie margin, and returns insufficient evidence instead of interpolating or extrapolating. It does not execute circuits, change fq.run, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to one complex128 hardware-efficient statevector workload on the recorded single-process ARM64 CPU environment."
+limitations = "The default path is non-executing: circuit-bound advice requires the canonical FlagQuantum CircuitIR hash, workload fields, and recorded environment to match versioned non-release evidence exactly. A profile-only query is not circuit-bound. For an unknown circuit, a caller may explicitly provide a positive calibration budget; this executes native and installed external statevector bridges, verifies outputs against native, filters unavailable, incorrect, undersampled, and unstable engines, applies the native tie margin, and caches the exact result in-process. The budget is soft because an in-flight framework import or backend call is not interrupted. The advisor does not infer performance from qubit or gate count, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to five exact complex128 hardware-efficient circuits on one ARM64 CPU environment, and no similarity model is claimed from that narrow corpus."
 focused_tests = "tests/test_simulator_advisor.py"
 
 [capabilities.qiskit_interop]
