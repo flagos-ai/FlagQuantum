@@ -312,6 +312,7 @@ def _submit_quafu(
             "Detached Quafu jobs support full-register counts; use fq.run for expectations"
         )
     _validate_quafu_shots(target, shots)
+    assert isinstance(shots, int)
     if name is not None and (not isinstance(name, str) or not name.strip()):
         raise ValueError("name must be a non-empty string")
     package_options: dict[str, Any] = {}
