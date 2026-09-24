@@ -18,7 +18,7 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
-from . import controlled_phase, two_qubit_cpu
+from . import controlled_phase, cz_graph, two_qubit_cpu
 from .diagonal_cpu import (
     _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
 )
@@ -231,6 +231,7 @@ def _compile_statevector_program(
     *,
     enable_triton_loop: bool,
     enable_cpu_cross_wire_diagonal: bool = False,
+    enable_cpu_cz_graph: bool = False,
     enable_cpu_disjoint_single_wire: bool = False,
     enable_cpu_controlled_phase_decomposition: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
@@ -245,6 +246,8 @@ def _compile_statevector_program(
     if enable_cpu_controlled_phase_decomposition:
         program = controlled_phase._fuse_controlled_phase_decompositions(base_program)
     optimized: list[_StatevectorPreCXStep] = list(_fuse_gate_sequences(program))
+    if enable_cpu_cz_graph:
+        optimized = cz_graph._fuse_cz_graphs(optimized)
     if enable_cpu_cross_wire_diagonal:
         optimized = _fuse_cross_wire_diagonal_regions(optimized)
     if enable_cpu_disjoint_single_wire:

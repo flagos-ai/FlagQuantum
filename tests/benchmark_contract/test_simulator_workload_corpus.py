@@ -160,6 +160,43 @@ def test_checked_in_swap_routing_case_is_complete_and_correct() -> None:
         assert engine["end_to_end"]["median_seconds"] > 0
 
 
+def test_checked_in_dense_nonlocal_case_is_complete_stable_and_correct() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "simulator_dense_nonlocal_cpu_arm64_20260924.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == SCHEMA
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["hostname"] == "redacted"
+    assert payload["workloads"] == ["dense_nonlocal_statevector"]
+    assert payload["n_wires"] == [22]
+    assert len(payload["cases"]) == 1
+    case = payload["cases"][0]
+    assert case["workload"]["gate_count"] == 275
+    assert case["features"]["opcode_histogram"]["cz"] == 231
+    assert case["correctness"]["passed"] is True
+    assert set(case["engines"]) == {
+        "flagquantum_native",
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit",
+    }
+    assert all(
+        ratio > 1
+        for ratio in case["comparison"]["engine_over_flagquantum_median"].values()
+    )
+    for engine in case["engines"].values():
+        assert engine["end_to_end"]["sample_count"] == 7
+        assert engine["end_to_end"]["median_seconds"] > 0
+
+
 @pytest.mark.parametrize(
     "kwargs, message",
     (
