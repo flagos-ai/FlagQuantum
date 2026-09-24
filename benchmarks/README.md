@@ -140,6 +140,10 @@ and a [raw comparison artifact](results/comparison/simulator_dense_nonlocal_cpu_
 The static Random Clifford product-state routing change likewise has a
 [reproducible comparison report](results/comparison/SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md)
 and a [raw comparison artifact](results/comparison/simulator_random_clifford_cpu_arm64_20260924.json).
+The Truncated QFT controlled-phase graph optimization has a
+[reproducible comparison report](results/comparison/SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md);
+its refreshed FlagQuantum measurements and unchanged external measurements are
+stored in the workload-corpus artifact linked above.
 These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing workload comparison question, not isolated kernel
 throughput.

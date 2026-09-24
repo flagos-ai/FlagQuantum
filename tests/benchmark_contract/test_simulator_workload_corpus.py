@@ -129,6 +129,26 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
             assert engine["end_to_end"]["sample_count"] == 9
             assert engine["end_to_end"]["median_seconds"] > 0
 
+    qft_cases = {
+        case["workload"]["n_wires"]: case
+        for case in payload["cases"]
+        if case["workload"]["name"] == "truncated_qft_statevector"
+    }
+    assert qft_cases[18]["engines"]["flagquantum_native"]["end_to_end"][
+        "median_seconds"
+    ] == pytest.approx(0.00804412504658103)
+    assert qft_cases[22]["engines"]["flagquantum_native"]["end_to_end"][
+        "median_seconds"
+    ] == pytest.approx(0.1513523330213502)
+    assert qft_cases[22]["engines"]["cirq_simulator"]["end_to_end"][
+        "median_seconds"
+    ] == pytest.approx(0.15457395801786333)
+    assert all(
+        ratio > 1
+        for case in qft_cases.values()
+        for ratio in case["comparison"]["engine_over_flagquantum_median"].values()
+    )
+
 
 def test_checked_in_swap_routing_case_is_complete_and_correct() -> None:
     path = (
