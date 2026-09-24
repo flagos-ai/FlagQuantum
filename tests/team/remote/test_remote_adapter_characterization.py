@@ -31,7 +31,7 @@ def _local_package(*, provider: str = "local", shots: int = 8):
     backend = CloudBackendProfile(
         provider=provider,
         name="characterization-target",
-        n_wires=2,
+        n_qubits=2,
         is_simulator=provider == "local",
     )
     return fqd.create_deployment_package(

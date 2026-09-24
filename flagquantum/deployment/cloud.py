@@ -9,6 +9,7 @@ Circuit and IR objects.
 from __future__ import annotations
 
 import math
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from numbers import Integral
@@ -35,13 +36,13 @@ if TYPE_CHECKING:
     from ..remote.qpu.contracts import DeploymentResult, QuantumProvider
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class CloudBackendProfile:
     """Provider-neutral description of a quantum-cloud target."""
 
     provider: str
     name: str
-    n_wires: int
+    n_qubits: int
     basis_gates: tuple[str, ...] = ()
     coupling_map: CouplingMap | None = None
     supports_openqasm: bool = True
@@ -52,14 +53,80 @@ class CloudBackendProfile:
     metadata: Mapping[str, Any] = field(default_factory=dict)
     dynamic_dialect: str | None = None
 
+    def __init__(
+        self,
+        provider: str,
+        name: str,
+        n_qubits: int | None = None,
+        basis_gates: tuple[str, ...] = (),
+        coupling_map: CouplingMap | None = None,
+        supports_openqasm: bool = True,
+        supports_qcis: bool = False,
+        supports_dynamic_circuits: bool = False,
+        max_classical_bits: int | None = None,
+        is_simulator: bool = False,
+        metadata: Mapping[str, Any] | None = None,
+        dynamic_dialect: str | None = None,
+        *,
+        n_wires: int | None = None,
+    ) -> None:
+        if n_qubits is not None and n_wires is not None:
+            raise TypeError("Pass n_qubits or n_wires, not both")
+        if n_qubits is None:
+            if n_wires is None:
+                raise TypeError("CloudBackendProfile requires n_qubits")
+            warnings.warn(
+                "CloudBackendProfile(n_wires=...) is deprecated; use "
+                "n_qubits=.... Removal is planned for 0.4.0 after the 0.3.x "
+                "migration window.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            n_qubits = n_wires
+        object.__setattr__(self, "provider", provider)
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "n_qubits", n_qubits)
+        object.__setattr__(self, "basis_gates", basis_gates)
+        object.__setattr__(self, "coupling_map", coupling_map)
+        object.__setattr__(self, "supports_openqasm", supports_openqasm)
+        object.__setattr__(self, "supports_qcis", supports_qcis)
+        object.__setattr__(self, "supports_dynamic_circuits", supports_dynamic_circuits)
+        object.__setattr__(self, "max_classical_bits", max_classical_bits)
+        object.__setattr__(self, "is_simulator", is_simulator)
+        object.__setattr__(self, "metadata", {} if metadata is None else metadata)
+        object.__setattr__(self, "dynamic_dialect", dynamic_dialect)
+
+    @property
+    def n_wires(self) -> int:
+        """Deprecated compatibility alias for :attr:`n_qubits`."""
+
+        return self.n_qubits
+
     @classmethod
     def simulator(
-        cls, n_wires: int, *, provider: str = "local"
+        cls,
+        n_qubits: int | None = None,
+        *,
+        provider: str = "local",
+        n_wires: int | None = None,
     ) -> "CloudBackendProfile":
+        if n_qubits is not None and n_wires is not None:
+            raise TypeError("Pass n_qubits or n_wires, not both")
+        if n_qubits is None:
+            if n_wires is None:
+                raise TypeError("CloudBackendProfile.simulator requires n_qubits")
+            warnings.warn(
+                "CloudBackendProfile.simulator(n_wires=...) is deprecated; use "
+                "n_qubits=.... Removal is planned for 0.4.0 after the 0.3.x "
+                "migration window.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            n_qubits = n_wires
         return cls(
             provider=provider,
             name="simulator",
-            n_wires=int(n_wires),
+            n_qubits=int(n_qubits),
             basis_gates=("x", "y", "z", "h", "rx", "ry", "rz", "cx", "cz", "swap"),
             coupling_map=None,
             is_simulator=True,
@@ -256,11 +323,11 @@ def create_deployment_package(
             if not provider or not backend_name:
                 raise ValueError("execution_target requires provider and backend")
             backend = CloudBackendProfile(
-                provider=provider, name=backend_name, n_wires=ir.n_wires
+                provider=provider, name=backend_name, n_qubits=ir.n_wires
             )
         else:
             backend = CloudBackendProfile.simulator(ir.n_wires)
-    if ir.n_wires > backend.n_wires:
+    if ir.n_wires > backend.n_qubits:
         raise ValueError("Circuit uses more wires than the deployment backend exposes.")
     target_bound = bool(
         execution_target

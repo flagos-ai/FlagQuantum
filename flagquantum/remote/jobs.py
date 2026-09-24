@@ -304,15 +304,15 @@ def _submit_quafu(
 ) -> RemoteJob:
     from ..deployment import CloudBackendProfile, create_deployment_package
     from .qpu.execution import validate_quafu_output
-    from .qpu.quafu import _service_options
+    from .qpu.quafu import _service_options, _validate_quafu_shots
 
     output = validate_quafu_output(ir, outputs)
     if output.kind != "counts":
         raise CapabilityError(
             "Detached Quafu jobs support full-register counts; use fq.run for expectations"
         )
-    if type(shots) is not int or shots <= 0 or shots % 1024:
-        raise ValueError("Quafu shots must be a positive multiple of 1024")
+    _validate_quafu_shots(target, shots)
+    assert isinstance(shots, int)
     if name is not None and (not isinstance(name, str) or not name.strip()):
         raise ValueError("name must be a non-empty string")
     package_options: dict[str, Any] = {}
@@ -326,7 +326,7 @@ def _submit_quafu(
             "backend": CloudBackendProfile(
                 provider="quafu",
                 name=target.partition(":")[2].strip(),
-                n_wires=ir.n_wires,
+                n_qubits=ir.n_wires,
             ),
             "optimize": False,
             "metadata": {
@@ -351,6 +351,10 @@ def _submit_quafu(
     )
     client = QuafuProvider(reverse_result_bits=compiler is None)
     handle = client.submit(package)
+    submission_identity = build_result_metadata(handle)
+    protocol = handle.payload.get("quafu_protocol")
+    if isinstance(protocol, str):
+        submission_identity["quafu_protocol"] = protocol
     return RemoteJob(
         _Receipt(
             handle.task_id,
@@ -360,7 +364,7 @@ def _submit_quafu(
             mapping,
             name,
             output.name,
-            submission_identity=build_result_metadata(handle),
+            submission_identity=submission_identity,
         ),
         client,
     )

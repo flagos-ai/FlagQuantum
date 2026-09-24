@@ -18,7 +18,7 @@ class _AzureTestTarget(InMemoryRemoteTarget):
         self.backend = CloudBackendProfile(
             provider=self.provider,
             name=target_id,
-            n_wires=n_wires,
+            n_qubits=n_wires,
             metadata={
                 "target_id": target_id,
                 "device_provider": "test",

@@ -26,7 +26,7 @@ def _routing_plan() -> tuple[dict, CouplingMap]:
         backend=CloudBackendProfile(
             provider="local",
             name="line5",
-            n_wires=5,
+            n_qubits=5,
             coupling_map=coupling,
             is_simulator=True,
         ),

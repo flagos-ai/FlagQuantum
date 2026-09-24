@@ -51,7 +51,7 @@ def execute_quafu(
         )
         package_options = {
             "backend": CloudBackendProfile(
-                provider="quafu", name=backend, n_wires=compiled.n_wires
+                provider="quafu", name=backend, n_qubits=compiled.n_wires
             ),
             "optimize": False,
             "metadata": {

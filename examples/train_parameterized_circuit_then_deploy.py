@@ -73,7 +73,7 @@ def main() -> None:
     backend = fqd.CloudBackendProfile(
         provider="local",
         name="line2",
-        n_wires=2,
+        n_qubits=2,
         coupling_map=CouplingMap.line(2),
         is_simulator=True,
     )

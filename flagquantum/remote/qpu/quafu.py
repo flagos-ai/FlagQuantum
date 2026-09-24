@@ -6,9 +6,10 @@ import hashlib
 import os
 import re
 import time
+import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any
-from urllib import parse
+from urllib import error, parse
 
 from ...deployment.cloud import (
     CloudBackendProfile,
@@ -28,6 +29,44 @@ from .result_parsing import _extract_counts
 
 _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
+_TASK_API_PROTOCOL = "task_api_v1"
+_SQC_PROTOCOL = "sqc_legacy"
+_TASK_API_ROUTING_TARGETS = {"all-race", "all-redispatch"}
+_MAX_SHOTS = 8192
+
+
+def _quafu_backend_name(target: str) -> str:
+    """Return the backend portion of a root target or an adapter backend name."""
+
+    provider, separator, backend = str(target).partition(":")
+    return (
+        backend.strip() if separator and provider.lower() == "quafu" else target.strip()
+    )
+
+
+def _is_simulator_target(target: str) -> bool:
+    backend = _quafu_backend_name(target)
+    return backend == "sim" or backend.endswith("-sim")
+
+
+def _requires_task_api(target: str) -> bool:
+    backend = _quafu_backend_name(target)
+    return _is_simulator_target(backend) or backend in _TASK_API_ROUTING_TARGETS
+
+
+def _validate_quafu_shots(target: str, shots: int | None) -> None:
+    """Validate the task API's simulator and hardware shot ranges."""
+
+    if type(shots) is not int:
+        raise ValueError("Quafu shots must be an integer")
+    if _is_simulator_target(target):
+        if not 1 <= shots <= _MAX_SHOTS:
+            raise ValueError("Quafu simulator shots must be between 1 and 8192")
+        return
+    if not 1024 <= shots <= _MAX_SHOTS or shots % 1024:
+        raise ValueError(
+            "Quafu hardware shots must be a multiple of 1024 between 1024 and 8192"
+        )
 
 
 def _service_options(n_wires: int, raw_qubits: Sequence[int]) -> dict[str, Any]:
@@ -97,11 +136,13 @@ def _submission_options(
 
 
 class QuafuProvider(HttpQuantumProvider):
-    """HTTP adapter for the Quafu SQC cloud ``quafusqc`` contract.
+    """HTTP adapter for the current and legacy Quafu task APIs.
 
-    Authentication defaults to the provider-specific ``QUAFU_API_TOKEN`` environment
-    variable
-    used by ``quafusqc``. Tokens passed explicitly always take precedence.
+    ``QUAFU_API_KEY`` enables the current task API and
+    ``QUAFU_TASK_SERVER_URL`` overrides its base URL. When the current API is
+    unavailable before submission, the provider falls back to the legacy SQC
+    contract configured by ``QUAFU_API_TOKEN``. Explicit credentials take
+    precedence over environment variables.
     """
 
     def __init__(
@@ -109,12 +150,28 @@ class QuafuProvider(HttpQuantumProvider):
         *,
         base_url: str = "https://quafu-sqc.baqis.ac.cn",
         token: str | None = None,
+        task_server_url: str | None = None,
+        api_key: str | None = None,
         poll_interval: float = 0.2,
         result_timeout: float = 300.0,
         reverse_result_bits: bool = False,
         **kwargs: Any,
     ) -> None:
         resolved_token = token or os.getenv("QUAFU_API_TOKEN")
+        self.task_server_url = (
+            task_server_url
+            or os.getenv("QUAFU_TASK_SERVER_URL")
+            or "https://quafu.com.cn/api/v1"
+        ).rstrip("/")
+        task_server = parse.urlparse(self.task_server_url)
+        if (
+            task_server.scheme != "https"
+            or not task_server.netloc
+            or task_server.username is not None
+            or task_server.password is not None
+        ):
+            raise ValueError("Quafu task_server_url must be an HTTPS URL")
+        self.api_key = api_key or os.getenv("QUAFU_API_KEY")
         super().__init__(
             provider="quafu",
             base_url=base_url,
@@ -129,6 +186,30 @@ class QuafuProvider(HttpQuantumProvider):
         self.poll_interval = float(poll_interval)
         self.result_timeout = float(result_timeout)
         self.reverse_result_bits = bool(reverse_result_bits)
+
+    def _task_api_url(self, path: str, **values: Any) -> str:
+        return self.task_server_url + path.format(**values)
+
+    def _task_api_headers(self) -> dict[str, str]:
+        if not self.api_key:
+            return {}
+        return {"Authorization": f"Bearer {self.api_key}"}
+
+    @staticmethod
+    def _protocol(handle: ProviderTaskHandle) -> str:
+        protocol = handle.payload.get("quafu_protocol", _SQC_PROTOCOL)
+        return protocol if protocol == _TASK_API_PROTOCOL else _SQC_PROTOCOL
+
+    def _task_api_is_healthy(self) -> bool:
+        if not self.api_key:
+            return False
+        try:
+            response = self.transport.get_json(
+                self._task_api_url("/healthz"), {}, self.timeout
+            )
+        except Exception:
+            return False
+        return isinstance(response, Mapping) and response.get("healthy") is True
 
     def verify(self) -> Any:
         """Verify the configured token using the official platform endpoint."""
@@ -147,16 +228,79 @@ class QuafuProvider(HttpQuantumProvider):
             headers["token"] = self.credentials.token
         return headers
 
-    def discover_backends(
-        self, n_wires: int | None = None
+    def list_devices(
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        """Discover chips through ``Task.status(0)``.
+        """Discover current task-API devices, with legacy SQC fallback.
 
-        The SQC status response reports queue availability but not qubit counts,
-        so the requested width (or the configured conservative fallback) is
-        retained in each profile and the limitation is exposed in metadata.
+        The current API reports device capacity and status directly. The legacy
+        SQC response has no qubit counts, so fallback profiles retain the
+        requested width or configured conservative default.
         """
 
+        try:
+            response = self.transport.get_json(
+                self._task_api_url("/devices"), {}, self.timeout
+            )
+            return self._task_api_backends(response, n_qubits=n_qubits)
+        except Exception:
+            return self._legacy_backends(n_qubits=n_qubits)
+
+    def _task_api_backends(
+        self, response: Mapping[str, Any], *, n_qubits: int | None
+    ) -> tuple[CloudBackendProfile, ...]:
+        raw_devices = response.get("devices")
+        if not isinstance(raw_devices, Sequence) or isinstance(
+            raw_devices, (str, bytes)
+        ):
+            raise RuntimeError("quafu task API devices response is not a sequence")
+        rows = list(raw_devices)
+        simulator = response.get("simulator")
+        if isinstance(simulator, Mapping):
+            rows.append(simulator)
+        profiles = []
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise RuntimeError("quafu task API device is not a mapping")
+            name = row.get("name")
+            capacity = row.get("n_qubits", row.get("max_qubits"))
+            if not isinstance(name, str) or not name.strip():
+                raise RuntimeError("quafu task API device has no name")
+            if type(capacity) is not int or capacity <= 0:
+                capacity = n_qubits or self.default_n_wires
+            metadata_fields = (
+                "status",
+                "queue",
+                "simulator_available",
+                "calibration_id",
+                "calibrated_at",
+                "calibration_source",
+                "data_fetched_at",
+                "data_origin",
+                "live_status_at",
+                "live_status_stale",
+                "usable",
+            )
+            profiles.append(
+                CloudBackendProfile(
+                    provider="quafu",
+                    name=name,
+                    n_qubits=capacity,
+                    basis_gates=tuple(map(str, row.get("basis_gates", ()))),
+                    is_simulator=name == "sim",
+                    metadata={
+                        "source": "quafu-task-api-devices",
+                        **{key: row[key] for key in metadata_fields if key in row},
+                    },
+                )
+            )
+        if not profiles:
+            raise RuntimeError("quafu task API devices response contains no devices")
+        return tuple(profiles)
+
+    def _legacy_backends(
+        self, *, n_qubits: int | None
+    ) -> tuple[CloudBackendProfile, ...]:
         response = self.transport.get_json(
             self._url("/task/status/0"), self._headers(), self.timeout
         )
@@ -171,7 +315,7 @@ class QuafuProvider(HttpQuantumProvider):
                 CloudBackendProfile(
                     provider="quafu",
                     name=str(name),
-                    n_wires=n_wires or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_wires,
                     metadata={
                         "source": "quafu-task-status",
                         "queue_status": queue_status,
@@ -206,11 +350,68 @@ class QuafuProvider(HttpQuantumProvider):
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         validate_deployment_package(package)
+        _validate_quafu_shots(package.backend.name, package.shots)
         options = _submission_options(
             package.qasm,
             n_wires=package.n_wires,
             options=dict(package.metadata.get("provider_options", {})),
         )
+        task_api_required = _requires_task_api(package.backend.name)
+        if task_api_required and (
+            options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
+        ):
+            raise ValueError(
+                f"Quafu target {package.backend.name!r} requires logical-circuit "
+                "submission through the task API"
+            )
+        if (
+            options.get("compiler") == "quarkcircuit"
+            and not options.get("target_qubits")
+            and self._task_api_is_healthy()
+        ):
+            try:
+                return self._submit_task_api(package)
+            except error.HTTPError as exc:
+                if 400 <= exc.code < 500:
+                    # A client rejection means the platform did not accept the
+                    # task. Server and transport failures after POST remain
+                    # ambiguous and must not create a second hardware task.
+                    if task_api_required:
+                        raise
+                else:
+                    raise
+        if task_api_required:
+            raise RuntimeError(
+                f"Quafu target {package.backend.name!r} requires the task API; "
+                "no equivalent legacy SQC fallback is available"
+            )
+        return self._submit_legacy(package, options)
+
+    def _submit_task_api(self, package: DeploymentPackage) -> ProviderTaskHandle:
+        client_ref = str(uuid.uuid4())
+        response = self.transport.post_json(
+            self._task_api_url("/jobs"),
+            {
+                "mode": "single",
+                "target": package.backend.name,
+                "shots": package.shots,
+                "circuits": [{"qasm": package.qasm}],
+                "client_ref": client_ref,
+            },
+            self._task_api_headers(),
+            self.timeout,
+        )
+        job_id = response.get("job_id") if isinstance(response, Mapping) else None
+        if not isinstance(job_id, str) or not job_id.strip():
+            raise RuntimeError("quafu task API response does not contain a job id.")
+        receipt = build_submission_receipt(package, response)
+        receipt["quafu_protocol"] = _TASK_API_PROTOCOL
+        receipt["client_ref"] = client_ref
+        return ProviderTaskHandle("quafu", job_id, package.backend.name, receipt)
+
+    def _submit_legacy(
+        self, package: DeploymentPackage, options: Mapping[str, Any]
+    ) -> ProviderTaskHandle:
         query = parse.urlencode(
             {"name": package.name, "chip": package.backend.name, "shots": package.shots}
         )
@@ -230,13 +431,15 @@ class QuafuProvider(HttpQuantumProvider):
         )
         if task_id is None:
             raise RuntimeError("quafu submit response does not contain a task id.")
+        receipt = build_submission_receipt(
+            package, response if isinstance(response, Mapping) else {}
+        )
+        receipt["quafu_protocol"] = _SQC_PROTOCOL
         return ProviderTaskHandle(
             "quafu",
             str(task_id),
             package.backend.name,
-            build_submission_receipt(
-                package, response if isinstance(response, Mapping) else {}
-            ),
+            receipt,
         )
 
     def submit_qasm(
@@ -261,8 +464,7 @@ class QuafuProvider(HttpQuantumProvider):
             raise ValueError("Quafu QASM submission requires OpenQASM 2.0")
         if not backend or not task_name:
             raise ValueError("Quafu QASM submission requires chip and name")
-        if int(shots) <= 0 or int(shots) % 1024:
-            raise ValueError("Quafu shots must be a positive multiple of 1024")
+        _validate_quafu_shots(backend, shots)
         options = _submission_options(
             program,
             n_wires=len(target_qubits),
@@ -294,17 +496,25 @@ class QuafuProvider(HttpQuantumProvider):
             "submitted_qasm_sha256": digest,
             "compiler": None,
             "target_qubits": options["target_qubits"],
+            "quafu_protocol": _SQC_PROTOCOL,
         }
         if isinstance(response, Mapping):
             receipt["submit"] = dict(response)
         return ProviderTaskHandle("quafu", str(task_id), backend, receipt)
 
     def query_status(self, handle: ProviderTaskHandle) -> str:
-        response = self.transport.get_json(
-            self._url("/task/status/{task_id}", task_id=handle.task_id),
-            self._headers(),
-            self.timeout,
-        )
+        if self._protocol(handle) == _TASK_API_PROTOCOL:
+            response = self.transport.get_json(
+                self._task_api_url("/jobs/{task_id}/status", task_id=handle.task_id),
+                self._task_api_headers(),
+                self.timeout,
+            )
+        else:
+            response = self.transport.get_json(
+                self._url("/task/status/{task_id}", task_id=handle.task_id),
+                self._headers(),
+                self.timeout,
+            )
         if isinstance(response, Mapping):
             status = str(
                 response.get(
@@ -324,7 +534,15 @@ class QuafuProvider(HttpQuantumProvider):
         }.get(status.lower(), status)
 
     def cancel(self, handle: ProviderTaskHandle) -> Any:
-        """Request cancellation through ``Task.cancel(tid)``."""
+        """Request cancellation through the API that accepted the task."""
+
+        if self._protocol(handle) == _TASK_API_PROTOCOL:
+            return self.transport.post_json(
+                self._task_api_url("/jobs/{task_id}/cancel", task_id=handle.task_id),
+                {},
+                self._task_api_headers(),
+                self.timeout,
+            )
 
         return self.transport.get_json(
             self._url("/task/cancel/{task_id}", task_id=handle.task_id),
@@ -333,23 +551,54 @@ class QuafuProvider(HttpQuantumProvider):
         )
 
     def fetch_result(self, handle: ProviderTaskHandle) -> DeploymentResult:
-        response = self.transport.get_json(
-            self._url("/task/result/{task_id}", task_id=handle.task_id),
-            self._headers(),
-            self.timeout,
-        )
+        protocol = self._protocol(handle)
+        if protocol == _TASK_API_PROTOCOL:
+            response = self.transport.get_json(
+                self._task_api_url("/jobs/{task_id}/results", task_id=handle.task_id),
+                self._task_api_headers(),
+                self.timeout,
+            )
+        else:
+            response = self.transport.get_json(
+                self._url("/task/result/{task_id}", task_id=handle.task_id),
+                self._headers(),
+                self.timeout,
+            )
         if not response:
             raise RuntimeError(
                 f"quafu task {handle.task_id} has no result yet; query status and retry"
             )
+        result_payload: Mapping[str, Any] = response
+        if protocol == _TASK_API_PROTOCOL:
+            rows = response.get("counts")
+            if (
+                isinstance(rows, Sequence)
+                and not isinstance(rows, (str, bytes))
+                and len(rows) == 1
+                and rows[0] is None
+            ):
+                raise RuntimeError(
+                    f"quafu task {handle.task_id} has no result yet; "
+                    "query status and retry"
+                )
+            if (
+                not isinstance(rows, Sequence)
+                or isinstance(rows, (str, bytes))
+                or len(rows) != 1
+                or not isinstance(rows[0], Mapping)
+            ):
+                raise RuntimeError("quafu task API result does not contain counts.")
+            result_payload = {"counts": rows[0]}
         counts = _extract_counts(
-            response, provider="quafu", flip=self.reverse_result_bits
+            result_payload, provider="quafu", flip=self.reverse_result_bits
         )
         return DeploymentResult(
             handle=handle,
             counts=counts,
             shots=sum(counts.values()),
-            metadata=build_result_metadata(handle, response),
+            metadata=build_result_metadata(
+                handle, dict(response) | {"quafu_protocol": protocol}
+            ),
         )
 
     def run(self, package: DeploymentPackage) -> DeploymentResult:

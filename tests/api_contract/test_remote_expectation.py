@@ -16,6 +16,47 @@ class _QuafuTestTarget(InMemoryRemoteTarget):
     provider = "quafu"
 
 
+@pytest.mark.parametrize(
+    ("target", "shots"),
+    [("quafu:sim", 1), ("quafu:sim", 8192), ("quafu:Baihua-sim", 1000)],
+)
+def test_direct_quafu_simulators_accept_task_api_shot_range(
+    monkeypatch: pytest.MonkeyPatch, target: str, shots: int
+) -> None:
+    import flagquantum.remote.qpu.execution as execution
+
+    execute = Mock(return_value=(target, shots))
+    monkeypatch.setattr(execution, "execute_quafu", execute)
+
+    assert fq.run(fq.Circuit(1), target=target, shots=shots) == (target, shots)
+    assert execute.call_args.kwargs["target"] == target
+    assert execute.call_args.kwargs["shots"] == shots
+
+
+@pytest.mark.parametrize(
+    ("target", "shots"),
+    [
+        ("quafu:sim", 0),
+        ("quafu:Baihua-sim", 8193),
+        ("quafu:Baihua", 1000),
+        ("quafu:Baihua", 9216),
+        ("quafu:all-race", 1000),
+    ],
+)
+def test_direct_quafu_rejects_invalid_shots_before_execution(
+    monkeypatch: pytest.MonkeyPatch, target: str, shots: int
+) -> None:
+    import flagquantum.remote.qpu.execution as execution
+
+    execute = Mock(side_effect=AssertionError("execution must not start"))
+    monkeypatch.setattr(execution, "execute_quafu", execute)
+
+    with pytest.raises(ValueError, match="shots"):
+        fq.run(fq.Circuit(1), target=target, shots=shots)
+
+    execute.assert_not_called()
+
+
 @pytest.mark.parametrize("outputs", [[object()], ["counts"], [fq.counts(), object()]])
 def test_quafu_rejects_non_request_output_items_before_compilation(
     monkeypatch: pytest.MonkeyPatch, outputs: object
@@ -117,7 +158,7 @@ def test_fq_run_remote_expectation_compiles_once_and_groups_measurements(
         compiler="qsteed",
         target="quafu:ScQ-P10",
         target_qubits=(3, 4),
-        shots=128,
+        shots=1024,
         name="bell energy",
     )
 
@@ -127,13 +168,13 @@ def test_fq_run_remote_expectation_compiles_once_and_groups_measurements(
     assert measurement.statistics == {
         "standard_error": 0.0,
         "group_count": 2,
-        "shots_per_group": (128, 128),
-        "total_shots": 256,
+        "shots_per_group": (1024, 1024),
+        "total_shots": 2048,
     }
     assert result.runtime == {
         "mode": "remote_qpu",
-        "shots": 256,
-        "shots_per_group": (128, 128),
+        "shots": 2048,
+        "shots_per_group": (1024, 1024),
     }
     assert result.provenance["target_qubits"] == (3, 4)
     assert result.provenance["task_ids"] == ("local-1", "local-2")

@@ -157,7 +157,7 @@ def braket_backend_profile(
     return CloudBackendProfile(
         provider="amazon-braket",
         name=name,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         basis_gates=tuple(str(gate).lower() for gate in basis),
         coupling_map=_braket_coupling_map(properties, n_wires),
         supports_openqasm=True,
@@ -201,10 +201,10 @@ class AmazonBraketProvider(QuantumProvider):
     def device_arn(self) -> str:
         return str(self.backend.metadata.get("device_arn", ""))
 
-    def discover_backends(
-        self, n_wires: int | None = None
+    def list_devices(
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        if n_wires is not None and self.backend.n_wires < int(n_wires):
+        if n_qubits is not None and self.backend.n_qubits < int(n_qubits):
             return ()
         return (self.backend,)
 

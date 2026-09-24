@@ -155,7 +155,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     supported = CloudBackendProfile(
         provider="test",
         name="dynamic-qpu",
-        n_wires=2,
+        n_qubits=2,
         supports_openqasm=True,
         supports_dynamic_circuits=True,
         max_classical_bits=4,
@@ -167,7 +167,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     too_small = CloudBackendProfile(
         provider="test",
         name="small-register-qpu",
-        n_wires=2,
+        n_qubits=2,
         supports_openqasm=True,
         supports_dynamic_circuits=True,
         max_classical_bits=2,
@@ -180,7 +180,7 @@ def _dynamic_backend(**overrides) -> CloudBackendProfile:
     values = {
         "provider": "test",
         "name": "dynamic-qpu",
-        "n_wires": 4,
+        "n_qubits": 4,
         "supports_openqasm": True,
         "supports_dynamic_circuits": True,
         "max_classical_bits": 4,
@@ -246,7 +246,7 @@ def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
     with pytest.raises(RuntimeError, match="qubit_capacity"):
         create_dynamic_deployment_package(
             circuit,
-            backend=_dynamic_backend(n_wires=1),
+            backend=_dynamic_backend(n_qubits=1),
         )
     batched = DynamicCircuit(1, bsz=2)
     batched.measure(0, classical_bit=0)
@@ -303,7 +303,7 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
     backend = _dynamic_backend(
-        n_wires=3,
+        n_qubits=3,
         coupling_map=CouplingMap.line(3),
     )
 
@@ -331,7 +331,7 @@ def test_dynamic_deployment_reuses_matching_routing(
     circuit.conditional("cx", (0, 2), classical_bit=0)
     coupling = CouplingMap.line(3)
     routed = route_dynamic_circuit(circuit, coupling)
-    backend = _dynamic_backend(n_wires=3, coupling_map=coupling)
+    backend = _dynamic_backend(n_qubits=3, coupling_map=coupling)
 
     def reject_rerouting(*args: object, **kwargs: object) -> None:
         raise AssertionError("matching dynamic routing must be reused")
@@ -354,7 +354,7 @@ def test_dynamic_deployment_does_not_reuse_mismatched_topology(
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
     routed = route_dynamic_circuit(circuit, CouplingMap.line(3))
-    backend = _dynamic_backend(n_wires=3, coupling_map=CouplingMap.ring(3))
+    backend = _dynamic_backend(n_qubits=3, coupling_map=CouplingMap.ring(3))
     route_calls = 0
     original_route = route_dynamic_circuit
 
@@ -392,6 +392,6 @@ def test_dynamic_deployment_rejects_tampered_reused_routing() -> None:
     with pytest.raises(ValueError, match="non-negative integer"):
         create_dynamic_deployment_package(
             routed,
-            backend=_dynamic_backend(n_wires=3, coupling_map=coupling),
+            backend=_dynamic_backend(n_qubits=3, coupling_map=coupling),
             shots=32,
         )

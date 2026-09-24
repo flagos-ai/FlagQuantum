@@ -67,6 +67,22 @@ def test_deployment_name_is_optional_but_cannot_be_empty():
         fqd.create_deployment_package(circuit, name="  ")
 
 
+def test_cloud_backend_profile_uses_qubit_capacity_with_wire_compatibility():
+    canonical = CloudBackendProfile(provider="test", name="qpu", n_qubits=8)
+    assert canonical.n_qubits == 8
+
+    with pytest.warns(DeprecationWarning, match="n_qubits"):
+        legacy = CloudBackendProfile(provider="test", name="qpu", n_wires=8)
+    assert legacy.n_wires == 8
+    assert legacy.n_qubits == 8
+
+    with pytest.raises(TypeError, match="not both"):
+        CloudBackendProfile(provider="test", name="qpu", n_qubits=8, n_wires=8)
+    with pytest.warns(DeprecationWarning, match="n_qubits"):
+        legacy_simulator = CloudBackendProfile.simulator(n_wires=4)
+    assert legacy_simulator.n_qubits == 4
+
+
 def test_target_backend_does_not_replace_deployment_name():
     compiled = fq.CircuitIR(
         n_wires=1,
@@ -93,7 +109,7 @@ def test_deployment_package_uses_backend_topology():
     backend = CloudBackendProfile(
         provider="local",
         name="line3",
-        n_wires=3,
+        n_qubits=3,
         coupling_map=CouplingMap.line(3),
         is_simulator=True,
     )
@@ -112,7 +128,7 @@ def test_deployment_package_preserves_auto_routing_selection_evidence():
     backend = CloudBackendProfile(
         provider="local",
         name="line5",
-        n_wires=5,
+        n_qubits=5,
         coupling_map=CouplingMap.line(5),
         is_simulator=True,
     )
@@ -149,7 +165,7 @@ def test_deployment_reuses_compatible_compiled_routing_plan():
     backend = CloudBackendProfile(
         provider="local",
         name="line4",
-        n_wires=4,
+        n_qubits=4,
         coupling_map=coupling,
         is_simulator=True,
     )
@@ -214,7 +230,7 @@ def test_qcis_backend_package_gets_qcis_metadata_automatically():
     backend = CloudBackendProfile(
         provider="tianyan",
         name="tianyan176",
-        n_wires=8,
+        n_qubits=8,
         supports_openqasm=False,
         supports_qcis=True,
     )
@@ -231,7 +247,7 @@ def test_local_provider_runs_packaged_circuit():
     circuit = fq.Circuit(2)
     circuit.x(0).x(1)
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
 
     result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=32)
 
@@ -342,7 +358,7 @@ def test_symbolic_parameter_template_binds_optimized_values_for_deployment():
     backend = CloudBackendProfile(
         provider="guodun",
         name="gd_qc1",
-        n_wires=8,
+        n_qubits=8,
         supports_openqasm=False,
         supports_qcis=True,
     )
@@ -366,7 +382,7 @@ def test_deployment_subsystem_is_top_level_easy_to_use():
 @pytest.mark.parametrize("field", ("qasm", "shots", "routing_evidence"))
 def test_provider_rejects_tampered_deployment_package(field):
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
     package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
         backend=backend,
@@ -389,7 +405,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
     backend = CloudBackendProfile(
         provider="tianyan",
         name="qpu",
-        n_wires=2,
+        n_qubits=2,
         supports_openqasm=False,
         supports_qcis=True,
     )
@@ -408,7 +424,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
 @pytest.mark.parametrize("field", ("identity", "shots"))
 def test_deployment_result_rejects_broken_receipt_chain(field):
     provider = InMemoryRemoteTarget()
-    backend = provider.discover_backends(2)[0]
+    backend = provider.list_devices(n_qubits=2)[0]
     result = fqd.deploy_circuit(
         fq.Circuit(2).x(0),
         provider,

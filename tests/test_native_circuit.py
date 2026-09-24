@@ -88,6 +88,7 @@ def test_circuit_prefers_qubit_count_and_preserves_wire_aliases():
     assert circuit.n_qubits == 3
     assert circuit.num_qubits == 3
     assert circuit.n_wires == 3
+    assert repr(circuit) == "Circuit(n_qubits=3, instructions=0)"
     assert fq.Circuit(n_wires=3).n_qubits == 3
     assert fq.Circuit(nqubits=3).n_qubits == 3
     assert fq.Circuit(n_qubits=3, n_wires=3, nqubits=3).n_qubits == 3

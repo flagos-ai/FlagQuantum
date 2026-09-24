@@ -41,3 +41,10 @@ actual HTTP adapter with a fake transport, check counts and grouped expectations
 and reject invalid mappings/shots before submission. Existing precompiled
 provider and root execution contracts are retained. API snapshots are not
 regenerated. The Quafu guide and unreleased notes document the new journey.
+
+The current task API distinguishes simulator and hardware shot contracts.
+`sim` and `<device>-sim` accept 1 through 8192 shots. Hardware targets,
+including `all-race` and `all-redispatch`, accept multiples of 1024 from 1024
+through 8192. Simulator and task-API routing targets do not fall back to legacy
+SQC because no equivalent legacy semantics have been verified. These checks
+occur before submission and do not change the public `fq.run` signature.
