@@ -34,6 +34,21 @@ set +a
 credential in it. Loading is explicit so importing FlagQuantum does not modify
 process-wide environment variables.
 
+## Select a target
+
+The target name determines both where the circuit runs and which simulation
+model is used:
+
+- `quafu:sim` uses the ideal simulator;
+- `quafu:<device>-sim`, for example `quafu:Baihua-sim`, simulates that
+  device's noise model;
+- `quafu:<device>`, for example `quafu:Baihua`, runs on the real device;
+- `quafu:all-race` races all online real devices and `quafu:all-redispatch`
+  automatically moves the task if the selected real device is unavailable.
+
+Device names are case-sensitive. For a real or noisy-simulator target, use the
+device spelling returned by `QuafuProvider().list_devices()`.
+
 ## Run on the ideal simulator
 
 Use `quafu:sim` to exercise the current HTTP path without consuming real-device
