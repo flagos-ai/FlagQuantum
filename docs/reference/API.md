@@ -484,6 +484,27 @@ instance and each Braket/Cirq/CUDA-Q/Qiskit/PennyLane adapter remain
 experimental implementation details; they are not part of the candidate-stable
 export list.
 
+### Evidence-based simulator advice
+
+The experimental advisor ranks explicit local simulator choices only when a
+checked-in comparison row matches the requested workload and environment:
+
+```python
+from flagquantum.ecosystem.simulators import recommend
+
+decision = recommend(n_wires=22)
+if decision.status == "recommended":
+    print(decision.recommended_engine)
+```
+
+`SimulatorRecommendation` exposes the measured candidates, timing ratios,
+stability and availability exclusions, workload fingerprint, evidence source,
+checksum, and limitations. It never executes a circuit, changes `fq.run`, or
+automatically falls back. An unmeasured qubit count, workload, CPU environment,
+or dependency set returns a structured `insufficient_evidence` decision. See
+[Evidence-based simulator advisor](../guides/SIMULATOR_ADVISOR.md) for the
+initial ARM64 evidence scope and conservative native tie policy.
+
 ### PennyLane QuantumScript interoperability
 
 PennyLane is an optional control-plane adapter and is never a FlagQuantum

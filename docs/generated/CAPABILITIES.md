@@ -98,6 +98,9 @@ This catalog is generated from the machine-validated
 | Execute FlagQuantum code on Cirq Simulator | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Compare an external simulator without changing the native default | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
 | Inspect external-backend provenance and fallback status | Cirq Simulator execution bridge | Experimental | [Run example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md) |
+| Choose among measured local simulators | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Inspect the timing and stability evidence behind a recommendation | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
+| Reject recommendations outside the measured workload or environment | Evidence-based simulator advisor | Experimental | [Run example](../../docs/guides/SIMULATOR_ADVISOR.md) |
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
@@ -677,6 +680,20 @@ Execute a FlagQuantum circuit explicitly on local Cirq Simulator while preservin
 - **Start:** [quick example](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md)
 - **Documentation:** [guide](../../docs/guides/CIRQ_SIMULATOR_EXECUTION.md)
 - **Known boundary:** The flagquantum.ecosystem.cirq bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU Cirq Simulator and returns an owned ExecutionResult. It supports exact complex64 and complex128 statevectors and computational-basis samples or counts with explicit wire order and seed. Explicit qubit order preserves idle FlagQuantum wire extent. It does not support gradients, noise models, dynamic circuits, automatic routing, device selection, or fallback. Native fq.run remains unchanged.
+
+### Evidence-based simulator advisor
+
+Rank explicit local simulator choices from environment-matched, workload-matched comparison evidence without changing runtime routing.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.simulators.recommend`
+- **Runtime modes:** `offline_evidence_advice`
+- **Hardware:** `recorded_cpu_environment_only`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/guides/SIMULATOR_ADVISOR.md)
+- **Documentation:** [guide](../../docs/guides/SIMULATOR_ADVISOR.md)
+- **Known boundary:** The advisor uses non-release comparison evidence for exact measured workload and environment matches. It filters unavailable, incorrect, and unstable engines, prefers native execution inside a configurable tie margin, and returns insufficient evidence instead of interpolating or extrapolating. It does not execute circuits, change fq.run, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to one complex128 hardware-efficient statevector workload on the recorded single-process ARM64 CPU environment.
 
 ### Qiskit IR interoperability
 

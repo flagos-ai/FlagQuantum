@@ -514,6 +514,23 @@ owner = "interop maintainers"
 limitations = "The flagquantum.ecosystem.cirq bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU Cirq Simulator and returns an owned ExecutionResult. It supports exact complex64 and complex128 statevectors and computational-basis samples or counts with explicit wire order and seed. Explicit qubit order preserves idle FlagQuantum wire extent. It does not support gradients, noise models, dynamic circuits, automatic routing, device selection, or fallback. Native fq.run remains unchanged."
 focused_tests = "tests/test_cirq_interop.py"
 
+[capabilities.simulator_advisor]
+title = "Evidence-based simulator advisor"
+summary = "Rank explicit local simulator choices from environment-matched, workload-matched comparison evidence without changing runtime routing."
+category = "deployment_and_extension"
+user_goals = ["Choose among measured local simulators", "Inspect the timing and stability evidence behind a recommendation", "Reject recommendations outside the measured workload or environment"]
+public_apis = ["flagquantum.ecosystem.simulators.recommend"]
+runtime_modes = ["offline_evidence_advice"]
+hardware = ["recorded_cpu_environment_only"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "docs/guides/SIMULATOR_ADVISOR.md"
+documentation = "docs/guides/SIMULATOR_ADVISOR.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "The advisor uses non-release comparison evidence for exact measured workload and environment matches. It filters unavailable, incorrect, and unstable engines, prefers native execution inside a configurable tie margin, and returns insufficient evidence instead of interpolating or extrapolating. It does not execute circuits, change fq.run, automatically route, install dependencies, guarantee production performance, or establish scalability. The initial packaged evidence is limited to one complex128 hardware-efficient statevector workload on the recorded single-process ARM64 CPU environment."
+focused_tests = "tests/test_simulator_advisor.py"
+
 [capabilities.qiskit_interop]
 title = "Qiskit IR interoperability"
 summary = "Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter."
