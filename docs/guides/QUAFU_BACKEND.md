@@ -64,7 +64,7 @@ result = fq.run(
     target="quafu:sim",
     shots=1000,
 )
-print(result.counts)
+print(result.counts[0])
 print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
@@ -85,7 +85,7 @@ result = fq.run(
     target="quafu:Baihua-sim",
     shots=1000,
 )
-print(result.counts)
+print(result.counts[0])
 print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
@@ -124,7 +124,7 @@ result = fq.run(
 )
 
 deployment = result.provenance["deployment"]
-print(result.counts)
+print(result.counts[0])
 print(deployment["job_id"])
 print(deployment["quafu_protocol"])
 ```
@@ -133,7 +133,7 @@ This direct path sends logical OpenQASM 2.0 and does not require local QSteed or
 QuarkCircuit installation. The platform performs compilation and physical
 routing. Counts are returned in logical-wire order (wire 0 on the left), while
 raw provider metadata retains the original response. Hardware shots must be a
-positive multiple of 1024.
+multiple of 1024 from 1024 through 8192.
 
 `outputs=fq.expectation(...)` is also supported through grouped basis
 measurements:
@@ -169,7 +169,7 @@ job.save("quafu-job.json")
 restored = fq.restore_job("quafu-job.json")
 print(restored.status())
 result = restored.wait(timeout=1800, poll_interval=3)
-print(result.counts)
+print(result.counts[0])
 ```
 
 Call `job.cancel()` to request cancellation. A task already sent to hardware may
