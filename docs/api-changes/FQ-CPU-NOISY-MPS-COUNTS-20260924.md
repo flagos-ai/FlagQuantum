@@ -69,3 +69,18 @@ no serialized field is added or reinterpreted incompatibly.
 - Executable target-binding tests for Baihua-sim, Shenglian-sim, and
   Dongling-sim, plus exact-to-MPS routing and mismatched-calibration rejection.
 - Existing MPS, modern-measurement, plan-contract, and seeded-sampling suites.
+
+## Accuracy claim boundary
+
+The acceptance evidence above establishes numerical agreement with the exact
+density-matrix implementation for small circuits. It does not establish
+agreement with a physical Quafu device. This PR therefore makes no QPU fidelity
+claim for Baihua-sim, Shenglian-sim, or Dongling-sim.
+
+A later target release may claim hardware agreement only from paired evidence
+using the complete calibration snapshot, identical physical mapping and
+compiled circuit, repeated QPU jobs, and a predeclared workload suite. The
+report must include MPS-to-QPU total-variation distance, ideal-to-QPU distance,
+QPU-to-QPU repeatability, finite-shot uncertainty, and MPS truncation
+diagnostics. No single percentage is transferable across devices, calibration
+times, mappings, and workloads.

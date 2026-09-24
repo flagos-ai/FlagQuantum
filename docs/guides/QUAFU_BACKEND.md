@@ -176,6 +176,14 @@ for the memory formula, the verified 100-qubit low-bond width test, the
 24-qubit noisy timing evidence, and the conditions under which no qubit-count
 guarantee is possible.
 
+Capacity is not hardware accuracy. The current MPS tests validate the numerical
+engine against exact density-matrix evolution; this release does not yet contain
+a same-calibration, same-mapping QPU comparison for Baihua-sim, Shenglian-sim,
+or Dongling-sim. Their hardware fidelity is therefore **unvalidated**, not zero
+and not implied by the device name. See
+[Hardware agreement and reliability](NOISY_SIMULATION.md#hardware-agreement-and-reliability)
+for the required TVD, QPU-repeatability, finite-shot, and provenance evidence.
+
 ## Run on a real device
 
 Inspect the current device list before choosing a target. Python discovery uses

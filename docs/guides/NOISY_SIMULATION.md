@@ -533,6 +533,59 @@ qubit calibration fails closed rather than silently assuming zero noise.
 This is an explicit Markovian timing approximation. A profile import does not
 by itself prove that the model reproduces real hardware.
 
+## Hardware agreement and reliability
+
+**Current status: numerical correctness validated; hardware fidelity
+unvalidated.** The exact-density comparison tests show that the MPS engine
+implements the declared noise channels within sampling and truncation error.
+They do not show that those channels reproduce a Baihua, Shenglian, or Dongling
+QPU. Do not interpret `device_profile_identity` or a `<device>-sim` target name
+as a hardware-accuracy guarantee.
+
+Hardware agreement belongs to the complete tuple `(device, calibration
+snapshot, physical mapping, compiled circuit, noise-model version, workload)`;
+there is no honest device-wide percentage that can be inferred from MPS width
+or bond dimension. Report distribution agreement with total-variation distance
+(TVD):
+
+```text
+TVD(p, q) = 0.5 * sum_x abs(p[x] - q[x])
+agreement = 1 - TVD
+```
+
+For a claim about one managed simulator release, freeze a prospective circuit
+suite and, for every circuit:
+
+1. Capture the complete calibration snapshot used to build the noise model.
+2. Preserve the same physical-qubit mapping and final compiled circuit for the
+   simulator and QPU comparison.
+3. Submit at least two independent QPU jobs so QPU-to-QPU repeatability is
+   measured rather than assumed.
+4. Record MPS-to-QPU TVD, ideal-to-QPU TVD, QPU-to-QPU TVD, shot count and a
+   finite-shot uncertainty bound, plus MPS bond/truncation diagnostics.
+5. Predeclare an application-specific maximum TVD. Accept the model only when
+   MPS-to-QPU TVD meets that limit, improves on the ideal baseline, and is not
+   materially larger than QPU repeatability plus finite-shot uncertainty.
+
+Use several circuit families and mappings; one Bell circuit validates only that
+exact circuit on those physical qubits at that calibration time. More shots
+reduce histogram uncertainty but do not repair an incomplete noise model, stale
+calibration, too few quantum trajectories, or MPS truncation.
+
+The checked-in historical Dongling task record cannot establish this claim: it
+preserves counts, mapping, circuit, task identity, and a calibration timestamp,
+but not the complete calibration payload needed to reconstruct the noise model.
+It must not be compared against a newer calibration snapshot as if they were
+the same experiment. Until paired evidence is published for each target, users
+should treat the managed noise model as an engineering approximation and
+validate important workloads on the QPU.
+
+FlagQuantum's QPU Twin validation tools already report Twin-to-QPU TVD,
+ideal-to-QPU TVD, QPU repeatability, and simultaneous finite-shot TV bounds; see
+[QPU Digital Twin](QPU_DIGITAL_TWIN.md). A future managed-target accuracy
+artifact should reuse those definitions rather than introduce a second notion
+of “accuracy.”
+
 ## Current support boundary
 
 - Density-matrix evolution is exact but requires exponential memory.
