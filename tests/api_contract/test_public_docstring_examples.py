@@ -10,6 +10,7 @@ import flagquantum as fq
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
+from flagquantum.ecosystem.simulators import recommend as recommend_simulator
 from flagquantum.runtime import planner
 
 pytestmark = pytest.mark.unit
@@ -26,6 +27,7 @@ ENTRIES = (
     fq.run,
     fq.train,
     planner.plan,
+    recommend_simulator,
     run_cirq,
     run_pennylane,
     run_qiskit,
