@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -72,7 +72,10 @@ class _DensityMatrixTarget:
         values = expectation_z_density(self.density, wires)
         if self.noise_model is not None:
             all_values = expectation_z_density(self.density)
-            all_values = self.noise_model.apply_readout_expectation_z(all_values)
+            all_values = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_expectation_z(all_values),
+            )
             if wires is None:
                 return all_values
             selected = (wires,) if isinstance(wires, int) else tuple(wires)
@@ -88,9 +91,12 @@ class _DensityMatrixTarget:
     ) -> torch.Tensor:
         if not x and not y and self.noise_model is not None:
             probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
-            probabilities = self.noise_model.apply_readout_probabilities(
-                probabilities,
-                n_wires=self.n_wires,
+            probabilities = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_probabilities(
+                    probabilities,
+                    n_wires=self.n_wires,
+                ),
             )
             indices = torch.arange(
                 2**self.n_wires,

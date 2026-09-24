@@ -32,6 +32,15 @@ small exact workloads and an expert Runtime function for larger MPS workloads.
    evolution semantics, 32-trajectory policy, seed, and error flags survive plan
    serialization and execute without replanning.
 6. Explicit `mode="density_matrix"` remains exact and never falls back to MPS.
+7. `flagquantum.services.run_managed_quafu_simulator(...)` is the deployment
+   bridge for `quafu:Baihua-sim`, `quafu:Shenglian-sim`, and
+   `quafu:Dongling-sim`. It binds each target to its physical-device
+   calibration, calls the same stable exact/MPS policy, and returns a receipt
+   containing the calibration and execution identities.
+
+The bridge is intentionally service-side. Client `fq.run(target="quafu:...-sim")`
+continues to use the Quafu task API, so task lifecycle and provenance are not
+lost and a remote request is never silently converted into local work.
 
 The initial stable policy fixes the trajectory count at 32. Fine-grained
 trajectory, cutoff, and bond controls remain on the expert Runtime API until a
@@ -54,4 +63,6 @@ no serialized field is added or reinterpreted incompatibly.
   tolerance.
 - CPU noisy-MPS count smoke tests at 16, 20, and 24 qubits.
 - Stable 24-qubit `fq.run(...)` selection and ExecutionPlan JSON round trip.
+- Executable target-binding tests for Baihua-sim, Shenglian-sim, and
+  Dongling-sim, plus exact-to-MPS routing and mismatched-calibration rejection.
 - Existing MPS, modern-measurement, plan-contract, and seeded-sampling suites.

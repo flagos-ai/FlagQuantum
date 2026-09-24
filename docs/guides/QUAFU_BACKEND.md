@@ -92,6 +92,68 @@ print(result.provenance["deployment"]["quafu_protocol"])
 This PR treats `Baihua-sim` as a task-API target and does not claim that the
 client downloads, caches, or trains its device-noise model locally.
 
+The three verified managed mappings are:
+
+| Remote target | Calibration device | FlagQuantum execution policy |
+|---|---|---|
+| `quafu:Baihua-sim` | `Baihua` | exact density matrix, then CPU noisy MPS when the declared memory budget is exceeded |
+| `quafu:Shenglian-sim` | `Shenglian` | exact density matrix, then CPU noisy MPS when the declared memory budget is exceeded |
+| `quafu:Dongling-sim` | `Dongling` | exact density matrix, then CPU noisy MPS when the declared memory budget is exceeded |
+
+The mapping is implemented as a service-side workflow. Deploying it in the
+Quafu task service makes the existing user call above reach FlagQuantum; the
+Python client continues to submit a remote job and receive its task identity.
+It never silently substitutes a local simulation.
+
+The following handler code is directly reusable by the Quafu service after its
+scheduler has selected the physical qubits for the submitted circuit:
+
+```python
+from quark.circuit import Backend
+
+from flagquantum.remote import quafu_noise_model_from_chip_info
+from flagquantum.services import (
+    managed_quafu_simulator_device,
+    run_managed_quafu_simulator,
+)
+
+
+def execute_device_simulator(
+    circuit,
+    *,
+    target: str,
+    physical_qubits: tuple[int, ...],
+    shots: int,
+    seed: int | None = None,
+):
+    device = managed_quafu_simulator_device(target)
+    chip_info = Backend(device).chip_info  # fetched for this run
+    noise = quafu_noise_model_from_chip_info(
+        chip_info,
+        physical_qubits=physical_qubits,
+    )
+    execution = run_managed_quafu_simulator(
+        circuit,
+        target=target,
+        calibration_device=device,
+        noise_model=noise,
+        shots=shots,
+        seed=seed,
+        memory_limit_bytes=512 * 1024**2,
+    )
+    return {
+        "counts": execution.result.counts[0],
+        "simulation": execution.receipt.to_dict(),
+    }
+```
+
+The workflow rejects an unknown target, a calibration belonging to a different
+device, a profile that does not cover every logical wire, or a noise model with
+no timestamped device profile. Its receipt records the calibration source and
+capture time, noise-model identity, selected representation, and whether that
+representation is approximate. The service can therefore persist the receipt
+beside the ordinary Quafu task record.
+
 The current task API limits device-noise simulations to 12 participating
 qubits, independently of the physical device's full qubit count. It rejects a
 larger circuit with `precheck.simTooLarge`. The circuit must also compile onto
@@ -100,6 +162,11 @@ otherwise valid multi-qubit circuit may fail with `precheck.edgeUnusable` when
 the required connected topology is unavailable. Treat
 `simulator_available=True` as target availability, not as a guarantee that
 every circuit up to the device's physical `n_qubits` is routable.
+
+That 12-qubit statement describes the currently deployed Quafu service. The
+CPU noisy-MPS workflow removes the dense-memory bottleneck in FlagQuantum, but
+the public target limit changes only after the Quafu service deploys this
+handler and updates its own admission policy.
 
 ## Run on a real device
 
