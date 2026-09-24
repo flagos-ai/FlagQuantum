@@ -498,13 +498,32 @@ ir = from_pennylane(quantum_script)
 round_trip = to_pennylane(ir)
 ```
 
-The v1 adapter is intentionally static and complex128-first. It supports the
-gate map recorded in `contracts/pennylane-interop-contract.toml`, bound real scalar
-parameters, and contiguous integer wires. QNodes, devices, execution, shots,
-measurement processes, autograd bridges, and symbolic parameters remain out of
-scope and fail closed. Nonstandard wire labels can only be flattened with an
-explicit `allow_lossy=True` report. PennyLane objects do not cross into the
-compiler, PyTorch runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers.
+The v1 conversion adapter is intentionally static and complex128-first. It
+supports the gate map recorded in `contracts/pennylane-interop-contract.toml`,
+bound real scalar parameters, and contiguous integer wires. QNodes, embedded
+shots and measurement processes, autograd bridges, and symbolic parameters
+remain out of scope and fail closed. Nonstandard wire labels can only be
+flattened with an explicit `allow_lossy=True` report. PennyLane objects do not
+cross into the compiler, PyTorch runtime, Torch-FL, CUDA, vendor accelerator,
+or QPU layers.
+
+To execute a supported FlagQuantum circuit explicitly on local PennyLane
+`lightning.qubit`, use the same result expressions as native execution:
+
+```python
+import flagquantum as fq
+from flagquantum.ecosystem.pennylane import run
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+options = fq.ExecutionOptions(shots=1_000, seed=7)
+state = run(circuit)
+counts = run(circuit, outputs=fq.counts(), options=options)
+```
+
+This explicit bridge returns a FlagQuantum `ExecutionResult`; it does not alter
+the default `fq.run` route or fall back to another PennyLane device. See
+[Explicit PennyLane Lightning execution](../guides/PENNYLANE_LIGHTNING_EXECUTION.md)
+for its support boundary and provenance contract.
 
 Adapter authors use `InteropRoundTripCase`, `InteropRejectionCase`, and
 `run_adapter_conformance()` to apply the same framework-neutral identity,

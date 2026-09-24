@@ -115,7 +115,7 @@ so the check is per test rather than per file.
 | `jax` | The `jax` extra installed (`.[dev,jax]`); selected by the `jax-optional` job and by the coverage job's marker expression. | JAX kernel execution, the hybrid JAX/PyTorch layer, and the sharded MPS, statevector, and tensor-network plans and executors. | That JAX ships in the core distribution; the core lanes prove it is absent. |
 | `triton` | The `cuda` extra installed (`.[dev,cuda]`); selected by the `triton-optional` job, which has no device, and by the accelerator tier. | The Triton kernel launch wrappers and the CPU fallbacks beside them. Tests that launch a kernel also carry `gpu`. | That a device is present; a CUDA build is not a GPU. |
 | `qiskit` | The `qiskit` extra installed; selected by the `qiskit-optional` job on the certified 2.0.x and 2.5.x lanes. The coverage job excludes it explicitly (`and not qiskit`). | The machine-readable interoperability contract plus real Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional differential programs, and local Aer conformance. | Hardware submission, or that Qiskit is a core dependency. |
-| `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract plus golden and fixed-seed differential complex128 QuantumScript semantics described in [PennyLane Differential Conformance](PENNYLANE_DIFFERENTIAL_CONFORMANCE.md). | Hardware submission, dynamic execution, differentiation, or that PennyLane is a core dependency. |
+| `pennylane` | The `pennylane` extra installed; selected by the `pennylane-optional` job on the 0.44.1 and 0.45.1 lanes, and by the coverage job, which installs the extra. | The IR-only contract, golden and fixed-seed differential complex128 QuantumScript semantics, and explicit local `lightning.qubit` statevector/shot execution. | Hardware submission, dynamic execution, differentiation, automatic routing, or that PennyLane is a core dependency. |
 | `cirq` | The `cirq` extra installed; selected by the `cirq-optional` job on the 1.6.1 and 1.7.0 lanes, and by the coverage job. | Static `cirq.Circuit` conversion, explicit qubit order, fail-closed diagnostics, seeded bidirectional statevector conformance, and explicit local Simulator statevector/shot execution. | Cirq devices, automatic backend routing, or that Cirq is a core dependency. |
 | `cudaq` | The isolated `cudaq` heterogeneous-toolchain extra installed; selected by the `cudaq-optional` Linux job on the 0.15.1 and 0.16.0.post1 lanes. | One-way static kernel construction, fail-closed diagnostics, explicit bit-order conversion, and seeded statevector conformance. | Reverse import, runtime execution, targets, GPU/QPU support, or that CUDA-Q is a core dependency. |
 | `braket` | The `braket` extra installed for static-circuit tests; selected by the `braket-optional` job on the 1.117.0 and 1.127.1 lanes, and by coverage. Provider tests still use fakes. | Static `braket.circuits.Circuit` conversion, explicit qubit and statevector order, fail-closed diagnostics, seeded bidirectional conformance, and fake-based provider orchestration. | AWS task submission, credentials, QPU behavior, or that Braket is a core dependency. |
@@ -428,8 +428,9 @@ The checked-in `ci.yml` defines fifteen jobs:
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit
   2.0.x and 2.5.x lanes, isolated from the core environment;
-- `pennylane-optional`: the IR-only contract and complex128 QuantumScript
-  semantics against the minimum 0.44.1 and latest 0.45.1 supported lanes;
+- `pennylane-optional`: the IR-only contract, complex128 QuantumScript
+  semantics, and explicit local `lightning.qubit` statevector/shot execution
+  against the minimum 0.44.1 and latest 0.45.1 supported lanes;
 - `dependency-bounds`: the oldest supported Python and Torch line beside the
   newest, so a declared lower bound is exercised rather than assumed;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
