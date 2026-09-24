@@ -7,9 +7,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 0.9818851538322155,
-          "pennylane_lightning_qubit": 0.8327561444282522,
-          "qiskit_aer": 3.836776849473096
+          "cirq_simulator": 1.1563975776468598,
+          "pennylane_lightning_qubit": 0.9807635693735383,
+          "qiskit_aer": 4.518694918021344
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -63,22 +63,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.015896358410827816,
-            "mean_seconds": 0.013741101916982896,
-            "median_seconds": 0.013538166810758413,
-            "min_seconds": 0.012726216798182578,
-            "relative_median_absolute_deviation": 0.03565351238524144,
+            "max_seconds": 0.012197733414359391,
+            "mean_seconds": 0.01152333609190666,
+            "median_seconds": 0.01149511660914868,
+            "min_seconds": 0.010729375015944242,
+            "relative_median_absolute_deviation": 0.046264583762510324,
             "sample_count": 9,
             "samples_seconds": [
-              0.013226091605611145,
-              0.014020850008819252,
-              0.013538166810758413,
-              0.015896358410827816,
-              0.01466315840370953,
-              0.012754141807090492,
-              0.013722658401820808,
-              0.01312227500602603,
-              0.012726216798182578
+              0.012026933394372464,
+              0.01203167501371354,
+              0.012197733414359391,
+              0.01149511660914868,
+              0.010819224989973009,
+              0.011484858207404613,
+              0.011697683180682362,
+              0.011227425001561642,
+              0.010729375015944242
             ]
           },
           "versions": {
@@ -183,9 +183,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 1.0535985300848507,
-          "pennylane_lightning_qubit": 1.1994743354977142,
-          "qiskit_aer": 2.9829561278662946
+          "cirq_simulator": 1.1568275335994957,
+          "pennylane_lightning_qubit": 1.316995893149136,
+          "qiskit_aer": 3.2752188634480754
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -239,22 +239,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.4527574334060773,
-            "mean_seconds": 0.2478379471783733,
-            "median_seconds": 0.19876742499182,
-            "min_seconds": 0.16726748320506885,
-            "relative_median_absolute_deviation": 0.15847637905480488,
+            "max_seconds": 0.23242790841031818,
+            "mean_seconds": 0.19097849815411286,
+            "median_seconds": 0.18103049998171628,
+            "min_seconds": 0.1750489416066557,
+            "relative_median_absolute_deviation": 0.033041716040472124,
             "sample_count": 9,
             "samples_seconds": [
-              0.2423662165994756,
-              0.18263162500225008,
-              0.16726748320506885,
-              0.4527574334060773,
-              0.19876742499182,
-              0.32443969160085545,
-              0.284085816598963,
-              0.1931846916093491,
-              0.18504114159150048
+              0.1750489416066557,
+              0.17550935840699822,
+              0.20721834159921854,
+              0.23242790841031818,
+              0.20200933339074253,
+              0.1788477917900309,
+              0.1790441915858537,
+              0.18103049998171628,
+              0.18767011661548166
             ]
           },
           "versions": {
@@ -401,6 +401,63 @@
   "passed": true,
   "platform": "macOS-27.0-arm64-arm-64bit",
   "python": "3.12.14",
+  "refresh_history": [
+    {
+      "cases": [
+        {
+          "n_wires": 18,
+          "workload": "random_clifford_statevector"
+        },
+        {
+          "n_wires": 22,
+          "workload": "random_clifford_statevector"
+        }
+      ],
+      "engines": [
+        "flagquantum_native"
+      ],
+      "environment": {
+        "device": "cpu",
+        "machine": "arm64",
+        "processor": "arm",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch": "2.13.0",
+        "torch_threads": 1
+      },
+      "methodology": {
+        "calls_per_sample": 5,
+        "compilation_or_device_preparation_included": true,
+        "conversion_included": true,
+        "engine_order": "rotated_per_iteration_within_one_process",
+        "exact_statevector": true,
+        "feature_schema": "flagquantum.simulator_workload_features.v1",
+        "hidden_fallback_allowed": false,
+        "iterations": 9,
+        "measurement_scope": "end_to_end_user_facing_run_call",
+        "qiskit_max_parallel_threads": 1,
+        "result_retrieval_included": true,
+        "warmup": 2
+      },
+      "n_wires": [
+        18,
+        22
+      ],
+      "platform": "macOS-27.0-arm64-arm-64bit",
+      "preserved_engines": [
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit"
+      ],
+      "python": "3.12.14",
+      "workloads": [
+        "random_clifford_statevector"
+      ]
+    }
+  ],
   "release_gate_allowed": false,
   "runner": "simulator_workload_corpus",
   "scalability_blockers": [

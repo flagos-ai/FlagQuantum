@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum.simulation.statevector.operations as statevector_ops
+import flagquantum.simulation.statevector.product_state as product_state
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
@@ -1443,6 +1444,24 @@ def test_single_fixed_gate_keeps_its_specialized_cpu_path(
 
     assert circuit._last_statevector_runtime["statevector_apply_count"] == 1
     assert circuit._last_statevector_runtime[counter] == 1
+
+
+@pytest.mark.parametrize("gate", ("h", "s", "sdg", "y", "z"))
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_fixed_single_qubit_clifford_kernel_matches_dense_reference(
+    gate: str,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(914)
+    state = torch.randn((1, 64), generator=generator, dtype=dtype)
+    reference_circuit = Circuit(6, inputs=state, dtype=dtype)
+    getattr(reference_circuit, gate)(3)
+
+    reference = reference_circuit.state(refresh=True)
+    actual = product_state._apply_fixed_clifford_gate(state, gate, 3, 6)
+
+    tolerance = 2e-6 if dtype == torch.complex64 else 1e-12
+    torch.testing.assert_close(actual, reference, atol=tolerance, rtol=tolerance)
 
 
 def _two_disjoint_dense_two_wire_circuit(

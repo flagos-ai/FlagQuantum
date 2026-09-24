@@ -16,36 +16,36 @@ met the declared 20% relative median absolute deviation stability threshold.
 
 | Qubits | FlagQuantum | Qiskit Aer | Cirq | PennyLane Lightning | Aer / FQ | Cirq / FQ | PennyLane / FQ |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 13.538 ms | 51.943 ms | 13.293 ms | 11.274 ms | 3.84× | 0.98× | 0.83× |
-| 22 | 198.767 ms | 592.915 ms | 209.421 ms | 238.416 ms | 2.98× | 1.05× | 1.20× |
+| 18 | 11.495 ms | 51.943 ms | 13.293 ms | 11.274 ms | 4.52× | 1.16× | 0.98× |
+| 22 | 181.030 ms | 592.915 ms | 209.421 ms | 238.416 ms | 3.28× | 1.16× | 1.32× |
 
 A ratio above one means FlagQuantum was faster. At 18 qubits FlagQuantum is
-within 1.8% of Cirq, while PennyLane remains 20% faster. At 22 qubits
-FlagQuantum is the fastest of the four measured engines. These are reproducible
-results for this circuit family and host, not a universal framework ranking.
+faster than Cirq and within 2% of PennyLane. At 22 qubits FlagQuantum is the
+fastest of the four measured engines. These are reproducible results for this
+circuit family and host, not a universal framework ranking.
 
 ## What changed
 
-The existing product-state executor selects a plan from a static estimate of
-component work versus dense statevector work. The general limit remains 0.30.
-This change permits a measured 0.36 limit only when every compiled operation is
-a parameter-free, built-in Clifford gate and no custom matrix is present.
+The product-state executor previously sent standalone `H`, `S`, `Sdg`, `Y`, and
+`Z` operations through dense gate-matrix construction and batched matrix
+multiplication. The new fixed Clifford kernels operate directly on the affected
+two amplitude slices. `X`, `CX`, and `CZ` retain their existing permutation or
+diagonal paths; routing and public APIs do not change.
 
-The official 18- and 20-qubit workloads have estimated ratios of 0.350 and
-0.317, respectively, so the old general limit sent them to the dense path. A
-separate alternating rollback A/B on the same host used one thread, three
-warmups, nine retained samples, and seven calls per sample at 18 qubits or three
-at 20 qubits:
+A separate rollback A/B on the same host used one thread, one warmup per path,
+and 21 retained end-to-end samples with alternating path order. It changed only
+`FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD`:
 
-| Qubits | Dense rollback | Product state | Speedup | Dense RMAD | Product RMAD |
+| Qubits | Dense-matrix rollback | Fixed kernels | Speedup | Rollback RMAD | Fixed RMAD |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 33.034 ms | 16.869 ms | 1.96× | 6.50% | 7.10% |
-| 20 | 155.816 ms | 52.392 ms | 2.97× | 1.71% | 3.95% |
+| 18 | 13.348 ms | 11.416 ms | 1.17× | 1.27% | 4.08% |
+| 22 | 187.996 ms | 179.003 ms | 1.05× | 5.71% | 6.55% |
 
-The 22-qubit estimate is 0.290, so it already selected product-state execution
-before this change and is intentionally unaffected. Parameterized circuits,
-custom matrices, non-Clifford gates, custom input states, batches, and plans
-above the measured limit retain their established routing.
+The checked-in comparison then refreshed only FlagQuantum native. Qiskit Aer,
+Cirq, and PennyLane payloads were preserved field-for-field, and the comparison
+ratios were recomputed. Parameterized circuits,
+custom matrices, non-Clifford gates, custom input states, batches, and routing
+decisions retain their established behavior.
 
 Normal user code needs no backend-specific option:
 
@@ -71,18 +71,20 @@ for _ in range(4):
 state = circuit.state()
 ```
 
-`FQ_CPU_PRODUCT_STATE_EXECUTION=0` restores dense execution for rollback and A/B
-measurement.
+`FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD=0` restores the prior product-state gate
+application for rollback and A/B measurement. The broader
+`FQ_CPU_PRODUCT_STATE_EXECUTION=0` switch still restores dense execution.
 
 ## Reproduce the comparison
 
 From the repository root:
 
 ```bash
-pip install -e '.[qiskit,cirq,pennylane]'
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 flagquantum-benchmark run simulator_workload_corpus \
   --workloads random_clifford_statevector --n-wires 18 22 \
+  --engines flagquantum_native \
   --threads 1 --warmup 2 --iterations 9 --calls-per-sample 5 \
+  --refresh-from benchmarks/results/comparison/simulator_random_clifford_cpu_arm64_20260924.json \
   --json-output benchmarks/results/comparison/simulator_random_clifford_cpu_arm64_20260924.json
 ```

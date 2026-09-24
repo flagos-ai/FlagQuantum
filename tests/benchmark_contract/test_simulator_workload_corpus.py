@@ -249,7 +249,7 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
     }
     assert refreshed_cases[("random_clifford_statevector", 18)]["engines"][
         "flagquantum_native"
-    ]["end_to_end"]["median_seconds"] == pytest.approx(0.02002929092850536)
+    ]["end_to_end"]["median_seconds"] == pytest.approx(0.01334287493955344)
     assert refreshed_cases[("dense_nonlocal_statevector", 22)]["engines"][
         "flagquantum_native"
     ]["end_to_end"]["median_seconds"] == pytest.approx(0.3745365421054885)
@@ -366,6 +366,17 @@ def test_checked_in_random_clifford_case_is_complete_stable_and_correct() -> Non
         ratio > 1
         for ratio in cases[22]["comparison"]["engine_over_flagquantum_median"].values()
     )
+    assert cases[18]["engines"]["flagquantum_native"]["end_to_end"][
+        "median_seconds"
+    ] == pytest.approx(0.01149511660914868)
+    assert cases[22]["engines"]["flagquantum_native"]["end_to_end"][
+        "median_seconds"
+    ] == pytest.approx(0.18103049998171628)
+    assert payload["refresh_history"][-1]["preserved_engines"] == [
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit",
+    ]
 
 
 @pytest.mark.parametrize(

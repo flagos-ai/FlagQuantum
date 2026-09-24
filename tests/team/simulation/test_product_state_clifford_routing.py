@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.simulation.statevector.product_state as product_state
 from flagquantum.core.ir import Instruction
 from flagquantum.simulation.statevector.operations import _compile_statevector_program
 from flagquantum.simulation.statevector.product_state import (
@@ -93,3 +94,48 @@ def test_static_clifford_product_state_matches_dense_rollback(
         key[0] == "cpu_product_state" for key in product_circuit._backend_programs
     )
     assert not any(key[0] == "statevector" for key in product_circuit._backend_programs)
+
+
+def test_fixed_clifford_kernel_can_be_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD", "0")
+
+    def unexpected_fixed_kernel(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("fixed Clifford kernel must respect its rollback switch")
+
+    monkeypatch.setattr(
+        product_state,
+        "_apply_fixed_clifford_gate",
+        unexpected_fixed_kernel,
+    )
+
+    state = _random_clifford(18, torch.complex128).state(refresh=True)
+
+    assert state.shape == (1, 2**18)
+
+
+def test_product_state_routes_h_and_s_through_fixed_clifford_kernel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: set[str] = set()
+    apply_fixed = product_state._apply_fixed_clifford_gate
+
+    def record_fixed_kernel(
+        state: torch.Tensor,
+        name: str,
+        wire: int,
+        n_wires: int,
+    ) -> torch.Tensor:
+        observed.add(name)
+        return apply_fixed(state, name, wire, n_wires)
+
+    monkeypatch.setattr(
+        product_state,
+        "_apply_fixed_clifford_gate",
+        record_fixed_kernel,
+    )
+
+    _random_clifford(18, torch.complex128).state(refresh=True)
+
+    assert {"h", "s"} <= observed

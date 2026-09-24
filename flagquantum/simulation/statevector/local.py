@@ -61,6 +61,7 @@ from .operations import (
     _triton_single_qubit_matrix_enabled,
 )
 from .product_state import (
+    _cpu_product_state_fixed_clifford_enabled,
     execute_product_state_program,
     product_state_execution_is_beneficial,
 )
@@ -923,6 +924,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
                 enable_swap_remapping=enable_product_state_swap_remapping,
+                enable_fixed_clifford=_cpu_product_state_fixed_clifford_enabled(),
                 constant_cache=circuit._statevector_fused_matrices,
             )
             circuit._last_statevector_runtime = _initial_runtime_metrics(

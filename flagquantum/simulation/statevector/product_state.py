@@ -20,6 +20,7 @@ from .operations import (
     _apply_matrix,
     _apply_single_qubit_fixed,
     _diagonal_region,
+    _environment_flag,
     _fused_gate_matrix,
 )
 from .program import (
@@ -46,6 +47,36 @@ _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO = 0.36
 # only when the compiled plan contains that exact static graph step.
 _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO = 0.45
 _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
+_FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})
+
+
+def _cpu_product_state_fixed_clifford_enabled() -> bool:
+    """Whether product components use fixed CPU Clifford kernels."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD", default=True)
+
+
+def _apply_fixed_clifford_gate(
+    state: torch.Tensor,
+    name: str,
+    wire: int,
+    n_wires: int,
+) -> torch.Tensor:
+    axis = int(wire) + 1
+    tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
+    zero, one = tensor.unbind(dim=axis)
+    if name == "h":
+        scale = 2**-0.5
+        values = ((zero + one) * scale, (zero - one) * scale)
+    elif name == "s":
+        values = (zero, 1j * one)
+    elif name == "sdg":
+        values = (zero, -1j * one)
+    elif name == "z":
+        values = (zero, -one)
+    else:
+        return _apply_single_qubit_fixed(state, name, wire, n_wires)
+    return torch.stack(values, dim=axis).reshape(state.shape)
 
 
 @dataclass(frozen=True)
@@ -266,6 +297,7 @@ def _apply_step(
     ),
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None,
+    enable_fixed_clifford: bool,
 ) -> torch.Tensor:
     global_wires: tuple[int, ...]
     if isinstance(step, _StatevectorControlledPhaseGraphStep):
@@ -327,8 +359,8 @@ def _apply_step(
             return _apply_fixed_permutation(
                 component.state, name, local_wires, len(component.wires)
             )
-        if name == "y":
-            return _apply_single_qubit_fixed(
+        if enable_fixed_clifford and name in _FIXED_SINGLE_QUBIT_CLIFFORD_GATES:
+            return _apply_fixed_clifford_gate(
                 component.state, name, local_wires[0], len(component.wires)
             )
         matrix = _gate_matrix(
@@ -357,6 +389,7 @@ def execute_product_state_program(
     dtype: torch.dtype,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     enable_swap_remapping: bool = True,
+    enable_fixed_clifford: bool = True,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None = None,
 ) -> torch.Tensor:
     """Execute an exact program while merging components only when required."""
@@ -400,7 +433,13 @@ def execute_product_state_program(
         component = _merge_components(components, groups[0])
         updated = _ProductComponent(
             component.wires,
-            _apply_step(component, step, parameter_bindings, constant_cache),
+            _apply_step(
+                component,
+                step,
+                parameter_bindings,
+                constant_cache,
+                enable_fixed_clifford,
+            ),
         )
         for wire in updated.wires:
             components[wire] = updated
