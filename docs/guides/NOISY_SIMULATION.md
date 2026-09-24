@@ -535,12 +535,14 @@ by itself prove that the model reproduces real hardware.
 
 ## Hardware agreement and reliability
 
-**Current status: numerical correctness validated; hardware fidelity
-unvalidated.** The exact-density comparison tests show that the MPS engine
-implements the declared noise channels within sampling and truncation error.
-They do not show that those channels reproduce a Baihua, Shenglian, or Dongling
-QPU. Do not interpret `device_profile_identity` or a `<device>-sim` target name
-as a hardware-accuracy guarantee.
+**Current status: numerical correctness validated and workload-specific QPU
+agreement measured; device-wide hardware fidelity remains unvalidated.** The
+exact-density comparison tests show that the MPS engine implements the declared
+noise channels within sampling and truncation error. The live evidence below
+measures three circuits on one physical edge and one calibration snapshot per
+device; it does not show that arbitrary circuits reproduce a Baihua, Shenglian,
+or Dongling QPU. Do not interpret `device_profile_identity` or a `<device>-sim`
+target name as a hardware-accuracy guarantee.
 
 Hardware agreement belongs to the complete tuple `(device, calibration
 snapshot, physical mapping, compiled circuit, noise-model version, workload)`;
@@ -572,19 +574,46 @@ exact circuit on those physical qubits at that calibration time. More shots
 reduce histogram uncertainty but do not repair an incomplete noise model, stale
 calibration, too few quantum trajectories, or MPS truncation.
 
-The checked-in historical Dongling task record cannot establish this claim: it
-preserves counts, mapping, circuit, task identity, and a calibration timestamp,
-but not the complete calibration payload needed to reconstruct the noise model.
-It must not be compared against a newer calibration snapshot as if they were
-the same experiment. Until paired evidence is published for each target, users
-should treat the managed noise model as an engineering approximation and
-validate important workloads on the QPU.
+The 2026-09-24 paired run used `|00>`, `|11>`, and Bell circuits, one fixed
+physical edge per device, 8,192 simulator shots, and two independent 1,024-shot
+QPU repetitions. Local MPS used 4,096 trajectories, bond cap 4, and zero
+cutoff; observed bond was at most 2 and truncation error was zero. Values below
+are TVD averaged over the three circuits and both QPU observations:
+
+| Device | Local MPS to QPU | Online `<device>-sim` to QPU | QPU repeatability | Ideal to QPU |
+|---|---:|---:|---:|---:|
+| Dongling | 4.20% | 6.39% | 2.51% | 16.10% |
+| Shenglian | 2.48% | 2.55% | 2.08% | 8.25% |
+| Baihua | 2.08% | 2.28% | 0.94% | 4.46% |
+| Mean | 2.92% | 3.74% | 1.84% | 9.60% |
+
+This is positive evidence: the local MPS model improved substantially over the
+ideal baseline on this suite. It is not a device-wide acceptance result. Its
+mean MPS-to-QPU distance remains above mean QPU repeatability, Dongling `|00>`
+was about 5.26% from QPU while QPU repeatability was about 0.68%, and the
+distribution-free 95% TV radius for one 1,024-shot four-outcome histogram is
+about 5.25%. More circuits, mappings, shots, and repetitions are required for a
+tighter claim.
+
+The public Task API snapshots contain T1/T2 and gate/readout fidelities but no
+gate durations. The local MPS evidence therefore uses one-qubit/CZ depolarizing
+channels plus independent readout confusion and excludes timing-derived T1/T2
+relaxation. It also uses the expert 4,096-trajectory route, not the stable
+managed route's current 32-trajectory policy. The deployed online simulators
+are reported separately and are not assumed to run this PR's code. Raw counts,
+task IDs, calibration IDs and hashes, mappings, per-circuit TVD, and all claim
+boundaries are preserved in
+[`quafu_noisy_mps_qpu_validation_20260924.json`](../../artifacts/development/quafu_noisy_mps_qpu_validation_20260924.json).
+
+An older Dongling task record that lacks its complete calibration payload is
+not used in these numbers. The paired run instead restores each submission's
+exact snapshot through `/api/v1/calibrations/{calibration_id}`; comparing with a
+newer “current” calibration would mix device drift into the result.
 
 FlagQuantum's QPU Twin validation tools already report Twin-to-QPU TVD,
 ideal-to-QPU TVD, QPU repeatability, and simultaneous finite-shot TV bounds; see
-[QPU Digital Twin](QPU_DIGITAL_TWIN.md). A future managed-target accuracy
-artifact should reuse those definitions rather than introduce a second notion
-of “accuracy.”
+[QPU Digital Twin](QPU_DIGITAL_TWIN.md). Managed-target evidence reuses those
+definitions rather than introducing a second notion of “accuracy.”
 
 ## Current support boundary
 

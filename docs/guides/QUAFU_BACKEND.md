@@ -176,11 +176,14 @@ for the memory formula, the verified 100-qubit low-bond width test, the
 24-qubit noisy timing evidence, and the conditions under which no qubit-count
 guarantee is possible.
 
-Capacity is not hardware accuracy. The current MPS tests validate the numerical
-engine against exact density-matrix evolution; this release does not yet contain
-a same-calibration, same-mapping QPU comparison for Baihua-sim, Shenglian-sim,
-or Dongling-sim. Their hardware fidelity is therefore **unvalidated**, not zero
-and not implied by the device name. See
+Capacity is not hardware accuracy. In addition to numerical comparison with
+exact density-matrix evolution, this release contains a same-calibration,
+same-mapping three-circuit QPU comparison for Baihua-sim, Shenglian-sim, and
+Dongling-sim. Mean local-MPS-to-QPU TVD was 2.08%, 2.48%, and 4.20%
+respectively, compared with QPU repeatability of 0.94%, 2.08%, and 2.51%.
+These are workload-specific measurements, not device-wide fidelity guarantees;
+the public snapshots also lack the gate durations required for timing-derived
+T1/T2 relaxation. See
 [Hardware agreement and reliability](NOISY_SIMULATION.md#hardware-agreement-and-reliability)
 for the required TVD, QPU-repeatability, finite-shot, and provenance evidence.
 
@@ -202,6 +205,26 @@ for device in provider.list_devices():
         device.metadata.get("simulator_available"),
     )
 ```
+
+Fetch the current public calibration in Python. Preserve its `id` with every
+result, then restore that exact snapshot later instead of silently substituting
+the newest calibration:
+
+```python
+from flagquantum.remote import QuafuProvider
+
+provider = QuafuProvider()
+current = provider.fetch_calibration("Baihua")
+same_snapshot = provider.fetch_calibration(
+    "Baihua",
+    calibration_id=current["id"],
+)
+assert same_snapshot["id"] == current["id"]
+```
+
+`fetch_calibration(...)` uses the public Task API and does not send a Key. The
+current endpoint can change while a job waits; use the `calibration_ids` stored
+by the job and `/calibrations/{id}` semantics for reproducible analysis.
 
 Choose a device whose status is `online`, then use its case-sensitive name after
 `quafu:`. Real-device execution consumes quota and may wait in a queue.

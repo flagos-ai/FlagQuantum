@@ -327,6 +327,64 @@ class QuafuProvider(HttpQuantumProvider):
             raise RuntimeError("quafu backend status response contains no chips")
         return tuple(profiles)
 
+    def fetch_calibration(
+        self,
+        device: str,
+        *,
+        calibration_id: str | None = None,
+    ) -> Mapping[str, Any]:
+        """Fetch a current or immutable Task API calibration snapshot.
+
+        Current snapshots use ``/devices/{device}/calibration``.  Pass the
+        calibration identity preserved by a job receipt to restore the exact
+        historical snapshot through ``/calibrations/{calibration_id}``.
+        Calibration discovery is public and never sends provider credentials.
+        """
+
+        name = str(device).strip()
+        if not name:
+            raise ValueError("Quafu device name cannot be empty")
+        expected_identity = None
+        if calibration_id is None:
+            path = "/devices/{device}/calibration"
+            values = {"device": parse.quote(name, safe="")}
+        else:
+            expected_identity = str(calibration_id).strip()
+            if not expected_identity:
+                raise ValueError("Quafu calibration_id cannot be empty")
+            path = "/calibrations/{calibration_id}"
+            values = {
+                "calibration_id": parse.quote(expected_identity, safe=""),
+            }
+        response = self.transport.get_json(
+            self._task_api_url(path, **values),
+            {},
+            self.timeout,
+        )
+        if not isinstance(response, Mapping):
+            raise RuntimeError("quafu calibration response is not a mapping")
+        required = {
+            "id",
+            "chip",
+            "calibrated_at",
+            "qubits",
+            "couplers",
+        }
+        missing = sorted(required.difference(response))
+        if missing:
+            raise RuntimeError(
+                "quafu calibration response is missing " + ", ".join(missing)
+            )
+        if response["chip"] != name:
+            raise RuntimeError(
+                f"quafu calibration belongs to {response['chip']!r}, not {name!r}"
+            )
+        if expected_identity is not None and response["id"] != expected_identity:
+            raise RuntimeError(
+                "quafu historical calibration identity does not match the request"
+            )
+        return response
+
     def fetch_chip_info(self, chip: str) -> Mapping[str, Any]:
         """Fetch the current QuarkCircuit calibration and topology snapshot."""
 

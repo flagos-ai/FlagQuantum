@@ -37,6 +37,9 @@ small exact workloads and an expert Runtime function for larger MPS workloads.
    `quafu:Dongling-sim`. It binds each target to its physical-device
    calibration, calls the same stable exact/MPS policy, and returns a receipt
    containing the calibration and execution identities.
+8. `QuafuProvider.fetch_calibration(device, calibration_id=...)` reads current
+   or immutable historical Task API snapshots without sending credentials, so
+   a job can be analyzed against the calibration identity stored in its receipt.
 
 The bridge is intentionally service-side. Client `fq.run(target="quafu:...-sim")`
 continues to use the Quafu task API, so task lifecycle and provenance are not
@@ -73,14 +76,18 @@ no serialized field is added or reinterpreted incompatibly.
 ## Accuracy claim boundary
 
 The acceptance evidence above establishes numerical agreement with the exact
-density-matrix implementation for small circuits. It does not establish
-agreement with a physical Quafu device. This PR therefore makes no QPU fidelity
-claim for Baihua-sim, Shenglian-sim, or Dongling-sim.
+density-matrix implementation for small circuits. A paired 2026-09-24 live run
+also measured three circuits, one physical mapping, and two QPU repetitions for
+each of Baihua, Shenglian, and Dongling. Mean local-MPS-to-QPU TVD was 2.08%,
+2.48%, and 4.20%, respectively; this is workload-specific evidence, not a
+device-wide QPU fidelity claim.
 
-A later target release may claim hardware agreement only from paired evidence
-using the complete calibration snapshot, identical physical mapping and
-compiled circuit, repeated QPU jobs, and a predeclared workload suite. The
-report must include MPS-to-QPU total-variation distance, ideal-to-QPU distance,
-QPU-to-QPU repeatability, finite-shot uncertainty, and MPS truncation
-diagnostics. No single percentage is transferable across devices, calibration
-times, mappings, and workloads.
+The checked-in artifact preserves complete provenance and discloses two
+important limits: the public calibration payload lacks gate durations, so the
+local MPS model excludes timing-derived T1/T2 relaxation; and the run uses
+4,096 expert trajectories rather than the stable managed route's 32-trajectory
+policy. A broader target release may claim hardware agreement only from paired
+evidence using the complete calibration snapshot, identical physical mapping
+and compiled circuit, repeated QPU jobs, and a predeclared workload suite. No
+single percentage is transferable across devices, calibration times, mappings,
+and workloads.
