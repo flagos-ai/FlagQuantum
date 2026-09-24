@@ -54,14 +54,15 @@ class FakeTransport:
         return {"code": 0, "data": {"access_token": "access-1"}}
 
 
-def _package(provider, n_wires=2, *, metadata=None):
+def _package(provider, n_wires=2, *, name="chip", shots=None, metadata=None):
     circuit = fq.Circuit(n_wires)
     circuit.h(0).cx(0, 1)
-    backend = CloudBackendProfile(provider=provider, name="chip", n_qubits=8)
+    backend = CloudBackendProfile(provider=provider, name=name, n_qubits=8)
     if provider == "quafu" and metadata is None:
         metadata = {"provider_options": {"compiler": None, "target_qubits": [3, 4]}}
+    selected_shots = (1024 if provider == "quafu" else 8) if shots is None else shots
     return fqd.create_deployment_package(
-        circuit, backend=backend, shots=8, metadata=metadata
+        circuit, backend=backend, shots=selected_shots, metadata=metadata
     )
 
 
@@ -195,8 +196,8 @@ def test_quafu_provider_prefers_task_api_and_keeps_lifecycle_on_it():
             if url.endswith("/results"):
                 return {
                     "bit_order": "c0_rightmost",
-                    "counts": [{"00": 3, "11": 5}],
-                    "shots_returned": [8],
+                    "counts": [{"00": 512, "11": 512}],
+                    "shots_returned": [1024],
                 }
             raise AssertionError(url)
 
@@ -216,6 +217,7 @@ def test_quafu_provider_prefers_task_api_and_keeps_lifecycle_on_it():
     )
     package = _package(
         "quafu",
+        shots=1024,
         metadata={
             "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
         },
@@ -235,7 +237,7 @@ def test_quafu_provider_prefers_task_api_and_keeps_lifecycle_on_it():
     assert headers == {"Authorization": "Bearer qf_test"}
     assert provider.query_status(handle) == "Finished"
     result = provider.fetch_result(handle)
-    assert result.counts == {"00": 3, "11": 5}
+    assert result.counts == {"00": 512, "11": 512}
     assert result.metadata["quafu_protocol"] == "task_api_v1"
     provider.cancel(handle)
     assert transport.posts[-1][0] == "https://quafu.test/api/v1/jobs/u-task-1/cancel"
@@ -258,6 +260,7 @@ def test_quafu_provider_falls_back_when_task_api_health_check_fails():
     )
     package = _package(
         "quafu",
+        shots=1024,
         metadata={
             "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
         },
@@ -268,6 +271,37 @@ def test_quafu_provider_falls_back_when_task_api_health_check_fails():
     assert handle.payload["quafu_protocol"] == "sqc_legacy"
     assert transport.posts[0][0].startswith("https://legacy.test/task/run/?")
     assert transport.posts[0][2] == {"token": "legacy-secret"}
+
+
+@pytest.mark.parametrize("target", ["sim", "Baihua-sim", "all-race", "all-redispatch"])
+def test_quafu_provider_does_not_legacy_fallback_task_api_only_targets(target):
+    class OfflineTaskApiTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                raise OSError("task API unavailable")
+            return super().get_json(url, headers, timeout)
+
+    transport = OfflineTaskApiTransport()
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        task_server_url="https://quafu.test/api/v1",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=transport,
+    )
+    package = _package(
+        "quafu",
+        name=target,
+        shots=1000 if target == "sim" or target.endswith("-sim") else 1024,
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    with pytest.raises(RuntimeError, match="requires the task API"):
+        provider.submit(package)
+
+    assert transport.posts == []
 
 
 def test_quafu_provider_falls_back_after_definite_task_api_http_error():
@@ -291,6 +325,7 @@ def test_quafu_provider_falls_back_after_definite_task_api_http_error():
     )
     package = _package(
         "quafu",
+        shots=1024,
         metadata={
             "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
         },
@@ -301,6 +336,63 @@ def test_quafu_provider_falls_back_after_definite_task_api_http_error():
     assert handle.payload["quafu_protocol"] == "sqc_legacy"
     assert len(transport.posts) == 1
     assert transport.posts[0][0].startswith("https://legacy.test/task/run/?")
+
+
+def test_quafu_provider_does_not_fallback_rejected_device_simulator():
+    class RejectedTaskApiTransport(FakeTransport):
+        def post_json(self, url, payload, headers, timeout):
+            self.posts.append((url, payload, headers, timeout))
+            raise HTTPError(url, 422, "invalid simulator request", {}, None)
+
+        def get_json(self, url, headers, timeout):
+            if url.endswith("/healthz"):
+                return {"healthy": True}
+            return super().get_json(url, headers, timeout)
+
+    transport = RejectedTaskApiTransport()
+    provider = QuafuProvider(
+        base_url="https://legacy.test",
+        task_server_url="https://quafu.test/api/v1",
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=transport,
+    )
+    package = _package(
+        "quafu",
+        name="Baihua-sim",
+        shots=1000,
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
+    )
+
+    with pytest.raises(HTTPError) as rejected:
+        provider.submit(package)
+
+    assert rejected.value.code == 422
+    assert [call[0] for call in transport.posts] == ["https://quafu.test/api/v1/jobs"]
+
+
+def test_quafu_provider_rejects_mapping_for_task_api_only_target():
+    provider = QuafuProvider(
+        api_key="qf_test",
+        token="legacy-secret",
+        transport=FakeTransport(),
+    )
+    package = _package(
+        "quafu",
+        name="Baihua-sim",
+        shots=1000,
+        metadata={
+            "provider_options": {
+                "compiler": "quarkcircuit",
+                "target_qubits": [3, 4],
+            }
+        },
+    )
+
+    with pytest.raises(ValueError, match="requires logical-circuit submission"):
+        provider.submit(package)
 
 
 def test_quafu_provider_does_not_duplicate_ambiguous_task_api_submission():
@@ -321,6 +413,7 @@ def test_quafu_provider_does_not_duplicate_ambiguous_task_api_submission():
     )
     package = _package(
         "quafu",
+        shots=1024,
         metadata={
             "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
         },
@@ -400,7 +493,12 @@ def test_quafu_provider_prefers_task_api_device_discovery():
                             "n_qubits": 84,
                             "basis_gates": ["h", "rx", "ry", "rz", "cz"],
                             "queue": 4,
+                            "simulator_available": True,
                             "calibration_id": "calibration-1",
+                            "calibrated_at": "2026-09-24T09:56:41+08:00",
+                            "calibration_source": "live",
+                            "data_fetched_at": "2026-09-24T11:56:46+08:00",
+                            "live_status_stale": False,
                         }
                     ],
                     "simulator": {
@@ -427,7 +525,12 @@ def test_quafu_provider_prefers_task_api_device_discovery():
         "source": "quafu-task-api-devices",
         "status": "online",
         "queue": 4,
+        "simulator_available": True,
         "calibration_id": "calibration-1",
+        "calibrated_at": "2026-09-24T09:56:41+08:00",
+        "calibration_source": "live",
+        "data_fetched_at": "2026-09-24T11:56:46+08:00",
+        "live_status_stale": False,
     }
     assert transport.gets == [
         ("https://quafu.test/api/v1/devices", {}, provider.timeout)
@@ -535,5 +638,13 @@ def test_quafu_provider_rejects_missing_or_invalid_physical_mapping():
             chip="Baihua",
             name="direct",
             shots=1024,
+            target_qubits=(3, 4),
+        )
+    with pytest.raises(ValueError, match="between 1024 and 8192"):
+        provider.submit_qasm(
+            qasm,
+            chip="Baihua",
+            name="direct",
+            shots=9216,
             target_qubits=(3, 4),
         )

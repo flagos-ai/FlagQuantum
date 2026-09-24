@@ -31,6 +31,42 @@ _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
 _TASK_API_PROTOCOL = "task_api_v1"
 _SQC_PROTOCOL = "sqc_legacy"
+_TASK_API_ROUTING_TARGETS = {"all-race", "all-redispatch"}
+_MAX_SHOTS = 8192
+
+
+def _quafu_backend_name(target: str) -> str:
+    """Return the backend portion of a root target or an adapter backend name."""
+
+    provider, separator, backend = str(target).partition(":")
+    return (
+        backend.strip() if separator and provider.lower() == "quafu" else target.strip()
+    )
+
+
+def _is_simulator_target(target: str) -> bool:
+    backend = _quafu_backend_name(target)
+    return backend == "sim" or backend.endswith("-sim")
+
+
+def _requires_task_api(target: str) -> bool:
+    backend = _quafu_backend_name(target)
+    return _is_simulator_target(backend) or backend in _TASK_API_ROUTING_TARGETS
+
+
+def _validate_quafu_shots(target: str, shots: int | None) -> None:
+    """Validate the task API's simulator and hardware shot ranges."""
+
+    if type(shots) is not int:
+        raise ValueError("Quafu shots must be an integer")
+    if _is_simulator_target(target):
+        if not 1 <= shots <= _MAX_SHOTS:
+            raise ValueError("Quafu simulator shots must be between 1 and 8192")
+        return
+    if not 1024 <= shots <= _MAX_SHOTS or shots % 1024:
+        raise ValueError(
+            "Quafu hardware shots must be a multiple of 1024 between 1024 and 8192"
+        )
 
 
 def _service_options(n_wires: int, raw_qubits: Sequence[int]) -> dict[str, Any]:
@@ -232,6 +268,19 @@ class QuafuProvider(HttpQuantumProvider):
                 raise RuntimeError("quafu task API device has no name")
             if type(capacity) is not int or capacity <= 0:
                 capacity = n_qubits or self.default_n_wires
+            metadata_fields = (
+                "status",
+                "queue",
+                "simulator_available",
+                "calibration_id",
+                "calibrated_at",
+                "calibration_source",
+                "data_fetched_at",
+                "data_origin",
+                "live_status_at",
+                "live_status_stale",
+                "usable",
+            )
             profiles.append(
                 CloudBackendProfile(
                     provider="quafu",
@@ -241,9 +290,7 @@ class QuafuProvider(HttpQuantumProvider):
                     is_simulator=name == "sim",
                     metadata={
                         "source": "quafu-task-api-devices",
-                        "status": row.get("status"),
-                        "queue": row.get("queue"),
-                        "calibration_id": row.get("calibration_id"),
+                        **{key: row[key] for key in metadata_fields if key in row},
                     },
                 )
             )
@@ -303,11 +350,20 @@ class QuafuProvider(HttpQuantumProvider):
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         validate_deployment_package(package)
+        _validate_quafu_shots(package.backend.name, package.shots)
         options = _submission_options(
             package.qasm,
             n_wires=package.n_wires,
             options=dict(package.metadata.get("provider_options", {})),
         )
+        task_api_required = _requires_task_api(package.backend.name)
+        if task_api_required and (
+            options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
+        ):
+            raise ValueError(
+                f"Quafu target {package.backend.name!r} requires logical-circuit "
+                "submission through the task API"
+            )
         if (
             options.get("compiler") == "quarkcircuit"
             and not options.get("target_qubits")
@@ -320,9 +376,15 @@ class QuafuProvider(HttpQuantumProvider):
                     # A client rejection means the platform did not accept the
                     # task. Server and transport failures after POST remain
                     # ambiguous and must not create a second hardware task.
-                    pass
+                    if task_api_required:
+                        raise
                 else:
                     raise
+        if task_api_required:
+            raise RuntimeError(
+                f"Quafu target {package.backend.name!r} requires the task API; "
+                "no equivalent legacy SQC fallback is available"
+            )
         return self._submit_legacy(package, options)
 
     def _submit_task_api(self, package: DeploymentPackage) -> ProviderTaskHandle:
@@ -402,8 +464,7 @@ class QuafuProvider(HttpQuantumProvider):
             raise ValueError("Quafu QASM submission requires OpenQASM 2.0")
         if not backend or not task_name:
             raise ValueError("Quafu QASM submission requires chip and name")
-        if int(shots) <= 0 or int(shots) % 1024:
-            raise ValueError("Quafu shots must be a positive multiple of 1024")
+        _validate_quafu_shots(backend, shots)
         options = _submission_options(
             program,
             n_wires=len(target_qubits),

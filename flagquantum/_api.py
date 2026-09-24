@@ -212,11 +212,11 @@ def run(
         )
 
     from .remote.qpu.execution import execute_quafu, validate_quafu_output
+    from .remote.qpu.quafu import _validate_quafu_shots
 
     output = validate_quafu_output(program_or_plan, outputs)
+    _validate_quafu_shots(target, shots)
     if compiler is None:
-        if shots % 1024:
-            raise ValueError("Quafu shots must be a positive multiple of 1024")
         return execute_quafu(
             import_module(".core.ir", __package__).ensure_circuit_ir(program_or_plan),
             output=output,

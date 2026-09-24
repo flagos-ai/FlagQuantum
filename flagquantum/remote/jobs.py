@@ -304,15 +304,14 @@ def _submit_quafu(
 ) -> RemoteJob:
     from ..deployment import CloudBackendProfile, create_deployment_package
     from .qpu.execution import validate_quafu_output
-    from .qpu.quafu import _service_options
+    from .qpu.quafu import _service_options, _validate_quafu_shots
 
     output = validate_quafu_output(ir, outputs)
     if output.kind != "counts":
         raise CapabilityError(
             "Detached Quafu jobs support full-register counts; use fq.run for expectations"
         )
-    if type(shots) is not int or shots <= 0 or shots % 1024:
-        raise ValueError("Quafu shots must be a positive multiple of 1024")
+    _validate_quafu_shots(target, shots)
     if name is not None and (not isinstance(name, str) or not name.strip()):
         raise ValueError("name must be a non-empty string")
     package_options: dict[str, Any] = {}

@@ -46,8 +46,10 @@ model is used:
 - `quafu:all-race` races all online real devices and `quafu:all-redispatch`
   automatically moves the task if the selected real device is unavailable.
 
-Device names are case-sensitive. For a real or noisy-simulator target, use the
-device spelling returned by `QuafuProvider().list_devices()`.
+Device names are case-sensitive. `list_devices()` returns physical devices and
+the ideal `sim` target, not a second profile for every derived target. When a
+physical device reports `metadata["simulator_available"] == True`, append
+`-sim` to its exact name to select its device-noise simulator.
 
 ## Run on the ideal simulator
 
@@ -60,14 +62,35 @@ import flagquantum as fq
 result = fq.run(
     fq.Circuit(2).h(0).cx(0, 1),
     target="quafu:sim",
-    shots=1024,
+    shots=1000,
 )
 print(result.counts)
 print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
 `quafu_protocol == "task_api_v1"` confirms that the preferred platform handled
-the task. A successful fallback reports `sqc_legacy` instead.
+the task. Simulator targets accept 1 through 8192 shots. They require the task
+API because the legacy SQC contract has no verified equivalent target.
+
+## Run on a device-noise simulator
+
+Check that the physical device reports `simulator_available`, then append
+`-sim` to its case-sensitive name:
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Baihua-sim",
+    shots=1000,
+)
+print(result.counts)
+print(result.provenance["deployment"]["quafu_protocol"])
+```
+
+This PR treats `Baihua-sim` as a task-API target and does not claim that the
+client downloads, caches, or trains its device-noise model locally.
 
 ## Run on a real device
 
@@ -78,12 +101,13 @@ the new `/devices` endpoint first and falls back to legacy SQC discovery:
 from flagquantum.remote import QuafuProvider
 
 provider = QuafuProvider()
-for backend in provider.list_devices():
+for device in provider.list_devices():
     print(
-        backend.name,
-        backend.n_qubits,
-        backend.metadata.get("status"),
-        backend.metadata.get("queue"),
+        device.name,
+        device.n_qubits,
+        device.metadata.get("status"),
+        device.metadata.get("queue"),
+        device.metadata.get("simulator_available"),
     )
 ```
 
@@ -224,10 +248,11 @@ retry could create a second hardware job.
 | Submission | Selected protocol |
 |---|---|
 | Logical circuit, no explicit physical mapping, healthy task API | `task_api_v1` |
-| Task API health check fails | `sqc_legacy` |
-| Task API returns a definite 4xx rejection | `sqc_legacy` |
+| Task API health check fails for a legacy-compatible hardware target | `sqc_legacy` |
+| Task API returns a definite 4xx rejection for a legacy-compatible hardware target | `sqc_legacy` |
 | `POST /jobs` has a 5xx response or ambiguous transport failure | Raise without resubmitting |
 | Explicit `target_qubits` or locally precompiled mapped circuit | `sqc_legacy` |
+| `sim`, `<device>-sim`, `all-race`, or `all-redispatch` cannot use the task API | Raise; no equivalent legacy fallback |
 
 These endpoints do not expose a compile-only request that returns the
 authoritative final circuit before submission. QuarkCircuit and QSteed can
