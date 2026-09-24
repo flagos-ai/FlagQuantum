@@ -310,6 +310,57 @@ class NoiseModel:
                 ) + true_one * (matrix[1, 0] - matrix[1, 1])
         return output
 
+    def apply_readout_samples(
+        self,
+        samples: torch.Tensor,
+        *,
+        generator: torch.Generator | None = None,
+    ) -> torch.Tensor:
+        """Sample classical readout confusion on computational-basis bits."""
+
+        output = torch.as_tensor(samples).clone()
+        if output.ndim < 2:
+            raise ValueError("readout samples must end in a wire dimension")
+        if output.dtype != torch.int64:
+            output = output.to(torch.int64)
+        n_wires = int(output.shape[-1])
+        if bool(((output != 0) & (output != 1)).any()):
+            raise ValueError("readout samples must contain only 0 and 1")
+
+        for rule in self.readout_rules:
+            if any(wire >= n_wires for wire in rule.wires):
+                raise ValueError("readout wire is outside the circuit")
+            matrix = torch.as_tensor(
+                rule.error.probabilities,
+                device=output.device,
+                dtype=torch.float64,
+            )
+            if isinstance(rule.error, CorrelatedReadoutError):
+                true_index = torch.zeros(
+                    output.shape[:-1], dtype=torch.int64, device=output.device
+                )
+                for wire in rule.wires:
+                    true_index = (true_index << 1) | output[..., wire]
+                observed = torch.multinomial(
+                    matrix[true_index.reshape(-1)],
+                    num_samples=1,
+                    replacement=True,
+                    generator=generator,
+                ).reshape(true_index.shape)
+                for offset, wire in enumerate(rule.wires):
+                    shift = len(rule.wires) - offset - 1
+                    output[..., wire] = (observed >> shift) & 1
+                continue
+            for wire in rule.wires:
+                probabilities = matrix[output[..., wire].reshape(-1)]
+                output[..., wire] = torch.multinomial(
+                    probabilities,
+                    num_samples=1,
+                    replacement=True,
+                    generator=generator,
+                ).reshape(output.shape[:-1])
+        return output
+
     def channels_for(
         self,
         instruction: Instruction,

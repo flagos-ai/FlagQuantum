@@ -48,3 +48,11 @@ including `all-race` and `all-redispatch`, accept multiples of 1024 from 1024
 through 8192. Simulator and task-API routing targets do not fall back to legacy
 SQC because no equivalent legacy semantics have been verified. These checks
 occur before submission and do not change the public `fq.run` signature.
+
+Live task-API verification on 2026-09-24 established a separate capacity
+boundary for device-noise simulation: `<device>-sim` accepts at most 12
+participating qubits and remains constrained by the usable couplers in the
+selected calibration snapshot. Physical `n_qubits` therefore must not be
+presented as the device-noise simulator's routable capacity. The service is the
+authority for these dynamic prechecks and reports `precheck.simTooLarge` or
+`precheck.edgeUnusable` when the circuit is unsupported.

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime
 from functools import lru_cache
+from math import isqrt
 
 import torch
 
@@ -207,6 +208,14 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_wires=source_ir.n_wires)
     mode = str(decision["mode"])
+    noisy_plan = execution_plan.noisy_execution_plan
+    if (
+        noise_model is not None
+        and noisy_plan is not None
+        and noisy_plan.representation == "mps"
+        and noisy_plan.evolution == "quantum_trajectory"
+    ):
+        mode = "noisy_mps"
     if world_size > 1:
         mode = {
             "statevector": "distributed_statevector",
@@ -229,6 +238,24 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         jax_enable_x64=precision == "complex128",
     )
     try:
+        noisy_options: dict[str, object] = {}
+        if mode == "noisy_mps":
+            assert noisy_plan is not None and noisy_plan.trajectory is not None
+            element_bytes = torch.empty(
+                (), dtype=getattr(torch, precision)
+            ).element_size()
+            denominator = batch_size * source_ir.n_wires * 2 * element_bytes
+            noisy_options = {
+                "trajectories": noisy_plan.trajectory.count,
+                "seed": noisy_plan.trajectory.seed,
+                "min_trajectories": noisy_plan.trajectory.min_count,
+                "target_standard_error": noisy_plan.trajectory.target_standard_error,
+                "cutoff": noisy_plan.error_budget.truncation_cutoff,
+                "max_bond": max(
+                    1,
+                    isqrt(execution_plan.state_bytes // denominator),
+                ),
+            }
         output, returned_plan = run_native(
             execution_ir,
             noise_model=noise_model,
@@ -244,6 +271,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
             output_target=targets[str(decision["target"])],
             require_gradients=bool(decision["require_gradients"]),
             allow_approximate=bool(decision["allow_approximate"]),
+            **noisy_options,
         )
     except FlagQuantumError:
         raise

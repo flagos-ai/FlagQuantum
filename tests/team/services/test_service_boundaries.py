@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[3]
-SERVICE_PATHS = (ROOT / "flagquantum" / "services" / "preflight.py",)
+SERVICE_PATHS = tuple(sorted((ROOT / "flagquantum" / "services").glob("*.py")))
 
 
 def _imports(path: Path) -> tuple[str, ...]:

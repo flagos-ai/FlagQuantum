@@ -154,6 +154,35 @@ def test_public_run_reports_noisy_statevector_runtime_mode():
     assert result.plan.noisy_execution_plan.noise_model_identity == model.identity
 
 
+def test_stable_density_noise_supports_counts_and_z_expectation():
+    circuit = fq.Circuit(1).x(0)
+    model = (
+        fqn.NoiseModel()
+        .add("x", bit_flip_channel(1.0))
+        .add_readout(0, ReadoutError(((0.0, 1.0), (1.0, 0.0))))
+    )
+
+    counts = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(
+            mode="density_matrix",
+            shots=32,
+            seed=5,
+        ),
+        outputs=fq.counts(),
+        noise_model=model,
+    )
+    expectation = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(mode="density_matrix"),
+        outputs=fq.expectation(fq.Z(0)),
+        noise_model=model,
+    )
+
+    assert counts.counts == [{"1": 32}]
+    torch.testing.assert_close(expectation.expectation(), torch.tensor([-1.0]))
+
+
 def test_rank_local_batched_statevector_results_merge_by_global_id():
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
@@ -484,6 +513,28 @@ def test_correlated_readout_confusion_preserves_joint_assignment_errors():
     assert observed.tolist() == pytest.approx(matrix[2])
     restored = fqn.NoiseModel.from_dict(model.to_dict())
     assert restored.to_dict() == model.to_dict()
+
+
+def test_correlated_readout_confusion_applies_to_samples():
+    model = fqn.NoiseModel().add_correlated_readout(
+        (0, 1),
+        CorrelatedReadoutError(
+            (
+                (1.0, 0.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0, 0.0),
+                (0.0, 0.0, 0.0, 1.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        ),
+    )
+    samples = torch.tensor([[[1, 0], [1, 0], [0, 1]]])
+
+    observed = model.apply_readout_samples(
+        samples,
+        generator=torch.Generator().manual_seed(3),
+    )
+
+    assert observed.tolist() == [[[1, 1], [1, 1], [0, 1]]]
 
 
 def test_phase_damping_matches_analytic_coherence():

@@ -1,0 +1,189 @@
+{
+  "schema": "flagquantum.quafu_noisy_mps_qpu_validation.v1",
+  "captured_at": "2026-09-24T17:11:05+08:00",
+  "status": "workload_specific_evidence",
+  "summary": {
+    "mean_local_mps_qpu_tvd": 0.029188368055555552,
+    "mean_online_sim_qpu_tvd": 0.03740098741319444,
+    "mean_qpu_repeatability_tvd": 0.018446180555555556,
+    "mean_ideal_qpu_tvd": 0.09602864583333333
+  },
+  "method": {
+    "circuit_order": [
+      "zero",
+      "one",
+      "bell"
+    ],
+    "circuit_definitions": {
+      "zero": ["measure q0 -> c0", "measure q1 -> c1"],
+      "one": ["rx(pi) q0", "rx(pi) q1", "measure q0 -> c0", "measure q1 -> c1"],
+      "bell": ["h q0", "h q1", "cz q0,q1", "h q1", "measure q0 -> c0", "measure q1 -> c1"]
+    },
+    "online_simulator_shots": 8192,
+    "qpu_repetitions": 2,
+    "qpu_shots_per_repetition": 1024,
+    "local_mps": {
+      "entry_point": "flagquantum.runtime.run_noisy_mps",
+      "trajectories": 4096,
+      "shots": 8192,
+      "max_bond": 4,
+      "cutoff": 0.0,
+      "maximum_observed_bond": 2,
+      "maximum_truncation_error": 0.0,
+      "noise_scope": "single-qubit and CZ depolarizing channels plus independent readout confusion",
+      "excluded_noise": "T1/T2 timing relaxation because the Task API calibration payload contains no gate durations"
+    },
+    "metric": "TVD(p,q) = 0.5 * sum_x abs(p[x] - q[x])",
+    "per_histogram_95_percent_distribution_free_tv_radius": {
+      "1024_shots": 0.052453428018790965,
+      "8192_shots": 0.018545087324283772
+    }
+  },
+  "devices": [
+    {
+      "device": "Dongling",
+      "physical_qubits": [5, 12],
+      "submitted_qasm_sha256": [
+        "ba01571e2090b10ce4a9e11cccf0c5213152915861d3ec3109d3714af0cbbf39",
+        "7b34fdb92eb425995ad443da1b082c58731b51a6426b711c753c3a852eacc63d",
+        "1f31e9b9fb627f3a3c90642c4e819b47bf2b25c9f92b5ebda2de2851f7760cfe"
+      ],
+      "calibration_id": "5fb97068c51cb8c9",
+      "calibration_sha256": "b82cedb133c2c9926676f5924751e6f7e25ce07796ad53cc931b60bf07847e6a",
+      "job_ids": {
+        "online_simulator": "u86cc5515-260924-164127",
+        "qpu": [
+          "u86cc5515-260924-164200",
+          "u86cc5515-260924-164200-2"
+        ]
+      },
+      "counts": {
+        "local_mps": [
+          {"00": 7055, "01": 706, "10": 388, "11": 43},
+          {"00": 132, "01": 799, "10": 1127, "11": 6134},
+          {"00": 3552, "01": 724, "10": 837, "11": 3079}
+        ],
+        "online_simulator": [
+          {"00": 6726, "01": 580, "10": 818, "11": 68},
+          {"00": 68, "01": 834, "10": 623, "11": 6667},
+          {"00": 3321, "01": 689, "10": 763, "11": 3419}
+        ],
+        "qpu_repetition_1": [
+          {"00": 935, "01": 42, "10": 43, "11": 4},
+          {"00": 14, "01": 79, "10": 125, "11": 806},
+          {"00": 457, "01": 67, "10": 96, "11": 404}
+        ],
+        "qpu_repetition_2": [
+          {"00": 935, "01": 36, "10": 50, "11": 3},
+          {"00": 11, "01": 104, "10": 107, "11": 802},
+          {"00": 457, "01": 77, "10": 131, "11": 359}
+        ]
+      },
+      "metrics": [
+        {"circuit": "zero", "local_mps_qpu_mean_tvd": 0.0526123046875, "online_sim_qpu_mean_tvd": 0.092041015625, "qpu_repeatability_tvd": 0.0068359375, "ideal_qpu_mean_tvd": 0.0869140625},
+        {"circuit": "one", "local_mps_qpu_mean_tvd": 0.03839111328125, "online_sim_qpu_mean_tvd": 0.0411376953125, "qpu_repeatability_tvd": 0.0244140625, "ideal_qpu_mean_tvd": 0.21484375},
+        {"circuit": "bell", "local_mps_qpu_mean_tvd": 0.034912109375, "online_sim_qpu_mean_tvd": 0.05859375, "qpu_repeatability_tvd": 0.0439453125, "ideal_qpu_mean_tvd": 0.18115234375}
+      ],
+      "means": {"local_mps_qpu_tvd": 0.041971842447916664, "online_sim_qpu_tvd": 0.06392415364583333, "qpu_repeatability_tvd": 0.025065104166666668, "ideal_qpu_tvd": 0.16097005208333334}
+    },
+    {
+      "device": "Shenglian",
+      "physical_qubits": [69, 76],
+      "submitted_qasm_sha256": [
+        "fda24259d8887310826fc5efddd35a0634c84be7d732b6c520741840259df87c",
+        "d582579687cc85f32f00af1ccb6584617d7d85a02f2a11bf38991bf0d62e94b7",
+        "00085cfdf61b4e8d56feb7faee1a19098554b4fd18b396ea837ac29c9b568b7c"
+      ],
+      "calibration_id": "6a946a4382860e9b",
+      "calibration_sha256": "30fa944b1f22f61c425fe16a0a6d78b3e5c7f446a73686e94c3e00881b14f019",
+      "job_ids": {
+        "online_simulator": "u86cc5515-260924-164127-2",
+        "qpu": [
+          "u86cc5515-260924-164200-3",
+          "u86cc5515-260924-164200-4"
+        ]
+      },
+      "counts": {
+        "local_mps": [
+          {"00": 7644, "01": 341, "10": 194, "11": 13},
+          {"00": 16, "01": 490, "10": 249, "11": 7437},
+          {"00": 3798, "01": 396, "10": 243, "11": 3755}
+        ],
+        "online_simulator": [
+          {"00": 7634, "01": 338, "10": 210, "11": 10},
+          {"00": 8, "01": 191, "10": 351, "11": 7642},
+          {"00": 3815, "01": 275, "10": 271, "11": 3831}
+        ],
+        "qpu_repetition_1": [
+          {"00": 980, "01": 32, "10": 12, "11": 0},
+          {"00": 2, "01": 30, "10": 46, "11": 946},
+          {"00": 462, "01": 41, "10": 64, "11": 457}
+        ],
+        "qpu_repetition_2": [
+          {"00": 954, "01": 50, "10": 19, "11": 1},
+          {"00": 3, "01": 47, "10": 40, "11": 934},
+          {"00": 442, "01": 48, "10": 72, "11": 462}
+        ]
+      },
+      "metrics": [
+        {"circuit": "zero", "local_mps_qpu_mean_tvd": 0.01556396484375, "online_sim_qpu_mean_tvd": 0.016357421875, "qpu_repeatability_tvd": 0.025390625, "ideal_qpu_mean_tvd": 0.0556640625},
+        {"circuit": "one", "local_mps_qpu_mean_tvd": 0.022216796875, "online_sim_qpu_mean_tvd": 0.01678466796875, "qpu_repeatability_tvd": 0.017578125, "ideal_qpu_mean_tvd": 0.08203125},
+        {"circuit": "bell", "local_mps_qpu_mean_tvd": 0.0367431640625, "online_sim_qpu_mean_tvd": 0.043212890625, "qpu_repeatability_tvd": 0.01953125, "ideal_qpu_mean_tvd": 0.10986328125}
+      ],
+      "means": {"local_mps_qpu_tvd": 0.02484130859375, "online_sim_qpu_tvd": 0.02545166015625, "qpu_repeatability_tvd": 0.020833333333333332, "ideal_qpu_tvd": 0.08251953125}
+    },
+    {
+      "device": "Baihua",
+      "physical_qubits": [125, 126],
+      "submitted_qasm_sha256": [
+        "32ba734611b51d9b8de11768015ce38d2f640aad0f37ef17e82a8f65a86019e1",
+        "19a21bc9656c9a0987c485b5925e861ab40d94600f6cb1ca35490a5484bc0b45",
+        "5a4c22ce64accb1f6ebf376384903a273b2e343f200cf5a03ef77a2a4d878095"
+      ],
+      "calibration_id": "5f487aa2e8f011f9",
+      "calibration_sha256": "0dd79b3416116b944ebb3a70a01e22e9a4672c2b8298144e16fdbefdce58c09b",
+      "job_ids": {
+        "online_simulator": "u86cc5515-260924-164127-3",
+        "qpu": [
+          "u86cc5515-260924-164200-5",
+          "u86cc5515-260924-164200-6"
+        ]
+      },
+      "counts": {
+        "local_mps": [
+          {"00": 8006, "01": 116, "10": 69, "11": 1},
+          {"00": 2, "01": 165, "10": 165, "11": 7860},
+          {"00": 3917, "01": 194, "10": 178, "11": 3903}
+        ],
+        "online_simulator": [
+          {"00": 7924, "01": 143, "10": 125, "11": 0},
+          {"00": 2, "01": 147, "10": 157, "11": 7886},
+          {"00": 3962, "01": 172, "10": 190, "11": 3868}
+        ],
+        "qpu_repetition_1": [
+          {"00": 1007, "01": 8, "10": 9, "11": 0},
+          {"00": 1, "01": 27, "10": 45, "11": 951},
+          {"00": 493, "01": 10, "10": 36, "11": 485}
+        ],
+        "qpu_repetition_2": [
+          {"00": 1007, "01": 5, "10": 12, "11": 0},
+          {"00": 1, "01": 37, "10": 45, "11": 941},
+          {"00": 507, "01": 12, "10": 26, "11": 479}
+        ]
+      },
+      "metrics": [
+        {"circuit": "zero", "local_mps_qpu_mean_tvd": 0.0079345703125, "online_sim_qpu_mean_tvd": 0.01611328125, "qpu_repeatability_tvd": 0.0029296875, "ideal_qpu_mean_tvd": 0.0166015625},
+        {"circuit": "one", "local_mps_qpu_mean_tvd": 0.03564453125, "online_sim_qpu_mean_tvd": 0.038818359375, "qpu_repeatability_tvd": 0.009765625, "ideal_qpu_mean_tvd": 0.076171875},
+        {"circuit": "bell", "local_mps_qpu_mean_tvd": 0.0186767578125, "online_sim_qpu_mean_tvd": 0.0135498046875, "qpu_repeatability_tvd": 0.015625, "ideal_qpu_mean_tvd": 0.041015625}
+      ],
+      "means": {"local_mps_qpu_tvd": 0.020751953125, "online_sim_qpu_tvd": 0.0228271484375, "qpu_repeatability_tvd": 0.009440104166666666, "ideal_qpu_tvd": 0.044596354166666664}
+    }
+  ],
+  "claim_boundary": [
+    "This validates only the three listed circuits, physical mappings, and calibration snapshots.",
+    "The local MPS run uses 4096 expert trajectories, not the stable managed route's current 32-trajectory policy.",
+    "The public Task API calibration contains no gate durations, so the local model excludes timing-derived T1/T2 relaxation.",
+    "The deployed online <device>-sim engine is reported separately and is not assumed to be the code from this pull request.",
+    "A larger prospective circuit suite and more QPU repetitions are required for a device-wide reliability claim."
+  ]
+}

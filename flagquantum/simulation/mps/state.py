@@ -13,7 +13,9 @@ from ...core.runtime_config import get_runtime_config
 from ..gate_matrix import gate_matrix, parameter_tensor
 from ..matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
-from ..statevector.operations import _apply_matrix, _bits_from_indices
+from ..statevector.operations import _apply_matrix
+from .canonical import move_orthogonality_center as _move_orthogonality_center
+from .canonical import sweep_center_left as _sweep_center_left
 from .factorization import (
     _discarded_weight,
     _select_rank,
@@ -49,6 +51,7 @@ class MPSState(MPSPlanningMixin):
         self.truncation_errors: list[float] = []
         self.truncation_records: list[MPSTruncationRecord] = []
         self.orthogonality_center: int | None = None
+        self._canonical_center_valid = False
         self.triton_two_site_regions = 0
         self.eager_two_site_regions = 0
         self.svd_gradient_method = "not_used"
@@ -105,6 +108,7 @@ class MPSState(MPSPlanningMixin):
             tensors.append(tensor)
         out = cls(tensors, config=config)
         out.orthogonality_center = 0
+        out._canonical_center_valid = True
         return out
 
     @classmethod
@@ -171,6 +175,7 @@ class MPSState(MPSPlanningMixin):
         out.truncation_errors.extend(truncation_errors)
         out.truncation_records.extend(truncation_records)
         out.orthogonality_center = int(n_wires) - 1
+        out._canonical_center_valid = True
         return out
 
     def to_statevector(self) -> torch.Tensor:
@@ -243,6 +248,7 @@ class MPSState(MPSPlanningMixin):
         out.truncation_errors = list(self.truncation_errors)
         out.truncation_records = list(self.truncation_records)
         out.orthogonality_center = self.orthogonality_center
+        out._canonical_center_valid = self._canonical_center_valid
         return out
 
     def canonicalize(self) -> "MPSState":
@@ -255,6 +261,7 @@ class MPSState(MPSPlanningMixin):
         self.truncation_errors.extend(rebuilt.truncation_errors)
         self.truncation_records.extend(rebuilt.truncation_records)
         self.orthogonality_center = rebuilt.orthogonality_center
+        self._canonical_center_valid = True
         return self
 
     def orthogonalize_left(self) -> "MPSState":
@@ -270,6 +277,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return self
         for wire in range(self.n_wires - 1):
             tensor = self.tensors[wire]
@@ -281,6 +289,7 @@ class MPSState(MPSPlanningMixin):
             next_tensor = self.tensors[wire + 1]
             self.tensors[wire + 1] = torch.einsum("ab,cbsr->casr", r, next_tensor)
         self.orthogonality_center = self.n_wires - 1
+        self._canonical_center_valid = True
         return self
 
     def orthogonalize_right(self) -> "MPSState":
@@ -300,48 +309,16 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return self
-        self._sweep_center_left(0)
+        _sweep_center_left(self, 0)
         return self
 
     def move_orthogonality_center(self, site: int) -> "MPSState":
         """Move the mixed-canonical orthogonality center to ``site``."""
 
-        site = int(site)
-        if site < 0 or site >= self.n_wires:
-            raise ValueError(
-                f"Orthogonality center must be in [0, {self.n_wires - 1}], got {site}."
-            )
-        if self.bsz != 1:
-            rebuilt = type(self).from_statevector(
-                self.to_statevector(),
-                self.n_wires,
-                config=self.config,
-            )
-            self.tensors = rebuilt.tensors
-            self.truncation_errors.extend(rebuilt.truncation_errors)
-            self.truncation_records.extend(rebuilt.truncation_records)
-            self.orthogonality_center = rebuilt.orthogonality_center
-        if self.orthogonality_center is None or self.orthogonality_center < site:
-            self.orthogonalize_left()
-        self._sweep_center_left(site)
+        _move_orthogonality_center(self, site)
         return self
-
-    def _sweep_center_left(self, target_site: int) -> None:
-        for wire in range(self.n_wires - 1, int(target_site), -1):
-            tensor = self.tensors[wire]
-            _, left_dim, physical_dim, right_dim = tensor.shape
-            matrix = tensor[0].reshape(left_dim, physical_dim * right_dim)
-            q, r = torch.linalg.qr(matrix.transpose(-1, -2), mode="reduced")
-            right_orthogonal = q.transpose(-1, -2)
-            transfer = r.transpose(-1, -2)
-            new_left_dim = right_orthogonal.shape[0]
-            self.tensors[wire] = right_orthogonal.reshape(
-                1, new_left_dim, physical_dim, right_dim
-            )
-            previous = self.tensors[wire - 1]
-            self.tensors[wire - 1] = torch.einsum("blpa,ac->blpc", previous, transfer)
-        self.orthogonality_center = int(target_site)
 
     @torch.no_grad()
     def left_canonical_residual(self) -> float:
@@ -739,10 +716,11 @@ class MPSState(MPSPlanningMixin):
             raise ValueError("sample format must be 'bits' or 'index'.")
         if type(shots) is not int or shots <= 0:
             raise ValueError("sample shots must be a positive integer")
-        samples = self._sample_indices(shots, generator=generator)
         if format == "index":
-            return samples
-        return _bits_from_indices(samples, self.n_wires)
+            return self._sample_indices(shots, generator=generator)
+        from .sampling import sample_mps_bits
+
+        return sample_mps_bits(self, shots, generator=generator)
 
     def _sample_indices(
         self,
@@ -750,40 +728,29 @@ class MPSState(MPSPlanningMixin):
         *,
         generator: torch.Generator | None = None,
     ) -> torch.Tensor:
-        outputs = torch.zeros(self.bsz, shots, dtype=torch.int64, device=self.device)
-        for shot in range(int(shots)):
-            work = self.copy()
-            for wire in range(self.n_wires):
-                probs = work._wire_probabilities(wire)
-                bit = torch.multinomial(
-                    probs,
-                    num_samples=1,
-                    replacement=True,
-                    generator=generator,
-                ).squeeze(-1)
-                outputs[:, shot] = (outputs[:, shot] << 1) | bit
-                work._project_wire(wire, bit)
-                work._normalize()
-        return outputs
+        from .sampling import sample_mps_indices
+
+        return sample_mps_indices(self, shots, generator=generator)
 
     def _wire_probabilities(self, wire: int) -> torch.Tensor:
-        z_value = self._expectation_product_ops(
-            {int(wire): self._fixed_gate_matrix("z")}
-        )
-        probs = torch.stack(((1 + z_value) / 2, (1 - z_value) / 2), dim=-1)
+        self.move_orthogonality_center(int(wire))
+        tensor = self.tensors[int(wire)]
+        probs = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
         probs = torch.clamp(probs, min=0)
         norm = probs.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(probs))) or bool(torch.any(norm <= 1e-12)):
+            raise RuntimeError("MPS measurement probabilities are not finite")
         return probs / torch.clamp(norm, min=1e-12)
 
-    def _project_wire(self, wire: int, bits: torch.Tensor) -> None:
-        tensor = self.tensors[int(wire)].clone()
-        mask = torch.zeros(self.bsz, 2, dtype=self.dtype, device=self.device)
-        mask.scatter_(1, bits.reshape(-1, 1), 1)
-        self.tensors[int(wire)] = tensor * mask[:, None, :, None]
-
     def _normalize(self) -> None:
-        norm = torch.sqrt(torch.clamp(self._expectation_product_ops({}), min=1e-24))
+        norm_squared = self._expectation_product_ops({})
+        if bool(torch.any(~torch.isfinite(norm_squared))) or bool(
+            torch.any(norm_squared <= 1e-24)
+        ):
+            raise RuntimeError("MPS state norm is not finite and positive")
+        norm = torch.sqrt(norm_squared)
         self.tensors[0] = self.tensors[0] / norm.reshape(-1, 1, 1, 1).to(self.dtype)
+        self._canonical_center_valid &= self.orthogonality_center == 0
 
     def counts(
         self,
@@ -868,6 +835,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
         return self
 
     def _validate_wire(self, wire: int) -> None:
@@ -987,6 +955,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return
 
         wire = wires[0]
@@ -996,8 +965,13 @@ class MPSState(MPSPlanningMixin):
             branch_probs.append(
                 torch.clamp(self._local_effect_probability(op, wire), min=0)
             )
-        probs = torch.stack(branch_probs, dim=-1)
-        probs = probs / torch.clamp(probs.sum(dim=-1, keepdim=True), min=1e-12)
+        branch_weights = torch.stack(branch_probs, dim=-1)
+        totals = branch_weights.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(branch_weights))) or bool(
+            torch.any(totals <= 1e-12)
+        ):
+            raise RuntimeError("Kraus branch probabilities are not finite and positive")
+        probs = branch_weights / totals
         choices = torch.multinomial(
             probs,
             num_samples=1,
@@ -1005,18 +979,29 @@ class MPSState(MPSPlanningMixin):
             generator=generator,
         ).squeeze(-1)
         for batch in range(self.bsz):
-            op = ops[int(choices[batch].item())]
+            choice = int(choices[batch].item())
+            op = ops[choice]
             tensor = self.tensors[wire][batch : batch + 1]
-            self.tensors[wire][batch : batch + 1] = torch.einsum(
+            updated = torch.einsum(
                 "pq,blqr->blpr",
                 op,
                 tensor,
             )
-        self._normalize()
+            branch_norm = torch.sqrt(branch_weights[batch, choice])
+            self.tensors[wire][batch : batch + 1] = updated / branch_norm.to(self.dtype)
 
     def _local_effect_probability(self, op: torch.Tensor, wire: int) -> torch.Tensor:
+        self.move_orthogonality_center(int(wire))
         effect = torch.conj(op).transpose(-1, -2) @ op
-        return self._expectation_product_ops({int(wire): effect})
+        tensor = self.tensors[int(wire)]
+        return torch.real(
+            torch.einsum(
+                "blpr,pq,blqr->b",
+                torch.conj(tensor),
+                effect,
+                tensor,
+            )
+        )
 
     def apply_two(
         self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
@@ -1036,6 +1021,7 @@ class MPSState(MPSPlanningMixin):
         """
         self._validate_wire(int(left_wire))
         self._validate_wire(int(left_wire) + 1)
+        canonical_split = self._split_preserves_center(int(left_wire))
         left = self.tensors[int(left_wire)]
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
@@ -1055,6 +1041,7 @@ class MPSState(MPSPlanningMixin):
             self.tensors[int(left_wire)] = left_out
             self.tensors[int(left_wire) + 1] = right_out
             self.orthogonality_center = int(left_wire) + 1
+            self._canonical_center_valid = canonical_split
             self.fixed_rank_qr_regions += 1
             self.svd_gradient_method = "fixed_rank_range_qr"
             # Computing the exact discarded Frobenius weight would require
@@ -1185,6 +1172,7 @@ class MPSState(MPSPlanningMixin):
                 self.tensors[wire] = left_out
                 self.tensors[wire + 1] = right_out
                 self.orthogonality_center = wire + 1
+                self._canonical_center_valid = False
                 discarded_weight = float(split_info["discarded_weight"])
                 if split_info["method"] == "svd":
                     self.svd_gradient_method = str(
@@ -1220,7 +1208,14 @@ class MPSState(MPSPlanningMixin):
         self.apply_two(self._fixed_gate_matrix("swap"), left_wire)
         self.local_swap_count += 1
 
+    def _split_preserves_center(self, left_wire: int) -> bool:
+        return self._canonical_center_valid and self.orthogonality_center in (
+            left_wire,
+            left_wire + 1,
+        )
+
     def _split_pair(self, theta: torch.Tensor, left_wire: int) -> None:
+        canonical_split = self._split_preserves_center(int(left_wire))
         bsz, left_dim, _, _, right_dim = theta.shape
         matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
         left_tensor, right_tensor, split_info = _split_pair_matrix(
@@ -1232,6 +1227,7 @@ class MPSState(MPSPlanningMixin):
         self.tensors[left_wire] = left_tensor
         self.tensors[left_wire + 1] = right_tensor
         self.orthogonality_center = int(left_wire) + 1
+        self._canonical_center_valid = canonical_split
         discarded_weight = float(split_info["discarded_weight"])
         if split_info["method"] == "svd":
             self.svd_gradient_method = str(split_info.get("gradient_method", "exact"))

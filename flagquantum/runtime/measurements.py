@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -31,6 +31,106 @@ _DEFAULT_MAX_MARGINAL_WIRES = 8
 _TRACE_TOLERANCE = 1e-4
 
 
+class _DensityMatrixTarget:
+    """Measurement adapter for an already-materialized density matrix."""
+
+    def __init__(self, density: torch.Tensor, noise_model: Any | None) -> None:
+        self.density = density
+        self.noise_model = noise_model
+        self.device = density.device
+        self.n_wires = int(round(math.log2(density.shape[-1])))
+        self.bsz = int(density.shape[0])
+
+    def sample(
+        self,
+        shots: int = 1,
+        *,
+        generator: torch.Generator | None = None,
+        format: str = "bits",
+    ) -> torch.Tensor:
+        if format not in {"bits", "index"}:
+            raise ValueError("sample format must be 'bits' or 'index'.")
+        if type(shots) is not int or shots <= 0:
+            raise ValueError("sample shots must be a positive integer")
+        probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
+        probabilities = torch.clamp(probabilities, min=0)
+        probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True)
+        indices = torch.multinomial(
+            probabilities,
+            shots,
+            replacement=True,
+            generator=generator,
+        )
+        if format == "index":
+            return indices
+        shifts = torch.arange(self.n_wires - 1, -1, -1, device=self.device)
+        return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
+
+    def expectation_z(self, wires: Sequence[int] | int | None = None) -> torch.Tensor:
+        from ..simulation.density_matrix import expectation_z_density
+
+        values = expectation_z_density(self.density, wires)
+        if self.noise_model is not None:
+            all_values = expectation_z_density(self.density)
+            all_values = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_expectation_z(all_values),
+            )
+            if wires is None:
+                return all_values
+            selected = (wires,) if isinstance(wires, int) else tuple(wires)
+            return all_values[..., list(selected)]
+        return values
+
+    def expectation_ps(
+        self,
+        *,
+        z: Sequence[int] | None = None,
+        x: Sequence[int] | None = None,
+        y: Sequence[int] | None = None,
+    ) -> torch.Tensor:
+        if not x and not y and self.noise_model is not None:
+            probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
+            probabilities = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_probabilities(
+                    probabilities,
+                    n_wires=self.n_wires,
+                ),
+            )
+            indices = torch.arange(
+                2**self.n_wires,
+                device=self.device,
+                dtype=torch.int64,
+            )
+            parity = torch.zeros_like(indices)
+            for wire in z or ():
+                parity ^= (indices >> (self.n_wires - int(wire) - 1)) & 1
+            eigenvalue = (1 - 2 * parity).to(probabilities.dtype)
+            return probabilities @ eigenvalue
+        axes = {
+            wire: axis
+            for axis, wires in (("x", x), ("y", y), ("z", z))
+            for wire in (wires or ())
+        }
+        matrices = {
+            "i": torch.eye(2, dtype=self.density.dtype, device=self.device),
+            "x": torch.tensor(
+                ((0, 1), (1, 0)), dtype=self.density.dtype, device=self.device
+            ),
+            "y": torch.tensor(
+                ((0, -1j), (1j, 0)), dtype=self.density.dtype, device=self.device
+            ),
+            "z": torch.tensor(
+                ((1, 0), (0, -1)), dtype=self.density.dtype, device=self.device
+            ),
+        }
+        operator = matrices[axes.get(0, "i")]
+        for wire in range(1, self.n_wires):
+            operator = torch.kron(operator, matrices[axes.get(wire, "i")])
+        return torch.real(torch.einsum("bij,ji->b", self.density, operator))
+
+
 def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if any(wire < 0 or wire >= n_wires for wire in normalized):
@@ -42,7 +142,11 @@ def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
     return normalized
 
 
-def _statevector_target(output: Any, n_wires: int) -> Any:
+def _statevector_target(
+    output: Any,
+    n_wires: int,
+    noise_model: Any | None = None,
+) -> Any:
     if not isinstance(output, torch.Tensor):
         return output
     if output.is_complex() and output.ndim == 2 and output.shape[-1] == 2**n_wires:
@@ -55,6 +159,12 @@ def _statevector_target(output: Any, n_wires: int) -> Any:
             dtype=output.dtype,
             inputs=output,
         )
+    if (
+        output.is_complex()
+        and output.ndim == 3
+        and output.shape[-2:] == (2**n_wires, 2**n_wires)
+    ):
+        return _DensityMatrixTarget(output, noise_model)
     raise CapabilityError(
         "measurements for this tensor result are not implemented; "
         "request a statevector, MPS, or tensor-network execution mode"
@@ -302,6 +412,7 @@ def _sample(
     wires: tuple[int, ...],
     metadata: dict[str, Any],
     n_wires: int,
+    noise_model: Any | None,
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     sampler = getattr(target, "sample", None)
     if not callable(sampler):
@@ -312,29 +423,49 @@ def _sample(
     conditions = _postselection(metadata, n_wires)
     if not conditions:
         samples = sampler(shots, generator=generator, format="bits")
+        if noise_model is not None:
+            samples = noise_model.apply_readout_samples(
+                samples,
+                generator=generator,
+            )
         selected = samples[..., list(wires)]
-        return selected, {
+        statistics = {
             "draws": [int(shots)] * int(selected.shape[0]),
             "acceptance_rate": [1.0] * int(selected.shape[0]),
         }
+        sampling_summary = getattr(target, "sampling_summary", None)
+        if callable(sampling_summary):
+            statistics.update(sampling_summary())
+        return selected, statistics
 
     multiplier = int(metadata.get("max_postselection_draw_multiplier", 1024))
     if multiplier < 1:
         raise ValueError("max_postselection_draw_multiplier must be positive")
     max_draws = int(shots) * multiplier
     conditioned, accepted_counts, draws = _collect_postselected_samples(
-        sampler,
+        (
+            sampler
+            if noise_model is None
+            else lambda count, **kwargs: noise_model.apply_readout_samples(
+                sampler(count, **kwargs),
+                generator=kwargs.get("generator"),
+            )
+        ),
         shots=shots,
         conditions=conditions,
         max_draws=max_draws,
         generator=generator,
     )
-    return conditioned[..., list(wires)], {
+    statistics = {
         "draws": [draws] * len(accepted_counts),
         "accepted_before_truncation": accepted_counts,
         "acceptance_rate": [count / draws for count in accepted_counts],
         "postselection": dict(sorted(conditions.items())),
     }
+    sampling_summary = getattr(target, "sampling_summary", None)
+    if callable(sampling_summary):
+        statistics.update(sampling_summary())
+    return conditioned[..., list(wires)], statistics
 
 
 def _counts_from_samples(
@@ -531,6 +662,7 @@ def _execute_shot_measurement(
     wires: tuple[int, ...],
     metadata: dict[str, Any],
     n_wires: int,
+    noise_model: Any | None,
 ) -> tuple[torch.Tensor | list[dict[str | int, int]], dict[str, Any]]:
     assert request.shots is not None
     if kind in {"sample_ps", "counts_ps"}:
@@ -550,6 +682,7 @@ def _execute_shot_measurement(
             wires=wires,
             metadata=metadata,
             n_wires=n_wires,
+            noise_model=noise_model,
         )
     counts = (
         _counts_from_samples(
@@ -638,7 +771,7 @@ def execute_measurements(
     def measurement_target() -> Any:
         nonlocal target
         if target is None:
-            target = _statevector_target(output, n_wires)
+            target = _statevector_target(output, n_wires, noise_model)
         return target
 
     results: list[MeasurementResult] = []
@@ -677,6 +810,7 @@ def execute_measurements(
                 wires,
                 metadata,
                 n_wires,
+                noise_model,
             )
 
         results.append(

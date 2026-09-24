@@ -50,6 +50,171 @@ print(sampled.statistics.standard_error)
 print(sampled.converged, sampled.stopped_early)
 ```
 
+## CPU counts beyond the dense-memory limit
+
+The stable `fq.run(...)` entry point can select noisy MPS trajectories when the
+exact density matrix exceeds an explicit memory budget. The caller must opt in
+to approximation; otherwise planning fails rather than silently changing
+semantics. This example is directly runnable on CPU:
+
+```python
+import flagquantum as fq
+import flagquantum.noise as fqn
+
+n_qubits = 24
+circuit = fq.Circuit(n_qubits).h(0)
+for wire in range(n_qubits - 1):
+    circuit.cx(wire, wire + 1)
+
+noise = (
+    fqn.NoiseModel()
+    .add("cx", fqn.depolarizing_channel(0.01))
+    .add_readout(0, fqn.ReadoutError(((0.98, 0.02), (0.03, 0.97))))
+)
+
+result = fq.run(
+    circuit,
+    options=fq.ExecutionOptions(
+        mode="auto",
+        device="cpu",
+        shots=1_000,
+        seed=42,
+        memory_limit_bytes=512 * 1024**2,
+        allow_approximate=True,
+    ),
+    outputs=fq.counts(),
+    noise_model=noise,
+)
+
+print(result.counts[0])
+print(result.plan.noisy_execution_plan.summary())
+print(result.measurement("counts").statistics)
+```
+
+The planner keeps exact density-matrix evolution when it fits. If it does not,
+the memory budget determines a bounded MPS bond dimension and the serialized
+plan records MPS representation, quantum-trajectory evolution, the noise-model
+identity, and the trajectory policy. Restoring the plan from JSON executes the
+same route without replanning.
+
+`shots` and trajectory count are different error sources. Shots control the
+final measurement histogram. The stable auto route currently uses 32 noise
+trajectories and samples the empirical mixture of their retained MPS states;
+measurement statistics report `sampling_semantics`, `trajectory_count`, and
+`retained_trajectory_count`, plus the observed maximum bond, maximum trajectory
+truncation error, and maximum discarded weight. Use the expert
+`run_noisy_mps(...)` interface when the trajectory count, adaptive stopping
+threshold, bond dimension, or cutoff must be controlled directly.
+
+### Writing circuits for MPS
+
+Users keep the same circuit API, but circuit structure matters after the
+planner selects MPS:
+
+- Put qubits that interact frequently next to each other in logical-wire order.
+  Nearest-neighbour two-qubit gates are the most MPS-friendly; distant gates
+  require internal swaps and increase work.
+- Prefer shallow, local-entangling layers. One-dimensional hardware-efficient
+  ansatzes, product states, and GHZ chains can remain low-bond at large width.
+- Treat deep random circuits, dense all-to-all QAOA layers, and unoptimised QFT
+  patterns as high-risk. They can create volume-law entanglement and make the
+  required bond dimension exponential.
+- Do not infer difficulty from gate count alone. The important quantity is the
+  entanglement crossing every cut in the chosen wire ordering; reordering
+  logical qubits can change MPS cost substantially without changing the
+  algorithm.
+- `shots` only reduces final measurement noise. It does not reduce trajectory
+  error or MPS truncation error. Increasing `memory_limit_bytes` permits a
+  larger bond; the expert API separately controls trajectories, `max_bond`,
+  and `cutoff`.
+
+Always inspect the returned diagnostics:
+
+```python
+stats = result.measurement("counts").statistics
+print("bond:", stats["observed_max_bond"], "/", stats["configured_max_bond"])
+print("cutoff:", stats["configured_cutoff"])
+print("trajectory truncation:", stats["max_trajectory_truncation_error"])
+print("discarded weight:", stats["max_discarded_weight"])
+```
+
+Reaching the configured bond is not by itself a failure, but reaching it while
+discarded weight is non-zero means truncation occurred. There is no universal
+acceptable threshold: rerun important workloads with a larger memory budget
+or expert `max_bond` and require the observable or counts distribution to be
+stable within the application's tolerance. Use an exact density-matrix result
+on a reduced circuit as a correctness oracle when possible.
+
+This raises capacity only for workloads whose entanglement remains compressible
+at the selected bond dimension. It is not a promise that every 24-qubit noisy
+circuit will be fast or accurate: highly entangled circuits may require a larger
+memory budget, and trajectory plus truncation errors must be evaluated for the
+workload.
+
+### Capacity and limits
+
+There is no fixed MPS qubit constant in the counts path. Capacity is controlled
+by the bond dimension `chi`, not by qubit count alone. For the stable route,
+which retains 32 trajectories so it can produce shot samples, the planned MPS
+state memory is approximately:
+
+```text
+32 * batch_size * n_qubits * 2 * chi**2 * complex_bytes
+```
+
+`complex_bytes` is 8 for `complex64` and 16 for `complex128`. The planner
+chooses the largest integer `chi` whose estimate fits `memory_limit_bytes`.
+For example, with one circuit, `complex64`, 100 qubits, and a 512 MiB limit,
+the current policy caps the bond at 102. Shot sampling has a separate bounded
+workspace of at most 4,000,000 complex elements (about 30.5 MiB for
+`complex64` or 61 MiB for `complex128`), plus PyTorch and factorization
+workspace. The declared MPS-state estimate is therefore not a process-RSS
+upper bound.
+
+The implementation now verifies full-register counts on a 100-qubit CPU
+product-state circuit without materializing an integer basis index. Explicit
+`format="index"` samples remain limited to 63 qubits because they use signed
+`int64`; ordinary `fq.counts()` and `format="bits"` do not have that artificial
+limit. The checked-in performance benchmark provides noisy, entangled evidence
+from 16 through 1,000 qubits for a low-bond GHZ chain with bond cap 8.
+
+The 1,000-qubit check is a width test, not a general 1,000-qubit performance or
+accuracy guarantee. Required Schmidt rank can grow as `2**(n_qubits / 2)` for
+highly entangled circuits. Once the required rank exceeds `chi`, MPS truncates;
+the result reports maximum observed bond, truncation error, and discarded
+weight. Dominant two-qubit split work can grow cubically with `chi`, while
+memory grows quadratically. Runtime also grows with circuit depth, non-local
+gate routing, trajectory count, and shots. The stable route uses one CPU process
+and 32 trajectories; public distributed noisy-MPS reduction is not implemented.
+
+For a managed `quafu:<device>-sim` target, the usable qubit count is additionally
+bounded by the logical wires covered by the selected physical-device
+calibration and by the service's admission policy. FlagQuantum rejects a
+profile that does not cover every logical wire. Consequently the honest
+capacity statement is: up to 1,000 qubits are timed for this low-bond noisy GHZ
+workload; every other circuit must be admitted by memory and calibration checks
+and judged from its reported bond dimension and truncation evidence.
+
+The 2026-09-24 arm64 CPU smoke run used a GHZ chain, `cx`
+depolarizing probability 0.01, four trajectories, bond cap 8, cutoff `1e-10`,
+and 1,000 output shots. Median end-to-end times over three runs were:
+
+| Qubits | Median time | Observed max bond | Counts |
+|---:|---:|---:|---:|
+| 16 | 0.037 s | 2 | 1,000 |
+| 20 | 0.045 s | 2 | 1,000 |
+| 24 | 0.065 s | 2 | 1,000 |
+| 50 | 0.133 s | 2 | 1,000 |
+| 100 | 0.221 s | 2 | 1,000 |
+| 200 | 0.440 s | 2 | 1,000 |
+| 500 | 1.231 s | 2 | 1,000 |
+| 1,000 | 2.366 s | 2 | 1,000 |
+
+These timings include planning, noisy evolution, and counts. No truncation was
+observed for this particular rank-2 workload. They are workload-specific
+capacity evidence, not a general performance promise. The raw record is
+[`cpu_noisy_mps_counts_20260924.json`](../../benchmarks/results/local/cpu_noisy_mps_counts_20260924.json).
+
 For dense circuits that fit statevector memory, trajectories can be processed
 in true tensor batches:
 
@@ -378,6 +543,88 @@ qubit calibration fails closed rather than silently assuming zero noise.
 
 This is an explicit Markovian timing approximation. A profile import does not
 by itself prove that the model reproduces real hardware.
+
+## Hardware agreement and reliability
+
+**Current status: numerical correctness validated and workload-specific QPU
+agreement measured; device-wide hardware fidelity remains unvalidated.** The
+exact-density comparison tests show that the MPS engine implements the declared
+noise channels within sampling and truncation error. The live evidence below
+measures three circuits on one physical edge and one calibration snapshot per
+device; it does not show that arbitrary circuits reproduce a Baihua, Shenglian,
+or Dongling QPU. Do not interpret `device_profile_identity` or a `<device>-sim`
+target name as a hardware-accuracy guarantee.
+
+Hardware agreement belongs to the complete tuple `(device, calibration
+snapshot, physical mapping, compiled circuit, noise-model version, workload)`;
+there is no honest device-wide percentage that can be inferred from MPS width
+or bond dimension. Report distribution agreement with total-variation distance
+(TVD):
+
+```text
+TVD(p, q) = 0.5 * sum_x abs(p[x] - q[x])
+agreement = 1 - TVD
+```
+
+For a claim about one managed simulator release, freeze a prospective circuit
+suite and, for every circuit:
+
+1. Capture the complete calibration snapshot used to build the noise model.
+2. Preserve the same physical-qubit mapping and final compiled circuit for the
+   simulator and QPU comparison.
+3. Submit at least two independent QPU jobs so QPU-to-QPU repeatability is
+   measured rather than assumed.
+4. Record MPS-to-QPU TVD, ideal-to-QPU TVD, QPU-to-QPU TVD, shot count and a
+   finite-shot uncertainty bound, plus MPS bond/truncation diagnostics.
+5. Predeclare an application-specific maximum TVD. Accept the model only when
+   MPS-to-QPU TVD meets that limit, improves on the ideal baseline, and is not
+   materially larger than QPU repeatability plus finite-shot uncertainty.
+
+Use several circuit families and mappings; one Bell circuit validates only that
+exact circuit on those physical qubits at that calibration time. More shots
+reduce histogram uncertainty but do not repair an incomplete noise model, stale
+calibration, too few quantum trajectories, or MPS truncation.
+
+The 2026-09-24 paired run used `|00>`, `|11>`, and Bell circuits, one fixed
+physical edge per device, 8,192 simulator shots, and two independent 1,024-shot
+QPU repetitions. Local MPS used 4,096 trajectories, bond cap 4, and zero
+cutoff; observed bond was at most 2 and truncation error was zero. Values below
+are TVD averaged over the three circuits and both QPU observations:
+
+| Device | Local MPS to QPU | Online `<device>-sim` to QPU | QPU repeatability | Ideal to QPU |
+|---|---:|---:|---:|---:|
+| Dongling | 4.20% | 6.39% | 2.51% | 16.10% |
+| Shenglian | 2.48% | 2.55% | 2.08% | 8.25% |
+| Baihua | 2.08% | 2.28% | 0.94% | 4.46% |
+| Mean | 2.92% | 3.74% | 1.84% | 9.60% |
+
+This is positive evidence: the local MPS model improved substantially over the
+ideal baseline on this suite. It is not a device-wide acceptance result. Its
+mean MPS-to-QPU distance remains above mean QPU repeatability, Dongling `|00>`
+was about 5.26% from QPU while QPU repeatability was about 0.68%, and the
+distribution-free 95% TV radius for one 1,024-shot four-outcome histogram is
+about 5.25%. More circuits, mappings, shots, and repetitions are required for a
+tighter claim.
+
+The public Task API snapshots contain T1/T2 and gate/readout fidelities but no
+gate durations. The local MPS evidence therefore uses one-qubit/CZ depolarizing
+channels plus independent readout confusion and excludes timing-derived T1/T2
+relaxation. It also uses the expert 4,096-trajectory route, not the stable
+managed route's current 32-trajectory policy. The deployed online simulators
+are reported separately and are not assumed to run this PR's code. Raw counts,
+task IDs, calibration IDs and hashes, mappings, per-circuit TVD, and all claim
+boundaries are preserved in
+[`quafu_noisy_mps_qpu_validation_20260924.json`](../../artifacts/development/quafu_noisy_mps_qpu_validation_20260924.json).
+
+An older Dongling task record that lacks its complete calibration payload is
+not used in these numbers. The paired run instead restores each submission's
+exact snapshot through `/api/v1/calibrations/{calibration_id}`; comparing with a
+newer “current” calibration would mix device drift into the result.
+
+FlagQuantum's QPU Twin validation tools already report Twin-to-QPU TVD,
+ideal-to-QPU TVD, QPU repeatability, and simultaneous finite-shot TV bounds; see
+[QPU Digital Twin](QPU_DIGITAL_TWIN.md). Managed-target evidence reuses those
+definitions rather than introducing a second notion of “accuracy.”
 
 ## Current support boundary
 

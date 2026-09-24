@@ -586,6 +586,66 @@ def test_quafu_provider_fetches_verbatim_chip_info():
     assert transport.gets[0][1] == {"token": "secret"}
 
 
+def test_quafu_provider_fetches_current_and_historical_task_calibration():
+    payload = {
+        "id": "cal-1",
+        "chip": "Baihua",
+        "calibrated_at": "2026-09-24T14:36:26+08:00",
+        "qubits": [{"index": 0}],
+        "couplers": [],
+    }
+
+    class CalibrationTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            self.gets.append((url, headers, timeout))
+            return payload
+
+    transport = CalibrationTransport()
+    provider = QuafuProvider(
+        task_server_url="https://quafu.test/api/v1",
+        api_key="must-not-be-sent",
+        transport=transport,
+    )
+
+    current = provider.fetch_calibration("Baihua")
+    historical = provider.fetch_calibration("Baihua", calibration_id="cal-1")
+
+    assert current is payload
+    assert historical is payload
+    assert transport.gets == [
+        (
+            "https://quafu.test/api/v1/devices/Baihua/calibration",
+            {},
+            provider.timeout,
+        ),
+        (
+            "https://quafu.test/api/v1/calibrations/cal-1",
+            {},
+            provider.timeout,
+        ),
+    ]
+
+
+def test_quafu_provider_rejects_mismatched_task_calibration():
+    class CalibrationTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            return {
+                "id": "other-calibration",
+                "chip": "Dongling",
+                "calibrated_at": "2026-09-24T14:36:29+08:00",
+                "qubits": [],
+                "couplers": [],
+            }
+
+    provider = QuafuProvider(
+        task_server_url="https://quafu.test/api/v1",
+        transport=CalibrationTransport(),
+    )
+
+    with pytest.raises(RuntimeError, match="belongs to 'Dongling'"):
+        provider.fetch_calibration("Baihua", calibration_id="cal-1")
+
+
 def test_quafu_provider_submits_precompiled_logical_qasm_with_mapping():
     transport = FakeTransport()
     provider = QuafuProvider(

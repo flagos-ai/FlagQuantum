@@ -23,6 +23,12 @@ agent logic.
 Start in `preflight.py`. A small behavior change should normally touch that file
 and a scenario in `tests/team/services/` or `tests/test_service_preflight.py`.
 
+`run_managed_quafu_simulator(...)` is the other intentional composite workflow:
+it validates the binding between a managed `<device>-sim` target and a
+timestamped device noise profile, executes the stable exact/MPS policy, and
+returns an auditable calibration-and-routing receipt. It is a service-side
+deployment hook, not a replacement for the client's remote Quafu job path.
+
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py
