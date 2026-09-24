@@ -18,7 +18,7 @@ def move_orthogonality_center(state: MPSState, site: int) -> None:
         raise ValueError(
             f"Orthogonality center must be in [0, {state.n_wires - 1}], got {site}."
         )
-    if state.orthogonality_center is None:
+    if state.orthogonality_center is None or not state._canonical_center_valid:
         state.orthogonalize_left()
     center = state.orthogonality_center
     if center is None:
@@ -53,6 +53,7 @@ def sweep_center_right(state: MPSState, target_site: int) -> None:
             state.tensors[wire + 1],
         )
     state.orthogonality_center = int(target_site)
+    state._canonical_center_valid = True
 
 
 def sweep_center_left(state: MPSState, target_site: int) -> None:
@@ -81,3 +82,4 @@ def sweep_center_left(state: MPSState, target_site: int) -> None:
             transfer,
         )
     state.orthogonality_center = int(target_site)
+    state._canonical_center_valid = True

@@ -51,6 +51,7 @@ class MPSState(MPSPlanningMixin):
         self.truncation_errors: list[float] = []
         self.truncation_records: list[MPSTruncationRecord] = []
         self.orthogonality_center: int | None = None
+        self._canonical_center_valid = False
         self.triton_two_site_regions = 0
         self.eager_two_site_regions = 0
         self.svd_gradient_method = "not_used"
@@ -107,6 +108,7 @@ class MPSState(MPSPlanningMixin):
             tensors.append(tensor)
         out = cls(tensors, config=config)
         out.orthogonality_center = 0
+        out._canonical_center_valid = True
         return out
 
     @classmethod
@@ -173,6 +175,7 @@ class MPSState(MPSPlanningMixin):
         out.truncation_errors.extend(truncation_errors)
         out.truncation_records.extend(truncation_records)
         out.orthogonality_center = int(n_wires) - 1
+        out._canonical_center_valid = True
         return out
 
     def to_statevector(self) -> torch.Tensor:
@@ -245,6 +248,7 @@ class MPSState(MPSPlanningMixin):
         out.truncation_errors = list(self.truncation_errors)
         out.truncation_records = list(self.truncation_records)
         out.orthogonality_center = self.orthogonality_center
+        out._canonical_center_valid = self._canonical_center_valid
         return out
 
     def canonicalize(self) -> "MPSState":
@@ -257,6 +261,7 @@ class MPSState(MPSPlanningMixin):
         self.truncation_errors.extend(rebuilt.truncation_errors)
         self.truncation_records.extend(rebuilt.truncation_records)
         self.orthogonality_center = rebuilt.orthogonality_center
+        self._canonical_center_valid = True
         return self
 
     def orthogonalize_left(self) -> "MPSState":
@@ -272,6 +277,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return self
         for wire in range(self.n_wires - 1):
             tensor = self.tensors[wire]
@@ -283,6 +289,7 @@ class MPSState(MPSPlanningMixin):
             next_tensor = self.tensors[wire + 1]
             self.tensors[wire + 1] = torch.einsum("ab,cbsr->casr", r, next_tensor)
         self.orthogonality_center = self.n_wires - 1
+        self._canonical_center_valid = True
         return self
 
     def orthogonalize_right(self) -> "MPSState":
@@ -302,6 +309,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return self
         _sweep_center_left(self, 0)
         return self
@@ -735,18 +743,14 @@ class MPSState(MPSPlanningMixin):
         return probs / torch.clamp(norm, min=1e-12)
 
     def _normalize(self) -> None:
-        center = self.orthogonality_center
-        if center is None:
-            self.move_orthogonality_center(0)
-            center = 0
-        tensor = self.tensors[int(center)]
-        norm_squared = torch.sum(torch.abs(tensor) ** 2, dim=(1, 2, 3))
+        norm_squared = self._expectation_product_ops({})
         if bool(torch.any(~torch.isfinite(norm_squared))) or bool(
             torch.any(norm_squared <= 1e-24)
         ):
             raise RuntimeError("MPS state norm is not finite and positive")
         norm = torch.sqrt(norm_squared)
-        self.tensors[int(center)] = tensor / norm.reshape(-1, 1, 1, 1).to(self.dtype)
+        self.tensors[0] = self.tensors[0] / norm.reshape(-1, 1, 1, 1).to(self.dtype)
+        self._canonical_center_valid &= self.orthogonality_center == 0
 
     def counts(
         self,
@@ -831,6 +835,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
         return self
 
     def _validate_wire(self, wire: int) -> None:
@@ -950,6 +955,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.extend(rebuilt.truncation_errors)
             self.truncation_records.extend(rebuilt.truncation_records)
             self.orthogonality_center = rebuilt.orthogonality_center
+            self._canonical_center_valid = True
             return
 
         wire = wires[0]
@@ -1015,20 +1021,7 @@ class MPSState(MPSPlanningMixin):
         """
         self._validate_wire(int(left_wire))
         self._validate_wire(int(left_wire) + 1)
-        # A local split only leaves a valid mixed-canonical state when the
-        # incoming two-site region contains the current center.  Keeping that
-        # invariant makes subsequent local measurement and Kraus probabilities
-        # both stable and independent of the total chain length.
-        # QR center moves through rank-deficient product-state tensors can have
-        # undefined derivatives.  The established differentiable path therefore
-        # keeps its original SVD-only behavior; execution/sampling paths maintain
-        # the stronger canonical invariant used by local probabilities.
-        if not (
-            matrix.requires_grad
-            or self.tensors[int(left_wire)].requires_grad
-            or self.tensors[int(left_wire) + 1].requires_grad
-        ):
-            self.move_orthogonality_center(int(left_wire))
+        canonical_split = self._split_preserves_center(int(left_wire))
         left = self.tensors[int(left_wire)]
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
@@ -1048,6 +1041,7 @@ class MPSState(MPSPlanningMixin):
             self.tensors[int(left_wire)] = left_out
             self.tensors[int(left_wire) + 1] = right_out
             self.orthogonality_center = int(left_wire) + 1
+            self._canonical_center_valid = canonical_split
             self.fixed_rank_qr_regions += 1
             self.svd_gradient_method = "fixed_rank_range_qr"
             # Computing the exact discarded Frobenius weight would require
@@ -1178,6 +1172,7 @@ class MPSState(MPSPlanningMixin):
                 self.tensors[wire] = left_out
                 self.tensors[wire + 1] = right_out
                 self.orthogonality_center = wire + 1
+                self._canonical_center_valid = False
                 discarded_weight = float(split_info["discarded_weight"])
                 if split_info["method"] == "svd":
                     self.svd_gradient_method = str(
@@ -1213,7 +1208,14 @@ class MPSState(MPSPlanningMixin):
         self.apply_two(self._fixed_gate_matrix("swap"), left_wire)
         self.local_swap_count += 1
 
+    def _split_preserves_center(self, left_wire: int) -> bool:
+        return self._canonical_center_valid and self.orthogonality_center in (
+            left_wire,
+            left_wire + 1,
+        )
+
     def _split_pair(self, theta: torch.Tensor, left_wire: int) -> None:
+        canonical_split = self._split_preserves_center(int(left_wire))
         bsz, left_dim, _, _, right_dim = theta.shape
         matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
         left_tensor, right_tensor, split_info = _split_pair_matrix(
@@ -1225,6 +1227,7 @@ class MPSState(MPSPlanningMixin):
         self.tensors[left_wire] = left_tensor
         self.tensors[left_wire + 1] = right_tensor
         self.orthogonality_center = int(left_wire) + 1
+        self._canonical_center_valid = canonical_split
         discarded_weight = float(split_info["discarded_weight"])
         if split_info["method"] == "svd":
             self.svd_gradient_method = str(split_info.get("gradient_method", "exact"))

@@ -44,6 +44,7 @@ def _collapse_sampled_wire(state: MPSState, wire: int, bits: torch.Tensor) -> No
         state.orthogonality_center = wire + 1
     else:
         state.orthogonality_center = wire
+    state._canonical_center_valid = True
 
 
 def sample_mps_bits(
@@ -73,6 +74,7 @@ def sample_mps_bits(
             config=state.config,
         )
         work.orthogonality_center = state.orthogonality_center
+        work._canonical_center_valid = state._canonical_center_valid
         for wire in range(state.n_wires):
             probabilities = work._wire_probabilities(wire)
             bit = torch.multinomial(
