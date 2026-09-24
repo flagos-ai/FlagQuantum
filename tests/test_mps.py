@@ -876,6 +876,9 @@ def test_stable_run_selects_cpu_noisy_mps_when_density_exceeds_budget():
     )
     assert result.plan.noisy_execution_plan.memory.fits
     assert result.counts == [{"0" * n_qubits: 32}]
+    statistics = result.measurement("counts").statistics
+    assert statistics["configured_max_bond"] >= statistics["observed_max_bond"]
+    assert statistics["configured_cutoff"] == 0.0
 
 
 def test_noisy_mps_sampling_requires_retained_trajectory_states():

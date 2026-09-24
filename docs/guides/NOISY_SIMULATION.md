@@ -106,6 +106,45 @@ truncation error, and maximum discarded weight. Use the expert
 `run_noisy_mps(...)` interface when the trajectory count, adaptive stopping
 threshold, bond dimension, or cutoff must be controlled directly.
 
+### Writing circuits for MPS
+
+Users keep the same circuit API, but circuit structure matters after the
+planner selects MPS:
+
+- Put qubits that interact frequently next to each other in logical-wire order.
+  Nearest-neighbour two-qubit gates are the most MPS-friendly; distant gates
+  require internal swaps and increase work.
+- Prefer shallow, local-entangling layers. One-dimensional hardware-efficient
+  ansatzes, product states, and GHZ chains can remain low-bond at large width.
+- Treat deep random circuits, dense all-to-all QAOA layers, and unoptimised QFT
+  patterns as high-risk. They can create volume-law entanglement and make the
+  required bond dimension exponential.
+- Do not infer difficulty from gate count alone. The important quantity is the
+  entanglement crossing every cut in the chosen wire ordering; reordering
+  logical qubits can change MPS cost substantially without changing the
+  algorithm.
+- `shots` only reduces final measurement noise. It does not reduce trajectory
+  error or MPS truncation error. Increasing `memory_limit_bytes` permits a
+  larger bond; the expert API separately controls trajectories, `max_bond`,
+  and `cutoff`.
+
+Always inspect the returned diagnostics:
+
+```python
+stats = result.measurement("counts").statistics
+print("bond:", stats["observed_max_bond"], "/", stats["configured_max_bond"])
+print("cutoff:", stats["configured_cutoff"])
+print("trajectory truncation:", stats["max_trajectory_truncation_error"])
+print("discarded weight:", stats["max_discarded_weight"])
+```
+
+Reaching the configured bond is not by itself a failure, but reaching it while
+discarded weight is non-zero means truncation occurred. There is no universal
+acceptable threshold: rerun important workloads with a larger memory budget
+or expert `max_bond` and require the observable or counts distribution to be
+stable within the application's tolerance. Use an exact density-matrix result
+on a reduced circuit as a correctness oracle when possible.
+
 This raises capacity only for workloads whose entanglement remains compressible
 at the selected bond dimension. It is not a promise that every 24-qubit noisy
 circuit will be fast or accurate: highly entangled circuits may require a larger

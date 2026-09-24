@@ -182,6 +182,7 @@ class MPSMonteCarloResult:
             for state in self.trajectories
             for error in state.truncation_errors
         )
+        first_config = self.trajectories[0].config if self.trajectories else None
         return {
             "sampling_semantics": "empirical_noisy_trajectory_mixture",
             "trajectory_count": self.n_trajectories,
@@ -190,6 +191,12 @@ class MPSMonteCarloResult:
             "observed_max_bond": max(
                 (int(state.max_bond) for state in self.trajectories),
                 default=None,
+            ),
+            "configured_max_bond": (
+                None if first_config is None else first_config.max_bond
+            ),
+            "configured_cutoff": (
+                None if first_config is None else float(first_config.cutoff)
             ),
             "max_trajectory_truncation_error": max(
                 trajectory_errors,

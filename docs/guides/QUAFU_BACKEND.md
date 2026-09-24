@@ -144,6 +144,7 @@ def execute_device_simulator(
     return {
         "counts": execution.result.counts[0],
         "simulation": execution.receipt.to_dict(),
+        "diagnostics": execution.result.measurement("counts").statistics,
     }
 ```
 
