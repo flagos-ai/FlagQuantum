@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix as _gate_matrix
 from .operations import (
@@ -31,6 +32,11 @@ if TYPE_CHECKING:
 
 _PRODUCT_STATE_MIN_WIRES = 16
 _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO = 0.30
+# Static 18- and 20-wire Clifford plans measured 1.96x and 2.97x faster at
+# estimated ratios 0.350 and 0.317. Keep the evidence-bound extension narrow;
+# every other program retains the established conservative ceiling.
+_PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO = 0.36
+_STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
 
 
 @dataclass(frozen=True)
@@ -58,6 +64,26 @@ def _swap_wires(step: _StatevectorProgramStep) -> tuple[int, int] | None:
         return None
     left, right = step.instruction.wires
     return left, right
+
+
+def _is_static_clifford_step(step: _StatevectorProgramStep) -> bool:
+    """Whether a compiled step is an exact parameter-free Clifford operation."""
+
+    instructions: tuple[Instruction, ...]
+    if isinstance(step, _StatevectorCXSequenceStep):
+        return True
+    if isinstance(step, _StatevectorGateStep):
+        instructions = (step.instruction,)
+    elif isinstance(step, _StatevectorFusedGateStep):
+        instructions = step.instructions
+    else:
+        return False
+    return all(
+        instruction.matrix is None
+        and not instruction.params
+        and canonical_opcode(instruction.name) in _STATIC_CLIFFORD_GATES
+        for instruction in instructions
+    )
 
 
 def product_state_execution_is_beneficial(
@@ -100,7 +126,9 @@ def product_state_execution_is_beneficial(
 
     estimated_work = 2**n_wires
     operation_count = 0
+    static_clifford = True
     for step in program:
+        static_clifford = static_clifford and _is_static_clifford_step(step)
         swap_wires = _swap_wires(step)
         if enable_swap_remapping and swap_wires is not None:
             left, right = swap_wires
@@ -114,7 +142,12 @@ def product_state_execution_is_beneficial(
             estimated_work += 2 ** merge(wires)
             operation_count += 1
     dense_work = max(len(program), operation_count) * 2**n_wires
-    return bool(estimated_work <= _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO * dense_work)
+    maximum_ratio = (
+        _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO
+        if static_clifford
+        else _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO
+    )
+    return bool(estimated_work <= maximum_ratio * dense_work)
 
 
 def _merge_components(

@@ -137,6 +137,9 @@ The focused 22-qubit SWAP-routing run is available as a
 The dense nonlocal CZ-graph optimization has a
 [reproducible comparison report](results/comparison/SIMULATOR_DENSE_NONLOCAL_CPU_ARM64_20260924.md)
 and a [raw comparison artifact](results/comparison/simulator_dense_nonlocal_cpu_arm64_20260924.json).
+The static Random Clifford product-state routing change likewise has a
+[reproducible comparison report](results/comparison/SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md)
+and a [raw comparison artifact](results/comparison/simulator_random_clifford_cpu_arm64_20260924.json).
 These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing workload comparison question, not isolated kernel
 throughput.
