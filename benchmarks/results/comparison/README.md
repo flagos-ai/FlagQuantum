@@ -20,3 +20,7 @@ raw measurements.
 [`SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md`](SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md)
 records the native rollback A/B and refreshed cross-framework evidence for the
 measured complex128 dense-fusion width policy.
+
+[`SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md`](SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md)
+records the exact-statevector Random Clifford comparison, product-state
+Clifford-layer rollback A/B, public example, and reproduction command.

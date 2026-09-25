@@ -61,6 +61,7 @@ from .operations import (
     _triton_single_qubit_matrix_enabled,
 )
 from .product_state import (
+    _cpu_product_state_clifford_matching_enabled,
     _cpu_product_state_fixed_clifford_enabled,
     execute_product_state_program,
     product_state_execution_is_beneficial,
@@ -143,13 +144,7 @@ def _cpu_disjoint_dense_max_wires(
     batch_size: int,
     dtype: torch.dtype,
 ) -> int:
-    """Choose the dense fusion width without regressing smaller CPU states.
-
-    Paired rotation-layer measurements favor six fused wires from 18 qubits,
-    except at the 20-qubit crossover where four remains faster. Eight wins at
-    22 qubits but regresses at 24, so it stays local to the measured state size.
-    Batches and complex64 retain the conservative four-wire product.
-    """
+    """Choose the measured dense-fusion width for this CPU state shape."""
 
     if batch_size == 1 and dtype == torch.complex128:
         if not _cpu_adaptive_dense_fusion_width_enabled():
@@ -898,15 +893,15 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and device.type == "cpu"
             and circuit.n_wires >= 16
         )
-        enable_product_state_swap_remapping = (
-            _cpu_product_state_swap_remapping_enabled()
-        )
+        product_swap_remapping = _cpu_product_state_swap_remapping_enabled()
+        product_clifford_matching = _cpu_product_state_clifford_matching_enabled()
         product_program: tuple[_StatevectorProgramStep, ...] = ()
         if product_state_candidate:
             product_program_key = (
                 "cpu_product_state",
                 enable_cpu_controlled_phase_decomposition,
                 enable_cpu_controlled_phase_graph,
+                product_clifford_matching,
             )
             cached_product_program = cast(
                 tuple[_StatevectorProgramStep, ...] | None,
@@ -923,6 +918,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_controlled_phase_graph=(
                         enable_cpu_controlled_phase_graph
                     ),
+                    enable_cpu_disjoint_clifford_matching=product_clifford_matching,
                 )
                 circuit._backend_programs[product_program_key] = product_program
             else:
@@ -930,7 +926,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         if product_state_candidate and product_state_execution_is_beneficial(
             product_program,
             circuit.n_wires,
-            enable_swap_remapping=enable_product_state_swap_remapping,
+            enable_swap_remapping=product_swap_remapping,
         ):
             output = execute_product_state_program(
                 product_program,
@@ -938,8 +934,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 device=device,
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
-                enable_swap_remapping=enable_product_state_swap_remapping,
+                enable_swap_remapping=product_swap_remapping,
                 enable_fixed_clifford=_cpu_product_state_fixed_clifford_enabled(),
+                enable_clifford_matching=product_clifford_matching,
                 constant_cache=circuit._statevector_fused_matrices,
             )
             circuit._last_statevector_runtime = _initial_runtime_metrics(
