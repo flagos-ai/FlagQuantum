@@ -361,9 +361,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 3.4816904231566252,
-          "pennylane_lightning_qubit": 1.307103213787122,
-          "qiskit_aer": 3.4950851634633167
+          "cirq_simulator": 4.609077142564166,
+          "pennylane_lightning_qubit": 1.7303490010396507,
+          "qiskit_aer": 4.62680915887657
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -417,22 +417,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.04512537503615022,
-            "mean_seconds": 0.02076883333372987,
-            "median_seconds": 0.016362166963517666,
-            "min_seconds": 0.014923707989510149,
-            "relative_median_absolute_deviation": 0.035254130019432804,
+            "max_seconds": 0.013649208005517721,
+            "mean_seconds": 0.012489032323679162,
+            "median_seconds": 0.012359958025626838,
+            "min_seconds": 0.011493457946926355,
+            "relative_median_absolute_deviation": 0.04637960729682036,
             "sample_count": 9,
             "samples_seconds": [
-              0.016362166963517666,
-              0.016563625016715378,
-              0.014923707989510149,
-              0.01618187502026558,
-              0.028210457996465266,
-              0.015785333001986146,
-              0.016310542006976902,
-              0.017456416971981525,
-              0.04512537503615022
+              0.012933208025060594,
+              0.013649208005517721,
+              0.013631333946250379,
+              0.012359958025626838,
+              0.01243320805951953,
+              0.011493457946926355,
+              0.012209167005494237,
+              0.01170662499498576,
+              0.011985124903731048
             ]
           },
           "versions": {
@@ -538,9 +538,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 2.5977406375845535,
-          "pennylane_lightning_qubit": 1.186678009233595,
-          "qiskit_aer": 1.7881987012537481
+          "cirq_simulator": 3.768304866758892,
+          "pennylane_lightning_qubit": 1.7214053061235057,
+          "qiskit_aer": 2.5939763851606217
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -594,22 +594,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.8515041659702547,
-            "mean_seconds": 0.45914347211105955,
-            "median_seconds": 0.4018349580001086,
-            "min_seconds": 0.33343604201218113,
-            "relative_median_absolute_deviation": 0.1249517967916113,
+            "max_seconds": 0.29700720799155533,
+            "mean_seconds": 0.2789297222237413,
+            "median_seconds": 0.2770112920552492,
+            "min_seconds": 0.26952545798849314,
+            "relative_median_absolute_deviation": 0.019818538773429584,
             "sample_count": 9,
             "samples_seconds": [
-              0.483665292034857,
-              0.4181714169681072,
-              0.4018349580001086,
-              0.8515041659702547,
-              0.5482329580117948,
-              0.3833802079898305,
-              0.33343604201218113,
-              0.3604412500280887,
-              0.35162495798431337
+              0.2832113339100033,
+              0.27374404203146696,
+              0.29700720799155533,
+              0.28661233303137124,
+              0.2770112920552492,
+              0.27224874997045845,
+              0.27948575001209974,
+              0.27152133302297443,
+              0.26952545798849314
             ]
           },
           "versions": {
@@ -2467,9 +2467,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 1.9352422751746703,
-          "pennylane_lightning_qubit": 0.9867500128411547,
-          "qiskit_aer": 1.8897656030325578
+          "cirq_simulator": 2.7713635086574384,
+          "pennylane_lightning_qubit": 1.4130752582430088,
+          "qiskit_aer": 2.7062386448165774
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -2523,22 +2523,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.036202792020048946,
-            "mean_seconds": 0.03191627789702681,
-            "median_seconds": 0.032028332992922515,
-            "min_seconds": 0.028274792013689876,
-            "relative_median_absolute_deviation": 0.06737394006542616,
+            "max_seconds": 0.02327737503219396,
+            "mean_seconds": 0.022534231435404055,
+            "median_seconds": 0.022365374956279993,
+            "min_seconds": 0.02141995809506625,
+            "relative_median_absolute_deviation": 0.026462068125655942,
             "sample_count": 9,
             "samples_seconds": [
-              0.029069125012028962,
-              0.032028332992922515,
-              0.031362916983198375,
-              0.029870458005461842,
-              0.036202792020048946,
-              0.028274792013689876,
-              0.033321292023174465,
-              0.03230125003028661,
-              0.034815541992429644
+              0.022957209032028913,
+              0.023096667020581663,
+              0.022365374956279993,
+              0.02327737503219396,
+              0.022275749943219125,
+              0.023220582981593907,
+              0.021853082929737866,
+              0.02141995809506625,
+              0.022342082927934825
             ]
           },
           "versions": {
@@ -2641,9 +2641,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 1.8154536975640005,
-          "pennylane_lightning_qubit": 1.0674826799289439,
-          "qiskit_aer": 1.0670394282149853
+          "cirq_simulator": 2.4232602645504913,
+          "pennylane_lightning_qubit": 1.4248715705824204,
+          "qiskit_aer": 1.4242799199845169
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -2697,22 +2697,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.8264694579993375,
-            "mean_seconds": 0.6971286434434458,
-            "median_seconds": 0.6725861660088412,
-            "min_seconds": 0.6221299589960836,
-            "relative_median_absolute_deviation": 0.033692585675347636,
+            "max_seconds": 0.5801546250004321,
+            "mean_seconds": 0.5131183334419297,
+            "median_seconds": 0.5038868749979883,
+            "min_seconds": 0.49612845899537206,
+            "relative_median_absolute_deviation": 0.01539713849988107,
             "sample_count": 9,
             "samples_seconds": [
-              0.73365366703365,
-              0.7287022919626907,
-              0.6725861660088412,
-              0.6952473330311477,
-              0.6651569579844363,
-              0.8264694579993375,
-              0.6710407909704372,
-              0.6591711670043878,
-              0.6221299589960836
+              0.5138942090561613,
+              0.5136090000160038,
+              0.4972784579731524,
+              0.5008097499376163,
+              0.5155718750320375,
+              0.49612845899537206,
+              0.49673174996860325,
+              0.5801546250004321,
+              0.5038868749979883
             ]
           },
           "versions": {
@@ -3163,9 +3163,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 1.9951399615326435,
-          "pennylane_lightning_qubit": 0.7336000679115018,
-          "qiskit_aer": 4.7549159840780435
+          "cirq_simulator": 4.688330673151402,
+          "pennylane_lightning_qubit": 1.7238688846537709,
+          "qiskit_aer": 11.173460953228586
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -3219,22 +3219,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 0.1049148750025779,
-            "mean_seconds": 0.02957263886411157,
-            "median_seconds": 0.022016083006747067,
-            "min_seconds": 0.015422249911352992,
-            "relative_median_absolute_deviation": 0.14810763446380332,
+            "max_seconds": 0.010028332937508821,
+            "mean_seconds": 0.009513490678121647,
+            "median_seconds": 0.009369042003527284,
+            "min_seconds": 0.009092167019844055,
+            "relative_median_absolute_deviation": 0.02066198060131071,
             "sample_count": 9,
             "samples_seconds": [
-              0.1049148750025779,
-              0.024222416919656098,
-              0.022896082955412567,
-              0.023549458011984825,
-              0.022016083006747067,
-              0.01806208398193121,
-              0.01875533303245902,
-              0.016315166954882443,
-              0.015422249911352992
+              0.010028332937508821,
+              0.009718250017613173,
+              0.009092167019844055,
+              0.010014041094109416,
+              0.00935195793863386,
+              0.00926525006070733,
+              0.009219750063493848,
+              0.009369042003527284,
+              0.00956262496765703
             ]
           },
           "versions": {
@@ -3337,9 +3337,9 @@
     {
       "comparison": {
         "engine_over_flagquantum_median": {
-          "cirq_simulator": 2.584148383810738,
-          "pennylane_lightning_qubit": 1.1043675409317264,
-          "qiskit_aer": 5.211028801141445
+          "cirq_simulator": 4.085767988254919,
+          "pennylane_lightning_qubit": 1.7461031163205536,
+          "qiskit_aer": 8.239099114804343
         },
         "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
       },
@@ -3393,22 +3393,22 @@
         },
         "flagquantum_native": {
           "end_to_end": {
-            "max_seconds": 1.48849495803006,
-            "mean_seconds": 0.5291053103412398,
-            "median_seconds": 0.3745365421054885,
-            "min_seconds": 0.28605345799587667,
-            "relative_median_absolute_deviation": 0.1956617042198167,
+            "max_seconds": 0.24640958302188665,
+            "mean_seconds": 0.23769984724155316,
+            "median_seconds": 0.23688520805444568,
+            "min_seconds": 0.23137137503363192,
+            "relative_median_absolute_deviation": 0.0120351920007047,
             "sample_count": 9,
             "samples_seconds": [
-              0.43376725004054606,
-              0.3443791250465438,
-              0.7447532089427114,
-              0.47267874993849546,
-              0.31603041698690504,
-              0.28605345799587667,
-              0.30125408398453146,
-              0.3745365421054885,
-              1.48849495803006
+              0.23518845904618502,
+              0.24219704198185354,
+              0.23688520805444568,
+              0.2396618330385536,
+              0.23137137503363192,
+              0.23973616701550782,
+              0.23303749994374812,
+              0.24640958302188665,
+              0.23481145803816617
             ]
           },
           "versions": {
@@ -3673,6 +3673,79 @@
       "python": "3.12.14",
       "workloads": [
         "random_clifford_statevector"
+      ]
+    },
+    {
+      "cases": [
+        {
+          "n_wires": 18,
+          "workload": "hardware_efficient_statevector"
+        },
+        {
+          "n_wires": 22,
+          "workload": "hardware_efficient_statevector"
+        },
+        {
+          "n_wires": 18,
+          "workload": "local_brickwork_statevector"
+        },
+        {
+          "n_wires": 22,
+          "workload": "local_brickwork_statevector"
+        },
+        {
+          "n_wires": 18,
+          "workload": "dense_nonlocal_statevector"
+        },
+        {
+          "n_wires": 22,
+          "workload": "dense_nonlocal_statevector"
+        }
+      ],
+      "engines": [
+        "flagquantum_native"
+      ],
+      "environment": {
+        "device": "cpu",
+        "machine": "arm64",
+        "processor": "arm",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "torch": "2.13.0",
+        "torch_threads": 1
+      },
+      "methodology": {
+        "calls_per_sample": 1,
+        "compilation_or_device_preparation_included": true,
+        "conversion_included": true,
+        "engine_order": "rotated_per_iteration_within_one_process",
+        "exact_statevector": true,
+        "feature_schema": "flagquantum.simulator_workload_features.v1",
+        "hidden_fallback_allowed": false,
+        "iterations": 9,
+        "measurement_scope": "end_to_end_user_facing_run_call",
+        "qiskit_max_parallel_threads": 1,
+        "result_retrieval_included": true,
+        "warmup": 1
+      },
+      "n_wires": [
+        18,
+        22
+      ],
+      "platform": "macOS-27.0-arm64-arm-64bit",
+      "preserved_engines": [
+        "qiskit_aer",
+        "cirq_simulator",
+        "pennylane_lightning_qubit"
+      ],
+      "python": "3.12.14",
+      "workloads": [
+        "hardware_efficient_statevector",
+        "local_brickwork_statevector",
+        "dense_nonlocal_statevector"
       ]
     }
   ],
