@@ -12,6 +12,10 @@ from flagquantum.simulation.statevector.operations import _compile_statevector_p
 from flagquantum.simulation.statevector.product_state import (
     product_state_execution_is_beneficial,
 )
+from flagquantum.simulation.statevector.program import (
+    _StatevectorCXSequenceStep,
+    _StatevectorGateStep,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -139,3 +143,69 @@ def test_product_state_routes_h_and_s_through_fixed_clifford_kernel(
     _random_clifford(18, torch.complex128).state(refresh=True)
 
     assert {"h", "s"} <= observed
+
+
+def test_disjoint_mixed_clifford_matching_batches_each_gate_kind() -> None:
+    instructions = (
+        Instruction("cx", (0, 1)),
+        Instruction("cz", (2, 3)),
+        Instruction("cx", (4, 5)),
+        Instruction("cz", (6, 7)),
+    )
+
+    program = _compile_statevector_program(
+        instructions,
+        8,
+        enable_triton_loop=False,
+        enable_cpu_disjoint_clifford_matching=True,
+    )
+
+    assert [
+        step.instruction.name
+        for step in program[:2]
+        if isinstance(step, _StatevectorGateStep)
+    ] == ["cz", "cz"]
+    assert program[2] == _StatevectorCXSequenceStep(
+        controls=(0, 4),
+        targets=(1, 5),
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_batched_fixed_clifford_layer_matches_sequential_kernels(
+    dtype: torch.dtype,
+) -> None:
+    state = torch.randn(1, 64, dtype=dtype)
+    component = product_state._ProductComponent(tuple(range(6)), state)
+    gates = (("h", 0), ("s", 1), ("x", 2), ("s", 4), ("x", 5))
+    expected = state
+    for name, wire in gates:
+        if name == "x":
+            expected = product_state._apply_fixed_permutation(
+                expected, name, (wire,), 6
+            )
+        else:
+            expected = product_state._apply_fixed_clifford_gate(expected, name, wire, 6)
+
+    actual = product_state._apply_fixed_clifford_layer(component, gates)
+
+    assert torch.equal(actual, expected)
+
+
+def test_clifford_matching_rollback_disables_layer_batching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING", "0")
+
+    def unexpected_layer(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("Clifford matching must respect its rollback switch")
+
+    monkeypatch.setattr(
+        product_state,
+        "_apply_fixed_clifford_layer",
+        unexpected_layer,
+    )
+
+    state = _random_clifford(18, torch.complex128).state(refresh=True)
+
+    assert state.shape == (1, 2**18)
