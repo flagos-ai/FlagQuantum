@@ -231,10 +231,10 @@ def test_checked_in_workload_corpus_is_complete_and_correct() -> None:
     }
     assert qft_cases[18]["engines"]["flagquantum_native"]["end_to_end"][
         "median_seconds"
-    ] == pytest.approx(0.00804412504658103)
+    ] == pytest.approx(0.004167124978266656)
     assert qft_cases[22]["engines"]["flagquantum_native"]["end_to_end"][
         "median_seconds"
-    ] == pytest.approx(0.1513523330213502)
+    ] == pytest.approx(0.08653316600248218)
     assert qft_cases[22]["engines"]["cirq_simulator"]["end_to_end"][
         "median_seconds"
     ] == pytest.approx(0.15457395801786333)

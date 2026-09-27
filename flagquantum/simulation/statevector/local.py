@@ -62,6 +62,7 @@ from .operations import (
 )
 from .product_state import (
     _cpu_product_state_clifford_matching_enabled,
+    _cpu_product_state_deferred_swap_enabled,
     _cpu_product_state_fixed_clifford_enabled,
     execute_product_state_program,
     product_state_execution_is_beneficial,
@@ -935,6 +936,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
                 enable_swap_remapping=product_swap_remapping,
+                enable_deferred_swap=_cpu_product_state_deferred_swap_enabled(),
                 enable_fixed_clifford=_cpu_product_state_fixed_clifford_enabled(),
                 enable_clifford_matching=product_clifford_matching,
                 constant_cache=circuit._statevector_fused_matrices,
