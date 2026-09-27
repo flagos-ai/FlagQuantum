@@ -15,6 +15,7 @@ from .controlled_phase import (
     _controlled_phase_graph_factors_cpu,
 )
 from .operations import (
+    _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
@@ -48,12 +49,19 @@ _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO = 0.36
 _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO = 0.45
 _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
 _FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})
+_PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH = 5
 
 
 def _cpu_product_state_fixed_clifford_enabled() -> bool:
     """Whether product components use fixed CPU Clifford kernels."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD", default=True)
+
+
+def _cpu_product_state_clifford_matching_enabled() -> bool:
+    """Whether product-state Clifford matchings may share permutation passes."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING", default=True)
 
 
 def _apply_fixed_clifford_gate(
@@ -77,6 +85,62 @@ def _apply_fixed_clifford_gate(
     else:
         return _apply_single_qubit_fixed(state, name, wire, n_wires)
     return torch.stack(values, dim=axis).reshape(state.shape)
+
+
+def _fixed_clifford_layer_gate(
+    step: _StatevectorProgramStep,
+) -> tuple[str, int] | None:
+    if not isinstance(step, _StatevectorGateStep):
+        return None
+    instruction = step.instruction
+    name = canonical_opcode(instruction.name)
+    if (
+        instruction.matrix is not None
+        or instruction.params
+        or len(instruction.wires) != 1
+        or name not in {"h", "s", "x"}
+    ):
+        return None
+    return name, int(instruction.wires[0])
+
+
+def _apply_fixed_clifford_layer(
+    component: _ProductComponent,
+    gates: Sequence[tuple[str, int]],
+) -> torch.Tensor:
+    """Apply one disjoint H/S/X layer with bounded passes over a component."""
+
+    n_wires = len(component.wires)
+    local_gates = tuple((name, component.wires.index(wire)) for name, wire in gates)
+    if len(local_gates) == 1:
+        name, wire = local_gates[0]
+        if name == "x":
+            return _apply_fixed_permutation(component.state, name, (wire,), n_wires)
+        return _apply_fixed_clifford_gate(component.state, name, wire, n_wires)
+
+    state = component.state
+    for name, wire in local_gates:
+        if name == "h":
+            state = _apply_fixed_clifford_gate(state, name, wire, n_wires)
+
+    s_wires = tuple(wire for name, wire in local_gates if name == "s")
+    if s_wires:
+        factor_shape = [1] * (n_wires + 1)
+        phases = torch.ones((), device=state.device, dtype=state.dtype)
+        local_phase = torch.tensor((1, 1j), device=state.device, dtype=state.dtype)
+        for wire in s_wires:
+            factor_shape[wire + 1] = 2
+            phases = phases.unsqueeze(-1) * local_phase
+        tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
+        state = (tensor * phases.reshape(factor_shape)).reshape(state.shape)
+
+    x_wires = tuple(wire for name, wire in local_gates if name == "x")
+    if x_wires:
+        tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
+        state = torch.flip(tensor, dims=tuple(wire + 1 for wire in x_wires)).reshape(
+            state.shape
+        )
+    return state
 
 
 @dataclass(frozen=True)
@@ -390,6 +454,7 @@ def execute_product_state_program(
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     enable_swap_remapping: bool = True,
     enable_fixed_clifford: bool = True,
+    enable_clifford_matching: bool = True,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None = None,
 ) -> torch.Tensor:
     """Execute an exact program while merging components only when required."""
@@ -399,25 +464,108 @@ def execute_product_state_program(
     components = {
         wire: _ProductComponent((wire,), zero.clone()) for wire in range(n_wires)
     }
-    for step in program:
+    index = 0
+    while index < len(program):
+        step = program[index]
+        if enable_clifford_matching and enable_fixed_clifford:
+            first_gate = _fixed_clifford_layer_gate(step)
+            if first_gate is not None:
+                gates = [first_gate]
+                occupied_wires = {first_gate[1]}
+                cursor = index + 1
+                while cursor < len(program):
+                    candidate = _fixed_clifford_layer_gate(program[cursor])
+                    if candidate is None or candidate[1] in occupied_wires:
+                        break
+                    gates.append(candidate)
+                    occupied_wires.add(candidate[1])
+                    cursor += 1
+                if len(gates) >= 2:
+                    gates_by_component: dict[
+                        int, tuple[_ProductComponent, list[tuple[str, int]]]
+                    ] = {}
+                    for name, wire in gates:
+                        component = components[wire]
+                        matching_entry = gates_by_component.get(id(component))
+                        if matching_entry is None:
+                            matching_entry = (component, [])
+                            gates_by_component[id(component)] = matching_entry
+                        matching_entry[1].append((name, wire))
+                    if not any(
+                        len(component_gates) >= 2
+                        for _, component_gates in gates_by_component.values()
+                    ):
+                        gates_by_component.clear()
+                    for component, component_gates in gates_by_component.values():
+                        updated = _ProductComponent(
+                            component.wires,
+                            _apply_fixed_clifford_layer(component, component_gates),
+                        )
+                        for wire in updated.wires:
+                            components[wire] = updated
+                    if gates_by_component:
+                        index = cursor
+                        continue
         swap_wires = _swap_wires(step)
         if enable_swap_remapping and swap_wires is not None:
             left, right = swap_wires
             _remap_swap_components(components, left, right)
+            index += 1
             continue
         if isinstance(step, _StatevectorCXSequenceStep):
+            if not enable_clifford_matching:
+                for control, target in zip(step.controls, step.targets, strict=True):
+                    component = _merge_components(components, (control, target))
+                    local_wires = (
+                        component.wires.index(control),
+                        component.wires.index(target),
+                    )
+                    state = _apply_fixed_permutation(
+                        component.state, "cx", local_wires, len(component.wires)
+                    )
+                    updated = _ProductComponent(component.wires, state)
+                    for wire in updated.wires:
+                        components[wire] = updated
+                index += 1
+                continue
+
             for control, target in zip(step.controls, step.targets, strict=True):
-                component = _merge_components(components, (control, target))
-                local_wires = (
-                    component.wires.index(control),
-                    component.wires.index(target),
-                )
-                state = _apply_fixed_permutation(
-                    component.state, "cx", local_wires, len(component.wires)
-                )
+                _merge_components(components, (control, target))
+
+            edges_by_component: dict[
+                int, tuple[_ProductComponent, list[tuple[int, int]]]
+            ] = {}
+            for control, target in zip(step.controls, step.targets, strict=True):
+                component = components[control]
+                edge_entry = edges_by_component.get(id(component))
+                if edge_entry is None:
+                    edge_entry = (component, [])
+                    edges_by_component[id(component)] = edge_entry
+                edge_entry[1].append((control, target))
+
+            for component, edges in edges_by_component.values():
+                controls = tuple(component.wires.index(control) for control, _ in edges)
+                targets = tuple(component.wires.index(target) for _, target in edges)
+                if len(edges) >= _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH:
+                    state = _apply_cx_sequence_gather(
+                        component.state,
+                        controls,
+                        targets,
+                        len(component.wires),
+                    )
+                else:
+                    state = component.state
+                    for control, target in zip(controls, targets, strict=True):
+                        state = _apply_fixed_permutation(
+                            state,
+                            "cx",
+                            (control, target),
+                            len(component.wires),
+                        )
                 updated = _ProductComponent(component.wires, state)
                 for wire in updated.wires:
                     components[wire] = updated
+            index += 1
             continue
         groups = _step_wire_groups(step)
         if len(groups) != 1 or not isinstance(
@@ -443,4 +591,5 @@ def execute_product_state_program(
         )
         for wire in updated.wires:
             components[wire] = updated
+        index += 1
     return _merge_components(components, tuple(range(n_wires))).state

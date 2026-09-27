@@ -19,6 +19,7 @@ from ..gate_matrix import (
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
 from . import controlled_phase, cz_graph, two_qubit_cpu
+from .clifford_matching import _reorder_disjoint_clifford_matchings
 from .diagonal_cpu import (
     _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
 )
@@ -51,12 +52,8 @@ def clear_statevector_layout_cache() -> None:
     _STATEVECTOR_LAYOUT_CACHE.clear()
 
 
-# A CX sequence acts on basis indices as an affine map over GF(2), so the whole
-# sequence can be applied as one gather instead of one pass per gate. The table
-# costs one int32 per amplitude, which is half the size of a complex64 state, and
-# it is addressed by its content rather than by a Circuit, so it cannot go stale
-# when a Circuit is mutated. The budget bounds what distinct sequences may keep
-# resident; the entries are dropped in insertion order once it is exceeded.
+# Cache each CX affine-map table by content; insertion-order eviction bounds
+# memory because one int32 table is half the size of a complex64 state.
 _CX_SEQUENCE_INDEX_CACHE_BYTES = 128 * 1024 * 1024
 _CX_SEQUENCE_INDEX_CACHE: dict[
     tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype], torch.Tensor
@@ -232,6 +229,7 @@ def _compile_statevector_program(
     enable_cpu_disjoint_single_wire: bool = False,
     enable_cpu_controlled_phase_decomposition: bool = False,
     enable_cpu_controlled_phase_graph: bool = False,
+    enable_cpu_disjoint_clifford_matching: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -256,6 +254,8 @@ def _compile_statevector_program(
             max_two_wire_regions,
             max_wires=max_dense_wires,
         )
+    if enable_cpu_disjoint_clifford_matching:
+        optimized = _reorder_disjoint_clifford_matchings(optimized)
     return tuple(_fuse_cx_sequences(optimized))
 
 

@@ -16,36 +16,45 @@ met the declared 20% relative median absolute deviation stability threshold.
 
 | Qubits | FlagQuantum | Qiskit Aer | Cirq | PennyLane Lightning | Aer / FQ | Cirq / FQ | PennyLane / FQ |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 11.495 ms | 51.943 ms | 13.293 ms | 11.274 ms | 4.52× | 1.16× | 0.98× |
-| 22 | 181.030 ms | 592.915 ms | 209.421 ms | 238.416 ms | 3.28× | 1.16× | 1.32× |
+| 18 | 9.246 ms | 51.943 ms | 13.293 ms | 11.274 ms | 5.62× | 1.44× | 1.22× |
+| 22 | 136.246 ms | 592.915 ms | 209.421 ms | 238.416 ms | 4.35× | 1.54× | 1.75× |
 
-A ratio above one means FlagQuantum was faster. At 18 qubits FlagQuantum is
-faster than Cirq and within 2% of PennyLane. At 22 qubits FlagQuantum is the
-fastest of the four measured engines. These are reproducible results for this
-circuit family and host, not a universal framework ranking.
+A ratio above one means FlagQuantum was faster. FlagQuantum is the fastest of
+the four measured engines at both widths, including a 1.22× advantage over
+PennyLane at 18 qubits and a 1.75× advantage at 22 qubits. These are
+reproducible results for this circuit family and host, not a universal framework
+ranking.
 
 ## What changed
 
-The product-state executor previously sent standalone `H`, `S`, `Sdg`, `Y`, and
-`Z` operations through dense gate-matrix construction and batched matrix
-multiplication. The new fixed Clifford kernels operate directly on the affected
-two amplitude slices. `X`, `CX`, and `CZ` retain their existing permutation or
-diagonal paths; routing and public APIs do not change.
+The product-state executor already had fixed kernels for individual Clifford
+gates, but it still scanned a merged component once per gate. The new path
+batches a disjoint `H`/`S`/`X` layer per product component: `H` retains its
+fixed numerical kernel, while all `S` phases share one broadcast and all `X`
+operations share one multi-axis permutation. It also recognizes exact,
+wire-disjoint mixed `CX`/`CZ` matchings. Because those edges commute, the
+compiler places each kind together and the product-state executor applies five
+or more `CX` operations in one cached gather when they land in the same merged
+component. Independent components remain independent.
 
-A separate rollback A/B on the same host used one thread, one warmup per path,
-and 21 retained end-to-end samples with alternating path order. It changed only
-`FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD`:
+A separate rollback A/B on the same host used one thread, two warmups per path,
+and 11 retained end-to-end samples with three calls per sample and alternating
+path order. It changed only `FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING`:
 
-| Qubits | Dense-matrix rollback | Fixed kernels | Speedup | Rollback RMAD | Fixed RMAD |
+| Qubits | Per-gate rollback | Batched layers | Speedup | Rollback RMAD | Batched RMAD |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 13.348 ms | 11.416 ms | 1.17× | 1.27% | 4.08% |
-| 22 | 187.996 ms | 179.003 ms | 1.05× | 5.71% | 6.55% |
+| 18 | 11.825 ms | 9.777 ms | 1.21× | 2.13% | 3.23% |
+| 22 | 182.693 ms | 131.582 ms | 1.39× | 2.22% | 3.74% |
 
-The checked-in comparison then refreshed only FlagQuantum native. Qiskit Aer,
-Cirq, and PennyLane payloads were preserved field-for-field, and the comparison
-ratios were recomputed. Parameterized circuits,
-custom matrices, non-Clifford gates, custom input states, batches, and routing
-decisions retain their established behavior.
+The rollback and optimized paths were bitwise equal at 18 qubits. Their maximum
+absolute difference at 22 qubits was `1.31e-18`, well below the comparison
+tolerance.
+
+The checked-in comparison refreshed only FlagQuantum native. Qiskit Aer, Cirq,
+and PennyLane timing payloads were preserved field-for-field, and the comparison
+ratios were recomputed. Parameterized circuits, custom matrices, non-Clifford
+gates, custom input states, batches, and routing decisions retain their
+established behavior.
 
 Normal user code needs no backend-specific option:
 
@@ -71,9 +80,10 @@ for _ in range(4):
 state = circuit.state()
 ```
 
-`FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD=0` restores the prior product-state gate
-application for rollback and A/B measurement. The broader
-`FQ_CPU_PRODUCT_STATE_EXECUTION=0` switch still restores dense execution.
+`FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING=0` restores the prior per-gate ordering
+and execution for rollback and A/B measurement. The existing
+`FQ_CPU_PRODUCT_STATE_FIXED_CLIFFORD=0` disables fixed single-gate kernels. The
+broader `FQ_CPU_PRODUCT_STATE_EXECUTION=0` switch still restores dense execution.
 
 ## Reproduce the comparison
 
@@ -88,3 +98,7 @@ flagquantum-benchmark run simulator_workload_corpus \
   --refresh-from benchmarks/results/comparison/simulator_random_clifford_cpu_arm64_20260924.json \
   --json-output benchmarks/results/comparison/simulator_random_clifford_cpu_arm64_20260924.json
 ```
+
+To reproduce a rollback comparison, run the same native-only command once with
+`FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING=0` and once with it set to `1`, writing
+the outputs to different JSON files.
