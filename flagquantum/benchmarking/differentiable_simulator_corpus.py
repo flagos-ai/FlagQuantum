@@ -1089,7 +1089,8 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
             "allocation-free reverse H blocks, same-wire forward "
             "composition, CX-sequence permutations, reuse of the observable diagonal, "
             "bounded structural planning reuse, cached accelerator capability probes, "
-            "and analytic Pauli-rotation VJPs. The native adjoint operators "
+            "parameter-free adjoint IR template reuse, once-per-parameter binding "
+            "validation, and analytic Pauli-rotation VJPs. The native adjoint operators "
             "accelerated backward by "
             f"{min(backward_speedups):.2f}x to {max(backward_speedups):.2f}x and total "
             f"value-and-gradient by {min(total_speedups):.2f}x to "
@@ -1100,8 +1101,9 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
             "shared parameters. This establishes functional local adjoint support for real "
             "weighted Z/ZZ Hamiltonians at complex128, not a universal performance or "
             "general Pauli-support claim. The QAOA path now reduces repeated planning and "
-            "shared-parameter bookkeeping overhead while preserving the large-width "
-            "execution path.",
+            "shared-parameter bookkeeping overhead; repeated optimization steps also "
+            "avoid rebuilding detached IR snapshots while preserving fresh parameter "
+            "values and autograd contexts.",
             "",
             "## FlagQuantum example",
             "",

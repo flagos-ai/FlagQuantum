@@ -11,14 +11,14 @@ to every circuit parameter; construction and optimizer updates are excluded.
 
 | Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | PennyLane Lightning total (ms) | PennyLane Lightning / FlagQuantum total | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Hardware-efficient VQE | 10 | 39 | 30 | 1.577 | 0.732 | 2.331 | 4.041 | 5.491 | 5.52x | 2.267 | 0.97x | 3.889e-15 |
-| Hardware-efficient VQE | 14 | 55 | 42 | 2.757 | 1.997 | 4.740 | 8.283 | 10.994 | 4.15x | 5.252 | 1.11x | 4.956e-15 |
-| Hardware-efficient VQE | 18 | 71 | 54 | 19.903 | 27.567 | 47.279 | 76.471 | 96.278 | 2.77x | 60.871 | 1.29x | 7.466e-14 |
-| Hardware-efficient VQE | 22 | 87 | 66 | 461.624 | 524.822 | 965.937 | 1867.513 | 2307.161 | 3.56x | 1438.021 | 1.49x | 1.115e-12 |
-| QAOA path MaxCut | 10 | 29 | 2 | 1.180 | 0.578 | 1.789 | 2.824 | 3.973 | 4.89x | 1.786 | 1.00x | 4.441e-16 |
-| QAOA path MaxCut | 14 | 41 | 2 | 2.222 | 1.556 | 3.951 | 5.918 | 8.139 | 3.80x | 3.679 | 0.93x | 6.661e-16 |
-| QAOA path MaxCut | 18 | 53 | 2 | 19.501 | 21.087 | 40.588 | 61.343 | 82.852 | 2.91x | 41.438 | 1.02x | 1.688e-14 |
-| QAOA path MaxCut | 22 | 65 | 2 | 421.590 | 432.638 | 849.326 | 1336.359 | 1788.846 | 3.09x | 902.152 | 1.06x | 3.570e-13 |
+| Hardware-efficient VQE | 10 | 39 | 30 | 1.271 | 0.668 | 1.951 | 3.987 | 5.241 | 5.97x | 2.539 | 1.30x | 3.889e-15 |
+| Hardware-efficient VQE | 14 | 55 | 42 | 2.567 | 2.129 | 4.921 | 8.676 | 11.383 | 4.08x | 5.936 | 1.21x | 4.956e-15 |
+| Hardware-efficient VQE | 18 | 71 | 54 | 20.474 | 28.159 | 48.421 | 93.834 | 115.117 | 3.33x | 65.486 | 1.35x | 7.466e-14 |
+| Hardware-efficient VQE | 22 | 87 | 66 | 507.578 | 597.326 | 1104.905 | 2037.578 | 2527.226 | 3.41x | 1654.287 | 1.50x | 1.115e-12 |
+| QAOA path MaxCut | 10 | 29 | 2 | 1.120 | 0.586 | 1.731 | 2.718 | 3.841 | 4.64x | 1.851 | 1.07x | 4.441e-16 |
+| QAOA path MaxCut | 14 | 41 | 2 | 2.428 | 1.728 | 4.142 | 6.651 | 8.899 | 3.85x | 4.380 | 1.06x | 6.661e-16 |
+| QAOA path MaxCut | 18 | 53 | 2 | 21.851 | 22.990 | 44.966 | 70.161 | 89.981 | 3.05x | 49.179 | 1.09x | 1.688e-14 |
+| QAOA path MaxCut | 22 | 65 | 2 | 414.576 | 416.280 | 838.229 | 1294.972 | 1731.306 | 3.11x | 891.147 | 1.06x | 3.570e-13 |
 
 A PennyLane Lightning/FlagQuantum ratio above one means FlagQuantum was faster. Peak RSS was
 not measured in this timing run. These are local, non-release
@@ -26,7 +26,7 @@ single-device results, not a universal framework ranking or scaling claim.
 
 ## Meaning and current level
 
-All 8 cases passed the 1e-9 value/gradient tolerance; maximum gradient error was 1.115e-12. One-pass forward RZZ segments and native disjoint one-qubit H/rotation layers complement the fused RX/RY/RZ/RZZ adjoint operators, commuting shared-parameter RZZ segments, shared rotation-layer adjoints with native shared-gradient reduction, allocation-free reverse H blocks, same-wire forward composition, CX-sequence permutations, reuse of the observable diagonal, bounded structural planning reuse, cached accelerator capability probes, and analytic Pauli-rotation VJPs. The native adjoint operators accelerated backward by 2.77x to 5.52x and total value-and-gradient by 2.04x to 2.39x. Total PennyLane Lightning/FlagQuantum ratios ranged from 0.93x to 1.49x on this host. Hardware-efficient VQE stresses many independent rotation gradients; QAOA stresses repeated shared parameters. This establishes functional local adjoint support for real weighted Z/ZZ Hamiltonians at complex128, not a universal performance or general Pauli-support claim. The QAOA path now reduces repeated planning and shared-parameter bookkeeping overhead while preserving the large-width execution path.
+All 8 cases passed the 1e-9 value/gradient tolerance; maximum gradient error was 1.115e-12. One-pass forward RZZ segments and native disjoint one-qubit H/rotation layers complement the fused RX/RY/RZ/RZZ adjoint operators, commuting shared-parameter RZZ segments, shared rotation-layer adjoints with native shared-gradient reduction, allocation-free reverse H blocks, same-wire forward composition, CX-sequence permutations, reuse of the observable diagonal, bounded structural planning reuse, cached accelerator capability probes, parameter-free adjoint IR template reuse, once-per-parameter binding validation, and analytic Pauli-rotation VJPs. The native adjoint operators accelerated backward by 3.05x to 5.97x and total value-and-gradient by 2.00x to 2.69x. Total PennyLane Lightning/FlagQuantum ratios ranged from 1.06x to 1.50x on this host. Hardware-efficient VQE stresses many independent rotation gradients; QAOA stresses repeated shared parameters. This establishes functional local adjoint support for real weighted Z/ZZ Hamiltonians at complex128, not a universal performance or general Pauli-support claim. The QAOA path now reduces repeated planning and shared-parameter bookkeeping overhead; repeated optimization steps also avoid rebuilding detached IR snapshots while preserving fresh parameter values and autograd contexts.
 
 ## FlagQuantum example
 
@@ -54,8 +54,8 @@ flagquantum-benchmark run differentiable_simulator_corpus \
   --engines flagquantum_adjoint flagquantum_adjoint_python_fallback pennylane_lightning_adjoint \
   --workloads hardware_efficient_vqe qaoa_path_maxcut \
   --n-wires 10 14 18 22 \
-  --layers 1 --threads 1 --warmup 1 \
-  --iterations 5 --calls-per-sample 1 \
+  --layers 1 --threads 1 --warmup 2 \
+  --iterations 7 --calls-per-sample 1 \
   --skip-memory-probe \
   --json-output adjoint_differentiable_simulator_corpus_cpu_arm64_20260928.json --markdown-output REPORT.md
 ```

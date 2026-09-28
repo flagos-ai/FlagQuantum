@@ -13,7 +13,6 @@ import torch.distributed as dist
 
 from ....compute import resolve_platform_device
 from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...builder_compilation import detached_ir_snapshot
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout
 from .forward_executor import execute_torch_distributed_statevector
@@ -29,6 +28,7 @@ from .reverse_support import (
     _persistent_wire_layout_enabled,
     _reverse_chunk_amplitudes,
 )
+from .reverse_template import prepare_adjoint_ir_template
 
 
 def _communication_aware_layout_enabled() -> bool:
@@ -326,10 +326,10 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         ctx.process_group = process_group
         ctx.evidence = evidence
         ctx.save_for_backward(*parameters)
-        bound = _bind_parameters(detached_ir_snapshot(ir), slots, parameters)
-        # Builder slot mappings are task-local and are cleared after forward.
-        # Retain the materialized IR so backward never dereferences cleared slots.
-        ctx.ir = bound
+        bound = _bind_parameters(ir, slots, parameters)
+        # Retain the parameter-free template; backward binds only saved tensors into
+        # a fresh IR and never depends on a cached tensor or autograd graph.
+        ctx.ir = ir
         dtype = (
             torch.complex128
             if any(parameter.dtype == torch.float64 for parameter in parameters)
@@ -530,6 +530,7 @@ def execute_torch_distributed_statevector_reverse(
             execution_ir, world_size=world_size
         )
     parameters, slots, occurrences = _parameter_layout(execution_ir)
+    execution_template = prepare_adjoint_ir_template(execution_ir, slots)
     if device is None:
         device = (
             resolve_platform_device("cuda")
@@ -567,7 +568,7 @@ def execute_torch_distributed_statevector_reverse(
     )
     apply: Callable[..., object] = _ShardedStatevectorExpectation.apply
     value = apply(
-        execution_ir,
+        execution_template,
         slots,
         policy,
         tuple(
