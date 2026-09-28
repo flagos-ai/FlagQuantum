@@ -412,7 +412,8 @@ separate. A representative direct-Triton record is:
     "distribution": "triton",
     "version": "<measured>",
     "backend": "cuda",
-    "identity_source": "python_package_metadata"
+    "identity_source": "python_package_metadata",
+    "identity_status": "resolved"
   },
   "kernel_route": {
     "semantic_id": "statevector.local_1q",
@@ -428,6 +429,13 @@ FlagTree integration layer. It does not claim that the distribution is an
 unmodified upstream build. A future FlagTree route should report
 `integration_path="flagtree"` and FlagTree's measured integration version in
 addition to the underlying compiler facts.
+
+Because FlagTree installs a `flagtree` distribution that provides the
+`triton` Python module, provenance must come from the module-to-distribution
+mapping rather than from `import triton` or a lookup of the `triton`
+distribution name alone. Missing, ambiguous, or unsupported ownership is
+reported as `integration_path="unknown"`; it must not be relabeled as direct
+Triton or FlagTree from a device name or environment hint.
 
 The record must not claim a FlagTree route merely because Torch-FL is active.
 Torch-FL can select vendor-native kernels, compatibility boxing, FlagGems,

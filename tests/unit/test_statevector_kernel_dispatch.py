@@ -9,6 +9,7 @@ from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
     select_triton_kernel,
     triton_available,
+    triton_compiler_provenance,
 )
 
 pytestmark = pytest.mark.unit
@@ -105,8 +106,8 @@ def test_dispatch_records_direct_triton_compiler_identity(monkeypatch):
     monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
     monkeypatch.setattr(
         kernel_dispatch,
-        "triton_distribution_identity",
-        lambda: ("triton", "3.7.1"),
+        "triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
     )
 
     decision = select_triton_kernel(
@@ -117,7 +118,7 @@ def test_dispatch_records_direct_triton_compiler_identity(monkeypatch):
         device_runtime_provider="pytorch",
         device_type="cuda",
         compiler_backend="cuda",
-        integration_path="direct",
+        capture_compiler_identity=True,
     )
 
     assert decision.summary() == {
@@ -131,6 +132,7 @@ def test_dispatch_records_direct_triton_compiler_identity(monkeypatch):
             "version": "3.7.1",
             "backend": "cuda",
             "identity_source": "python_package_metadata",
+            "identity_status": "resolved",
         },
         "kernel_route": {
             "semantic_id": "statevector.local_1q",
@@ -152,7 +154,7 @@ def test_dispatch_records_direct_pytorch_fallback_without_compiler_claim(monkeyp
         device_runtime_provider="pytorch",
         device_type="cpu",
         compiler_backend="cuda",
-        integration_path="direct",
+        capture_compiler_identity=True,
     )
 
     summary = decision.summary()
@@ -160,6 +162,130 @@ def test_dispatch_records_direct_pytorch_fallback_without_compiler_claim(monkeyp
     assert summary["kernel_route"] == {
         "semantic_id": "statevector.local_1q",
         "implementation": "pytorch_eager",
-        "integration_path": "direct",
+        "integration_path": "pytorch",
         "fallback": True,
     }
+
+
+@pytest.mark.parametrize(
+    ("owner", "version", "integration_path"),
+    (
+        ("triton", "3.7.1", "direct"),
+        ("FlagTree", "0.6.0", "flagtree"),
+    ),
+)
+def test_triton_compiler_provenance_resolves_module_owner(
+    monkeypatch, owner, version, integration_path
+):
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "packages_distributions",
+        lambda: {"triton": [owner]},
+    )
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "version",
+        lambda distribution: version,
+    )
+
+    assert triton_compiler_provenance() == (
+        owner.casefold(),
+        version,
+        integration_path,
+        "resolved",
+    )
+
+
+def test_triton_compiler_provenance_does_not_guess_without_metadata(monkeypatch):
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "packages_distributions",
+        lambda: {},
+    )
+
+    assert triton_compiler_provenance() == (None, None, "unknown", "missing")
+
+
+def test_triton_compiler_provenance_rejects_ambiguous_owners(monkeypatch):
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "packages_distributions",
+        lambda: {"triton": ["triton", "flagtree"]},
+    )
+
+    assert triton_compiler_provenance() == (
+        None,
+        None,
+        "unknown",
+        "ambiguous",
+    )
+
+
+def test_triton_compiler_provenance_requires_owner_version_metadata(monkeypatch):
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "packages_distributions",
+        lambda: {"triton": ["flagtree"]},
+    )
+
+    def missing_version(distribution):
+        raise kernel_dispatch.metadata.PackageNotFoundError(distribution)
+
+    monkeypatch.setattr(kernel_dispatch.metadata, "version", missing_version)
+
+    assert triton_compiler_provenance() == (
+        "flagtree",
+        None,
+        "unknown",
+        "missing_metadata",
+    )
+
+
+def test_triton_compiler_provenance_reports_unknown_distribution(monkeypatch):
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "packages_distributions",
+        lambda: {"triton": ["vendor_triton"]},
+    )
+    monkeypatch.setattr(
+        kernel_dispatch.metadata,
+        "version",
+        lambda distribution: "1.2.3",
+    )
+
+    assert triton_compiler_provenance() == (
+        "vendor-triton",
+        "1.2.3",
+        "unknown",
+        "unsupported_distribution",
+    )
+
+
+def test_dispatch_records_flagtree_substitution_without_importing_flagtree(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        kernel_dispatch,
+        "triton_compiler_provenance",
+        lambda: ("flagtree", "0.6.0", "flagtree", "resolved"),
+    )
+
+    decision = select_triton_kernel(
+        "local_1q",
+        requested=True,
+        supported=True,
+        available=True,
+        device_runtime_provider="pytorch",
+        device_type="cuda",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
+    )
+
+    summary = decision.summary()
+    assert summary["kernel_compiler"] == {
+        "distribution": "flagtree",
+        "version": "0.6.0",
+        "backend": "cuda",
+        "identity_source": "python_package_metadata",
+        "identity_status": "resolved",
+    }
+    assert summary["kernel_route"]["integration_path"] == "flagtree"
