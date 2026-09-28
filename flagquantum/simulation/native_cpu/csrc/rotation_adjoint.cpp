@@ -250,6 +250,108 @@ at::Tensor fused_rotation_adjoint_cpu(
   return result;
 }
 
+at::Tensor fused_rzz_segment_forward_cpu(
+    at::Tensor state,
+    const at::Tensor& angles,
+    const at::Tensor& first_wires,
+    const at::Tensor& second_wires,
+    int64_t n_wires) {
+  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  TORCH_CHECK(
+      angles.device().is_cpu() && first_wires.device().is_cpu() &&
+          second_wires.device().is_cpu(),
+      "segment metadata must be on CPU");
+  TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
+  TORCH_CHECK(
+      angles.is_contiguous() && first_wires.is_contiguous() &&
+          second_wires.is_contiguous(),
+      "segment metadata must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(first_wires.scalar_type() == at::kLong, "first_wires must be int64");
+  TORCH_CHECK(second_wires.scalar_type() == at::kLong, "second_wires must be int64");
+  TORCH_CHECK(
+      angles.dim() == 1 && first_wires.dim() == 1 && second_wires.dim() == 1,
+      "segment metadata must be one-dimensional");
+  TORCH_CHECK(
+      angles.numel() > 1 && first_wires.numel() == angles.numel() &&
+          second_wires.numel() == angles.numel(),
+      "segment metadata lengths must match and contain at least two gates");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  const int64_t gate_count = angles.numel();
+  const int64_t* first_data = first_wires.const_data_ptr<int64_t>();
+  const int64_t* second_data = second_wires.const_data_ptr<int64_t>();
+  std::vector<int64_t> first_masks(gate_count);
+  std::vector<int64_t> second_masks(gate_count);
+  uint64_t transition_mask = 0;
+  bool shared_path = true;
+  for (int64_t gate = 0; gate < gate_count; ++gate) {
+    TORCH_CHECK(
+        first_data[gate] >= 0 && first_data[gate] < n_wires &&
+            second_data[gate] >= 0 && second_data[gate] < n_wires &&
+            first_data[gate] != second_data[gate],
+        "RZZ segment contains an invalid wire pair");
+    first_masks[gate] = int64_t{1} << (n_wires - first_data[gate] - 1);
+    second_masks[gate] = int64_t{1} << (n_wires - second_data[gate] - 1);
+    if (std::abs(first_data[gate] - second_data[gate]) != 1) {
+      shared_path = false;
+      continue;
+    }
+    const uint64_t transition_bit = static_cast<uint64_t>(
+        std::min(first_masks[gate], second_masks[gate]));
+    if ((transition_mask & transition_bit) != 0) {
+      shared_path = false;
+    }
+    transition_mask |= transition_bit;
+  }
+
+  AT_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rzz_segment_forward_cpu", [&] {
+    using real_t = typename scalar_t::value_type;
+    TORCH_CHECK(
+        angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+        "angle dtype must match the state precision");
+    const real_t* angle_data = angles.const_data_ptr<real_t>();
+    for (int64_t gate = 1; gate < gate_count; ++gate) {
+      if (angle_data[gate] != angle_data[0]) {
+        shared_path = false;
+        break;
+      }
+    }
+    scalar_t* state_data = state.data_ptr<scalar_t>();
+    const int64_t item_count = state.numel();
+    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+      for (int64_t item = begin; item < end; ++item) {
+        const int64_t basis = item & (amplitudes - 1);
+        real_t phase = real_t{0};
+        if (shared_path) {
+          const uint64_t transitions =
+              (static_cast<uint64_t>(basis) ^
+               (static_cast<uint64_t>(basis) >> 1)) &
+              transition_mask;
+          const real_t sign_sum = static_cast<real_t>(
+              gate_count - 2 * popcount(transitions));
+          phase = real_t{-0.5} * sign_sum * angle_data[0];
+        } else {
+          for (int64_t gate = 0; gate < gate_count; ++gate) {
+            const bool odd_parity = ((basis & first_masks[gate]) != 0) !=
+                ((basis & second_masks[gate]) != 0);
+            const real_t sign = odd_parity ? real_t{-1} : real_t{1};
+            phase -= real_t{0.5} * sign * angle_data[gate];
+          }
+        }
+        state_data[item] *= scalar_t(std::cos(phase), std::sin(phase));
+      }
+    });
+  });
+  return state;
+}
+
 at::Tensor fused_rotation_segment_adjoint_cpu(
     at::Tensor ket,
     at::Tensor adjoint,
@@ -592,6 +694,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor matrix, int wire, int second_wire, int n_wires, int gate_kind) -> Tensor");
   library.def(
+      "fused_rzz_segment_forward_(Tensor(a!) state, Tensor angles, "
+      "Tensor first_wires, Tensor second_wires, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires) -> Tensor");
   library.def(
@@ -603,6 +708,7 @@ TORCH_LIBRARY(flagquantum_native, library) {
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
+  library.impl("fused_rzz_segment_forward_", &fused_rzz_segment_forward_cpu);
   library.impl("fused_rotation_segment_adjoint_", &fused_rotation_segment_adjoint_cpu);
   library.impl("fused_rzz_segment_adjoint_", &fused_rzz_segment_adjoint_cpu);
 }

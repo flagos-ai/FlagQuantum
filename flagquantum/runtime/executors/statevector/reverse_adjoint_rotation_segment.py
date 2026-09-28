@@ -1,4 +1,4 @@
-"""Native CPU planning for small-state adjoint rotation segments."""
+"""Native CPU planning for adjoint rotation segments."""
 
 from __future__ import annotations
 
@@ -27,7 +27,6 @@ def _apply_local_rotation_segment(
         and execution_instruction.name in _KIND_BY_NAME
         and len(execution_instruction.wires) == 1
         and sweep.world_size == 1
-        and sweep.plan.n_wires < 16
         and sweep.reversible_state.amplitudes.device.type == "cpu"
         and _cpu_direct_adjoint_gate_enabled()
         and native_cpu_rotation_segment_available()
@@ -56,7 +55,7 @@ def _apply_local_rotation_segment(
             indices.append(cursor)
         cursor -= 1
 
-    if len(block_wires) < 2 or len(indices) == len(block_wires):
+    if len(block_wires) < 2:
         return False
     active_by_gate = tuple(
         sorted(sweep.slots_by_instruction.get(gate_index, ())) for gate_index in indices

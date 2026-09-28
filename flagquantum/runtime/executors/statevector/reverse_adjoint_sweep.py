@@ -12,7 +12,11 @@ import torch.distributed as dist
 from ....compute import get_platform_runtime
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....simulation.native_cpu import fused_rzz_segment_adjoint_
+from ....simulation.native_cpu import (
+    fused_rotation_block_forward_,
+    fused_rzz_segment_adjoint_,
+    native_cpu_one_qubit_layer_available,
+)
 from ....simulation.statevector.adjoint import (
     analytic_rotation_derivative as _analytic_rotation_derivative,
 )
@@ -790,7 +794,8 @@ class _ReversibleAdjointSweep:
         segment: list[Instruction] = [execution_instruction]
         wires = {execution_instruction.wires[0]}
         cursor = index - 1
-        while cursor >= 0 and len(segment) < 4:
+        max_block_wires = 4 if self.plan.n_wires < 16 else 6
+        while cursor >= 0 and len(segment) < max_block_wires:
             if self.swaps_before.get(cursor) or self.slots_by_instruction.get(cursor):
                 break
             candidate = self.bound.instructions[cursor]
@@ -811,10 +816,37 @@ class _ReversibleAdjointSweep:
             _instruction_matrix(item, device=self.device, dtype=self.dtype).mH
             for item in segment
         )
+        block_wires = tuple(item.wires[0] for item in segment)
+        if native_cpu_one_qubit_layer_available():
+            matrix_block = torch.stack(matrices).contiguous()
+            wire_block = torch.tensor(block_wires, dtype=torch.int64)
+            applied_ket = fused_rotation_block_forward_(
+                self.reversible_state.amplitudes,
+                matrix_block,
+                wire_block,
+                n_wires=self.plan.n_wires,
+            )
+            if applied_ket:
+                applied_adjoint = fused_rotation_block_forward_(
+                    self.adjoint,
+                    matrix_block,
+                    wire_block,
+                    n_wires=self.plan.n_wires,
+                )
+                if not applied_adjoint:
+                    raise RuntimeError(
+                        "native fixed-block adjoint rejected a validated matching state"
+                    )
+                self.evidence.peak_scratch_bytes = max(
+                    self.evidence.peak_scratch_bytes,
+                    matrix_block.numel() * matrix_block.element_size()
+                    + wire_block.numel() * wire_block.element_size(),
+                )
+                self.skipped_fixed_block_indices.update(range(cursor + 1, index))
+                return True
         combined = matrices[0]
         for matrix in matrices[1:]:
             combined = torch.kron(combined, matrix)
-        block_wires = tuple(item.wires[0] for item in segment)
         ket = _apply_matrix(
             self.reversible_state.amplitudes,
             combined,

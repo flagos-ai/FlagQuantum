@@ -7,7 +7,12 @@ from .adjoint import (
     native_cpu_adjoint_available,
     native_cpu_rotation_segment_available,
 )
-from .rotation import fused_rotation_block_forward_, native_cpu_rotation_available
+from .rotation import (
+    fused_rotation_block_forward_,
+    native_cpu_one_qubit_layer_available,
+    native_cpu_rotation_available,
+)
+from .rzz import fused_rzz_segment_forward_, native_cpu_rzz_available
 
 __all__ = [
     "fused_rotation_adjoint_",
@@ -17,4 +22,7 @@ __all__ = [
     "native_cpu_rotation_segment_available",
     "fused_rotation_block_forward_",
     "native_cpu_rotation_available",
+    "native_cpu_one_qubit_layer_available",
+    "fused_rzz_segment_forward_",
+    "native_cpu_rzz_available",
 ]
