@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+from collections import OrderedDict
 from collections.abc import Sequence
 from math import log2
+from threading import Lock
 from typing import Any
 
 from ....compiler import schedule_layers
@@ -36,6 +39,9 @@ _COMMUNICATION_LOCAL_DIAGONAL_GATES = {
     "cphase",
 }
 _TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
+_PLAN_CACHE_CAPACITY = 128
+_PLAN_CACHE: OrderedDict[tuple[Any, ...], DistributedStatevectorPlan] = OrderedDict()
+_PLAN_CACHE_LOCK = Lock()
 
 
 def _is_power_of_two(value: int) -> bool:
@@ -405,6 +411,31 @@ def plan_distributed_statevector(
     node_count = _node_count(world_size, local_world_size)
     bsz = max(1, int(bsz))
     complex_bytes = int(complex_bytes)
+    max_fusion_gate_width = max(1, int(max_fusion_gate_width))
+    cache_key = (
+        int(ir.n_wires),
+        tuple(
+            (instruction.name, tuple(int(wire) for wire in instruction.wires))
+            for instruction in ir.instructions
+        ),
+        bsz,
+        world_size,
+        local_world_size,
+        complex_bytes,
+        max_fusion_gate_width,
+    )
+    cache_enabled = os.getenv("FQ_STATEVECTOR_PLAN_CACHE", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+    if cache_enabled:
+        with _PLAN_CACHE_LOCK:
+            cached = _PLAN_CACHE.get(cache_key)
+            if cached is not None:
+                _PLAN_CACHE.move_to_end(cache_key)
+                return cached
     total_amplitudes = 2 ** int(ir.n_wires)
     total_state_bytes = total_amplitudes * bsz * complex_bytes
     power_two_world = _is_power_of_two(world_size)
@@ -445,7 +476,7 @@ def plan_distributed_statevector(
         )
     fusion_blocks = _fusion_blocks(
         gate_plans,
-        max_fusion_gate_width=max(1, int(max_fusion_gate_width)),
+        max_fusion_gate_width=max_fusion_gate_width,
     )
     execution_segments = _execution_segments(fusion_blocks, gate_plans)
     communication_gate_count = sum(
@@ -465,7 +496,7 @@ def plan_distributed_statevector(
         distribution=distribution,
     )
     buffer_plans = _buffer_plans(execution_segments, world_size=world_size)
-    return DistributedStatevectorPlan(
+    plan = DistributedStatevectorPlan(
         n_wires=int(ir.n_wires),
         bsz=bsz,
         world_size=world_size,
@@ -490,6 +521,13 @@ def plan_distributed_statevector(
         ),
         distribution=distribution,
     )
+    if cache_enabled:
+        with _PLAN_CACHE_LOCK:
+            _PLAN_CACHE[cache_key] = plan
+            _PLAN_CACHE.move_to_end(cache_key)
+            while len(_PLAN_CACHE) > _PLAN_CACHE_CAPACITY:
+                _PLAN_CACHE.popitem(last=False)
+    return plan
 
 
 def estimate_distributed_statevector_performance(

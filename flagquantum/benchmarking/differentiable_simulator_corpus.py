@@ -1020,7 +1020,7 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
         "",
         "## Results",
         "",
-        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | Lightning total (ms) | Lightning / FQ total | Max gradient error |",
+        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | PennyLane Lightning total (ms) | PennyLane Lightning / FlagQuantum total | Max gradient error |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
 
@@ -1074,7 +1074,8 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
     lines.extend(
         (
             "",
-            "A Lightning/FQ ratio above one means FlagQuantum was faster. Peak RSS was",
+            "A PennyLane Lightning/FlagQuantum ratio above one means FlagQuantum was "
+            "faster. Peak RSS was",
             "not measured in this timing run. These are local, non-release",
             "single-device results, not a universal framework ranking or scaling claim.",
             "",
@@ -1084,19 +1085,23 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
             f"gradient error was {max(errors):.3e}. One-pass forward RZZ segments and "
             "native disjoint one-qubit H/rotation layers complement the fused "
             "RX/RY/RZ/RZZ adjoint operators, commuting shared-parameter RZZ segments, "
-            "shared rotation-layer adjoints, allocation-free reverse H blocks, same-wire "
-            "forward composition, CX-sequence permutations, reuse of the observable "
-            "diagonal, and analytic Pauli-rotation VJPs. The native adjoint operators "
+            "shared rotation-layer adjoints with native shared-gradient reduction, "
+            "allocation-free reverse H blocks, same-wire forward "
+            "composition, CX-sequence permutations, reuse of the observable diagonal, "
+            "bounded structural planning reuse, cached accelerator capability probes, "
+            "and analytic Pauli-rotation VJPs. The native adjoint operators "
             "accelerated backward by "
             f"{min(backward_speedups):.2f}x to {max(backward_speedups):.2f}x and total "
             f"value-and-gradient by {min(total_speedups):.2f}x to "
-            f"{max(total_speedups):.2f}x. Total Lightning/FQ ratios ranged from "
+            f"{max(total_speedups):.2f}x. Total PennyLane Lightning/FlagQuantum ratios "
+            "ranged from "
             f"{min(ratios):.2f}x to {max(ratios):.2f}x on this host. Hardware-efficient "
             "VQE stresses many independent rotation gradients; QAOA stresses repeated "
             "shared parameters. This establishes functional local adjoint support for real "
             "weighted Z/ZZ Hamiltonians at complex128, not a universal performance or "
-            "general Pauli-support claim. The largest QAOA case now has balanced forward "
-            "and backward costs; small-width framework overhead remains the next target.",
+            "general Pauli-support claim. The QAOA path now reduces repeated planning and "
+            "shared-parameter bookkeeping overhead while preserving the large-width "
+            "execution path.",
             "",
             "## FlagQuantum example",
             "",

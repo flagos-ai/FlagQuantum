@@ -1,13 +1,35 @@
 """Statevector accelerated-kernel dispatch policy contracts."""
 
+import importlib.util
+
 import pytest
 
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
     select_triton_kernel,
+    triton_available,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_triton_availability_probe_is_cached(monkeypatch):
+    calls = 0
+
+    def available(name):
+        nonlocal calls
+        calls += 1
+        assert name == "triton"
+        return object()
+
+    monkeypatch.setattr(importlib.util, "find_spec", available)
+    triton_available.cache_clear()
+    try:
+        assert triton_available()
+        assert triton_available()
+        assert calls == 1
+    finally:
+        triton_available.cache_clear()
 
 
 def test_dispatch_selects_accelerated_kernel_when_eligible(monkeypatch):
