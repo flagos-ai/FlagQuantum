@@ -1,5 +1,7 @@
 """Ownership tests for Runtime-independent statevector adjoint numerics."""
 
+import math
+
 import pytest
 import torch
 
@@ -9,6 +11,7 @@ from flagquantum.simulation.statevector.adjoint import (
     real_conjugate_inner_sum,
     z_expectation_adjoint_chunk,
     z_expectation_chunk,
+    z_hamiltonian_chunk,
 )
 
 pytestmark = pytest.mark.unit
@@ -43,6 +46,36 @@ def test_z_expectation_chunk_and_adjoint_share_wire_semantics():
         adjoint,
         torch.tensor([[1.0 + 1.0j, -1.0 + 1.0j]], dtype=torch.complex64),
     )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_z_hamiltonian_chunk_matches_dense_diagonal(dtype):
+    amplitudes = torch.tensor(
+        [[0.1 + 0.2j, -0.3 + 0.1j, 0.2 - 0.4j, 0.5 + 0.6j]],
+        dtype=dtype,
+    )
+    amplitudes = amplitudes / torch.linalg.vector_norm(amplitudes)
+    indices = torch.tensor([0, 2, 5, 7])
+    terms = ((0.7, (0, 1)), (0.2, (0,)), (-0.3, (1, 2)))
+
+    value, adjoint = z_hamiltonian_chunk(amplitudes, indices, n_wires=3, terms=terms)
+
+    weights = torch.tensor(
+        [
+            sum(
+                coefficient
+                * math.prod(
+                    1 - 2 * ((int(index) >> (3 - wire - 1)) & 1) for wire in wires
+                )
+                for coefficient, wires in terms
+            )
+            for index in indices
+        ],
+        dtype=amplitudes.real.dtype,
+    )
+    expected = (amplitudes.abs().square() * weights).sum()
+    torch.testing.assert_close(value, expected)
+    torch.testing.assert_close(adjoint, 2 * amplitudes * weights)
 
 
 def _rotation_matrix(
@@ -82,3 +115,32 @@ def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, real_
 
     assert actual is not None
     assert torch.allclose(actual, reference, atol=2e-7, rtol=2e-6)
+
+
+@pytest.mark.parametrize("real_dtype", (torch.float32, torch.float64))
+def test_rzz_analytic_derivative_matches_autograd(real_dtype):
+    theta = torch.tensor(0.37, dtype=real_dtype, requires_grad=True)
+    complex_dtype = torch.complex64 if real_dtype == torch.float32 else torch.complex128
+    instruction = Instruction("rzz", (0, 1), {"theta": theta})
+
+    def matrix(value: torch.Tensor) -> torch.Tensor:
+        phases = torch.stack(
+            (
+                torch.exp(-0.5j * value),
+                torch.exp(0.5j * value),
+                torch.exp(0.5j * value),
+                torch.exp(-0.5j * value),
+            )
+        ).to(complex_dtype)
+        return torch.diag(phases)
+
+    gate_matrix = matrix(theta)
+    _, reference = torch.autograd.functional.jvp(
+        matrix,
+        (theta,),
+        (torch.ones_like(theta),),
+    )
+    actual = analytic_rotation_derivative(instruction, gate_matrix)
+
+    assert actual is not None
+    torch.testing.assert_close(actual, reference, atol=2e-7, rtol=2e-6)

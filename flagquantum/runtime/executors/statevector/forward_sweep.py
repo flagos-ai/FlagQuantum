@@ -15,6 +15,7 @@ from ....compute import resolve_platform_device
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.statevector.operations import (
+    _apply_cx_sequence_gather,
     _compose_gate_matrices,
     _instruction_matrix,
 )
@@ -28,6 +29,7 @@ from .forward import (
     _ket_checkpoint_mode,
     _local_block_fusion_enabled,
     _local_block_fusion_width,
+    _single_process_cpu_direct_enabled,
     _triton_local_cx_decision,
     _triton_local_cx_segment_enabled,
     _triton_transpose_1q_enabled,
@@ -312,6 +314,9 @@ class _ShardedForwardSweep:
         cursor = self._cx_segment(index, instruction, touched)
         if cursor is not None:
             return cursor
+        cursor = self._same_wire_fusion(index, instruction, matrix, touched)
+        if cursor is not None:
+            return cursor
         cursor = self._local_block_fusion(index, instruction, matrix, touched)
         if cursor is not None:
             return cursor
@@ -339,10 +344,14 @@ class _ShardedForwardSweep:
     ) -> int | None:
         """Fuse a contiguous run of local CX gates, or report it cannot."""
 
-        if (
-            self.cx_segment_scratch is not None
-            and instruction.name == "cx"
-            and not touched
+        cpu_gather = bool(
+            self.local_compilation
+            and self.world_size == 1
+            and self.resolved_device.type == "cpu"
+            and _single_process_cpu_direct_enabled()
+        )
+        if (self.cx_segment_scratch is not None or cpu_gather) and (
+            instruction.name == "cx" and not touched
         ):
             segment_wires = [instruction.wires]
             segment_cursor = index + 1
@@ -360,6 +369,20 @@ class _ShardedForwardSweep:
                 segment_wires.append(mapped)
                 segment_cursor += 1
             if len(segment_wires) > 1:
+                if self.resolved_device.type == "cpu":
+                    gathered = _apply_cx_sequence_gather(
+                        self.shard_state.amplitudes,
+                        tuple(wires[0] for wires in segment_wires),
+                        tuple(wires[1] for wires in segment_wires),
+                        self.plan.n_wires,
+                    )
+                    self.shard_state = replace(self.shard_state, amplitudes=gathered)
+                    self.local_count += len(segment_wires)
+                    self.peak_scratch = max(
+                        self.peak_scratch,
+                        gathered.numel() * gathered.element_size(),
+                    )
+                    return segment_cursor
                 from ....simulation.triton_kernels.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
@@ -374,14 +397,16 @@ class _ShardedForwardSweep:
                     for wires in segment_wires
                 )
                 previous = self.shard_state.amplitudes
+                assert self.cx_segment_scratch is not None
+                cx_segment_scratch = self.cx_segment_scratch
                 apply_complex64_local_cx_segment(
                     previous,
                     control_bit_positions=controls,
                     target_bit_positions=targets,
-                    output=self.cx_segment_scratch,
+                    output=cx_segment_scratch,
                 )
                 self.shard_state = replace(
-                    self.shard_state, amplitudes=self.cx_segment_scratch
+                    self.shard_state, amplitudes=cx_segment_scratch
                 )
                 self.cx_segment_scratch = previous
                 self.local_count += len(segment_wires)
@@ -392,6 +417,54 @@ class _ShardedForwardSweep:
                 )
                 return segment_cursor
         return None
+
+    def _same_wire_fusion(
+        self,
+        index: int,
+        instruction: Instruction,
+        matrix: torch.Tensor,
+        touched: bool,
+    ) -> int | None:
+        """Compose adjacent gates on one local wire before scanning the state."""
+
+        if not (
+            self.local_compilation
+            and _local_block_fusion_enabled()
+            and len(instruction.wires) == 1
+            and not touched
+        ):
+            return None
+        wire = instruction.wires[0]
+        matrices = [matrix]
+        cursor = index + 1
+        while cursor < len(self.ir.instructions):
+            if self.swaps_before.get(cursor):
+                break
+            candidate = self.ir.instructions[cursor]
+            if len(candidate.wires) != 1:
+                break
+            candidate_wire = self.persistent_mapping[int(candidate.wires[0])]
+            if candidate_wire != wire:
+                break
+            matrices.append(self.matrices[cursor])
+            cursor += 1
+        if len(matrices) == 1:
+            return None
+        combined = matrices[0]
+        for candidate_matrix in matrices[1:]:
+            combined = candidate_matrix @ combined
+        self.shard_state, scratch = _vectorized_local_gate(
+            self.shard_state,
+            combined,
+            (wire,),
+            plan=self.plan,
+            chunk_amplitudes=self.chunk_amplitudes,
+            output=self.shard_state.amplitudes,
+            kernel_dispatch_evidence=self.kernel_dispatch_evidence,
+        )
+        self.peak_scratch = max(self.peak_scratch, scratch)
+        self.local_count += len(matrices)
+        return cursor
 
     def _local_block_fusion(
         self,

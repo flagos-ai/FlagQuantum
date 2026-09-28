@@ -342,6 +342,31 @@ Core IR measurement nodes remain available to Runtime implementers for advanced
 capabilities such as bounded postselection, but are intentionally absent from
 the root user API.
 
+## Local adjoint Hamiltonian gradients
+
+For batch-size-one statevector circuits with real, constant-coefficient Z and
+ZZ terms, `Hamiltonian.expectation` exposes a memory-bounded adjoint path:
+
+```python
+import torch
+import flagquantum as fq
+from flagquantum import algorithms as fqa
+
+theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
+circuit = fq.Circuit(3, dtype=torch.complex128).ry(0, theta).cx(0, 1)
+hamiltonian = fqa.Hamiltonian((
+    fqa.pauli_term(0.7, "ZZ", (0, 1)),
+    fqa.pauli_term(0.2, "Z", (2,)),
+))
+
+energy = hamiltonian.expectation(circuit, differentiation="adjoint")
+energy.backward()
+```
+
+The default remains `differentiation="autograd"`. Adjoint mode rejects X/Y
+terms, trainable or complex coefficients, and batched circuits instead of
+silently falling back to a different differentiation algorithm.
+
 ## Hardware Pauli measurements
 
 Use `create_pauli_measurement_plan` to measure a Hamiltonian containing X, Y,

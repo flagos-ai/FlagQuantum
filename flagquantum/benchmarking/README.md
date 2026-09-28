@@ -56,6 +56,21 @@ Aer and Cirq remain outside this corpus because their
 current FlagQuantum bridges do not provide a matching native Torch-gradient
 contract; finite differences are not substituted for a native gradient.
 
+The same runner also provides a separate, method-matched adjoint track. Select
+`--engines flagquantum_adjoint flagquantum_adjoint_gather_rollback
+pennylane_lightning_adjoint` to compare FlagQuantum's optimized reversible
+statevector adjoint with its gather-based rollback and PennyLane Lightning's
+adjoint. FlagQuantum's public entry point is
+`hamiltonian.expectation(circuit, differentiation="adjoint")`; this initial
+contract supports a batch size of one and real, constant-coefficient Z/ZZ terms.
+The optimized single-process CPU path composes adjacent same-wire gates, applies
+whole CX sequences as one permutation, reuses the forward observable diagonal,
+and evaluates analytic RX/RY/RZ/RZZ VJPs without materializing a derivative
+state. Set `FQ_STATEVECTOR_ADJOINT_CPU_DIRECT=0` only to reproduce the
+gather-based rollback A/B. `FQ_STATEVECTOR_CPU_DIRECT_LOCAL=0` independently
+restores the distributed gather implementation for ordinary one-process CPU
+forward execution.
+
 ## Refreshing native comparison evidence
 
 When a FlagQuantum optimization changes only the native timing, refresh that

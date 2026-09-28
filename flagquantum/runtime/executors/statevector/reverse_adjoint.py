@@ -13,6 +13,10 @@ from ....simulation.statevector.adjoint import (
 from ....simulation.statevector.adjoint import (
     z_expectation_chunk as _z_expectation_chunk,
 )
+from ....simulation.statevector.adjoint import (
+    z_hamiltonian_chunk,
+    z_hamiltonian_weights,
+)
 from .checkpointing import StatevectorCheckpointPolicy
 from .forward import _storage_global_indices
 from .reverse_adjoint_sweep import _ReversibleAdjointSweep
@@ -80,17 +84,74 @@ def _local_expectation_z_sum(
     return total
 
 
+def _local_expectation_z_hamiltonian(
+    shard_state: Any,
+    *,
+    plan: Any,
+    n_wires: int,
+    terms: tuple[tuple[float, tuple[int, ...]], ...],
+) -> torch.Tensor:
+    """Evaluate a weighted Z/ZZ Hamiltonian from one final shard state."""
+
+    total = torch.zeros(
+        (),
+        dtype=shard_state.amplitudes.real.dtype,
+        device=shard_state.amplitudes.device,
+    )
+    local_count = shard_state.shard.local_amplitudes
+    for start in range(0, local_count, _reverse_chunk_amplitudes()):
+        end = min(local_count, start + _reverse_chunk_amplitudes())
+        indices = _storage_global_indices(shard_state, start, end, plan=plan)
+        contribution, _ = z_hamiltonian_chunk(
+            shard_state.amplitudes[:, start:end],
+            indices,
+            n_wires=n_wires,
+            terms=terms,
+        )
+        total = total + contribution
+    return total
+
+
+def _local_expectation_z_hamiltonian_and_weights(
+    shard_state: Any,
+    *,
+    plan: Any,
+    n_wires: int,
+    terms: tuple[tuple[float, tuple[int, ...]], ...],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Evaluate one Hamiltonian and retain its real diagonal for backward."""
+
+    local_count = shard_state.shard.local_amplitudes
+    weights = torch.empty(
+        local_count,
+        dtype=shard_state.amplitudes.real.dtype,
+        device=shard_state.amplitudes.device,
+    )
+    for start in range(0, local_count, _reverse_chunk_amplitudes()):
+        end = min(local_count, start + _reverse_chunk_amplitudes())
+        indices = _storage_global_indices(shard_state, start, end, plan=plan)
+        weights[start:end] = z_hamiltonian_weights(
+            indices,
+            n_wires=n_wires,
+            terms=terms,
+            dtype=weights.dtype,
+        )
+    value = (shard_state.amplitudes.abs().square() * weights.reshape(1, -1)).sum()
+    return value, weights
+
+
 def _explicit_sharded_adjoint(
     ir: CircuitIR,
     slots: tuple[tuple[int, str, int], ...],
     saved_parameters: tuple[torch.Tensor, ...],
     *,
-    observable_wires: tuple[int, ...],
+    observable_terms: tuple[tuple[float, tuple[int, ...]], ...],
     device: torch.device,
     policy: StatevectorCheckpointPolicy,
     process_group: Any | None = None,
     evidence: BackwardExecutionEvidence,
     saved_final_state: Any | None = None,
+    saved_observable_weights: torch.Tensor | None = None,
     saved_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...] = (),
 ) -> tuple[torch.Tensor, ...]:
     """Rematerialize rank-local forward states and propagate gate adjoints."""
@@ -99,12 +160,13 @@ def _explicit_sharded_adjoint(
         ir,
         slots,
         saved_parameters,
-        observable_wires=observable_wires,
+        observable_terms=observable_terms,
         device=device,
         policy=policy,
         process_group=process_group,
         evidence=evidence,
         saved_final_state=saved_final_state,
+        saved_observable_weights=saved_observable_weights,
         saved_inter_node_ket_checkpoints=saved_inter_node_ket_checkpoints,
     )
     return sweep.run()
