@@ -128,6 +128,20 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output benchmarks/results/comparison/workload-corpus.json"
         ),
     ),
+    "differentiable_simulator_corpus": RunnerSpec(
+        name="differentiable_simulator_corpus",
+        module="flagquantum.benchmarking.differentiable_simulator_corpus",
+        attribute="main",
+        category="interop",
+        summary="Compare exact expectation gradients across simulator engines.",
+        hardware="CPU; PennyLane optional dependency required",
+        example=(
+            "flagquantum-benchmark run differentiable_simulator_corpus "
+            "--n-wires 10 14 18 22 --layers 1 --threads 1 --warmup 1 "
+            "--iterations 5 --json-output "
+            "benchmarks/results/comparison/differentiable-corpus.json"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",
