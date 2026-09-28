@@ -6,7 +6,7 @@ from flagquantum.algorithms import zz_chain_hamiltonian
 pytest.importorskip("triton")
 
 import flagquantum as fq
-from flagquantum.simulation.triton_kernels import (
+from flagquantum.kernels.triton import (
     repeated_rx_rz,
     repeated_rx_rz_tangents,
 )

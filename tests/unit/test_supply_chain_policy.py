@@ -13,7 +13,7 @@ def test_ci_has_coverage_security_and_sbom_gates():
     coverage_config = (ROOT / ".coveragerc").read_text()
     assert "python tools/check_coverage.py" in workflow
     assert "flagquantum/benchmarking/*" in coverage_config
-    assert "flagquantum/simulation/triton_kernels/*" in coverage_config
+    assert "flagquantum/kernels/triton/*" in coverage_config
     assert "pip list --format freeze --exclude flagquantum" in workflow
     assert (
         "pip-audit --strict --no-deps --requirement audit-requirements.txt" in workflow

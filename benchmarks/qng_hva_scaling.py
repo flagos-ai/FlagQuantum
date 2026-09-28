@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from benchmarks.qng_hva_forward_tangent_triton import metric,reference
 import flagquantum.algorithms as fqa
-from flagquantum.simulation.triton_kernels import heisenberg_hva_forward_tangents
+from flagquantum.kernels.triton import heisenberg_hva_forward_tangents
 
 def measure(fn,warmup,repeats):
  for _ in range(warmup):fn()

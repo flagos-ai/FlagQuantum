@@ -587,6 +587,14 @@ def architecture_errors() -> tuple[str, ...]:
                         f"{relative}: simulation primitive imports forbidden layer {module}"
                     )
 
+        if relative.startswith("flagquantum/kernels/"):
+            forbidden = tuple(boundaries["kernel_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: optimized kernel imports forbidden layer {module}"
+                    )
+
         if relative in {
             "flagquantum/runtime/distributed/protocols.py",
         }:

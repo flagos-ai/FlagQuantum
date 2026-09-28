@@ -3,7 +3,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.simulation.triton_kernels.complex_bmm import fused_complex_bmm
+from flagquantum.kernels.triton.complex_bmm import fused_complex_bmm
 
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 

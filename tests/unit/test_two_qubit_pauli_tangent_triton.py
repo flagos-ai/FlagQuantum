@@ -3,7 +3,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.simulation.triton_kernels.two_qubit_pauli_tangent import (
+from flagquantum.kernels.triton.two_qubit_pauli_tangent import (
     _reference,
     repeated_rxx_ryy_rzz_tangents,
 )

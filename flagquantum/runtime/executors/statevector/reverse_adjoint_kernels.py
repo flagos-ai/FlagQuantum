@@ -356,7 +356,7 @@ def _fused_sharded_1q_vjp_adjoint(
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
     """Exchange before/adjoint chunks once and fuse the sharded 1q reverse work."""
 
-    from ....simulation.triton_kernels.statevector_adjoint import (
+    from ....kernels.triton.statevector_adjoint import (
         fused_complex64_sharded_1q_vjp_adjoint,
     )
 

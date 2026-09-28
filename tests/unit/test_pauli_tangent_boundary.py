@@ -21,7 +21,7 @@ def tangent_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setitem(sys.modules, "triton.language", language)
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/simulation/triton_kernels/two_qubit_pauli_tangent.py"
+        / "flagquantum/kernels/triton/two_qubit_pauli_tangent.py"
     )
     spec = importlib.util.spec_from_file_location("_test_pauli_tangent", path)
     assert spec is not None and spec.loader is not None

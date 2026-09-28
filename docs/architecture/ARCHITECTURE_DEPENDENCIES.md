@@ -11,9 +11,11 @@ flowchart TD
     Compiler --> Core
     Runtime --> Core
     Runtime --> Simulation
+    Runtime --> Kernels[Optimized kernels]
     Runtime --> Compute
     Runtime --> Remote
     Simulation --> Core
+    Simulation --> Kernels
     Ecosystem[External object adapters] --> Core
     Collectors --> Records[Execution records]
     Audit[Audit and release policy] --> Records
@@ -46,7 +48,8 @@ name an owner and removal version. Run
 | Distributed executor protocols | `flagquantum.runtime.distributed.protocols` |
 | Backend boundaries | `flagquantum.runtime.executors` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
-| Numerical kernels | `flagquantum.simulation`, including optional `simulation.jax` |
+| Numerical semantics and portable references | `flagquantum.simulation`, including optional `simulation.jax` |
+| Optional optimized kernels | `flagquantum.kernels`, including lazy `kernels.triton` |
 | Directly controlled resources | `flagquantum.compute` |
 | Measurement contracts | `flagquantum.core.ir`, `flagquantum.runtime.measurements` |
 | Deployment packages | `flagquantum.deployment` |

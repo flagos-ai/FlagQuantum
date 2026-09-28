@@ -937,7 +937,7 @@ def _apply_rx_rz_loop(
     n_wires: int,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    from ..triton_kernels import repeated_rx_rz
+    from ...kernels.triton import repeated_rx_rz
 
     rx_angles = []
     rz_angles = []

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.simulation.triton_kernels import repeated_rx_rz_tangents
+from flagquantum.kernels.triton import repeated_rx_rz_tangents
 
 
 def reference(state, rx, rz):

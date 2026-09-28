@@ -591,7 +591,7 @@ def _vectorized_local_gate(
             amplitudes.numel() * amplitudes.element_size(),
         )
     if triton_decision.accelerated:
-        from ....simulation.triton_kernels.statevector_gates import (
+        from ....kernels.triton.statevector_gates import (
             apply_complex64_local_1q,
         )
 
@@ -642,7 +642,7 @@ def _vectorized_local_cx_gate(
 ) -> tuple[StatevectorShardState, int]:
     """Apply a fully local CNOT with no basis-index or matrix temporaries."""
 
-    from ....simulation.triton_kernels.statevector_gates import (
+    from ....kernels.triton.statevector_gates import (
         apply_complex64_local_cx_inplace,
     )
 
@@ -921,7 +921,7 @@ def _vectorized_cross_shard_cx(
         and out.is_contiguous()
     )
     if use_triton_pack:
-        from ....simulation.triton_kernels.statevector_gates import (
+        from ....kernels.triton.statevector_gates import (
             pack_complex64_control_one,
             unpack_complex64_control_one,
         )

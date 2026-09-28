@@ -25,11 +25,11 @@ composition, fusion, and tensor operations, including basis-bit extraction,
 global gate-basis offset expansion, compressed-to-local index expansion, and
 the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
 block combination kernels. Neither file is a new public API.
-`triton_kernels/statevector_gates.py` owns flat CUDA statevector kernels,
+`../kernels/triton/statevector_gates.py` owns flat CUDA statevector kernels,
 including buffered and transpose-fused one-qubit gates, CNOT segments, and
 control-one packing/scattering used around cross-shard CX transport. Runtime
 decides when to use them and owns the transport itself.
-`triton_kernels/statevector_adjoint.py` owns local and sharded one-qubit
+`../kernels/triton/statevector_adjoint.py` owns local and sharded one-qubit
 adjoint/VJP CUDA kernels; Runtime retains replay, checkpointing, collectives,
 and backward-pass evidence.
 `Circuit.state()` remains the

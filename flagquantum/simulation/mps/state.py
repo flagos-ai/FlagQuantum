@@ -1081,7 +1081,7 @@ class MPSState(MPSPlanningMixin):
             and not reverse
             and contraction_volume >= fused_threshold
         ):
-            from .triton_kernels.mps_two_site import fused_mps_two_site
+            from ...kernels.triton.mps_two_site import fused_mps_two_site
 
             fused = fused_mps_two_site(left, matrix, right)
             self._split_pair(
@@ -1148,7 +1148,7 @@ class MPSState(MPSPlanningMixin):
                 and volume >= 2**18
             )
             if use_triton:
-                from .triton_kernels.mps_two_site import fused_mps_two_site
+                from ...kernels.triton.mps_two_site import fused_mps_two_site
 
                 matrix = fused_mps_two_site(flat_left, flat_gates, flat_right)
                 self.triton_two_site_regions += bond_count

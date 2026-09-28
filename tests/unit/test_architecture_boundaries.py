@@ -67,7 +67,15 @@ def test_non_jax_backend_import_check_resolves_relative_and_absolute_imports(
 
 def test_top_level_package_layout_is_explicitly_frozen():
     allowed = set(CONFIG["package_layout"]["allowed_top_level_directories"])
-    assert {"core", "compiler", "runtime", "simulation", "compute", "remote"} <= allowed
+    assert {
+        "core",
+        "compiler",
+        "runtime",
+        "simulation",
+        "kernels",
+        "compute",
+        "remote",
+    } <= allowed
     assert "providers" not in allowed
     assert {"ops", "numerics", "compilation", "_compiler"}.isdisjoint(allowed)
 
@@ -82,6 +90,17 @@ assert not any(name.startswith(forbidden) for name in sys.modules), sorted(sys.m
 # guard as a coarse emergency ceiling without contradicting that snapshot.
 assert len(flagquantum.__all__) <= 64
 assert 'flagquantum.api' not in sys.modules
+"""
+    subprocess.run([sys.executable, "-c", code], cwd=ROOT, check=True)
+
+
+def test_kernel_package_import_is_lazy_and_does_not_initialize_optional_runtimes():
+    code = """
+import sys
+import flagquantum.kernels
+import flagquantum.kernels.triton
+forbidden = ('triton', 'torch_fl')
+assert not any(name.startswith(forbidden) for name in sys.modules), sorted(sys.modules)
 """
     subprocess.run([sys.executable, "-c", code], cwd=ROOT, check=True)
 

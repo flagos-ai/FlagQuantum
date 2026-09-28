@@ -23,7 +23,7 @@ def gate_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setitem(sys.modules, "triton.language", language)
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/simulation/triton_kernels/statevector_gates.py"
+        / "flagquantum/kernels/triton/statevector_gates.py"
     )
     spec = importlib.util.spec_from_file_location("_test_statevector_gates", path)
     assert spec is not None and spec.loader is not None

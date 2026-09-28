@@ -5,15 +5,15 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.runtime.executors.statevector.layout import _local_bit_view
-from flagquantum.simulation.triton_kernels.statevector_adjoint import (
+from flagquantum.kernels.triton.statevector_adjoint import (
     fused_complex64_local_1q_vjp_adjoint,
     fused_complex64_sharded_1q_vjp_adjoint,
 )
-from flagquantum.simulation.triton_kernels.statevector_gates import (
+from flagquantum.kernels.triton.statevector_gates import (
     apply_complex64_local_1q,
     apply_complex64_transpose_1q_inplace,
 )
+from flagquantum.runtime.executors.statevector.layout import _local_bit_view
 
 pytestmark = [
     pytest.mark.unit,

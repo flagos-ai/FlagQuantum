@@ -23,7 +23,7 @@ def bmm_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setitem(sys.modules, "triton.language", language)
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/simulation/triton_kernels/complex_bmm.py"
+        / "flagquantum/kernels/triton/complex_bmm.py"
     )
     spec = importlib.util.spec_from_file_location("_test_complex_bmm", path)
     assert spec is not None and spec.loader is not None
