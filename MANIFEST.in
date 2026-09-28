@@ -3,6 +3,7 @@ prune benchmarks
 prune examples
 prune .fq_jax_cache
 prune .pytest_cache
+recursive-include flagquantum/simulation/native_cpu/csrc *.cpp
 global-exclude *.py[cod]
 global-exclude *.parquet
 global-exclude *.ipynb

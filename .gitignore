@@ -13,6 +13,9 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+*.so
+*.dylib
+*.dll
 
 # IDE
 .vscode/

@@ -12,6 +12,7 @@ import torch.distributed as dist
 from ....compute import get_platform_runtime
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....simulation.native_cpu import fused_rzz_segment_adjoint_
 from ....simulation.statevector.adjoint import (
     analytic_rotation_derivative as _analytic_rotation_derivative,
 )
@@ -125,11 +126,13 @@ class _ReversibleAdjointSweep:
         self._prepare_gradients()
         self.skipped_cx_indices: set[int] = set()
         self.skipped_fixed_block_indices: set[int] = set()
+        self.skipped_rzz_indices: set[int] = set()
         self.cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
         for index in range(len(self.bound.instructions) - 1, -1, -1):
             if (
                 index in self.skipped_cx_indices
                 or index in self.skipped_fixed_block_indices
+                or index in self.skipped_rzz_indices
             ):
                 continue
             execution_instruction = replace(
@@ -140,6 +143,8 @@ class _ReversibleAdjointSweep:
                 ),
             )
             active = sorted(self.slots_by_instruction.get(index, ()))
+            if self._apply_local_rzz_segment(index, execution_instruction):
+                continue
             if self._apply_accelerated_reversible(index, execution_instruction, active):
                 continue
             if self._apply_local_cx_segment(index, execution_instruction):
@@ -149,6 +154,94 @@ class _ReversibleAdjointSweep:
             self._apply_general_step(index, execution_instruction, active)
         self._finish()
         return tuple(self.accumulated)
+
+    def _apply_local_rzz_segment(
+        self, index: int, execution_instruction: Instruction
+    ) -> bool:
+        """Undo a contiguous commuting RZZ region in one state traversal."""
+
+        if not (
+            self.inplace_local
+            and self.reversible_state is not None
+            and execution_instruction.name == "rzz"
+            and self.world_size == 1
+            and self.reversible_state.amplitudes.device.type == "cpu"
+            and _cpu_direct_adjoint_gate_enabled()
+            and not self.swaps_before.get(index)
+        ):
+            return False
+        segment_start = index
+        while segment_start > 0:
+            candidate_index = segment_start - 1
+            candidate = self.bound.instructions[candidate_index]
+            if candidate.name != "rzz" or self.swaps_before.get(candidate_index):
+                break
+            segment_start = candidate_index
+        if segment_start == index:
+            return False
+        indices = tuple(range(index, segment_start - 1, -1))
+        active_by_gate = tuple(
+            sorted(self.slots_by_instruction.get(gate_index, ()))
+            for gate_index in indices
+        )
+        if any(len(active) != 1 for active in active_by_gate):
+            return False
+        real_dtype = torch.float32 if self.dtype == torch.complex64 else torch.float64
+        angles = torch.stack(
+            tuple(
+                torch.as_tensor(
+                    self.bound.instructions[gate_index].params["theta"],
+                    dtype=real_dtype,
+                    device=self.device,
+                ).reshape(())
+                for gate_index in indices
+            )
+        ).contiguous()
+        mapped_wires = tuple(
+            tuple(
+                self.persistent_mapping[int(wire)]
+                for wire in self.bound.instructions[gate_index].wires
+            )
+            for gate_index in indices
+        )
+        first_wires = torch.tensor(
+            [wires[0] for wires in mapped_wires], dtype=torch.int64
+        )
+        second_wires = torch.tensor(
+            [wires[1] for wires in mapped_wires], dtype=torch.int64
+        )
+        shared_parameter = len({active[0] for active in active_by_gate}) == 1
+        adjacent_unique = len(
+            {
+                tuple(sorted(wires))
+                for wires in mapped_wires
+                if abs(wires[0] - wires[1]) == 1
+            }
+        ) == len(mapped_wires)
+        gradients = fused_rzz_segment_adjoint_(
+            self.reversible_state.amplitudes,
+            self.adjoint,
+            angles,
+            first_wires,
+            second_wires,
+            n_wires=self.plan.n_wires,
+            aggregate_shared_parameter=shared_parameter and adjacent_unique,
+        )
+        if gradients is None:
+            return False
+        for offset, (gate_index, active) in enumerate(
+            zip(indices, active_by_gate, strict=True)
+        ):
+            parameter_index = active[0]
+            self._accumulate_parameter_gradient(
+                parameter_index,
+                gradients[offset].to(dtype=self.base_parameters[parameter_index].dtype),
+                gate_index,
+            )
+            self.evidence.analytic_rotation_derivative_count += 1
+            self.evidence.fused_parameter_adjoint_count += 1
+        self.skipped_rzz_indices.update(range(segment_start, index))
+        return True
 
     def _prepare_layout(self) -> None:
         """Resolve the distributed plan and the persistent-layout state it needs."""
