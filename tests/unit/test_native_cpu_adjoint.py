@@ -25,10 +25,20 @@ from flagquantum.simulation.native_cpu import (
     fused_rzz_segment_adjoint_,
     fused_rzz_segment_forward_,
     native_cpu_adjoint_available,
+    native_cpu_parallel_build_available,
     native_cpu_rotation_available,
     native_cpu_rzz_available,
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
+
+
+def test_native_cpu_build_preserves_torch_parallel_backend() -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU adjoint extension is unavailable")
+    torch_backend = torch.__config__.parallel_info()
+    if "ATen parallel backend: OpenMP" in torch_backend:
+        assert native_cpu_parallel_build_available()
+
 
 pytestmark = pytest.mark.unit
 

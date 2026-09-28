@@ -60,6 +60,16 @@ def native_cpu_adjoint_available() -> bool:
     return _enabled() and _load_extension()
 
 
+def native_cpu_parallel_build_available() -> bool:
+    """Return whether native operators were built with Torch intra-op parallelism."""
+
+    if not _load_extension():
+        return False
+    extension = import_module("flagquantum.simulation.native_cpu._C")
+    probe = getattr(extension, "parallel_build_available", None)
+    return bool(probe is not None and probe())
+
+
 def native_cpu_rotation_segment_available() -> bool:
     """Return whether the optional multi-gate CPU adjoint path is available."""
 
