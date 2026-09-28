@@ -718,4 +718,12 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_rzz_segment_adjoint_", &fused_rzz_segment_adjoint_cpu);
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, module) {}
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, module) {
+  module.def("parallel_build_available", []() {
+#ifdef INTRA_OP_PARALLEL
+    return true;
+#else
+    return false;
+#endif
+  });
+}

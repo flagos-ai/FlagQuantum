@@ -10,16 +10,28 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import torch
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CppExtension
 
+TORCH_USES_OPENMP = "ATen parallel backend: OpenMP" in torch.__config__.parallel_info()
+
 if os.name == "nt":
-    CPP_FLAGS = ["/O2", "/std:c++17", "/Brepro"]
+    CPP_FLAGS = ["/O2", "/std:c++17", "/Brepro"] + (
+        ["/openmp"] if TORCH_USES_OPENMP else []
+    )
     LINK_FLAGS = ["/Brepro"]
+elif sys.platform == "darwin":
+    CPP_FLAGS = ["-O3", "-g0", "-std=c++17"] + (
+        ["-Xpreprocessor", "-fopenmp"] if TORCH_USES_OPENMP else []
+    )
+    LINK_FLAGS = ["-lomp"] if TORCH_USES_OPENMP else []
 else:
-    CPP_FLAGS = ["-O3", "-g0", "-std=c++17"]
-    LINK_FLAGS = (
-        [] if sys.platform == "darwin" else ["-Wl,-rpath,$ORIGIN/../../../torch/lib"]
+    CPP_FLAGS = ["-O3", "-g0", "-std=c++17"] + (
+        ["-fopenmp"] if TORCH_USES_OPENMP else []
+    )
+    LINK_FLAGS = ["-Wl,-rpath,$ORIGIN/../../../torch/lib"] + (
+        ["-fopenmp"] if TORCH_USES_OPENMP else []
     )
 
 

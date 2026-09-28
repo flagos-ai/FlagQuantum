@@ -41,3 +41,9 @@ same-process rollback A/B for the native CPU direct-layout backward optimization
 The report includes the initial Z/ZZ Hamiltonian API, full-gradient correctness,
 measured forward/backward/total times and speedups, current performance gap,
 limitations, and exact reproduction command.
+
+[`NATIVE_CPU_ADJOINT_THREAD_SCALING_CPU_ARM64_20260928.md`](NATIVE_CPU_ADJOINT_THREAD_SCALING_CPU_ARM64_20260928.md)
+records method-matched 1/2/4/8-thread FlagQuantum and PennyLane Lightning
+adjoint measurements after enabling Torch OpenMP in the package-local native
+CPU extension. It includes absolute forward/backward/total time, FlagQuantum
+speedup, correctness, a small-workload guardrail, and exact reproduction steps.

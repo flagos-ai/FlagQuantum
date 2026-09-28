@@ -30,6 +30,11 @@ Runtime or creating one extension module per optimization.
   an aggregate fast path for adjacent gates that share one parameter.
 - The extension is built with the distribution. Runtime JIT compilation is not
   permitted.
+- When PyTorch reports an OpenMP ATen backend, the extension is compiled and
+  linked with the matching OpenMP support. Otherwise inline `at::parallel_for`
+  and `at::parallel_reduce` calls silently select their serial implementation.
+  The extension exposes a private build probe so tests can prevent that
+  packaging regression.
 - Every native path retains a PyTorch fallback. `FQ_NATIVE_CPU_ADJOINT=0`
   provides an explicit operational rollback.
 - Unsupported gates, layouts, devices, and dtypes return to the existing path;

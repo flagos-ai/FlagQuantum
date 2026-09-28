@@ -5,6 +5,7 @@ from .adjoint import (
     fused_rotation_segment_adjoint_,
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
+    native_cpu_parallel_build_available,
     native_cpu_rotation_segment_available,
     native_cpu_shared_rotation_gradient_available,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "fused_rotation_segment_adjoint_",
     "fused_rzz_segment_adjoint_",
     "native_cpu_adjoint_available",
+    "native_cpu_parallel_build_available",
     "native_cpu_rotation_segment_available",
     "native_cpu_shared_rotation_gradient_available",
     "fused_rotation_block_forward_",
