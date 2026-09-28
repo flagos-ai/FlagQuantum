@@ -250,6 +250,213 @@ at::Tensor fused_rotation_adjoint_cpu(
   return result;
 }
 
+at::Tensor fused_rotation_segment_adjoint_cpu(
+    at::Tensor ket,
+    at::Tensor adjoint,
+    const at::Tensor& angles,
+    const at::Tensor& gate_kinds,
+    const at::Tensor& wires,
+    int64_t n_wires) {
+  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
+  TORCH_CHECK(gate_kinds.device().is_cpu(), "gate kinds must be on CPU");
+  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  TORCH_CHECK(angles.is_contiguous(), "angles must be contiguous");
+  TORCH_CHECK(gate_kinds.is_contiguous(), "gate kinds must be contiguous");
+  TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
+  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
+  TORCH_CHECK(angles.dim() == 1, "angles must be one-dimensional");
+  TORCH_CHECK(gate_kinds.dim() == 1, "gate kinds must be one-dimensional");
+  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  TORCH_CHECK(gate_kinds.scalar_type() == at::kLong, "gate kinds must be int64");
+  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
+  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
+  TORCH_CHECK(
+      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+
+  const int64_t gate_count = angles.size(0);
+  TORCH_CHECK(
+      gate_count >= 2 && gate_count <= 48,
+      "a fused rotation segment must contain between two and forty-eight gates");
+  TORCH_CHECK(gate_kinds.numel() == gate_count, "gate-kind count must match matrices");
+  TORCH_CHECK(wires.numel() == gate_count, "wire count must match matrices");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+
+  const int64_t* kind_data = gate_kinds.const_data_ptr<int64_t>();
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  uint64_t completed_wires = 0;
+  int64_t previous_wire = -1;
+  int64_t unique_wire_count = 0;
+  for (int64_t gate = 0; gate < gate_count; ++gate) {
+    TORCH_CHECK(kind_data[gate] >= 0 && kind_data[gate] <= 2, "unsupported gate kind");
+    TORCH_CHECK(
+        wire_data[gate] >= 0 && wire_data[gate] < n_wires,
+        "rotation wire is out of range");
+    if (wire_data[gate] != previous_wire) {
+      if (previous_wire >= 0) {
+        completed_wires |= uint64_t{1} << previous_wire;
+      }
+      TORCH_CHECK(
+          (completed_wires & (uint64_t{1} << wire_data[gate])) == 0,
+          "rotation wires must form contiguous groups");
+      previous_wire = wire_data[gate];
+      ++unique_wire_count;
+    }
+  }
+  TORCH_CHECK(unique_wire_count >= 2, "a fused rotation segment requires at least two wires");
+  at::Tensor result;
+  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_segment_adjoint_cpu", [&] {
+    using real_t = typename scalar_t::value_type;
+    TORCH_CHECK(
+        angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+        "angle dtype must match the state precision");
+    scalar_t* ket_data = ket.data_ptr<scalar_t>();
+    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+    const real_t* angle_data = angles.const_data_ptr<real_t>();
+    std::array<scalar_t, 48 * 4> inverse_matrices{};
+    for (int64_t gate = 0; gate < gate_count; ++gate) {
+      const real_t cosine = std::cos(angle_data[gate] * real_t{0.5});
+      const real_t sine = std::sin(angle_data[gate] * real_t{0.5});
+      scalar_t* inverse = inverse_matrices.data() + gate * 4;
+      if (kind_data[gate] == 0) {
+        inverse[0] = scalar_t(cosine, real_t{0});
+        inverse[1] = scalar_t(real_t{0}, sine);
+        inverse[2] = scalar_t(real_t{0}, sine);
+        inverse[3] = scalar_t(cosine, real_t{0});
+      } else if (kind_data[gate] == 1) {
+        inverse[0] = scalar_t(cosine, real_t{0});
+        inverse[1] = scalar_t(sine, real_t{0});
+        inverse[2] = scalar_t(-sine, real_t{0});
+        inverse[3] = scalar_t(cosine, real_t{0});
+      } else {
+        inverse[0] = scalar_t(cosine, sine);
+        inverse[3] = scalar_t(cosine, -sine);
+      }
+    }
+    const int64_t thread_count = at::get_num_threads();
+    at::Tensor partial = at::zeros(
+        {thread_count, gate_count},
+        ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
+    real_t* partial_data = partial.data_ptr<real_t>();
+
+    int64_t segment_start = 0;
+    while (segment_start < gate_count) {
+      std::array<int64_t, 2> unique_wires{};
+      std::array<int64_t, 2> unique_masks{};
+      std::array<int64_t, 2> bit_positions{};
+      std::array<int64_t, 48> local_masks{};
+      int64_t unique_count = 0;
+      int64_t segment_end = segment_start;
+      while (segment_end < gate_count) {
+        int64_t local_wire = -1;
+        for (int64_t candidate = 0; candidate < unique_count; ++candidate) {
+          if (unique_wires[candidate] == wire_data[segment_end]) {
+            local_wire = candidate;
+            break;
+          }
+        }
+        if (local_wire < 0) {
+          if (unique_count == 2) {
+            break;
+          }
+          local_wire = unique_count++;
+          unique_wires[local_wire] = wire_data[segment_end];
+          const int64_t bit_position = n_wires - wire_data[segment_end] - 1;
+          unique_masks[local_wire] = int64_t{1} << bit_position;
+          bit_positions[local_wire] = bit_position;
+        }
+        local_masks[segment_end] = int64_t{1} << local_wire;
+        ++segment_end;
+      }
+      std::sort(bit_positions.begin(), bit_positions.begin() + unique_count);
+      const int64_t local_size = int64_t{1} << unique_count;
+      std::array<int64_t, 4> offsets{};
+      for (int64_t local = 0; local < local_size; ++local) {
+        int64_t offset = 0;
+        for (int64_t wire = 0; wire < unique_count; ++wire) {
+          if ((local & (int64_t{1} << wire)) != 0) {
+            offset |= unique_masks[wire];
+          }
+        }
+        offsets[local] = offset;
+      }
+      const int64_t blocks_per_row = amplitudes >> unique_count;
+      const int64_t item_count = ket.size(0) * blocks_per_row;
+      at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
+        std::array<scalar_t, 4> ket_values{};
+        std::array<scalar_t, 4> adjoint_values{};
+        real_t* local_gradients = partial_data + at::get_thread_num() * gate_count;
+        for (int64_t item = begin; item < end; ++item) {
+          const int64_t row = item / blocks_per_row;
+          int64_t base = item - row * blocks_per_row;
+          for (int64_t wire = 0; wire < unique_count; ++wire) {
+            const int64_t position = bit_positions[wire];
+            const int64_t lower_mask = (int64_t{1} << position) - 1;
+            base = (base & lower_mask) | ((base & ~lower_mask) << 1);
+          }
+          base += row * amplitudes;
+          for (int64_t local = 0; local < local_size; ++local) {
+            ket_values[local] = ket_data[base + offsets[local]];
+            adjoint_values[local] = adjoint_data[base + offsets[local]];
+          }
+          for (int64_t gate = segment_start; gate < segment_end; ++gate) {
+            const scalar_t* inverse = inverse_matrices.data() + gate * 4;
+            const int64_t local_mask = local_masks[gate];
+            for (int64_t local = 0; local < local_size; ++local) {
+              if ((local & local_mask) != 0) {
+                continue;
+              }
+              const int64_t one = local | local_mask;
+              const scalar_t ket_zero = ket_values[local];
+              const scalar_t ket_one = ket_values[one];
+              const scalar_t adjoint_zero = adjoint_values[local];
+              const scalar_t adjoint_one = adjoint_values[one];
+              if (kind_data[gate] == 0) {
+                local_gradients[gate] += real_t{0.5} * (
+                    (adjoint_zero.real() * ket_one.imag() - adjoint_zero.imag() * ket_one.real()) +
+                    (adjoint_one.real() * ket_zero.imag() - adjoint_one.imag() * ket_zero.real()));
+              } else if (kind_data[gate] == 1) {
+                local_gradients[gate] += real_t{0.5} * (
+                    (adjoint_one.real() * ket_zero.real() + adjoint_one.imag() * ket_zero.imag()) -
+                    (adjoint_zero.real() * ket_one.real() + adjoint_zero.imag() * ket_one.imag()));
+              } else {
+                local_gradients[gate] += real_t{0.5} * (
+                    (adjoint_zero.real() * ket_zero.imag() - adjoint_zero.imag() * ket_zero.real()) -
+                    (adjoint_one.real() * ket_one.imag() - adjoint_one.imag() * ket_one.real()));
+              }
+              ket_values[local] = inverse[0] * ket_zero + inverse[1] * ket_one;
+              ket_values[one] = inverse[2] * ket_zero + inverse[3] * ket_one;
+              adjoint_values[local] = inverse[0] * adjoint_zero + inverse[1] * adjoint_one;
+              adjoint_values[one] = inverse[2] * adjoint_zero + inverse[3] * adjoint_one;
+            }
+          }
+          for (int64_t local = 0; local < local_size; ++local) {
+            ket_data[base + offsets[local]] = ket_values[local];
+            adjoint_data[base + offsets[local]] = adjoint_values[local];
+          }
+        }
+      });
+      segment_start = segment_end;
+    }
+    result = at::zeros(
+        {gate_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
+    real_t* result_data = result.data_ptr<real_t>();
+    for (int64_t thread = 0; thread < thread_count; ++thread) {
+      for (int64_t gate = 0; gate < gate_count; ++gate) {
+        result_data[gate] += partial_data[thread * gate_count + gate];
+      }
+    }
+  });
+  return result;
+}
+
 at::Tensor fused_rzz_segment_adjoint_cpu(
     at::Tensor ket,
     at::Tensor adjoint,
@@ -385,6 +592,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor matrix, int wire, int second_wire, int n_wires, int gate_kind) -> Tensor");
   library.def(
+      "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
+      "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires) -> Tensor");
+  library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor first_wires, Tensor second_wires, int n_wires, "
       "bool aggregate_shared_parameter) -> Tensor");
@@ -393,6 +603,7 @@ TORCH_LIBRARY(flagquantum_native, library) {
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
+  library.impl("fused_rotation_segment_adjoint_", &fused_rotation_segment_adjoint_cpu);
   library.impl("fused_rzz_segment_adjoint_", &fused_rzz_segment_adjoint_cpu);
 }
 

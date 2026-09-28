@@ -44,6 +44,7 @@ from .reverse_adjoint_kernels import (
     _fused_single_process_cpu_reversible_vjp,
     _MatrixJVP,
 )
+from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
@@ -126,12 +127,14 @@ class _ReversibleAdjointSweep:
         self._prepare_gradients()
         self.skipped_cx_indices: set[int] = set()
         self.skipped_fixed_block_indices: set[int] = set()
+        self.skipped_rotation_indices: set[int] = set()
         self.skipped_rzz_indices: set[int] = set()
         self.cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
         for index in range(len(self.bound.instructions) - 1, -1, -1):
             if (
                 index in self.skipped_cx_indices
                 or index in self.skipped_fixed_block_indices
+                or index in self.skipped_rotation_indices
                 or index in self.skipped_rzz_indices
             ):
                 continue
@@ -144,6 +147,8 @@ class _ReversibleAdjointSweep:
             )
             active = sorted(self.slots_by_instruction.get(index, ()))
             if self._apply_local_rzz_segment(index, execution_instruction):
+                continue
+            if _apply_local_rotation_segment(self, index, execution_instruction):
                 continue
             if self._apply_accelerated_reversible(index, execution_instruction, active):
                 continue
