@@ -6,17 +6,27 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.executors.statevector import forward_sweep
+from flagquantum.runtime.executors.statevector import (
+    forward_rzz_segment,
+    forward_sweep,
+    reverse_adjoint_rotation_segment,
+    reverse_adjoint_sweep,
+)
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
+)
+from flagquantum.runtime.executors.statevector.reverse import (
+    execute_torch_distributed_statevector_reverse,
 )
 from flagquantum.simulation.native_cpu import (
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
     fused_rotation_segment_adjoint_,
     fused_rzz_segment_adjoint_,
+    fused_rzz_segment_forward_,
     native_cpu_adjoint_available,
     native_cpu_rotation_available,
+    native_cpu_rzz_available,
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
@@ -82,6 +92,95 @@ def test_native_rotation_block_has_explicit_environment_rollback(
     torch.testing.assert_close(state, torch.ones_like(state))
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("pairs", (((0, 1), (1, 2), (2, 3), (3, 4)), ((0, 3), (2, 4))))
+def test_native_rzz_segment_forward_matches_sequential_pytorch(
+    dtype: torch.dtype, pairs: tuple[tuple[int, int], ...]
+) -> None:
+    if not native_cpu_rzz_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(1811 + len(pairs))
+    state = (
+        torch.randn((2, 32), generator=generator)
+        + 1j * torch.randn((2, 32), generator=generator)
+    ).to(dtype)
+    angles = torch.tensor(
+        tuple(
+            0.19 if len(pairs) > 2 else 0.11 * (index + 1)
+            for index in range(len(pairs))
+        ),
+        dtype=real_dtype,
+    )
+    expected = state.clone()
+    for angle, wires in zip(angles, pairs, strict=True):
+        expected = _apply_matrix(
+            expected,
+            _rotation_matrix("rzz", angle, dtype),
+            wires,
+            5,
+        )
+
+    applied = fused_rzz_segment_forward_(
+        state,
+        angles,
+        torch.tensor(tuple(pair[0] for pair in pairs), dtype=torch.int64),
+        torch.tensor(tuple(pair[1] for pair in pairs), dtype=torch.int64),
+        n_wires=5,
+    )
+
+    assert applied
+    tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
+def test_native_rzz_segment_forward_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_RZZ_FUSION", "0")
+    state = torch.ones((1, 8), dtype=torch.complex128)
+    applied = fused_rzz_segment_forward_(
+        state,
+        torch.tensor((0.1, 0.1), dtype=torch.float64),
+        torch.tensor((0, 1), dtype=torch.int64),
+        torch.tensor((1, 2), dtype=torch.int64),
+        n_wires=3,
+    )
+
+    assert not applied
+    torch.testing.assert_close(state, torch.ones_like(state))
+
+
+def test_forward_sweep_fuses_contiguous_rzz_segment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_rzz_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    for wire in range(5):
+        circuit.rzz(wire, wire + 1, 0.23)
+    monkeypatch.setenv("FQ_NATIVE_CPU_RZZ_FUSION", "0")
+    expected = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+    calls = 0
+    native = forward_rzz_segment.fused_rzz_segment_forward_
+
+    def counted(*args: object, **kwargs: object) -> bool:
+        nonlocal calls
+        calls += 1
+        return native(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(forward_rzz_segment, "fused_rzz_segment_forward_", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_RZZ_FUSION", "1")
+    actual = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+
+    assert calls == 1
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+
 def test_forward_sweep_fuses_composed_rotation_groups(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -121,20 +220,40 @@ def test_forward_sweep_fuses_composed_rotation_groups(
     torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
 
 
-def test_forward_sweep_leaves_single_rotation_layers_on_existing_path(
+def test_forward_sweep_fuses_single_rotation_layer_with_explicit_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
     circuit = fq.Circuit(4, dtype=torch.complex128)
     for wire in range(4):
         circuit.rx(wire, 0.1 + wire * 0.02)
+    monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "0")
+    expected = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+    calls = 0
+    native = forward_sweep.fused_rotation_block_forward_
 
-    def unexpected(*args: object, **kwargs: object) -> bool:
-        raise AssertionError("single-rotation layers must retain the existing path")
+    def counted(
+        state: torch.Tensor,
+        matrices: torch.Tensor,
+        wires: torch.Tensor,
+        *,
+        n_wires: int,
+    ) -> bool:
+        nonlocal calls
+        calls += 1
+        return native(state, matrices, wires, n_wires=n_wires)
 
-    monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", unexpected)
-    result = execute_torch_distributed_statevector(circuit, dtype=torch.complex128)
+    monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1")
+    actual = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
 
-    assert result.shard_state.amplitudes.shape == (1, 16)
+    assert calls == 1
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
 
 
 def _rotation_matrix(
@@ -346,6 +465,87 @@ def test_native_rotation_segment_adjoint_has_explicit_environment_rollback(
     assert gradients is None
     torch.testing.assert_close(ket, torch.ones_like(ket))
     torch.testing.assert_close(adjoint, torch.ones_like(adjoint))
+
+
+def test_reverse_sweep_fuses_shared_rotation_layer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    for wire in range(6):
+        circuit.h(wire)
+    for wire in range(6):
+        circuit.rx(wire, theta)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "0")
+    baseline = execute_torch_distributed_statevector_reverse(circuit)
+    baseline.backward()
+    expected_value = baseline.value.detach().clone()
+    expected_gradient = theta.grad.detach().clone()
+    theta.grad = None
+    calls = 0
+    native = reverse_adjoint_rotation_segment.fused_rotation_segment_adjoint_
+
+    def counted(*args: object, **kwargs: object) -> torch.Tensor | None:
+        nonlocal calls
+        calls += 1
+        return native(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(
+        reverse_adjoint_rotation_segment,
+        "fused_rotation_segment_adjoint_",
+        counted,
+    )
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "1")
+    actual = execute_torch_distributed_statevector_reverse(circuit)
+    actual.backward()
+
+    assert calls == 1
+    torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
+
+
+def test_reverse_sweep_fuses_fixed_hadamard_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    for wire in range(6):
+        circuit.h(wire)
+    circuit.ry(0, theta)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "0")
+    baseline = execute_torch_distributed_statevector_reverse(circuit)
+    baseline.backward()
+    expected_value = baseline.value.detach().clone()
+    expected_gradient = theta.grad.detach().clone()
+    theta.grad = None
+    calls = 0
+    native = reverse_adjoint_sweep.fused_rotation_block_forward_
+
+    def counted(
+        state: torch.Tensor,
+        matrices: torch.Tensor,
+        wires: torch.Tensor,
+        *,
+        n_wires: int,
+    ) -> bool:
+        nonlocal calls
+        calls += 1
+        return native(state, matrices, wires, n_wires=n_wires)
+
+    monkeypatch.setattr(reverse_adjoint_sweep, "fused_rotation_block_forward_", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1")
+    actual = execute_torch_distributed_statevector_reverse(circuit)
+    actual.backward()
+
+    assert calls == 4
+    torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))

@@ -25,6 +25,16 @@ def native_cpu_rotation_available() -> bool:
     return _enabled() and _load_extension()
 
 
+def native_cpu_one_qubit_layer_available() -> bool:
+    """Return whether generic disjoint one-qubit layer fusion is enabled."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_rotation_available()
+    )
+
+
 def fused_rotation_block_forward_(
     state: torch.Tensor,
     matrices: torch.Tensor,

@@ -1081,20 +1081,22 @@ def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) 
             "## Meaning and current level",
             "",
             f"All {len(cases)} cases passed the 1e-9 value/gradient tolerance; maximum "
-            f"gradient error was {max(errors):.3e}. The fused RX/RY/RZ/RZZ CPU operators, "
-            "commuting shared-parameter RZZ segments, same-wire forward composition, "
-            "CX-sequence permutations, reuse of the observable diagonal, and analytic "
-            "Pauli-rotation VJPs accelerated backward by "
+            f"gradient error was {max(errors):.3e}. One-pass forward RZZ segments and "
+            "native disjoint one-qubit H/rotation layers complement the fused "
+            "RX/RY/RZ/RZZ adjoint operators, commuting shared-parameter RZZ segments, "
+            "shared rotation-layer adjoints, allocation-free reverse H blocks, same-wire "
+            "forward composition, CX-sequence permutations, reuse of the observable "
+            "diagonal, and analytic Pauli-rotation VJPs. The native adjoint operators "
+            "accelerated backward by "
             f"{min(backward_speedups):.2f}x to {max(backward_speedups):.2f}x and total "
             f"value-and-gradient by {min(total_speedups):.2f}x to "
             f"{max(total_speedups):.2f}x. Total Lightning/FQ ratios ranged from "
             f"{min(ratios):.2f}x to {max(ratios):.2f}x on this host. Hardware-efficient "
             "VQE stresses many independent rotation gradients; QAOA stresses repeated "
             "shared parameters. This establishes functional local adjoint support for real "
-            "weighted Z/ZZ Hamiltonians at complex128, not performance parity or general "
-            "Pauli support. QAOA remains forward-bound at the largest width; the next "
-            "optimization target is native forward RZZ/RX layer fusion, followed by "
-            "wider reverse rotation blocks.",
+            "weighted Z/ZZ Hamiltonians at complex128, not a universal performance or "
+            "general Pauli-support claim. The largest QAOA case now has balanced forward "
+            "and backward costs; small-width framework overhead remains the next target.",
             "",
             "## FlagQuantum example",
             "",

@@ -14,7 +14,10 @@ import torch.distributed as dist
 from ....compute import resolve_platform_device
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....simulation.native_cpu import fused_rotation_block_forward_
+from ....simulation.native_cpu import (
+    fused_rotation_block_forward_,
+    native_cpu_one_qubit_layer_available,
+)
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
     _compose_gate_matrices,
@@ -42,6 +45,7 @@ from .forward import (
     _vectorized_subgroup_exchange_gate,
     communication_aware_wire_layout,
 )
+from .forward_rzz_segment import apply_native_rzz_segment
 from .kernel_dispatch import KernelDispatchEvidence, triton_available
 from .layout import (
     distributed_swap_rank_local_bits,
@@ -315,6 +319,15 @@ class _ShardedForwardSweep:
         cursor = self._cx_segment(index, instruction, touched)
         if cursor is not None:
             return cursor
+        cursor = apply_native_rzz_segment(
+            self,
+            index,
+            instruction,
+            touched=touched,
+            cpu_direct=_single_process_cpu_direct_enabled(),
+        )
+        if cursor is not None:
+            return cursor
         cursor = self._native_rotation_block(index, instruction, touched)
         if cursor is not None:
             return cursor
@@ -428,14 +441,13 @@ class _ShardedForwardSweep:
         instruction: Instruction,
         touched: bool,
     ) -> int | None:
-        """Apply consecutive local rotation groups in one native CPU block."""
+        """Apply consecutive local one-qubit groups in one native CPU block."""
 
         if not (
             self.local_compilation
             and self.world_size == 1
             and self.resolved_device.type == "cpu"
             and _single_process_cpu_direct_enabled()
-            and instruction.name in {"rx", "ry", "rz"}
             and len(instruction.wires) == 1
             and not touched
         ):
@@ -443,6 +455,9 @@ class _ShardedForwardSweep:
 
         block_wires: list[int] = []
         block_matrices: list[torch.Tensor] = []
+        generic_layer = native_cpu_one_qubit_layer_available()
+        if not generic_layer and instruction.name not in {"rx", "ry", "rz"}:
+            return None
         # The local tile grows as 2**k: four wires minimize small-state overhead,
         # while six amortize full-state scans once the state exceeds cache scale.
         max_block_wires = 4 if self.plan.n_wires < 16 else 6
@@ -452,7 +467,11 @@ class _ShardedForwardSweep:
             if self.swaps_before.get(cursor):
                 break
             candidate = self.ir.instructions[cursor]
-            if candidate.name not in {"rx", "ry", "rz"} or len(candidate.wires) != 1:
+            if (
+                len(candidate.wires) != 1
+                or self.matrices[cursor].ndim != 2
+                or (not generic_layer and candidate.name not in {"rx", "ry", "rz"})
+            ):
                 break
             wire = self.persistent_mapping[int(candidate.wires[0])]
             if wire in self.plan.sharded_wires:
@@ -469,7 +488,7 @@ class _ShardedForwardSweep:
 
         if (
             len(block_wires) < 2
-            or cursor - index == len(block_wires)
+            or (not generic_layer and cursor - index == len(block_wires))
             or any(matrix.ndim != 2 for matrix in block_matrices)
         ):
             return None
