@@ -14,6 +14,7 @@ import torch.distributed as dist
 from ....compute import resolve_platform_device
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....simulation.native_cpu import fused_rotation_block_forward_
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
     _compose_gate_matrices,
@@ -314,6 +315,9 @@ class _ShardedForwardSweep:
         cursor = self._cx_segment(index, instruction, touched)
         if cursor is not None:
             return cursor
+        cursor = self._native_rotation_block(index, instruction, touched)
+        if cursor is not None:
+            return cursor
         cursor = self._same_wire_fusion(index, instruction, matrix, touched)
         if cursor is not None:
             return cursor
@@ -417,6 +421,74 @@ class _ShardedForwardSweep:
                 )
                 return segment_cursor
         return None
+
+    def _native_rotation_block(
+        self,
+        index: int,
+        instruction: Instruction,
+        touched: bool,
+    ) -> int | None:
+        """Apply consecutive local rotation groups in one native CPU block."""
+
+        if not (
+            self.local_compilation
+            and self.world_size == 1
+            and self.resolved_device.type == "cpu"
+            and _single_process_cpu_direct_enabled()
+            and instruction.name in {"rx", "ry", "rz"}
+            and len(instruction.wires) == 1
+            and not touched
+        ):
+            return None
+
+        block_wires: list[int] = []
+        block_matrices: list[torch.Tensor] = []
+        # The local tile grows as 2**k: four wires minimize small-state overhead,
+        # while six amortize full-state scans once the state exceeds cache scale.
+        max_block_wires = 4 if self.plan.n_wires < 16 else 6
+        cursor = index
+        active_wire: int | None = None
+        while cursor < len(self.ir.instructions):
+            if self.swaps_before.get(cursor):
+                break
+            candidate = self.ir.instructions[cursor]
+            if candidate.name not in {"rx", "ry", "rz"} or len(candidate.wires) != 1:
+                break
+            wire = self.persistent_mapping[int(candidate.wires[0])]
+            if wire in self.plan.sharded_wires:
+                break
+            if wire == active_wire:
+                block_matrices[-1] = self.matrices[cursor] @ block_matrices[-1]
+            else:
+                if wire in block_wires or len(block_wires) == max_block_wires:
+                    break
+                block_wires.append(wire)
+                block_matrices.append(self.matrices[cursor])
+                active_wire = wire
+            cursor += 1
+
+        if (
+            len(block_wires) < 2
+            or cursor - index == len(block_wires)
+            or any(matrix.ndim != 2 for matrix in block_matrices)
+        ):
+            return None
+        matrices = torch.stack(block_matrices).contiguous()
+        wires = torch.tensor(block_wires, dtype=torch.int64)
+        if not fused_rotation_block_forward_(
+            self.shard_state.amplitudes,
+            matrices,
+            wires,
+            n_wires=self.plan.n_wires,
+        ):
+            return None
+        self.local_count += cursor - index
+        self.peak_scratch = max(
+            self.peak_scratch,
+            matrices.numel() * matrices.element_size()
+            + wires.numel() * wires.element_size(),
+        )
+        return cursor
 
     def _same_wire_fusion(
         self,

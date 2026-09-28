@@ -5,8 +5,10 @@
 #include <torch/library.h>
 #include <pybind11/pybind11.h>
 
-#include <complex>
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <vector>
 
@@ -19,6 +21,112 @@ inline int64_t popcount(uint64_t value) {
     ++count;
   }
   return count;
+}
+
+at::Tensor fused_rotation_block_forward_cpu(
+    at::Tensor state,
+    const at::Tensor& matrices,
+    const at::Tensor& wires,
+    int64_t n_wires) {
+  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
+  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
+  TORCH_CHECK(matrices.is_contiguous(), "matrices must be contiguous");
+  TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(matrices.dim() == 3, "matrices must have shape [gates, 2, 2]");
+  TORCH_CHECK(
+      matrices.size(1) == 2 && matrices.size(2) == 2,
+      "every rotation matrix must be 2 by 2");
+  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
+  TORCH_CHECK(
+      matrices.scalar_type() == state.scalar_type(),
+      "matrix dtype must match state");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+
+  const int64_t gate_count = matrices.size(0);
+  TORCH_CHECK(
+      gate_count >= 2 && gate_count <= 6,
+      "a fused rotation block must contain between two and six wires");
+  TORCH_CHECK(wires.numel() == gate_count, "wire and matrix counts must match");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  std::array<int64_t, 6> masks{};
+  std::array<int64_t, 6> bit_positions{};
+  int64_t target_mask = 0;
+  for (int64_t gate = 0; gate < gate_count; ++gate) {
+    TORCH_CHECK(
+        wire_data[gate] >= 0 && wire_data[gate] < n_wires,
+        "rotation wire is out of range");
+    const int64_t bit_position = n_wires - wire_data[gate] - 1;
+    const int64_t mask = int64_t{1} << bit_position;
+    TORCH_CHECK((target_mask & mask) == 0, "rotation wires must be unique");
+    masks[gate] = mask;
+    bit_positions[gate] = bit_position;
+    target_mask |= mask;
+  }
+  std::sort(bit_positions.begin(), bit_positions.begin() + gate_count);
+
+  const int64_t local_size = int64_t{1} << gate_count;
+  std::array<int64_t, 64> offsets{};
+  for (int64_t local = 0; local < local_size; ++local) {
+    int64_t offset = 0;
+    for (int64_t gate = 0; gate < gate_count; ++gate) {
+      if ((local & (int64_t{1} << gate)) != 0) {
+        offset |= masks[gate];
+      }
+    }
+    offsets[local] = offset;
+  }
+
+  const int64_t blocks_per_row = amplitudes >> gate_count;
+  const int64_t item_count = state.size(0) * blocks_per_row;
+  AT_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rotation_block_forward_cpu", [&] {
+    scalar_t* state_data = state.data_ptr<scalar_t>();
+    const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
+    at::parallel_for(int64_t{0}, item_count, int64_t{256}, [&](int64_t begin, int64_t end) {
+      std::array<scalar_t, 64> values{};
+      for (int64_t item = begin; item < end; ++item) {
+        const int64_t row = item / blocks_per_row;
+        int64_t base = item - row * blocks_per_row;
+        for (int64_t gate = 0; gate < gate_count; ++gate) {
+          const int64_t position = bit_positions[gate];
+          const int64_t lower_mask = (int64_t{1} << position) - 1;
+          base = (base & lower_mask) | ((base & ~lower_mask) << 1);
+        }
+        base += row * amplitudes;
+        for (int64_t local = 0; local < local_size; ++local) {
+          values[local] = state_data[base + offsets[local]];
+        }
+        for (int64_t gate = 0; gate < gate_count; ++gate) {
+          const scalar_t* matrix = matrix_data + gate * 4;
+          const int64_t local_mask = int64_t{1} << gate;
+          for (int64_t local = 0; local < local_size; ++local) {
+            if ((local & local_mask) != 0) {
+              continue;
+            }
+            const int64_t one = local | local_mask;
+            const scalar_t zero_value = values[local];
+            const scalar_t one_value = values[one];
+            values[local] = matrix[0] * zero_value + matrix[1] * one_value;
+            values[one] = matrix[2] * zero_value + matrix[3] * one_value;
+          }
+        }
+        for (int64_t local = 0; local < local_size; ++local) {
+          state_data[base + offsets[local]] = values[local];
+        }
+      }
+    });
+  });
+  return state;
 }
 
 at::Tensor fused_rotation_adjoint_cpu(
@@ -271,6 +379,9 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
 
 TORCH_LIBRARY(flagquantum_native, library) {
   library.def(
+      "fused_rotation_block_forward_(Tensor(a!) state, Tensor matrices, "
+      "Tensor wires, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_rotation_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor matrix, int wire, int second_wire, int n_wires, int gate_kind) -> Tensor");
   library.def(
@@ -280,6 +391,7 @@ TORCH_LIBRARY(flagquantum_native, library) {
 }
 
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
+  library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
   library.impl("fused_rzz_segment_adjoint_", &fused_rzz_segment_adjoint_cpu);
 }
