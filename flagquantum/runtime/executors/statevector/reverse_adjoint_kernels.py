@@ -12,6 +12,7 @@ import torch.distributed as dist
 
 from ....core.ir import Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....simulation.native_cpu import fused_rotation_adjoint_
 from ....simulation.statevector.operations import (
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
@@ -170,6 +171,21 @@ def _fused_single_process_cpu_reversible_vjp(
     n_wires: int,
 ) -> torch.Tensor | None:
     """Reverse ket and bra while avoiding a derivative-state materialization."""
+
+    if len(instruction.wires) == 1 or (
+        instruction.name == "rzz" and len(instruction.wires) == 2
+    ):
+        native_gradient = fused_rotation_adjoint_(
+            ket,
+            adjoint,
+            matrix,
+            name=instruction.name,
+            wire=instruction.wires[0],
+            second_wire=(instruction.wires[1] if len(instruction.wires) == 2 else None),
+            n_wires=n_wires,
+        )
+        if native_gradient is not None:
+            return native_gradient
 
     gradient = _single_process_cpu_pauli_rotation_gradient(
         ket, adjoint, instruction, n_wires=n_wires

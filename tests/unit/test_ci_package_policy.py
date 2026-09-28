@@ -49,6 +49,14 @@ def test_ci_install_checks_import_existing_modules():
         assert importlib.util.find_spec(module) is not None, module
 
 
+def test_clean_install_checks_do_not_import_the_checkout() -> None:
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    wheel_check = workflow.index("/tmp/fq-wheel/bin/python -c")
+    sdist_check = workflow.index("/tmp/fq-sdist/bin/python -c")
+    assert workflow.rfind("pushd /tmp", 0, wheel_check) != -1
+    assert workflow.rfind("pushd /tmp", 0, sdist_check) > wheel_check
+
+
 def test_distribution_quarantine_rejects_repo_only_members():
     assert _forbidden("flagquantum/__pycache__/module.pyc")
     assert _forbidden("source/tests/test_api.py")
