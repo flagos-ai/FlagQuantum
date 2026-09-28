@@ -5,13 +5,135 @@ from __future__ import annotations
 import pytest
 import torch
 
+import flagquantum as fq
+from flagquantum.runtime.executors.statevector import forward_sweep
+from flagquantum.runtime.executors.statevector.forward_executor import (
+    execute_torch_distributed_statevector,
+)
 from flagquantum.simulation.native_cpu import (
     fused_rotation_adjoint_,
+    fused_rotation_block_forward_,
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
+    native_cpu_rotation_available,
 )
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wires", ((0, 2), (4, 1, 3), (3, 0, 4, 2), (5, 1, 4, 0, 3, 2)))
+def test_native_rotation_block_matches_sequential_pytorch(
+    dtype: torch.dtype, wires: tuple[int, ...]
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(1307 + sum(wires))
+    n_wires = max(5, len(wires))
+    width = 1 << n_wires
+    state = (
+        torch.randn((2, width), generator=generator)
+        + 1j * torch.randn((2, width), generator=generator)
+    ).to(dtype)
+    matrices = torch.stack(
+        tuple(
+            _rotation_matrix(
+                ("rx", "ry", "rz")[index % 3],
+                torch.tensor(0.17 * (index + 1), dtype=real_dtype),
+                dtype,
+            )
+            for index in range(len(wires))
+        )
+    ).contiguous()
+    expected = state.clone()
+    for matrix, wire in zip(matrices, wires, strict=True):
+        expected = _apply_matrix(expected, matrix, (wire,), n_wires)
+
+    applied = fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.tensor(wires, dtype=torch.int64),
+        n_wires=n_wires,
+    )
+
+    assert applied
+    tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
+def test_native_rotation_block_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_FUSION", "0")
+    state = torch.ones((1, 4), dtype=torch.complex128)
+    matrices = torch.eye(2, dtype=torch.complex128).expand(2, -1, -1).contiguous()
+
+    applied = fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.tensor((0, 1), dtype=torch.int64),
+        n_wires=2,
+    )
+
+    assert not applied
+    torch.testing.assert_close(state, torch.ones_like(state))
+
+
+def test_forward_sweep_fuses_composed_rotation_groups(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    circuit = fq.Circuit(8, dtype=torch.complex128)
+    for wire in range(8):
+        circuit.rx(wire, 0.11 + wire * 0.01)
+        circuit.ry(wire, -0.07 + wire * 0.02)
+        circuit.rz(wire, 0.03 - wire * 0.01)
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_FUSION", "0")
+    expected = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+    calls = 0
+    native = forward_sweep.fused_rotation_block_forward_
+
+    def counted(
+        state: torch.Tensor,
+        matrices: torch.Tensor,
+        wires: torch.Tensor,
+        *,
+        n_wires: int,
+    ) -> bool:
+        nonlocal calls
+        calls += 1
+        return native(state, matrices, wires, n_wires=n_wires)
+
+    monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_FUSION", "1")
+
+    actual = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+
+    assert calls == 2
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+
+def test_forward_sweep_leaves_single_rotation_layers_on_existing_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = fq.Circuit(4, dtype=torch.complex128)
+    for wire in range(4):
+        circuit.rx(wire, 0.1 + wire * 0.02)
+
+    def unexpected(*args: object, **kwargs: object) -> bool:
+        raise AssertionError("single-rotation layers must retain the existing path")
+
+    monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", unexpected)
+    result = execute_torch_distributed_statevector(circuit, dtype=torch.complex128)
+
+    assert result.shard_state.amplitudes.shape == (1, 16)
 
 
 def _rotation_matrix(

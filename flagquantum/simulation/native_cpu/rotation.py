@@ -1,0 +1,65 @@
+"""Dispatch boundary for fused native CPU rotation blocks."""
+
+from __future__ import annotations
+
+import os
+from typing import cast
+
+import torch
+
+from .adjoint import _load_extension
+
+
+def _enabled() -> bool:
+    return os.getenv("FQ_NATIVE_CPU_ROTATION_FUSION", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def native_cpu_rotation_available() -> bool:
+    """Return whether fused package-local CPU rotations are enabled and loadable."""
+
+    return _enabled() and _load_extension()
+
+
+def fused_rotation_block_forward_(
+    state: torch.Tensor,
+    matrices: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+) -> bool:
+    """Apply two to six disjoint one-qubit matrices to a state in place.
+
+    ``False`` is the stable fallback signal. The caller retains the existing
+    PyTorch path when the extension is disabled, unavailable, or unsupported.
+    """
+
+    if (
+        not native_cpu_rotation_available()
+        or state.device.type != "cpu"
+        or matrices.device.type != "cpu"
+        or wires.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or matrices.dtype != state.dtype
+        or wires.dtype != torch.int64
+        or state.ndim != 2
+        or matrices.ndim != 3
+        or matrices.shape[0] not in {2, 3, 4, 5, 6}
+        or matrices.shape[1:] != (2, 2)
+        or wires.shape != (matrices.shape[0],)
+        or (torch.is_grad_enabled() and matrices.requires_grad)
+        or not all(item.is_contiguous() for item in (state, matrices, wires))
+    ):
+        return False
+    with torch.no_grad():
+        cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_rotation_block_forward_(
+                state, matrices, wires, n_wires
+            ),
+        )
+    return True
