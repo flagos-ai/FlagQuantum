@@ -18,6 +18,7 @@ from flagquantum.runtime.executors.statevector.local_execution import (
 from flagquantum.runtime.executors.statevector.reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
+    _parameter_layout,
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
@@ -27,8 +28,78 @@ from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
 from flagquantum.runtime.executors.statevector.reverse_adjoint_sweep import (
     _compact_reverse_global_indices,
 )
+from flagquantum.runtime.executors.statevector.reverse_template import (
+    _clear_adjoint_ir_template_cache,
+    prepare_adjoint_ir_template,
+)
 
 pytestmark = pytest.mark.unit
+
+
+def test_adjoint_ir_template_cache_is_parameter_free_and_has_rollback(monkeypatch):
+    _clear_adjoint_ir_template_cache()
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    ir = fq.Circuit(2, dtype=torch.complex128).ry(0, theta).cx(0, 1).to_ir()
+    _, slots, _ = _parameter_layout(ir)
+
+    first = prepare_adjoint_ir_template(ir, slots)
+    repeated = prepare_adjoint_ir_template(ir, slots)
+
+    assert repeated is first
+    assert first.instructions[0].params["theta"] == 0.0
+    assert all(
+        not isinstance(value, torch.Tensor)
+        for instruction in first.instructions
+        for value in instruction.params.values()
+    )
+
+    monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_TEMPLATE_CACHE", "0")
+    assert prepare_adjoint_ir_template(ir, slots) is not first
+
+
+def test_adjoint_ir_template_cache_bypasses_non_parameter_tensors():
+    _clear_adjoint_ir_template_cache()
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, theta)
+    circuit.any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    ir = circuit.to_ir()
+    _, slots, _ = _parameter_layout(ir)
+
+    first = prepare_adjoint_ir_template(ir, slots)
+    repeated = prepare_adjoint_ir_template(ir, slots)
+
+    assert repeated is not first
+
+
+def test_repeated_adjoint_execution_observes_updated_parameter_value():
+    _clear_adjoint_ir_template_cache()
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta)
+
+    first = execute_torch_distributed_statevector_reverse(circuit)
+    first.backward()
+    torch.testing.assert_close(theta.grad, -torch.sin(theta.detach()))
+
+    theta.grad = None
+    with torch.no_grad():
+        theta.fill_(0.71)
+    second = execute_torch_distributed_statevector_reverse(circuit)
+    second.backward()
+
+    torch.testing.assert_close(theta.grad, -torch.sin(theta.detach()))
+
+
+def test_cached_adjoint_template_revalidates_updated_parameter_value():
+    _clear_adjoint_ir_template_cache()
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta)
+    execute_torch_distributed_statevector_reverse(circuit)
+
+    with torch.no_grad():
+        theta.fill_(float("nan"))
+
+    with pytest.raises(ValueError, match="finite"):
+        execute_torch_distributed_statevector_reverse(circuit)
 
 
 def test_cpu_direct_adjoint_gate_has_explicit_rollback(

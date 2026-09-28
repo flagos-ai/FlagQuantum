@@ -9,7 +9,8 @@ from typing import Any
 
 import torch
 
-from ....core.ir import CircuitIR
+from ....core.ir import CircuitIR, _normalize_angle
+from ...builder_compilation import CompiledInstruction
 from .environment import get_bool
 from .kernel_dispatch import (
     KernelDecision,
@@ -86,13 +87,31 @@ def _bind_parameters(
 ) -> CircuitIR:
     instructions = list(ir.instructions)
     params_by_instruction: dict[int, dict[str, Any]] = {}
+    validated_parameters: set[int] = set()
     for instruction_index, name, parameter_index in slots:
+        instruction = instructions[instruction_index]
+        if parameter_index not in validated_parameters:
+            _normalize_angle(
+                parameters[parameter_index],
+                opcode=instruction.name,
+                parameter=name,
+            )
+            validated_parameters.add(parameter_index)
         params = params_by_instruction.setdefault(
-            instruction_index, dict(instructions[instruction_index].params)
+            instruction_index, dict(instruction.params)
         )
         params[name] = parameters[parameter_index]
     for index, params in params_by_instruction.items():
-        instructions[index] = replace(instructions[index], params=params)
+        instruction = instructions[index]
+        instructions[index] = CompiledInstruction(
+            name=instruction.name,
+            wires=instruction.wires,
+            params=params,
+            matrix=instruction.matrix,
+            metadata=instruction.metadata,
+            parameter_slots=(),
+            parameter_constants=(),
+        )
     return replace(ir, instructions=tuple(instructions))
 
 

@@ -130,7 +130,7 @@ def test_checked_in_adjoint_corpus_is_reproducible() -> None:
         assert case["stability"]["passed"] is True
         assert set(case["engines"]) == set(ADJOINT_ENGINE_NAMES)
         for engine in case["engines"].values():
-            assert engine["value_and_grad"]["sample_count"] == 5
+            assert engine["value_and_grad"]["sample_count"] == 7
             assert engine["memory"]["peak_rss_bytes"] is None
 
     report = path.with_name(
