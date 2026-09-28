@@ -1,4 +1,4 @@
-# Truncated QFT CPU controlled-phase graph comparison
+# Truncated QFT CPU deferred-SWAP comparison
 
 This report measures the deterministic exact-statevector Truncated QFT workload
 from the simulator corpus. Each QFT target interacts with at most its next three
@@ -6,12 +6,12 @@ wires through the portable `RZ-RZ-CX-RZ-CX` controlled-phase decomposition, and
 the circuit finishes with a SWAP reversal. At 22 qubits the workload contains
 333 gates and has logical depth 167.
 
-The optimization recognizes each exact static controlled-phase decomposition,
-then combines consecutive decompositions into a weighted phase graph even when
-their edges share a wire. The graph's cached complex factors include the exact
-global phase of every decomposition. One broadcast multiply replaces several
-passes over the current product-state component. Parameterized or approximate
-decomposition matches still use the established general path.
+The product-state executor previously materialized every SWAP immediately. The
+final 22-qubit reversal therefore copied the full state eleven times. The new
+path records the logical-wire order without moving amplitudes, then materializes
+canonical public statevector order once with a cached gather table. A merge can
+still canonicalize a component earlier when later computation requires it. The
+existing controlled-phase graph optimization remains unchanged.
 
 ## User code
 
@@ -55,27 +55,28 @@ relative median absolute deviation threshold.
 
 | Qubits | FlagQuantum | Cirq | PennyLane | Qiskit Aer | Cirq / FlagQuantum |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 0.008044 s | 0.015606 s | 0.050151 s | 0.075421 s | 1.94× |
-| 22 | 0.151352 s | 0.154574 s | 1.040753 s | 0.940726 s | 1.02× |
+| 18 | 0.004167 s | 0.015606 s | 0.050151 s | 0.075421 s | 3.74× |
+| 22 | 0.086533 s | 0.154574 s | 1.040753 s | 0.940726 s | 1.79× |
 
-Values above one mean FlagQuantum is faster for that measured case. At 22
-qubits the two native engines are close: the measured FlagQuantum median is
-2.1% faster than Cirq, not evidence of a universal framework ranking.
+Values above one mean FlagQuantum is faster for that measured case. The measured
+FlagQuantum median is 1.79 times faster than Cirq at 22 qubits. This is evidence
+for this workload and host, not a universal framework ranking.
 
 ## Rollback A/B
 
-The isolated native comparison used two warmups, nine retained samples, and
-five calls per sample. It changes only
-`FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION`:
+The isolated native comparison used two warmups, 11 retained samples, three
+calls per sample, and alternating path order. It changes only
+`FQ_CPU_PRODUCT_STATE_DEFER_SWAP`:
 
-| Qubits | Graph enabled | Rollback | Speedup | RMAD enabled | RMAD rollback |
+| Qubits | Eager rollback | Deferred SWAP | Speedup | Rollback RMAD | Deferred RMAD |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 18 | 0.007589 s | 0.012042 s | 1.59× | 3.88% | 9.92% |
-| 22 | 0.135640 s | 0.198294 s | 1.46× | 1.82% | 1.87% |
+| 18 | 0.005553 s | 0.004031 s | 1.38× | 1.54% | 3.28% |
+| 22 | 0.102015 s | 0.086267 s | 1.18× | 0.92% | 3.61% |
 
-The 18-qubit compiled product-state plan uses 44 state applications with the
-graph and 75 on rollback. Tests compare graph execution with rollback for
-complex64 and complex128, including gradients with respect to the input state.
+The eager and deferred results were bitwise identical at both widths. A separate
+screen of the SWAP-routing corpus changed by less than 0.3% at 18 and 22 qubits.
+Tests cover complex64 and complex128 permutation values and gradients, plus a
+parameterized QFT path after the logical SWAP reversal.
 
 ## Reproduction
 
@@ -89,15 +90,15 @@ flagquantum-benchmark run simulator_workload_corpus \
   --json-output truncated-qft-optimized.json
 ```
 
-Run the more stable native A/B by repeating the command with `--warmup 2`,
-`--calls-per-sample 5`, first normally and then with:
+Run the native A/B by repeating the command with `--warmup 2`,
+`--iterations 11`, and `--calls-per-sample 3`, first normally and then with:
 
 ```bash
-FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION=0 \
+FQ_CPU_PRODUCT_STATE_DEFER_SWAP=0 \
 flagquantum-benchmark run simulator_workload_corpus \
   --workloads truncated_qft_statevector --n-wires 18 22 \
   --engines flagquantum_native --threads 1 --warmup 2 \
-  --iterations 9 --calls-per-sample 5 \
+  --iterations 11 --calls-per-sample 3 \
   --json-output truncated-qft-rollback.json
 ```
 

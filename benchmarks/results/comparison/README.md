@@ -24,3 +24,7 @@ measured complex128 dense-fusion width policy.
 [`SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md`](SIMULATOR_RANDOM_CLIFFORD_CPU_ARM64_20260924.md)
 records the exact-statevector Random Clifford comparison, product-state
 Clifford-layer rollback A/B, public example, and reproduction command.
+
+[`SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md`](SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md)
+records the exact Truncated QFT comparison and the deferred product-state SWAP
+materialization rollback A/B.

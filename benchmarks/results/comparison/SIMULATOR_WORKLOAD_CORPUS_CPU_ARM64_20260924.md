@@ -21,8 +21,8 @@ the refreshed native medians.
 | Hardware-efficient | 22 | 178 | 50 | 0.277011 | 0.718561 | 1.043863 | 0.476849 | 2.59x | 3.77x | 1.72x |
 | Truncated QFT | 10 | 135 | 71 | 0.000714 | 0.024871 | 0.004211 | 0.003298 | 34.82x | 5.89x | 4.62x |
 | Truncated QFT | 14 | 201 | 103 | 0.003037 | 0.030667 | 0.008379 | 0.007009 | 10.10x | 2.76x | 2.31x |
-| Truncated QFT | 18 | 267 | 135 | 0.008044 | 0.075421 | 0.015606 | 0.050151 | 9.38x | 1.94x | 6.23x |
-| Truncated QFT | 22 | 333 | 167 | 0.151352 | 0.940726 | 0.154574 | 1.040753 | 6.22x | 1.02x | 6.88x |
+| Truncated QFT | 18 | 267 | 135 | 0.004167 | 0.075421 | 0.015606 | 0.050151 | 18.10x | 3.74x | 12.03x |
+| Truncated QFT | 22 | 333 | 167 | 0.086533 | 0.940726 | 0.154574 | 1.040753 | 10.87x | 1.79x | 12.03x |
 | Random Clifford | 10 | 60 | 8 | 0.000955 | 0.024117 | 0.002348 | 0.001865 | 25.24x | 2.46x | 1.95x |
 | Random Clifford | 14 | 84 | 8 | 0.003643 | 0.028257 | 0.004249 | 0.002884 | 7.76x | 1.17x | 0.79x |
 | Random Clifford | 18 | 108 | 8 | 0.009453 | 0.056273 | 0.015780 | 0.013661 | 5.95x | 1.67x | 1.45x |
@@ -46,7 +46,7 @@ Refresh only FlagQuantum while preserving the checked-in external data:
 
 ```bash
 flagquantum-benchmark run simulator_workload_corpus \
-  --workloads random_clifford_statevector \
+  --workloads truncated_qft_statevector \
   --n-wires 18 22 \
   --engines flagquantum_native --threads 1 \
   --warmup 1 \

@@ -32,6 +32,7 @@ from .program import (
     _StatevectorGateStep,
     _StatevectorProgramStep,
 )
+from .wire_permutation import _apply_wire_permutation_gather
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -62,6 +63,12 @@ def _cpu_product_state_clifford_matching_enabled() -> bool:
     """Whether product-state Clifford matchings may share permutation passes."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING", default=True)
+
+
+def _cpu_product_state_deferred_swap_enabled() -> bool:
+    """Whether product components defer SWAP tensor materialization."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_DEFER_SWAP", default=True)
 
 
 def _apply_fixed_clifford_gate(
@@ -305,35 +312,74 @@ def _merge_components(
 
 
 def _relabel_component(
-    component: _ProductComponent, substitutions: dict[int, int]
+    component: _ProductComponent,
+    substitutions: dict[int, int],
+    *,
+    defer_materialization: bool,
 ) -> _ProductComponent:
     relabeled_wires = tuple(substitutions.get(wire, wire) for wire in component.wires)
+    if defer_materialization:
+        return _ProductComponent(relabeled_wires, component.state)
+    return _canonicalize_component(
+        _ProductComponent(relabeled_wires, component.state), use_gather=False
+    )
+
+
+def _canonicalize_component(
+    component: _ProductComponent, *, use_gather: bool
+) -> _ProductComponent:
+    """Return a component whose tensor axes follow ascending logical wires."""
+
+    relabeled_wires = component.wires
     ordered_wires = tuple(sorted(relabeled_wires))
-    state = component.state
     if relabeled_wires != ordered_wires:
-        axes = {wire: index + 1 for index, wire in enumerate(relabeled_wires)}
-        state = (
-            state.reshape((1,) + (2,) * len(relabeled_wires))
-            .permute((0,) + tuple(axes[wire] for wire in ordered_wires))
-            .reshape(1, -1)
-            .contiguous()
-        )
-    return _ProductComponent(ordered_wires, state)
+        if use_gather:
+            state = _apply_wire_permutation_gather(component.state, relabeled_wires)
+        else:
+            axes = {wire: index + 1 for index, wire in enumerate(relabeled_wires)}
+            state = (
+                component.state.reshape(
+                    (component.state.shape[0],) + (2,) * len(relabeled_wires)
+                )
+                .permute((0,) + tuple(axes[wire] for wire in ordered_wires))
+                .reshape(component.state.shape)
+                .contiguous()
+            )
+        return _ProductComponent(ordered_wires, state)
+    return component
 
 
 def _remap_swap_components(
-    components: dict[int, _ProductComponent], left: int, right: int
+    components: dict[int, _ProductComponent],
+    left: int,
+    right: int,
+    *,
+    defer_materialization: bool,
 ) -> None:
     left_component = components[left]
     right_component = components[right]
     substitutions = {left: right, right: left}
     updated_components: tuple[_ProductComponent, ...]
     if left_component is right_component:
-        updated_components = (_relabel_component(left_component, substitutions),)
+        updated_components = (
+            _relabel_component(
+                left_component,
+                substitutions,
+                defer_materialization=defer_materialization,
+            ),
+        )
     else:
         updated_components = (
-            _relabel_component(left_component, substitutions),
-            _relabel_component(right_component, substitutions),
+            _relabel_component(
+                left_component,
+                substitutions,
+                defer_materialization=defer_materialization,
+            ),
+            _relabel_component(
+                right_component,
+                substitutions,
+                defer_materialization=defer_materialization,
+            ),
         )
     for component in updated_components:
         for wire in component.wires:
@@ -453,6 +499,7 @@ def execute_product_state_program(
     dtype: torch.dtype,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     enable_swap_remapping: bool = True,
+    enable_deferred_swap: bool = True,
     enable_fixed_clifford: bool = True,
     enable_clifford_matching: bool = True,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None = None,
@@ -509,7 +556,12 @@ def execute_product_state_program(
         swap_wires = _swap_wires(step)
         if enable_swap_remapping and swap_wires is not None:
             left, right = swap_wires
-            _remap_swap_components(components, left, right)
+            _remap_swap_components(
+                components,
+                left,
+                right,
+                defer_materialization=enable_deferred_swap,
+            )
             index += 1
             continue
         if isinstance(step, _StatevectorCXSequenceStep):
@@ -592,4 +644,7 @@ def execute_product_state_program(
         for wire in updated.wires:
             components[wire] = updated
         index += 1
-    return _merge_components(components, tuple(range(n_wires))).state
+    final_component = _merge_components(components, tuple(range(n_wires)))
+    return _canonicalize_component(
+        final_component, use_gather=enable_deferred_swap
+    ).state

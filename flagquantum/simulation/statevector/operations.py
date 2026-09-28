@@ -40,6 +40,7 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
+from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -50,10 +51,9 @@ def clear_statevector_layout_cache() -> None:
     """Clear the cached wire-layout computations for statevector gates."""
 
     _STATEVECTOR_LAYOUT_CACHE.clear()
+    _clear_wire_permutation_cache()
 
 
-# Cache each CX affine-map table by content; insertion-order eviction bounds
-# memory because one int32 table is half the size of a complex64 state.
 _CX_SEQUENCE_INDEX_CACHE_BYTES = 128 * 1024 * 1024
 _CX_SEQUENCE_INDEX_CACHE: dict[
     tuple[int, tuple[int, ...], tuple[int, ...], str, torch.dtype], torch.Tensor
