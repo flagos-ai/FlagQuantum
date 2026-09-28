@@ -11,14 +11,14 @@ to every circuit parameter; construction and optimizer updates are excluded.
 
 | Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | Lightning total (ms) | Lightning / FQ total | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Hardware-efficient VQE | 10 | 39 | 30 | 1.806 | 1.781 | 3.535 | 4.282 | 6.215 | 2.40x | 2.311 | 0.65x | 3.727e-15 |
-| Hardware-efficient VQE | 14 | 55 | 42 | 3.297 | 3.500 | 6.702 | 8.893 | 11.965 | 2.54x | 5.422 | 0.81x | 5.310e-15 |
-| Hardware-efficient VQE | 18 | 71 | 54 | 22.067 | 30.835 | 52.988 | 93.948 | 116.107 | 3.05x | 64.468 | 1.22x | 7.466e-14 |
-| Hardware-efficient VQE | 22 | 87 | 66 | 457.867 | 560.152 | 1026.943 | 1908.816 | 2375.371 | 3.41x | 1483.966 | 1.45x | 1.115e-12 |
-| QAOA path MaxCut | 10 | 29 | 2 | 2.273 | 1.220 | 3.468 | 2.789 | 5.195 | 2.29x | 1.716 | 0.49x | 4.441e-16 |
-| QAOA path MaxCut | 14 | 41 | 2 | 3.885 | 2.444 | 6.390 | 6.569 | 10.455 | 2.69x | 3.888 | 0.61x | 6.661e-16 |
-| QAOA path MaxCut | 18 | 53 | 2 | 29.340 | 27.630 | 56.057 | 67.828 | 96.979 | 2.45x | 42.315 | 0.75x | 1.954e-14 |
-| QAOA path MaxCut | 22 | 65 | 2 | 1174.694 | 869.070 | 2041.893 | 1686.212 | 2877.651 | 1.94x | 938.091 | 0.46x | 5.942e-13 |
+| Hardware-efficient VQE | 10 | 39 | 30 | 1.624 | 0.705 | 2.320 | 3.894 | 5.513 | 5.53x | 2.280 | 0.98x | 3.889e-15 |
+| Hardware-efficient VQE | 14 | 55 | 42 | 3.015 | 2.111 | 5.126 | 8.338 | 11.482 | 3.95x | 5.479 | 1.07x | 4.956e-15 |
+| Hardware-efficient VQE | 18 | 71 | 54 | 20.001 | 29.240 | 49.310 | 72.959 | 92.526 | 2.50x | 62.876 | 1.28x | 7.466e-14 |
+| Hardware-efficient VQE | 22 | 87 | 66 | 416.961 | 523.955 | 940.916 | 1747.131 | 2204.782 | 3.33x | 1407.361 | 1.50x | 1.115e-12 |
+| QAOA path MaxCut | 10 | 29 | 2 | 2.109 | 1.091 | 3.192 | 2.771 | 4.840 | 2.54x | 1.623 | 0.51x | 4.441e-16 |
+| QAOA path MaxCut | 14 | 41 | 2 | 3.833 | 2.419 | 6.252 | 6.274 | 10.012 | 2.59x | 3.827 | 0.61x | 6.661e-16 |
+| QAOA path MaxCut | 18 | 53 | 2 | 24.922 | 25.618 | 50.586 | 56.979 | 81.614 | 2.22x | 42.515 | 0.84x | 1.954e-14 |
+| QAOA path MaxCut | 22 | 65 | 2 | 1157.658 | 877.870 | 2055.415 | 1626.083 | 2784.653 | 1.85x | 891.908 | 0.43x | 5.942e-13 |
 
 A Lightning/FQ ratio above one means FlagQuantum was faster. Peak RSS was
 not measured in this timing run. These are local, non-release
@@ -26,7 +26,7 @@ single-device results, not a universal framework ranking or scaling claim.
 
 ## Meaning and current level
 
-All 8 cases passed the 1e-9 value/gradient tolerance; maximum gradient error was 1.115e-12. The fused RX/RY/RZ/RZZ CPU operators, commuting shared-parameter RZZ segments, same-wire forward composition, CX-sequence permutations, reuse of the observable diagonal, and analytic Pauli-rotation VJPs accelerated backward by 1.94x to 3.41x and total value-and-gradient by 1.41x to 2.31x. Total Lightning/FQ ratios ranged from 0.46x to 1.45x on this host. Hardware-efficient VQE stresses many independent rotation gradients; QAOA stresses repeated shared parameters. This establishes functional local adjoint support for real weighted Z/ZZ Hamiltonians at complex128, not performance parity or general Pauli support. QAOA remains forward-bound at the largest width; the next optimization target is native forward RZZ/RX layer fusion, followed by wider reverse rotation blocks.
+All 8 cases passed the 1e-9 value/gradient tolerance; maximum gradient error was 1.115e-12. The fused RX/RY/RZ/RZZ CPU operators, commuting shared-parameter RZZ segments, same-wire forward composition, CX-sequence permutations, reuse of the observable diagonal, and analytic Pauli-rotation VJPs accelerated backward by 1.85x to 5.53x and total value-and-gradient by 1.35x to 2.38x. Total Lightning/FQ ratios ranged from 0.43x to 1.50x on this host. Hardware-efficient VQE stresses many independent rotation gradients; QAOA stresses repeated shared parameters. This establishes functional local adjoint support for real weighted Z/ZZ Hamiltonians at complex128, not performance parity or general Pauli support. QAOA remains forward-bound at the largest width; the next optimization target is native forward RZZ/RX layer fusion, followed by wider reverse rotation blocks.
 
 ## FlagQuantum example
 

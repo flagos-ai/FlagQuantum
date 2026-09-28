@@ -13,6 +13,7 @@ from flagquantum.runtime.executors.statevector.forward_executor import (
 from flagquantum.simulation.native_cpu import (
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
+    fused_rotation_segment_adjoint_,
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
     native_cpu_rotation_available,
@@ -253,6 +254,96 @@ def test_native_rotation_adjoint_has_explicit_environment_rollback(
     result = fused_rotation_adjoint_(ket, adjoint, matrix, name="ry", wire=0, n_wires=1)
 
     assert result is None
+    torch.testing.assert_close(ket, torch.ones_like(ket))
+    torch.testing.assert_close(adjoint, torch.ones_like(adjoint))
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_segment_adjoint_matches_sequential_reference(
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(9871)
+    ket = (
+        torch.randn((2, 64), generator=generator)
+        + 1j * torch.randn((2, 64), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((2, 64), generator=generator)
+        + 1j * torch.randn((2, 64), generator=generator)
+    ).to(dtype)
+    names = ("rz", "ry", "rx", "rz", "ry", "rx", "rz", "ry", "rx")
+    wires = (4, 4, 4, 2, 2, 2, 0, 0, 0)
+    angles = torch.tensor(
+        tuple(0.07 * (index + 1) for index in range(len(names))), dtype=real_dtype
+    )
+    matrices = torch.stack(
+        tuple(
+            _rotation_matrix(
+                name,
+                angles[index],
+                dtype,
+            )
+            for index, name in enumerate(names)
+        )
+    ).contiguous()
+    expected_ket = ket.clone()
+    expected_adjoint = adjoint.clone()
+    expected_gradients = []
+    for name, wire, matrix in zip(names, wires, matrices, strict=True):
+        gradient, expected_ket, expected_adjoint = _reference(
+            expected_ket,
+            expected_adjoint,
+            matrix,
+            name=name,
+            wire=wire,
+            n_wires=6,
+        )
+        expected_gradients.append(gradient)
+
+    gradients = fused_rotation_segment_adjoint_(
+        ket,
+        adjoint,
+        angles,
+        torch.tensor(tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names)),
+        torch.tensor(wires, dtype=torch.int64),
+        n_wires=6,
+    )
+
+    assert gradients is not None
+    tolerance = 4e-5 if dtype == torch.complex64 else 3e-12
+    torch.testing.assert_close(
+        gradients,
+        torch.stack(expected_gradients),
+        atol=tolerance,
+        rtol=tolerance,
+    )
+    torch.testing.assert_close(ket, expected_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        adjoint, expected_adjoint, atol=tolerance, rtol=tolerance
+    )
+
+
+def test_native_rotation_segment_adjoint_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    adjoint = torch.ones_like(ket)
+    angles = torch.zeros(2, dtype=torch.float64)
+
+    gradients = fused_rotation_segment_adjoint_(
+        ket,
+        adjoint,
+        angles,
+        torch.tensor((0, 1), dtype=torch.int64),
+        torch.tensor((0, 1), dtype=torch.int64),
+        n_wires=2,
+    )
+
+    assert gradients is None
     torch.testing.assert_close(ket, torch.ones_like(ket))
     torch.testing.assert_close(adjoint, torch.ones_like(adjoint))
 

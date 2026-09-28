@@ -22,6 +22,15 @@ def _enabled() -> bool:
     }
 
 
+def _rotation_segment_enabled() -> bool:
+    return os.getenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
 def _load_extension() -> bool:
     global _EXTENSION_ERROR, _EXTENSION_LOADED
     if _EXTENSION_LOADED:
@@ -41,6 +50,12 @@ def native_cpu_adjoint_available() -> bool:
     """Return whether the installed native operator is enabled and loadable."""
 
     return _enabled() and _load_extension()
+
+
+def native_cpu_rotation_segment_available() -> bool:
+    """Return whether the optional multi-gate CPU adjoint path is available."""
+
+    return _rotation_segment_enabled() and native_cpu_adjoint_available()
 
 
 def fused_rotation_adjoint_(
@@ -86,6 +101,49 @@ def fused_rotation_adjoint_(
                 -1 if second_wire is None else second_wire,
                 n_wires,
                 gate_kind,
+            ),
+        )
+
+
+def fused_rotation_segment_adjoint_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    angles: torch.Tensor,
+    gate_kinds: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+) -> torch.Tensor | None:
+    """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
+
+    if (
+        not native_cpu_rotation_segment_available()
+        or ket.device.type != "cpu"
+        or adjoint.device.type != "cpu"
+        or angles.device.type != "cpu"
+        or gate_kinds.device.type != "cpu"
+        or wires.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or adjoint.dtype != ket.dtype
+        or angles.dtype
+        != (torch.float32 if ket.dtype == torch.complex64 else torch.float64)
+        or gate_kinds.dtype != torch.int64
+        or wires.dtype != torch.int64
+        or angles.ndim != 1
+        or angles.shape[0] < 2
+        or angles.shape[0] > 48
+        or gate_kinds.shape != angles.shape
+        or wires.shape != angles.shape
+        or not all(
+            item.is_contiguous() for item in (ket, adjoint, angles, gate_kinds, wires)
+        )
+    ):
+        return None
+    with torch.no_grad():
+        return cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_rotation_segment_adjoint_(
+                ket, adjoint, angles, gate_kinds, wires, n_wires
             ),
         )
 
