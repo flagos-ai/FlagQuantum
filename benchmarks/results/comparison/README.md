@@ -28,3 +28,8 @@ Clifford-layer rollback A/B, public example, and reproduction command.
 [`SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md`](SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md)
 records the exact Truncated QFT comparison and the deferred product-state SWAP
 materialization rollback A/B.
+
+The differentiable simulator corpus adds matched exact expectation-value and
+full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
+default.qubit backprop. Its generated Markdown report contains the workload meaning,
+public FlagQuantum example, measured times and memory, and reproduction command.

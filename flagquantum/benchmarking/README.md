@@ -48,6 +48,14 @@ single-device results must not be promoted to multi-card, multi-node, domestic
 accelerator, QPU, or release-grade evidence without the separately required
 hardware run and audit.
 
+For differentiable CPU comparisons, use `differentiable_simulator_corpus`. It
+measures exact expectation forward time and the full reverse-mode parameter
+gradient separately. Its PennyLane comparison uses default.qubit backprop through
+the Torch interface so both engines use the same differentiation family. Qiskit
+Aer and Cirq remain outside this corpus because their
+current FlagQuantum bridges do not provide a matching native Torch-gradient
+contract; finite differences are not substituted for a native gradient.
+
 ## Refreshing native comparison evidence
 
 When a FlagQuantum optimization changes only the native timing, refresh that
