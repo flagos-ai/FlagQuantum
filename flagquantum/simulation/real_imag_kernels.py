@@ -165,7 +165,7 @@ def _fused_layout_bmm(
     right: torch.Tensor,
     layout: _CanonicalBMMLayout,
 ) -> torch.Tensor:
-    from .triton_kernels.complex_bmm import fused_complex_layout_bmm
+    from ..kernels.triton.complex_bmm import fused_complex_layout_bmm
 
     (
         left_permutation,

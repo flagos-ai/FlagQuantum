@@ -11,7 +11,7 @@ from pathlib import Path
 import torch
 
 import flagquantum.algorithms as fqa
-from flagquantum.simulation.triton_kernels import heisenberg_hva_forward_tangents
+from flagquantum.kernels.triton import heisenberg_hva_forward_tangents
 
 
 def metric(state, tangents, block_size):

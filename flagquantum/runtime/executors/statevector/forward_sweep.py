@@ -400,7 +400,7 @@ class _ShardedForwardSweep:
                         gathered.numel() * gathered.element_size(),
                     )
                     return segment_cursor
-                from ....simulation.triton_kernels.statevector_gates import (
+                from ....kernels.triton.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
 

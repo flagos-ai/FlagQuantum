@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.triton_kernels import (  # noqa: E402
+from flagquantum.kernels.triton import (  # noqa: E402
     fused_complex_bmm,
     fused_complex_layout_bmm,
 )

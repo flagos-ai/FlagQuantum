@@ -610,7 +610,7 @@ def _apply_fused_gate_step(
             and not ry_angles.requires_grad
             and not rz_angles.requires_grad
         ):
-            from ..triton_kernels import ry_rz_pair
+            from ...kernels.triton import ry_rz_pair
 
             circuit._last_statevector_runtime["triton_ry_rz_pair_executed"] += 1
             result: torch.Tensor = ry_rz_pair(
@@ -629,7 +629,7 @@ def _apply_fused_gate_step(
         and state.dtype == torch.complex64
         and _triton_single_qubit_matrix_enabled()
     ):
-        from ..triton_kernels import single_qubit_matrix
+        from ...kernels.triton import single_qubit_matrix
 
         circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
         result = single_qubit_matrix(
@@ -658,7 +658,7 @@ def _apply_fused_gate_step(
             or _triton_parameterized_single_qubit_matrix_enabled()
         )
     ):
-        from ..triton_kernels import single_qubit_matrix
+        from ...kernels.triton import single_qubit_matrix
 
         circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
         result = single_qubit_matrix(
@@ -800,7 +800,7 @@ def _apply_cx_sequence(
     """Apply a compiled CX sequence through the available local kernel."""
 
     if state.is_cuda and state.dtype == torch.complex64:
-        from ..triton_kernels import cx_sequence
+        from ...kernels.triton import cx_sequence
 
         control_masks, target_masks, reverse_control_masks, reverse_target_masks = (
             _cx_sequence_masks(circuit, step, state.device)

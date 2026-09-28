@@ -13,7 +13,7 @@ def _require_cuda() -> None:
 
 def test_control_one_pack_unpack_matches_index_reference() -> None:
     _require_cuda()
-    from flagquantum.simulation.triton_kernels.statevector_gates import (
+    from flagquantum.kernels.triton.statevector_gates import (
         pack_complex64_control_one,
         unpack_complex64_control_one,
     )
@@ -51,7 +51,7 @@ def test_control_one_pack_unpack_matches_index_reference() -> None:
 
 def test_local_cx_inplace_matches_index_reference() -> None:
     _require_cuda()
-    from flagquantum.simulation.triton_kernels.statevector_gates import (
+    from flagquantum.kernels.triton.statevector_gates import (
         apply_complex64_local_cx_inplace,
     )
 
@@ -72,7 +72,7 @@ def test_local_cx_inplace_matches_index_reference() -> None:
 
 def test_local_cx_segment_matches_reverse_source_permutation() -> None:
     _require_cuda()
-    from flagquantum.simulation.triton_kernels.statevector_gates import (
+    from flagquantum.kernels.triton.statevector_gates import (
         apply_complex64_local_cx_segment,
     )
 

@@ -579,7 +579,7 @@ class _ReversibleAdjointSweep:
             )
             if derivative_matrix is not None:
                 self.evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
-                from ....simulation.triton_kernels.statevector_adjoint import (
+                from ....kernels.triton.statevector_adjoint import (
                     fused_complex64_local_1q_reversible_vjp,
                 )
 
@@ -718,7 +718,7 @@ class _ReversibleAdjointSweep:
                     )
                     self.skipped_cx_indices.update(range(segment_start, index))
                     return True
-                from ....simulation.triton_kernels.statevector_gates import (
+                from ....kernels.triton.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
 
@@ -1020,7 +1020,7 @@ class _ReversibleAdjointSweep:
                 )
                 self.evidence.kernel_dispatch_evidence.record(vjp_decision)
                 if vjp_decision.accelerated:
-                    from ....simulation.triton_kernels.statevector_adjoint import (
+                    from ....kernels.triton.statevector_adjoint import (
                         fused_complex64_local_1q_vjp_adjoint,
                     )
 

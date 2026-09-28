@@ -34,7 +34,7 @@ def test_two_site_autograd_matches_direct_contraction(
     monkeypatch.setitem(sys.modules, "triton.language", language)
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/simulation/triton_kernels/mps_two_site.py"
+        / "flagquantum/kernels/triton/mps_two_site.py"
     )
     spec = importlib.util.spec_from_file_location("_test_mps_two_site", path)
     assert spec is not None and spec.loader is not None

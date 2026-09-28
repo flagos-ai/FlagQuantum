@@ -12,6 +12,7 @@ allowed_top_level_directories = [
     "drawer",
     "ecosystem",
     "experimental",
+    "kernels",
     "noise",
     "observables",
     "qec",
@@ -29,6 +30,7 @@ compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simu
 noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
 trajectory_runtime_forbidden = ["circuit", "simulation", "deployment"]
 simulation_forbidden = ["runtime", "compute", "remote", "deployment"]
+kernel_forbidden = ["runtime", "compute", "remote", "deployment", "simulation"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
 root_init_line_ceiling = 140

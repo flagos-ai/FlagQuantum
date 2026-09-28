@@ -2,7 +2,7 @@
 omit =
     flagquantum/benchmarking/*
     flagquantum/runtime/executors/statevector/triton.py
-    flagquantum/simulation/triton_kernels/*
+    flagquantum/kernels/triton/*
     flagquantum/ecosystem/cudaq/*
 
 [report]

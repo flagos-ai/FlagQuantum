@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.triton_kernels import fused_complex_bmm  # noqa: E402
+from flagquantum.kernels.triton import fused_complex_bmm  # noqa: E402
 
 
 def _measure(operation, *, warmup: int, iterations: int, repeats: int) -> dict:

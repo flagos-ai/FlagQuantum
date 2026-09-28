@@ -4,7 +4,7 @@ import torch
 pytest.importorskip("triton")
 
 import flagquantum.algorithms as fqa
-from flagquantum.simulation.triton_kernels import heisenberg_hva_forward_tangents
+from flagquantum.kernels.triton import heisenberg_hva_forward_tangents
 
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 

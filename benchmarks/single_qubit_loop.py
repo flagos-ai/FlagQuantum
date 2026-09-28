@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.triton_kernels import repeated_rx_rz  # noqa: E402
+from flagquantum.kernels.triton import repeated_rx_rz  # noqa: E402
 
 
 def _torch_loop(state, rx_angles, rz_angles):
