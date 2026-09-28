@@ -16,7 +16,9 @@ from ....core.ir import CircuitIR
 from ....simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
+    _apply_diagonal_matrix,
     _apply_local_gate_eager,
+    _apply_matrix,
     _basis_indices_for_wires,
     _basis_offset,
     _combine_gate_basis_blocks_eager,
@@ -52,6 +54,16 @@ def _runtime_index_validation_enabled() -> bool:
         "on",
         "yes",
     }
+
+
+def _single_process_cpu_direct_enabled() -> bool:
+    """Use native local layouts instead of distributed gather kernels on one CPU."""
+
+    raw = os.getenv(
+        "FQ_STATEVECTOR_CPU_DIRECT_LOCAL",
+        os.getenv("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", "1"),
+    )
+    return raw.strip().lower() not in {"0", "false", "off", "no"}
 
 
 def _triton_local_1q_decision(*, supported: bool = True) -> KernelDecision:
@@ -565,6 +577,19 @@ def _vectorized_local_gate(
     triton_decision = _triton_local_1q_decision(supported=triton_supported)
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
+    if (
+        plan.world_size == 1
+        and shard_state.amplitudes.device.type == "cpu"
+        and _single_process_cpu_direct_enabled()
+    ):
+        amplitudes = _apply_matrix(shard_state.amplitudes, matrix, wires, plan.n_wires)
+        if output is not None:
+            output.copy_(amplitudes)
+            amplitudes = output
+        return (
+            replace(shard_state, amplitudes=amplitudes),
+            amplitudes.numel() * amplitudes.element_size(),
+        )
     if triton_decision.accelerated:
         from ....simulation.triton_kernels.statevector_gates import (
             apply_complex64_local_1q,
@@ -652,6 +677,22 @@ def _vectorized_local_diagonal_gate(
     output: torch.Tensor | None = None,
 ) -> tuple[StatevectorShardState, int]:
     """Apply a diagonal gate rank-locally, including on sharded address bits."""
+
+    if (
+        plan.world_size == 1
+        and shard_state.amplitudes.device.type == "cpu"
+        and _single_process_cpu_direct_enabled()
+    ):
+        amplitudes = _apply_diagonal_matrix(
+            shard_state.amplitudes, matrix, wires, plan.n_wires
+        )
+        if output is not None:
+            output.copy_(amplitudes)
+            amplitudes = output
+        return (
+            replace(shard_state, amplitudes=amplitudes),
+            amplitudes.numel() * amplitudes.element_size(),
+        )
 
     diagonal = torch.diagonal(matrix.to(shard_state.amplitudes), dim1=-2, dim2=-1)
     out = torch.empty_like(shard_state.amplitudes) if output is None else output

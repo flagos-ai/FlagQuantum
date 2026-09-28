@@ -133,7 +133,7 @@ _RUNNERS: dict[str, RunnerSpec] = {
         module="flagquantum.benchmarking.differentiable_simulator_corpus",
         attribute="main",
         category="interop",
-        summary="Compare exact expectation gradients across simulator engines.",
+        summary="Compare matched backprop or adjoint gradients across simulators.",
         hardware="CPU; PennyLane optional dependency required",
         example=(
             "flagquantum-benchmark run differentiable_simulator_corpus "

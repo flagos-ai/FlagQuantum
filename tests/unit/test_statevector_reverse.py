@@ -21,11 +21,22 @@ from flagquantum.runtime.executors.statevector.reverse import (
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
+from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
+    _cpu_direct_adjoint_gate_enabled,
+)
 from flagquantum.runtime.executors.statevector.reverse_adjoint_sweep import (
     _compact_reverse_global_indices,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_cpu_direct_adjoint_gate_has_explicit_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert _cpu_direct_adjoint_gate_enabled() is True
+    monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", "0")
+    assert _cpu_direct_adjoint_gate_enabled() is False
 
 
 def test_generic_matrix_jvp_matches_rotation_gradient(
@@ -316,6 +327,63 @@ def test_multi_z_sum_uses_one_forward_and_one_combined_adjoint(monkeypatch):
     assert summary["observable_profile"] == "sum_of_single_wire_pauli_z_terms"
     assert summary["observable_wires"] == (0, 1)
     assert summary["backward_distribution_semantics"] == "single_device_fast_path"
+
+
+@pytest.mark.parametrize("real_dtype", (torch.float32, torch.float64))
+def test_weighted_z_zz_hamiltonian_matches_dense_autograd(real_dtype):
+    complex_dtype = torch.complex64 if real_dtype == torch.float32 else torch.complex128
+    theta = torch.tensor(0.23, dtype=real_dtype, requires_grad=True)
+    phi = torch.tensor(-0.37, dtype=real_dtype, requires_grad=True)
+    circuit = (
+        fq.Circuit(3, dtype=complex_dtype)
+        .rx(0, theta)
+        .ry(1, phi)
+        .cx(0, 2)
+        .rxx(1, 2, theta)
+    )
+    dense = (
+        0.7 * circuit.expectation_ps(z=(0, 2))
+        + 0.2 * circuit.expectation_z(1)
+        - 0.3 * circuit.expectation_ps(z=(1, 2))
+    ).squeeze()
+    expected = torch.autograd.grad(dense, (theta, phi), retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_terms=((0.7, (0, 2)), (0.2, (1,)), (-0.3, (1, 2))),
+    )
+    result.backward()
+
+    tolerance = 2e-5 if real_dtype == torch.float32 else 1e-10
+    torch.testing.assert_close(result.value, dense, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(theta.grad, expected[0], atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(phi.grad, expected[1], atol=tolerance, rtol=tolerance)
+    summary = result.summary()
+    assert summary["observable_profile"] == "weighted_z_zz_hamiltonian"
+    assert summary["observable_wires"] == (0, 1, 2)
+    assert summary["observable_terms"] == (
+        (0.7, (0, 2)),
+        (0.2, (1,)),
+        (-0.3, (1, 2)),
+    )
+
+
+@pytest.mark.parametrize(
+    ("terms", "error", "match"),
+    [
+        ((), ValueError, "at least one"),
+        (((1.0, (0, 0)),), ValueError, "repeat"),
+        (((1.0, (0, 1, 2)),), ValueError, "only Z and ZZ"),
+        (((float("inf"), (0,)),), ValueError, "finite"),
+        (((1.0, (0.5,)),), TypeError, "integers"),
+    ],
+)
+def test_weighted_observable_validation(terms, error, match):
+    theta = torch.tensor(0.2, requires_grad=True)
+    circuit = fq.Circuit(3).rx(0, theta)
+
+    with pytest.raises(error, match=match):
+        execute_torch_distributed_statevector_reverse(circuit, observable_terms=terms)
 
 
 def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():

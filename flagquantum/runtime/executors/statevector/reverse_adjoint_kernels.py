@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
+from dataclasses import replace
 from typing import Any, Protocol
 
 import torch
@@ -10,7 +12,12 @@ import torch.distributed as dist
 
 from ....core.ir import Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....simulation.statevector.operations import _instruction_matrix
+from ....simulation.statevector.operations import (
+    _apply_diagonal_matrix,
+    _apply_fixed_permutation,
+    _apply_matrix,
+    _instruction_matrix,
+)
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
@@ -43,6 +50,143 @@ class _MatrixJVP(Protocol):
         create_graph: bool,
         strict: bool,
     ) -> object: ...
+
+
+def _cpu_direct_adjoint_gate_enabled() -> bool:
+    """Use the native dense CPU layouts instead of rebuilding gather indices."""
+
+    return os.getenv("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def _apply_single_process_cpu_gate(
+    shard_state: Any,
+    *,
+    matrix: torch.Tensor,
+    instruction: Instruction,
+    plan: Any,
+    output: torch.Tensor | None,
+) -> tuple[Any, int]:
+    """Apply a local CPU gate without materializing full-state gather indices."""
+
+    source = shard_state.amplitudes
+    if instruction.name in {"cx", "swap", "x"} and instruction.matrix is None:
+        updated = _apply_fixed_permutation(
+            source, instruction.name, instruction.wires, plan.n_wires
+        )
+    elif _is_diagonal_instruction(instruction.name):
+        updated = _apply_diagonal_matrix(
+            source, matrix, instruction.wires, plan.n_wires
+        )
+    else:
+        updated = _apply_matrix(source, matrix, instruction.wires, plan.n_wires)
+    if output is not None:
+        output.copy_(updated)
+        updated = output
+    return (
+        replace(shard_state, amplitudes=updated),
+        updated.numel() * updated.element_size(),
+    )
+
+
+def _pair_components(
+    state: torch.Tensor, *, wire: int, n_wires: int
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return the zero/one views for one wire of a contiguous state."""
+
+    stride = 1 << (int(n_wires) - int(wire) - 1)
+    paired = state.reshape(state.shape[0], -1, 2, stride)
+    return paired[:, :, 0, :], paired[:, :, 1, :]
+
+
+def _complex_cross(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
+    """Return Im(conj(left) * right) without materializing a complex product."""
+
+    return left.real * right.imag - left.imag * right.real
+
+
+def _single_process_cpu_pauli_rotation_gradient(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    instruction: Instruction,
+    *,
+    n_wires: int,
+) -> torch.Tensor | None:
+    """Evaluate a Pauli-rotation VJP directly from the post-gate ket and bra."""
+
+    name = instruction.name
+    wires = instruction.wires
+    if name in {"rx", "ry", "rz"} and len(wires) == 1:
+        ket_zero, ket_one = _pair_components(ket, wire=wires[0], n_wires=n_wires)
+        adjoint_zero, adjoint_one = _pair_components(
+            adjoint, wire=wires[0], n_wires=n_wires
+        )
+        if name == "rx":
+            return 0.5 * (
+                _complex_cross(adjoint_zero, ket_one).sum()
+                + _complex_cross(adjoint_one, ket_zero).sum()
+            )
+        if name == "ry":
+            zero = (
+                adjoint_zero.real * ket_one.real + adjoint_zero.imag * ket_one.imag
+            ).sum()
+            one = (
+                adjoint_one.real * ket_zero.real + adjoint_one.imag * ket_zero.imag
+            ).sum()
+            return 0.5 * (one - zero)
+        return 0.5 * (
+            _complex_cross(adjoint_zero, ket_zero).sum()
+            - _complex_cross(adjoint_one, ket_one).sum()
+        )
+    if name == "rzz" and len(wires) == 2:
+        cross = _complex_cross(adjoint, ket)
+        ordered = tuple(int(wire) for wire in wires)
+        rest = tuple(wire for wire in range(n_wires) if wire not in ordered)
+        perm = (0,) + tuple(wire + 1 for wire in ordered + rest)
+        basis = (
+            cross.reshape((cross.shape[0],) + (2,) * n_wires)
+            .permute(perm)
+            .reshape(cross.shape[0], 4, -1)
+        )
+        return 0.5 * (
+            basis[:, 0].sum()
+            - basis[:, 1].sum()
+            - basis[:, 2].sum()
+            + basis[:, 3].sum()
+        )
+    return None
+
+
+def _fused_single_process_cpu_reversible_vjp(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    matrix: torch.Tensor,
+    instruction: Instruction,
+    *,
+    n_wires: int,
+) -> torch.Tensor | None:
+    """Reverse ket and bra while avoiding a derivative-state materialization."""
+
+    gradient = _single_process_cpu_pauli_rotation_gradient(
+        ket, adjoint, instruction, n_wires=n_wires
+    )
+    if gradient is None:
+        return None
+    inverse = matrix.mH
+    apply = (
+        _apply_diagonal_matrix
+        if _is_diagonal_instruction(instruction.name)
+        else _apply_matrix
+    )
+    previous_ket = apply(ket, inverse, instruction.wires, n_wires)
+    previous_adjoint = apply(adjoint, inverse, instruction.wires, n_wires)
+    ket.copy_(previous_ket)
+    adjoint.copy_(previous_adjoint)
+    return gradient
 
 
 def _apply_one_gate(
@@ -86,6 +230,21 @@ def _apply_matrix_gate(
     workspace: StatevectorExchangeWorkspace | None = None,
     output: torch.Tensor | None = None,
 ) -> Any:
+    if (
+        plan.world_size == 1
+        and shard_state.amplitudes.device.type == "cpu"
+        and _cpu_direct_adjoint_gate_enabled()
+    ):
+        state, scratch = _apply_single_process_cpu_gate(
+            shard_state,
+            matrix=matrix,
+            instruction=instruction,
+            plan=plan,
+            output=output,
+        )
+        if evidence is not None:
+            evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
+        return state
     if _is_diagonal_instruction(instruction.name):
         state, scratch = _vectorized_local_diagonal_gate(
             shard_state,

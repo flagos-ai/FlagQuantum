@@ -19,6 +19,9 @@ from flagquantum.runtime.executors.statevector.forward import (
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
+from flagquantum.runtime.executors.statevector.forward_sweep import (
+    _ShardedForwardSweep,
+)
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
     StatevectorShardState,
@@ -74,6 +77,22 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     assert not _triton_local_cx_segment_enabled(scheduled)
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
     assert _triton_local_cx_segment_enabled(scheduled)
+
+
+def test_cpu_cx_segment_gather_is_single_process_only(monkeypatch):
+    import flagquantum.runtime.executors.statevector.forward_sweep as forward_sweep
+
+    monkeypatch.setattr(
+        forward_sweep, "_single_process_cpu_direct_enabled", lambda: True
+    )
+    sweep = object.__new__(_ShardedForwardSweep)
+    sweep.local_compilation = True
+    sweep.world_size = 2
+    sweep.resolved_device = torch.device("cpu")
+    sweep.cx_segment_scratch = None
+
+    instruction = Instruction(name="cx", wires=(0, 1))
+    assert sweep._cx_segment(0, instruction, touched=False) is None
 
 
 def test_exchange_workspace_classifies_torchrun_peer_tiers(monkeypatch):

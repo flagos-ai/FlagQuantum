@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -81,6 +82,31 @@ def _parameter_layout(
     return tuple(parameters), tuple(slots), tuple(occurrences)
 
 
+def _normalize_z_observable_terms(
+    terms: Sequence[tuple[float, Sequence[int]]], *, n_wires: int
+) -> tuple[tuple[float, tuple[int, ...]], ...]:
+    """Validate the exact weighted Z/ZZ observable supported by adjoint mode."""
+
+    normalized: list[tuple[float, tuple[int, ...]]] = []
+    for coefficient, raw_wires in terms:
+        value = float(coefficient)
+        wires = tuple(raw_wires)
+        if not math.isfinite(value):
+            raise ValueError("observable coefficients must be finite")
+        if any(type(wire) is not int for wire in wires):
+            raise TypeError("observable wires must be integers")
+        if len(wires) not in {1, 2}:
+            raise ValueError("statevector adjoint supports only Z and ZZ terms")
+        if len(set(wires)) != len(wires):
+            raise ValueError("an observable term cannot repeat a wire")
+        if any(wire < 0 or wire >= n_wires for wire in wires):
+            raise ValueError("observable term wire is outside the circuit")
+        normalized.append((value, tuple(sorted(wires))))
+    if not normalized:
+        raise ValueError("observable_terms must contain at least one Z or ZZ term")
+    return tuple(normalized)
+
+
 @dataclass(frozen=True)
 class TorchDistributedStatevectorGradientResult:
     value: torch.Tensor
@@ -96,6 +122,7 @@ class TorchDistributedStatevectorGradientResult:
     total_amplitudes: int
     logical_to_physical_wires: tuple[int, ...]
     observable_wires: tuple[int, ...]
+    observable_terms: tuple[tuple[float, tuple[int, ...]], ...]
     layout_optimization_target: str
     backward_evidence: BackwardExecutionEvidence
 
@@ -138,8 +165,16 @@ class TorchDistributedStatevectorGradientResult:
             "logical_to_physical_wires": self.logical_to_physical_wires,
             "layout_optimization_target": self.layout_optimization_target,
             "gradient_method": "statevector_adjoint",
-            "observable_profile": "sum_of_single_wire_pauli_z_terms",
+            "observable_profile": (
+                "sum_of_single_wire_pauli_z_terms"
+                if all(
+                    coefficient == 1.0 and len(wires) == 1
+                    for coefficient, wires in self.observable_terms
+                )
+                else "weighted_z_zz_hamiltonian"
+            ),
             "observable_wires": self.observable_wires,
+            "observable_terms": self.observable_terms,
             "distribution_semantics": (
                 "sharded_across_ranks"
                 if self.world_size > 1
@@ -253,11 +288,12 @@ class _ShardedAutogradContext(Protocol):
     ir: CircuitIR
     slots: tuple[tuple[int, str, int], ...]
     policy: StatevectorCheckpointPolicy
-    observable_wires: tuple[int, ...]
+    observable_terms: tuple[tuple[float, tuple[int, ...]], ...]
     device: torch.device
     process_group: Any | None
     evidence: BackwardExecutionEvidence
     forward_shard_state: StatevectorShardState | None
+    forward_observable_weights: torch.Tensor | None
     forward_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...]
 
     @property
@@ -275,17 +311,17 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         ir: CircuitIR,
         slots: tuple[tuple[int, str, int], ...],
         policy: StatevectorCheckpointPolicy,
-        observable_wires: tuple[int, ...],
+        observable_terms: tuple[tuple[float, tuple[int, ...]], ...],
         device: torch.device,
         process_group: Any | None,
         evidence: BackwardExecutionEvidence,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
-        from .reverse_adjoint import _local_expectation_z_sum
+        from .reverse_adjoint import _local_expectation_z_hamiltonian_and_weights
 
         ctx.slots = slots
         ctx.policy = policy
-        ctx.observable_wires = observable_wires
+        ctx.observable_terms = observable_terms
         ctx.device = device
         ctx.process_group = process_group
         ctx.evidence = evidence
@@ -317,13 +353,21 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
             if policy.strategy == "reversible_adjoint"
             else ()
         )
-        value = _local_expectation_z_sum(
+        physical_terms = tuple(
+            (
+                coefficient,
+                tuple(result.logical_to_physical_wires[wire] for wire in wires),
+            )
+            for coefficient, wires in observable_terms
+        )
+        value, observable_weights = _local_expectation_z_hamiltonian_and_weights(
             result.shard_state,
             plan=result.plan,
             n_wires=ir.n_wires,
-            wires=tuple(
-                result.logical_to_physical_wires[wire] for wire in observable_wires
-            ),
+            terms=physical_terms,
+        )
+        ctx.forward_observable_weights = (
+            observable_weights if policy.strategy == "reversible_adjoint" else None
         )
         if dist.is_initialized() and dist.get_world_size(process_group) > 1:
             dist.all_reduce(value, op=dist.ReduceOp.SUM, group=process_group)
@@ -379,17 +423,19 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                     ctx.ir,
                     ctx.slots,
                     ctx.saved_tensors,
-                    observable_wires=ctx.observable_wires,
+                    observable_terms=ctx.observable_terms,
                     device=ctx.device,
                     policy=ctx.policy,
                     process_group=ctx.process_group,
                     evidence=evidence,
                     saved_final_state=ctx.forward_shard_state,
+                    saved_observable_weights=ctx.forward_observable_weights,
                     saved_inter_node_ket_checkpoints=(
                         ctx.forward_inter_node_ket_checkpoints
                     ),
                 )
             ctx.forward_shard_state = None
+            ctx.forward_observable_weights = None
             ctx.forward_inter_node_ket_checkpoints = ()
             world_size = (
                 dist.get_world_size(ctx.process_group) if dist.is_initialized() else 1
@@ -431,25 +477,31 @@ def execute_torch_distributed_statevector_reverse(
     *,
     observable_wire: int = 0,
     observable_wires: Sequence[int] | None = None,
+    observable_terms: Sequence[tuple[float, Sequence[int]]] | None = None,
     checkpoint_policy: StatevectorCheckpointPolicy | None = None,
     device: torch.device | str | None = None,
     process_group: Any | None = None,
 ) -> TorchDistributedStatevectorGradientResult:
-    """Return a differentiable global sum of single-wire Z expectations."""
+    """Return a differentiable weighted Z/ZZ expectation."""
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    selected_observable_wires = (
-        (observable_wire,) if observable_wires is None else tuple(observable_wires)
-    )
-    if not selected_observable_wires:
-        raise ValueError("observable_wires must contain at least one wire")
-    if any(type(wire) is not int for wire in selected_observable_wires):
-        raise TypeError("observable wires must be integers")
-    outside = tuple(
-        wire for wire in selected_observable_wires if wire < 0 or wire >= ir.n_wires
-    )
-    if outside:
-        raise ValueError(f"observable wires {outside} are outside the circuit")
+    if observable_terms is None:
+        selected_observable_wires = (
+            (observable_wire,) if observable_wires is None else tuple(observable_wires)
+        )
+        selected_observable_terms = _normalize_z_observable_terms(
+            tuple((1.0, (wire,)) for wire in selected_observable_wires),
+            n_wires=ir.n_wires,
+        )
+    else:
+        if observable_wires is not None:
+            raise ValueError("provide observable_wires or observable_terms, not both")
+        selected_observable_terms = _normalize_z_observable_terms(
+            observable_terms, n_wires=ir.n_wires
+        )
+        selected_observable_wires = tuple(
+            sorted({wire for _, wires in selected_observable_terms for wire in wires})
+        )
     backend = (
         dist.get_backend(process_group) if dist.is_initialized() else "single_process"
     )
@@ -466,7 +518,7 @@ def execute_torch_distributed_statevector_reverse(
         )
     (
         execution_ir,
-        execution_observable_wires,
+        _,
         execution_mapping,
     ) = _communication_aware_wire_layout(
         ir,
@@ -518,7 +570,13 @@ def execute_torch_distributed_statevector_reverse(
         execution_ir,
         slots,
         policy,
-        execution_observable_wires,
+        tuple(
+            (
+                coefficient,
+                tuple(execution_mapping[wire] for wire in wires),
+            )
+            for coefficient, wires in selected_observable_terms
+        ),
         resolved_device,
         process_group,
         evidence,
@@ -540,6 +598,7 @@ def execute_torch_distributed_statevector_reverse(
         total_amplitudes=plan.total_amplitudes,
         logical_to_physical_wires=execution_mapping,
         observable_wires=selected_observable_wires,
+        observable_terms=selected_observable_terms,
         layout_optimization_target="training_step",
         backward_evidence=evidence,
     )

@@ -35,7 +35,13 @@ _ABSOLUTE_TOLERANCE = 1e-9
 _STABILITY_THRESHOLD = 0.20
 
 WorkloadName = Literal["hardware_efficient_vqe", "qaoa_path_maxcut"]
-EngineName = Literal["flagquantum_native", "pennylane_default_qubit"]
+EngineName = Literal[
+    "flagquantum_native",
+    "pennylane_default_qubit",
+    "flagquantum_adjoint",
+    "flagquantum_adjoint_gather_rollback",
+    "pennylane_lightning_adjoint",
+]
 
 WORKLOAD_NAMES: tuple[WorkloadName, ...] = (
     "hardware_efficient_vqe",
@@ -45,6 +51,12 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native",
     "pennylane_default_qubit",
 )
+ADJOINT_ENGINE_NAMES: tuple[EngineName, ...] = (
+    "flagquantum_adjoint",
+    "flagquantum_adjoint_gather_rollback",
+    "pennylane_lightning_adjoint",
+)
+ALL_ENGINE_NAMES = ENGINE_NAMES + ADJOINT_ENGINE_NAMES
 
 _WORKLOAD_LABELS: dict[WorkloadName, str] = {
     "hardware_efficient_vqe": "Hardware-efficient VQE",
@@ -53,6 +65,9 @@ _WORKLOAD_LABELS: dict[WorkloadName, str] = {
 _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native": "FlagQuantum",
     "pennylane_default_qubit": "PennyLane default.qubit",
+    "flagquantum_adjoint": "FlagQuantum adjoint",
+    "flagquantum_adjoint_gather_rollback": "FlagQuantum adjoint gather rollback",
+    "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
 
 
@@ -154,17 +169,40 @@ def build_workload(
     )
 
 
-def _flagquantum_executor(workload: _Workload) -> Callable[[], _Execution]:
+def _flagquantum_executor(
+    workload: _Workload,
+    *,
+    differentiation: Literal["autograd", "adjoint"],
+    cpu_direct: bool | None = None,
+) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
     def execute() -> _Execution:
-        forward_started = time.perf_counter()
-        state = workload.circuit.state(refresh=True)
-        loss = workload.hamiltonian.expectation(state).sum() + workload.constant
-        forward_seconds = time.perf_counter() - forward_started
-        backward_started = time.perf_counter()
-        gradient = torch.autograd.grad(loss, parameters)[0]
-        backward_seconds = time.perf_counter() - backward_started
+        prior_direct = os.environ.get("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT")
+        if cpu_direct is not None:
+            os.environ["FQ_STATEVECTOR_ADJOINT_CPU_DIRECT"] = "1" if cpu_direct else "0"
+        try:
+            forward_started = time.perf_counter()
+            if differentiation == "adjoint":
+                loss = (
+                    workload.hamiltonian.expectation(
+                        workload.circuit, differentiation="adjoint"
+                    )
+                    + workload.constant
+                )
+            else:
+                state = workload.circuit.state(refresh=True)
+                loss = workload.hamiltonian.expectation(state).sum() + workload.constant
+            forward_seconds = time.perf_counter() - forward_started
+            backward_started = time.perf_counter()
+            gradient = torch.autograd.grad(loss, parameters)[0]
+            backward_seconds = time.perf_counter() - backward_started
+        finally:
+            if cpu_direct is not None:
+                if prior_direct is None:
+                    os.environ.pop("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", None)
+                else:
+                    os.environ["FQ_STATEVECTOR_ADJOINT_CPU_DIRECT"] = prior_direct
         return _Execution(
             value=float(loss.detach()),
             gradient=gradient.detach(),
@@ -181,10 +219,12 @@ def _pennylane_executor(
     n_wires: int,
     layers: int,
     seed: int,
+    device_name: Literal["default.qubit", "lightning.qubit"],
+    diff_method: Literal["backprop", "adjoint"],
 ) -> Callable[[], _Execution]:
     qml = import_module("pennylane")
     parameters = _parameters(name, n_wires, layers, seed)
-    device = qml.device("default.qubit", wires=n_wires, shots=None)
+    device = qml.device(device_name, wires=n_wires, shots=None)
     if name == "hardware_efficient_vqe":
         coefficients = [0.7] * (n_wires - 1) + [0.2] * n_wires
         operators = [
@@ -219,12 +259,12 @@ def _pennylane_executor(
                     qml.RX(values[layer, 1], wires=wire)
         return qml.expval(observable)
 
-    qnode = qml.qnode(device, interface="torch", diff_method="backprop")(circuit)
+    qnode = qml.qnode(device, interface="torch", diff_method=diff_method)(circuit)
 
     def execute() -> _Execution:
         forward_started = time.perf_counter()
         loss = (
-            _require_scalar_tensor(qnode(parameters), engine="PennyLane default.qubit")
+            _require_scalar_tensor(qnode(parameters), engine=f"PennyLane {device_name}")
             + constant
         )
         forward_seconds = time.perf_counter() - forward_started
@@ -251,10 +291,39 @@ def _engine_callable(
 ) -> Callable[[], _Execution]:
     if engine == "flagquantum_native":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed)
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="autograd",
+        )
+    if engine == "flagquantum_adjoint":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+        )
+    if engine == "flagquantum_adjoint_gather_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=False,
         )
     if engine == "pennylane_default_qubit":
-        return _pennylane_executor(workload, n_wires=n_wires, layers=layers, seed=seed)
+        return _pennylane_executor(
+            workload,
+            n_wires=n_wires,
+            layers=layers,
+            seed=seed,
+            device_name="default.qubit",
+            diff_method="backprop",
+        )
+    if engine == "pennylane_lightning_adjoint":
+        return _pennylane_executor(
+            workload,
+            n_wires=n_wires,
+            layers=layers,
+            seed=seed,
+            device_name="lightning.qubit",
+            diff_method="adjoint",
+        )
     raise ValueError(f"unsupported engine: {engine}")
 
 
@@ -288,8 +357,12 @@ def _configure_threads(threads: int) -> dict[str, str]:
 def _package_versions(engine: EngineName) -> dict[str, str]:
     packages = (
         ("flagquantum", "torch")
-        if engine == "flagquantum_native"
-        else ("pennylane", "torch")
+        if engine.startswith("flagquantum_")
+        else (
+            ("pennylane", "pennylane_lightning", "torch")
+            if engine == "pennylane_lightning_adjoint"
+            else ("pennylane", "torch")
+        )
     )
     return {package: metadata.version(package) for package in packages}
 
@@ -368,7 +441,7 @@ def run_case(
         )
     if not engines or len(set(engines)) != len(engines):
         raise ValueError("engines must contain unique supported engine names")
-    unknown = sorted(set(engines) - set(ENGINE_NAMES))
+    unknown = sorted(set(engines) - set(ALL_ENGINE_NAMES))
     if unknown:
         raise ValueError("unsupported engine(s): " + ", ".join(unknown))
     if case_timeout_seconds <= 0:
@@ -409,8 +482,8 @@ def run_case(
             samples[engine]["backward"].append(backward)
             samples[engine]["value_and_grad"].append(forward + backward)
 
-    reference_engine = (
-        "flagquantum_native" if "flagquantum_native" in engines else engines[0]
+    reference_engine = next(
+        (engine for engine in engines if engine.startswith("flagquantum_")), engines[0]
     )
     reference = outputs[reference_engine]
     engine_payload: dict[str, Any] = {}
@@ -447,7 +520,15 @@ def run_case(
             "differentiation": (
                 "torch_reverse_mode_autograd"
                 if engine == "flagquantum_native"
-                else "pennylane_backprop_with_torch_interface"
+                else (
+                    "flagquantum_statevector_adjoint"
+                    if engine.startswith("flagquantum_adjoint")
+                    else (
+                        "pennylane_lightning_adjoint_with_torch_interface"
+                        if engine == "pennylane_lightning_adjoint"
+                        else "pennylane_backprop_with_torch_interface"
+                    )
+                )
             ),
             "forward": _timing(samples[engine]["forward"]),
             "backward": _timing(samples[engine]["backward"]),
@@ -462,11 +543,16 @@ def run_case(
             },
         }
 
-    native_payload = engine_payload.get("flagquantum_native")
+    native_name = next(
+        (engine for engine in engines if engine.startswith("flagquantum_")), None
+    )
+    native_payload = (
+        engine_payload.get(native_name) if native_name is not None else None
+    )
     ratios: dict[str, dict[str, float]] = {}
     if native_payload is not None:
         for engine_name, payload in engine_payload.items():
-            if engine_name == "flagquantum_native":
+            if engine_name == native_name:
                 continue
             ratios[engine_name] = {
                 metric: payload[metric]["median_seconds"]
@@ -612,14 +698,29 @@ def run_benchmark(
         },
         support_matrix={
             "flagquantum_native": {
-                "included": True,
+                "included": "flagquantum_native" in engines,
                 "contract": "native PyTorch reverse-mode autograd",
                 "gradient_method": "backpropagation through exact statevector",
             },
             "pennylane_default_qubit": {
-                "included": True,
+                "included": "pennylane_default_qubit" in engines,
                 "contract": "default.qubit backprop through the PyTorch interface",
                 "gradient_method": "torch_reverse_mode_autograd",
+            },
+            "flagquantum_adjoint": {
+                "included": "flagquantum_adjoint" in engines,
+                "contract": "native reversible statevector adjoint",
+                "gradient_method": "statevector_adjoint",
+            },
+            "flagquantum_adjoint_gather_rollback": {
+                "included": "flagquantum_adjoint_gather_rollback" in engines,
+                "contract": "rollback to per-gate full-state gather indices",
+                "gradient_method": "statevector_adjoint",
+            },
+            "pennylane_lightning_adjoint": {
+                "included": "pennylane_lightning_adjoint" in engines,
+                "contract": "lightning.qubit adjoint through the PyTorch interface",
+                "gradient_method": "statevector_adjoint",
             },
             "qiskit_aer": {
                 "included": False,
@@ -643,6 +744,12 @@ def run_benchmark(
 def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
     """Render a self-contained differentiable comparison report."""
 
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_gather_rollback",
+        "pennylane_lightning_adjoint",
+    ):
+        return _render_adjoint_markdown(payload, artifact_name=artifact_name)
     methodology = payload["methodology"]
     cases = payload["cases"]
     engines = tuple(payload["engines"])
@@ -870,6 +977,137 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
     return "\n".join(lines)
 
 
+def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
+    """Render the method-matched adjoint comparison without changing backprop claims."""
+
+    cases = payload["cases"]
+    methodology = payload["methodology"]
+    lines = [
+        "# Adjoint differentiable simulator corpus (Apple arm64 CPU)",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}). It is a",
+        "separate method-matched track from the backpropagation corpus: FlagQuantum's",
+        "reversible statevector adjoint is compared with PennyLane Lightning's adjoint.",
+        "Both compute one exact weighted Z/ZZ expectation and its gradient with respect",
+        "to every circuit parameter; construction and optimizer updates are excluded.",
+        "",
+        "## Results",
+        "",
+        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Rollback backward (ms) | Rollback total (ms) | Backward speedup | Lightning total (ms) | Lightning / FQ total | Max gradient error |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+
+    def milliseconds(engine: Mapping[str, Any], metric: str) -> float:
+        return 1000.0 * float(engine[metric]["median_seconds"])
+
+    ratios = []
+    backward_speedups = []
+    total_speedups = []
+    errors = []
+    for case in cases:
+        workload = case["workload"]
+        native = case["engines"]["flagquantum_adjoint"]
+        rollback = case["engines"]["flagquantum_adjoint_gather_rollback"]
+        external = case["engines"]["pennylane_lightning_adjoint"]
+        ratio = case["comparison"]["engine_over_flagquantum_median"][
+            "pennylane_lightning_adjoint"
+        ]["value_and_grad"]
+        error = case["correctness"]["engines"]["pennylane_lightning_adjoint"][
+            "gradient_max_abs_error"
+        ]
+        ratios.append(ratio)
+        backward_speedup = (
+            rollback["backward"]["median_seconds"]
+            / native["backward"]["median_seconds"]
+        )
+        total_speedup = (
+            rollback["value_and_grad"]["median_seconds"]
+            / native["value_and_grad"]["median_seconds"]
+        )
+        backward_speedups.append(backward_speedup)
+        total_speedups.append(total_speedup)
+        errors.append(error)
+        values = (
+            _WORKLOAD_LABELS[workload["name"]],
+            workload["n_wires"],
+            workload["gate_count"],
+            workload["parameter_count"],
+            f"{milliseconds(native, 'forward'):.3f}",
+            f"{milliseconds(native, 'backward'):.3f}",
+            f"{milliseconds(native, 'value_and_grad'):.3f}",
+            f"{milliseconds(rollback, 'backward'):.3f}",
+            f"{milliseconds(rollback, 'value_and_grad'):.3f}",
+            f"{backward_speedup:.2f}x",
+            f"{milliseconds(external, 'value_and_grad'):.3f}",
+            f"{ratio:.2f}x",
+            f"{error:.3e}",
+        )
+        lines.append("| " + " | ".join(map(str, values)) + " |")
+
+    lines.extend(
+        (
+            "",
+            "A Lightning/FQ ratio above one means FlagQuantum was faster. Peak RSS was",
+            "not measured in this timing run. These are local, non-release",
+            "single-device results, not a universal framework ranking or scaling claim.",
+            "",
+            "## Meaning and current level",
+            "",
+            f"All {len(cases)} cases passed the 1e-9 value/gradient tolerance; maximum "
+            f"gradient error was {max(errors):.3e}. Native CPU layouts, same-wire "
+            "forward composition, CX-sequence permutations, reuse of the observable "
+            "diagonal, and analytic Pauli-rotation VJPs accelerated backward by "
+            f"{min(backward_speedups):.2f}x to {max(backward_speedups):.2f}x and total "
+            f"value-and-gradient by {min(total_speedups):.2f}x to "
+            f"{max(total_speedups):.2f}x. Total Lightning/FQ ratios ranged from "
+            f"{min(ratios):.2f}x to {max(ratios):.2f}x on this host, so Lightning was "
+            f"{1 / max(ratios):.2f}x to {1 / min(ratios):.2f}x faster. Hardware-efficient "
+            "VQE stresses many independent rotation gradients; QAOA stresses repeated "
+            "shared parameters. This establishes functional local adjoint support for real "
+            "weighted Z/ZZ Hamiltonians at complex128, not performance parity or general "
+            "Pauli support. The next optimization target is block-fusing commuting "
+            "rotation regions and moving the remaining hot reverse sweep into compiled "
+            "native kernels.",
+            "",
+            "## FlagQuantum example",
+            "",
+            "```python",
+            "import torch",
+            "import flagquantum as fq",
+            "from flagquantum import algorithms as fqa",
+            "",
+            "theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)",
+            "circuit = fq.Circuit(3, dtype=torch.complex128).ry(0, theta).cx(0, 1)",
+            "hamiltonian = fqa.Hamiltonian((",
+            '    fqa.pauli_term(0.7, "ZZ", (0, 1)),',
+            '    fqa.pauli_term(0.2, "Z", (2,)),',
+            "))",
+            'energy = hamiltonian.expectation(circuit, differentiation="adjoint")',
+            "energy.backward()",
+            "print(energy.item(), theta.grad)",
+            "```",
+            "",
+            "## Reproduction",
+            "",
+            "```bash",
+            "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \\",
+            "flagquantum-benchmark run differentiable_simulator_corpus \\",
+            "  --engines flagquantum_adjoint "
+            "flagquantum_adjoint_gather_rollback pennylane_lightning_adjoint \\",
+            "  --workloads hardware_efficient_vqe qaoa_path_maxcut \\",
+            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
+            f"  --layers {payload['layers']} --threads 1 --warmup {methodology['warmup']} \\",
+            f"  --iterations {methodology['iterations']} --calls-per-sample "
+            f"{methodology['calls_per_sample']} \\",
+            "  --skip-memory-probe \\",
+            f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            "```",
+            "",
+        )
+    )
+    return "\n".join(lines)
+
+
 def _memory_worker(args: argparse.Namespace) -> int:
     _configure_threads(args.threads)
     torch.set_default_dtype(torch.float64)
@@ -897,7 +1135,7 @@ def main() -> int:
     parser.add_argument("--n-wires", type=int, nargs="+", default=(10, 14, 18, 22))
     parser.add_argument("--layers", type=int, default=1)
     parser.add_argument(
-        "--engines", nargs="+", choices=ENGINE_NAMES, default=ENGINE_NAMES
+        "--engines", nargs="+", choices=ALL_ENGINE_NAMES, default=ENGINE_NAMES
     )
     parser.add_argument("--threads", type=int, default=1)
     parser.add_argument("--warmup", type=int, default=1)
@@ -948,6 +1186,8 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = (
+    "ADJOINT_ENGINE_NAMES",
+    "ALL_ENGINE_NAMES",
     "ENGINE_NAMES",
     "RUNNER",
     "SCHEMA",

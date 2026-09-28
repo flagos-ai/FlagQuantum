@@ -18,10 +18,12 @@ from ....simulation.statevector.adjoint import (
 from ....simulation.statevector.adjoint import (
     real_conjugate_inner_sum as _real_conjugate_inner_sum,
 )
-from ....simulation.statevector.adjoint import (
-    z_expectation_adjoint_chunk as _z_expectation_adjoint_chunk,
+from ....simulation.statevector.adjoint import z_hamiltonian_chunk
+from ....simulation.statevector.operations import (
+    _apply_cx_sequence_gather,
+    _apply_matrix,
+    _instruction_matrix,
 )
-from ....simulation.statevector.operations import _instruction_matrix
 from .checkpointing import StatevectorCheckpointPolicy
 from .forward import (
     StatevectorExchangeWorkspace,
@@ -36,7 +38,9 @@ from .planning import plan_distributed_statevector
 from .reverse_adjoint_kernels import (
     _apply_matrix_gate,
     _apply_one_gate,
+    _cpu_direct_adjoint_gate_enabled,
     _fused_sharded_1q_vjp_adjoint,
+    _fused_single_process_cpu_reversible_vjp,
     _MatrixJVP,
 )
 from .reverse_support import (
@@ -57,10 +61,14 @@ def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
     return bool(use_compact_global_indices(plan, rank))
 
 
-def _local_expectation_z_sum_adjoint(
-    shard_state: Any, *, plan: Any, n_wires: int, wires: tuple[int, ...]
+def _local_expectation_z_hamiltonian_adjoint(
+    shard_state: Any,
+    *,
+    plan: Any,
+    n_wires: int,
+    terms: tuple[tuple[float, tuple[int, ...]], ...],
 ) -> torch.Tensor:
-    """Construct one adjoint seed for a sum of single-wire Z terms."""
+    """Construct one adjoint seed for a weighted Z/ZZ Hamiltonian."""
 
     adjoint = torch.zeros_like(shard_state.amplitudes)
     local_count = shard_state.shard.local_amplitudes
@@ -68,15 +76,13 @@ def _local_expectation_z_sum_adjoint(
         for start in range(0, local_count, _reverse_chunk_amplitudes()):
             end = min(local_count, start + _reverse_chunk_amplitudes())
             indices = _storage_global_indices(shard_state, start, end, plan=plan)
-            for wire in wires:
-                adjoint[:, start:end].add_(
-                    _z_expectation_adjoint_chunk(
-                        shard_state.amplitudes[:, start:end],
-                        indices,
-                        n_wires=n_wires,
-                        wire=wire,
-                    )
-                )
+            _, chunk = z_hamiltonian_chunk(
+                shard_state.amplitudes[:, start:end],
+                indices,
+                n_wires=n_wires,
+                terms=terms,
+            )
+            adjoint[:, start:end].copy_(chunk)
     return adjoint
 
 
@@ -89,23 +95,25 @@ class _ReversibleAdjointSweep:
         slots: tuple[tuple[int, str, int], ...],
         saved_parameters: tuple[torch.Tensor, ...],
         *,
-        observable_wires: tuple[int, ...],
+        observable_terms: tuple[tuple[float, tuple[int, ...]], ...],
         device: torch.device,
         policy: StatevectorCheckpointPolicy,
         process_group: Any | None,
         evidence: BackwardExecutionEvidence,
         saved_final_state: Any | None,
+        saved_observable_weights: torch.Tensor | None,
         saved_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...],
     ) -> None:
         self.ir = ir
         self.slots = slots
         self.saved_parameters = saved_parameters
-        self.observable_wires = observable_wires
+        self.observable_terms = observable_terms
         self.device = device
         self.policy = policy
         self.process_group = process_group
         self.evidence = evidence
         self.saved_final_state = saved_final_state
+        self.saved_observable_weights = saved_observable_weights
         self.saved_inter_node_ket_checkpoints = saved_inter_node_ket_checkpoints
 
     def run(self) -> tuple[torch.Tensor, ...]:
@@ -116,9 +124,13 @@ class _ReversibleAdjointSweep:
         self._prepare_adjoint()
         self._prepare_gradients()
         self.skipped_cx_indices: set[int] = set()
+        self.skipped_fixed_block_indices: set[int] = set()
         self.cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
         for index in range(len(self.bound.instructions) - 1, -1, -1):
-            if index in self.skipped_cx_indices:
+            if (
+                index in self.skipped_cx_indices
+                or index in self.skipped_fixed_block_indices
+            ):
                 continue
             execution_instruction = replace(
                 self.bound.instructions[index],
@@ -131,6 +143,8 @@ class _ReversibleAdjointSweep:
             if self._apply_accelerated_reversible(index, execution_instruction, active):
                 continue
             if self._apply_local_cx_segment(index, execution_instruction):
+                continue
+            if self._apply_local_fixed_block(index, execution_instruction, active):
                 continue
             self._apply_general_step(index, execution_instruction, active)
         self._finish()
@@ -282,15 +296,26 @@ class _ReversibleAdjointSweep:
             )
         )
         self.evidence.saved_forward_state_reused = self.saved_final_state is not None
-        final_observable_wires = tuple(
-            self.persistent_mapping[wire] for wire in self.observable_wires
+        final_observable_terms = tuple(
+            (
+                coefficient,
+                tuple(self.persistent_mapping[wire] for wire in wires),
+            )
+            for coefficient, wires in self.observable_terms
         )
-        self.adjoint = _local_expectation_z_sum_adjoint(
-            final_state,
-            plan=self.plan,
-            n_wires=self.ir.n_wires,
-            wires=final_observable_wires,
-        )
+        if self.saved_observable_weights is None:
+            self.adjoint = _local_expectation_z_hamiltonian_adjoint(
+                final_state,
+                plan=self.plan,
+                n_wires=self.ir.n_wires,
+                terms=final_observable_terms,
+            )
+        else:
+            self.adjoint = (
+                2
+                * final_state.amplitudes
+                * self.saved_observable_weights.reshape(1, -1)
+            )
         self.reversible_state = (
             final_state if self.policy.strategy == "reversible_adjoint" else None
         )
@@ -399,6 +424,46 @@ class _ReversibleAdjointSweep:
                 and self.reversible_state.amplitudes.device.type == "cuda"
             )
         )
+        cpu_supported = bool(
+            self.inplace_local
+            and self.reversible_state is not None
+            and len(active) == 1
+            and self.world_size == 1
+            and self.reversible_state.amplitudes.device.type == "cpu"
+            and _cpu_direct_adjoint_gate_enabled()
+        )
+        if cpu_supported:
+            assert self.reversible_state is not None
+            precision = get_runtime_config().with_overrides(
+                complex_dtype=str(self.dtype).removeprefix("torch.")
+            )
+            with runtime_config(precision):
+                cpu_matrix = _instruction_matrix(
+                    execution_instruction, device=self.device, dtype=self.dtype
+                )
+            cpu_derivative = _analytic_rotation_derivative(
+                execution_instruction, cpu_matrix
+            )
+            gradient = None
+            if cpu_derivative is not None:
+                gradient = _fused_single_process_cpu_reversible_vjp(
+                    self.reversible_state.amplitudes,
+                    self.adjoint,
+                    cpu_matrix,
+                    execution_instruction,
+                    n_wires=self.plan.n_wires,
+                )
+            if gradient is not None:
+                self.evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
+                self._accumulate_parameter_gradient(
+                    active[0],
+                    gradient.to(dtype=self.base_parameters[active[0]].dtype),
+                    index,
+                )
+                self.evidence.analytic_rotation_derivative_count += 1
+                self.evidence.fused_parameter_adjoint_count += 1
+                return True
+
         if self.reversible_state is not None and reversible_vjp_decision.accelerated:
             precision = get_runtime_config().with_overrides(
                 complex_dtype=str(self.dtype).removeprefix("torch.")
@@ -501,10 +566,20 @@ class _ReversibleAdjointSweep:
         if (
             self.inplace_local
             and self.reversible_state is not None
-            and triton_available()
-            and _triton_local_cx_segment_enabled(self.bound)
             and execution_instruction.name == "cx"
             and not self.swaps_before.get(index)
+            and (
+                (
+                    triton_available()
+                    and _triton_local_cx_segment_enabled(self.bound)
+                    and self.reversible_state.amplitudes.device.type == "cuda"
+                )
+                or (
+                    self.world_size == 1
+                    and self.reversible_state.amplitudes.device.type == "cpu"
+                    and _cpu_direct_adjoint_gate_enabled()
+                )
+            )
         ):
             segment_start = index
             while segment_start > 0:
@@ -514,14 +589,37 @@ class _ReversibleAdjointSweep:
                     break
                 segment_start = candidate_index
             if segment_start < index:
-                from ....simulation.triton_kernels.statevector_gates import (
-                    apply_complex64_local_cx_segment,
-                )
-
                 segment_wires = tuple(
                     tuple(self.persistent_mapping[int(wire)] for wire in item.wires)
                     for item in self.bound.instructions[segment_start : index + 1]
                 )
+                if self.reversible_state.amplitudes.device.type == "cpu":
+                    controls = tuple(wires[0] for wires in reversed(segment_wires))
+                    targets = tuple(wires[1] for wires in reversed(segment_wires))
+                    ket = _apply_cx_sequence_gather(
+                        self.reversible_state.amplitudes,
+                        controls,
+                        targets,
+                        self.plan.n_wires,
+                    )
+                    adjoint = _apply_cx_sequence_gather(
+                        self.adjoint,
+                        controls,
+                        targets,
+                        self.plan.n_wires,
+                    )
+                    self.reversible_state.amplitudes.copy_(ket)
+                    self.adjoint.copy_(adjoint)
+                    self.evidence.peak_scratch_bytes = max(
+                        self.evidence.peak_scratch_bytes,
+                        2 * ket.numel() * ket.element_size(),
+                    )
+                    self.skipped_cx_indices.update(range(segment_start, index))
+                    return True
+                from ....simulation.triton_kernels.statevector_gates import (
+                    apply_complex64_local_cx_segment,
+                )
+
                 if not any(
                     wire in self.plan.sharded_wires
                     for wires in segment_wires
@@ -572,6 +670,73 @@ class _ReversibleAdjointSweep:
                     self.skipped_cx_indices.update(range(segment_start, index))
                     return True
         return False
+
+    def _apply_local_fixed_block(
+        self,
+        index: int,
+        execution_instruction: Instruction,
+        active: list[int],
+    ) -> bool:
+        """Undo adjacent local Hadamards with one bounded dense state pass."""
+
+        if not (
+            self.inplace_local
+            and self.reversible_state is not None
+            and not active
+            and execution_instruction.name == "h"
+            and self.world_size == 1
+            and self.reversible_state.amplitudes.device.type == "cpu"
+            and _cpu_direct_adjoint_gate_enabled()
+        ):
+            return False
+        segment: list[Instruction] = [execution_instruction]
+        wires = {execution_instruction.wires[0]}
+        cursor = index - 1
+        while cursor >= 0 and len(segment) < 4:
+            if self.swaps_before.get(cursor) or self.slots_by_instruction.get(cursor):
+                break
+            candidate = self.bound.instructions[cursor]
+            mapped = replace(
+                candidate,
+                wires=tuple(
+                    self.persistent_mapping[int(wire)] for wire in candidate.wires
+                ),
+            )
+            if mapped.name != "h" or len(mapped.wires) != 1 or mapped.wires[0] in wires:
+                break
+            segment.append(mapped)
+            wires.add(mapped.wires[0])
+            cursor -= 1
+        if len(segment) == 1:
+            return False
+        matrices = tuple(
+            _instruction_matrix(item, device=self.device, dtype=self.dtype).mH
+            for item in segment
+        )
+        combined = matrices[0]
+        for matrix in matrices[1:]:
+            combined = torch.kron(combined, matrix)
+        block_wires = tuple(item.wires[0] for item in segment)
+        ket = _apply_matrix(
+            self.reversible_state.amplitudes,
+            combined,
+            block_wires,
+            self.plan.n_wires,
+        )
+        adjoint = _apply_matrix(
+            self.adjoint,
+            combined,
+            block_wires,
+            self.plan.n_wires,
+        )
+        self.reversible_state.amplitudes.copy_(ket)
+        self.adjoint.copy_(adjoint)
+        self.evidence.peak_scratch_bytes = max(
+            self.evidence.peak_scratch_bytes,
+            2 * ket.numel() * ket.element_size(),
+        )
+        self.skipped_fixed_block_indices.update(range(cursor + 1, index))
+        return True
 
     def _apply_general_step(
         self,

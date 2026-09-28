@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 from time import perf_counter
-from typing import Protocol
+from typing import Literal, Protocol
 
 import torch
 
@@ -184,7 +184,57 @@ class Hamiltonian:
     def n_wires(self) -> int:
         return 1 + max((term.max_wire for term in self.terms), default=-1)
 
-    def expectation(self, target: Circuit | MPSState | torch.Tensor) -> torch.Tensor:
+    def expectation(
+        self,
+        target: Circuit | MPSState | torch.Tensor,
+        *,
+        differentiation: Literal["autograd", "adjoint"] = "autograd",
+    ) -> torch.Tensor:
+        if differentiation not in {"autograd", "adjoint"}:
+            raise ValueError("differentiation must be 'autograd' or 'adjoint'")
+        if differentiation == "adjoint":
+            if not isinstance(target, Circuit):
+                raise TypeError("adjoint differentiation requires a Circuit target")
+            if target.bsz != 1:
+                raise ValueError("adjoint differentiation currently requires bsz=1")
+            observable_terms: list[tuple[float, tuple[int, ...]]] = []
+            constant = 0.0
+            for term in self.terms:
+                coefficient = term.coefficient
+                if isinstance(coefficient, torch.Tensor):
+                    if coefficient.numel() != 1 or coefficient.requires_grad:
+                        raise ValueError(
+                            "adjoint differentiation requires constant scalar coefficients"
+                        )
+                    coefficient = coefficient.detach().item()
+                coefficient_value = complex(coefficient)
+                if coefficient_value.imag != 0.0:
+                    raise ValueError(
+                        "adjoint differentiation requires real Hamiltonian coefficients"
+                    )
+                wires = tuple(wire for wire, name in term.ops if name == "z")
+                if len(wires) != len(term.ops) or len(wires) > 2:
+                    raise ValueError(
+                        "adjoint differentiation currently supports only Z and ZZ terms"
+                    )
+                if not wires:
+                    constant += coefficient_value.real
+                else:
+                    observable_terms.append((coefficient_value.real, wires))
+            if not observable_terms:
+                raise ValueError(
+                    "adjoint differentiation requires at least one Z or ZZ term"
+                )
+            from ..runtime.executors.statevector.reverse import (
+                execute_torch_distributed_statevector_reverse,
+            )
+
+            result = execute_torch_distributed_statevector_reverse(
+                target,
+                observable_terms=observable_terms,
+                device=target.device,
+            )
+            return result.value + result.value.new_tensor(constant)
         if isinstance(target, MPSState):
             z_coefficients: dict[int, float | complex | torch.Tensor] = {}
             zz_coefficients: dict[int, float | complex | torch.Tensor] = {}
