@@ -87,7 +87,7 @@ class KernelDispatchEvidence:
         self.decisions[decision] = self.decisions.get(decision, 0) + int(count)
 
     def summary(self) -> dict[str, Any]:
-        records = []
+        record_list: list[dict[str, Any]] = []
         for decision, count in sorted(
             self.decisions.items(),
             key=lambda item: (
@@ -100,8 +100,8 @@ class KernelDispatchEvidence:
             record = decision.summary()
             record.pop("accelerated")
             record["count"] = count
-            records.append(record)
-        records = tuple(records)
+            record_list.append(record)
+        records = tuple(record_list)
         return {
             "decisions": records,
             "triton_execution_count": sum(
