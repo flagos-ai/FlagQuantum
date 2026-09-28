@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any
 
 from .environment import mode
@@ -61,6 +62,7 @@ class KernelDispatchEvidence:
         }
 
 
+@lru_cache(maxsize=1)
 def triton_available() -> bool:
     """Return whether the optional Triton runtime is importable."""
 

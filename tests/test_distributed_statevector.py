@@ -45,6 +45,23 @@ from flagquantum.runtime.executors.statevector.planning import (
     validate_distributed_statevector_plan,
 )
 
+
+def test_statevector_plan_cache_reuses_structure_with_explicit_rollback(monkeypatch):
+    first = fq.Circuit(3).rx(0, 0.1).cx(0, 1)
+    same_structure = fq.Circuit(3).rx(0, 0.7).cx(0, 1)
+    different_structure = fq.Circuit(3).ry(0, 0.1).cx(0, 1)
+
+    first_plan = plan_distributed_statevector(first, world_size=2)
+    repeated_plan = plan_distributed_statevector(same_structure, world_size=2)
+    different_plan = plan_distributed_statevector(different_structure, world_size=2)
+
+    assert repeated_plan is first_plan
+    assert different_plan is not first_plan
+
+    monkeypatch.setenv("FQ_STATEVECTOR_PLAN_CACHE", "0")
+    assert plan_distributed_statevector(first, world_size=2) is not first_plan
+
+
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
 

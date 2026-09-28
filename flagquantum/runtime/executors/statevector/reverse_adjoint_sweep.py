@@ -492,12 +492,14 @@ class _ReversibleAdjointSweep:
         parameter_index: int,
         gradient: torch.Tensor,
         index: int,
+        *,
+        occurrence_count: int = 1,
     ) -> None:
         """Add one parameter's local gradient and release it when it is complete."""
 
         self.accumulated[parameter_index] += gradient.detach()
-        self.evidence.reduction_counts[parameter_index] += 1
-        self.remaining_parameter_instructions[parameter_index] -= 1
+        self.evidence.reduction_counts[parameter_index] += occurrence_count
+        self.remaining_parameter_instructions[parameter_index] -= occurrence_count
         if (
             self.gradient_reducer is not None
             and self.remaining_parameter_instructions[parameter_index] == 0

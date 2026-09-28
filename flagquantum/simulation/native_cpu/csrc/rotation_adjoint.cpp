@@ -358,7 +358,8 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     const at::Tensor& angles,
     const at::Tensor& gate_kinds,
     const at::Tensor& wires,
-    int64_t n_wires) {
+    int64_t n_wires,
+    bool aggregate_shared_parameter) {
   TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
   TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
   TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
@@ -443,8 +444,9 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
       }
     }
     const int64_t thread_count = at::get_num_threads();
+    const int64_t gradient_count = aggregate_shared_parameter ? 1 : gate_count;
     at::Tensor partial = at::zeros(
-        {thread_count, gate_count},
+        {thread_count, gradient_count},
         ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
     real_t* partial_data = partial.data_ptr<real_t>();
 
@@ -494,7 +496,8 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
       at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
         std::array<scalar_t, 4> ket_values{};
         std::array<scalar_t, 4> adjoint_values{};
-        real_t* local_gradients = partial_data + at::get_thread_num() * gate_count;
+        real_t* local_gradients =
+            partial_data + at::get_thread_num() * gradient_count;
         for (int64_t item = begin; item < end; ++item) {
           const int64_t row = item / blocks_per_row;
           int64_t base = item - row * blocks_per_row;
@@ -521,15 +524,15 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
               const scalar_t adjoint_zero = adjoint_values[local];
               const scalar_t adjoint_one = adjoint_values[one];
               if (kind_data[gate] == 0) {
-                local_gradients[gate] += real_t{0.5} * (
+                local_gradients[aggregate_shared_parameter ? 0 : gate] += real_t{0.5} * (
                     (adjoint_zero.real() * ket_one.imag() - adjoint_zero.imag() * ket_one.real()) +
                     (adjoint_one.real() * ket_zero.imag() - adjoint_one.imag() * ket_zero.real()));
               } else if (kind_data[gate] == 1) {
-                local_gradients[gate] += real_t{0.5} * (
+                local_gradients[aggregate_shared_parameter ? 0 : gate] += real_t{0.5} * (
                     (adjoint_one.real() * ket_zero.real() + adjoint_one.imag() * ket_zero.imag()) -
                     (adjoint_zero.real() * ket_one.real() + adjoint_zero.imag() * ket_one.imag()));
               } else {
-                local_gradients[gate] += real_t{0.5} * (
+                local_gradients[aggregate_shared_parameter ? 0 : gate] += real_t{0.5} * (
                     (adjoint_zero.real() * ket_zero.imag() - adjoint_zero.imag() * ket_zero.real()) -
                     (adjoint_one.real() * ket_one.imag() - adjoint_one.imag() * ket_one.real()));
               }
@@ -548,11 +551,12 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
       segment_start = segment_end;
     }
     result = at::zeros(
-        {gate_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
+        {gradient_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
     real_t* result_data = result.data_ptr<real_t>();
     for (int64_t thread = 0; thread < thread_count; ++thread) {
-      for (int64_t gate = 0; gate < gate_count; ++gate) {
-        result_data[gate] += partial_data[thread * gate_count + gate];
+      for (int64_t gradient = 0; gradient < gradient_count; ++gradient) {
+        result_data[gradient] +=
+            partial_data[thread * gradient_count + gradient];
       }
     }
   });
@@ -698,7 +702,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "Tensor first_wires, Tensor second_wires, int n_wires) -> Tensor(a!)");
   library.def(
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
-      "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires) -> Tensor");
+      "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
+      "bool aggregate_shared_parameter) -> Tensor");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor first_wires, Tensor second_wires, int n_wires, "

@@ -31,6 +31,14 @@ def _rotation_segment_enabled() -> bool:
     }
 
 
+def native_cpu_shared_rotation_gradient_available() -> bool:
+    """Return whether shared rotation segments may aggregate one VJP in native code."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_SHARED_ROTATION_GRADIENT", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
 def _load_extension() -> bool:
     global _EXTENSION_ERROR, _EXTENSION_LOADED
     if _EXTENSION_LOADED:
@@ -113,6 +121,7 @@ def fused_rotation_segment_adjoint_(
     wires: torch.Tensor,
     *,
     n_wires: int,
+    aggregate_shared_parameter: bool = False,
 ) -> torch.Tensor | None:
     """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
 
@@ -143,7 +152,13 @@ def fused_rotation_segment_adjoint_(
         return cast(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_rotation_segment_adjoint_(
-                ket, adjoint, angles, gate_kinds, wires, n_wires
+                ket,
+                adjoint,
+                angles,
+                gate_kinds,
+                wires,
+                n_wires,
+                aggregate_shared_parameter,
             ),
         )
 

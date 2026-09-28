@@ -378,8 +378,10 @@ def test_native_rotation_adjoint_has_explicit_environment_rollback(
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("aggregate", (False, True))
 def test_native_rotation_segment_adjoint_matches_sequential_reference(
     dtype: torch.dtype,
+    aggregate: bool,
 ) -> None:
     if not native_cpu_adjoint_available():
         pytest.skip("native CPU extension is not built in this source checkout")
@@ -429,13 +431,18 @@ def test_native_rotation_segment_adjoint_matches_sequential_reference(
         torch.tensor(tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names)),
         torch.tensor(wires, dtype=torch.int64),
         n_wires=6,
+        aggregate_shared_parameter=aggregate,
     )
 
     assert gradients is not None
     tolerance = 4e-5 if dtype == torch.complex64 else 3e-12
     torch.testing.assert_close(
         gradients,
-        torch.stack(expected_gradients),
+        (
+            torch.stack(expected_gradients).sum().reshape(1)
+            if aggregate
+            else torch.stack(expected_gradients)
+        ),
         atol=tolerance,
         rtol=tolerance,
     )
@@ -479,18 +486,21 @@ def test_reverse_sweep_fuses_shared_rotation_layer(
     for wire in range(6):
         circuit.rx(wire, theta)
 
-    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "0")
+    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "1")
+    monkeypatch.setenv("FQ_NATIVE_CPU_SHARED_ROTATION_GRADIENT", "0")
     baseline = execute_torch_distributed_statevector_reverse(circuit)
     baseline.backward()
     expected_value = baseline.value.detach().clone()
     expected_gradient = theta.grad.detach().clone()
     theta.grad = None
     calls = 0
+    aggregate_flags: list[bool] = []
     native = reverse_adjoint_rotation_segment.fused_rotation_segment_adjoint_
 
     def counted(*args: object, **kwargs: object) -> torch.Tensor | None:
         nonlocal calls
         calls += 1
+        aggregate_flags.append(bool(kwargs.get("aggregate_shared_parameter")))
         return native(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(
@@ -498,11 +508,12 @@ def test_reverse_sweep_fuses_shared_rotation_layer(
         "fused_rotation_segment_adjoint_",
         counted,
     )
-    monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_SEGMENT", "1")
+    monkeypatch.setenv("FQ_NATIVE_CPU_SHARED_ROTATION_GRADIENT", "1")
     actual = execute_torch_distributed_statevector_reverse(circuit)
     actual.backward()
 
     assert calls == 1
+    assert aggregate_flags == [True]
     torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
     torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
 

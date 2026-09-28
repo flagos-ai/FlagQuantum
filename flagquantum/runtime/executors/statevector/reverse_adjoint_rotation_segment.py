@@ -10,6 +10,7 @@ from ....core.ir import Instruction
 from ....simulation.native_cpu import (
     fused_rotation_segment_adjoint_,
     native_cpu_rotation_segment_available,
+    native_cpu_shared_rotation_gradient_available,
 )
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
 
@@ -77,6 +78,10 @@ def _apply_local_rotation_segment(
         gate_kinds.append(_KIND_BY_NAME[candidate.name])
         mapped_wires.append(sweep.persistent_mapping[int(candidate.wires[0])])
 
+    shared_parameter = (
+        len({active[0] for active in active_by_gate}) == 1
+        and native_cpu_shared_rotation_gradient_available()
+    )
     gradients = fused_rotation_segment_adjoint_(
         sweep.reversible_state.amplitudes,
         sweep.adjoint,
@@ -84,19 +89,31 @@ def _apply_local_rotation_segment(
         torch.tensor(gate_kinds, dtype=torch.int64),
         torch.tensor(mapped_wires, dtype=torch.int64),
         n_wires=sweep.plan.n_wires,
+        aggregate_shared_parameter=shared_parameter,
     )
     if gradients is None:
         return False
-    for offset, (gate_index, active) in enumerate(
-        zip(indices, active_by_gate, strict=True)
-    ):
-        parameter_index = active[0]
+    if shared_parameter:
+        parameter_index = active_by_gate[0][0]
         sweep._accumulate_parameter_gradient(
             parameter_index,
-            gradients[offset].to(dtype=sweep.base_parameters[parameter_index].dtype),
-            gate_index,
+            gradients[0].to(dtype=sweep.base_parameters[parameter_index].dtype),
+            indices[-1],
+            occurrence_count=len(indices),
         )
-        sweep.evidence.analytic_rotation_derivative_count += 1
-        sweep.evidence.fused_parameter_adjoint_count += 1
+    else:
+        for offset, (gate_index, active) in enumerate(
+            zip(indices, active_by_gate, strict=True)
+        ):
+            parameter_index = active[0]
+            sweep._accumulate_parameter_gradient(
+                parameter_index,
+                gradients[offset].to(
+                    dtype=sweep.base_parameters[parameter_index].dtype
+                ),
+                gate_index,
+            )
+    sweep.evidence.analytic_rotation_derivative_count += len(indices)
+    sweep.evidence.fused_parameter_adjoint_count += len(indices)
     sweep.skipped_rotation_indices.update(indices[1:])
     return True
