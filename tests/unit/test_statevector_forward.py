@@ -129,6 +129,20 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         ("local_1q", "disabled_by_policy", 2),
         ("local_cx", "input_not_supported", 1),
     }
+    local_1q_dispatch = next(
+        record for record in dispatch["decisions"] if record["feature"] == "local_1q"
+    )
+    assert local_1q_dispatch["device_runtime"] == {
+        "provider": "pytorch",
+        "device_type": "cpu",
+    }
+    assert local_1q_dispatch["kernel_compiler"] is None
+    assert local_1q_dispatch["kernel_route"] == {
+        "semantic_id": "statevector.local_1q",
+        "implementation": "pytorch_eager",
+        "integration_path": "direct",
+        "fallback": False,
+    }
     with pytest.raises(FullStateMaterializationError, match="forbidden"):
         result.full_state()
 

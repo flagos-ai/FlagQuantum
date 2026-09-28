@@ -40,9 +40,9 @@ The target architecture has two complementary execution paths:
    routing, and runtime identity. Torch-FL may route work to FlagTree, vendor
    kernels, compatibility boxing, FlagGems, or an explicitly reported fallback.
 2. **Auxiliary quantum-kernel path:** FlagQuantum owns quantum-specific Triton
-   kernels and may compile them with stock Triton or FlagTree. This path does not
-   replace Torch-FL's device responsibilities. On a `flagos` device, it must use
-   the device and stream contract established by Torch-FL.
+   kernels and may compile them through a direct Triton route or FlagTree. This
+   path does not replace Torch-FL's device responsibilities. On a `flagos`
+   device, it must use the device and stream contract established by Torch-FL.
 
 FlagQuantum should not create a second multi-vendor device runtime, duplicate
 Torch-FL vendor branches, or treat FlagTree as the quantum circuit compiler.
@@ -84,7 +84,7 @@ changes, increasing regression and review risk.
 1. Give optimized quantum kernels one clear internal owner.
 2. Preserve current portable CPU and PyTorch execution paths.
 3. Keep Triton and FlagTree optional and lazily imported.
-4. Allow runtime policy to distinguish PyTorch, stock Triton, and FlagTree.
+4. Allow runtime policy to distinguish PyTorch, direct Triton, and FlagTree.
 5. Record device runtime and kernel compiler identity separately.
 6. Support native CUDA and Torch-FL `flagos` tensors without duplicating device
    runtime ownership.
@@ -179,8 +179,9 @@ Two compiler identities must remain distinct:
 
 1. **Circuit compiler identity:** FlagQuantum IR version, circuit legalization,
    optimization, routing, scheduling, and target-text generation.
-2. **Kernel compiler identity:** stock Triton, FlagTree, or another numerical
-   kernel compiler, including its version and selected backend.
+2. **Kernel compiler identity:** the measured compiler distribution, FlagTree,
+   or another numerical kernel compiler, including its version and selected
+   backend.
 
 Kernel compiler facts must not be inserted into the circuit compiler identity
 as if both compilers were one pipeline.
@@ -204,7 +205,7 @@ Simulation reference     Kernel dispatch
                        +------+------+
                        |             |
                        v             v
-                 stock Triton     FlagTree
+                 direct Triton    FlagTree
                        |             |
                        +------+------+
                               |
@@ -331,7 +332,8 @@ Initial provider identities should distinguish:
 
 - `pytorch_eager`;
 - `torch_compile`;
-- `stock_triton`; and
+- direct Triton (`compiler_distribution="triton"`, `integration_path="direct"`);
+  and
 - `flagtree`.
 
 Importability is not capability. `find_spec("triton")` can establish only that a
@@ -398,28 +400,34 @@ fallback authorization
 ```
 
 Execution evidence should keep platform, compiler, and route identities
-separate. A representative record is:
+separate. A representative direct-Triton record is:
 
 ```json
 {
   "device_runtime": {
-    "provider": "torch_fl",
-    "device_type": "flagos",
-    "vendor": "hygon"
+    "provider": "pytorch",
+    "device_type": "cuda"
   },
   "kernel_compiler": {
-    "provider": "flagtree",
+    "distribution": "triton",
     "version": "<measured>",
-    "backend": "hcu",
-    "triton_compatibility": "<measured>"
+    "backend": "cuda",
+    "identity_source": "python_package_metadata"
   },
   "kernel_route": {
     "semantic_id": "statevector.local_1q",
     "implementation": "triton",
+    "integration_path": "direct",
     "fallback": false
   }
 }
 ```
+
+`direct` means FlagQuantum called the measured Triton distribution without a
+FlagTree integration layer. It does not claim that the distribution is an
+unmodified upstream build. A future FlagTree route should report
+`integration_path="flagtree"` and FlagTree's measured integration version in
+addition to the underlying compiler facts.
 
 The record must not claim a FlagTree route merely because Torch-FL is active.
 Torch-FL can select vendor-native kernels, compatibility boxing, FlagGems,
@@ -490,7 +498,7 @@ Exit criteria:
 
 - Generalize statevector-local dispatch into a reusable internal provider
   contract.
-- Distinguish PyTorch eager, `torch.compile`, stock Triton, and FlagTree.
+- Distinguish PyTorch eager, `torch.compile`, direct Triton, and FlagTree.
 - Record kernel compiler identity separately from circuit compiler identity.
 - Add strict fallback and compile-failure caching.
 - Add provider capability tests that do not require hardware.
@@ -500,7 +508,7 @@ without inferring identity from the device name.
 
 ### Phase 3: FlagTree on Native CUDA
 
-- Run the same kernel sources with stock Triton and FlagTree's NVIDIA backend
+- Run the same kernel sources through direct Triton and FlagTree's NVIDIA backend
   in separate pinned environments.
 - Validate forward values, gradients, device residency, compiler identity,
   compilation cache behavior, and performance.
@@ -538,7 +546,7 @@ workload-specific conformance on real hardware.
 | --- | --- | --- |
 | CPU PyTorch | Semantic reference and import isolation | Correctness only |
 | Native CUDA PyTorch | Existing accelerator non-regression | Native CUDA path |
-| Stock Triton on CUDA | Baseline optimized kernel behavior | Stock Triton only |
+| Direct Triton on CUDA | Baseline optimized kernel behavior | Measured direct Triton tuple only |
 | FlagTree NVIDIA | Direct compiler-path comparison | FlagTree NVIDIA only |
 | Torch-FL on CUDA | Main device integration reference | Torch-FL CUDA reference |
 | Torch-FL + FlagTree on one domestic accelerator | End-to-end primary plus auxiliary path | Exact pinned tuple only |

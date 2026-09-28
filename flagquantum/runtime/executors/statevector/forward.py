@@ -66,14 +66,24 @@ def _single_process_cpu_direct_enabled() -> bool:
     return raw.strip().lower() not in {"0", "false", "off", "no"}
 
 
-def _triton_local_1q_decision(*, supported: bool = True) -> KernelDecision:
+def _triton_local_1q_decision(
+    *, supported: bool = True, device_type: str | None = None
+) -> KernelDecision:
     requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
         "1",
         "true",
         "on",
         "yes",
     }
-    return select_triton_kernel("local_1q", requested=requested, supported=supported)
+    return select_triton_kernel(
+        "local_1q",
+        requested=requested,
+        supported=supported,
+        device_runtime_provider="pytorch",
+        device_type=device_type,
+        compiler_backend="cuda",
+        integration_path="direct",
+    )
 
 
 def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
@@ -574,7 +584,10 @@ def _vectorized_local_gate(
         and shard_state.amplitudes.dtype == torch.complex64
         and shard_state.amplitudes.is_contiguous()
     )
-    triton_decision = _triton_local_1q_decision(supported=triton_supported)
+    triton_decision = _triton_local_1q_decision(
+        supported=triton_supported,
+        device_type=shard_state.amplitudes.device.type,
+    )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
     if (

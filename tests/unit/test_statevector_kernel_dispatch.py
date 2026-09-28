@@ -4,6 +4,7 @@ import importlib.util
 
 import pytest
 
+import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
     select_triton_kernel,
@@ -98,3 +99,67 @@ def test_dispatch_evidence_aggregates_actual_decisions(monkeypatch):
     summary = evidence.summary()
     assert summary["triton_execution_count"] == 3
     assert summary["pytorch_fallback_count"] == 2
+
+
+def test_dispatch_records_direct_triton_compiler_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        kernel_dispatch,
+        "triton_distribution_identity",
+        lambda: ("triton", "3.7.1"),
+    )
+
+    decision = select_triton_kernel(
+        "local_1q",
+        requested=True,
+        supported=True,
+        available=True,
+        device_runtime_provider="pytorch",
+        device_type="cuda",
+        compiler_backend="cuda",
+        integration_path="direct",
+    )
+
+    assert decision.summary() == {
+        "feature": "local_1q",
+        "selected": "triton",
+        "accelerated": True,
+        "reason": "eligible",
+        "device_runtime": {"provider": "pytorch", "device_type": "cuda"},
+        "kernel_compiler": {
+            "distribution": "triton",
+            "version": "3.7.1",
+            "backend": "cuda",
+            "identity_source": "python_package_metadata",
+        },
+        "kernel_route": {
+            "semantic_id": "statevector.local_1q",
+            "implementation": "triton",
+            "integration_path": "direct",
+            "fallback": False,
+        },
+    }
+
+
+def test_dispatch_records_direct_pytorch_fallback_without_compiler_claim(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+
+    decision = select_triton_kernel(
+        "local_1q",
+        requested=True,
+        supported=False,
+        available=True,
+        device_runtime_provider="pytorch",
+        device_type="cpu",
+        compiler_backend="cuda",
+        integration_path="direct",
+    )
+
+    summary = decision.summary()
+    assert summary["kernel_compiler"] is None
+    assert summary["kernel_route"] == {
+        "semantic_id": "statevector.local_1q",
+        "implementation": "pytorch_eager",
+        "integration_path": "direct",
+        "fallback": True,
+    }
