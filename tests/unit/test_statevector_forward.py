@@ -7,6 +7,10 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR, Instruction
+from flagquantum.runtime.executors.statevector.control_subspace_dispatch import (
+    _triton_control_subspace_pack_decision,
+    _triton_control_subspace_unpack_decision,
+)
 from flagquantum.runtime.executors.statevector.cx_segment_dispatch import (
     _triton_local_cx_segment_decision,
     _triton_local_cx_segment_enabled,
@@ -15,6 +19,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
+    _vectorized_cross_shard_cx,
     _vectorized_pair_exchange_gate,
     _wait_for_exchange,
     communication_aware_wire_layout,
@@ -24,6 +29,9 @@ from flagquantum.runtime.executors.statevector.forward_executor import (
 )
 from flagquantum.runtime.executors.statevector.forward_sweep import (
     _ShardedForwardSweep,
+)
+from flagquantum.runtime.executors.statevector.kernel_dispatch import (
+    KernelDispatchEvidence,
 )
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
@@ -150,6 +158,115 @@ def test_transpose_1q_decision_binds_catalog_identity(monkeypatch):
     assert decision.semantic_id == "statevector.distributed.transpose_apply_1q"
     assert decision.implementation_id == "FQKI-TRITON-SV-006-A"
     assert decision.catalog_mismatches == ()
+
+
+def test_control_subspace_transport_decisions_bind_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    pack = _triton_control_subspace_pack_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+    unpack = _triton_control_subspace_unpack_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert pack.accelerated
+    assert pack.semantic_id == "statevector.transport.control_subspace_pack"
+    assert pack.implementation_id == "FQKI-TRITON-SV-007-A"
+    assert pack.catalog_mismatches == ()
+    assert unpack.accelerated
+    assert unpack.semantic_id == "statevector.transport.control_subspace_unpack"
+    assert unpack.implementation_id == "FQKI-TRITON-SV-008-A"
+    assert unpack.catalog_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_control_subspace_transport_decisions_report_catalog_mismatch(
+    monkeypatch, device_type, dtype, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+
+    decisions = (
+        _triton_control_subspace_pack_decision(
+            device_type=device_type,
+            dtype=dtype,
+        ),
+        _triton_control_subspace_unpack_decision(
+            device_type=device_type,
+            dtype=dtype,
+        ),
+    )
+
+    for decision in decisions:
+        assert not decision.accelerated
+        assert decision.reason == "input_not_supported"
+        assert decision.implementation_id is None
+        assert decision.catalog_mismatches == (mismatch,)
+
+
+def test_control_subspace_transport_decisions_preserve_runtime_contract(
+    monkeypatch,
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+
+    decisions = (
+        _triton_control_subspace_pack_decision(
+            runtime_supported=False,
+            device_type="cuda",
+            dtype="complex64",
+        ),
+        _triton_control_subspace_unpack_decision(
+            runtime_supported=False,
+            device_type="cuda",
+            dtype="complex64",
+        ),
+    )
+
+    for decision in decisions:
+        assert not decision.accelerated
+        assert decision.reason == "input_not_supported"
+        assert decision.catalog_mismatches == ()
+
+
+def test_control_subspace_transport_decisions_report_unavailable_triton(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: False,
+    )
+
+    decisions = (
+        _triton_control_subspace_pack_decision(
+            device_type="cuda",
+            dtype="complex64",
+        ),
+        _triton_control_subspace_unpack_decision(
+            device_type="cuda",
+            dtype="complex64",
+        ),
+    )
+
+    for decision in decisions:
+        assert not decision.accelerated
+        assert decision.reason == "triton_unavailable"
+        assert decision.catalog_mismatches == ()
 
 
 @pytest.mark.parametrize(
@@ -593,6 +710,47 @@ def _pair_exchange_state(plan: SimpleNamespace, amplitudes: torch.Tensor):
         amplitudes=amplitudes,
         global_indices=torch.empty(0, dtype=torch.long),
     )
+
+
+def test_cross_shard_cx_records_each_control_subspace_fallback_invocation(
+    monkeypatch,
+):
+    plan = _pair_exchange_plan(world_size=2, local_amplitudes=8)
+    amplitudes = torch.arange(8, dtype=torch.float32).to(torch.complex64).reshape(1, 8)
+    evidence = KernelDispatchEvidence()
+
+    class _FakeP2POp:
+        def __init__(self, operation, tensor, peer, group=None, tag=0):
+            self.operation = operation
+            self.tensor = tensor
+            self.peer = peer
+            self.group = group
+            self.tag = tag
+
+    def batch_isend_irecv(operations):
+        operations[1].tensor.copy_(operations[0].tensor)
+        return (_FakeCollective(), _FakeCollective())
+
+    monkeypatch.setattr(torch.distributed, "P2POp", _FakeP2POp)
+    monkeypatch.setattr(torch.distributed, "batch_isend_irecv", batch_isend_irecv)
+
+    _, communication_count, _, _ = _vectorized_cross_shard_cx(
+        _pair_exchange_state(plan, amplitudes),
+        (0, 3),
+        plan=plan,
+        chunk_amplitudes=2,
+        kernel_dispatch_evidence=evidence,
+    )
+
+    assert communication_count == 2
+    records = {record["feature"]: record for record in evidence.summary()["decisions"]}
+    assert records["control_subspace_pack"]["count"] == 2
+    assert records["control_subspace_unpack"]["count"] == 2
+    for record in records.values():
+        assert record["selected"] == "pytorch"
+        assert record["reason"] == "input_not_supported"
+        assert record["kernel_route"]["implementation_id"] is None
+        assert record["kernel_route"]["catalog_mismatches"] == ("device",)
 
 
 # The peak the pair-exchange path reports is an exact sum of four live buffers:

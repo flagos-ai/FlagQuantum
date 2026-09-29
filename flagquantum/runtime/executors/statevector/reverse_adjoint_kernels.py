@@ -310,6 +310,9 @@ def _apply_matrix_gate(
             process_group=process_group,
             workspace=workspace,
             output=output,
+            kernel_dispatch_evidence=(
+                evidence.kernel_dispatch_evidence if evidence is not None else None
+            ),
         )
     elif len(instruction.wires) == 1 and instruction.wires[0] in plan.sharded_wires:
         state, count, byte_count, scratch = _vectorized_pair_exchange_gate(

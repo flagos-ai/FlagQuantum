@@ -26,6 +26,7 @@ def main() -> None:
         os.environ["FQ_STATEVECTOR_TRITON_VJP_ADJOINT"] = "1"
         os.environ["FQ_STATEVECTOR_TRITON_LOCAL_CX"] = "1"
         os.environ["FQ_STATEVECTOR_TRITON_CX_SEGMENT"] = "1"
+        os.environ["FQ_STATEVECTOR_REVERSE_CROSS_SHARD_CX_PACK"] = "1"
     world = int(os.environ.get("WORLD_SIZE", "1"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", str(world)))
@@ -116,6 +117,69 @@ def main() -> None:
             item["participating_ranks"] == tuple(range(world))
             for item in summary["parameter_ownership"]
         )
+        control_transport_summary = None
+        if args.persistent_layout:
+            os.environ["FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT"] = "0"
+            transport_theta = torch.tensor(0.41, device=device, requires_grad=True)
+            transport_circuit = fq.Circuit(n_wires, device=device).ry(
+                0, transport_theta
+            )
+            for target in range(1, n_wires):
+                transport_circuit.cx(0, target)
+            dense_transport_value = transport_circuit.expectation_z(0).sum()
+            (dense_transport_gradient,) = torch.autograd.grad(
+                dense_transport_value,
+                (transport_theta,),
+                retain_graph=True,
+            )
+            transport_result = execute_torch_distributed_statevector_reverse(
+                transport_circuit,
+                observable_wire=0,
+                checkpoint_policy=StatevectorCheckpointPolicy(
+                    strategy="interval",
+                    interval=1,
+                ),
+                device=device,
+            )
+            transport_result.backward()
+            torch.testing.assert_close(
+                transport_result.value,
+                dense_transport_value,
+                atol=2e-5,
+                rtol=2e-5,
+            )
+            torch.testing.assert_close(
+                transport_theta.grad,
+                dense_transport_gradient,
+                atol=3e-5,
+                rtol=3e-5,
+            )
+            transport_dispatch = {
+                record["feature"]: record
+                for record in transport_result.summary()["kernel_dispatch"]["decisions"]
+            }
+            assert "control_subspace_pack" in transport_dispatch, transport_dispatch
+            assert "control_subspace_unpack" in transport_dispatch, transport_dispatch
+            pack_record = transport_dispatch["control_subspace_pack"]
+            unpack_record = transport_dispatch["control_subspace_unpack"]
+            assert (
+                pack_record["kernel_route"]["implementation_id"]
+                == "FQKI-TRITON-SV-007-A"
+            )
+            assert (
+                unpack_record["kernel_route"]["implementation_id"]
+                == "FQKI-TRITON-SV-008-A"
+            )
+            control_transport_summary = {
+                "pack_execution_count": pack_record["count"],
+                "pack_implementation_id": pack_record["kernel_route"][
+                    "implementation_id"
+                ],
+                "unpack_execution_count": unpack_record["count"],
+                "unpack_implementation_id": unpack_record["kernel_route"][
+                    "implementation_id"
+                ],
+            }
         if dist.is_initialized():
             dist.destroy_process_group()
         print(
@@ -124,6 +188,7 @@ def main() -> None:
                     **summary,
                     "value": float(result.value.detach().cpu()),
                     "gradients": [float(theta.grad.cpu()), float(phi.grad.cpu())],
+                    "control_subspace_transport": control_transport_summary,
                     "cleanup_verified": not dist.is_initialized(),
                 },
                 sort_keys=True,

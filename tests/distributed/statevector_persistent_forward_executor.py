@@ -154,12 +154,43 @@ def main() -> None:
             atol=2e-6,
             rtol=2e-6,
         )
+        control_transport = fq.Circuit(5).h(0).cx(0, 4)
+        control_transport_result = execute_torch_distributed_statevector(
+            control_transport,
+            device=device,
+            dtype=torch.complex64,
+        )
+        torch.testing.assert_close(
+            _canonical_state(control_transport_result),
+            control_transport.state()[0].to(device),
+            atol=2e-6,
+            rtol=2e-6,
+        )
         evidence = persistent.kernel_dispatch_evidence.summary()
         transpose_record = next(
             (
                 record
                 for record in evidence["decisions"]
                 if record["feature"] == "transpose_1q"
+            ),
+            None,
+        )
+        control_transport_evidence = (
+            control_transport_result.kernel_dispatch_evidence.summary()
+        )
+        control_pack_record = next(
+            (
+                record
+                for record in control_transport_evidence["decisions"]
+                if record["feature"] == "control_subspace_pack"
+            ),
+            None,
+        )
+        control_unpack_record = next(
+            (
+                record
+                for record in control_transport_evidence["decisions"]
+                if record["feature"] == "control_subspace_unpack"
             ),
             None,
         )
@@ -185,6 +216,22 @@ def main() -> None:
                     "transpose_1q_implementation_id": (
                         transpose_record["kernel_route"]["implementation_id"]
                         if transpose_record
+                        else None
+                    ),
+                    "control_subspace_pack_execution_count": (
+                        control_pack_record["count"] if control_pack_record else 0
+                    ),
+                    "control_subspace_pack_implementation_id": (
+                        control_pack_record["kernel_route"]["implementation_id"]
+                        if control_pack_record
+                        else None
+                    ),
+                    "control_subspace_unpack_execution_count": (
+                        control_unpack_record["count"] if control_unpack_record else 0
+                    ),
+                    "control_subspace_unpack_implementation_id": (
+                        control_unpack_record["kernel_route"]["implementation_id"]
+                        if control_unpack_record
                         else None
                     ),
                     "cleanup_verified": not dist.is_initialized(),
