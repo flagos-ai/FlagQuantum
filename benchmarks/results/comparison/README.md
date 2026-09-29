@@ -47,3 +47,8 @@ records method-matched 1/2/4/8-thread FlagQuantum and PennyLane Lightning
 adjoint measurements after enabling Torch OpenMP in the package-local native
 CPU extension. It includes absolute forward/backward/total time, FlagQuantum
 speedup, correctness, a small-workload guardrail, and exact reproduction steps.
+
+[`NATIVE_CPU_ADJOINT_EULER_TRIPLES_CPU_ARM64_20260929.md`](NATIVE_CPU_ADJOINT_EULER_TRIPLES_CPU_ARM64_20260929.md)
+records an exact rollback A/B for branchless amplitude-pair traversal and the
+same-wire RZ/RY/RX Euler-triple reverse kernel. It reports absolute backward and
+total times, speedups, correctness, workload meaning, and reproduction steps.

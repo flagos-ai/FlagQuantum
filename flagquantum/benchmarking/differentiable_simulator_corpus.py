@@ -28,6 +28,7 @@ from flagquantum import algorithms as fqa
 from .contract import runtime_metadata, write_json_atomic
 from .differentiable_adjoint_report import render_adjoint_markdown
 from .differentiable_regression_report import (
+    render_euler_triple_markdown,
     render_forward_cx_markdown,
     render_observable_cache_markdown,
     render_rotation_tile_markdown,
@@ -50,6 +51,7 @@ EngineName = Literal[
     "flagquantum_adjoint_forward_cx_rollback",
     "flagquantum_adjoint_observable_cache_rollback",
     "flagquantum_adjoint_rotation_tile_rollback",
+    "flagquantum_adjoint_euler_triple_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -74,6 +76,7 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_forward_cx_rollback",
         "flagquantum_adjoint_observable_cache_rollback",
         "flagquantum_adjoint_rotation_tile_rollback",
+        "flagquantum_adjoint_euler_triple_rollback",
     )
 )
 
@@ -95,6 +98,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_adjoint_rotation_tile_rollback": (
         "FlagQuantum adjoint rotation-tile rollback"
+    ),
+    "flagquantum_adjoint_euler_triple_rollback": (
+        "FlagQuantum adjoint Euler-triple rollback"
     ),
     "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
@@ -207,6 +213,7 @@ def _flagquantum_executor(
     native_cpu_cx_gather: bool | None = None,
     observable_cache: bool | None = None,
     wide_rotation_tiles: bool | None = None,
+    euler_triple_fusion: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -218,6 +225,9 @@ def _flagquantum_executor(
             "FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"
         )
         prior_wide_rotation_tiles = os.environ.get("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES")
+        prior_euler_triple_fusion = os.environ.get(
+            "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES"
+        )
         if cpu_direct is not None:
             os.environ["FQ_STATEVECTOR_ADJOINT_CPU_DIRECT"] = "1" if cpu_direct else "0"
         if native_cpu_adjoint is not None:
@@ -231,6 +241,10 @@ def _flagquantum_executor(
         if wide_rotation_tiles is not None:
             os.environ["FQ_NATIVE_CPU_ADJOINT_WIDE_TILES"] = (
                 "1" if wide_rotation_tiles else "0"
+            )
+        if euler_triple_fusion is not None:
+            os.environ["FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES"] = (
+                "1" if euler_triple_fusion else "0"
             )
         try:
             forward_started = time.perf_counter()
@@ -277,6 +291,13 @@ def _flagquantum_executor(
                 else:
                     os.environ["FQ_NATIVE_CPU_ADJOINT_WIDE_TILES"] = (
                         prior_wide_rotation_tiles
+                    )
+            if euler_triple_fusion is not None:
+                if prior_euler_triple_fusion is None:
+                    os.environ.pop("FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", None)
+                else:
+                    os.environ["FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES"] = (
+                        prior_euler_triple_fusion
                     )
         return _Execution(
             value=float(loss.detach()),
@@ -412,6 +433,14 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             wide_rotation_tiles=False,
+        )
+    if engine == "flagquantum_adjoint_euler_triple_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            euler_triple_fusion=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
@@ -844,6 +873,11 @@ def run_benchmark(
                 "contract": "same native adjoint with legacy two-wire rotation tiles",
                 "gradient_method": "statevector_adjoint",
             },
+            "flagquantum_adjoint_euler_triple_rollback": {
+                "included": "flagquantum_adjoint_euler_triple_rollback" in engines,
+                "contract": "same native adjoint with Euler fast path disabled",
+                "gradient_method": "statevector_adjoint",
+            },
             "pennylane_lightning_adjoint": {
                 "included": "pennylane_lightning_adjoint" in engines,
                 "contract": "lightning.qubit adjoint through the PyTorch interface",
@@ -886,6 +920,11 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
         "flagquantum_adjoint_rotation_tile_rollback",
     ):
         return render_rotation_tile_markdown(payload, artifact_name=artifact_name)
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_euler_triple_rollback",
+    ):
+        return render_euler_triple_markdown(payload, artifact_name=artifact_name)
     if tuple(payload["engines"]) == (
         "flagquantum_adjoint",
         "flagquantum_adjoint_python_fallback",

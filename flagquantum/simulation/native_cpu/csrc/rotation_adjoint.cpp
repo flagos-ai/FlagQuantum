@@ -59,6 +59,34 @@ inline void apply_inverse_rotation_pair(
   }
 }
 
+template <int64_t gate_kind, typename scalar_t>
+inline typename scalar_t::value_type rotation_pair_gradient(
+    const scalar_t& ket_zero,
+    const scalar_t& ket_one,
+    const scalar_t& adjoint_zero,
+    const scalar_t& adjoint_one) {
+  using real_t = typename scalar_t::value_type;
+  if constexpr (gate_kind == 0) {
+    return real_t{0.5} * (
+        (adjoint_zero.real() * ket_one.imag() -
+         adjoint_zero.imag() * ket_one.real()) +
+        (adjoint_one.real() * ket_zero.imag() -
+         adjoint_one.imag() * ket_zero.real()));
+  } else if constexpr (gate_kind == 1) {
+    return real_t{0.5} * (
+        (adjoint_one.real() * ket_zero.real() +
+         adjoint_one.imag() * ket_zero.imag()) -
+        (adjoint_zero.real() * ket_one.real() +
+         adjoint_zero.imag() * ket_one.imag()));
+  } else {
+    return real_t{0.5} * (
+        (adjoint_zero.real() * ket_zero.imag() -
+         adjoint_zero.imag() * ket_zero.real()) -
+        (adjoint_one.real() * ket_one.imag() -
+         adjoint_one.imag() * ket_one.real()));
+  }
+}
+
 at::Tensor fused_rotation_block_forward_cpu(
     at::Tensor state,
     const at::Tensor& matrices,
@@ -516,7 +544,8 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     const at::Tensor& wires,
     int64_t n_wires,
     bool aggregate_shared_parameter,
-    int64_t max_tile_wires) {
+    int64_t max_tile_wires,
+    bool enable_pair_fast_path) {
   TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
   TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
   TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
@@ -659,37 +688,106 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
           }
           for (int64_t gate = segment_start; gate < segment_end; ++gate) {
             const int64_t local_mask = local_masks[gate];
+            const bool euler_triple = enable_pair_fast_path &&
+                gate + 2 < segment_end &&
+                local_masks[gate + 1] == local_mask &&
+                local_masks[gate + 2] == local_mask &&
+                kind_data[gate] == 2 && kind_data[gate + 1] == 1 &&
+                kind_data[gate + 2] == 0;
+            if (euler_triple) {
+              real_t gradient_rz = real_t{0};
+              real_t gradient_ry = real_t{0};
+              real_t gradient_rx = real_t{0};
+              const int64_t local_block = local_mask << 1;
+              for (int64_t block = 0; block < local_size;
+                   block += local_block) {
+                _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                for (int64_t offset = 0; offset < local_mask; ++offset) {
+                  const int64_t local = block + offset;
+                  const int64_t one = local + local_mask;
+                  scalar_t ket_zero = ket_values[local];
+                  scalar_t ket_one = ket_values[one];
+                  scalar_t adjoint_zero = adjoint_values[local];
+                  scalar_t adjoint_one = adjoint_values[one];
+                  gradient_rz += rotation_pair_gradient<2>(
+                      ket_zero, ket_one, adjoint_zero, adjoint_one);
+                  apply_inverse_rotation_pair<2>(
+                      cosines[gate], sines[gate], ket_zero, ket_one);
+                  apply_inverse_rotation_pair<2>(
+                      cosines[gate], sines[gate], adjoint_zero, adjoint_one);
+                  gradient_ry += rotation_pair_gradient<1>(
+                      ket_zero, ket_one, adjoint_zero, adjoint_one);
+                  apply_inverse_rotation_pair<1>(
+                      cosines[gate + 1], sines[gate + 1], ket_zero, ket_one);
+                  apply_inverse_rotation_pair<1>(
+                      cosines[gate + 1], sines[gate + 1],
+                      adjoint_zero, adjoint_one);
+                  gradient_rx += rotation_pair_gradient<0>(
+                      ket_zero, ket_one, adjoint_zero, adjoint_one);
+                  apply_inverse_rotation_pair<0>(
+                      cosines[gate + 2], sines[gate + 2], ket_zero, ket_one);
+                  apply_inverse_rotation_pair<0>(
+                      cosines[gate + 2], sines[gate + 2],
+                      adjoint_zero, adjoint_one);
+                  ket_values[local] = ket_zero;
+                  ket_values[one] = ket_one;
+                  adjoint_values[local] = adjoint_zero;
+                  adjoint_values[one] = adjoint_one;
+                }
+              }
+              local_gradients[aggregate_shared_parameter ? 0 : gate] +=
+                  gradient_rz;
+              local_gradients[aggregate_shared_parameter ? 0 : gate + 1] +=
+                  gradient_ry;
+              local_gradients[aggregate_shared_parameter ? 0 : gate + 2] +=
+                  gradient_rx;
+              gate += 2;
+              continue;
+            }
             auto apply_gate = [&](auto kind_tag) {
               constexpr int64_t gate_kind = decltype(kind_tag)::value;
               real_t gate_gradient = real_t{0};
-              for (int64_t local = 0; local < local_size; ++local) {
-                if ((local & local_mask) != 0) {
-                  continue;
+              if (enable_pair_fast_path) {
+                const int64_t local_block = local_mask << 1;
+                for (int64_t block = 0; block < local_size;
+                     block += local_block) {
+                  _Pragma("omp simd reduction(+:gate_gradient)")
+                  for (int64_t offset = 0; offset < local_mask; ++offset) {
+                    const int64_t local = block + offset;
+                    const int64_t one = local + local_mask;
+                    const scalar_t ket_zero = ket_values[local];
+                    const scalar_t ket_one = ket_values[one];
+                    const scalar_t adjoint_zero = adjoint_values[local];
+                    const scalar_t adjoint_one = adjoint_values[one];
+                    gate_gradient += rotation_pair_gradient<gate_kind>(
+                        ket_zero, ket_one, adjoint_zero, adjoint_one);
+                    apply_inverse_rotation_pair<gate_kind>(
+                        cosines[gate], sines[gate],
+                        ket_values[local], ket_values[one]);
+                    apply_inverse_rotation_pair<gate_kind>(
+                        cosines[gate], sines[gate],
+                        adjoint_values[local], adjoint_values[one]);
+                  }
                 }
-                const int64_t one = local | local_mask;
-                const scalar_t ket_zero = ket_values[local];
-                const scalar_t ket_one = ket_values[one];
-                const scalar_t adjoint_zero = adjoint_values[local];
-                const scalar_t adjoint_one = adjoint_values[one];
-                if constexpr (gate_kind == 0) {
-                  gate_gradient += real_t{0.5} * (
-                      (adjoint_zero.real() * ket_one.imag() - adjoint_zero.imag() * ket_one.real()) +
-                      (adjoint_one.real() * ket_zero.imag() - adjoint_one.imag() * ket_zero.real()));
-                } else if constexpr (gate_kind == 1) {
-                  gate_gradient += real_t{0.5} * (
-                      (adjoint_one.real() * ket_zero.real() + adjoint_one.imag() * ket_zero.imag()) -
-                      (adjoint_zero.real() * ket_one.real() + adjoint_zero.imag() * ket_one.imag()));
-                } else {
-                  gate_gradient += real_t{0.5} * (
-                      (adjoint_zero.real() * ket_zero.imag() - adjoint_zero.imag() * ket_zero.real()) -
-                      (adjoint_one.real() * ket_one.imag() - adjoint_one.imag() * ket_one.real()));
+              } else {
+                for (int64_t local = 0; local < local_size; ++local) {
+                  if ((local & local_mask) != 0) {
+                    continue;
+                  }
+                  const int64_t one = local | local_mask;
+                  const scalar_t ket_zero = ket_values[local];
+                  const scalar_t ket_one = ket_values[one];
+                  const scalar_t adjoint_zero = adjoint_values[local];
+                  const scalar_t adjoint_one = adjoint_values[one];
+                  gate_gradient += rotation_pair_gradient<gate_kind>(
+                      ket_zero, ket_one, adjoint_zero, adjoint_one);
+                  apply_inverse_rotation_pair<gate_kind>(
+                      cosines[gate], sines[gate],
+                      ket_values[local], ket_values[one]);
+                  apply_inverse_rotation_pair<gate_kind>(
+                      cosines[gate], sines[gate],
+                      adjoint_values[local], adjoint_values[one]);
                 }
-                apply_inverse_rotation_pair<gate_kind>(
-                    cosines[gate], sines[gate],
-                    ket_values[local], ket_values[one]);
-                apply_inverse_rotation_pair<gate_kind>(
-                    cosines[gate], sines[gate],
-                    adjoint_values[local], adjoint_values[one]);
               }
               local_gradients[aggregate_shared_parameter ? 0 : gate] +=
                   gate_gradient;
@@ -866,7 +964,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
   library.def(
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
-      "bool aggregate_shared_parameter, int max_tile_wires) -> Tensor");
+      "bool aggregate_shared_parameter, int max_tile_wires, "
+      "bool enable_pair_fast_path) -> Tensor");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor first_wires, Tensor second_wires, int n_wires, "

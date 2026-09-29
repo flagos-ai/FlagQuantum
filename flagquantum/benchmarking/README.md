@@ -84,6 +84,12 @@ same 11-wire policy while updating ket and adjoint together. Use
 `flagquantum_adjoint_rotation_tile_rollback` for paired measurements or set
 `FQ_NATIVE_CPU_ADJOINT_WIDE_TILES=0` to restore the legacy 48-gate, two-wire
 rotation tiles and separate fixed-layer state passes.
+The rotation reverse sweep directly enumerates zero/one amplitude-pair blocks;
+same-wire RZ/RY/RX Euler triples additionally keep each pair in registers across
+all three gradients and inverse rotations. Use
+`flagquantum_adjoint_euler_triple_rollback` for paired measurements or set
+`FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES=0` to restore the prior per-gate,
+bit-tested traversal.
 `FQ_STATEVECTOR_CPU_DIRECT_LOCAL=0` independently
 restores the distributed gather implementation for ordinary one-process CPU
 forward execution.
