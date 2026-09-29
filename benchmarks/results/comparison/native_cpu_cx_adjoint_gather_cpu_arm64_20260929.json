@@ -1,0 +1,163 @@
+{
+  "artifact_class": "measured_microbenchmark_non_release",
+  "benchmark": "native_cpu_cx_adjoint_gather",
+  "benchmark_evidence_class": "comparison_non_release",
+  "correctness": {
+    "absolute_tolerance": 0.0,
+    "passed": true
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "machine": "arm64",
+    "omp_num_threads": "8",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python": "3.12.14",
+    "torch": "2.13.0"
+  },
+  "methodology": {
+    "alternating_order": true,
+    "baseline": "two torch.index_select calls",
+    "calls_per_sample": 5,
+    "iterations": 12,
+    "native": "one fused dual-state C++ gather",
+    "warmup": 3
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "results": [
+    {
+      "baseline": {
+        "median_seconds": 0.018559545899915972,
+        "relative_median_absolute_deviation": 0.024411292281906326,
+        "samples_seconds": [
+          0.021584766800515354,
+          0.01754288340016501,
+          0.01860094180010492,
+          0.01904663339955732,
+          0.018382649999693967,
+          0.018978583399439232,
+          0.018616574999759904,
+          0.017973416799213736,
+          0.018652516799920704,
+          0.018518149999727028,
+          0.017438574999687262,
+          0.017871166599798018
+        ]
+      },
+      "native": {
+        "median_seconds": 0.00482033340013004,
+        "relative_median_absolute_deviation": 0.053180948054010475,
+        "samples_seconds": [
+          0.0043315082002663985,
+          0.0042926416004775095,
+          0.004897049999271985,
+          0.004810591800196562,
+          0.005223583400947973,
+          0.005151941601070575,
+          0.004987416601215955,
+          0.005001424999500159,
+          0.0048300750000635165,
+          0.004796258399437647,
+          0.004335449999780394,
+          0.004301833400677424
+        ]
+      },
+      "speedup": 3.8502618718064783,
+      "threads": 1
+    },
+    {
+      "baseline": {
+        "median_seconds": 0.0189444083996932,
+        "relative_median_absolute_deviation": 0.005972305796793513,
+        "samples_seconds": [
+          0.019236583200108726,
+          0.01887209999986226,
+          0.018886341601319145,
+          0.019739266599935947,
+          0.019108966599742417,
+          0.019650641799671575,
+          0.01896687499975087,
+          0.01879043319931952,
+          0.018080866600212176,
+          0.018967366601282266,
+          0.018909324999549428,
+          0.018921941799635533
+        ]
+      },
+      "native": {
+        "median_seconds": 0.003594570900168037,
+        "relative_median_absolute_deviation": 0.05347533964685875,
+        "samples_seconds": [
+          0.0036117167997872456,
+          0.00398166679951828,
+          0.00356913340074243,
+          0.0033715166006004437,
+          0.003787016800197307,
+          0.003946191600698512,
+          0.003450124998926185,
+          0.003402575000654906,
+          0.0035774250005488283,
+          0.004027699999278411,
+          0.003484041799674742,
+          0.0038200999988475814
+        ]
+      },
+      "speedup": 5.270283693335301,
+      "threads": 4
+    },
+    {
+      "baseline": {
+        "median_seconds": 0.01859548749998794,
+        "relative_median_absolute_deviation": 0.017777834529759177,
+        "samples_seconds": [
+          0.018210125000041443,
+          0.018661758399684914,
+          0.018955799999821464,
+          0.019422108399157877,
+          0.01809578340034932,
+          0.018369641600293106,
+          0.018212725000921637,
+          0.01925628340104595,
+          0.0185181166001712,
+          0.018726175000483635,
+          0.018529216600290964,
+          0.0188963499997044
+        ]
+      },
+      "native": {
+        "median_seconds": 0.0034455542001524007,
+        "relative_median_absolute_deviation": 0.03098801916354422,
+        "samples_seconds": [
+          0.003444875001150649,
+          0.003418699999747332,
+          0.00353377499995986,
+          0.003786766799748875,
+          0.002922166600183118,
+          0.0031734165997477247,
+          0.0034588918002555146,
+          0.003446233399154153,
+          0.0033802999998442827,
+          0.0037823416001629083,
+          0.0033202332007931544,
+          0.0038072750001447277
+        ]
+      },
+      "speedup": 5.396951091109071,
+      "threads": 8
+    }
+  ],
+  "scalability_blockers": [
+    "single_device_microbenchmark"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.native_cpu_cx_adjoint_gather.v1",
+  "workload": {
+    "batch_size": 1,
+    "cx_count": 21,
+    "dtype": "complex128",
+    "logical_state_bytes_each": 67108864,
+    "n_wires": 22,
+    "state_count": 2
+  },
+  "world_size": 1
+}

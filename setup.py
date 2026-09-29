@@ -75,7 +75,10 @@ setup(
     ext_modules=[
         CppExtension(
             "flagquantum.simulation.native_cpu._C",
-            ["flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp"],
+            [
+                "flagquantum/simulation/native_cpu/csrc/permutation.cpp",
+                "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
+            ],
             extra_compile_args=CPP_FLAGS,
             extra_link_args=LINK_FLAGS,
         )
