@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.kernels.catalog import (
+    EVIDENCE,
     IMPLEMENTATIONS,
     SEMANTICS,
     validate_catalog,
@@ -47,6 +48,7 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
 
     assert len(SEMANTICS) == 18
     assert len(IMPLEMENTATIONS) == 20
+    assert len(EVIDENCE) == 20
     assert {semantic.domain for semantic in SEMANTICS} == {
         "gradient",
         "mps",
@@ -87,6 +89,25 @@ def test_catalog_covers_every_triton_wrapper() -> None:
     assert cataloged == exported
 
 
+def test_evidence_references_existing_tests_and_artifacts() -> None:
+    for record in EVIDENCE:
+        references = (
+            *record.correctness_tests,
+            *record.gradient_tests,
+            *record.capability_tests,
+        )
+        for reference in references:
+            relative_path, function_name = reference.split("::", maxsplit=1)
+            path = _REPOSITORY_ROOT / relative_path
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            functions = {
+                node.name for node in tree.body if isinstance(node, ast.FunctionDef)
+            }
+            assert function_name in functions
+        for relative_path in record.benchmark_artifacts:
+            assert (_REPOSITORY_ROOT / relative_path).is_file()
+
+
 def test_catalog_import_is_accelerator_provider_free() -> None:
     command = (
         "import sys; "
@@ -123,3 +144,28 @@ def test_validation_rejects_unknown_implementation_semantic() -> None:
 
     with pytest.raises(ValueError, match="unknown semantic ID"):
         validate_catalog(SEMANTICS, (invalid, *IMPLEMENTATIONS[1:]))
+
+
+def test_validation_rejects_implementation_without_evidence() -> None:
+    with pytest.raises(ValueError, match="implementations without evidence"):
+        validate_catalog(SEMANTICS, IMPLEMENTATIONS, EVIDENCE[1:])
+
+
+def test_validation_requires_evidence_for_declared_derivatives() -> None:
+    invalid = replace(EVIDENCE[1], gradient_tests=())
+
+    with pytest.raises(ValueError, match="missing gradient evidence"):
+        validate_catalog(
+            SEMANTICS, IMPLEMENTATIONS, (EVIDENCE[0], invalid, *EVIDENCE[2:])
+        )
+
+
+def test_validation_requires_evidence_for_internal_fallbacks() -> None:
+    invalid = replace(EVIDENCE[6], capability_tests=())
+
+    with pytest.raises(ValueError, match="missing fallback evidence"):
+        validate_catalog(
+            SEMANTICS,
+            IMPLEMENTATIONS,
+            (*EVIDENCE[:6], invalid, *EVIDENCE[7:]),
+        )

@@ -6,6 +6,7 @@ import torch
 pytest.importorskip("triton")
 
 from flagquantum.kernels.triton.statevector_adjoint import (
+    fused_complex64_local_1q_reversible_vjp,
     fused_complex64_local_1q_vjp_adjoint,
     fused_complex64_sharded_1q_vjp_adjoint,
 )
@@ -98,6 +99,45 @@ def test_fused_vjp_and_adjoint_match_pytorch(bit):
     expected_gradient = torch.real(torch.sum(torch.conj(adjoint) * derivative_state))
 
     torch.testing.assert_close(next_adjoint, expected_adjoint, atol=3e-5, rtol=3e-5)
+    torch.testing.assert_close(gradient, expected_gradient, atol=3e-3, rtol=3e-5)
+
+
+@pytest.mark.parametrize("bit", [0, 3, 8])
+def test_fused_reversible_vjp_matches_pytorch(bit):
+    generator = torch.Generator(device="cuda").manual_seed(3701 + bit)
+    before = torch.randn(
+        2, 1 << 10, dtype=torch.complex64, device="cuda", generator=generator
+    )
+    adjoint = torch.randn_like(before)
+    angle = torch.tensor(0.37, device="cuda")
+    cosine, sine = torch.cos(angle / 2), torch.sin(angle / 2)
+    matrix = torch.stack(
+        (
+            torch.stack((cosine, -1j * sine)),
+            torch.stack((-1j * sine, cosine)),
+        )
+    ).to(torch.complex64)
+    derivative = torch.stack(
+        (
+            torch.stack((-0.5 * sine, -0.5j * cosine)),
+            torch.stack((-0.5j * cosine, -0.5 * sine)),
+        )
+    ).to(torch.complex64)
+    ket = _reference_apply(before, matrix, bit).contiguous()
+    expected_adjoint = _reference_apply(adjoint, matrix.mH, bit)
+    derivative_state = _reference_apply(before, derivative, bit)
+    expected_gradient = torch.real(torch.sum(torch.conj(adjoint) * derivative_state))
+
+    gradient = fused_complex64_local_1q_reversible_vjp(
+        ket,
+        adjoint,
+        matrix,
+        derivative,
+        bit_position=bit,
+    )
+
+    torch.testing.assert_close(ket, before, atol=3e-5, rtol=3e-5)
+    torch.testing.assert_close(adjoint, expected_adjoint, atol=3e-5, rtol=3e-5)
     torch.testing.assert_close(gradient, expected_gradient, atol=3e-3, rtol=3e-5)
 
 

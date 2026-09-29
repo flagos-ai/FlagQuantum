@@ -11,6 +11,43 @@ from flagquantum.kernels.triton.mps_two_site import (
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 
 
+def _reference_two_site(
+    left: torch.Tensor, gate: torch.Tensor, right: torch.Tensor
+) -> torch.Tensor:
+    theta = torch.einsum("blsm,bmtr->blstr", left, right).reshape(
+        left.shape[0], left.shape[1], 4, right.shape[3]
+    )
+    equation = "bij,bljr->blir" if gate.ndim == 3 else "ij,bljr->blir"
+    return torch.einsum(equation, gate, theta).reshape(
+        left.shape[0], left.shape[1] * 2, 2 * right.shape[3]
+    )
+
+
+def test_fused_mps_two_site_cpu_fallback_matches_reference() -> None:
+    generator = torch.Generator().manual_seed(503)
+    left = torch.randn(2, 3, 2, 4, dtype=torch.complex128, generator=generator)
+    gate = torch.randn(2, 4, 4, dtype=torch.complex128, generator=generator)
+    right = torch.randn(2, 4, 2, 5, dtype=torch.complex128, generator=generator)
+
+    torch.testing.assert_close(
+        fused_mps_two_site(left, gate, right),
+        _reference_two_site(left, gate, right),
+    )
+
+
+def test_fused_mps_range_projection_cpu_fallback_matches_reference() -> None:
+    generator = torch.Generator().manual_seed(509)
+    left = torch.randn(2, 3, 2, 4, dtype=torch.complex128, generator=generator)
+    gate = torch.randn(2, 4, 4, dtype=torch.complex128, generator=generator)
+    right = torch.randn(2, 4, 2, 5, dtype=torch.complex128, generator=generator)
+    projection = torch.randn(10, 6, dtype=torch.complex128, generator=generator)
+
+    torch.testing.assert_close(
+        fused_mps_range_projection(left, gate, right, projection),
+        _reference_two_site(left, gate, right) @ projection,
+    )
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.parametrize("batched_gate", [False, True])
 def test_fused_mps_two_site_forward_and_backward(batched_gate: bool) -> None:

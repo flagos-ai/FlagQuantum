@@ -27,6 +27,11 @@ The machine-readable records live in [`catalog/`](catalog/). Importing
 `flagquantum.kernels.catalog` is metadata-only and must not import Triton,
 initialize CUDA, or load an implementation module.
 
+Each implementation also has one **evidence record**. Evidence records link the
+implementation ID to repository test nodes, optional checked-in benchmark
+artifacts, and the validation lane that must execute device-bound tests. A test
+reference is a coverage obligation, not a claim that every pull request ran it.
+
 ## Semantic naming
 
 Semantic IDs follow this shape:
@@ -191,6 +196,20 @@ policy.
 Catalog validation is intentionally CPU-only and dependency-light. It checks
 identity, references, naming, and metadata without importing an accelerator
 provider.
+
+The evidence catalog enforces these minimums:
+
+- every implementation has correctness evidence;
+- every implementation that declares backward, VJP, JVP, or Jacobian support
+  has gradient evidence;
+- every wrapper with an internal fallback has capability/fallback evidence;
+- every referenced test node and checked-in artifact exists;
+- device tests name an explicit required lane, currently `gpu_scheduled` for
+  Triton implementations.
+
+The ordinary PR lanes validate the catalog and its references. An executed GPU
+lane, or a recorded run on `jp-a800-171` or `jp-a800-172`, is required before a
+device result is described as observed hardware evidence.
 
 ## Adding a kernel
 
