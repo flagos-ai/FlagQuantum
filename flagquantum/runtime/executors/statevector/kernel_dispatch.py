@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from importlib import metadata
 from typing import Any
 
+from ....kernels.catalog import KernelRequest, match_kernel_implementations
 from .environment import mode
 
 
@@ -25,6 +26,9 @@ class KernelDecision:
     compiler_backend: str | None = None
     compiler_identity_status: str | None = None
     integration_path: str | None = None
+    semantic_id: str | None = None
+    implementation_id: str | None = None
+    catalog_mismatches: tuple[str, ...] = ()
 
     @property
     def accelerated(self) -> bool:
@@ -67,7 +71,7 @@ class KernelDecision:
                     else None
                 ),
                 "kernel_route": {
-                    "semantic_id": f"statevector.{self.feature}",
+                    "semantic_id": self.semantic_id or f"statevector.{self.feature}",
                     "implementation": (
                         "triton" if self.accelerated else "pytorch_eager"
                     ),
@@ -76,6 +80,13 @@ class KernelDecision:
                 },
             }
         )
+        if self.semantic_id is not None:
+            summary["kernel_route"].update(
+                {
+                    "implementation_id": self.implementation_id,
+                    "catalog_mismatches": self.catalog_mismatches,
+                }
+            )
         return summary
 
 
@@ -203,9 +214,69 @@ def select_triton_kernel(
     )
 
 
+def select_cataloged_triton_kernel(
+    feature: str,
+    *,
+    request: KernelRequest,
+    implementation_id: str,
+    requested: bool,
+    runtime_supported: bool = True,
+    available: bool | None = None,
+    device_runtime_provider: str | None = None,
+    compiler_backend: str | None = None,
+    capture_compiler_identity: bool = False,
+) -> KernelDecision:
+    """Select one wired Triton implementation after catalog capability matching.
+
+    The catalog establishes whether the named implementation declares and
+    evidences the requested capabilities. Runtime policy, availability, and
+    fallback precedence remain owned by :func:`select_triton_kernel`.
+    """
+
+    match = match_kernel_implementations(request)
+    candidate_ids = {
+        candidate.implementation.implementation_id for candidate in match.candidates
+    }
+    catalog_supported = implementation_id in candidate_ids
+    mismatch_codes: tuple[str, ...] = ()
+    if not catalog_supported:
+        rejection = next(
+            (
+                rejection
+                for rejection in match.rejections
+                if rejection.implementation.implementation_id == implementation_id
+            ),
+            None,
+        )
+        if rejection is not None:
+            mismatch_codes = tuple(mismatch.code for mismatch in rejection.mismatches)
+        elif not match.semantic_known:
+            mismatch_codes = ("semantic_unknown",)
+        else:
+            mismatch_codes = ("implementation_not_registered_for_semantic",)
+
+    decision = select_triton_kernel(
+        feature,
+        requested=requested,
+        supported=runtime_supported and catalog_supported,
+        available=available,
+        device_runtime_provider=device_runtime_provider,
+        device_type=request.device,
+        compiler_backend=compiler_backend,
+        capture_compiler_identity=capture_compiler_identity,
+    )
+    return replace(
+        decision,
+        semantic_id=request.semantic_id,
+        implementation_id=implementation_id if decision.accelerated else None,
+        catalog_mismatches=mismatch_codes,
+    )
+
+
 __all__ = (
     "KernelDecision",
     "KernelDispatchEvidence",
+    "select_cataloged_triton_kernel",
     "select_triton_kernel",
     "triton_available",
     "triton_compiler_provenance",

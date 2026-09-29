@@ -5,14 +5,30 @@ import importlib.util
 import pytest
 
 import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
+from flagquantum.kernels.catalog import KernelRequest
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
+    select_cataloged_triton_kernel,
     select_triton_kernel,
     triton_available,
     triton_compiler_provenance,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _local_1q_request(**overrides):
+    values = {
+        "semantic_id": "statevector.apply.matrix_1q.local",
+        "device": "cuda",
+        "dtype": "complex64",
+        "layout": "flat_statevector",
+        "direction": "forward",
+        "addressing": ("local",),
+        "providers": ("triton",),
+    }
+    values.update(overrides)
+    return KernelRequest(**values)
 
 
 def test_triton_availability_probe_is_cached(monkeypatch):
@@ -48,6 +64,81 @@ def test_dispatch_selects_accelerated_kernel_when_eligible(monkeypatch):
         "accelerated": True,
         "reason": "eligible",
     }
+
+
+def test_cataloged_dispatch_records_canonical_route_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setattr(
+        kernel_dispatch,
+        "triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    decision = select_cataloged_triton_kernel(
+        "local_1q",
+        request=_local_1q_request(),
+        implementation_id="FQKI-TRITON-SV-001-A",
+        requested=True,
+        available=True,
+        device_runtime_provider="pytorch",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
+    )
+
+    assert decision.accelerated
+    assert decision.summary()["kernel_route"] == {
+        "semantic_id": "statevector.apply.matrix_1q.local",
+        "implementation": "triton",
+        "integration_path": "direct",
+        "fallback": False,
+        "implementation_id": "FQKI-TRITON-SV-001-A",
+        "catalog_mismatches": (),
+    }
+
+
+@pytest.mark.parametrize(
+    ("kernel_request", "mismatch"),
+    (
+        (_local_1q_request(device="cpu"), "device"),
+        (_local_1q_request(dtype="complex128"), "dtype"),
+        (_local_1q_request(direction="backward"), "direction"),
+    ),
+)
+def test_cataloged_dispatch_rejects_undeclared_capabilities(
+    monkeypatch, kernel_request, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+
+    decision = select_cataloged_triton_kernel(
+        "local_1q",
+        request=kernel_request,
+        implementation_id="FQKI-TRITON-SV-001-A",
+        requested=True,
+        available=True,
+        device_runtime_provider="pytorch",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
+    )
+
+    assert decision.reason == "input_not_supported"
+    assert decision.implementation_id is None
+    assert decision.catalog_mismatches == (mismatch,)
+    assert decision.summary()["kernel_route"]["implementation_id"] is None
+
+
+def test_cataloged_dispatch_preserves_policy_precedence(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "portable")
+
+    decision = select_cataloged_triton_kernel(
+        "local_1q",
+        request=_local_1q_request(device="cpu"),
+        implementation_id="FQKI-TRITON-SV-001-A",
+        requested=True,
+        available=True,
+    )
+
+    assert decision.reason == "portable_mode"
+    assert decision.catalog_mismatches == ("device",)
 
 
 @pytest.mark.parametrize(

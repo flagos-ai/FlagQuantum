@@ -13,6 +13,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
+from ....kernels.catalog import KernelRequest
 from ....simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
@@ -32,6 +33,7 @@ from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,
+    select_cataloged_triton_kernel,
     select_triton_kernel,
 )
 from .models import (
@@ -67,7 +69,10 @@ def _single_process_cpu_direct_enabled() -> bool:
 
 
 def _triton_local_1q_decision(
-    *, supported: bool = True, device_type: str | None = None
+    *,
+    runtime_supported: bool = True,
+    device_type: str,
+    dtype: str,
 ) -> KernelDecision:
     requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
         "1",
@@ -75,12 +80,21 @@ def _triton_local_1q_decision(
         "on",
         "yes",
     }
-    return select_triton_kernel(
+    return select_cataloged_triton_kernel(
         "local_1q",
+        request=KernelRequest(
+            semantic_id="statevector.apply.matrix_1q.local",
+            device=device_type,
+            dtype=dtype,
+            layout="flat_statevector",
+            direction="forward",
+            addressing=("local",),
+            providers=("triton",),
+        ),
+        implementation_id="FQKI-TRITON-SV-001-A",
         requested=requested,
-        supported=supported,
+        runtime_supported=runtime_supported,
         device_runtime_provider="pytorch",
-        device_type=device_type,
         compiler_backend="cuda",
         capture_compiler_identity=True,
     )
@@ -578,15 +592,13 @@ def _vectorized_local_gate(
     gate_dim = 2 ** len(wires)
     matrix = matrix.to(shard_state.amplitudes)
     rank_bits = len(plan.sharded_wires)
-    triton_supported = bool(
-        gate_dim == 2
-        and shard_state.amplitudes.device.type == "cuda"
-        and shard_state.amplitudes.dtype == torch.complex64
-        and shard_state.amplitudes.is_contiguous()
+    triton_runtime_supported = bool(
+        gate_dim == 2 and shard_state.amplitudes.is_contiguous()
     )
     triton_decision = _triton_local_1q_decision(
-        supported=triton_supported,
+        runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
+        dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
