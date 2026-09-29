@@ -54,8 +54,8 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "statevector_adjoint",
         ),
         "flagquantum_adjoint_forward_rzz_rotation_rollback": (
-            "same native adjoint with forward shared-RZZ fusion and specialized "
-            "rotation arithmetic disabled",
+            "same native adjoint with the backward RZZ/H boundary fusion, forward "
+            "shared-RZZ fusion, and specialized rotation arithmetic disabled",
             "statevector_adjoint",
         ),
         "pennylane_lightning_adjoint": (

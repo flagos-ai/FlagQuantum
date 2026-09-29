@@ -234,6 +234,7 @@ def _flagquantum_executor(
     euler_triple_fusion: bool | None = None,
     observable_boundary_fusion: bool | None = None,
     shared_rzz_fusion: bool | None = None,
+    adjoint_rzz_h_fusion: bool | None = None,
     forward_shared_rzz_fusion: bool | None = None,
     forward_specialized_rotations: bool | None = None,
 ) -> Callable[[], _Execution]:
@@ -250,6 +251,7 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES": euler_triple_fusion,
                 "FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY": observable_boundary_fusion,
                 "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION": shared_rzz_fusion,
+                "FQ_NATIVE_CPU_ADJOINT_RZZ_H_FUSION": adjoint_rzz_h_fusion,
                 "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION": (forward_shared_rzz_fusion),
                 "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS": (
                     forward_specialized_rotations
@@ -436,6 +438,7 @@ def _engine_callable(
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
+            adjoint_rzz_h_fusion=False,
             forward_shared_rzz_fusion=False,
             forward_specialized_rotations=False,
         )

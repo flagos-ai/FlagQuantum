@@ -78,6 +78,23 @@ def native_cpu_rotation_rzz_fusion_available() -> bool:
     }
 
 
+def native_cpu_adjoint_rzz_h_fusion_available() -> bool:
+    """Return whether a fused RZZ boundary may absorb preceding Hadamards."""
+
+    return os.getenv("FQ_NATIVE_CPU_ADJOINT_RZZ_H_FUSION", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def native_cpu_rotation_tile_wires() -> int:
+    """Return the active native adjoint rotation tile width."""
+
+    return _rotation_segment_tile_wires()
+
+
 def _load_extension() -> bool:
     global _EXTENSION_ERROR, _EXTENSION_LOADED
     if _EXTENSION_LOADED:
@@ -230,6 +247,7 @@ def fused_rotation_segment_adjoint_(
     rzz_angles: torch.Tensor | None = None,
     rzz_first_wires: torch.Tensor | None = None,
     rzz_second_wires: torch.Tensor | None = None,
+    fuse_preceding_hadamards: bool = False,
 ) -> torch.Tensor | None:
     """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
 
@@ -291,6 +309,8 @@ def fused_rotation_segment_adjoint_(
                 aggregate_shared_parameter,
                 _rotation_segment_tile_wires(),
                 _rotation_pair_fast_path_enabled(),
+                fuse_preceding_hadamards
+                and native_cpu_adjoint_rzz_h_fusion_available(),
                 rzz_angles,
                 rzz_first_wires,
                 rzz_second_wires,
