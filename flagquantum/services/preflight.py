@@ -180,6 +180,7 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
 
     from ..runtime.backend_registry import capability_summary, list_backends
     from ..version import __version__
+    from .ground_state import ground_state_vqe_capability
 
     backends = {}
     for name in list_backends(refresh=refresh):
@@ -196,7 +197,9 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
             "execution_planning": True,
             "deployment_preflight": True,
             "deployment_identity_validation": True,
+            "ground_state_vqe_v1": True,
         },
+        "ground_state_vqe": ground_state_vqe_capability(),
     }
 
 

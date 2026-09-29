@@ -29,6 +29,16 @@ timestamped device noise profile, executes the stable exact/MPS policy, and
 returns an auditable calibration-and-routing receipt. It is a service-side
 deployment hook, not a replacement for the client's remote Quafu job path.
 
+`run_ground_state_vqe(...)` is the provider-owned variational ground-state
+workflow. It accepts a versioned Pauli sum, an explicit fixed-sector ansatz, and
+a bounded optimizer configuration. The result includes the convergence trace,
+term expectations, final statevector, resources, FlagQuantum package/tool
+identity, and a deterministic execution digest. Unsupported Hamiltonians,
+sectors, ansatzes, and optimizers return `status="unsupported"`; the workflow
+never falls back to another provider. `exact_sector_reference(...)` is a
+separate dense reference operation so its evidence cannot be confused with the
+variational simulation.
+
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py

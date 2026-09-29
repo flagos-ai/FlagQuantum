@@ -1,5 +1,24 @@
 """Small application workflows shared by protocol and user interfaces."""
 
+from .ground_state import (
+    ComplexAmplitude,
+    ConvergencePoint,
+    ExactSectorReference,
+    ExecutionProvenance,
+    GroundStateAnsatz,
+    GroundStateOptimizer,
+    GroundStateResources,
+    GroundStateVQERequest,
+    GroundStateVQEResult,
+    PauliExpectationEvidence,
+    PauliSum,
+    PauliSumTerm,
+    StatevectorEvidence,
+    UnsupportedCapability,
+    exact_sector_reference,
+    ground_state_vqe_capability,
+    run_ground_state_vqe,
+)
 from .managed_simulator import (
     ManagedSimulatorExecution,
     ManagedSimulatorReceipt,
@@ -17,15 +36,32 @@ from .preflight import (
 )
 
 __all__ = (
+    "ComplexAmplitude",
+    "ConvergencePoint",
+    "ExactSectorReference",
+    "ExecutionProvenance",
+    "GroundStateAnsatz",
+    "GroundStateOptimizer",
+    "GroundStateResources",
+    "GroundStateVQERequest",
+    "GroundStateVQEResult",
     "ManagedSimulatorExecution",
     "ManagedSimulatorReceipt",
+    "PauliExpectationEvidence",
+    "PauliSum",
+    "PauliSumTerm",
+    "StatevectorEvidence",
+    "UnsupportedCapability",
     "ExecutionPreflightReport",
     "DeploymentPreflightReport",
     "ValidationIssue",
     "ValidationReport",
     "capabilities",
+    "exact_sector_reference",
+    "ground_state_vqe_capability",
     "managed_quafu_simulator_device",
     "preflight_deployment",
     "preflight_execution",
     "run_managed_quafu_simulator",
+    "run_ground_state_vqe",
 )
