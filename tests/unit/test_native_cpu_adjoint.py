@@ -9,6 +9,7 @@ import flagquantum as fq
 from flagquantum.runtime.executors.statevector import (
     forward_rzz_segment,
     forward_sweep,
+    reverse_adjoint_cx,
     reverse_adjoint_rotation_segment,
     reverse_adjoint_sweep,
 )
@@ -19,12 +20,14 @@ from flagquantum.runtime.executors.statevector.reverse import (
     execute_torch_distributed_statevector_reverse,
 )
 from flagquantum.simulation.native_cpu import (
+    fused_cx_adjoint_gather,
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
     fused_rotation_segment_adjoint_,
     fused_rzz_segment_adjoint_,
     fused_rzz_segment_forward_,
     native_cpu_adjoint_available,
+    native_cpu_cx_adjoint_gather_available,
     native_cpu_parallel_build_available,
     native_cpu_rotation_available,
     native_cpu_rzz_available,
@@ -41,6 +44,42 @@ def test_native_cpu_build_preserves_torch_parallel_backend() -> None:
 
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("index_dtype", (torch.int32, torch.int64))
+def test_native_cx_adjoint_gather_matches_two_index_selects(
+    dtype: torch.dtype,
+    index_dtype: torch.dtype,
+) -> None:
+    if not native_cpu_cx_adjoint_gather_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(8123)
+    ket = (
+        torch.randn((2, 64), generator=generator)
+        + 1j * torch.randn((2, 64), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((2, 64), generator=generator)
+        + 1j * torch.randn((2, 64), generator=generator)
+    ).to(dtype)
+    index = torch.randperm(64, generator=generator, dtype=index_dtype)
+
+    gathered = fused_cx_adjoint_gather(ket, adjoint, index)
+
+    assert gathered is not None
+    torch.testing.assert_close(gathered[0], torch.index_select(ket, 1, index))
+    torch.testing.assert_close(gathered[1], torch.index_select(adjoint, 1, index))
+
+
+def test_native_cx_adjoint_gather_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_GATHER", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    index = torch.arange(4, dtype=torch.int32)
+
+    assert fused_cx_adjoint_gather(ket, ket, index) is None
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -524,6 +563,45 @@ def test_reverse_sweep_fuses_shared_rotation_layer(
 
     assert calls == 1
     assert aggregate_flags == [True]
+    torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
+
+
+def test_reverse_sweep_uses_native_dual_cx_gather(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_cx_adjoint_gather_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    circuit.ry(0, theta)
+    for wire in range(5):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_GATHER", "0")
+    baseline = execute_torch_distributed_statevector_reverse(circuit)
+    baseline.backward()
+    expected_value = baseline.value.detach().clone()
+    expected_gradient = theta.grad.detach().clone()
+    theta.grad = None
+    calls = 0
+    native = reverse_adjoint_cx.fused_cx_adjoint_gather
+
+    def counted(
+        ket: torch.Tensor,
+        adjoint: torch.Tensor,
+        index: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor] | None:
+        nonlocal calls
+        calls += 1
+        return native(ket, adjoint, index)
+
+    monkeypatch.setattr(reverse_adjoint_cx, "fused_cx_adjoint_gather", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_GATHER", "1")
+    actual = execute_torch_distributed_statevector_reverse(circuit)
+    actual.backward()
+
+    assert calls == 1
     torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
     torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
 

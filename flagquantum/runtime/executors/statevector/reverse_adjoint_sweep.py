@@ -25,7 +25,6 @@ from ....simulation.statevector.adjoint import (
 )
 from ....simulation.statevector.adjoint import z_hamiltonian_chunk
 from ....simulation.statevector.operations import (
-    _apply_cx_sequence_gather,
     _apply_matrix,
     _instruction_matrix,
 )
@@ -40,6 +39,7 @@ from .kernel_dispatch import triton_available
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
+from .reverse_adjoint_cx import apply_cpu_cx_adjoint_segment
 from .reverse_adjoint_kernels import (
     _apply_matrix_gate,
     _apply_one_gate,
@@ -700,20 +700,17 @@ class _ReversibleAdjointSweep:
                 if self.reversible_state.amplitudes.device.type == "cpu":
                     controls = tuple(wires[0] for wires in reversed(segment_wires))
                     targets = tuple(wires[1] for wires in reversed(segment_wires))
-                    ket = _apply_cx_sequence_gather(
+                    ket, adjoint = apply_cpu_cx_adjoint_segment(
                         self.reversible_state.amplitudes,
-                        controls,
-                        targets,
-                        self.plan.n_wires,
-                    )
-                    adjoint = _apply_cx_sequence_gather(
                         self.adjoint,
                         controls,
                         targets,
                         self.plan.n_wires,
                     )
-                    self.reversible_state.amplitudes.copy_(ket)
-                    self.adjoint.copy_(adjoint)
+                    self.reversible_state = replace(
+                        self.reversible_state, amplitudes=ket
+                    )
+                    self.adjoint = adjoint
                     self.evidence.peak_scratch_bytes = max(
                         self.evidence.peak_scratch_bytes,
                         2 * ket.numel() * ket.element_size(),
