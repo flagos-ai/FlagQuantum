@@ -30,6 +30,9 @@ OBSERVABLE_BOUNDARY_RESULT_NAME = (
     "native_cpu_adjoint_observable_boundary_cpu_arm64_20260929.json"
 )
 SHARED_RZZ_RESULT_NAME = "native_cpu_shared_rzz_cpu_arm64_20260929.json"
+FORWARD_RZZ_ROTATION_RESULT_NAME = (
+    "native_cpu_forward_rzz_rotation_cpu_arm64_20260929.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -246,6 +249,35 @@ def test_shared_rzz_rollback_engine_restores_environment(
     support = payload["support_matrix"][rollback]
     assert support["included"] is True
     assert "shared-RZZ fusion disabled" in support["contract"]
+
+
+def test_forward_rzz_rotation_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    variables = (
+        "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION",
+        "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS",
+    )
+    for variable in variables:
+        monkeypatch.setenv(variable, "custom")
+    rollback = "flagquantum_adjoint_forward_rzz_rotation_rollback"
+    payload = run_benchmark(
+        workloads=("qaoa_path_maxcut",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert all(os.environ[variable] == "custom" for variable in variables)
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert "forward shared-RZZ fusion" in support["contract"]
 
 
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
@@ -498,6 +530,40 @@ def test_checked_in_shared_rzz_comparison_is_reproducible() -> None:
     assert "180.598" in text
     assert "196.709" in text
     assert "1.09x" in text
+
+
+def test_checked_in_forward_rzz_rotation_comparison_is_reproducible() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / FORWARD_RZZ_ROTATION_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_forward_rzz_rotation_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == ["flagquantum_adjoint", rollback]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 4
+    case = payload["cases"][0]
+    assert case["workload"]["name"] == "qaoa_path_maxcut"
+    assert case["correctness"]["passed"] is True
+    assert case["stability"]["passed"] is True
+    assert case["engines"]["flagquantum_adjoint"]["forward"]["sample_count"] == 31
+    ratio = case["comparison"]["engine_over_flagquantum_median"][rollback]
+    assert ratio["forward"] > 1.80
+    assert ratio["value_and_grad"] > 1.20
+
+    report = path.with_name("NATIVE_CPU_FORWARD_RZZ_ROTATION_CPU_ARM64_20260929.md")
+    text = report.read_text(encoding="utf-8")
+    assert "50.465" in text
+    assert "97.692" in text
+    assert "1.94x" in text
 
 
 @pytest.mark.parametrize(

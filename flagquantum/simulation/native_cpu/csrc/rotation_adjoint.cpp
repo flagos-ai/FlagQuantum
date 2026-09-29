@@ -173,7 +173,11 @@ at::Tensor fused_rotation_block_forward_cpu(
     at::Tensor state,
     const at::Tensor& matrices,
     const at::Tensor& wires,
-    int64_t n_wires) {
+    int64_t n_wires,
+    const c10::optional<at::Tensor>& rzz_angles,
+    const c10::optional<at::Tensor>& rzz_first_wires,
+    const c10::optional<at::Tensor>& rzz_second_wires,
+    bool specialized_rotations) {
   TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
   TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
   TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
@@ -203,6 +207,41 @@ at::Tensor fused_rotation_block_forward_cpu(
   TORCH_CHECK(wires.numel() == gate_count, "wire and matrix counts must match");
   const int64_t amplitudes = int64_t{1} << n_wires;
   TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  const bool fuse_rzz = rzz_angles.has_value();
+  TORCH_CHECK(
+      fuse_rzz == rzz_first_wires.has_value() && fuse_rzz == rzz_second_wires.has_value(),
+      "all fused RZZ metadata must be provided together");
+  int64_t rzz_count = 0;
+  uint64_t rzz_transition_mask = 0;
+  if (fuse_rzz) {
+    const at::Tensor& angle_tensor = rzz_angles.value();
+    const at::Tensor& first_tensor = rzz_first_wires.value();
+    const at::Tensor& second_tensor = rzz_second_wires.value();
+    TORCH_CHECK(angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
+                    second_tensor.device().is_cpu(), "fused RZZ metadata must be on CPU");
+    TORCH_CHECK(angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
+                    second_tensor.is_contiguous(), "fused RZZ metadata must be contiguous");
+    rzz_count = angle_tensor.numel();
+    TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
+                    second_tensor.numel() == rzz_count, "fused RZZ metadata lengths must match");
+    TORCH_CHECK(first_tensor.scalar_type() == at::kLong &&
+                    second_tensor.scalar_type() == at::kLong, "fused RZZ wires must be int64");
+    const int64_t* first_data = first_tensor.const_data_ptr<int64_t>();
+    const int64_t* second_data = second_tensor.const_data_ptr<int64_t>();
+    for (int64_t gate = 0; gate < rzz_count; ++gate) {
+      TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
+                      second_data[gate] >= 0 && second_data[gate] < n_wires,
+                  "fused RZZ wire is out of range");
+      TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
+                  "fused RZZ gates must connect adjacent wires");
+      const int64_t first_mask = int64_t{1} << (n_wires - first_data[gate] - 1);
+      const int64_t second_mask = int64_t{1} << (n_wires - second_data[gate] - 1);
+      const uint64_t transition_bit = std::min(first_mask, second_mask);
+      TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
+                  "fused RZZ gates must have unique adjacent pairs");
+      rzz_transition_mask |= transition_bit;
+    }
+  }
 
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
   std::array<int64_t, 6> masks{};
@@ -236,9 +275,47 @@ at::Tensor fused_rotation_block_forward_cpu(
   const int64_t blocks_per_row = amplitudes >> gate_count;
   const int64_t item_count = state.size(0) * blocks_per_row;
   AT_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rotation_block_forward_cpu", [&] {
+    using real_t = typename scalar_t::value_type;
     scalar_t* state_data = state.data_ptr<scalar_t>();
     const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
-    at::parallel_for(int64_t{0}, item_count, int64_t{256}, [&](int64_t begin, int64_t end) {
+    std::array<uint8_t, 6> rotation_kinds{};
+    for (int64_t gate = 0; gate < gate_count; ++gate) {
+      const scalar_t* matrix = matrix_data + gate * 4;
+      const bool diagonal = matrix[1] == scalar_t{} && matrix[2] == scalar_t{};
+      const bool rx = matrix[0].imag() == real_t{} &&
+                      matrix[3].imag() == real_t{} &&
+                      matrix[1].real() == real_t{} &&
+                      matrix[2].real() == real_t{} &&
+                      matrix[0].real() == matrix[3].real() &&
+                      matrix[1].imag() == matrix[2].imag();
+      const bool ry = matrix[0].imag() == real_t{} &&
+                      matrix[1].imag() == real_t{} &&
+                      matrix[2].imag() == real_t{} &&
+                      matrix[3].imag() == real_t{} &&
+                      matrix[0].real() == matrix[3].real() &&
+                      matrix[1].real() == -matrix[2].real();
+      rotation_kinds[gate] = specialized_rotations
+          ? (diagonal ? 1 : (rx ? 2 : (ry ? 3 : 0)))
+          : 0;
+    }
+    std::vector<scalar_t> rzz_phases;
+    if (fuse_rzz) {
+      const at::Tensor& angle_tensor = rzz_angles.value();
+      TORCH_CHECK(angle_tensor.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+                  "fused RZZ angle dtype must match state precision");
+      const real_t* angle_data = angle_tensor.const_data_ptr<real_t>();
+      for (int64_t gate = 1; gate < rzz_count; ++gate) {
+        TORCH_CHECK(angle_data[gate] == angle_data[0],
+                    "fused RZZ gates must share one angle");
+      }
+      rzz_phases.resize(rzz_count + 1);
+      for (int64_t transitions = 0; transitions <= rzz_count; ++transitions) {
+        const real_t sign_sum = static_cast<real_t>(rzz_count - 2 * transitions);
+        const real_t phase = real_t{-0.5} * sign_sum * angle_data[0];
+        rzz_phases[transitions] = scalar_t(std::cos(phase), std::sin(phase));
+      }
+    }
+    at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
       std::array<scalar_t, 64> values{};
       for (int64_t item = begin; item < end; ++item) {
         const int64_t row = item / blocks_per_row;
@@ -250,20 +327,93 @@ at::Tensor fused_rotation_block_forward_cpu(
         }
         base += row * amplitudes;
         for (int64_t local = 0; local < local_size; ++local) {
-          values[local] = state_data[base + offsets[local]];
+          const int64_t position = base + offsets[local];
+          values[local] = state_data[position];
+          if (fuse_rzz) {
+            const int64_t basis = position - row * amplitudes;
+            const uint64_t transitions =
+                (static_cast<uint64_t>(basis) ^
+                 (static_cast<uint64_t>(basis) >> 1)) & rzz_transition_mask;
+            values[local] *= rzz_phases[popcount(transitions)];
+          }
         }
         for (int64_t gate = 0; gate < gate_count; ++gate) {
           const scalar_t* matrix = matrix_data + gate * 4;
           const int64_t local_mask = int64_t{1} << gate;
-          for (int64_t local = 0; local < local_size; ++local) {
-            if ((local & local_mask) != 0) {
-              continue;
+          if (rotation_kinds[gate] == 1) {
+            for (int64_t block = 0; block < local_size;
+                 block += 2 * local_mask) {
+              for (int64_t offset = 0; offset < local_mask; ++offset) {
+                const int64_t local = block + offset;
+                const int64_t one = local + local_mask;
+                const scalar_t zero_value = values[local];
+                const scalar_t one_value = values[one];
+                values[local] = matrix[0] * zero_value;
+                values[one] = matrix[3] * one_value;
+              }
             }
-            const int64_t one = local | local_mask;
-            const scalar_t zero_value = values[local];
-            const scalar_t one_value = values[one];
-            values[local] = matrix[0] * zero_value + matrix[1] * one_value;
-            values[one] = matrix[2] * zero_value + matrix[3] * one_value;
+          } else if (rotation_kinds[gate] == 2) {
+            const real_t cosine = matrix[0].real();
+            const real_t sine = matrix[1].imag();
+            for (int64_t block = 0; block < local_size;
+                 block += 2 * local_mask) {
+              for (int64_t offset = 0; offset < local_mask; ++offset) {
+                const int64_t local = block + offset;
+                const int64_t one = local + local_mask;
+                const scalar_t zero_value = values[local];
+                const scalar_t one_value = values[one];
+                values[local] = scalar_t(
+                    cosine * zero_value.real() - sine * one_value.imag(),
+                    cosine * zero_value.imag() + sine * one_value.real());
+                values[one] = scalar_t(
+                    cosine * one_value.real() - sine * zero_value.imag(),
+                    cosine * one_value.imag() + sine * zero_value.real());
+              }
+            }
+          } else if (rotation_kinds[gate] == 3) {
+            const real_t cosine = matrix[0].real();
+            const real_t upper_sine = matrix[1].real();
+            const real_t lower_sine = matrix[2].real();
+            for (int64_t block = 0; block < local_size;
+                 block += 2 * local_mask) {
+              for (int64_t offset = 0; offset < local_mask; ++offset) {
+                const int64_t local = block + offset;
+                const int64_t one = local + local_mask;
+                const scalar_t zero_value = values[local];
+                const scalar_t one_value = values[one];
+                values[local] = scalar_t(
+                    cosine * zero_value.real() + upper_sine * one_value.real(),
+                    cosine * zero_value.imag() + upper_sine * one_value.imag());
+                values[one] = scalar_t(
+                    lower_sine * zero_value.real() + cosine * one_value.real(),
+                    lower_sine * zero_value.imag() + cosine * one_value.imag());
+              }
+            }
+          } else {
+            if (!specialized_rotations) {
+              for (int64_t local = 0; local < local_size; ++local) {
+                if ((local & local_mask) != 0) {
+                  continue;
+                }
+                const int64_t one = local | local_mask;
+                const scalar_t zero_value = values[local];
+                const scalar_t one_value = values[one];
+                values[local] = matrix[0] * zero_value + matrix[1] * one_value;
+                values[one] = matrix[2] * zero_value + matrix[3] * one_value;
+              }
+            } else {
+              for (int64_t block = 0; block < local_size;
+                   block += 2 * local_mask) {
+                for (int64_t offset = 0; offset < local_mask; ++offset) {
+                  const int64_t local = block + offset;
+                  const int64_t one = local + local_mask;
+                  const scalar_t zero_value = values[local];
+                  const scalar_t one_value = values[one];
+                  values[local] = matrix[0] * zero_value + matrix[1] * one_value;
+                  values[one] = matrix[2] * zero_value + matrix[3] * one_value;
+                }
+              }
+            }
           }
         }
         for (int64_t local = 0; local < local_size; ++local) {
@@ -1128,7 +1278,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_observable_adjoint_seed(Tensor ket, Tensor weights) -> Tensor");
   library.def(
       "fused_rotation_block_forward_(Tensor(a!) state, Tensor matrices, "
-      "Tensor wires, int n_wires) -> Tensor(a!)");
+      "Tensor wires, int n_wires, Tensor? rzz_angles=None, "
+      "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
+      "bool specialized_rotations=True) -> Tensor(a!)");
   library.def(
       "fused_hadamard_block_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor wires, int n_wires) -> Tensor(a!)");

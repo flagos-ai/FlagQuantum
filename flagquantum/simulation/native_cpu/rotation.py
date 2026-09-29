@@ -35,6 +35,27 @@ def native_cpu_one_qubit_layer_available() -> bool:
     )
 
 
+def native_cpu_shared_rzz_forward_fusion_available() -> bool:
+    """Return whether a shared RZZ segment may fuse into a rotation block."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION", "1"
+    ).strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def native_cpu_specialized_forward_rotations_available() -> bool:
+    """Return whether forward tiles may use specialized rotation arithmetic."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
 def native_cpu_hadamard_block_adjoint_available() -> bool:
     """Return whether paired wide Hadamard blocks are enabled and loadable."""
 
@@ -51,6 +72,9 @@ def fused_rotation_block_forward_(
     wires: torch.Tensor,
     *,
     n_wires: int,
+    rzz_angles: torch.Tensor | None = None,
+    rzz_first_wires: torch.Tensor | None = None,
+    rzz_second_wires: torch.Tensor | None = None,
 ) -> bool:
     """Apply two to six disjoint one-qubit matrices to a state in place.
 
@@ -58,6 +82,8 @@ def fused_rotation_block_forward_(
     PyTorch path when the extension is disabled, unavailable, or unsupported.
     """
 
+    rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
+    real_dtype = torch.float32 if state.dtype == torch.complex64 else torch.float64
     if (
         not native_cpu_rotation_available()
         or state.device.type != "cpu"
@@ -68,18 +94,58 @@ def fused_rotation_block_forward_(
         or wires.dtype != torch.int64
         or state.ndim != 2
         or matrices.ndim != 3
-        or matrices.shape[0] not in {2, 3, 4, 5, 6}
+        or not 2 <= matrices.shape[0] <= 6
         or matrices.shape[1:] != (2, 2)
         or wires.shape != (matrices.shape[0],)
         or (torch.is_grad_enabled() and matrices.requires_grad)
         or not all(item.is_contiguous() for item in (state, matrices, wires))
+        or (
+            any(item is None for item in rzz_tensors)
+            and any(item is not None for item in rzz_tensors)
+        )
+        or (
+            rzz_angles is not None
+            and (
+                not native_cpu_shared_rzz_forward_fusion_available()
+                or rzz_angles.device.type != "cpu"
+                or rzz_angles.dtype != real_dtype
+                or rzz_first_wires is None
+                or rzz_second_wires is None
+                or rzz_first_wires.device.type != "cpu"
+                or rzz_second_wires.device.type != "cpu"
+                or rzz_first_wires.dtype != torch.int64
+                or rzz_second_wires.dtype != torch.int64
+                or rzz_angles.ndim != 1
+                or rzz_angles.numel() < 2
+                or rzz_first_wires.shape != rzz_angles.shape
+                or rzz_second_wires.shape != rzz_angles.shape
+                or not torch.equal(rzz_angles, rzz_angles[0].expand_as(rzz_angles))
+                or not bool(
+                    torch.all(torch.abs(rzz_first_wires - rzz_second_wires) == 1)
+                )
+                or torch.unique(
+                    torch.minimum(rzz_first_wires, rzz_second_wires)
+                ).numel()
+                != rzz_angles.numel()
+                or not rzz_angles.is_contiguous()
+                or not rzz_first_wires.is_contiguous()
+                or not rzz_second_wires.is_contiguous()
+            )
+        )
     ):
         return False
     with torch.no_grad():
         cast(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_rotation_block_forward_(
-                state, matrices, wires, n_wires
+                state,
+                matrices,
+                wires,
+                n_wires,
+                rzz_angles,
+                rzz_first_wires,
+                rzz_second_wires,
+                native_cpu_specialized_forward_rotations_available(),
             ),
         )
     return True
