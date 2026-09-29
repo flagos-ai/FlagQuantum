@@ -10,6 +10,8 @@ import flagquantum as fq
 from flagquantum.runtime.executors.statevector import plan_distributed_statevector
 from flagquantum.runtime.executors.statevector.gradient_dispatch import (
     _triton_local_adjoint_vjp_decision,
+    _triton_local_reversible_vjp_decision,
+    _triton_local_reversible_vjp_tensor_decision,
 )
 from flagquantum.runtime.executors.statevector.gradient_reduction import (
     AsyncGradientReducer,
@@ -116,6 +118,96 @@ def test_local_adjoint_vjp_decision_honors_policy_and_availability(monkeypatch):
         lambda: False,
     )
     unavailable = _triton_local_adjoint_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+    assert unavailable.reason == "triton_unavailable"
+
+
+def test_local_reversible_vjp_decision_binds_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    decision = _triton_local_reversible_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert decision.accelerated
+    assert decision.semantic_id == "gradient.vjp.reversible_1q.local"
+    assert decision.implementation_id == "FQKI-TRITON-GR-002-A"
+    assert decision.catalog_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_local_reversible_vjp_decision_reports_catalog_mismatch(
+    monkeypatch, device_type, dtype, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+
+    decision = _triton_local_reversible_vjp_decision(
+        device_type=device_type,
+        dtype=dtype,
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == "input_not_supported"
+    assert decision.implementation_id is None
+    assert decision.catalog_mismatches == (mismatch,)
+
+
+def test_local_reversible_vjp_decision_rejects_aliasing_states(monkeypatch):
+    captured = {}
+    sentinel = object()
+
+    def capture_decision(**kwargs):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.gradient_dispatch."
+        "_triton_local_reversible_vjp_decision",
+        capture_decision,
+    )
+    state = torch.zeros((1, 4), dtype=torch.complex64)
+
+    decision = _triton_local_reversible_vjp_tensor_decision(state, state)
+
+    assert decision is sentinel
+    assert captured == {
+        "runtime_supported": False,
+        "device_type": "cpu",
+        "dtype": "complex64",
+    }
+
+
+def test_local_reversible_vjp_decision_honors_policy_and_availability(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", raising=False)
+    disabled = _triton_local_reversible_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+    assert disabled.reason == "disabled_by_policy"
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: False,
+    )
+    unavailable = _triton_local_reversible_vjp_decision(
         device_type="cuda",
         dtype="complex64",
     )
@@ -455,7 +547,10 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     assert dispatch["pytorch_fallback_count"] == 3
     assert {
         (record["feature"], record["reason"]) for record in dispatch["decisions"]
-    } == {("vjp_adjoint", "disabled_by_policy")}
+    } == {
+        ("local_reversible_vjp", "disabled_by_policy"),
+        ("vjp_adjoint", "disabled_by_policy"),
+    }
 
 
 def test_parameter_shift_and_finite_difference_match_native_vjp():
@@ -779,6 +874,40 @@ def test_reverse_local_adjoint_vjp_records_catalog_identity(monkeypatch):
     assert record["count"] == 1
     assert route["semantic_id"] == "gradient.vjp.adjoint_1q.local"
     assert route["implementation_id"] == "FQKI-TRITON-GR-001-A"
+    assert route["catalog_mismatches"] == ()
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_reverse_local_reversible_vjp_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setenv("FQ_STATEVECTOR_PERSISTENT_INPLACE_LOCAL", "1")
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(1).ry(0, theta)
+    dense = circuit.expectation_z(0)
+    (expected_gradient,) = torch.autograd.grad(dense, theta, retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=0,
+        checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
+        device="cuda",
+    )
+    result.backward()
+
+    torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    record = next(
+        record
+        for record in result.summary()["kernel_dispatch"]["decisions"]
+        if record["feature"] == "local_reversible_vjp"
+    )
+    route = record["kernel_route"]
+    assert record["selected"] == "triton"
+    assert record["count"] == 1
+    assert route["semantic_id"] == "gradient.vjp.reversible_1q.local"
+    assert route["implementation_id"] == "FQKI-TRITON-GR-002-A"
     assert route["catalog_mismatches"] == ()
 
 

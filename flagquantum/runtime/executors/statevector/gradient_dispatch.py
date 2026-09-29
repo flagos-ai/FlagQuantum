@@ -14,7 +14,7 @@ from .kernel_dispatch import (
 )
 
 
-def _triton_local_adjoint_vjp_requested() -> bool:
+def _triton_vjp_adjoint_requested() -> bool:
     return os.getenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "0").strip().lower() in {
         "1",
         "true",
@@ -28,7 +28,7 @@ def _triton_vjp_adjoint_decision(*, supported: bool = True) -> KernelDecision:
 
     return select_triton_kernel(
         "vjp_adjoint",
-        requested=_triton_local_adjoint_vjp_requested(),
+        requested=_triton_vjp_adjoint_requested(),
         supported=supported,
     )
 
@@ -53,7 +53,7 @@ def _triton_local_adjoint_vjp_decision(
             providers=("triton",),
         ),
         implementation_id="FQKI-TRITON-GR-001-A",
-        requested=_triton_local_adjoint_vjp_requested(),
+        requested=_triton_vjp_adjoint_requested(),
         runtime_supported=runtime_supported,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
@@ -81,6 +81,60 @@ def _triton_local_adjoint_vjp_tensor_decision(
         runtime_supported=runtime_supported and tensors_supported,
         device_type=before.device.type,
         dtype=str(before.dtype).removeprefix("torch."),
+    )
+
+
+def _triton_local_reversible_vjp_decision(
+    *,
+    runtime_supported: bool = True,
+    device_type: str,
+    dtype: str,
+) -> KernelDecision:
+    """Select the exact evidenced local reversible VJP implementation."""
+
+    return select_cataloged_triton_kernel(
+        "local_reversible_vjp",
+        request=KernelRequest(
+            semantic_id="gradient.vjp.reversible_1q.local",
+            device=device_type,
+            dtype=dtype,
+            layout="flat_statevector",
+            direction="vjp",
+            addressing=("local",),
+            providers=("triton",),
+        ),
+        implementation_id="FQKI-TRITON-GR-002-A",
+        requested=_triton_vjp_adjoint_requested(),
+        runtime_supported=runtime_supported,
+        device_runtime_provider="pytorch",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
+    )
+
+
+def _triton_local_reversible_vjp_tensor_decision(
+    ket: torch.Tensor | None,
+    adjoint: torch.Tensor,
+    *,
+    runtime_supported: bool = True,
+) -> KernelDecision:
+    """Select the local reversible VJP from its state tensor contract."""
+
+    tensors_supported = bool(
+        ket is not None
+        and ket.ndim == 2
+        and ket.is_contiguous()
+        and adjoint.shape == ket.shape
+        and adjoint.device == ket.device
+        and adjoint.dtype == ket.dtype
+        and adjoint.is_contiguous()
+        and adjoint.data_ptr() != ket.data_ptr()
+    )
+    state = adjoint if ket is None else ket
+    return _triton_local_reversible_vjp_decision(
+        runtime_supported=runtime_supported and tensors_supported,
+        device_type=state.device.type,
+        dtype=str(state.dtype).removeprefix("torch."),
     )
 
 
@@ -114,5 +168,7 @@ __all__ = (
     "_triton_adjoint_vjp_tensor_decision",
     "_triton_local_adjoint_vjp_decision",
     "_triton_local_adjoint_vjp_tensor_decision",
+    "_triton_local_reversible_vjp_decision",
+    "_triton_local_reversible_vjp_tensor_decision",
     "_triton_vjp_adjoint_decision",
 )
