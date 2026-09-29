@@ -129,6 +129,30 @@ _ENGINE_LABELS: dict[EngineName, str] = {
 }
 
 
+def _timing_semantics(engine: EngineName) -> dict[str, Any]:
+    """Describe externally observed Torch timing phases without overclaiming them."""
+
+    lightning = engine == "pennylane_lightning_adjoint"
+    return {
+        "value_evaluation_metric": "forward",
+        "autograd_callback_metric": "backward",
+        "primary_performance_metric": "value_and_grad",
+        "cross_engine_comparable_metrics": ["value_and_grad"],
+        "cross_engine_phase_comparison_allowed": False,
+        "gradient_work_attribution": (
+            "adjoint_derivative_work_may_run_during_value_evaluation"
+            if lightning
+            else "gradient_work_runs_during_the_autograd_callback"
+        ),
+        "note": (
+            "The Torch autograd callback may only retrieve or contract derivatives "
+            "prepared while the QNode was evaluated."
+            if lightning
+            else "The callback includes the engine's reverse-mode or adjoint gradient work."
+        ),
+    }
+
+
 @dataclass(frozen=True)
 class _Workload:
     circuit: fq.Circuit
@@ -683,6 +707,7 @@ def run_case(
                     )
                 )
             ),
+            "timing_semantics": _timing_semantics(engine),
             "forward": _timing(samples[engine]["forward"]),
             "backward": _timing(samples[engine]["backward"]),
             "value_and_grad": _timing(samples[engine]["value_and_grad"]),
@@ -742,8 +767,11 @@ def run_case(
         "engines": engine_payload,
         "comparison": {
             "engine_over_flagquantum_median": ratios,
+            "primary_performance_metric": "value_and_grad",
+            "cross_engine_comparable_metrics": ["value_and_grad"],
             "ratio_semantics": (
-                "values above one mean FlagQuantum is faster for that metric"
+                "values above one mean FlagQuantum is faster; only value_and_grad "
+                "is comparable across framework timing boundaries"
             ),
         },
         "stability": {
@@ -839,6 +867,12 @@ def run_benchmark(
             "measurement_scope": (
                 "expectation_forward_plus_full_reverse_mode_parameter_gradient"
             ),
+            "primary_performance_metric": "value_and_grad",
+            "phase_metric_labels": {
+                "forward": "value_evaluation",
+                "backward": "autograd_callback",
+            },
+            "cross_engine_phase_comparison_allowed": False,
             "engine_order": "rotated_per_iteration_within_one_process",
             "circuit_and_device_construction_included": False,
             "parameter_initialization_included": False,
@@ -927,7 +961,7 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
         "",
         "## Results",
         "",
-        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | PL forward (ms) | PL backward (ms) | PL total (ms) | PL / FQ total | FQ peak RSS (MiB) | PL peak RSS (MiB) | Max gradient error |",
+        "| Workload | Qubits | Gates | Params | FQ value evaluation (ms) | FQ autograd callback (ms) | FQ value + gradient (ms) | PL value evaluation (ms) | PL autograd callback (ms) | PL value + gradient (ms) | PL / FQ value + gradient | FQ peak RSS (MiB) | PL peak RSS (MiB) | Max gradient error |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for case in cases:
@@ -991,9 +1025,9 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
     ]
     widest_details = "; ".join(
         (
-            f"{_WORKLOAD_LABELS[case['workload']['name']]}: forward "
+            f"{_WORKLOAD_LABELS[case['workload']['name']]}: value evaluation "
             f"{1000 * case['engines']['flagquantum_native']['forward']['median_seconds']:.3f} "
-            "ms and backward "
+            "ms and autograd callback "
             f"{1000 * case['engines']['flagquantum_native']['backward']['median_seconds']:.3f} "
             "ms"
         )
@@ -1041,17 +1075,21 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
         f"{maximum_gradient_error:.3e}. {performance_summary}"
     )
     bottleneck_summary = (
-        f"At {maximum_width} qubits, FlagQuantum's forward and total execution were "
-        f"faster than default.qubit, while native backward remained its largest component "
+        f"At {maximum_width} qubits, FlagQuantum's value evaluation and total execution "
+        "were faster than default.qubit, while its autograd callback remained its "
+        "largest measured phase "
         f"({widest_details}). "
         "The measured optimization target is therefore reverse-mode state retention and "
-        f"backward execution, not another forward-only gate kernel.{memory_summary}"
+        f"autograd-callback execution, not another value-only gate kernel.{memory_summary}"
     )
     lines.extend(
         (
             "",
-            "A PL/FQ ratio above one means FlagQuantum was faster; below one means",
-            "PennyLane default.qubit was faster. Peak RSS is measured in a separate isolated",
+            "The value-evaluation and autograd-callback phases are framework-observed",
+            "Torch boundaries, not method-matched kernel boundaries, so they must not be",
+            "ranked across frameworks. Value + gradient is the primary comparable metric.",
+            "A PL/FQ value + gradient ratio above one means FlagQuantum was faster; below",
+            "one means PennyLane default.qubit was faster. Peak RSS is measured in a separate isolated",
             "process and includes framework import, circuit/device construction, one warmup,",
             "and one value-and-gradient execution, so it is an operational footprint rather",
             "than tensor-only memory. These local results are not a universal framework",

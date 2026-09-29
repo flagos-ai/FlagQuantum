@@ -28,7 +28,7 @@ def render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) -
         "",
         "## Results",
         "",
-        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | PennyLane Lightning total (ms) | PennyLane Lightning / FlagQuantum total | Max gradient error |",
+        "| Workload | Qubits | Gates | Params | FQ value evaluation (ms) | FQ autograd callback (ms) | FQ value + gradient (ms) | Python autograd callback (ms) | Python value + gradient (ms) | Native callback speedup | PennyLane Lightning value + gradient (ms) | PennyLane Lightning / FlagQuantum value + gradient | Max gradient error |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
 
@@ -82,8 +82,12 @@ def render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) -
     lines.extend(
         (
             "",
-            "A PennyLane Lightning/FlagQuantum ratio above one means FlagQuantum was "
-            "faster. Peak RSS was",
+            "Value evaluation and autograd callback are framework-observed Torch phases,",
+            "not method-matched adjoint-kernel boundaries. Lightning may perform most",
+            "adjoint derivative work during QNode value evaluation, leaving a very small",
+            "autograd callback. Only value + gradient is ranked across frameworks. A",
+            "PennyLane Lightning/FlagQuantum value + gradient ratio above one means",
+            "FlagQuantum was faster. Peak RSS was",
             "not measured in this timing run. These are local, non-release",
             "single-device results, not a universal framework ranking or scaling claim.",
             "",
