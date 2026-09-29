@@ -149,6 +149,8 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         result.full_state()
 
 
+@pytest.mark.gpu
+@pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 def test_local_1q_triton_execution_records_catalog_identity(monkeypatch):
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")

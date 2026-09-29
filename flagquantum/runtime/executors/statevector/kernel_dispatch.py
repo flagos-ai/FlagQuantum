@@ -171,26 +171,51 @@ def select_triton_kernel(
 ) -> KernelDecision:
     """Select Triton or the portable PyTorch implementation with a reason."""
 
-    common_identity = {
-        "device_runtime_provider": device_runtime_provider,
-        "device_type": device_type,
-        "compiler_backend": compiler_backend,
-        "integration_path": "pytorch" if capture_compiler_identity else None,
-    }
-    if mode() == "portable":
-        return KernelDecision(feature, "pytorch", "portable_mode", **common_identity)
-    if not requested:
+    def decision(
+        selected: str,
+        reason: str,
+        *,
+        compiler_distribution: str | None = None,
+        compiler_version: str | None = None,
+        compiler_identity_status: str | None = None,
+        integration_path: str | None = None,
+    ) -> KernelDecision:
         return KernelDecision(
-            feature, "pytorch", "disabled_by_policy", **common_identity
+            feature=feature,
+            selected=selected,
+            reason=reason,
+            device_runtime_provider=device_runtime_provider,
+            device_type=device_type,
+            compiler_distribution=compiler_distribution,
+            compiler_version=compiler_version,
+            compiler_backend=compiler_backend,
+            compiler_identity_status=compiler_identity_status,
+            integration_path=integration_path,
+        )
+
+    fallback_integration_path = "pytorch" if capture_compiler_identity else None
+    if mode() == "portable":
+        return decision(
+            "pytorch", "portable_mode", integration_path=fallback_integration_path
+        )
+    if not requested:
+        return decision(
+            "pytorch",
+            "disabled_by_policy",
+            integration_path=fallback_integration_path,
         )
     if not supported:
-        return KernelDecision(
-            feature, "pytorch", "input_not_supported", **common_identity
+        return decision(
+            "pytorch",
+            "input_not_supported",
+            integration_path=fallback_integration_path,
         )
     resolved_available = triton_available() if available is None else bool(available)
     if not resolved_available:
-        return KernelDecision(
-            feature, "pytorch", "triton_unavailable", **common_identity
+        return decision(
+            "pytorch",
+            "triton_unavailable",
+            integration_path=fallback_integration_path,
         )
     compiler_distribution = None
     compiler_version = None
@@ -202,15 +227,15 @@ def select_triton_kernel(
             integration_path,
             compiler_identity_status,
         ) = triton_compiler_provenance()
-        common_identity["integration_path"] = integration_path
-    return KernelDecision(
-        feature,
+    else:
+        integration_path = None
+    return decision(
         "triton",
         "eligible",
         compiler_distribution=compiler_distribution,
         compiler_version=compiler_version,
         compiler_identity_status=compiler_identity_status,
-        **common_identity,
+        integration_path=integration_path,
     )
 
 
