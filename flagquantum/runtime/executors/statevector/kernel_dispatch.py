@@ -23,6 +23,7 @@ class KernelDecision:
     compiler_distribution: str | None = None
     compiler_version: str | None = None
     compiler_backend: str | None = None
+    compiler_identity_status: str | None = None
     integration_path: str | None = None
 
     @property
@@ -60,6 +61,7 @@ class KernelDecision:
                         "version": self.compiler_version,
                         "backend": self.compiler_backend,
                         "identity_source": "python_package_metadata",
+                        "identity_status": self.compiler_identity_status,
                     }
                     if self.accelerated
                     else None
@@ -120,14 +122,29 @@ def triton_available() -> bool:
     return importlib.util.find_spec("triton") is not None
 
 
-def triton_distribution_identity() -> tuple[str | None, str | None]:
-    """Read the installed Triton distribution identity without importing Triton."""
+def triton_compiler_provenance() -> tuple[str | None, str | None, str, str]:
+    """Resolve who installed the ``triton`` module without importing it."""
 
+    module_owners = metadata.packages_distributions().get("triton", ())
+    owners = tuple(
+        sorted({owner.casefold().replace("_", "-") for owner in module_owners})
+    )
+    if not owners:
+        return None, None, "unknown", "missing"
+    if len(owners) != 1:
+        return None, None, "unknown", "ambiguous"
+
+    distribution = owners[0]
     try:
-        distribution = metadata.distribution("triton")
+        version = metadata.version(distribution)
     except metadata.PackageNotFoundError:
-        return None, None
-    return distribution.metadata.get("Name"), distribution.version
+        return distribution, None, "unknown", "missing_metadata"
+
+    if distribution == "triton":
+        return distribution, version, "direct", "resolved"
+    if distribution == "flagtree":
+        return distribution, version, "flagtree", "resolved"
+    return distribution, version, "unknown", "unsupported_distribution"
 
 
 def select_triton_kernel(
@@ -139,7 +156,7 @@ def select_triton_kernel(
     device_runtime_provider: str | None = None,
     device_type: str | None = None,
     compiler_backend: str | None = None,
-    integration_path: str | None = None,
+    capture_compiler_identity: bool = False,
 ) -> KernelDecision:
     """Select Triton or the portable PyTorch implementation with a reason."""
 
@@ -147,7 +164,7 @@ def select_triton_kernel(
         "device_runtime_provider": device_runtime_provider,
         "device_type": device_type,
         "compiler_backend": compiler_backend,
-        "integration_path": integration_path,
+        "integration_path": "pytorch" if capture_compiler_identity else None,
     }
     if mode() == "portable":
         return KernelDecision(feature, "pytorch", "portable_mode", **common_identity)
@@ -166,14 +183,22 @@ def select_triton_kernel(
         )
     compiler_distribution = None
     compiler_version = None
-    if integration_path is not None:
-        compiler_distribution, compiler_version = triton_distribution_identity()
+    compiler_identity_status = None
+    if capture_compiler_identity:
+        (
+            compiler_distribution,
+            compiler_version,
+            integration_path,
+            compiler_identity_status,
+        ) = triton_compiler_provenance()
+        common_identity["integration_path"] = integration_path
     return KernelDecision(
         feature,
         "triton",
         "eligible",
         compiler_distribution=compiler_distribution,
         compiler_version=compiler_version,
+        compiler_identity_status=compiler_identity_status,
         **common_identity,
     )
 
@@ -183,5 +208,5 @@ __all__ = (
     "KernelDispatchEvidence",
     "select_triton_kernel",
     "triton_available",
-    "triton_distribution_identity",
+    "triton_compiler_provenance",
 )

@@ -82,7 +82,7 @@ def _triton_local_1q_decision(
         device_runtime_provider="pytorch",
         device_type=device_type,
         compiler_backend="cuda",
-        integration_path="direct",
+        capture_compiler_identity=True,
     )
 
 

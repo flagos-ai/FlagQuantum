@@ -140,7 +140,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
     assert local_1q_dispatch["kernel_route"] == {
         "semantic_id": "statevector.local_1q",
         "implementation": "pytorch_eager",
-        "integration_path": "direct",
+        "integration_path": "pytorch",
         "fallback": False,
     }
     with pytest.raises(FullStateMaterializationError, match="forbidden"):

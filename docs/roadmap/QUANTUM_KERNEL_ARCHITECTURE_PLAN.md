@@ -412,7 +412,8 @@ separate. A representative direct-Triton record is:
     "distribution": "triton",
     "version": "<measured>",
     "backend": "cuda",
-    "identity_source": "python_package_metadata"
+    "identity_source": "python_package_metadata",
+    "identity_status": "resolved"
   },
   "kernel_route": {
     "semantic_id": "statevector.local_1q",
@@ -429,10 +430,38 @@ unmodified upstream build. A future FlagTree route should report
 `integration_path="flagtree"` and FlagTree's measured integration version in
 addition to the underlying compiler facts.
 
+Because FlagTree installs a `flagtree` distribution that provides the
+`triton` Python module, provenance must come from the module-to-distribution
+mapping rather than from `import triton` or a lookup of the `triton`
+distribution name alone. Missing, ambiguous, or unsupported ownership is
+reported as `integration_path="unknown"`; it must not be relabeled as direct
+Triton or FlagTree from a device name or environment hint.
+
 The record must not claim a FlagTree route merely because Torch-FL is active.
 Torch-FL can select vendor-native kernels, compatibility boxing, FlagGems,
 FlagTree, or fallback paths. The actual route must be measured or supplied by
 an authoritative runtime/compiler interface.
+
+### Current `statevector.local_1q` user path
+
+Users do not call the Triton launch wrapper directly. They submit a statevector
+circuit containing one-qubit gates to the distributed runtime, and the executor
+selects the kernel when the feature is requested and the input is eligible:
+
+```bash
+FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
+  python -m examples.triton_statevector_local_1q
+```
+
+The complete example builds the circuit with `fq.Circuit`, executes it through
+the public `flagquantum.runtime.run_distributed` entry point, and reads the
+native result summary to verify the selected route. The ordinary single-GPU
+`fq.run(..., mode="statevector")` path currently uses the local simulator and
+does not call this distributed-statevector kernel. The kernel requires a
+contiguous CUDA `complex64` statevector, an available `triton` module, a
+non-portable runtime mode, and a one-qubit gate on a local wire. Every wire is
+local on a one-rank run. With a sharded statevector, a wire is local only when
+both amplitudes in each affected pair are owned by the same rank.
 
 ## 12. Fallback Rules
 
