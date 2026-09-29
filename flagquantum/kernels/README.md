@@ -109,6 +109,46 @@ Provider selection belongs in dispatch policy outside this catalog. The catalog
 describes capabilities and evidence; it does not choose a backend at import
 time.
 
+## Capability matching
+
+`catalog.match_kernel_implementations` answers which cataloged implementations
+declare support for a request. A request identifies the semantic, device,
+dtype, layout, derivative direction, addressing requirements, and optional
+provider and maturity filters.
+
+```python
+from flagquantum.kernels.catalog import (
+    KernelRequest,
+    match_kernel_implementations,
+)
+
+result = match_kernel_implementations(
+    KernelRequest(
+        semantic_id="statevector.apply.matrix_1q.local",
+        device="cuda",
+        dtype="complex64",
+        layout="flat_statevector",
+        direction="backward",
+        addressing=("local",),
+    )
+)
+```
+
+The matcher returns every compatible, evidenced implementation in catalog
+order, plus structured reasons for each rejected implementation. It does not:
+
+- rank Triton, FlagTree, or PyTorch providers;
+- import implementation modules or probe whether optional packages are loaded;
+- inspect live hardware or initialize CUDA;
+- execute an internal fallback;
+- turn a declared capability into observed execution evidence.
+
+An internal PyTorch fallback therefore does not make a Triton implementation a
+CPU specialization. A CPU request rejects an implementation whose cataloged
+device is CUDA. Runtime policy may use matcher output as one input to provider
+selection, but loading, live availability checks, priorities, and fallback
+execution remain separate responsibilities.
+
 ## Target inventory: 100 semantics and 800 implementations
 
 The program target is **100 semantic families** represented by approximately
