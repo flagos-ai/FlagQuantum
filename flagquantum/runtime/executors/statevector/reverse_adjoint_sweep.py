@@ -33,9 +33,13 @@ from ....simulation.statevector.operations import (
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import StatevectorExchangeWorkspace, _storage_global_indices
+from .gradient_dispatch import (
+    _triton_adjoint_vjp_tensor_decision,
+    _triton_vjp_adjoint_decision,
+)
 from .gradient_reduction import AsyncGradientReducer
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
-from .local_execution import initialize_statevector_shard, use_compact_global_indices
+from .local_execution import initialize_statevector_shard
 from .planning import plan_distributed_statevector
 from .reverse_adjoint_cx import apply_cpu_cx_adjoint_segment
 from .reverse_adjoint_kernels import (
@@ -51,18 +55,14 @@ from .reverse_observable import prepare_observable_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
+    _compact_reverse_global_indices,
     _gradient_bucketing_enabled,
     _gradient_reduction_overlap_enabled,
     _persistent_inplace_local_enabled,
     _persistent_wire_layout_enabled,
     _reverse_chunk_amplitudes,
     _reverse_exchange_workspace_enabled,
-    _triton_vjp_adjoint_decision,
 )
-
-
-def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
-    return bool(use_compact_global_indices(plan, rank))
 
 
 def _local_expectation_z_hamiltonian_adjoint(
@@ -338,14 +338,13 @@ class _ReversibleAdjointSweep:
         self.initial = None
         self.checkpoints: dict[int, Any] = {}
         if self.saved_final_state is None:
+            compact_indices = _compact_reverse_global_indices(self.plan, self.rank)
             self.initial = initialize_statevector_shard(
                 self.plan,
                 rank=self.rank,
                 device=self.device,
                 dtype=self.dtype,
-                compact_global_indices=_compact_reverse_global_indices(
-                    self.plan, self.rank
-                ),
+                compact_global_indices=compact_indices,
             )
             self.checkpoints[0] = self.initial
         if self.policy.strategy == "interval":
@@ -1012,21 +1011,21 @@ class _ReversibleAdjointSweep:
                     ):
                         raise TypeError("Matrix JVP must return a tensor derivative")
                     derivative_matrix = jvp_result[1]
-                vjp_decision = _triton_vjp_adjoint_decision(
-                    supported=bool(
-                        len(active) == 1
-                        and len(instruction.wires) == 1
-                        and before.amplitudes.dtype == torch.complex64
-                        and before.amplitudes.device.type == "cuda"
-                    )
+                wire = instruction.wires[0]
+                vjp_decision = _triton_adjoint_vjp_tensor_decision(
+                    before.amplitudes,
+                    self.adjoint,
+                    wire_count=len(instruction.wires),
+                    sharded=(
+                        wire in self.plan.sharded_wires and self.plan.world_size > 1
+                    ),
+                    runtime_supported=len(active) == 1,
                 )
-                self.evidence.kernel_dispatch_evidence.record(vjp_decision)
                 if vjp_decision.accelerated:
                     from ....kernels.triton.statevector_adjoint import (
                         fused_complex64_local_1q_vjp_adjoint,
                     )
 
-                    wire = instruction.wires[0]
                     if wire in self.plan.sharded_wires and self.plan.world_size > 1:
                         (
                             fused_adjoint,
@@ -1076,11 +1075,13 @@ class _ReversibleAdjointSweep:
                             self.evidence.peak_scratch_bytes,
                             fused_adjoint.numel() * fused_adjoint.element_size(),
                         )
+                    self.evidence.kernel_dispatch_evidence.record(vjp_decision)
                     local_derivative = local_derivative.to(dtype=parameter.dtype)
                     derivatives.append(local_derivative)
                     self.evidence.fused_parameter_adjoint_count += 1
                     del derivative_matrix
                     continue
+                self.evidence.kernel_dispatch_evidence.record(vjp_decision)
                 with torch.no_grad():
                     derivative_state = _apply_matrix_gate(
                         replace(before, amplitudes=before.amplitudes.detach()),
