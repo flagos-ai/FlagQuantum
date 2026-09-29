@@ -1,0 +1,172 @@
+"""Provider-neutral semantics currently implemented in ``flagquantum.kernels``."""
+
+from __future__ import annotations
+
+from .schema import KernelDomain, KernelSemantic
+
+
+def _semantic(
+    catalog_id: str,
+    semantic_id: str,
+    domain: KernelDomain,
+    summary: str,
+    *workloads: str,
+) -> KernelSemantic:
+    return KernelSemantic(
+        catalog_id=catalog_id,
+        semantic_id=semantic_id,
+        domain=domain,
+        summary=summary,
+        reference="pytorch_eager",
+        workloads=workloads,
+    )
+
+
+SEMANTICS: tuple[KernelSemantic, ...] = (
+    _semantic(
+        "FQK-SV-001",
+        "statevector.apply.matrix_1q.local",
+        "statevector",
+        "Apply a dense one-qubit matrix to locally addressed amplitudes.",
+        "circuit_simulation",
+        "variational_algorithms",
+    ),
+    _semantic(
+        "FQK-SV-002",
+        "statevector.apply.cnot.local",
+        "statevector",
+        "Apply a locally addressed controlled-X permutation in place.",
+        "circuit_simulation",
+        "clifford_plus_t",
+    ),
+    _semantic(
+        "FQK-SV-003",
+        "statevector.apply.cnot_sequence.local",
+        "statevector",
+        "Apply a sequence or segment of locally addressed controlled-X gates.",
+        "circuit_simulation",
+        "circuit_optimization",
+    ),
+    _semantic(
+        "FQK-SV-004",
+        "statevector.apply.ry_rz_pair.local",
+        "statevector",
+        "Apply a fused local RY followed by RZ rotation pair.",
+        "variational_algorithms",
+        "quantum_machine_learning",
+    ),
+    _semantic(
+        "FQK-SV-005",
+        "statevector.apply.rx_rz_sequence.local",
+        "statevector",
+        "Apply repeated local RX-RZ rotation pairs.",
+        "variational_algorithms",
+        "quantum_machine_learning",
+    ),
+    _semantic(
+        "FQK-SV-006",
+        "statevector.distributed.transpose_apply_1q",
+        "statevector",
+        "Transpose distributed addressing while applying a one-qubit gate.",
+        "distributed_simulation",
+    ),
+    _semantic(
+        "FQK-SV-007",
+        "statevector.transport.control_subspace_pack",
+        "statevector",
+        "Pack amplitudes in the control-one subspace for transport.",
+        "distributed_simulation",
+        "distributed_training",
+    ),
+    _semantic(
+        "FQK-SV-008",
+        "statevector.transport.control_subspace_unpack",
+        "statevector",
+        "Unpack transported amplitudes into the control-one subspace.",
+        "distributed_simulation",
+        "distributed_training",
+    ),
+    _semantic(
+        "FQK-GR-001",
+        "gradient.vjp.adjoint_1q.local",
+        "gradient",
+        "Evaluate a local one-qubit vector-Jacobian product by adjoint replay.",
+        "variational_algorithms",
+        "differentiable_simulation",
+    ),
+    _semantic(
+        "FQK-GR-002",
+        "gradient.vjp.reversible_1q.local",
+        "gradient",
+        "Evaluate a reversible local one-qubit vector-Jacobian product.",
+        "variational_algorithms",
+        "differentiable_simulation",
+    ),
+    _semantic(
+        "FQK-GR-003",
+        "gradient.vjp.adjoint_1q.sharded",
+        "gradient",
+        "Evaluate an adjoint one-qubit vector-Jacobian product on shards.",
+        "distributed_training",
+        "differentiable_simulation",
+    ),
+    _semantic(
+        "FQK-GR-004",
+        "gradient.jacobian.rx_rz_sequence",
+        "gradient",
+        "Evaluate parameter tangents for repeated RX-RZ rotations.",
+        "variational_algorithms",
+        "quantum_machine_learning",
+    ),
+    _semantic(
+        "FQK-GR-005",
+        "gradient.jacobian.pauli_rotation_sequence_2q",
+        "gradient",
+        "Evaluate tangents for repeated two-qubit Pauli rotations.",
+        "hamiltonian_simulation",
+        "variational_algorithms",
+    ),
+    _semantic(
+        "FQK-GR-006",
+        "gradient.forward_tangent.heisenberg_hva",
+        "gradient",
+        "Propagate forward tangents through a Heisenberg variational ansatz.",
+        "vqe",
+        "many_body_simulation",
+    ),
+    _semantic(
+        "FQK-MPS-001",
+        "mps.contract.two_site_gate",
+        "mps",
+        "Contract a two-site MPS tensor pair with a two-site gate.",
+        "tensor_network_simulation",
+        "many_body_simulation",
+    ),
+    _semantic(
+        "FQK-MPS-002",
+        "mps.contract.two_site_gate_projected",
+        "mps",
+        "Contract a two-site MPS update and project a requested output range.",
+        "tensor_network_simulation",
+        "distributed_mps",
+    ),
+    _semantic(
+        "FQK-NUM-001",
+        "numerics.matmul.complex_batched",
+        "numerics",
+        "Multiply batches of complex matrices.",
+        "statevector_simulation",
+        "tensor_network_simulation",
+    ),
+    _semantic(
+        "FQK-NUM-002",
+        "numerics.matmul.complex_batched_layout",
+        "numerics",
+        "Multiply complex matrix batches with explicit strided layouts.",
+        "tensor_network_simulation",
+        "distributed_simulation",
+    ),
+)
+
+
+__all__ = ["SEMANTICS"]
