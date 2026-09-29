@@ -635,6 +635,40 @@ def test_reversible_adjoint_matches_dense_autograd_on_all_active_wires():
     assert result.summary()["saved_forward_state_reused"] is True
 
 
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_reverse_local_cnot_uses_cataloged_triton_route(monkeypatch):
+    import flagquantum.runtime.executors.statevector.reverse_adjoint_kernels as kernels
+
+    calls = 0
+    original = kernels._vectorized_local_cx_gate
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(kernels, "_vectorized_local_cx_gate", counted)
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(2).ry(0, theta).cx(0, 1)
+    dense = circuit.expectation_z(1)
+    (expected_gradient,) = torch.autograd.grad(dense, theta, retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=1,
+        checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
+        device="cuda",
+    )
+    result.backward()
+
+    assert calls > 0
+    torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+
+
 def test_reverse_executor_import_does_not_initialize_jax():
     import subprocess
     import sys

@@ -132,6 +132,9 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
     local_1q_dispatch = next(
         record for record in dispatch["decisions"] if record["feature"] == "local_1q"
     )
+    local_cx_dispatch = next(
+        record for record in dispatch["decisions"] if record["feature"] == "local_cx"
+    )
     assert local_1q_dispatch["device_runtime"] == {
         "provider": "pytorch",
         "device_type": "cpu",
@@ -142,6 +145,14 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         "implementation": "pytorch_eager",
         "integration_path": "pytorch",
         "fallback": False,
+        "implementation_id": None,
+        "catalog_mismatches": ("device",),
+    }
+    assert local_cx_dispatch["kernel_route"] == {
+        "semantic_id": "statevector.apply.cnot.local",
+        "implementation": "pytorch_eager",
+        "integration_path": "pytorch",
+        "fallback": True,
         "implementation_id": None,
         "catalog_mismatches": ("device",),
     }
@@ -164,6 +175,28 @@ def test_local_1q_triton_execution_records_catalog_identity(monkeypatch):
     route = dispatch["decisions"][0]["kernel_route"]
     assert route["semantic_id"] == "statevector.apply.matrix_1q.local"
     assert route["implementation_id"] == "FQKI-TRITON-SV-001-A"
+    assert route["catalog_mismatches"] == ()
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_local_cnot_triton_execution_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    circuit = fq.Circuit(3).x(0).cx(0, 1)
+
+    result = execute_torch_distributed_statevector(circuit, device="cuda")
+
+    torch.testing.assert_close(result.shard_state.amplitudes.cpu(), circuit.state())
+    dispatch = result.summary()["kernel_dispatch"]
+    assert dispatch["triton_execution_count"] == 1
+    route = next(
+        record["kernel_route"]
+        for record in dispatch["decisions"]
+        if record["feature"] == "local_cx"
+    )
+    assert route["semantic_id"] == "statevector.apply.cnot.local"
+    assert route["implementation_id"] == "FQKI-TRITON-SV-002-A"
     assert route["catalog_mismatches"] == ()
 
 
