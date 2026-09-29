@@ -444,21 +444,24 @@ an authoritative runtime/compiler interface.
 
 ### Current `statevector.local_1q` user path
 
-Users do not call the Triton launch wrapper directly. They run an ordinary
-statevector circuit containing one-qubit gates, and the executor selects the
-kernel when the feature is requested and the input is eligible:
+Users do not call the Triton launch wrapper directly. They submit a statevector
+circuit containing one-qubit gates to the distributed runtime, and the executor
+selects the kernel when the feature is requested and the input is eligible:
 
 ```bash
 FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
   python -m examples.triton_statevector_local_1q
 ```
 
-The complete example uses `fq.Circuit`, `fq.ExecutionOptions`, and `fq.run`,
-then reads `result.runtime["kernel_dispatch"]` to verify the selected route. The
-current kernel requires a contiguous CUDA `complex64` statevector, an available
-`triton` module, a non-portable runtime mode, and a one-qubit gate on a local
-wire. Every wire is local on one GPU. With a sharded statevector, a wire is local
-only when both amplitudes in each affected pair are owned by the same rank.
+The complete example builds the circuit with `fq.Circuit`, executes it through
+the public `flagquantum.runtime.run_distributed` entry point, and reads the
+native result summary to verify the selected route. The ordinary single-GPU
+`fq.run(..., mode="statevector")` path currently uses the local simulator and
+does not call this distributed-statevector kernel. The kernel requires a
+contiguous CUDA `complex64` statevector, an available `triton` module, a
+non-portable runtime mode, and a one-qubit gate on a local wire. Every wire is
+local on a one-rank run. With a sharded statevector, a wire is local only when
+both amplitudes in each affected pair are owned by the same rank.
 
 ## 12. Fallback Rules
 

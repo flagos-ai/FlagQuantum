@@ -7,6 +7,7 @@ import os
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime import run_distributed
 
 
 _TRUTHY = {"1", "true", "on", "yes"}
@@ -31,20 +32,17 @@ def main() -> None:
             allow_backend_fallback=False,
         ),
     ).to_statevector()
-    result = fq.run(
+    result = run_distributed(
         circuit,
-        options=fq.ExecutionOptions(
-            mode="statevector",
-            backend="pytorch",
-            device="cuda:0",
-            precision="complex64",
-            allow_backend_fallback=False,
-        ),
+        device="cuda:0",
+        precision="complex64",
+        distributed_profile="production",
+        world_size=1,
     )
-    state = result.to_statevector()
+    state = result.shard_state.amplitudes
     torch.testing.assert_close(state.cpu(), reference, atol=3e-6, rtol=3e-6)
 
-    dispatch = result.runtime["kernel_dispatch"]
+    dispatch = result.summary()["kernel_dispatch"]
     local_1q = next(
         record for record in dispatch["decisions"] if record["feature"] == "local_1q"
     )
