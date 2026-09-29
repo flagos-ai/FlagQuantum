@@ -303,6 +303,114 @@ def render_rotation_tile_markdown(
     return "\n".join(lines)
 
 
+def render_forward_wide_tile_markdown(
+    payload: Mapping[str, Any], *, artifact_name: str
+) -> str:
+    """Render the eight/six-wire forward rotation-tile comparison."""
+
+    methodology = payload["methodology"]
+    rollback_name = "flagquantum_adjoint_forward_wide_tile_rollback"
+    lines = [
+        "# Native CPU forward wide rotation-tile comparison",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}). It compares",
+        "FlagQuantum's eight-wire forward rotation tiles with the previous six-wire tiles.",
+        "Both paths use the same exact statevector-adjoint differentiation method; only",
+        "the forward tile width changes, and values plus full gradients must match.",
+        "",
+        "| Workload | Qubits | Forward rotations | Wide forward (ms) | Six-wire rollback (ms) | Forward speedup | Wide total (ms) | Rollback total (ms) | Total speedup | Max gradient error |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for case in payload["cases"]:
+        workload = case["workload"]
+        native = case["engines"]["flagquantum_adjoint"]
+        rollback = case["engines"][rollback_name]
+        ratio = case["comparison"]["engine_over_flagquantum_median"][rollback_name]
+        error = case["correctness"]["engines"][rollback_name]["gradient_max_abs_error"]
+        opcodes = case["features"]["opcode_histogram"]
+        rotations = sum(opcodes.get(name, 0) for name in ("rx", "ry", "rz"))
+        lines.append(
+            f"| {_WORKLOAD_LABELS[workload['name']]} | {workload['n_wires']} | "
+            f"{rotations} | {_milliseconds(native, 'forward'):.3f} | "
+            f"{_milliseconds(rollback, 'forward'):.3f} | {ratio['forward']:.2f}x | "
+            f"{_milliseconds(native, 'value_and_grad'):.3f} | "
+            f"{_milliseconds(rollback, 'value_and_grad'):.3f} | "
+            f"{ratio['value_and_grad']:.2f}x | {error:.3e} |"
+        )
+    lines.extend(
+        (
+            "",
+            "## Interpretation",
+            "",
+            "At 22 qubits, an eight-wire tile applies a complete 22-wire rotation layer in",
+            "three full-state passes instead of four six-wire passes. QAOA benefits most",
+            "because its forward RX layer is a larger share of total runtime. VQE remains",
+            "backward-dominated, so its end-to-end gain is smaller. This is non-release,",
+            "single-device evidence and is not a scaling claim.",
+            "",
+            "## What is measured and why it matters",
+            "",
+            "Each retained sample performs an exact expectation-value evaluation and the",
+            "full adjoint gradient. Hardware-efficient VQE exercises 66 RX/RY/RZ gates",
+            "and a nearest-neighbor CNOT chain; QAOA exercises an initial Hadamard layer,",
+            "21 shared-parameter RZZ gates, and 22 RX gates. This measures realistic",
+            "training calls rather than an isolated gate microbenchmark.",
+            "",
+            "## Current level",
+            "",
+            "On the recorded Apple arm64 process with two PyTorch threads, both workloads",
+            "improve in forward and complete value-plus-gradient time. The 1.01x-1.05x",
+            "range is an incremental memory-traffic improvement, not a claim that this",
+            "change closes the remaining gap to every external simulator or thread count.",
+            "",
+            "## FlagQuantum example",
+            "",
+            "```python",
+            "import torch",
+            "import flagquantum as fq",
+            "from flagquantum import algorithms as fqa",
+            "",
+            "parameters = torch.tensor([0.31, 0.17], dtype=torch.float64, requires_grad=True)",
+            "circuit = fq.Circuit(6, dtype=torch.complex128)",
+            "for wire in range(6):",
+            "    circuit.h(wire)",
+            "for wire in range(5):",
+            "    circuit.rzz(wire, wire + 1, parameters[0])",
+            "for wire in range(6):",
+            "    circuit.rx(wire, parameters[1])",
+            "",
+            "hamiltonian = fqa.Hamiltonian(",
+            "    fqa.HamiltonianTerm(-0.5, {wire: 'z', wire + 1: 'z'})",
+            "    for wire in range(5)",
+            ")",
+            "energy = hamiltonian.expectation(circuit, differentiation='adjoint') + 2.5",
+            "energy.backward()",
+            "print(energy.item(), parameters.grad)",
+            "```",
+            "",
+            "No new user option is required; eligible CPU rotation layers select the",
+            "eight-wire tile automatically.",
+            "",
+            "## Reproduce",
+            "",
+            "```bash",
+            "flagquantum-benchmark run differentiable_simulator_corpus \\",
+            "  --workloads " + " ".join(payload["workloads"]) + " \\",
+            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
+            "  --engines flagquantum_adjoint " + rollback_name + " \\",
+            f"  --layers {payload['layers']} --threads {payload['environment']['torch_threads']} \\",
+            f"  --warmup {methodology['warmup']} --iterations {methodology['iterations']} \\",
+            f"  --calls-per-sample {methodology['calls_per_sample']} --skip-memory-probe \\",
+            f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            "```",
+            "",
+            "Set `FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES=0` for direct rollback.",
+            "",
+        )
+    )
+    return "\n".join(lines)
+
+
 def render_euler_triple_markdown(
     payload: Mapping[str, Any], *, artifact_name: str
 ) -> str:

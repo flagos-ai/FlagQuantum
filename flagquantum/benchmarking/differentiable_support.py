@@ -63,6 +63,10 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "shared-RZZ fusion, and specialized rotation arithmetic disabled",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_forward_wide_tile_rollback": (
+            "same native adjoint with legacy six-wire forward rotation tiles",
+            "statevector_adjoint",
+        ),
         "pennylane_lightning_adjoint": (
             "lightning.qubit adjoint through the PyTorch interface",
             "statevector_adjoint",

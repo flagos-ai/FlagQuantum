@@ -12,6 +12,7 @@ from ....simulation.native_cpu import (
     fused_rzz_segment_forward_,
     native_cpu_shared_rzz_forward_fusion_available,
 )
+from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_wires
 
 
 def _following_rotation_block(
@@ -41,7 +42,9 @@ def _following_rotation_block(
         if wire == active_wire:
             block_matrices[-1] = sweep.matrices[cursor] @ block_matrices[-1]
         else:
-            if wire in block_wires or len(block_wires) == 6:
+            if wire in block_wires or len(block_wires) == (
+                native_cpu_forward_rotation_tile_wires(sweep.plan.n_wires)
+            ):
                 break
             block_wires.append(wire)
             block_matrices.append(sweep.matrices[cursor])
