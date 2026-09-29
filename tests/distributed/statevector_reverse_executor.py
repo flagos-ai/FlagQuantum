@@ -118,6 +118,7 @@ def main() -> None:
             for item in summary["parameter_ownership"]
         )
         control_transport_summary = None
+        sharded_vjp_summary = None
         if args.persistent_layout:
             os.environ["FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT"] = "0"
             transport_theta = torch.tensor(0.41, device=device, requires_grad=True)
@@ -180,6 +181,61 @@ def main() -> None:
                     "implementation_id"
                 ],
             }
+            sharded_theta = torch.tensor(0.29, device=device, requires_grad=True)
+            sharded_circuit = fq.Circuit(n_wires, device=device)
+            for wire in range(n_wires):
+                sharded_circuit.ry(wire, sharded_theta)
+            dense_sharded_value = sharded_circuit.expectation_z(0).sum()
+            (dense_sharded_gradient,) = torch.autograd.grad(
+                dense_sharded_value,
+                (sharded_theta,),
+                retain_graph=True,
+            )
+            sharded_result = execute_torch_distributed_statevector_reverse(
+                sharded_circuit,
+                observable_wire=0,
+                checkpoint_policy=StatevectorCheckpointPolicy(
+                    strategy="interval",
+                    interval=1,
+                ),
+                device=device,
+            )
+            sharded_result.backward()
+            torch.testing.assert_close(
+                sharded_result.value,
+                dense_sharded_value,
+                atol=2e-5,
+                rtol=2e-5,
+            )
+            torch.testing.assert_close(
+                sharded_theta.grad,
+                dense_sharded_gradient,
+                atol=3e-5,
+                rtol=3e-5,
+            )
+            sharded_dispatch = {
+                record["feature"]: record
+                for record in sharded_result.summary()["kernel_dispatch"]["decisions"]
+            }
+            assert "sharded_adjoint_vjp" in sharded_dispatch, sharded_dispatch
+            sharded_vjp_record = sharded_dispatch["sharded_adjoint_vjp"]
+            assert sharded_vjp_record["selected"] == "triton"
+            assert sharded_vjp_record["count"] > 0
+            assert (
+                sharded_vjp_record["kernel_route"]["semantic_id"]
+                == "gradient.vjp.adjoint_1q.sharded"
+            )
+            assert (
+                sharded_vjp_record["kernel_route"]["implementation_id"]
+                == "FQKI-TRITON-GR-003-A"
+            )
+            sharded_vjp_summary = {
+                "execution_count": sharded_vjp_record["count"],
+                "semantic_id": sharded_vjp_record["kernel_route"]["semantic_id"],
+                "implementation_id": sharded_vjp_record["kernel_route"][
+                    "implementation_id"
+                ],
+            }
         if dist.is_initialized():
             dist.destroy_process_group()
         print(
@@ -188,6 +244,7 @@ def main() -> None:
                     **summary,
                     "value": float(result.value.detach().cpu()),
                     "gradients": [float(theta.grad.cpu()), float(phi.grad.cpu())],
+                    "sharded_adjoint_vjp": sharded_vjp_summary,
                     "control_subspace_transport": control_transport_summary,
                     "cleanup_verified": not dist.is_initialized(),
                 },
