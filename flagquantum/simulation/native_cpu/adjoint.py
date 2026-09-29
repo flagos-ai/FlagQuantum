@@ -46,6 +46,17 @@ def _rotation_segment_tile_wires() -> int:
     return 11 if _wide_rotation_tiles_enabled() else 2
 
 
+def _rotation_pair_fast_path_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "1"
+    ).strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
 def native_cpu_shared_rotation_gradient_available() -> bool:
     """Return whether shared rotation segments may aggregate one VJP in native code."""
 
@@ -185,6 +196,7 @@ def fused_rotation_segment_adjoint_(
                 n_wires,
                 aggregate_shared_parameter,
                 _rotation_segment_tile_wires(),
+                _rotation_pair_fast_path_enabled(),
             ),
         )
 

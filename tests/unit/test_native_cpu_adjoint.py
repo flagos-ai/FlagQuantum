@@ -697,6 +697,68 @@ def test_native_rotation_segment_adjoint_matches_sequential_reference(
     )
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_segment_fast_path_matches_exact_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(16127)
+    initial_ket = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    initial_adjoint = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    names = ("rz", "ry", "rx") * 5 + ("rx", "rz")
+    wires = tuple(wire for wire in (6, 5, 4, 3, 2) for _ in range(3)) + (1, 0)
+    angles = torch.linspace(0.03, 0.39, len(names), dtype=real_dtype)
+    gate_kinds = torch.tensor(
+        tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names),
+        dtype=torch.int64,
+    )
+    wire_tensor = torch.tensor(wires, dtype=torch.int64)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "0")
+    rollback_ket = initial_ket.clone()
+    rollback_adjoint = initial_adjoint.clone()
+    rollback_gradients = fused_rotation_segment_adjoint_(
+        rollback_ket,
+        rollback_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=7,
+    )
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "1")
+    fast_ket = initial_ket.clone()
+    fast_adjoint = initial_adjoint.clone()
+    fast_gradients = fused_rotation_segment_adjoint_(
+        fast_ket,
+        fast_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=7,
+    )
+
+    assert rollback_gradients is not None
+    assert fast_gradients is not None
+    tolerance = 5e-5 if dtype == torch.complex64 else 4e-12
+    torch.testing.assert_close(
+        fast_gradients, rollback_gradients, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(fast_ket, rollback_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        fast_adjoint, rollback_adjoint, atol=tolerance, rtol=tolerance
+    )
+
+
 def test_native_rotation_segment_adjoint_has_explicit_environment_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

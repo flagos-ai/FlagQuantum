@@ -212,3 +212,95 @@ def render_rotation_tile_markdown(
         )
     )
     return "\n".join(lines)
+
+
+def render_euler_triple_markdown(
+    payload: Mapping[str, Any], *, artifact_name: str
+) -> str:
+    """Render the native Euler-triple/rollback adjoint comparison."""
+
+    methodology = payload["methodology"]
+    rollback_name = "flagquantum_adjoint_euler_triple_rollback"
+    lines = [
+        "# Native CPU adjoint Euler-triple comparison",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}). It compares",
+        "FlagQuantum's native reverse sweep with and without the same-wire RZ/RY/RX",
+        "Euler-triple and branchless amplitude-pair kernel. Both paths use exact",
+        "statevector adjoint differentiation and must return matching values and full",
+        "parameter gradients. Kernel tests also compare ket and adjoint states.",
+        "Ratios above 1 mean the fused path is faster.",
+        "",
+        "| Workload | Qubits | Euler triples | Native backward (ms) | Rollback backward (ms) | Backward speedup | Native total (ms) | Rollback total (ms) | Total speedup | Max gradient error |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for case in payload["cases"]:
+        workload = case["workload"]
+        native = case["engines"]["flagquantum_adjoint"]
+        rollback = case["engines"][rollback_name]
+        ratio = case["comparison"]["engine_over_flagquantum_median"][rollback_name]
+        error = case["correctness"]["engines"][rollback_name]["gradient_max_abs_error"]
+        opcodes = case["features"]["opcode_histogram"]
+        triples = min(opcodes.get("rx", 0), opcodes.get("ry", 0), opcodes.get("rz", 0))
+        lines.append(
+            f"| {_WORKLOAD_LABELS[workload['name']]} | {workload['n_wires']} | "
+            f"{triples} | {_milliseconds(native, 'backward'):.3f} | "
+            f"{_milliseconds(rollback, 'backward'):.3f} | {ratio['backward']:.2f}x | "
+            f"{_milliseconds(native, 'value_and_grad'):.3f} | "
+            f"{_milliseconds(rollback, 'value_and_grad'):.3f} | "
+            f"{ratio['value_and_grad']:.2f}x | {error:.3e} |"
+        )
+    lines.extend(
+        (
+            "",
+            "## What this measures",
+            "",
+            "Hardware-efficient VQE applies RX, RY, and RZ consecutively to each",
+            "qubit, which the reverse sweep visits as RZ/RY/RX. The fused kernel keeps",
+            "one amplitude pair in registers while computing three gradients and undoing",
+            "all three rotations, instead of loading and storing the pair once per gate.",
+            "The pair loop uses an OpenMP SIMD reduction for its gradient totals. All other",
+            "rotations use direct zero/one pair blocks without a per-amplitude bit test.",
+            "QAOA has no Euler triples, so it isolates that branchless traversal gain.",
+            "This is non-release single-device evidence, not a thread-scaling or",
+            "cross-machine claim.",
+            "",
+            "## FlagQuantum example",
+            "",
+            "The optimization is automatic behind the existing adjoint API; user code",
+            "does not select a kernel:",
+            "",
+            "```python",
+            "import torch",
+            "import flagquantum as fq",
+            "from flagquantum import algorithms as fqa",
+            "",
+            "theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)",
+            "circuit = fq.Circuit(3, dtype=torch.complex128)",
+            "for wire in range(3):",
+            "    circuit.rx(wire, theta).ry(wire, theta).rz(wire, theta)",
+            'hamiltonian = fqa.Hamiltonian((fqa.pauli_term(1.0, "ZZ", (0, 1)),))',
+            'energy = hamiltonian.expectation(circuit, differentiation="adjoint")',
+            "energy.backward()",
+            "print(energy.item(), theta.grad)",
+            "```",
+            "",
+            "## Reproduce",
+            "",
+            "```bash",
+            "flagquantum-benchmark run differentiable_simulator_corpus \\",
+            "  --workloads " + " ".join(payload["workloads"]) + " \\",
+            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
+            "  --engines flagquantum_adjoint " + rollback_name + " \\",
+            f"  --layers {payload['layers']} --threads {payload['environment']['torch_threads']} \\",
+            f"  --warmup {methodology['warmup']} --iterations {methodology['iterations']} \\",
+            f"  --calls-per-sample {methodology['calls_per_sample']} --skip-memory-probe \\",
+            f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            "```",
+            "",
+            "Set `FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES=0` to restore the prior",
+            "per-gate, bit-tested pair traversal while retaining native adjoint.",
+            "",
+        )
+    )
+    return "\n".join(lines)
