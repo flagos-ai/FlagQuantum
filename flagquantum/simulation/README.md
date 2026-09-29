@@ -78,6 +78,22 @@ print(result.maximum_trace_drift)
 print(result.population_bounded)
 ```
 
+For an inspectable or cross-process workflow, serialize the sealed plan and run
+the restored request without semantic overrides:
+
+```python
+plan = fql.plan(
+    0.5 * fq.X(0) + 0.1 * fq.Z(0),
+    "1",
+    torch.linspace(0.0, 8.0, 161),
+    collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+    outputs=fq.expectation(fq.Z(0), name="z"),
+)
+restored = fql.LindbladPlan.from_json(plan.to_json())
+result = fql.run(restored)
+assert result.plan is restored
+```
+
 Set `return_density_matrices=True` when the complete density trajectory is
 needed. Otherwise it is omitted from the returned result.
 

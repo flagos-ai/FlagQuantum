@@ -17,9 +17,10 @@ request = {
 
 # Planning performs the same validation without running the evolution.
 plan = fql.plan(hamiltonian, "1", times, **request)
-result = fql.run(hamiltonian, "1", times, **request)
+result = fql.run(plan)
 
 print("time points:", plan.n_times)
+print("plan identity:", plan.identity)
 print("final [P(0), P(1)]:", result.populations[-1].tolist())
 print("final <Z>:", result.expectation("z")[-1].item())
 print("maximum trace drift:", result.maximum_trace_drift)

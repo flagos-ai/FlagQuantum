@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.errors import CapabilityError, ValidationError
+from flagquantum.errors import CapabilityError, SerializationError, ValidationError
 from flagquantum.simulation import (
     EvolutionValidationError,
     amplitude_damping,
@@ -153,6 +153,45 @@ def test_dedicated_lindblad_api_reuses_flagquantum_contracts() -> None:
     assert result.populations.shape == (161, 2)
     assert result.probabilities is result.populations
     assert result.expectation("z").shape == (161,)
+    assert result.plan is not None
+    assert result.plan.identity == plan.identity
+
+
+def test_lindblad_plan_round_trip_executes_without_replanning() -> None:
+    import flagquantum.lindblad as fql
+
+    original = fql.plan(
+        0.5 * fq.X(0) + 0.1 * fq.Z(0),
+        "1",
+        torch.linspace(0.0, 0.2, 5, dtype=torch.float64),
+        collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+        outputs=fq.expectation(fq.Z(0), name="z"),
+        return_density_matrices=True,
+    )
+    restored = fql.LindbladPlan.from_json(original.to_json())
+    result = fql.run(restored)
+
+    assert restored.identity == original.identity
+    assert restored.n_qubits == 1
+    assert restored.n_times == 5
+    assert restored.to_dict()["request"]["collapse_operators"][0]["rate"] == 0.1
+    assert result.plan is restored
+    assert result.density_matrices is not None
+    assert result.expectation("z").shape == (5,)
+
+    with pytest.raises(TypeError, match="closed"):
+        fql.run(restored, "1", [0.0, 0.1])
+
+
+def test_lindblad_plan_rejects_content_tampering() -> None:
+    import flagquantum.lindblad as fql
+
+    planned = fql.plan(fq.Z(0), "0", [0.0, 0.1])
+    payload = planned.to_dict()
+    payload["request"]["times"][1] = 0.2
+
+    with pytest.raises(SerializationError, match="identity"):
+        fql.LindbladPlan.from_dict(payload)
 
 
 def test_dedicated_lindblad_api_reuses_execution_options_and_output_selectors() -> None:

@@ -64,6 +64,7 @@ class EvolutionResult:
     precision: str
     population_tolerance: float
     trace_tolerance: float
+    plan: object | None = None
 
     @property
     def probabilities(self) -> torch.Tensor:
@@ -133,6 +134,7 @@ class EvolutionResult:
                 "population_tolerance": self.population_tolerance,
                 "trace_tolerance": self.trace_tolerance,
             },
+            "plan_identity": getattr(self.plan, "identity", None),
         }
 
 
@@ -484,14 +486,14 @@ def _named_operator(
         ) from exc
 
 
-def _normalize_collapse_operators(
+def _normalize_collapse_terms(
     collapse_operators: Sequence[Any] | None,
     *,
     n_wires: int,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
-) -> tuple[torch.Tensor, ...]:
+) -> tuple[tuple[torch.Tensor, float], ...]:
     result = []
     for index, item in enumerate(collapse_operators or ()):
         operator: Any
@@ -567,8 +569,28 @@ def _normalize_collapse_operators(
                 dtype=dtype,
                 device=device,
             )
-        result.append((numeric_rate**0.5) * full)
+        result.append((full, numeric_rate))
     return tuple(result)
+
+
+def _normalize_collapse_operators(
+    collapse_operators: Sequence[Any] | None,
+    *,
+    n_wires: int,
+    dim: int,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> tuple[torch.Tensor, ...]:
+    return tuple(
+        (rate**0.5) * operator
+        for operator, rate in _normalize_collapse_terms(
+            collapse_operators,
+            n_wires=n_wires,
+            dim=dim,
+            dtype=dtype,
+            device=device,
+        )
+    )
 
 
 def _normalize_observables(

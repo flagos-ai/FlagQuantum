@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Any
 
 import torch
@@ -13,15 +14,16 @@ from ..observables import OutputRequest
 from ..runtime.options import ExecutionOptions
 from ..simulation.lindblad import (
     CollapseOperator,
-    EvolutionPlan,
     EvolutionResult,
     EvolutionValidationError,
     evolve_density_matrix,
-    plan_density_matrix_evolution,
 )
 from ..simulation.lindblad import (
     amplitude_damping as _amplitude_damping,
 )
+from ._plan import LindbladPlan, build_lindblad_plan
+
+_MISSING = object()
 
 
 def amplitude_damping(rate: float, qubit: int) -> CollapseOperator:
@@ -131,9 +133,9 @@ def _observables(
 
 
 def run(
-    hamiltonian: Any,
-    initial_state: Any,
-    times: Any,
+    hamiltonian_or_plan: Any,
+    initial_state: Any = _MISSING,
+    times: Any = _MISSING,
     *,
     collapse_operators: Sequence[Any] | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -141,20 +143,37 @@ def run(
     options: ExecutionOptions | None = None,
     return_density_matrices: bool = False,
 ) -> EvolutionResult:
-    """Run continuous-time Lindblad evolution on an explicit time grid."""
+    """Run a Lindblad plan or plan and run a request in one call."""
 
-    device, dtype = _execution_settings(options)
-    return evolve_density_matrix(
-        hamiltonian,
-        initial_state,
-        _infer_n_qubits(initial_state) if n_qubits is None else n_qubits,
-        times,
-        collapse_operators,
-        _observables(outputs),
-        device=device,
-        dtype=dtype,
-        return_density_matrices=return_density_matrices,
-    )
+    if isinstance(hamiltonian_or_plan, LindbladPlan):
+        if (
+            initial_state is not _MISSING
+            or times is not _MISSING
+            or collapse_operators is not None
+            or outputs is not None
+            or n_qubits is not None
+            or options is not None
+            or return_density_matrices
+        ):
+            raise TypeError(
+                "a LindbladPlan is closed to initial_state, times, and semantic overrides"
+            )
+        execution_plan = hamiltonian_or_plan
+    else:
+        if initial_state is _MISSING or times is _MISSING:
+            raise TypeError("fql.run requires initial_state and times")
+        execution_plan = plan(
+            hamiltonian_or_plan,
+            initial_state,
+            times,
+            collapse_operators=collapse_operators,
+            outputs=outputs,
+            n_qubits=n_qubits,
+            options=options,
+            return_density_matrices=return_density_matrices,
+        )
+    result = evolve_density_matrix(**execution_plan._execution_request())
+    return replace(result, plan=execution_plan)
 
 
 def plan(
@@ -167,14 +186,15 @@ def plan(
     n_qubits: int | None = None,
     options: ExecutionOptions | None = None,
     return_density_matrices: bool = False,
-) -> EvolutionPlan:
-    """Validate and size a Lindblad request without running it."""
+) -> LindbladPlan:
+    """Build a sealed, serializable plan without running it."""
 
     device, dtype = _execution_settings(options)
-    return plan_density_matrix_evolution(
+    resolved_n_qubits = _infer_n_qubits(initial_state) if n_qubits is None else n_qubits
+    return build_lindblad_plan(
         hamiltonian,
         initial_state,
-        _infer_n_qubits(initial_state) if n_qubits is None else n_qubits,
+        resolved_n_qubits,
         times,
         collapse_operators,
         _observables(outputs),
@@ -186,8 +206,8 @@ def plan(
 
 __all__ = (
     "CollapseOperator",
-    "EvolutionPlan",
     "EvolutionResult",
+    "LindbladPlan",
     "amplitude_damping",
     "plan",
     "run",
