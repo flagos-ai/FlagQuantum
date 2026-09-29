@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.simulation import (
     EvolutionValidationError,
     amplitude_damping,
@@ -136,21 +137,54 @@ def test_python_sdk_accepts_observable_algebra_and_typed_collapse() -> None:
     assert result.population_bounded
 
 
-def test_dedicated_lindblad_api_infers_wires_and_matches_solver_convention() -> None:
-    import flagquantum.lindblad as lindblad
+def test_dedicated_lindblad_api_reuses_flagquantum_contracts() -> None:
+    import flagquantum.lindblad as fql
 
     times = torch.linspace(0.0, 8.0, 161, dtype=torch.float64)
     request = {
-        "collapse_operators": [lindblad.amplitude_damping(0.1, 0)],
-        "observables": {"z": fq.Z(0)},
+        "collapse_operators": [fql.amplitude_damping(rate=0.1, qubit=0)],
+        "outputs": fq.expectation(fq.Z(0), name="z"),
     }
 
-    plan = lindblad.plan(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
-    result = lindblad.solve(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
+    plan = fql.plan(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
+    result = fql.run(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
 
-    assert plan.n_wires == 1
+    assert plan.n_qubits == 1
     assert result.populations.shape == (161, 2)
-    assert result.observables["z"].shape == (161,)
+    assert result.probabilities is result.populations
+    assert result.expectation("z").shape == (161,)
+
+
+def test_dedicated_lindblad_api_reuses_execution_options_and_output_selectors() -> None:
+    import flagquantum.lindblad as fql
+
+    result = fql.run(
+        fq.Z(0),
+        "0",
+        [0.0, 0.1],
+        outputs=(
+            fq.expectation(fq.Z(0), name="z"),
+            fq.expectation(fq.X(0), name="x"),
+        ),
+        options=fq.ExecutionOptions(
+            mode="density_matrix", device="cpu", precision="complex64"
+        ),
+    )
+
+    assert result.precision == "complex64"
+    assert result.expectation(0) is result.expectation("z")
+    assert result.expectation(1) is result.expectation("x")
+    assert len(result.expectations) == 2
+
+
+def test_dedicated_lindblad_api_uses_stable_error_categories() -> None:
+    import flagquantum.lindblad as fql
+
+    with pytest.raises(CapabilityError, match="only expectation"):
+        fql.run(fq.Z(0), "0", [0.0, 0.1], outputs=fq.counts())
+
+    with pytest.raises(ValidationError):
+        fql.run(fq.Z(0), "0", [0.1, 0.0])
 
 
 @pytest.mark.parametrize(

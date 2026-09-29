@@ -8,11 +8,12 @@ from typing import Any
 
 import torch
 
+from ..errors import ExecutionError, ValidationError
 from ..observables import Observable
 from .density_matrix import expand_operator
 
 
-class EvolutionValidationError(ValueError):
+class EvolutionValidationError(ValidationError):
     """A machine-readable refusal of an invalid evolution request."""
 
     def __init__(self, code: str, message: str, *, field: str) -> None:
@@ -64,6 +65,49 @@ class EvolutionResult:
     population_tolerance: float
     trace_tolerance: float
 
+    @property
+    def probabilities(self) -> torch.Tensor:
+        """Return the time-resolved computational-basis probabilities."""
+
+        return self.populations
+
+    @property
+    def expectations(self) -> tuple[torch.Tensor, ...]:
+        """Return requested expectation trajectories in output order."""
+
+        return tuple(self.observables.values())
+
+    def expectation(self, selector: int | str | None = None) -> torch.Tensor:
+        """Return one expectation trajectory by output index or name."""
+
+        outputs = tuple(self.observables.items())
+        if not outputs:
+            raise ExecutionError("evolution result does not contain an expectation")
+        if selector is None:
+            if len(outputs) != 1:
+                raise ExecutionError(
+                    "evolution result contains multiple expectations; select one by "
+                    "output index or name"
+                )
+            return outputs[0][1]
+        if type(selector) is int:
+            try:
+                return outputs[selector][1]
+            except IndexError as exc:
+                raise ExecutionError(
+                    f"expectation index {selector} is outside the result"
+                ) from exc
+        if not isinstance(selector, str) or not selector:
+            raise TypeError(
+                "expectation selector must be an integer or non-empty string"
+            )
+        try:
+            return self.observables[selector]
+        except KeyError as exc:
+            raise ExecutionError(
+                f"evolution result has no expectation {selector!r}"
+            ) from exc
+
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible representation, including provenance."""
 
@@ -105,6 +149,12 @@ class EvolutionPlan:
     step_size: float
     device: str
     precision: str
+
+    @property
+    def n_qubits(self) -> int:
+        """Return the public qubit count; ``n_wires`` remains serialized internally."""
+
+        return self.n_wires
 
     def to_dict(self) -> dict[str, Any]:
         return {

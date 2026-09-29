@@ -54,7 +54,7 @@ reports dimensions and retained-trajectory memory without evolving it.
 The issue #234 reference problem can be run directly:
 
 ```bash
-python examples/lindblad_evolution.py
+python -m examples.lindblad_evolution
 ```
 
 The minimal SDK call is:
@@ -62,17 +62,18 @@ The minimal SDK call is:
 ```python
 import torch
 import flagquantum as fq
-import flagquantum.lindblad as lindblad
+import flagquantum.lindblad as fql
 
-result = lindblad.solve(
+result = fql.run(
     0.5 * fq.X(0) + 0.1 * fq.Z(0),
     "1",
     torch.linspace(0.0, 8.0, 161),
-    collapse_operators=[lindblad.amplitude_damping(rate=0.1, wire=0)],
-    observables={"z": fq.Z(0)},
+    collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+    outputs=fq.expectation(fq.Z(0), name="z"),
 )
 
 print(result.populations.shape)          # torch.Size([161, 2])
+print(result.expectation("z")[-1])
 print(result.maximum_trace_drift)
 print(result.population_bounded)
 ```
