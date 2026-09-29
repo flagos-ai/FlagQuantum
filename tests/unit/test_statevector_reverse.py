@@ -8,6 +8,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum.runtime.executors.statevector import plan_distributed_statevector
+from flagquantum.runtime.executors.statevector.gradient_dispatch import (
+    _triton_local_adjoint_vjp_decision,
+)
 from flagquantum.runtime.executors.statevector.gradient_reduction import (
     AsyncGradientReducer,
 )
@@ -25,7 +28,7 @@ from flagquantum.runtime.executors.statevector.reverse import (
 from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
     _cpu_direct_adjoint_gate_enabled,
 )
-from flagquantum.runtime.executors.statevector.reverse_adjoint_sweep import (
+from flagquantum.runtime.executors.statevector.reverse_support import (
     _compact_reverse_global_indices,
 )
 from flagquantum.runtime.executors.statevector.reverse_template import (
@@ -34,6 +37,89 @@ from flagquantum.runtime.executors.statevector.reverse_template import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_local_adjoint_vjp_decision_binds_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    decision = _triton_local_adjoint_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert decision.accelerated
+    assert decision.semantic_id == "gradient.vjp.adjoint_1q.local"
+    assert decision.implementation_id == "FQKI-TRITON-GR-001-A"
+    assert decision.catalog_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_local_adjoint_vjp_decision_reports_catalog_mismatch(
+    monkeypatch, device_type, dtype, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+
+    decision = _triton_local_adjoint_vjp_decision(
+        device_type=device_type,
+        dtype=dtype,
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == "input_not_supported"
+    assert decision.implementation_id is None
+    assert decision.catalog_mismatches == (mismatch,)
+
+
+def test_local_adjoint_vjp_decision_preserves_runtime_contract(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    decision = _triton_local_adjoint_vjp_decision(
+        runtime_supported=False,
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == "input_not_supported"
+    assert decision.catalog_mismatches == ()
+
+
+def test_local_adjoint_vjp_decision_honors_policy_and_availability(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", raising=False)
+    disabled = _triton_local_adjoint_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+    assert disabled.reason == "disabled_by_policy"
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: False,
+    )
+    unavailable = _triton_local_adjoint_vjp_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+    assert unavailable.reason == "triton_unavailable"
 
 
 def test_adjoint_ir_template_cache_is_parameter_free_and_has_rollback(monkeypatch):
@@ -661,6 +747,39 @@ def test_reverse_local_cnot_uses_cataloged_triton_route(monkeypatch):
     assert calls > 0
     torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
     torch.testing.assert_close(theta.grad, expected_gradient)
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_reverse_local_adjoint_vjp_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "1")
+    monkeypatch.setenv("FQ_STATEVECTOR_PERSISTENT_INPLACE_LOCAL", "0")
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(1).ry(0, theta)
+    dense = circuit.expectation_z(0)
+    (expected_gradient,) = torch.autograd.grad(dense, theta, retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=0,
+        device="cuda",
+    )
+    result.backward()
+
+    torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    record = next(
+        record
+        for record in result.summary()["kernel_dispatch"]["decisions"]
+        if record["feature"] == "local_adjoint_vjp"
+    )
+    route = record["kernel_route"]
+    assert record["selected"] == "triton"
+    assert record["count"] == 1
+    assert route["semantic_id"] == "gradient.vjp.adjoint_1q.local"
+    assert route["implementation_id"] == "FQKI-TRITON-GR-001-A"
+    assert route["catalog_mismatches"] == ()
 
 
 @pytest.mark.gpu
