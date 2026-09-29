@@ -62,16 +62,13 @@ The minimal SDK call is:
 ```python
 import torch
 import flagquantum as fq
+import flagquantum.lindblad as lindblad
 
-from flagquantum.simulation import evolve_density_matrix
-from flagquantum.simulation import amplitude_damping
-
-result = evolve_density_matrix(
-    hamiltonian=0.5 * fq.X(0) + 0.1 * fq.Z(0),
-    initial_state="1",
-    n_wires=1,
-    times=torch.linspace(0.0, 8.0, 161),
-    collapse_operators=[amplitude_damping(rate=0.1, wire=0)],
+result = lindblad.solve(
+    0.5 * fq.X(0) + 0.1 * fq.Z(0),
+    "1",
+    torch.linspace(0.0, 8.0, 161),
+    collapse_operators=[lindblad.amplitude_damping(rate=0.1, wire=0)],
     observables={"z": fq.Z(0)},
 )
 

@@ -136,6 +136,23 @@ def test_python_sdk_accepts_observable_algebra_and_typed_collapse() -> None:
     assert result.population_bounded
 
 
+def test_dedicated_lindblad_api_infers_wires_and_matches_solver_convention() -> None:
+    import flagquantum.lindblad as lindblad
+
+    times = torch.linspace(0.0, 8.0, 161, dtype=torch.float64)
+    request = {
+        "collapse_operators": [lindblad.amplitude_damping(0.1, 0)],
+        "observables": {"z": fq.Z(0)},
+    }
+
+    plan = lindblad.plan(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
+    result = lindblad.solve(0.5 * fq.X(0) + 0.1 * fq.Z(0), "1", times, **request)
+
+    assert plan.n_wires == 1
+    assert result.populations.shape == (161, 2)
+    assert result.observables["z"].shape == (161,)
+
+
 @pytest.mark.parametrize(
     ("overrides", "code"),
     [
