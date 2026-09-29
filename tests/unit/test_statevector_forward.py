@@ -138,13 +138,33 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
     }
     assert local_1q_dispatch["kernel_compiler"] is None
     assert local_1q_dispatch["kernel_route"] == {
-        "semantic_id": "statevector.local_1q",
+        "semantic_id": "statevector.apply.matrix_1q.local",
         "implementation": "pytorch_eager",
         "integration_path": "pytorch",
         "fallback": False,
+        "implementation_id": None,
+        "catalog_mismatches": ("device",),
     }
     with pytest.raises(FullStateMaterializationError, match="forbidden"):
         result.full_state()
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_local_1q_triton_execution_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
+    circuit = fq.Circuit(3).h(0)
+
+    result = execute_torch_distributed_statevector(circuit, device="cuda")
+
+    torch.testing.assert_close(result.shard_state.amplitudes.cpu(), circuit.state())
+    dispatch = result.summary()["kernel_dispatch"]
+    assert dispatch["triton_execution_count"] == 1
+    route = dispatch["decisions"][0]["kernel_route"]
+    assert route["semantic_id"] == "statevector.apply.matrix_1q.local"
+    assert route["implementation_id"] == "FQKI-TRITON-SV-001-A"
+    assert route["catalog_mismatches"] == ()
 
 
 def test_single_rank_parameterized_gates_preserve_complex128_precision():
