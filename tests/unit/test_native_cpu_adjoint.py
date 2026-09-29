@@ -9,6 +9,7 @@ import flagquantum as fq
 from flagquantum.runtime.executors.statevector import (
     forward_rzz_segment,
     forward_sweep,
+    reverse_adjoint,
     reverse_adjoint_cx,
     reverse_adjoint_rotation_segment,
     reverse_adjoint_sweep,
@@ -21,6 +22,7 @@ from flagquantum.runtime.executors.statevector.reverse import (
 )
 from flagquantum.simulation.native_cpu import (
     fused_cx_adjoint_gather,
+    fused_cx_gather_out,
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
     fused_rotation_segment_adjoint_,
@@ -28,6 +30,7 @@ from flagquantum.simulation.native_cpu import (
     fused_rzz_segment_forward_,
     native_cpu_adjoint_available,
     native_cpu_cx_adjoint_gather_available,
+    native_cpu_cx_gather_available,
     native_cpu_parallel_build_available,
     native_cpu_rotation_available,
     native_cpu_rzz_available,
@@ -80,6 +83,140 @@ def test_native_cx_adjoint_gather_has_explicit_environment_rollback(
     index = torch.arange(4, dtype=torch.int32)
 
     assert fused_cx_adjoint_gather(ket, ket, index) is None
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("index_dtype", (torch.int32, torch.int64))
+@pytest.mark.parametrize("batch", (1, 2))
+def test_native_cx_gather_out_matches_index_select(
+    dtype: torch.dtype,
+    index_dtype: torch.dtype,
+    batch: int,
+) -> None:
+    if not native_cpu_cx_gather_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(9321 + batch)
+    state = (
+        torch.randn((batch, 64), generator=generator)
+        + 1j * torch.randn((batch, 64), generator=generator)
+    ).to(dtype)
+    index = torch.randperm(64, generator=generator, dtype=index_dtype)
+    output = torch.empty_like(state)
+
+    applied = fused_cx_gather_out(state, index, output)
+
+    assert applied
+    torch.testing.assert_close(output, torch.index_select(state, 1, index))
+
+
+def test_native_cx_gather_out_preserves_autograd_and_has_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = torch.arange(4, dtype=torch.int32)
+    output = torch.empty((1, 4), dtype=torch.complex128)
+    differentiable = torch.ones((1, 4), dtype=torch.complex128, requires_grad=True)
+
+    assert not fused_cx_gather_out(differentiable, index, output)
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_GATHER", "0")
+    assert not fused_cx_gather_out(differentiable.detach(), index, output)
+
+
+def test_forward_sweep_reuses_native_cx_gather_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_cx_gather_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    circuit.h(0).cx(0, 1).cx(1, 2).h(3).cx(2, 4).cx(4, 5)
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_GATHER", "0")
+    expected = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+    calls: list[tuple[int, int]] = []
+    native = forward_sweep.fused_cx_gather_out
+
+    def counted(
+        state: torch.Tensor,
+        index: torch.Tensor,
+        output: torch.Tensor,
+    ) -> bool:
+        calls.append((state.data_ptr(), output.data_ptr()))
+        return native(state, index, output)
+
+    monkeypatch.setattr(forward_sweep, "fused_cx_gather_out", counted)
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_GATHER", "1")
+    actual = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+
+    assert len(calls) == 2
+    assert calls[0] == (calls[1][1], calls[1][0])
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+
+def test_adjoint_forward_caches_observable_weights_with_isolation_and_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reverse_adjoint._clear_observable_weight_cache()
+    theta = torch.tensor(0.17, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(6, dtype=torch.complex128).ry(0, theta).cx(0, 1)
+    terms = ((0.7, (0, 1)), (0.2, (2,)))
+    calls = 0
+    original = reverse_adjoint.z_hamiltonian_weights
+
+    def counted(*args: object, **kwargs: object) -> torch.Tensor:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(reverse_adjoint, "z_hamiltonian_weights", counted)
+    first = execute_torch_distributed_statevector_reverse(
+        circuit, observable_terms=terms
+    ).value
+    second = execute_torch_distributed_statevector_reverse(
+        circuit, observable_terms=terms
+    ).value
+
+    assert calls == 1
+    torch.testing.assert_close(first, second)
+
+    execute_torch_distributed_statevector_reverse(
+        circuit, observable_terms=((0.8, (0, 1)), (0.2, (2,)))
+    )
+    assert calls == 2
+
+    monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE", "0")
+    execute_torch_distributed_statevector_reverse(circuit, observable_terms=terms)
+    assert calls == 3
+    reverse_adjoint._clear_observable_weight_cache()
+
+
+def test_adjoint_observable_weight_cache_evicts_least_recent_entry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reverse_adjoint._clear_observable_weight_cache()
+    monkeypatch.setattr(reverse_adjoint, "_OBSERVABLE_WEIGHT_CACHE_MAX_ENTRIES", 1)
+    theta = torch.tensor(0.11, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(4, dtype=torch.complex128).rx(0, theta)
+    calls = 0
+    original = reverse_adjoint.z_hamiltonian_weights
+
+    def counted(*args: object, **kwargs: object) -> torch.Tensor:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(reverse_adjoint, "z_hamiltonian_weights", counted)
+    first_terms = ((0.7, (0,)),)
+    second_terms = ((0.2, (1,)),)
+    execute_torch_distributed_statevector_reverse(circuit, observable_terms=first_terms)
+    execute_torch_distributed_statevector_reverse(
+        circuit, observable_terms=second_terms
+    )
+    execute_torch_distributed_statevector_reverse(circuit, observable_terms=first_terms)
+
+    assert calls == 3
+    reverse_adjoint._clear_observable_weight_cache()
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))

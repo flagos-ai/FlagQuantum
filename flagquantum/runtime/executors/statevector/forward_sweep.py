@@ -15,12 +15,15 @@ from ....compute import resolve_platform_device
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.native_cpu import (
+    fused_cx_gather_out,
     fused_rotation_block_forward_,
+    native_cpu_cx_gather_available,
     native_cpu_one_qubit_layer_available,
 )
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
     _compose_gate_matrices,
+    _cx_sequence_permutation_index,
     _instruction_matrix,
 )
 from ...distributed.flagos_runtime import current_flagos_device
@@ -387,12 +390,36 @@ class _ShardedForwardSweep:
                 segment_cursor += 1
             if len(segment_wires) > 1:
                 if self.resolved_device.type == "cpu":
-                    gathered = _apply_cx_sequence_gather(
-                        self.shard_state.amplitudes,
-                        tuple(wires[0] for wires in segment_wires),
-                        tuple(wires[1] for wires in segment_wires),
+                    previous = self.shard_state.amplitudes
+                    controls = tuple(wires[0] for wires in segment_wires)
+                    targets = tuple(wires[1] for wires in segment_wires)
+                    index_table = _cx_sequence_permutation_index(
+                        controls,
+                        targets,
                         self.plan.n_wires,
+                        device=previous.device,
+                        dtype=previous.dtype,
                     )
+                    if native_cpu_cx_gather_available():
+                        if self.cx_segment_scratch is None:
+                            self.cx_segment_scratch = torch.empty_like(previous)
+                        gathered = self.cx_segment_scratch
+                        if fused_cx_gather_out(previous, index_table, gathered):
+                            self.cx_segment_scratch = previous
+                        else:
+                            gathered = _apply_cx_sequence_gather(
+                                previous,
+                                controls,
+                                targets,
+                                self.plan.n_wires,
+                            )
+                    else:
+                        gathered = _apply_cx_sequence_gather(
+                            previous,
+                            controls,
+                            targets,
+                            self.plan.n_wires,
+                        )
                     self.shard_state = replace(self.shard_state, amplitudes=gathered)
                     self.local_count += len(segment_wires)
                     self.peak_scratch = max(

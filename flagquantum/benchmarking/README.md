@@ -62,7 +62,9 @@ pennylane_lightning_adjoint` to compare FlagQuantum's fused native reversible
 statevector adjoint, the same direct-layout path with its native operator
 disabled, and PennyLane Lightning's adjoint. The older
 `flagquantum_adjoint_gather_rollback` engine remains available for regression
-diagnosis. FlagQuantum's public entry point is
+diagnosis. The `flagquantum_adjoint_forward_cx_rollback` engine keeps the same
+native adjoint implementation but disables the reusable-output CPU CX gather,
+providing a paired A/B baseline for forward-path changes. FlagQuantum's public entry point is
 `hamiltonian.expectation(circuit, differentiation="adjoint")`; this initial
 contract supports a batch size of one and real, constant-coefficient Z/ZZ terms.
 The optimized single-process CPU path composes adjacent same-wire gates, applies
@@ -70,6 +72,12 @@ whole CX sequences as one permutation, reuses the forward observable diagonal,
 and evaluates analytic RX/RY/RZ/RZZ VJPs without materializing a derivative
 state. Set `FQ_NATIVE_CPU_ADJOINT=0` to reproduce the Python direct-layout A/B,
 or `FQ_STATEVECTOR_ADJOINT_CPU_DIRECT=0` to reproduce the gather-based rollback.
+Set `FQ_NATIVE_CPU_CX_GATHER=0` to restore allocating PyTorch `index_select`
+for forward CX sequences.
+Repeated local CPU adjoint steps retain the parameter-independent Z/ZZ
+observable diagonal in a bounded 256 MiB LRU cache. Use
+`flagquantum_adjoint_observable_cache_rollback` for paired benchmark runs or set
+`FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE=0` for direct rollback.
 `FQ_STATEVECTOR_CPU_DIRECT_LOCAL=0` independently
 restores the distributed gather implementation for ordinary one-process CPU
 forward execution.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,10 @@ pytestmark = pytest.mark.benchmark_contract
 ROOT = Path(__file__).parents[2]
 RESULT_NAME = "differentiable_simulator_corpus_cpu_arm64_20260928.json"
 ADJOINT_RESULT_NAME = "adjoint_differentiable_simulator_corpus_cpu_arm64_20260928.json"
+FORWARD_CX_RESULT_NAME = "native_cpu_forward_cx_gather_cpu_arm64_20260929.json"
+OBSERVABLE_CACHE_RESULT_NAME = (
+    "native_cpu_adjoint_observable_cache_cpu_arm64_20260929.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -84,6 +89,58 @@ def test_native_adjoint_corpus_records_method_matched_gradient() -> None:
         assert engine["value_and_grad"]["sample_count"] == 3
 
 
+def test_forward_cx_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_GATHER", "custom")
+    payload = run_benchmark(
+        workloads=("hardware_efficient_vqe",),
+        n_wires=(4,),
+        layers=1,
+        engines=(
+            "flagquantum_adjoint",
+            "flagquantum_adjoint_forward_cx_rollback",
+        ),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ["FQ_NATIVE_CPU_CX_GATHER"] == "custom"
+    support = payload["support_matrix"]["flagquantum_adjoint_forward_cx_rollback"]
+    assert support["included"] is True
+    assert "forward CX gather disabled" in support["contract"]
+
+
+def test_observable_cache_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE", "custom")
+    payload = run_benchmark(
+        workloads=("qaoa_path_maxcut",),
+        n_wires=(4,),
+        layers=1,
+        engines=(
+            "flagquantum_adjoint",
+            "flagquantum_adjoint_observable_cache_rollback",
+        ),
+        threads=1,
+        warmup=1,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ["FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"] == "custom"
+    support = payload["support_matrix"]["flagquantum_adjoint_observable_cache_rollback"]
+    assert support["included"] is True
+    assert "observable-weight cache disabled" in support["contract"]
+
+
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
     path = ROOT / "benchmarks" / "results" / "comparison" / RESULT_NAME
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -136,6 +193,68 @@ def test_checked_in_adjoint_corpus_is_reproducible() -> None:
     report = path.with_name(
         "ADJOINT_DIFFERENTIABLE_SIMULATOR_CORPUS_CPU_ARM64_20260928.md"
     )
+    assert report.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
+    )
+
+
+def test_checked_in_forward_cx_comparison_is_reproducible() -> None:
+    path = ROOT / "benchmarks" / "results" / "comparison" / FORWARD_CX_RESULT_NAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["schema"] == SCHEMA
+    assert payload["passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["non_release_evidence"] is True
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["release_gate_allowed"] is False
+    assert payload["scalability_blockers"]
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_forward_cx_rollback",
+    ]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 8
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert case["engines"]["flagquantum_adjoint"]["forward"]["sample_count"] == 11
+
+    report = path.with_name("NATIVE_CPU_FORWARD_CX_GATHER_CPU_ARM64_20260929.md")
+    assert report.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
+    )
+
+
+def test_checked_in_observable_cache_comparison_is_reproducible() -> None:
+    path = ROOT / "benchmarks" / "results" / "comparison" / OBSERVABLE_CACHE_RESULT_NAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["non_release_evidence"] is True
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["release_gate_allowed"] is False
+    assert payload["scalability_blockers"]
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_observable_cache_rollback",
+    ]
+    assert payload["environment"]["torch_threads"] == 8
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert (
+            case["comparison"]["engine_over_flagquantum_median"][
+                "flagquantum_adjoint_observable_cache_rollback"
+            ]["forward"]
+            > 1.0
+        )
+
+    report = path.with_name("NATIVE_CPU_ADJOINT_OBSERVABLE_CACHE_CPU_ARM64_20260929.md")
     assert report.read_text(encoding="utf-8") == _render_markdown(
         payload, artifact_name=path.name
     )
