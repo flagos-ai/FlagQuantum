@@ -89,6 +89,14 @@ def native_cpu_adjoint_rzz_h_fusion_available() -> bool:
     }
 
 
+def native_cpu_observable_rotation_boundary_available() -> bool:
+    """Return whether the observable seed may be fused into reverse rotations."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_OBSERVABLE_ROTATION_BOUNDARY", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
 def native_cpu_rotation_tile_wires() -> int:
     """Return the active native adjoint rotation tile width."""
 
@@ -248,6 +256,7 @@ def fused_rotation_segment_adjoint_(
     rzz_first_wires: torch.Tensor | None = None,
     rzz_second_wires: torch.Tensor | None = None,
     fuse_preceding_hadamards: bool = False,
+    observable_weights: torch.Tensor | None = None,
 ) -> torch.Tensor | None:
     """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
 
@@ -294,6 +303,16 @@ def fused_rotation_segment_adjoint_(
                 or not rzz_second_wires.is_contiguous()
             )
         )
+        or (
+            observable_weights is not None
+            and (
+                not native_cpu_observable_rotation_boundary_available()
+                or observable_weights.device.type != "cpu"
+                or observable_weights.dtype != angles.dtype
+                or observable_weights.shape != (ket.shape[1],)
+                or not observable_weights.is_contiguous()
+            )
+        )
     ):
         return None
     with torch.no_grad():
@@ -314,6 +333,7 @@ def fused_rotation_segment_adjoint_(
                 rzz_angles,
                 rzz_first_wires,
                 rzz_second_wires,
+                observable_weights,
             ),
         )
 

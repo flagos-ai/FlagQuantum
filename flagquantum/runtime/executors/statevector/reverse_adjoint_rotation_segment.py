@@ -16,6 +16,7 @@ from ....simulation.native_cpu import (
     native_cpu_shared_rotation_gradient_available,
 )
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
+from .reverse_observable import materialize_pending_observable_adjoint
 
 _KIND_BY_NAME = {"rx": 0, "ry": 1, "rz": 2}
 
@@ -117,6 +118,7 @@ def _apply_local_rotation_segment(
         and native_cpu_rotation_segment_available()
         and not sweep.swaps_before.get(index)
     ):
+        materialize_pending_observable_adjoint(sweep)
         return False
 
     indices: list[int] = []
@@ -141,11 +143,13 @@ def _apply_local_rotation_segment(
         cursor -= 1
 
     if len(block_wires) < 2:
+        materialize_pending_observable_adjoint(sweep)
         return False
     active_by_gate = tuple(
         sorted(sweep.slots_by_instruction.get(gate_index, ())) for gate_index in indices
     )
     if any(len(active) != 1 for active in active_by_gate):
+        materialize_pending_observable_adjoint(sweep)
         return False
 
     real_dtype = torch.float32 if sweep.dtype == torch.complex64 else torch.float64
@@ -182,9 +186,12 @@ def _apply_local_rotation_segment(
         rzz_first_wires=None if rzz_layer is None else rzz_layer[3],
         rzz_second_wires=None if rzz_layer is None else rzz_layer[4],
         fuse_preceding_hadamards=bool(rzz_layer and rzz_layer[5]),
+        observable_weights=sweep.pending_observable_weights,
     )
     if gradients is None:
+        materialize_pending_observable_adjoint(sweep)
         return False
+    sweep.pending_observable_weights = None
     if shared_parameter:
         parameter_index = active_by_gate[0][0]
         sweep._accumulate_parameter_gradient(

@@ -49,6 +49,11 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "same native adjoint with eager observable boundary",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_observable_rotation_rollback": (
+            "same native adjoint with observable seeding separate from the first "
+            "reverse rotation tile",
+            "statevector_adjoint",
+        ),
         "flagquantum_adjoint_shared_rzz_rollback": (
             "same native adjoint with shared-RZZ fusion disabled",
             "statevector_adjoint",
