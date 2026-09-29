@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 
+from ..observables import Observable
 from .density_matrix import expand_operator
 
 
@@ -21,6 +22,24 @@ class EvolutionValidationError(ValueError):
 
     def to_dict(self) -> dict[str, str]:
         return {"code": self.code, "field": self.field, "message": str(self)}
+
+
+@dataclass(frozen=True, slots=True)
+class CollapseOperator:
+    """A physical Lindblad collapse operator and its inverse-time rate."""
+
+    operator: object
+    rate: float
+    wires: tuple[int, ...] = ()
+
+
+def amplitude_damping(rate: float, wire: int) -> CollapseOperator:
+    """Return ``sqrt(rate) * |0><1|`` on one wire.
+
+    ``rate`` is a physical inverse-time rate, never a channel probability.
+    """
+
+    return CollapseOperator("amplitude_damping", rate, (wire,))
 
 
 @dataclass(frozen=True)
@@ -304,6 +323,14 @@ def _normalize_hamiltonian(
     dtype: torch.dtype,
     device: torch.device,
 ) -> torch.Tensor:
+    if isinstance(hamiltonian, Observable):
+        return _observable_matrix(
+            hamiltonian,
+            n_wires=n_wires,
+            dtype=dtype,
+            device=device,
+            field="hamiltonian",
+        )
     if (
         isinstance(hamiltonian, Sequence)
         and not isinstance(hamiltonian, (str, bytes, torch.Tensor))
@@ -349,6 +376,34 @@ def _normalize_hamiltonian(
     )
 
 
+def _observable_matrix(
+    observable: Observable,
+    *,
+    n_wires: int,
+    dtype: torch.dtype,
+    device: torch.device,
+    field: str,
+) -> torch.Tensor:
+    dim = 2**n_wires
+    matrix = torch.zeros((dim, dim), dtype=dtype, device=device)
+    identity = torch.eye(dim, dtype=dtype, device=device)
+    for term in observable.terms:
+        if not term.factors:
+            matrix = matrix + term.coefficient * identity
+            continue
+        wires = tuple(wire for wire, _ in term.factors)
+        pauli = "".join(axis for _, axis in term.factors)
+        matrix = matrix + term.coefficient * _pauli_operator(
+            pauli,
+            wires,
+            n_wires=n_wires,
+            dtype=dtype,
+            device=device,
+            field=field,
+        )
+    return matrix
+
+
 def _named_operator(
     name: str,
     wires: Sequence[int],
@@ -392,7 +447,11 @@ def _normalize_collapse_operators(
         operator: Any
         rate: Any
         raw_wires: Any
-        if isinstance(item, Mapping):
+        if isinstance(item, CollapseOperator):
+            operator = item.operator
+            rate = item.rate
+            raw_wires = item.wires
+        elif isinstance(item, Mapping):
             operator = item.get("operator", item.get("kind"))
             rate = item.get("rate")
             raw_wires = item.get("wires", item.get("wire", (0,)))
@@ -480,7 +539,16 @@ def _normalize_observables(
         items = enumerate(observables)
     result = {}
     for name, value in items:
-        if isinstance(value, Mapping):
+        if isinstance(value, Observable):
+            label = str(name) if named_mapping else f"observable_{name}"
+            matrix = _observable_matrix(
+                value,
+                n_wires=dim.bit_length() - 1,
+                dtype=dtype,
+                device=device,
+                field="observables",
+            )
+        elif isinstance(value, Mapping):
             default_label = str(name) if named_mapping else f"observable_{name}"
             label = str(value.get("name", default_label))
             matrix = _descriptor_matrix(
@@ -730,9 +798,11 @@ def evolve_density_matrix(
 
 
 __all__ = (
+    "CollapseOperator",
     "EvolutionPlan",
     "EvolutionResult",
     "EvolutionValidationError",
+    "amplitude_damping",
     "evolve_density_matrix",
     "plan_density_matrix_evolution",
 )

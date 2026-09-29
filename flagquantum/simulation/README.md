@@ -60,20 +60,19 @@ python examples/lindblad_evolution.py
 The minimal SDK call is:
 
 ```python
+import torch
+import flagquantum as fq
+
 from flagquantum.simulation import evolve_density_matrix
+from flagquantum.simulation import amplitude_damping
 
 result = evolve_density_matrix(
-    hamiltonian=[
-        {"pauli": "X", "coefficient": 0.5, "wires": [0]},
-        {"pauli": "Z", "coefficient": 0.1, "wires": [0]},
-    ],
+    hamiltonian=0.5 * fq.X(0) + 0.1 * fq.Z(0),
     initial_state="1",
     n_wires=1,
-    times=[index * 0.05 for index in range(161)],
-    collapse_operators=[
-        {"operator": "amplitude_damping", "rate": 0.1, "wire": 0}
-    ],
-    observables=[{"name": "z", "pauli": "Z", "wires": [0]}],
+    times=torch.linspace(0.0, 8.0, 161),
+    collapse_operators=[amplitude_damping(rate=0.1, wire=0)],
+    observables={"z": fq.Z(0)},
 )
 
 print(result.populations.shape)          # torch.Size([161, 2])

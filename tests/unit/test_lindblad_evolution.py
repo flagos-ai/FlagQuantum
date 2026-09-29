@@ -5,8 +5,10 @@ import math
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum.simulation import (
     EvolutionValidationError,
+    amplitude_damping,
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
@@ -117,6 +119,21 @@ def test_json_native_request_and_plan_use_the_public_contract() -> None:
     assert plan.trajectory_bytes == 3 * 2 * 2 * 16
     assert result.observables["z"].shape == (3,)
     assert result.to_dict()["density_matrices"] is not None
+
+
+def test_python_sdk_accepts_observable_algebra_and_typed_collapse() -> None:
+    result = evolve_density_matrix(
+        0.5 * fq.X(0) + 0.1 * fq.Z(0),
+        initial_state="1",
+        n_wires=1,
+        times=torch.linspace(0.0, 8.0, 161, dtype=torch.float64),
+        collapse_operators=[amplitude_damping(rate=0.1, wire=0)],
+        observables={"z": fq.Z(0)},
+    )
+
+    assert result.populations.shape == (161, 2)
+    assert result.observables["z"].shape == (161,)
+    assert result.population_bounded
 
 
 @pytest.mark.parametrize(

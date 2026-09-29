@@ -1,32 +1,26 @@
 """Driven one-qubit Lindblad evolution with physical amplitude damping."""
 
+import torch
+
+import flagquantum as fq
 from flagquantum.simulation import (
+    amplitude_damping,
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
 
 # H = (X + 0.2 Z) / 2 in one shared inverse-time unit.
-hamiltonian = [
-    {"pauli": "X", "coefficient": 0.5, "wires": [0]},
-    {"pauli": "Z", "coefficient": 0.1, "wires": [0]},
-]
-times = [index * 0.05 for index in range(161)]  # 0, ..., 8
-collapse_operators = [
-    {
-        "operator": "amplitude_damping",
-        "rate": 0.1,  # A physical inverse-time rate, not a channel probability.
-        "wire": 0,
-    }
-]
-observables = [{"name": "z", "pauli": "Z", "wires": [0]}]
+hamiltonian = 0.5 * fq.X(0) + 0.1 * fq.Z(0)
+times = torch.linspace(0.0, 8.0, 161, dtype=torch.float64)
 
 request = {
     "hamiltonian": hamiltonian,
     "initial_state": "1",
     "n_wires": 1,
     "times": times,
-    "collapse_operators": collapse_operators,
-    "observables": observables,
+    # The rate is physical inverse time, not a channel probability.
+    "collapse_operators": [amplitude_damping(rate=0.1, wire=0)],
+    "observables": {"z": fq.Z(0)},
 }
 
 # Planning performs the same validation without running the evolution.
