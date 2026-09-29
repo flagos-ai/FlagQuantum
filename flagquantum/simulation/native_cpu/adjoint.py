@@ -31,6 +31,21 @@ def _rotation_segment_enabled() -> bool:
     }
 
 
+def _wide_rotation_tiles_enabled() -> bool:
+    return os.getenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def _rotation_segment_tile_wires() -> int:
+    """Return the native rotation tile width, including the legacy rollback."""
+
+    return 11 if _wide_rotation_tiles_enabled() else 2
+
+
 def native_cpu_shared_rotation_gradient_available() -> bool:
     """Return whether shared rotation segments may aggregate one VJP in native code."""
 
@@ -150,7 +165,7 @@ def fused_rotation_segment_adjoint_(
         or wires.dtype != torch.int64
         or angles.ndim != 1
         or angles.shape[0] < 2
-        or angles.shape[0] > 48
+        or angles.shape[0] > (256 if _wide_rotation_tiles_enabled() else 48)
         or gate_kinds.shape != angles.shape
         or wires.shape != angles.shape
         or not all(
@@ -169,6 +184,7 @@ def fused_rotation_segment_adjoint_(
                 wires,
                 n_wires,
                 aggregate_shared_parameter,
+                _rotation_segment_tile_wires(),
             ),
         )
 

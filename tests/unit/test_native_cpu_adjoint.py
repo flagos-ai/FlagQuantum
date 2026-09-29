@@ -23,6 +23,7 @@ from flagquantum.runtime.executors.statevector.reverse import (
 from flagquantum.simulation.native_cpu import (
     fused_cx_adjoint_gather,
     fused_cx_gather_out,
+    fused_hadamard_block_adjoint_,
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
     fused_rotation_segment_adjoint_,
@@ -276,6 +277,64 @@ def test_native_rotation_block_has_explicit_environment_rollback(
 
     assert not applied
     torch.testing.assert_close(state, torch.ones_like(state))
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wire_count", (2, 6, 11))
+def test_native_hadamard_block_adjoint_matches_two_sequential_states(
+    dtype: torch.dtype, wire_count: int
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(1709 + wire_count)
+    width = 1 << wire_count
+    ket = (
+        torch.randn((2, width), generator=generator)
+        + 1j * torch.randn((2, width), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((2, width), generator=generator)
+        + 1j * torch.randn((2, width), generator=generator)
+    ).to(dtype)
+    matrix = torch.tensor(((1.0, 1.0), (1.0, -1.0)), dtype=dtype) / 2**0.5
+    expected_ket = ket.clone()
+    expected_adjoint = adjoint.clone()
+    for wire in range(wire_count):
+        expected_ket = _apply_matrix(expected_ket, matrix, (wire,), wire_count)
+        expected_adjoint = _apply_matrix(expected_adjoint, matrix, (wire,), wire_count)
+
+    applied = fused_hadamard_block_adjoint_(
+        ket,
+        adjoint,
+        torch.arange(wire_count, dtype=torch.int64),
+        n_wires=wire_count,
+    )
+
+    assert applied
+    tolerance = 3e-5 if dtype == torch.complex64 else 3e-12
+    torch.testing.assert_close(ket, expected_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        adjoint, expected_adjoint, atol=tolerance, rtol=tolerance
+    )
+
+
+def test_native_hadamard_block_adjoint_uses_wide_tile_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    adjoint = torch.ones_like(ket)
+
+    applied = fused_hadamard_block_adjoint_(
+        ket,
+        adjoint,
+        torch.tensor((0, 1), dtype=torch.int64),
+        n_wires=2,
+    )
+
+    assert not applied
+    torch.testing.assert_close(ket, torch.ones_like(ket))
+    torch.testing.assert_close(adjoint, torch.ones_like(adjoint))
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -660,6 +719,143 @@ def test_native_rotation_segment_adjoint_has_explicit_environment_rollback(
     torch.testing.assert_close(adjoint, torch.ones_like(adjoint))
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_segment_wide_tiles_match_legacy_tiles(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(5317)
+    initial_ket = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    initial_adjoint = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    names = ("rz", "ry", "rx") * 6
+    wires = tuple(wire for wire in (6, 5, 4, 3, 2, 1) for _ in range(3))
+    angles = torch.tensor(
+        tuple(0.03 * (index + 1) for index in range(len(names))), dtype=real_dtype
+    )
+    gate_kinds = torch.tensor(
+        tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names),
+        dtype=torch.int64,
+    )
+    wire_tensor = torch.tensor(wires, dtype=torch.int64)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "0")
+    legacy_ket = initial_ket.clone()
+    legacy_adjoint = initial_adjoint.clone()
+    legacy_gradients = fused_rotation_segment_adjoint_(
+        legacy_ket,
+        legacy_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=7,
+    )
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "1")
+    wide_ket = initial_ket.clone()
+    wide_adjoint = initial_adjoint.clone()
+    wide_gradients = fused_rotation_segment_adjoint_(
+        wide_ket,
+        wide_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=7,
+    )
+
+    assert legacy_gradients is not None
+    assert wide_gradients is not None
+    tolerance = 7e-5 if dtype == torch.complex64 else 8e-12
+    torch.testing.assert_close(
+        wide_gradients, legacy_gradients, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(wide_ket, legacy_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        wide_adjoint, legacy_adjoint, atol=tolerance, rtol=tolerance
+    )
+
+
+def test_native_rotation_segment_wide_tiles_cover_complete_large_layer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(9137)
+    initial_ket = (
+        torch.randn((1, 256), generator=generator)
+        + 1j * torch.randn((1, 256), generator=generator)
+    ).to(torch.complex128)
+    initial_adjoint = (
+        torch.randn((1, 256), generator=generator)
+        + 1j * torch.randn((1, 256), generator=generator)
+    ).to(torch.complex128)
+    names = ("rz", "ry", "rx", "rz", "ry", "rx", "rz") * 8
+    wires = tuple(wire for wire in range(7, -1, -1) for _ in range(7))
+    angles = torch.tensor(
+        tuple(0.01 * (index + 1) for index in range(len(names))),
+        dtype=torch.float64,
+    )
+    gate_kinds = torch.tensor(
+        tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names),
+        dtype=torch.int64,
+    )
+    wire_tensor = torch.tensor(wires, dtype=torch.int64)
+
+    expected_ket = initial_ket.clone()
+    expected_adjoint = initial_adjoint.clone()
+    expected_gradients = []
+    for name, wire, angle in zip(names, wires, angles, strict=True):
+        gradient, expected_ket, expected_adjoint = _reference(
+            expected_ket,
+            expected_adjoint,
+            _rotation_matrix(name, angle, torch.complex128),
+            name=name,
+            wire=wire,
+            n_wires=8,
+        )
+        expected_gradients.append(gradient)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "0")
+    assert (
+        fused_rotation_segment_adjoint_(
+            initial_ket.clone(),
+            initial_adjoint.clone(),
+            angles,
+            gate_kinds,
+            wire_tensor,
+            n_wires=8,
+        )
+        is None
+    )
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "1")
+    actual_ket = initial_ket.clone()
+    actual_adjoint = initial_adjoint.clone()
+    actual_gradients = fused_rotation_segment_adjoint_(
+        actual_ket,
+        actual_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=8,
+    )
+
+    assert actual_gradients is not None
+    torch.testing.assert_close(
+        actual_gradients, torch.stack(expected_gradients), atol=1e-11, rtol=1e-11
+    )
+    torch.testing.assert_close(actual_ket, expected_ket, atol=1e-11, rtol=1e-11)
+    torch.testing.assert_close(actual_adjoint, expected_adjoint, atol=1e-11, rtol=1e-11)
+
+
 def test_reverse_sweep_fuses_shared_rotation_layer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -761,25 +957,25 @@ def test_reverse_sweep_fuses_fixed_hadamard_blocks(
     expected_gradient = theta.grad.detach().clone()
     theta.grad = None
     calls = 0
-    native = reverse_adjoint_sweep.fused_rotation_block_forward_
+    native = reverse_adjoint_sweep.fused_hadamard_block_adjoint_
 
     def counted(
-        state: torch.Tensor,
-        matrices: torch.Tensor,
+        ket: torch.Tensor,
+        adjoint: torch.Tensor,
         wires: torch.Tensor,
         *,
         n_wires: int,
     ) -> bool:
         nonlocal calls
         calls += 1
-        return native(state, matrices, wires, n_wires=n_wires)
+        return native(ket, adjoint, wires, n_wires=n_wires)
 
-    monkeypatch.setattr(reverse_adjoint_sweep, "fused_rotation_block_forward_", counted)
+    monkeypatch.setattr(reverse_adjoint_sweep, "fused_hadamard_block_adjoint_", counted)
     monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1")
     actual = execute_torch_distributed_statevector_reverse(circuit)
     actual.backward()
 
-    assert calls == 4
+    assert calls == 1
     torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
     torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
 

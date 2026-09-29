@@ -16,7 +16,10 @@ from .permutation import (
     native_cpu_cx_gather_available,
 )
 from .rotation import (
+    fused_hadamard_block_adjoint_,
+    fused_rotation_block_adjoint_,
     fused_rotation_block_forward_,
+    native_cpu_hadamard_block_adjoint_available,
     native_cpu_one_qubit_layer_available,
     native_cpu_rotation_available,
 )
@@ -31,8 +34,11 @@ __all__ = [
     "native_cpu_rotation_segment_available",
     "native_cpu_shared_rotation_gradient_available",
     "fused_rotation_block_forward_",
+    "fused_hadamard_block_adjoint_",
+    "fused_rotation_block_adjoint_",
     "native_cpu_rotation_available",
     "native_cpu_one_qubit_layer_available",
+    "native_cpu_hadamard_block_adjoint_available",
     "fused_cx_adjoint_gather",
     "fused_cx_gather_out",
     "native_cpu_cx_adjoint_gather_available",

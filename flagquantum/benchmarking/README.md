@@ -78,6 +78,12 @@ Repeated local CPU adjoint steps retain the parameter-independent Z/ZZ
 observable diagonal in a bounded 256 MiB LRU cache. Use
 `flagquantum_adjoint_observable_cache_rollback` for paired benchmark runs or set
 `FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE=0` for direct rollback.
+Native CPU RX/RY/RZ adjoint layers use full-layer, structure-specialized wide
+tiles with tile-local gradient accumulation. Adjacent fixed Hadamards use the
+same 11-wire policy while updating ket and adjoint together. Use
+`flagquantum_adjoint_rotation_tile_rollback` for paired measurements or set
+`FQ_NATIVE_CPU_ADJOINT_WIDE_TILES=0` to restore the legacy 48-gate, two-wire
+rotation tiles and separate fixed-layer state passes.
 `FQ_STATEVECTOR_CPU_DIRECT_LOCAL=0` independently
 restores the distributed gather implementation for ordinary one-process CPU
 forward execution.
