@@ -9,12 +9,64 @@ import torch
 from ....core.ir import Instruction
 from ....simulation.native_cpu import (
     fused_rotation_segment_adjoint_,
+    native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
     native_cpu_shared_rotation_gradient_available,
 )
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
 
 _KIND_BY_NAME = {"rx": 0, "ry": 1, "rz": 2}
+
+
+def _fusable_rzz_layer(
+    sweep: Any, cursor: int, real_dtype: torch.dtype
+) -> tuple[tuple[int, ...], int, torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    """Describe an adjacent shared-parameter RZZ layer directly before rotations."""
+
+    if cursor < 1 or not native_cpu_rotation_rzz_fusion_available():
+        return None
+    indices: list[int] = []
+    while cursor >= 0:
+        candidate = sweep.bound.instructions[cursor]
+        if candidate.name != "rzz" or sweep.swaps_before.get(cursor):
+            break
+        indices.append(cursor)
+        cursor -= 1
+    active = tuple(
+        sorted(sweep.slots_by_instruction.get(gate_index, ())) for gate_index in indices
+    )
+    if len(indices) < 2 or any(len(item) != 1 for item in active):
+        return None
+    if len({item[0] for item in active}) != 1:
+        return None
+    pairs = tuple(
+        tuple(
+            sweep.persistent_mapping[int(wire)]
+            for wire in sweep.bound.instructions[gate_index].wires
+        )
+        for gate_index in indices
+    )
+    if any(abs(first - second) != 1 for first, second in pairs):
+        return None
+    if len({tuple(sorted(pair)) for pair in pairs}) != len(pairs):
+        return None
+    angles = torch.stack(
+        tuple(
+            torch.as_tensor(
+                sweep.bound.instructions[gate_index].params["theta"],
+                device=sweep.device,
+                dtype=real_dtype,
+            ).reshape(())
+            for gate_index in indices
+        )
+    ).contiguous()
+    return (
+        tuple(indices),
+        active[0][0],
+        angles,
+        torch.tensor([pair[0] for pair in pairs], dtype=torch.int64),
+        torch.tensor([pair[1] for pair in pairs], dtype=torch.int64),
+    )
 
 
 def _apply_local_rotation_segment(
@@ -82,6 +134,7 @@ def _apply_local_rotation_segment(
         len({active[0] for active in active_by_gate}) == 1
         and native_cpu_shared_rotation_gradient_available()
     )
+    rzz_layer = _fusable_rzz_layer(sweep, cursor, real_dtype)
     gradients = fused_rotation_segment_adjoint_(
         sweep.reversible_state.amplitudes,
         sweep.adjoint,
@@ -90,6 +143,9 @@ def _apply_local_rotation_segment(
         torch.tensor(mapped_wires, dtype=torch.int64),
         n_wires=sweep.plan.n_wires,
         aggregate_shared_parameter=shared_parameter,
+        rzz_angles=None if rzz_layer is None else rzz_layer[2],
+        rzz_first_wires=None if rzz_layer is None else rzz_layer[3],
+        rzz_second_wires=None if rzz_layer is None else rzz_layer[4],
     )
     if gradients is None:
         return False
@@ -116,4 +172,17 @@ def _apply_local_rotation_segment(
     sweep.evidence.analytic_rotation_derivative_count += len(indices)
     sweep.evidence.fused_parameter_adjoint_count += len(indices)
     sweep.skipped_rotation_indices.update(indices[1:])
+    if rzz_layer is not None:
+        rzz_indices, parameter_index = rzz_layer[:2]
+        sweep._accumulate_parameter_gradient(
+            parameter_index,
+            gradients[1 if shared_parameter else len(indices)].to(
+                dtype=sweep.base_parameters[parameter_index].dtype
+            ),
+            rzz_indices[-1],
+            occurrence_count=len(rzz_indices),
+        )
+        sweep.evidence.analytic_rotation_derivative_count += len(rzz_indices)
+        sweep.evidence.fused_parameter_adjoint_count += len(rzz_indices)
+        sweep.skipped_rzz_indices.update(rzz_indices)
     return True

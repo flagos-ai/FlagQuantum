@@ -90,6 +90,11 @@ all three gradients and inverse rotations. Use
 `flagquantum_adjoint_euler_triple_rollback` for paired measurements or set
 `FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES=0` to restore the prior per-gate,
 bit-tested traversal.
+The cached Z/ZZ diagonal is consumed by a fused native observable boundary:
+one parallel pass evaluates the expectation and one seeds the reverse sweep.
+Use `flagquantum_adjoint_observable_boundary_rollback` for paired measurements
+or set `FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY=0` to restore the eager PyTorch
+expressions.
 `FQ_STATEVECTOR_CPU_DIRECT_LOCAL=0` independently
 restores the distributed gather implementation for ordinary one-process CPU
 forward execution.

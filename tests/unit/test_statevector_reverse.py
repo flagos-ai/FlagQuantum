@@ -89,6 +89,31 @@ def test_repeated_adjoint_execution_observes_updated_parameter_value():
     torch.testing.assert_close(theta.grad, -torch.sin(theta.detach()))
 
 
+def test_parameter_layout_deduplicates_exact_views_of_one_leaf_element():
+    parameters = torch.tensor((0.2, 0.4), dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    circuit.rx(0, parameters[0]).rx(1, parameters[0]).rz(1, parameters[1])
+
+    values, slots, occurrences = _parameter_layout(circuit.to_ir())
+
+    assert len(values) == 2
+    assert tuple(slot[2] for slot in slots) == (0, 0, 1)
+    assert occurrences == (2, 1)
+
+
+def test_parameter_layout_keeps_independent_aliasing_leaves_distinct():
+    first = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
+    second = first.detach().requires_grad_()
+    circuit = fq.Circuit(2, dtype=torch.complex128).rx(0, first).rx(1, second)
+
+    values, slots, occurrences = _parameter_layout(circuit.to_ir())
+
+    assert values[0] is first
+    assert values[1] is second
+    assert tuple(slot[2] for slot in slots) == (0, 1)
+    assert occurrences == (1, 1)
+
+
 def test_cached_adjoint_template_revalidates_updated_parameter_value():
     _clear_adjoint_ir_template_cache()
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)

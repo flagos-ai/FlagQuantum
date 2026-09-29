@@ -15,6 +15,88 @@
 
 namespace {
 
+at::Tensor fused_observable_expectation_cpu(
+    const at::Tensor& ket,
+    const at::Tensor& weights) {
+  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
+  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
+  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
+  TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
+  TORCH_CHECK(
+      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(
+      (ket.scalar_type() == at::kComplexFloat && weights.scalar_type() == at::kFloat) ||
+          (ket.scalar_type() == at::kComplexDouble && weights.scalar_type() == at::kDouble),
+      "weight dtype must match the real component of ket");
+
+  const int64_t width = ket.size(1);
+  const int64_t item_count = ket.numel();
+  const int64_t thread_count = std::max<int64_t>(1, at::get_num_threads());
+  at::Tensor partials = at::zeros({thread_count}, weights.options());
+  at::Tensor result = at::empty({}, weights.options());
+  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_expectation_cpu", [&] {
+    using real_t = typename scalar_t::value_type;
+    const scalar_t* ket_data = ket.const_data_ptr<scalar_t>();
+    const real_t* weight_data = weights.const_data_ptr<real_t>();
+    real_t* partial_data = partials.data_ptr<real_t>();
+    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+      real_t local = real_t{0};
+      for (int64_t item = begin; item < end; ++item) {
+        const scalar_t value = ket_data[item];
+        local += (value.real() * value.real() + value.imag() * value.imag()) *
+            weight_data[item % width];
+      }
+      partial_data[at::get_thread_num()] += local;
+    });
+    real_t total = real_t{0};
+    for (int64_t thread = 0; thread < thread_count; ++thread) {
+      total += partial_data[thread];
+    }
+    *result.data_ptr<real_t>() = total;
+  });
+  return result;
+}
+
+at::Tensor fused_observable_adjoint_seed_cpu(
+    const at::Tensor& ket,
+    const at::Tensor& weights) {
+  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
+  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
+  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
+  TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
+  TORCH_CHECK(
+      ket.scalar_type() == at::kComplexFloat ||
+          ket.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(
+      (ket.scalar_type() == at::kComplexFloat && weights.scalar_type() == at::kFloat) ||
+          (ket.scalar_type() == at::kComplexDouble && weights.scalar_type() == at::kDouble),
+      "weight dtype must match the real component of ket");
+
+  at::Tensor adjoint = at::empty_like(ket);
+  const int64_t width = ket.size(1);
+  const int64_t item_count = ket.numel();
+  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_adjoint_seed_cpu", [&] {
+    using real_t = typename scalar_t::value_type;
+    const scalar_t* ket_data = ket.const_data_ptr<scalar_t>();
+    const real_t* weight_data = weights.const_data_ptr<real_t>();
+    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+      for (int64_t item = begin; item < end; ++item) {
+        adjoint_data[item] = ket_data[item] * (real_t{2} * weight_data[item % width]);
+      }
+    });
+  });
+  return adjoint;
+}
+
 inline int64_t popcount(uint64_t value) {
   int64_t count = 0;
   while (value != 0) {
@@ -439,7 +521,8 @@ at::Tensor fused_rzz_segment_forward_cpu(
     const at::Tensor& angles,
     const at::Tensor& first_wires,
     const at::Tensor& second_wires,
-    int64_t n_wires) {
+    int64_t n_wires,
+    bool enable_shared_phase_lookup) {
   TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
   TORCH_CHECK(
       angles.device().is_cpu() && first_wires.device().is_cpu() &&
@@ -509,6 +592,15 @@ at::Tensor fused_rzz_segment_forward_cpu(
     }
     scalar_t* state_data = state.data_ptr<scalar_t>();
     const int64_t item_count = state.numel();
+    std::vector<scalar_t> shared_phases;
+    if (shared_path && enable_shared_phase_lookup) {
+      shared_phases.resize(gate_count + 1);
+      for (int64_t transitions = 0; transitions <= gate_count; ++transitions) {
+        const real_t sign_sum = static_cast<real_t>(gate_count - 2 * transitions);
+        const real_t phase = real_t{-0.5} * sign_sum * angle_data[0];
+        shared_phases[transitions] = scalar_t(std::cos(phase), std::sin(phase));
+      }
+    }
     at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
       for (int64_t item = begin; item < end; ++item) {
         const int64_t basis = item & (amplitudes - 1);
@@ -529,7 +621,11 @@ at::Tensor fused_rzz_segment_forward_cpu(
             phase -= real_t{0.5} * sign * angle_data[gate];
           }
         }
-        state_data[item] *= scalar_t(std::cos(phase), std::sin(phase));
+        state_data[item] *= shared_phases.empty()
+            ? scalar_t(std::cos(phase), std::sin(phase))
+            : shared_phases[popcount(
+                  (static_cast<uint64_t>(basis) ^
+                   (static_cast<uint64_t>(basis) >> 1)) & transition_mask)];
       }
     });
   });
@@ -545,7 +641,10 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     int64_t n_wires,
     bool aggregate_shared_parameter,
     int64_t max_tile_wires,
-    bool enable_pair_fast_path) {
+    bool enable_pair_fast_path,
+    const c10::optional<at::Tensor>& rzz_angles,
+    const c10::optional<at::Tensor>& rzz_first_wires,
+    const c10::optional<at::Tensor>& rzz_second_wires) {
   TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
   TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
   TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
@@ -580,6 +679,41 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
   TORCH_CHECK(wires.numel() == gate_count, "wire count must match matrices");
   const int64_t amplitudes = int64_t{1} << n_wires;
   TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+  const bool fuse_rzz = rzz_angles.has_value();
+  TORCH_CHECK(
+      fuse_rzz == rzz_first_wires.has_value() && fuse_rzz == rzz_second_wires.has_value(),
+      "all fused RZZ metadata must be provided together");
+  int64_t rzz_count = 0;
+  uint64_t rzz_transition_mask = 0;
+  if (fuse_rzz) {
+    const at::Tensor& rzz_angle_tensor = rzz_angles.value();
+    const at::Tensor& first_tensor = rzz_first_wires.value();
+    const at::Tensor& second_tensor = rzz_second_wires.value();
+    TORCH_CHECK(rzz_angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
+                    second_tensor.device().is_cpu(), "fused RZZ metadata must be on CPU");
+    TORCH_CHECK(rzz_angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
+                    second_tensor.is_contiguous(), "fused RZZ metadata must be contiguous");
+    rzz_count = rzz_angle_tensor.numel();
+    TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
+                    second_tensor.numel() == rzz_count, "fused RZZ metadata lengths must match");
+    TORCH_CHECK(first_tensor.scalar_type() == at::kLong &&
+                    second_tensor.scalar_type() == at::kLong, "fused RZZ wires must be int64");
+    const int64_t* first_data = first_tensor.const_data_ptr<int64_t>();
+    const int64_t* second_data = second_tensor.const_data_ptr<int64_t>();
+    for (int64_t gate = 0; gate < rzz_count; ++gate) {
+      TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
+                      second_data[gate] >= 0 && second_data[gate] < n_wires,
+                  "fused RZZ wire is out of range");
+      TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
+                  "fused RZZ gates must connect adjacent wires");
+      const int64_t first_mask = int64_t{1} << (n_wires - first_data[gate] - 1);
+      const int64_t second_mask = int64_t{1} << (n_wires - second_data[gate] - 1);
+      const uint64_t transition_bit = std::min(first_mask, second_mask);
+      TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
+                  "fused RZZ gates must have unique adjacent pairs");
+      rzz_transition_mask |= transition_bit;
+    }
+  }
 
   const int64_t* kind_data = gate_kinds.const_data_ptr<int64_t>();
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
@@ -612,6 +746,23 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     scalar_t* ket_data = ket.data_ptr<scalar_t>();
     scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
     const real_t* angle_data = angles.const_data_ptr<real_t>();
+    const real_t* rzz_angle_data = nullptr;
+    std::vector<scalar_t> rzz_inverses;
+    if (fuse_rzz) {
+      TORCH_CHECK(rzz_angles.value().scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+                  "fused RZZ angle dtype must match state precision");
+      rzz_angle_data = rzz_angles.value().const_data_ptr<real_t>();
+      for (int64_t gate = 1; gate < rzz_count; ++gate) {
+        TORCH_CHECK(rzz_angle_data[gate] == rzz_angle_data[0],
+                    "fused RZZ gates must share one angle");
+      }
+      rzz_inverses.resize(rzz_count + 1);
+      for (int64_t transitions = 0; transitions <= rzz_count; ++transitions) {
+        const real_t sign_sum = static_cast<real_t>(rzz_count - 2 * transitions);
+        const real_t phase = real_t{0.5} * sign_sum * rzz_angle_data[0];
+        rzz_inverses[transitions] = scalar_t(std::cos(phase), std::sin(phase));
+      }
+    }
     std::vector<real_t> cosines(gate_count);
     std::vector<real_t> sines(gate_count);
     for (int64_t gate = 0; gate < gate_count; ++gate) {
@@ -620,8 +771,9 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     }
     const int64_t thread_count = at::get_num_threads();
     const int64_t gradient_count = aggregate_shared_parameter ? 1 : gate_count;
+    const int64_t result_gradient_count = gradient_count + (fuse_rzz ? 1 : 0);
     at::Tensor partial = at::zeros(
-        {thread_count, gradient_count},
+        {thread_count, result_gradient_count},
         ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
     real_t* partial_data = partial.data_ptr<real_t>();
 
@@ -672,7 +824,7 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
         std::array<scalar_t, 2048> ket_values{};
         std::array<scalar_t, 2048> adjoint_values{};
         real_t* local_gradients =
-            partial_data + at::get_thread_num() * gradient_count;
+            partial_data + at::get_thread_num() * result_gradient_count;
         for (int64_t item = begin; item < end; ++item) {
           const int64_t row = item / blocks_per_row;
           int64_t base = item - row * blocks_per_row;
@@ -800,6 +952,27 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
               apply_gate(std::integral_constant<int64_t, 2>{});
             }
           }
+          if (fuse_rzz && segment_end == gate_count) {
+            real_t rzz_gradient = real_t{0};
+            for (int64_t local = 0; local < local_size; ++local) {
+              const int64_t basis = base + offsets[local] - row * amplitudes;
+              const uint64_t transitions =
+                  (static_cast<uint64_t>(basis) ^
+                   (static_cast<uint64_t>(basis) >> 1)) & rzz_transition_mask;
+              const int64_t transition_count = popcount(transitions);
+              const real_t sign_sum = static_cast<real_t>(
+                  rzz_count - 2 * transition_count);
+              const scalar_t ket_value = ket_values[local];
+              const scalar_t adjoint_value = adjoint_values[local];
+              const real_t cross = adjoint_value.real() * ket_value.imag() -
+                  adjoint_value.imag() * ket_value.real();
+              rzz_gradient += real_t{0.5} * sign_sum * cross;
+              const scalar_t inverse = rzz_inverses[transition_count];
+              ket_values[local] = inverse * ket_value;
+              adjoint_values[local] = inverse * adjoint_value;
+            }
+            local_gradients[gradient_count] += rzz_gradient;
+          }
           for (int64_t local = 0; local < local_size; ++local) {
             ket_data[base + offsets[local]] = ket_values[local];
             adjoint_data[base + offsets[local]] = adjoint_values[local];
@@ -809,12 +982,12 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
       segment_start = segment_end;
     }
     result = at::zeros(
-        {gradient_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
+        {result_gradient_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
     real_t* result_data = result.data_ptr<real_t>();
     for (int64_t thread = 0; thread < thread_count; ++thread) {
-      for (int64_t gradient = 0; gradient < gradient_count; ++gradient) {
+      for (int64_t gradient = 0; gradient < result_gradient_count; ++gradient) {
         result_data[gradient] +=
-            partial_data[thread * gradient_count + gradient];
+            partial_data[thread * result_gradient_count + gradient];
       }
     }
   });
@@ -950,6 +1123,10 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
 
 TORCH_LIBRARY(flagquantum_native, library) {
   library.def(
+      "fused_observable_expectation(Tensor ket, Tensor weights) -> Tensor");
+  library.def(
+      "fused_observable_adjoint_seed(Tensor ket, Tensor weights) -> Tensor");
+  library.def(
       "fused_rotation_block_forward_(Tensor(a!) state, Tensor matrices, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
   library.def(
@@ -960,12 +1137,14 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "Tensor matrix, int wire, int second_wire, int n_wires, int gate_kind) -> Tensor");
   library.def(
       "fused_rzz_segment_forward_(Tensor(a!) state, Tensor angles, "
-      "Tensor first_wires, Tensor second_wires, int n_wires) -> Tensor(a!)");
+      "Tensor first_wires, Tensor second_wires, int n_wires, "
+      "bool enable_shared_phase_lookup) -> Tensor(a!)");
   library.def(
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
       "bool aggregate_shared_parameter, int max_tile_wires, "
-      "bool enable_pair_fast_path) -> Tensor");
+      "bool enable_pair_fast_path, Tensor? rzz_angles=None, "
+      "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None) -> Tensor");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor first_wires, Tensor second_wires, int n_wires, "
@@ -973,6 +1152,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
 }
 
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
+  library.impl("fused_observable_expectation", &fused_observable_expectation_cpu);
+  library.impl(
+      "fused_observable_adjoint_seed", &fused_observable_adjoint_seed_cpu);
   library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
   library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);

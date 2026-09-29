@@ -26,6 +26,10 @@ OBSERVABLE_CACHE_RESULT_NAME = (
 )
 ROTATION_TILE_RESULT_NAME = "native_cpu_adjoint_rotation_tiles_cpu_arm64_20260929.json"
 EULER_TRIPLE_RESULT_NAME = "native_cpu_adjoint_euler_triples_cpu_arm64_20260929.json"
+OBSERVABLE_BOUNDARY_RESULT_NAME = (
+    "native_cpu_adjoint_observable_boundary_cpu_arm64_20260929.json"
+)
+SHARED_RZZ_RESULT_NAME = "native_cpu_shared_rzz_cpu_arm64_20260929.json"
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -193,6 +197,55 @@ def test_euler_triple_rollback_engine_restores_environment(
     support = payload["support_matrix"]["flagquantum_adjoint_euler_triple_rollback"]
     assert support["included"] is True
     assert "Euler fast path disabled" in support["contract"]
+
+
+def test_observable_boundary_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY", "custom")
+    rollback = "flagquantum_adjoint_observable_boundary_rollback"
+    payload = run_benchmark(
+        workloads=("hardware_efficient_vqe",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ["FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY"] == "custom"
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert "eager observable boundary" in support["contract"]
+
+
+def test_shared_rzz_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    variable = "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION"
+    monkeypatch.setenv(variable, "custom")
+    rollback = "flagquantum_adjoint_shared_rzz_rollback"
+    payload = run_benchmark(
+        workloads=("qaoa_path_maxcut",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ[variable] == "custom"
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert "shared-RZZ fusion disabled" in support["contract"]
 
 
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
@@ -382,6 +435,69 @@ def test_checked_in_euler_triple_comparison_is_reproducible() -> None:
     assert report.read_text(encoding="utf-8") == _render_markdown(
         payload, artifact_name=path.name
     )
+
+
+def test_checked_in_observable_boundary_comparison_is_reproducible() -> None:
+    path = (
+        ROOT / "benchmarks" / "results" / "comparison" / OBSERVABLE_BOUNDARY_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_observable_boundary_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == ["flagquantum_adjoint", rollback]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 4
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert case["engines"]["flagquantum_adjoint"]["backward"]["sample_count"] == 9
+
+    vqe = payload["cases"][0]
+    ratio = vqe["comparison"]["engine_over_flagquantum_median"][rollback]
+    assert ratio["forward"] > 1.10
+    assert ratio["backward"] > 1.05
+    assert ratio["value_and_grad"] > 1.05
+
+    report = path.with_name(
+        "NATIVE_CPU_ADJOINT_OBSERVABLE_BOUNDARY_CPU_ARM64_20260929.md"
+    )
+    assert report.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
+    )
+
+
+def test_checked_in_shared_rzz_comparison_is_reproducible() -> None:
+    path = ROOT / "benchmarks" / "results" / "comparison" / SHARED_RZZ_RESULT_NAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_shared_rzz_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == ["flagquantum_adjoint", rollback]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 4
+    case = payload["cases"][0]
+    assert case["workload"]["name"] == "qaoa_path_maxcut"
+    assert case["correctness"]["passed"] is True
+    assert case["stability"]["passed"] is True
+    assert case["engines"]["flagquantum_adjoint"]["backward"]["sample_count"] == 9
+    ratio = case["comparison"]["engine_over_flagquantum_median"][rollback]
+    assert ratio["forward"] > 1.09
+    assert ratio["backward"] > 1.03
+    assert ratio["value_and_grad"] > 1.08
+
+    report = path.with_name("NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md")
+    text = report.read_text(encoding="utf-8")
+    assert "180.598" in text
+    assert "196.709" in text
+    assert "1.09x" in text
 
 
 @pytest.mark.parametrize(

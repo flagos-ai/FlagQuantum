@@ -24,6 +24,8 @@ from flagquantum.simulation.native_cpu import (
     fused_cx_adjoint_gather,
     fused_cx_gather_out,
     fused_hadamard_block_adjoint_,
+    fused_observable_adjoint_seed,
+    fused_observable_expectation,
     fused_rotation_adjoint_,
     fused_rotation_block_forward_,
     fused_rotation_segment_adjoint_,
@@ -48,6 +50,56 @@ def test_native_cpu_build_preserves_torch_parallel_backend() -> None:
 
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batch", (1, 2))
+def test_native_observable_boundary_matches_eager_reference(
+    dtype: torch.dtype,
+    batch: int,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is unavailable")
+    generator = torch.Generator().manual_seed(9181 + batch)
+    ket = (
+        torch.randn((batch, 64), generator=generator)
+        + 1j * torch.randn((batch, 64), generator=generator)
+    ).to(dtype)
+    weights = torch.randn(
+        64,
+        generator=generator,
+        dtype=torch.float32 if dtype == torch.complex64 else torch.float64,
+    )
+
+    value = fused_observable_expectation(ket, weights)
+    adjoint = fused_observable_adjoint_seed(ket, weights)
+
+    assert value is not None
+    assert adjoint is not None
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(
+        value,
+        (ket.abs().square() * weights.reshape(1, -1)).sum(),
+        atol=tolerance,
+        rtol=tolerance,
+    )
+    torch.testing.assert_close(
+        adjoint,
+        2 * ket * weights.reshape(1, -1),
+        atol=tolerance,
+        rtol=tolerance,
+    )
+
+
+def test_native_observable_boundary_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    weights = torch.ones(4, dtype=torch.float64)
+    monkeypatch.setenv("FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY", "0")
+
+    assert fused_observable_expectation(ket, weights) is None
+    assert fused_observable_adjoint_seed(ket, weights) is None
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
