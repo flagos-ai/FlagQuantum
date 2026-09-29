@@ -56,6 +56,17 @@ def native_cpu_specialized_forward_rotations_available() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
+def native_cpu_forward_rotation_tile_wires(n_wires: int) -> int:
+    """Return the bounded forward tile width with an explicit rollback."""
+
+    if n_wires < 16:
+        return 4
+    enabled = os.getenv(
+        "FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+    return 8 if enabled else 6
+
+
 def native_cpu_hadamard_block_adjoint_available() -> bool:
     """Return whether paired wide Hadamard blocks are enabled and loadable."""
 
@@ -76,7 +87,7 @@ def fused_rotation_block_forward_(
     rzz_first_wires: torch.Tensor | None = None,
     rzz_second_wires: torch.Tensor | None = None,
 ) -> bool:
-    """Apply two to six disjoint one-qubit matrices to a state in place.
+    """Apply two to eight disjoint one-qubit matrices to a state in place.
 
     ``False`` is the stable fallback signal. The caller retains the existing
     PyTorch path when the extension is disabled, unavailable, or unsupported.
@@ -94,7 +105,7 @@ def fused_rotation_block_forward_(
         or wires.dtype != torch.int64
         or state.ndim != 2
         or matrices.ndim != 3
-        or not 2 <= matrices.shape[0] <= 6
+        or not 2 <= matrices.shape[0] <= 8
         or matrices.shape[1:] != (2, 2)
         or wires.shape != (matrices.shape[0],)
         or (torch.is_grad_enabled() and matrices.requires_grad)

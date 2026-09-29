@@ -28,9 +28,16 @@ from flagquantum import algorithms as fqa
 from ._environment import temporary_boolean_environment
 from .contract import runtime_metadata, write_json_atomic
 from .differentiable_adjoint_report import render_adjoint_markdown
+from .differentiable_engines import (
+    ADJOINT_ENGINE_NAMES,
+    ALL_ENGINE_NAMES,
+    ENGINE_NAMES,
+    EngineName,
+)
 from .differentiable_regression_report import (
     render_euler_triple_markdown,
     render_forward_cx_markdown,
+    render_forward_wide_tile_markdown,
     render_observable_boundary_markdown,
     render_observable_cache_markdown,
     render_rotation_tile_markdown,
@@ -45,87 +52,14 @@ _ABSOLUTE_TOLERANCE = 1e-9
 _STABILITY_THRESHOLD = 0.20
 
 WorkloadName = Literal["hardware_efficient_vqe", "qaoa_path_maxcut"]
-EngineName = Literal[
-    "flagquantum_native",
-    "pennylane_default_qubit",
-    "flagquantum_adjoint",
-    "flagquantum_adjoint_python_fallback",
-    "flagquantum_adjoint_gather_rollback",
-    "flagquantum_adjoint_forward_cx_rollback",
-    "flagquantum_adjoint_observable_cache_rollback",
-    "flagquantum_adjoint_rotation_tile_rollback",
-    "flagquantum_adjoint_euler_triple_rollback",
-    "flagquantum_adjoint_observable_boundary_rollback",
-    "flagquantum_adjoint_observable_rotation_rollback",
-    "flagquantum_adjoint_shared_rzz_rollback",
-    "flagquantum_adjoint_forward_rzz_rotation_rollback",
-    "pennylane_lightning_adjoint",
-]
 
 WORKLOAD_NAMES: tuple[WorkloadName, ...] = (
     "hardware_efficient_vqe",
     "qaoa_path_maxcut",
 )
-ENGINE_NAMES: tuple[EngineName, ...] = (
-    "flagquantum_native",
-    "pennylane_default_qubit",
-)
-ADJOINT_ENGINE_NAMES: tuple[EngineName, ...] = (
-    "flagquantum_adjoint",
-    "flagquantum_adjoint_python_fallback",
-    "pennylane_lightning_adjoint",
-)
-ALL_ENGINE_NAMES = (
-    ENGINE_NAMES
-    + ADJOINT_ENGINE_NAMES
-    + (
-        "flagquantum_adjoint_gather_rollback",
-        "flagquantum_adjoint_forward_cx_rollback",
-        "flagquantum_adjoint_observable_cache_rollback",
-        "flagquantum_adjoint_rotation_tile_rollback",
-        "flagquantum_adjoint_euler_triple_rollback",
-        "flagquantum_adjoint_observable_boundary_rollback",
-        "flagquantum_adjoint_observable_rotation_rollback",
-        "flagquantum_adjoint_shared_rzz_rollback",
-        "flagquantum_adjoint_forward_rzz_rotation_rollback",
-    )
-)
-
 _WORKLOAD_LABELS: dict[WorkloadName, str] = {
     "hardware_efficient_vqe": "Hardware-efficient VQE",
     "qaoa_path_maxcut": "QAOA path MaxCut",
-}
-_ENGINE_LABELS: dict[EngineName, str] = {
-    "flagquantum_native": "FlagQuantum",
-    "pennylane_default_qubit": "PennyLane default.qubit",
-    "flagquantum_adjoint": "FlagQuantum adjoint",
-    "flagquantum_adjoint_python_fallback": "FlagQuantum adjoint Python fallback",
-    "flagquantum_adjoint_gather_rollback": "FlagQuantum adjoint gather rollback",
-    "flagquantum_adjoint_forward_cx_rollback": (
-        "FlagQuantum adjoint forward CX rollback"
-    ),
-    "flagquantum_adjoint_observable_cache_rollback": (
-        "FlagQuantum adjoint observable-cache rollback"
-    ),
-    "flagquantum_adjoint_rotation_tile_rollback": (
-        "FlagQuantum adjoint rotation-tile rollback"
-    ),
-    "flagquantum_adjoint_euler_triple_rollback": (
-        "FlagQuantum adjoint Euler-triple rollback"
-    ),
-    "flagquantum_adjoint_observable_boundary_rollback": (
-        "FlagQuantum adjoint observable-boundary rollback"
-    ),
-    "flagquantum_adjoint_observable_rotation_rollback": (
-        "FlagQuantum adjoint observable/rotation rollback"
-    ),
-    "flagquantum_adjoint_shared_rzz_rollback": (
-        "FlagQuantum adjoint shared-RZZ rollback"
-    ),
-    "flagquantum_adjoint_forward_rzz_rotation_rollback": (
-        "FlagQuantum adjoint forward RZZ/rotation rollback"
-    ),
-    "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
 
 
@@ -267,6 +201,7 @@ def _flagquantum_executor(
     adjoint_rzz_h_fusion: bool | None = None,
     forward_shared_rzz_fusion: bool | None = None,
     forward_specialized_rotations: bool | None = None,
+    forward_wide_rotation_tiles: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -288,6 +223,9 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION": (forward_shared_rzz_fusion),
                 "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS": (
                     forward_specialized_rotations
+                ),
+                "FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES": (
+                    forward_wide_rotation_tiles
                 ),
             }
         ):
@@ -482,6 +420,14 @@ def _engine_callable(
             adjoint_rzz_h_fusion=False,
             forward_shared_rzz_fusion=False,
             forward_specialized_rotations=False,
+        )
+    if engine == "flagquantum_adjoint_forward_wide_tile_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            forward_wide_rotation_tiles=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
@@ -922,6 +868,11 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
         "flagquantum_adjoint_observable_boundary_rollback",
     ):
         return render_observable_boundary_markdown(payload, artifact_name=artifact_name)
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_forward_wide_tile_rollback",
+    ):
+        return render_forward_wide_tile_markdown(payload, artifact_name=artifact_name)
     if tuple(payload["engines"]) == (
         "flagquantum_adjoint",
         "flagquantum_adjoint_python_fallback",

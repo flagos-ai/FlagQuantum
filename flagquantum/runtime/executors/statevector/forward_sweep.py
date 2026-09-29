@@ -20,6 +20,7 @@ from ....simulation.native_cpu import (
     native_cpu_cx_gather_available,
     native_cpu_one_qubit_layer_available,
 )
+from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_wires
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
     _compose_gate_matrices,
@@ -493,9 +494,7 @@ class _ShardedForwardSweep:
         generic_layer = native_cpu_one_qubit_layer_available()
         if not generic_layer and instruction.name not in {"rx", "ry", "rz"}:
             return None
-        # The local tile grows as 2**k: four wires minimize small-state overhead,
-        # while six amortize full-state scans once the state exceeds cache scale.
-        max_block_wires = 4 if self.plan.n_wires < 16 else 6
+        max_block_wires = native_cpu_forward_rotation_tile_wires(self.plan.n_wires)
         cursor = index
         active_wire: int | None = None
         while cursor < len(self.ir.instructions):

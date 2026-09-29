@@ -38,6 +38,9 @@ from flagquantum.simulation.native_cpu import (
     native_cpu_rotation_available,
     native_cpu_rzz_available,
 )
+from flagquantum.simulation.native_cpu.rotation import (
+    native_cpu_forward_rotation_tile_wires,
+)
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
 
@@ -273,7 +276,16 @@ def test_adjoint_observable_weight_cache_evicts_least_recent_entry(
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
-@pytest.mark.parametrize("wires", ((0, 2), (4, 1, 3), (3, 0, 4, 2), (5, 1, 4, 0, 3, 2)))
+@pytest.mark.parametrize(
+    "wires",
+    (
+        (0, 2),
+        (4, 1, 3),
+        (3, 0, 4, 2),
+        (5, 1, 4, 0, 3, 2),
+        tuple(range(8)),
+    ),
+)
 def test_native_rotation_block_matches_sequential_pytorch(
     dtype: torch.dtype, wires: tuple[int, ...]
 ) -> None:
@@ -311,6 +323,17 @@ def test_native_rotation_block_matches_sequential_pytorch(
     assert applied
     tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
     torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
+def test_forward_rotation_tile_width_has_explicit_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert native_cpu_forward_rotation_tile_wires(15) == 4
+    assert native_cpu_forward_rotation_tile_wires(22) == 8
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES", "0")
+
+    assert native_cpu_forward_rotation_tile_wires(22) == 6
 
 
 def test_native_rotation_block_has_explicit_environment_rollback(

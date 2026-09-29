@@ -37,6 +37,9 @@ FORWARD_RZZ_ROTATION_RESULT_NAME = (
 OBSERVABLE_ROTATION_RESULT_NAME = (
     "native_cpu_observable_rotation_cpu_arm64_20260929.json"
 )
+FORWARD_WIDE_TILE_RESULT_NAME = (
+    "native_cpu_forward_wide_rotation_tiles_cpu_arm64_20260929.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -327,6 +330,31 @@ def test_forward_rzz_rotation_rollback_engine_restores_environment(
     support = payload["support_matrix"][rollback]
     assert support["included"] is True
     assert "backward RZZ/H boundary fusion" in support["contract"]
+
+
+def test_forward_wide_tile_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    variable = "FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES"
+    monkeypatch.setenv(variable, "custom")
+    rollback = "flagquantum_adjoint_forward_wide_tile_rollback"
+    payload = run_benchmark(
+        workloads=("qaoa_path_maxcut",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ[variable] == "custom"
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert "legacy six-wire forward rotation tiles" in support["contract"]
 
 
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
@@ -654,6 +682,37 @@ def test_checked_in_observable_rotation_comparison_is_reproducible() -> None:
     assert "70.938" in text
     assert "913.521" in text
     assert "6.45x" in text
+
+
+def test_checked_in_forward_wide_tile_comparison_is_reproducible() -> None:
+    path = (
+        ROOT / "benchmarks" / "results" / "comparison" / FORWARD_WIDE_TILE_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_forward_wide_tile_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == ["flagquantum_adjoint", rollback]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 2
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert case["engines"]["flagquantum_adjoint"]["forward"]["sample_count"] == 41
+        ratio = case["comparison"]["engine_over_flagquantum_median"][rollback]
+        assert ratio["forward"] > 1.02
+        assert ratio["value_and_grad"] > 1.0
+
+    report = path.with_name(
+        "NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES_CPU_ARM64_20260929.md"
+    )
+    assert report.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
+    )
 
 
 @pytest.mark.parametrize(
