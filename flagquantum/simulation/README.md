@@ -51,5 +51,38 @@ complex128 and `2e-5` for complex64). Density matrices are returned only when
 requested. `plan_density_matrix_evolution` validates the identical request and
 reports dimensions and retained-trajectory memory without evolving it.
 
+The issue #234 reference problem can be run directly:
+
+```bash
+python examples/lindblad_evolution.py
+```
+
+The minimal SDK call is:
+
+```python
+from flagquantum.simulation import evolve_density_matrix
+
+result = evolve_density_matrix(
+    hamiltonian=[
+        {"pauli": "X", "coefficient": 0.5, "wires": [0]},
+        {"pauli": "Z", "coefficient": 0.1, "wires": [0]},
+    ],
+    initial_state="1",
+    n_wires=1,
+    times=[index * 0.05 for index in range(161)],
+    collapse_operators=[
+        {"operator": "amplitude_damping", "rate": 0.1, "wire": 0}
+    ],
+    observables=[{"name": "z", "pauli": "Z", "wires": [0]}],
+)
+
+print(result.populations.shape)          # torch.Size([161, 2])
+print(result.maximum_trace_drift)
+print(result.population_bounded)
+```
+
+Set `return_density_matrices=True` when the complete density trajectory is
+needed. Otherwise it is omitted from the returned result.
+
 [Detailed source map](IMPLEMENTATION.md) locates shared gate primitives,
 rank-local kernels, specialized precision paths, and numerical migration rules.
