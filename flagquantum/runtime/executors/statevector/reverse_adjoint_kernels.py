@@ -275,11 +275,9 @@ def _apply_matrix_gate(
         return state
     touched = any(wire in plan.sharded_wires for wire in instruction.wires)
     if not touched or plan.world_size == 1:
-        if (
-            _triton_local_cx_enabled()
-            and instruction.name == "cx"
-            and shard_state.amplitudes.device.type == "cuda"
-            and shard_state.amplitudes.dtype == torch.complex64
+        if instruction.name == "cx" and _triton_local_cx_enabled(
+            device_type=shard_state.amplitudes.device.type,
+            dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
         ):
             state, scratch = _vectorized_local_cx_gate(
                 shard_state,

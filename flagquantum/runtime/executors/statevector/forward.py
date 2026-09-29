@@ -100,16 +100,39 @@ def _triton_local_1q_decision(
     )
 
 
-def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
-    return select_triton_kernel(
+def _triton_local_cx_decision(
+    *,
+    runtime_supported: bool = True,
+    device_type: str,
+    dtype: str,
+) -> KernelDecision:
+    return select_cataloged_triton_kernel(
         "local_cx",
+        request=KernelRequest(
+            semantic_id="statevector.apply.cnot.local",
+            device=device_type,
+            dtype=dtype,
+            layout="flat_statevector",
+            direction="forward",
+            addressing=("local",),
+            providers=("triton",),
+        ),
+        implementation_id="FQKI-TRITON-SV-002-A",
         requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
-        supported=supported,
+        runtime_supported=runtime_supported,
+        device_runtime_provider="pytorch",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
     )
 
 
-def _triton_local_cx_enabled() -> bool:
-    return bool(_triton_local_cx_decision().accelerated)
+def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
+    return bool(
+        _triton_local_cx_decision(
+            device_type=device_type,
+            dtype=dtype,
+        ).accelerated
+    )
 
 
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:

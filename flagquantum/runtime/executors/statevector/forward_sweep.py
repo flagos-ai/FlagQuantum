@@ -753,11 +753,9 @@ class _ShardedForwardSweep:
                 self.shard_state.amplitudes if self.local_compilation else None
             )
             cx_decision = _triton_local_cx_decision(
-                supported=bool(
-                    instruction.name == "cx"
-                    and self.shard_state.amplitudes.device.type == "cuda"
-                    and self.shard_state.amplitudes.dtype == torch.complex64
-                )
+                runtime_supported=instruction.name == "cx",
+                device_type=self.shard_state.amplitudes.device.type,
+                dtype=str(self.shard_state.amplitudes.dtype).removeprefix("torch."),
             )
             if instruction.name == "cx":
                 self.kernel_dispatch_evidence.record(cx_decision)
