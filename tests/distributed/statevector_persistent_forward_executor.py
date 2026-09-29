@@ -106,9 +106,9 @@ def main() -> None:
                 expected_mapping[sharded],
                 expected_mapping[local],
             )
-        assert persistent.logical_to_physical_wires == tuple(expected_mapping), (
-            "the replayed swaps do not reproduce the plan's wire permutation"
-        )
+        assert persistent.logical_to_physical_wires == tuple(
+            expected_mapping
+        ), "the replayed swaps do not reproduce the plan's wire permutation"
         torch.testing.assert_close(
             _canonical_state(persistent),
             _canonical_state(canonical),
