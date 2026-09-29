@@ -792,6 +792,7 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     bool aggregate_shared_parameter,
     int64_t max_tile_wires,
     bool enable_pair_fast_path,
+    bool fuse_preceding_hadamards,
     const c10::optional<at::Tensor>& rzz_angles,
     const c10::optional<at::Tensor>& rzz_first_wires,
     const c10::optional<at::Tensor>& rzz_second_wires) {
@@ -830,6 +831,9 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
   const int64_t amplitudes = int64_t{1} << n_wires;
   TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const bool fuse_rzz = rzz_angles.has_value();
+  TORCH_CHECK(
+      !fuse_preceding_hadamards || fuse_rzz,
+      "preceding Hadamards require a fused RZZ boundary");
   TORCH_CHECK(
       fuse_rzz == rzz_first_wires.has_value() && fuse_rzz == rzz_second_wires.has_value(),
       "all fused RZZ metadata must be provided together");
@@ -890,6 +894,8 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
   at::Tensor result;
   AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_segment_adjoint_cpu", [&] {
     using real_t = typename scalar_t::value_type;
+    constexpr real_t inverse_sqrt_two =
+        static_cast<real_t>(0.7071067811865475244);
     TORCH_CHECK(
         angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
         "angle dtype must match the state precision");
@@ -1123,6 +1129,35 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
             }
             local_gradients[gradient_count] += rzz_gradient;
           }
+          if (fuse_preceding_hadamards && segment_end == gate_count) {
+            for (int64_t wire = 0; wire < unique_count; ++wire) {
+              const int64_t local_mask = int64_t{1} << wire;
+              for (int64_t block = 0; block < local_size;
+                   block += 2 * local_mask) {
+                _Pragma("omp simd")
+                for (int64_t offset = 0; offset < local_mask; ++offset) {
+                  const int64_t local = block + offset;
+                  const int64_t one = local + local_mask;
+                  const scalar_t ket_zero = ket_values[local];
+                  const scalar_t ket_one = ket_values[one];
+                  ket_values[local] = scalar_t(
+                      (ket_zero.real() + ket_one.real()) * inverse_sqrt_two,
+                      (ket_zero.imag() + ket_one.imag()) * inverse_sqrt_two);
+                  ket_values[one] = scalar_t(
+                      (ket_zero.real() - ket_one.real()) * inverse_sqrt_two,
+                      (ket_zero.imag() - ket_one.imag()) * inverse_sqrt_two);
+                  const scalar_t adjoint_zero = adjoint_values[local];
+                  const scalar_t adjoint_one = adjoint_values[one];
+                  adjoint_values[local] = scalar_t(
+                      (adjoint_zero.real() + adjoint_one.real()) * inverse_sqrt_two,
+                      (adjoint_zero.imag() + adjoint_one.imag()) * inverse_sqrt_two);
+                  adjoint_values[one] = scalar_t(
+                      (adjoint_zero.real() - adjoint_one.real()) * inverse_sqrt_two,
+                      (adjoint_zero.imag() - adjoint_one.imag()) * inverse_sqrt_two);
+                }
+              }
+            }
+          }
           for (int64_t local = 0; local < local_size; ++local) {
             ket_data[base + offsets[local]] = ket_values[local];
             adjoint_data[base + offsets[local]] = adjoint_values[local];
@@ -1295,7 +1330,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
       "bool aggregate_shared_parameter, int max_tile_wires, "
-      "bool enable_pair_fast_path, Tensor? rzz_angles=None, "
+      "bool enable_pair_fast_path, bool fuse_preceding_hadamards, "
+      "Tensor? rzz_angles=None, "
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None) -> Tensor");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "

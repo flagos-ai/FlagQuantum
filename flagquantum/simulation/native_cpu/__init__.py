@@ -7,9 +7,11 @@ from .adjoint import (
     fused_rotation_segment_adjoint_,
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
+    native_cpu_adjoint_rzz_h_fusion_available,
     native_cpu_parallel_build_available,
     native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
+    native_cpu_rotation_tile_wires,
     native_cpu_shared_rotation_gradient_available,
 )
 from .permutation import (
@@ -37,9 +39,11 @@ __all__ = [
     "fused_rotation_segment_adjoint_",
     "fused_rzz_segment_adjoint_",
     "native_cpu_adjoint_available",
+    "native_cpu_adjoint_rzz_h_fusion_available",
     "native_cpu_parallel_build_available",
     "native_cpu_rotation_segment_available",
     "native_cpu_rotation_rzz_fusion_available",
+    "native_cpu_rotation_tile_wires",
     "native_cpu_shared_rotation_gradient_available",
     "fused_rotation_block_forward_",
     "fused_hadamard_block_adjoint_",

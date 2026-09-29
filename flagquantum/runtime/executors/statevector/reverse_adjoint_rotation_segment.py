@@ -9,8 +9,10 @@ import torch
 from ....core.ir import Instruction
 from ....simulation.native_cpu import (
     fused_rotation_segment_adjoint_,
+    native_cpu_adjoint_rzz_h_fusion_available,
     native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
+    native_cpu_rotation_tile_wires,
     native_cpu_shared_rotation_gradient_available,
 )
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
@@ -19,8 +21,21 @@ _KIND_BY_NAME = {"rx": 0, "ry": 1, "rz": 2}
 
 
 def _fusable_rzz_layer(
-    sweep: Any, cursor: int, real_dtype: torch.dtype
-) -> tuple[tuple[int, ...], int, torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    sweep: Any,
+    cursor: int,
+    real_dtype: torch.dtype,
+    final_tile_wires: frozenset[int],
+) -> (
+    tuple[
+        tuple[int, ...],
+        int,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        tuple[int, ...],
+    ]
+    | None
+):
     """Describe an adjacent shared-parameter RZZ layer directly before rotations."""
 
     if cursor < 1 or not native_cpu_rotation_rzz_fusion_available():
@@ -60,12 +75,29 @@ def _fusable_rzz_layer(
             for gate_index in indices
         )
     ).contiguous()
+    hadamard_indices: tuple[int, ...] = ()
+    if native_cpu_adjoint_rzz_h_fusion_available():
+        matched: dict[int, int] = {}
+        while cursor >= 0:
+            if sweep.swaps_before.get(cursor) or sweep.slots_by_instruction.get(cursor):
+                break
+            candidate = sweep.bound.instructions[cursor]
+            if candidate.name != "h" or len(candidate.wires) != 1:
+                break
+            wire = sweep.persistent_mapping[int(candidate.wires[0])]
+            if wire in matched:
+                break
+            matched[wire] = cursor
+            cursor -= 1
+        if final_tile_wires.issubset(matched):
+            hadamard_indices = tuple(matched[wire] for wire in final_tile_wires)
     return (
         tuple(indices),
         active[0][0],
         angles,
         torch.tensor([pair[0] for pair in pairs], dtype=torch.int64),
         torch.tensor([pair[1] for pair in pairs], dtype=torch.int64),
+        hadamard_indices,
     )
 
 
@@ -134,7 +166,10 @@ def _apply_local_rotation_segment(
         len({active[0] for active in active_by_gate}) == 1
         and native_cpu_shared_rotation_gradient_available()
     )
-    rzz_layer = _fusable_rzz_layer(sweep, cursor, real_dtype)
+    tile_wires = native_cpu_rotation_tile_wires()
+    final_tile_start = ((len(block_wires) - 1) // tile_wires) * tile_wires
+    final_tile_wires = frozenset(block_wires[final_tile_start:])
+    rzz_layer = _fusable_rzz_layer(sweep, cursor, real_dtype, final_tile_wires)
     gradients = fused_rotation_segment_adjoint_(
         sweep.reversible_state.amplitudes,
         sweep.adjoint,
@@ -146,6 +181,7 @@ def _apply_local_rotation_segment(
         rzz_angles=None if rzz_layer is None else rzz_layer[2],
         rzz_first_wires=None if rzz_layer is None else rzz_layer[3],
         rzz_second_wires=None if rzz_layer is None else rzz_layer[4],
+        fuse_preceding_hadamards=bool(rzz_layer and rzz_layer[5]),
     )
     if gradients is None:
         return False
@@ -185,4 +221,5 @@ def _apply_local_rotation_segment(
         sweep.evidence.analytic_rotation_derivative_count += len(rzz_indices)
         sweep.evidence.fused_parameter_adjoint_count += len(rzz_indices)
         sweep.skipped_rzz_indices.update(rzz_indices)
+        sweep.skipped_fixed_block_indices.update(rzz_layer[5])
     return True

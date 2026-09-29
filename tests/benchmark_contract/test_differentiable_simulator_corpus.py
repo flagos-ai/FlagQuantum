@@ -255,6 +255,7 @@ def test_forward_rzz_rotation_rollback_engine_restores_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     variables = (
+        "FQ_NATIVE_CPU_ADJOINT_RZZ_H_FUSION",
         "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION",
         "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS",
     )
@@ -277,7 +278,7 @@ def test_forward_rzz_rotation_rollback_engine_restores_environment(
     assert all(os.environ[variable] == "custom" for variable in variables)
     support = payload["support_matrix"][rollback]
     assert support["included"] is True
-    assert "forward shared-RZZ fusion" in support["contract"]
+    assert "backward RZZ/H boundary fusion" in support["contract"]
 
 
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
@@ -557,13 +558,15 @@ def test_checked_in_forward_rzz_rotation_comparison_is_reproducible() -> None:
     assert case["engines"]["flagquantum_adjoint"]["forward"]["sample_count"] == 31
     ratio = case["comparison"]["engine_over_flagquantum_median"][rollback]
     assert ratio["forward"] > 1.80
-    assert ratio["value_and_grad"] > 1.20
+    assert ratio["backward"] > 1.40
+    assert ratio["value_and_grad"] > 1.55
 
     report = path.with_name("NATIVE_CPU_FORWARD_RZZ_ROTATION_CPU_ARM64_20260929.md")
     text = report.read_text(encoding="utf-8")
-    assert "50.465" in text
-    assert "97.692" in text
-    assert "1.94x" in text
+    assert "66.208" in text
+    assert "65.829" in text
+    assert "1.45x" in text
+    assert "1.59x" in text
 
 
 @pytest.mark.parametrize(

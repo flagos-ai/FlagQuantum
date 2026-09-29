@@ -1,18 +1,18 @@
-# Native CPU forward RZZ/rotation comparison
+# Native CPU QAOA boundary comparison
 
 This report is generated from
 [`native_cpu_forward_rzz_rotation_cpu_arm64_20260929.json`](native_cpu_forward_rzz_rotation_cpu_arm64_20260929.json).
 It measures an exact 22-qubit QAOA path-MaxCut value-and-gradient evaluation
-before and after the native CPU forward changes in this PR. Ratios above one
-mean the optimized path is faster.
+before and after the native CPU forward and backward boundary changes in this
+PR. Ratios above one mean the optimized path is faster.
 
 | Workload | Qubits | Gates | Parameters | Optimized forward (ms) | Rollback forward (ms) | Forward speedup | Optimized backward (ms) | Rollback backward (ms) | Backward speedup | Optimized total (ms) | Rollback total (ms) | Total speedup | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| QAOA path MaxCut | 22 | 65 | 2 | 50.465 | 97.692 | 1.94x | 93.862 | 94.408 | 1.01x | 144.316 | 192.909 | 1.34x | 1.776e-15 |
+| QAOA path MaxCut | 22 | 65 | 2 | 66.208 | 119.486 | 1.80x | 65.829 | 95.549 | 1.45x | 134.134 | 213.654 | 1.59x | 1.776e-15 |
 
 Both paths passed the `1e-9` correctness threshold. Thirty-one retained samples
-followed five warmups. Total-time relative median absolute deviation was 1.49%
-for the optimized path and 1.32% for rollback, both below the benchmark's 20%
+followed five warmups. Total-time relative median absolute deviation was 3.71%
+for the optimized path and 1.24% for rollback, both below the benchmark's 20%
 stability ceiling.
 
 ## What is measured and why it matters
@@ -26,21 +26,20 @@ gate microbenchmark.
 The optimized forward path fuses the shared RZZ layer into the first following
 rotation tile and replaces generic complex matrix multiplication with
 structurally equivalent RX, RY, and RZ arithmetic. Contiguous butterfly pairs
-also remove the legacy per-amplitude bit-test branch.
-Contiguous butterfly pairs avoid a branch in the amplitude hot loop. Together,
-these changes reduce full-state traffic and arithmetic without changing the
-public API or the fallback path.
+also remove the legacy per-amplitude bit-test branch. In reverse, the last
+rotation tile now absorbs the preceding Hadamards after undoing its adjacent
+RZZ layer. That reduces the ket-plus-adjoint full-state scans for this QAOA
+boundary from four to three. Together, these changes reduce memory traffic and
+arithmetic without changing the public API or the fallback path.
 
 ## Current level
 
 On this Apple arm64 CPU with four PyTorch threads, the optimized FlagQuantum
-forward pass takes 48.3% less time than the direct rollback of all three changes;
-the complete value-and-gradient call takes 25.2% less time. This is useful evidence for the
-22-qubit QAOA shape, not a claim that every circuit, CPU, thread count, or larger
-state vector receives the same speedup. The unchanged backward kernel varied by
-about 2% in this run and is slightly slower in the optimized samples, so the
-forward improvement is the causal result while total time is the user-visible
-outcome; its 0.6% movement is within ordinary run-to-run variation.
+forward pass takes 44.6% less time and backward takes 31.1% less time than the
+direct rollback. The complete value-and-gradient call takes 37.2% less time.
+This is useful evidence for the measured 22-qubit QAOA shape, not a claim that
+every circuit, CPU, thread count, or larger state vector receives the same
+speedup.
 
 ## FlagQuantum example
 
@@ -84,7 +83,8 @@ flagquantum-benchmark run differentiable_simulator_corpus \
 ```
 
 The rollback engine temporarily disables
+`FQ_NATIVE_CPU_ADJOINT_RZZ_H_FUSION`,
 `FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION`,
-`FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS`, then restores the caller's
+and `FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS`, then restores the caller's
 environment. This keeps both engines in one process with rotated execution
 order and otherwise identical FlagQuantum code.
