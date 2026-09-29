@@ -29,6 +29,9 @@ from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
     StatevectorShardState,
 )
+from flagquantum.runtime.executors.statevector.transpose_dispatch import (
+    _triton_transpose_1q_decision,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -124,6 +127,75 @@ def test_local_cx_segment_decision_reports_catalog_mismatch(
     assert decision.reason == "input_not_supported"
     assert decision.implementation_id is None
     assert decision.catalog_mismatches == (mismatch,)
+
+
+def test_transpose_1q_decision_binds_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    decision = _triton_transpose_1q_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert decision.accelerated
+    assert decision.semantic_id == "statevector.distributed.transpose_apply_1q"
+    assert decision.implementation_id == "FQKI-TRITON-SV-006-A"
+    assert decision.catalog_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_transpose_1q_decision_reports_catalog_mismatch(
+    monkeypatch, device_type, dtype, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1")
+
+    decision = _triton_transpose_1q_decision(
+        device_type=device_type,
+        dtype=dtype,
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == "input_not_supported"
+    assert decision.implementation_id is None
+    assert decision.catalog_mismatches == (mismatch,)
+
+
+@pytest.mark.parametrize(
+    ("enabled", "runtime_supported", "reason"),
+    (("0", True, "disabled_by_policy"), ("1", False, "input_not_supported")),
+)
+def test_transpose_1q_decision_preserves_runtime_policy(
+    monkeypatch, enabled, runtime_supported, reason
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", enabled)
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+
+    decision = _triton_transpose_1q_decision(
+        runtime_supported=runtime_supported,
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == reason
+    assert decision.catalog_mismatches == ()
 
 
 def test_cpu_cx_segment_gather_is_single_process_only(monkeypatch):

@@ -51,6 +51,7 @@ def main() -> None:
     world = int(os.environ.get("WORLD_SIZE", "1"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     device = torch.device("cpu")
+    previous_grad_enabled = torch.is_grad_enabled()
     if args.backend == "nccl":
         torch.cuda.set_device(local_rank)
         device = torch.device("cuda", local_rank)
@@ -61,6 +62,8 @@ def main() -> None:
         os.environ["FQ_STATEVECTOR_LOCAL_BLOCK_FUSION"] = "1"
         os.environ["FQ_STATEVECTOR_TRITON_LOCAL_CX"] = "1"
         os.environ["FQ_STATEVECTOR_TRITON_CX_SEGMENT"] = "1"
+        os.environ["FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q"] = "1"
+        torch.set_grad_enabled(False)
     if world > 1:
         dist.init_process_group(args.backend)
     try:
@@ -152,6 +155,14 @@ def main() -> None:
             rtol=2e-6,
         )
         evidence = persistent.kernel_dispatch_evidence.summary()
+        transpose_record = next(
+            (
+                record
+                for record in evidence["decisions"]
+                if record["feature"] == "transpose_1q"
+            ),
+            None,
+        )
         if dist.is_initialized():
             dist.destroy_process_group()
         print(
@@ -168,6 +179,14 @@ def main() -> None:
                     "local_gate_count": persistent.local_gate_count,
                     "distributed_gate_count": persistent.distributed_gate_count,
                     "triton_execution_count": evidence["triton_execution_count"],
+                    "transpose_1q_execution_count": (
+                        transpose_record["count"] if transpose_record else 0
+                    ),
+                    "transpose_1q_implementation_id": (
+                        transpose_record["kernel_route"]["implementation_id"]
+                        if transpose_record
+                        else None
+                    ),
                     "cleanup_verified": not dist.is_initialized(),
                 },
                 sort_keys=True,
@@ -175,6 +194,7 @@ def main() -> None:
             flush=True,
         )
     finally:
+        torch.set_grad_enabled(previous_grad_enabled)
         if dist.is_initialized():
             dist.destroy_process_group()
 

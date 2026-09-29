@@ -39,7 +39,6 @@ from .forward import (
     _local_block_fusion_width,
     _single_process_cpu_direct_enabled,
     _triton_local_cx_decision,
-    _triton_transpose_1q_enabled,
     _vectorized_cross_shard_cx,
     _vectorized_local_cx_gate,
     _vectorized_local_diagonal_gate,
@@ -57,6 +56,7 @@ from .layout import (
 )
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
+from .transpose_dispatch import _triton_transpose_1q_tensor_decision
 
 
 class _ShardedForwardSweep:
@@ -252,16 +252,23 @@ class _ShardedForwardSweep:
 
         instruction_swaps = self.swaps_before.get(index, ())
         instruction = self.ir.instructions[index]
-        fused_swap_gate = bool(
-            _triton_transpose_1q_enabled()
-            and self.local_compilation
-            and not torch.is_grad_enabled()
-            and len(instruction_swaps) == 1
-            and len(instruction.wires) == 1
-            and instruction_swaps[0].sharded_logical_wire == int(instruction.wires[0])
-            and self.shard_state.amplitudes.dtype == torch.complex64
-            and self.shard_state.amplitudes.device.type == "cuda"
+        matrix = self.matrices[index]
+        transpose_decision = _triton_transpose_1q_tensor_decision(
+            self.shard_state.amplitudes,
+            runtime_supported=bool(
+                self.local_compilation
+                and not torch.is_grad_enabled()
+                and len(instruction_swaps) == 1
+                and len(instruction.wires) == 1
+                and instruction_swaps[0].sharded_logical_wire
+                == int(instruction.wires[0])
+                and matrix.shape == (2, 2)
+                and matrix.dtype == self.shard_state.amplitudes.dtype
+                and matrix.device == self.shard_state.amplitudes.device
+                and matrix.is_contiguous()
+            ),
         )
+        fused_swap_gate = transpose_decision.accelerated
         for swap_index, swap in enumerate(instruction_swaps):
             rank_bit_position = self.ir.n_wires - swap.sharded_physical_wire - 1
             checkpoint_mode = _ket_checkpoint_mode()
@@ -294,6 +301,8 @@ class _ShardedForwardSweep:
             self.shard_state = replace(self.shard_state, amplitudes=swapped)
             self.communication_count += count
             self.communication_bytes += byte_count
+            if fused_swap_gate:
+                self.kernel_dispatch_evidence.record(transpose_decision)
             (
                 self.persistent_mapping[swap.local_logical_wire],
                 self.persistent_mapping[swap.sharded_logical_wire],
@@ -316,7 +325,6 @@ class _ShardedForwardSweep:
                 for wire in original_instruction.wires
             ),
         )
-        matrix = self.matrices[index]
         touched = any(wire in self.plan.sharded_wires for wire in instruction.wires)
         cursor = self._cx_segment(index, instruction, touched)
         if cursor is not None:
