@@ -6,7 +6,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -89,7 +89,10 @@ class LindbladPlan:
     _payload_json: str
 
     def to_dict(self) -> dict[str, Any]:
-        return json.loads(self._payload_json)
+        payload = json.loads(self._payload_json)
+        if not isinstance(payload, dict):
+            raise SerializationError("stored Lindblad plan must contain an object")
+        return cast(dict[str, Any], payload)
 
     def to_json(self, *, indent: int | None = None) -> str:
         if indent is None:
