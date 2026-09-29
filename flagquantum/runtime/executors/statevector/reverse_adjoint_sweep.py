@@ -35,7 +35,7 @@ from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import StatevectorExchangeWorkspace, _storage_global_indices
 from .gradient_dispatch import (
     _triton_adjoint_vjp_tensor_decision,
-    _triton_vjp_adjoint_decision,
+    _triton_local_reversible_vjp_tensor_decision,
 )
 from .gradient_reduction import AsyncGradientReducer
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
@@ -519,16 +519,16 @@ class _ReversibleAdjointSweep:
     ) -> bool:
         """Reconstruct one ket with the fused reversible VJP, or report it cannot."""
 
-        reversible_vjp_decision = _triton_vjp_adjoint_decision(
-            supported=bool(
+        reversible_vjp_decision = _triton_local_reversible_vjp_tensor_decision(
+            getattr(self.reversible_state, "amplitudes", None),
+            self.adjoint,
+            runtime_supported=bool(
                 self.inplace_local
                 and self.reversible_state is not None
                 and len(active) == 1
                 and len(execution_instruction.wires) == 1
                 and execution_instruction.wires[0] not in self.plan.sharded_wires
-                and self.reversible_state.amplitudes.dtype == torch.complex64
-                and self.reversible_state.amplitudes.device.type == "cuda"
-            )
+            ),
         )
         cpu_supported = bool(
             self.inplace_local
@@ -582,7 +582,6 @@ class _ReversibleAdjointSweep:
                 execution_instruction, accelerated_matrix
             )
             if derivative_matrix is not None:
-                self.evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
                 from ....kernels.triton.statevector_adjoint import (
                     fused_complex64_local_1q_reversible_vjp,
                 )
@@ -600,6 +599,7 @@ class _ReversibleAdjointSweep:
                     derivative_matrix,
                     bit_position=bit_position,
                 ).to(dtype=self.base_parameters[active[0]].dtype)
+                self.evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
                 self._accumulate_parameter_gradient(active[0], gradient, index)
                 self.evidence.analytic_rotation_derivative_count += 1
                 self.evidence.fused_parameter_adjoint_count += 1
