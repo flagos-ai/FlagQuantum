@@ -31,13 +31,12 @@ from ....simulation.statevector.operations import (
     _instruction_matrix,
 )
 from .checkpointing import StatevectorCheckpointPolicy
+from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import (
     StatevectorExchangeWorkspace,
     _storage_global_indices,
-    _triton_local_cx_segment_enabled,
 )
 from .gradient_reduction import AsyncGradientReducer
-from .kernel_dispatch import triton_available
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
@@ -126,11 +125,16 @@ class _ReversibleAdjointSweep:
 
     def run(self) -> tuple[torch.Tensor, ...]:
         """Run the reverse sweep and return one gradient per parameter."""
-
         self._prepare_layout()
         self._prepare_checkpoints()
         self._prepare_adjoint()
         self._prepare_gradients()
+        segment_state = getattr(self.reversible_state, "amplitudes", self.adjoint)
+        self.cx_segment_decision = _triton_local_cx_segment_tensor_decision(
+            self.bound,
+            segment_state,
+            runtime_supported=self.inplace_local and self.adjoint.is_contiguous(),
+        )
         self.skipped_cx_indices: set[int] = set()
         self.skipped_fixed_block_indices: set[int] = set()
         self.skipped_rotation_indices: set[int] = set()
@@ -668,18 +672,13 @@ class _ReversibleAdjointSweep:
         execution_instruction: Instruction,
     ) -> bool:
         """Fuse a contiguous run of local CX gates, or report it cannot."""
-
         if (
             self.inplace_local
             and self.reversible_state is not None
             and execution_instruction.name == "cx"
             and not self.swaps_before.get(index)
             and (
-                (
-                    triton_available()
-                    and _triton_local_cx_segment_enabled(self.bound)
-                    and self.reversible_state.amplitudes.device.type == "cuda"
-                )
+                self.cx_segment_decision.accelerated
                 or (
                     self.world_size == 1
                     and self.reversible_state.amplitudes.device.type == "cpu"
@@ -761,6 +760,9 @@ class _ReversibleAdjointSweep:
                         control_bit_positions=controls,
                         target_bit_positions=targets,
                         output=cx_segment_adjoint_scratch,
+                    )
+                    self.evidence.kernel_dispatch_evidence.record(
+                        self.cx_segment_decision, count=2
                     )
                     self.adjoint = cx_segment_adjoint_scratch
                     self.cx_segment_scratch = (previous_ket, previous_adjoint)
