@@ -28,6 +28,7 @@ from ....simulation.statevector.operations import (
     _zero_basis_local_indices,
 )
 from ...distributed.identity import DistributedIdentity
+from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
 from .environment import get_bool, mode
 from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
@@ -871,6 +872,7 @@ def _vectorized_cross_shard_cx(
     process_group: Any | None = None,
     workspace: StatevectorExchangeWorkspace | None = None,
     output: torch.Tensor | None = None,
+    kernel_dispatch_evidence: KernelDispatchEvidence | None = None,
 ) -> tuple[StatevectorShardState, int, int, int]:
     """Apply a CX touching exactly one rank bit with minimal communication."""
 
@@ -930,26 +932,26 @@ def _vectorized_cross_shard_cx(
     active_chunk = max(1, chunk_amplitudes)
     communication_count = communication_bytes = 0
     peak = output_bytes
-    use_triton_pack = (
-        shard_state.amplitudes.device.type == "cuda"
-        and shard_state.amplitudes.dtype == torch.complex64
-        and shard_state.amplitudes.is_contiguous()
-        and out.is_contiguous()
+    pack_decision, unpack_decision = _triton_control_subspace_tensor_decisions(
+        shard_state.amplitudes,
+        out,
     )
-    if use_triton_pack:
+    if pack_decision.accelerated or unpack_decision.accelerated:
         from ....kernels.triton.statevector_gates import (
             pack_complex64_control_one,
             unpack_complex64_control_one,
         )
     for chunk_index, start in enumerate(range(0, active_count, active_chunk)):
         end = min(active_count, start + active_chunk)
-        if use_triton_pack:
+        if pack_decision.accelerated:
             local = pack_complex64_control_one(
                 shard_state.amplitudes,
                 bit_position=control_position,
                 compressed_start=start,
                 compressed_end=end,
             )
+            if kernel_dispatch_evidence is not None:
+                kernel_dispatch_evidence.record(pack_decision)
             indices = None
         else:
             indices = _zero_basis_local_indices(
@@ -962,6 +964,8 @@ def _vectorized_cross_shard_cx(
             )
             indices |= control_mask
             local = shard_state.amplitudes[:, indices].contiguous()
+            if kernel_dispatch_evidence is not None:
+                kernel_dispatch_evidence.record(pack_decision)
         remote = (
             workspace.acquire(local, slot=0)
             if workspace is not None
@@ -975,16 +979,29 @@ def _vectorized_cross_shard_cx(
         )
         for request in requests:
             _wait_for_exchange(request, local.device)
-        if use_triton_pack:
+        if unpack_decision.accelerated:
             unpack_complex64_control_one(
                 remote,
                 out,
                 bit_position=control_position,
                 compressed_start=start,
             )
+            if kernel_dispatch_evidence is not None:
+                kernel_dispatch_evidence.record(unpack_decision)
         else:
-            assert indices is not None
+            if indices is None:
+                indices = _zero_basis_local_indices(
+                    start,
+                    end,
+                    (control,),
+                    n_wires=plan.n_wires,
+                    rank_bits=rank_bits,
+                    device=out.device,
+                )
+                indices |= control_mask
             out[:, indices] = remote
+            if kernel_dispatch_evidence is not None:
+                kernel_dispatch_evidence.record(unpack_decision)
         communication_count += 1
         sent_bytes = local.numel() * local.element_size()
         communication_bytes += sent_bytes

@@ -72,3 +72,10 @@ def test_two_rank_nccl_persistent_layout_backward_matches_dense_autograd():
         == 2
     )
     assert completed.stdout.count('"persistent_layout_enabled": true') == 2
+    assert (
+        completed.stdout.count('"pack_implementation_id": "FQKI-TRITON-SV-007-A"') == 2
+    )
+    assert (
+        completed.stdout.count('"unpack_implementation_id": "FQKI-TRITON-SV-008-A"')
+        == 2
+    )

@@ -809,6 +809,7 @@ class _ShardedForwardSweep:
                 chunk_amplitudes=self.chunk_amplitudes,
                 process_group=self.process_group,
                 workspace=self.exchange_workspace,
+                kernel_dispatch_evidence=self.kernel_dispatch_evidence,
             )
         elif (
             len(instruction.wires) == 1

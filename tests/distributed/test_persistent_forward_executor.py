@@ -103,3 +103,12 @@ def test_two_rank_nccl_persistent_layout_reaches_triton_paths():
         assert summary["triton_execution_count"] > 0
         assert summary["transpose_1q_execution_count"] > 0
         assert summary["transpose_1q_implementation_id"] == "FQKI-TRITON-SV-006-A"
+        assert summary["control_subspace_pack_execution_count"] > 0
+        assert (
+            summary["control_subspace_pack_implementation_id"] == "FQKI-TRITON-SV-007-A"
+        )
+        assert summary["control_subspace_unpack_execution_count"] > 0
+        assert (
+            summary["control_subspace_unpack_implementation_id"]
+            == "FQKI-TRITON-SV-008-A"
+        )
