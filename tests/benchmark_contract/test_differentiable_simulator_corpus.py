@@ -12,6 +12,7 @@ from flagquantum.benchmarking.differentiable_simulator_corpus import (
     SCHEMA,
     WORKLOAD_NAMES,
     _render_markdown,
+    _timing_semantics,
     build_workload,
     run_benchmark,
 )
@@ -69,9 +70,17 @@ def test_native_differentiable_corpus_records_forward_and_backward() -> None:
     assert payload["distribution_semantics"] == "single_device_fast_path"
     assert payload["scalability_claim_allowed"] is False
     assert payload["methodology"]["optimizer_step_included"] is False
+    assert payload["methodology"]["primary_performance_metric"] == "value_and_grad"
+    assert payload["methodology"]["cross_engine_phase_comparison_allowed"] is False
     assert len(payload["cases"]) == 2
     for case in payload["cases"]:
         engine = case["engines"]["flagquantum_native"]
+        assert engine["timing_semantics"]["cross_engine_comparable_metrics"] == [
+            "value_and_grad"
+        ]
+        assert (
+            engine["timing_semantics"]["cross_engine_phase_comparison_allowed"] is False
+        )
         assert engine["forward"]["sample_count"] == 3
         assert engine["backward"]["median_seconds"] > 0
         assert engine["value_and_grad"]["median_seconds"] > 0
@@ -99,6 +108,17 @@ def test_native_adjoint_corpus_records_method_matched_gradient() -> None:
         engine = case["engines"]["flagquantum_adjoint"]
         assert engine["differentiation"] == "flagquantum_statevector_adjoint"
         assert engine["value_and_grad"]["sample_count"] == 3
+
+
+def test_lightning_timing_semantics_prevent_phase_ranking() -> None:
+    semantics = _timing_semantics("pennylane_lightning_adjoint")
+
+    assert semantics["primary_performance_metric"] == "value_and_grad"
+    assert semantics["cross_engine_comparable_metrics"] == ["value_and_grad"]
+    assert semantics["cross_engine_phase_comparison_allowed"] is False
+    assert semantics["gradient_work_attribution"] == (
+        "adjoint_derivative_work_may_run_during_value_evaluation"
+    )
 
 
 def test_forward_cx_rollback_engine_restores_environment(
@@ -625,6 +645,11 @@ def test_checked_in_observable_rotation_comparison_is_reproducible() -> None:
 
     report = path.with_name("NATIVE_CPU_OBSERVABLE_ROTATION_CPU_ARM64_20260929.md")
     text = report.read_text(encoding="utf-8")
+    assert "Value evaluation (ms)" in text
+    assert "Autograd callback (ms)" in text
+    assert "Only value + gradient is" in text
+    assert "comparable across engines" in text
+    assert "Backward ratio vs optimized" not in text
     assert "69.109" in text
     assert "70.938" in text
     assert "913.521" in text

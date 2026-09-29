@@ -7,7 +7,7 @@ with the observable seed fused into the first reverse rotation tile, against a
 direct rollback and PennyLane Lightning. Ratios above one mean FlagQuantum is
 faster.
 
-| Engine | Forward (ms) | Backward (ms) | Value + gradient (ms) | Backward ratio vs optimized | Total ratio vs optimized | Max gradient error |
+| Engine | Value evaluation (ms) | Autograd callback (ms) | Value + gradient (ms) | Callback ratio vs optimized | Value + gradient ratio vs optimized | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | FlagQuantum fused observable/rotation | 74.265 | 69.109 | 141.595 | 1.00x | 1.00x | 0.000e+00 |
 | FlagQuantum direct seed rollback | 76.461 | 70.938 | 145.618 | 1.03x | 1.03x | 0.000e+00 |
@@ -16,6 +16,11 @@ faster.
 All engines passed the `1e-9` correctness threshold. Thirty-one retained
 samples followed five warmups. Total-time relative median absolute deviation
 was 3.40% for the optimized path, 5.34% for rollback, and 3.21% for Lightning.
+Value evaluation and autograd callback are framework-observed Torch phases,
+not method-matched adjoint-kernel boundaries. Lightning may perform most of its
+adjoint derivative work during QNode value evaluation. Only value + gradient is
+comparable across engines; callback ratios are meaningful only between the two
+FlagQuantum paths, which share an execution boundary.
 
 ## What is measured and why it matters
 

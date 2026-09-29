@@ -9,7 +9,7 @@ to every circuit parameter; construction and optimizer updates are excluded.
 
 ## Results
 
-| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | PennyLane Lightning total (ms) | PennyLane Lightning / FlagQuantum total | Max gradient error |
+| Workload | Qubits | Gates | Params | FQ value evaluation (ms) | FQ autograd callback (ms) | FQ value + gradient (ms) | Python autograd callback (ms) | Python value + gradient (ms) | Native callback speedup | PennyLane Lightning value + gradient (ms) | PennyLane Lightning / FlagQuantum value + gradient | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Hardware-efficient VQE | 10 | 39 | 30 | 1.271 | 0.668 | 1.951 | 3.987 | 5.241 | 5.97x | 2.539 | 1.30x | 3.889e-15 |
 | Hardware-efficient VQE | 14 | 55 | 42 | 2.567 | 2.129 | 4.921 | 8.676 | 11.383 | 4.08x | 5.936 | 1.21x | 4.956e-15 |
@@ -20,7 +20,12 @@ to every circuit parameter; construction and optimizer updates are excluded.
 | QAOA path MaxCut | 18 | 53 | 2 | 21.851 | 22.990 | 44.966 | 70.161 | 89.981 | 3.05x | 49.179 | 1.09x | 1.688e-14 |
 | QAOA path MaxCut | 22 | 65 | 2 | 414.576 | 416.280 | 838.229 | 1294.972 | 1731.306 | 3.11x | 891.147 | 1.06x | 3.570e-13 |
 
-A PennyLane Lightning/FlagQuantum ratio above one means FlagQuantum was faster. Peak RSS was
+Value evaluation and autograd callback are framework-observed Torch phases,
+not method-matched adjoint-kernel boundaries. Lightning may perform most
+adjoint derivative work during QNode value evaluation, leaving a very small
+autograd callback. Only value + gradient is ranked across frameworks. A
+PennyLane Lightning/FlagQuantum value + gradient ratio above one means
+FlagQuantum was faster. Peak RSS was
 not measured in this timing run. These are local, non-release
 single-device results, not a universal framework ranking or scaling claim.
 

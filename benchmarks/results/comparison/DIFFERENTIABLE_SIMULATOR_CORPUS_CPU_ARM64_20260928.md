@@ -13,7 +13,7 @@ Environment: macOS-27.0-arm64-arm-64bit; Python 3.12.14; flagquantum 0.2.0, torc
 
 ## Results
 
-| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | PL forward (ms) | PL backward (ms) | PL total (ms) | PL / FQ total | FQ peak RSS (MiB) | PL peak RSS (MiB) | Max gradient error |
+| Workload | Qubits | Gates | Params | FQ value evaluation (ms) | FQ autograd callback (ms) | FQ value + gradient (ms) | PL value evaluation (ms) | PL autograd callback (ms) | PL value + gradient (ms) | PL / FQ value + gradient | FQ peak RSS (MiB) | PL peak RSS (MiB) | Max gradient error |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Hardware-efficient VQE | 10 | 39 | 30 | 1.766 | 1.503 | 3.294 | 3.371 | 2.046 | 5.505 | 1.67x | 203.8 | 412.7 | 3.023e-15 |
 | Hardware-efficient VQE | 14 | 55 | 42 | 4.091 | 5.343 | 9.362 | 7.024 | 7.809 | 14.921 | 1.59x | 213.5 | 422.6 | 3.028e-15 |
@@ -24,8 +24,11 @@ Environment: macOS-27.0-arm64-arm-64bit; Python 3.12.14; flagquantum 0.2.0, torc
 | QAOA path MaxCut | 18 | 53 | 2 | 35.181 | 45.763 | 80.960 | 54.889 | 86.339 | 141.573 | 1.75x | 336.9 | 604.0 | 1.048e-13 |
 | QAOA path MaxCut | 22 | 65 | 2 | 1025.693 | 1723.961 | 3008.643 | 6920.977 | 4265.360 | 11396.678 | 3.79x | 2473.3 | 2947.8 | 1.277e-12 |
 
-A PL/FQ ratio above one means FlagQuantum was faster; below one means
-PennyLane default.qubit was faster. Peak RSS is measured in a separate isolated
+The value-evaluation and autograd-callback phases are framework-observed
+Torch boundaries, not method-matched kernel boundaries, so they must not be
+ranked across frameworks. Value + gradient is the primary comparable metric.
+A PL/FQ value + gradient ratio above one means FlagQuantum was faster; below
+one means PennyLane default.qubit was faster. Peak RSS is measured in a separate isolated
 process and includes framework import, circuit/device construction, one warmup,
 and one value-and-gradient execution, so it is an operational footprint rather
 than tensor-only memory. These local results are not a universal framework
@@ -37,13 +40,13 @@ All 8 measured cases passed the value-and-gradient check and the 20% RMAD stabil
 gate; the maximum gradient error was 1.277e-12. FlagQuantum completed the matched value-
 and-gradient operation 1.36x to 3.79x faster on this host.
 
-At 22 qubits, FlagQuantum's forward and total execution were faster than default.qubit,
-while native backward remained its largest component (Hardware-efficient VQE: forward
-1132.953 ms and backward 1769.963 ms; QAOA path MaxCut: forward 1025.693 ms and backward
-1723.961 ms). The measured optimization target is therefore reverse-mode state retention
-and backward execution, not another forward-only gate kernel. FlagQuantum's isolated
-peak RSS reached 2.42-3.34 GiB at this width, versus 2.88-3.63 GiB for PennyLane
-default.qubit.
+At 22 qubits, FlagQuantum's value evaluation and total execution were faster than
+default.qubit, while its autograd callback remained its largest measured phase
+(Hardware-efficient VQE: value evaluation 1132.953 ms and autograd callback 1769.963 ms;
+QAOA path MaxCut: value evaluation 1025.693 ms and autograd callback 1723.961 ms). The
+measured optimization target is therefore reverse-mode state retention and autograd-
+callback execution, not another value-only gate kernel. FlagQuantum's isolated peak RSS
+reached 2.42-3.34 GiB at this width, versus 2.88-3.63 GiB for PennyLane default.qubit.
 
 ## What the workloads mean
 

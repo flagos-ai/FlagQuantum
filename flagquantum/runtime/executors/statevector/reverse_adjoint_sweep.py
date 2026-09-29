@@ -32,10 +32,7 @@ from ....simulation.statevector.operations import (
 )
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
-from .forward import (
-    StatevectorExchangeWorkspace,
-    _storage_global_indices,
-)
+from .forward import StatevectorExchangeWorkspace, _storage_global_indices
 from .gradient_reduction import AsyncGradientReducer
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
