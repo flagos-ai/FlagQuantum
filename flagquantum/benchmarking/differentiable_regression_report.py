@@ -144,6 +144,95 @@ def render_observable_cache_markdown(
     return "\n".join(lines)
 
 
+def render_observable_boundary_markdown(
+    payload: Mapping[str, Any], *, artifact_name: str
+) -> str:
+    """Render native fused-observable-boundary evidence."""
+
+    methodology = payload["methodology"]
+    rollback_name = "flagquantum_adjoint_observable_boundary_rollback"
+    lines = [
+        "# Native CPU adjoint observable-boundary comparison",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}). It compares",
+        "FlagQuantum's fused native observable expectation and adjoint-seed kernels",
+        "against the prior eager PyTorch tensor expressions. Circuit execution, cached",
+        "Z/ZZ observable weights, and the remaining adjoint sweep are identical.",
+        "Ratios above 1 mean the fused path is faster.",
+        "",
+        "| Workload | Qubits | Observable terms | Native forward (ms) | Rollback forward (ms) | Forward speedup | Native backward (ms) | Rollback backward (ms) | Backward speedup | Native total (ms) | Rollback total (ms) | Total speedup | Max value error | Max gradient error |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for case in payload["cases"]:
+        workload = case["workload"]
+        native = case["engines"]["flagquantum_adjoint"]
+        rollback = case["engines"][rollback_name]
+        ratio = case["comparison"]["engine_over_flagquantum_median"][rollback_name]
+        correctness = case["correctness"]["engines"][rollback_name]
+        lines.append(
+            f"| {_WORKLOAD_LABELS[workload['name']]} | {workload['n_wires']} | "
+            f"{workload['observable_term_count']} | {_milliseconds(native, 'forward'):.3f} | "
+            f"{_milliseconds(rollback, 'forward'):.3f} | {ratio['forward']:.2f}x | "
+            f"{_milliseconds(native, 'backward'):.3f} | "
+            f"{_milliseconds(rollback, 'backward'):.3f} | {ratio['backward']:.2f}x | "
+            f"{_milliseconds(native, 'value_and_grad'):.3f} | "
+            f"{_milliseconds(rollback, 'value_and_grad'):.3f} | "
+            f"{ratio['value_and_grad']:.2f}x | "
+            f"{correctness['value_max_abs_error']:.3e} | "
+            f"{correctness['gradient_max_abs_error']:.3e} |"
+        )
+    lines.extend(
+        (
+            "",
+            "## What this measures",
+            "",
+            "Exact Z/ZZ expectations multiply every state probability by a cached real",
+            "diagonal. Reverse-mode differentiation then seeds the adjoint with twice the",
+            "state times that same diagonal. The native boundary performs each operation",
+            "in one parallel traversal, avoiding eager full-state intermediates. It is",
+            "automatic for contiguous complex64/complex128 CPU statevectors; unsupported",
+            "layouts retain the existing PyTorch fallback. These are local single-device",
+            "measurements, not distributed or cross-machine scalability claims.",
+            "",
+            "## FlagQuantum example",
+            "",
+            "```python",
+            "import torch",
+            "import flagquantum as fq",
+            "from flagquantum import algorithms as fqa",
+            "",
+            "theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)",
+            "circuit = fq.Circuit(3, dtype=torch.complex128)",
+            "for wire in range(3):",
+            "    circuit.rx(wire, theta).ry(wire, theta).rz(wire, theta)",
+            "circuit.cx(0, 1).cx(1, 2)",
+            'hamiltonian = fqa.Hamiltonian((fqa.pauli_term(1.0, "ZZ", (0, 1)),))',
+            'energy = hamiltonian.expectation(circuit, differentiation="adjoint")',
+            "energy.backward()",
+            "print(energy.item(), theta.grad)",
+            "```",
+            "",
+            "## Reproduce",
+            "",
+            "```bash",
+            "flagquantum-benchmark run differentiable_simulator_corpus \\",
+            "  --workloads " + " ".join(payload["workloads"]) + " \\",
+            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
+            "  --engines flagquantum_adjoint " + rollback_name + " \\",
+            f"  --layers {payload['layers']} --threads {payload['environment']['torch_threads']} \\",
+            f"  --warmup {methodology['warmup']} --iterations {methodology['iterations']} \\",
+            f"  --calls-per-sample {methodology['calls_per_sample']} --skip-memory-probe \\",
+            f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            "```",
+            "",
+            "Set `FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY=0` to restore the eager expectation",
+            "and adjoint-seed expressions while retaining the rest of native adjoint.",
+            "",
+        )
+    )
+    return "\n".join(lines)
+
+
 def render_rotation_tile_markdown(
     payload: Mapping[str, Any], *, artifact_name: str
 ) -> str:

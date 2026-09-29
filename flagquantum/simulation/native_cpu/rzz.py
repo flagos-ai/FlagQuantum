@@ -19,6 +19,17 @@ def _enabled() -> bool:
     }
 
 
+def _shared_phase_lookup_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION", "1"
+    ).strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
 def native_cpu_rzz_available() -> bool:
     """Return whether fused package-local CPU RZZ execution is available."""
 
@@ -61,7 +72,12 @@ def fused_rzz_segment_forward_(
         cast(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_rzz_segment_forward_(
-                state, angles, first_wires, second_wires, n_wires
+                state,
+                angles,
+                first_wires,
+                second_wires,
+                n_wires,
+                _shared_phase_lookup_enabled(),
             ),
         )
     return True

@@ -65,6 +65,19 @@ def native_cpu_shared_rotation_gradient_available() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
+def native_cpu_rotation_rzz_fusion_available() -> bool:
+    """Return whether a terminal rotation layer may absorb a shared RZZ layer."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION", "1"
+    ).strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
 def _load_extension() -> bool:
     global _EXTENSION_ERROR, _EXTENSION_LOADED
     if _EXTENSION_LOADED:
@@ -84,6 +97,62 @@ def native_cpu_adjoint_available() -> bool:
     """Return whether the installed native operator is enabled and loadable."""
 
     return _enabled() and _load_extension()
+
+
+def fused_observable_adjoint_seed(
+    ket: torch.Tensor,
+    weights: torch.Tensor,
+) -> torch.Tensor | None:
+    """Build ``2 * ket * weights`` in one native CPU traversal."""
+
+    real_dtype = torch.float32 if ket.dtype == torch.complex64 else torch.float64
+    if (
+        os.getenv("FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY", "1").strip().lower()
+        in {"0", "false", "off", "no"}
+        or not native_cpu_adjoint_available()
+        or ket.device.type != "cpu"
+        or weights.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or weights.dtype != real_dtype
+        or ket.ndim != 2
+        or weights.shape != (ket.shape[1],)
+        or not ket.is_contiguous()
+        or not weights.is_contiguous()
+    ):
+        return None
+    with torch.no_grad():
+        return cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_observable_adjoint_seed(ket, weights),
+        )
+
+
+def fused_observable_expectation(
+    ket: torch.Tensor,
+    weights: torch.Tensor,
+) -> torch.Tensor | None:
+    """Evaluate a real diagonal observable in one native CPU traversal."""
+
+    real_dtype = torch.float32 if ket.dtype == torch.complex64 else torch.float64
+    if (
+        os.getenv("FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY", "1").strip().lower()
+        in {"0", "false", "off", "no"}
+        or not native_cpu_adjoint_available()
+        or ket.device.type != "cpu"
+        or weights.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or weights.dtype != real_dtype
+        or ket.ndim != 2
+        or weights.shape != (ket.shape[1],)
+        or not ket.is_contiguous()
+        or not weights.is_contiguous()
+    ):
+        return None
+    with torch.no_grad():
+        return cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_observable_expectation(ket, weights),
+        )
 
 
 def native_cpu_parallel_build_available() -> bool:
@@ -158,9 +227,13 @@ def fused_rotation_segment_adjoint_(
     *,
     n_wires: int,
     aggregate_shared_parameter: bool = False,
+    rzz_angles: torch.Tensor | None = None,
+    rzz_first_wires: torch.Tensor | None = None,
+    rzz_second_wires: torch.Tensor | None = None,
 ) -> torch.Tensor | None:
     """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
 
+    rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
     if (
         not native_cpu_rotation_segment_available()
         or ket.device.type != "cpu"
@@ -182,6 +255,27 @@ def fused_rotation_segment_adjoint_(
         or not all(
             item.is_contiguous() for item in (ket, adjoint, angles, gate_kinds, wires)
         )
+        or (
+            any(item is None for item in rzz_tensors)
+            and any(item is not None for item in rzz_tensors)
+        )
+        or (
+            rzz_angles is not None
+            and (
+                not native_cpu_rotation_rzz_fusion_available()
+                or rzz_angles.dtype != angles.dtype
+                or rzz_first_wires is None
+                or rzz_second_wires is None
+                or rzz_first_wires.dtype != torch.int64
+                or rzz_second_wires.dtype != torch.int64
+                or rzz_angles.ndim != 1
+                or rzz_first_wires.shape != rzz_angles.shape
+                or rzz_second_wires.shape != rzz_angles.shape
+                or not rzz_angles.is_contiguous()
+                or not rzz_first_wires.is_contiguous()
+                or not rzz_second_wires.is_contiguous()
+            )
+        )
     ):
         return None
     with torch.no_grad():
@@ -197,6 +291,9 @@ def fused_rotation_segment_adjoint_(
                 aggregate_shared_parameter,
                 _rotation_segment_tile_wires(),
                 _rotation_pair_fast_path_enabled(),
+                rzz_angles,
+                rzz_first_wires,
+                rzz_second_wires,
             ),
         )
 

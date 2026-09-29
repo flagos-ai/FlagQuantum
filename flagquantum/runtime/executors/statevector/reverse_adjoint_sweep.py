@@ -51,6 +51,7 @@ from .reverse_adjoint_kernels import (
     _MatrixJVP,
 )
 from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
+from .reverse_observable import seed_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
@@ -65,7 +66,6 @@ from .reverse_support import (
 
 
 def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
-    """Use the shared shard-index representation policy for reverse states."""
     return bool(use_compact_global_indices(plan, rank))
 
 
@@ -415,11 +415,8 @@ class _ReversibleAdjointSweep:
                 terms=final_observable_terms,
             )
         else:
-            self.adjoint = (
-                2
-                * final_state.amplitudes
-                * self.saved_observable_weights.reshape(1, -1)
-            )
+            weights = self.saved_observable_weights
+            self.adjoint = seed_adjoint(final_state.amplitudes, weights)
         self.reversible_state = (
             final_state if self.policy.strategy == "reversible_adjoint" else None
         )

@@ -52,3 +52,9 @@ speedup, correctness, a small-workload guardrail, and exact reproduction steps.
 records an exact rollback A/B for branchless amplitude-pair traversal and the
 same-wire RZ/RY/RX Euler-triple reverse kernel. It reports absolute backward and
 total times, speedups, correctness, workload meaning, and reproduction steps.
+
+[`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
+records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
+shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
+absolute forward/backward/total times, correctness, example code, limitations,
+and an exact reproduction command.

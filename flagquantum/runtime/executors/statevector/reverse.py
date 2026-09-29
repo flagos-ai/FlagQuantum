@@ -61,14 +61,25 @@ def _parameter_layout(
     ir: CircuitIR,
 ) -> tuple[tuple[torch.Tensor, ...], tuple[tuple[int, str, int], ...], tuple[int, ...]]:
     parameters: list[torch.Tensor] = []
-    identities: dict[int, int] = {}
+    identities: dict[
+        tuple[int, torch.device, torch.dtype, int, tuple[int, ...], tuple[int, ...]],
+        int,
+    ] = {}
     slots: list[tuple[int, str, int]] = []
     occurrences: list[int] = []
     for instruction_index, instruction in enumerate(ir.instructions):
         for name, value in instruction.params.items():
             if not isinstance(value, torch.Tensor) or not value.requires_grad:
                 continue
-            identity = id(value)
+            owner = value._base if value._base is not None else value
+            identity = (
+                id(owner),
+                value.device,
+                value.dtype,
+                value.data_ptr(),
+                tuple(value.shape),
+                tuple(value.stride()),
+            )
             parameter_index = identities.get(identity)
             if parameter_index is None:
                 parameter_index = len(parameters)
