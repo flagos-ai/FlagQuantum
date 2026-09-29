@@ -5,14 +5,22 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from .evidence import EVIDENCE
 from .implementations import IMPLEMENTATIONS
-from .schema import KernelImplementation, KernelSemantic
+from .schema import KernelEvidence, KernelImplementation, KernelSemantic
 from .semantics import SEMANTICS
 
 _CATALOG_ID = re.compile(r"^FQK-(SV|GR|MPS|NUM)-[0-9]{3}$")
 _IMPLEMENTATION_ID = re.compile(
     r"^FQKI-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|NUM)-[0-9]{3}-[A-Z]$"
 )
+_EVIDENCE_ID = re.compile(
+    r"^FQKE-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|NUM)-[0-9]{3}-[A-Z]$"
+)
+_TEST_REFERENCE = re.compile(
+    r"^tests/(?:[a-z][a-z0-9_]*/)*test_[a-z0-9_]+\.py::test_[a-z0-9_]+$"
+)
+_ARTIFACT_REFERENCE = re.compile(r"^(?:artifacts|benchmarks/results)/[A-Za-z0-9_./-]+$")
 _COMPONENT = re.compile(r"^[a-z][a-z0-9_]*$")
 _DOMAIN_CODES = {
     "statevector": "SV",
@@ -50,6 +58,7 @@ def _require_components(values: Sequence[str], label: str) -> None:
 def validate_catalog(
     semantics: Sequence[KernelSemantic] = SEMANTICS,
     implementations: Sequence[KernelImplementation] = IMPLEMENTATIONS,
+    evidence: Sequence[KernelEvidence] = EVIDENCE,
 ) -> None:
     """Raise ``ValueError`` when catalog records violate catalog invariants."""
 
@@ -62,6 +71,11 @@ def validate_catalog(
     _require_unique(
         [f"{item.module}:{item.symbol}" for item in implementations],
         "implementation entry point",
+    )
+    _require_unique([item.evidence_id for item in evidence], "evidence ID")
+    _require_unique(
+        [item.implementation_id for item in evidence],
+        "evidence implementation ID",
     )
 
     semantics_by_id = {item.semantic_id: item for item in semantics}
@@ -141,6 +155,82 @@ def validate_catalog(
     missing = sorted(set(semantics_by_id).difference(implemented_semantics))
     if missing:
         raise ValueError(f"semantics without implementations: {', '.join(missing)}")
+
+    implementations_by_id = {item.implementation_id: item for item in implementations}
+    evidenced_implementations: set[str] = set()
+    for record in evidence:
+        if not _EVIDENCE_ID.fullmatch(record.evidence_id):
+            raise ValueError(f"invalid evidence ID: {record.evidence_id}")
+        if record.implementation_id not in implementations_by_id:
+            raise ValueError(
+                f"unknown implementation ID for {record.evidence_id}: "
+                f"{record.implementation_id}"
+            )
+        expected_evidence_id = record.implementation_id.replace("FQKI-", "FQKE-", 1)
+        if record.evidence_id != expected_evidence_id:
+            raise ValueError(
+                f"evidence ID {record.evidence_id} does not match "
+                f"implementation {record.implementation_id}"
+            )
+        if not record.correctness_tests:
+            raise ValueError(
+                f"missing correctness evidence for {record.implementation_id}"
+            )
+        implementation = implementations_by_id[record.implementation_id]
+        if any(direction != "forward" for direction in implementation.directions):
+            if not record.gradient_tests:
+                raise ValueError(
+                    f"missing gradient evidence for {record.implementation_id}"
+                )
+        if implementation.internal_fallback and not record.capability_tests:
+            raise ValueError(
+                f"missing fallback evidence for {record.implementation_id}"
+            )
+        test_references = (
+            *record.correctness_tests,
+            *record.gradient_tests,
+            *record.capability_tests,
+        )
+        for references, label in (
+            (record.correctness_tests, "correctness"),
+            (record.gradient_tests, "gradient"),
+            (record.capability_tests, "capability"),
+        ):
+            _require_unique(references, f"{label} evidence for {record.evidence_id}")
+        invalid_tests = [
+            reference
+            for reference in test_references
+            if _TEST_REFERENCE.fullmatch(reference) is None
+        ]
+        if invalid_tests:
+            raise ValueError(
+                f"invalid test evidence for {record.evidence_id}: "
+                f"{', '.join(invalid_tests)}"
+            )
+        invalid_artifacts = [
+            reference
+            for reference in record.benchmark_artifacts
+            if _ARTIFACT_REFERENCE.fullmatch(reference) is None
+            or ".." in reference.split("/")
+        ]
+        if invalid_artifacts:
+            raise ValueError(
+                f"invalid benchmark evidence for {record.evidence_id}: "
+                f"{', '.join(invalid_artifacts)}"
+            )
+        _require_components(
+            record.required_lanes,
+            f"required lanes for {record.evidence_id}",
+        )
+        evidenced_implementations.add(record.implementation_id)
+
+    missing_evidence = sorted(
+        set(implementations_by_id).difference(evidenced_implementations)
+    )
+    if missing_evidence:
+        raise ValueError(
+            f"implementations without evidence: {', '.join(missing_evidence)}"
+        )
 
 
 __all__ = ["validate_catalog"]

@@ -41,9 +41,23 @@ class KernelImplementation:
     internal_fallback: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class KernelEvidence:
+    """Repository evidence associated with one kernel implementation."""
+
+    evidence_id: str
+    implementation_id: str
+    correctness_tests: tuple[str, ...]
+    gradient_tests: tuple[str, ...] = ()
+    capability_tests: tuple[str, ...] = ()
+    benchmark_artifacts: tuple[str, ...] = ()
+    required_lanes: tuple[str, ...] = ("gpu_scheduled",)
+
+
 __all__ = [
     "KernelDirection",
     "KernelDomain",
+    "KernelEvidence",
     "KernelImplementation",
     "KernelMaturity",
     "KernelProvider",

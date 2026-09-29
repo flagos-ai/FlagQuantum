@@ -3,9 +3,36 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.complex_bmm import fused_complex_bmm
+from flagquantum.kernels.triton.complex_bmm import (
+    fused_complex_bmm,
+    fused_complex_layout_bmm,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
+
+
+def test_fused_complex_bmm_cpu_fallback_matches_torch() -> None:
+    generator = torch.Generator().manual_seed(601)
+    left = torch.randn(2, 3, 4, dtype=torch.complex128, generator=generator)
+    right = torch.randn(2, 4, 5, dtype=torch.complex128, generator=generator)
+
+    torch.testing.assert_close(fused_complex_bmm(left, right), torch.bmm(left, right))
+
+
+def test_fused_complex_layout_bmm_cpu_fallback_matches_torch() -> None:
+    generator = torch.Generator().manual_seed(607)
+    left = torch.randn(2, 3, 4, dtype=torch.complex128, generator=generator)
+    right = torch.randn(2, 4, 5, dtype=torch.complex128, generator=generator)
+
+    actual = fused_complex_layout_bmm(
+        left,
+        right,
+        (0, 1, 2),
+        (0, 1, 2),
+        ((2,), (3,), (4,), (5,)),
+    )
+
+    torch.testing.assert_close(actual, torch.bmm(left, right))
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
