@@ -913,6 +913,58 @@ def test_native_rotation_segment_fuses_preceding_hadamards(
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("n_wires", (6, 12))
+def test_native_rotation_segment_fuses_observable_seed(
+    dtype: torch.dtype, n_wires: int
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(8137)
+    initial_ket = (
+        torch.randn((2, 1 << n_wires), generator=generator)
+        + 1j * torch.randn((2, 1 << n_wires), generator=generator)
+    ).to(dtype)
+    weights = torch.randn(1 << n_wires, generator=generator, dtype=real_dtype)
+    angles = torch.linspace(0.07, 0.31, n_wires, dtype=real_dtype)
+    kinds = torch.tensor(tuple(wire % 3 for wire in range(n_wires)), dtype=torch.int64)
+    wires = torch.arange(n_wires, dtype=torch.int64)
+
+    expected_ket = initial_ket.clone()
+    expected_adjoint = 2 * initial_ket * weights.reshape(1, -1)
+    expected_gradients = fused_rotation_segment_adjoint_(
+        expected_ket,
+        expected_adjoint,
+        angles,
+        kinds,
+        wires,
+        n_wires=n_wires,
+    )
+    ket = initial_ket.clone()
+    adjoint = torch.empty_like(ket)
+    gradients = fused_rotation_segment_adjoint_(
+        ket,
+        adjoint,
+        angles,
+        kinds,
+        wires,
+        n_wires=n_wires,
+        observable_weights=weights,
+    )
+
+    assert expected_gradients is not None
+    assert gradients is not None
+    tolerance = 7e-5 if dtype == torch.complex64 else 5e-12
+    torch.testing.assert_close(
+        gradients, expected_gradients, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(ket, expected_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        adjoint, expected_adjoint, atol=tolerance, rtol=tolerance
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_native_rotation_segment_fast_path_matches_exact_rollback(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
@@ -1214,6 +1266,45 @@ def test_reverse_sweep_fuses_qaoa_hadamard_boundary(
     actual.backward()
 
     assert fusion_flags == [True]
+    torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
+
+
+def test_reverse_sweep_fuses_observable_seed_with_first_rotation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor(0.17, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    for wire in range(6):
+        circuit.h(wire)
+    for wire in range(6):
+        circuit.rx(wire, theta)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_OBSERVABLE_ROTATION_BOUNDARY", "0")
+    baseline = execute_torch_distributed_statevector_reverse(circuit)
+    baseline.backward()
+    expected_value = baseline.value.detach().clone()
+    expected_gradient = theta.grad.detach().clone()
+    theta.grad = None
+    observed_weights: list[bool] = []
+    native = reverse_adjoint_rotation_segment.fused_rotation_segment_adjoint_
+
+    def counted(*args: object, **kwargs: object) -> torch.Tensor | None:
+        observed_weights.append(kwargs.get("observable_weights") is not None)
+        return native(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(
+        reverse_adjoint_rotation_segment,
+        "fused_rotation_segment_adjoint_",
+        counted,
+    )
+    monkeypatch.setenv("FQ_NATIVE_CPU_OBSERVABLE_ROTATION_BOUNDARY", "1")
+    actual = execute_torch_distributed_statevector_reverse(circuit)
+    actual.backward()
+
+    assert observed_weights == [True]
     torch.testing.assert_close(actual.value, expected_value, atol=2e-12, rtol=2e-12)
     torch.testing.assert_close(theta.grad, expected_gradient, atol=2e-12, rtol=2e-12)
 

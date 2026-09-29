@@ -51,7 +51,7 @@ from .reverse_adjoint_kernels import (
     _MatrixJVP,
 )
 from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
-from .reverse_observable import seed_adjoint
+from .reverse_observable import prepare_observable_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
@@ -407,6 +407,7 @@ class _ReversibleAdjointSweep:
             )
             for coefficient, wires in self.observable_terms
         )
+        self.pending_observable_weights: torch.Tensor | None = None
         if self.saved_observable_weights is None:
             self.adjoint = _local_expectation_z_hamiltonian_adjoint(
                 final_state,
@@ -416,7 +417,9 @@ class _ReversibleAdjointSweep:
             )
         else:
             weights = self.saved_observable_weights
-            self.adjoint = seed_adjoint(final_state.amplitudes, weights)
+            self.adjoint, self.pending_observable_weights = prepare_observable_adjoint(
+                self, final_state, weights
+            )
         self.reversible_state = (
             final_state if self.policy.strategy == "reversible_adjoint" else None
         )

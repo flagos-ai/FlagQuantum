@@ -1,0 +1,632 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "cross_framework_differentiable_simulator_workload_corpus",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_observable_rotation_rollback": {
+            "backward": 1.0264672792034855,
+            "forward": 1.0295611719979307,
+            "value_and_grad": 1.028408092121839
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.010257359393552108,
+            "forward": 12.291207504784083,
+            "value_and_grad": 6.451624818692841
+          }
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for that metric"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_observable_rotation_rollback": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 1.7710277688820497e-12,
+            "passed": true,
+            "value_max_abs_error": 6.927791673660977e-14
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.08090504199935822,
+            "mean_seconds": 0.07037755783864169,
+            "median_seconds": 0.06910891699953936,
+            "min_seconds": 0.06446087500080466,
+            "relative_median_absolute_deviation": 0.044651141027194766,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.07805745799851138,
+              0.0674402500008,
+              0.06601504199352348,
+              0.06797279100283049,
+              0.06773300000349991,
+              0.0663061250015744,
+              0.06650150000496069,
+              0.06624283400014974,
+              0.07438262500363635,
+              0.0742351669978234,
+              0.07130049999977928,
+              0.06446904200129211,
+              0.07422608300112188,
+              0.06446087500080466,
+              0.07266070799960289,
+              0.06541275000199676,
+              0.06690270800027065,
+              0.07692533299996285,
+              0.07456866699794773,
+              0.06630920799943851,
+              0.07229399999778252,
+              0.06602312500035623,
+              0.07171099999686703,
+              0.07118187499872874,
+              0.0661715419992106,
+              0.06910891699953936,
+              0.0719799590006005,
+              0.06730975000391481,
+              0.08090504199935822,
+              0.07587412499560742,
+              0.07702229199639987
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.09733437500108266,
+            "mean_seconds": 0.07540192603201215,
+            "median_seconds": 0.07426545899943449,
+            "min_seconds": 0.06503962499846239,
+            "relative_median_absolute_deviation": 0.047031177693934195,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.09733437500108266,
+              0.07369000000471715,
+              0.07216299999709008,
+              0.0707726670007105,
+              0.07811962500272784,
+              0.07357945799594745,
+              0.07132316700153751,
+              0.07039687500218861,
+              0.08202895800059196,
+              0.08031720899452921,
+              0.07124287499755155,
+              0.07231508299446432,
+              0.07958495800266974,
+              0.07482033300038893,
+              0.07818220800254494,
+              0.07063229200139176,
+              0.07348958399961703,
+              0.07740591599576874,
+              0.07632154099701438,
+              0.0715577500013751,
+              0.06930149999971036,
+              0.06930762500269338,
+              0.06738291699730325,
+              0.06503962499846239,
+              0.07426545899943449,
+              0.07634483300353168,
+              0.07539125000039348,
+              0.0769119579999824,
+              0.08939391699823318,
+              0.07892520799941849,
+              0.07991754099930404
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.17539183299959404,
+            "mean_seconds": 0.14577948387065384,
+            "median_seconds": 0.14159549999749288,
+            "min_seconds": 0.13533075000304962,
+            "relative_median_absolute_deviation": 0.0339797168823984,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.17539183299959404,
+              0.14113025000551715,
+              0.13817804199061356,
+              0.138745458003541,
+              0.14585262500622775,
+              0.13988558299752185,
+              0.1378246670064982,
+              0.13663970900233835,
+              0.1564115830042283,
+              0.1545523759923526,
+              0.14254337499733083,
+              0.13678412499575643,
+              0.15381104100379162,
+              0.1392812080011936,
+              0.15084291600214783,
+              0.13604504200338852,
+              0.14039229199988768,
+              0.15433124899573158,
+              0.1508902079949621,
+              0.1378669580008136,
+              0.14159549999749288,
+              0.13533075000304962,
+              0.13909391699417029,
+              0.13622149999719113,
+              0.1404370009986451,
+              0.14545375000307104,
+              0.14737120900099399,
+              0.14422170800389722,
+              0.1702989589975914,
+              0.1547993329950259,
+              0.1569398329957039
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_observable_rotation_rollback": {
+          "backward": {
+            "max_seconds": 2.274623249999422,
+            "mean_seconds": 0.14310942748383124,
+            "median_seconds": 0.07093804200121667,
+            "min_seconds": 0.06529712500196183,
+            "relative_median_absolute_deviation": 0.04936996994353927,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.08283712500269758,
+              0.0808954999956768,
+              0.06696170900249854,
+              0.07002591600030428,
+              0.06529712500196183,
+              0.06743583299976308,
+              0.06853362500260118,
+              0.07288279199565295,
+              0.073709415999474,
+              0.0786958329990739,
+              0.06984120800188975,
+              0.07861612499982584,
+              0.07676783300121315,
+              0.06729474999883678,
+              0.07480333399871597,
+              0.06822191699757241,
+              0.07041862500045681,
+              0.07464820799941663,
+              0.07653933400433743,
+              0.0670239590035635,
+              0.07309874999918975,
+              0.06768362499860814,
+              0.07089158399321605,
+              0.06915712499903748,
+              0.06857104200025788,
+              0.0738065830009873,
+              0.06687520899868105,
+              0.07093804200121667,
+              0.072352208000666,
+              0.07694466700195335,
+              2.274623249999422
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.11810279099881882,
+            "mean_seconds": 0.07691363712858161,
+            "median_seconds": 0.07646083300642204,
+            "min_seconds": 0.05626791599934222,
+            "relative_median_absolute_deviation": 0.07161237690168525,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.08428220899804728,
+              0.11810279099881882,
+              0.07346895900263917,
+              0.07116620899614645,
+              0.06931049999548122,
+              0.07180745799996657,
+              0.07472304200200597,
+              0.06824083399988012,
+              0.08218912499432918,
+              0.07928995799738914,
+              0.07324558300024364,
+              0.0727099579962669,
+              0.08193637499789475,
+              0.06406179199984763,
+              0.07780595800431911,
+              0.06675012499908917,
+              0.05626791599934222,
+              0.0801361249978072,
+              0.08128120900073554,
+              0.07082375000027241,
+              0.09741758399468381,
+              0.06888662499841303,
+              0.0682000410015462,
+              0.07646083300642204,
+              0.06961154199962039,
+              0.07727358300326159,
+              0.07717783300176961,
+              0.07652424999832874,
+              0.07756908299779752,
+              0.08576904200162971,
+              0.09183245900203474
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "value_and_grad": {
+            "max_seconds": 2.366455709001457,
+            "mean_seconds": 0.22002306461241283,
+            "median_seconds": 0.1456179580054595,
+            "min_seconds": 0.12668654099979904,
+            "relative_median_absolute_deviation": 0.053360513415057466,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.16711933400074486,
+              0.19899829099449562,
+              0.1404306680051377,
+              0.14119212499645073,
+              0.13460762499744305,
+              0.13924329099972965,
+              0.14325666700460715,
+              0.14112362599553308,
+              0.15589854099380318,
+              0.15798579099646304,
+              0.1430867910021334,
+              0.15132608299609274,
+              0.1587042079991079,
+              0.1313565419986844,
+              0.15260929200303508,
+              0.13497204199666157,
+              0.12668654099979904,
+              0.15478433299722383,
+              0.15782054300507298,
+              0.13784770900383592,
+              0.17051633399387356,
+              0.13657024999702116,
+              0.13909162499476224,
+              0.1456179580054595,
+              0.13818258399987826,
+              0.1510801660042489,
+              0.14405304200045066,
+              0.14746229199954541,
+              0.14992129099846352,
+              0.16271370900358306,
+              2.366455709001457
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0034732920030364767,
+            "mean_seconds": 0.0009458534519991747,
+            "median_seconds": 0.000708874998963438,
+            "min_seconds": 0.0006583750000572763,
+            "relative_median_absolute_deviation": 0.054194319240209274,
+            "sample_count": 31,
+            "samples_seconds": [
+              0.0034732920030364767,
+              0.0018883340017055161,
+              0.0007422499984386377,
+              0.0007905829988885671,
+              0.0007005830048001371,
+              0.000687250001647044,
+              0.0007430840050801635,
+              0.0006752499975846149,
+              0.0007073329979903065,
+              0.0006658750062342733,
+              0.0006596250022994354,
+              0.0006965830034459941,
+              0.0006669169961242005,
+              0.0010361660024500452,
+              0.0007049999985611066,
+              0.0006583750000572763,
+              0.0007643329954589717,
+              0.0008990000060293823,
+              0.0007293749949894845,
+              0.000708874998963438,
+              0.0006704580009682104,
+              0.0006763749988749623,
+              0.0007049170017126016,
+              0.0006936659992788918,
+              0.0007859590041334741,
+              0.0007272079965332523,
+              0.000930791997234337,
+              0.0006942079999134876,
+              0.0007607499937876128,
+              0.0007799160011927597,
+              0.0032991250045597553
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 2.4177935830011847,
+            "mean_seconds": 1.0058357917418284,
+            "median_seconds": 0.9128121670000837,
+            "min_seconds": 0.853058125001553,
+            "relative_median_absolute_deviation": 0.032163837273594384,
+            "sample_count": 31,
+            "samples_seconds": [
+              2.4177935830011847,
+              1.411910208997142,
+              0.865109250000387,
+              0.9292626669994206,
+              0.8988419999950565,
+              0.8805372920032823,
+              0.93712387499545,
+              0.9092572910012677,
+              0.9456243750028079,
+              0.9366422089951811,
+              0.9168285419946187,
+              0.908675917002256,
+              0.9690220420015976,
+              0.9926081250014249,
+              0.9383742079953663,
+              0.8904685000015888,
+              0.8892957079951884,
+              0.8784465410062694,
+              0.8961322920004022,
+              0.9128121670000837,
+              0.8601795420036069,
+              0.9110854169994127,
+              0.8883518340007868,
+              0.853058125001553,
+              0.9575715829996625,
+              0.883452624999336,
+              0.9054147499991814,
+              0.9807391249996726,
+              1.178794209001353,
+              1.07916358300281,
+              1.3583319579993258
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "value_and_grad": {
+            "max_seconds": 2.421266875004221,
+            "mean_seconds": 1.0067816451938274,
+            "median_seconds": 0.9135210419990472,
+            "min_seconds": 0.8537517910008319,
+            "relative_median_absolute_deviation": 0.03211881024543334,
+            "sample_count": 31,
+            "samples_seconds": [
+              2.421266875004221,
+              1.4137985429988476,
+              0.8658514999988256,
+              0.9300532499983092,
+              0.8995425829998567,
+              0.8812245420049294,
+              0.9378669590005302,
+              0.9099325409988523,
+              0.9463317080007982,
+              0.9373080840014154,
+              0.9174881669969182,
+              0.909372500005702,
+              0.9696889589977218,
+              0.993644291003875,
+              0.9390792079939274,
+              0.8911268750016461,
+              0.8900600409906474,
+              0.8793455410122988,
+              0.8968616669953917,
+              0.9135210419990472,
+              0.8608500000045751,
+              0.9117617919982877,
+              0.8890567510024994,
+              0.8537517910008319,
+              0.958357542003796,
+              0.8841798329958692,
+              0.9063455419964157,
+              0.9814333329995861,
+              1.1795549589951406,
+              1.0799434990040027,
+              1.3616310830038856
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "f34de961d0a77170c4c99d79a7776f977966b59256a90a0007f246400b6ffa63",
+        "gate_count": 65,
+        "gate_density_per_wire": 2.9545454545454546,
+        "logical_depth": 23,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "h": 22,
+          "rx": 22,
+          "rzz": 21
+        },
+        "parameterized_gate_count": 43,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 44,
+        "two_qubit_gate_count": 21,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_observable_rotation_rollback": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 65,
+        "ir_content_hash": "a2b01dae139873d09ef74ca86f92421c4aa0e3c14b76714eaf0b13a1eb6bd8a3",
+        "layers": 1,
+        "logical_statevector_bytes": 67108864,
+        "n_wires": 22,
+        "name": "qaoa_path_maxcut",
+        "observable": "sum((1 - Z_i Z_{i+1}) / 2)",
+        "observable_term_count": 22,
+        "parameter_count": 2,
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_device_fast_path",
+  "engines": [
+    "flagquantum_adjoint",
+    "flagquantum_adjoint_observable_rotation_rollback",
+    "pennylane_lightning_adjoint"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "4",
+      "OMP_NUM_THREADS": "4",
+      "OPENBLAS_NUM_THREADS": "4"
+    },
+    "torch": "2.13.0",
+    "torch_default_dtype": "float64",
+    "torch_threads": 4
+  },
+  "hostname": "redacted",
+  "layers": 1,
+  "methodology": {
+    "calls_per_sample": 1,
+    "circuit_and_device_construction_included": false,
+    "engine_order": "rotated_per_iteration_within_one_process",
+    "exact_statevector": true,
+    "expectation_evaluation_included": true,
+    "gradient_zeroing_included": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 31,
+    "measurement_scope": "expectation_forward_plus_full_reverse_mode_parameter_gradient",
+    "memory_measured_in_isolated_process": false,
+    "optimizer_step_included": false,
+    "parameter_initialization_included": false,
+    "warmup": 5
+  },
+  "n_wires": [
+    22
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "differentiable_simulator_corpus",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.differentiable_simulator_corpus.v1",
+  "support_matrix": {
+    "cirq_simulator": {
+      "included": false,
+      "reason": "FlagQuantum's Cirq bridge has no native PyTorch gradient contract"
+    },
+    "flagquantum_adjoint": {
+      "contract": "native reversible statevector adjoint",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_euler_triple_rollback": {
+      "contract": "same native adjoint with Euler fast path disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_cx_rollback": {
+      "contract": "same native adjoint with forward CX gather disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_rzz_rotation_rollback": {
+      "contract": "same native adjoint with the backward RZZ/H boundary fusion, forward shared-RZZ fusion, and specialized rotation arithmetic disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_gather_rollback": {
+      "contract": "rollback to per-gate full-state gather indices",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_boundary_rollback": {
+      "contract": "same native adjoint with eager observable boundary",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_cache_rollback": {
+      "contract": "same native adjoint with observable-weight cache disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_rotation_rollback": {
+      "contract": "same native adjoint with observable seeding separate from the first reverse rotation tile",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_python_fallback": {
+      "contract": "same direct-layout adjoint with native operator disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_rotation_tile_rollback": {
+      "contract": "same native adjoint with legacy two-wire rotation tiles",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_shared_rzz_rollback": {
+      "contract": "same native adjoint with shared-RZZ fusion disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_native": {
+      "contract": "native PyTorch reverse-mode autograd",
+      "gradient_method": "backpropagation through exact statevector",
+      "included": false
+    },
+    "pennylane_default_qubit": {
+      "contract": "default.qubit backprop through the PyTorch interface",
+      "gradient_method": "torch_reverse_mode_autograd",
+      "included": false
+    },
+    "pennylane_lightning_adjoint": {
+      "contract": "lightning.qubit adjoint through the PyTorch interface",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "qiskit_aer": {
+      "included": false,
+      "reason": "FlagQuantum's Aer bridge has no native PyTorch gradient contract"
+    }
+  },
+  "workloads": [
+    "qaoa_path_maxcut"
+  ],
+  "world_size": 1
+}

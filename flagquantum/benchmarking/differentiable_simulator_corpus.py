@@ -56,6 +56,7 @@ EngineName = Literal[
     "flagquantum_adjoint_rotation_tile_rollback",
     "flagquantum_adjoint_euler_triple_rollback",
     "flagquantum_adjoint_observable_boundary_rollback",
+    "flagquantum_adjoint_observable_rotation_rollback",
     "flagquantum_adjoint_shared_rzz_rollback",
     "flagquantum_adjoint_forward_rzz_rotation_rollback",
     "pennylane_lightning_adjoint",
@@ -84,6 +85,7 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_rotation_tile_rollback",
         "flagquantum_adjoint_euler_triple_rollback",
         "flagquantum_adjoint_observable_boundary_rollback",
+        "flagquantum_adjoint_observable_rotation_rollback",
         "flagquantum_adjoint_shared_rzz_rollback",
         "flagquantum_adjoint_forward_rzz_rotation_rollback",
     )
@@ -113,6 +115,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_adjoint_observable_boundary_rollback": (
         "FlagQuantum adjoint observable-boundary rollback"
+    ),
+    "flagquantum_adjoint_observable_rotation_rollback": (
+        "FlagQuantum adjoint observable/rotation rollback"
     ),
     "flagquantum_adjoint_shared_rzz_rollback": (
         "FlagQuantum adjoint shared-RZZ rollback"
@@ -233,6 +238,7 @@ def _flagquantum_executor(
     wide_rotation_tiles: bool | None = None,
     euler_triple_fusion: bool | None = None,
     observable_boundary_fusion: bool | None = None,
+    observable_rotation_fusion: bool | None = None,
     shared_rzz_fusion: bool | None = None,
     adjoint_rzz_h_fusion: bool | None = None,
     forward_shared_rzz_fusion: bool | None = None,
@@ -250,6 +256,9 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_ADJOINT_WIDE_TILES": wide_rotation_tiles,
                 "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES": euler_triple_fusion,
                 "FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY": observable_boundary_fusion,
+                "FQ_NATIVE_CPU_OBSERVABLE_ROTATION_BOUNDARY": (
+                    observable_rotation_fusion
+                ),
                 "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION": shared_rzz_fusion,
                 "FQ_NATIVE_CPU_ADJOINT_RZZ_H_FUSION": adjoint_rzz_h_fusion,
                 "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION": (forward_shared_rzz_fusion),
@@ -423,6 +432,14 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             observable_boundary_fusion=False,
+        )
+    if engine == "flagquantum_adjoint_observable_rotation_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            observable_rotation_fusion=False,
         )
     if engine == "flagquantum_adjoint_shared_rzz_rollback":
         return _flagquantum_executor(

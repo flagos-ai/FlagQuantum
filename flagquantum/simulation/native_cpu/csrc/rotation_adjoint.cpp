@@ -795,7 +795,8 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     bool fuse_preceding_hadamards,
     const c10::optional<at::Tensor>& rzz_angles,
     const c10::optional<at::Tensor>& rzz_first_wires,
-    const c10::optional<at::Tensor>& rzz_second_wires) {
+    const c10::optional<at::Tensor>& rzz_second_wires,
+    const c10::optional<at::Tensor>& observable_weights) {
   TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
   TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
   TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
@@ -831,6 +832,7 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
   const int64_t amplitudes = int64_t{1} << n_wires;
   TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const bool fuse_rzz = rzz_angles.has_value();
+  const bool seed_observable = observable_weights.has_value();
   TORCH_CHECK(
       !fuse_preceding_hadamards || fuse_rzz,
       "preceding Hadamards require a fused RZZ boundary");
@@ -868,6 +870,13 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
       rzz_transition_mask |= transition_bit;
     }
   }
+  if (seed_observable) {
+    const at::Tensor& weights = observable_weights.value();
+    TORCH_CHECK(weights.device().is_cpu(), "observable weights must be on CPU");
+    TORCH_CHECK(weights.is_contiguous(), "observable weights must be contiguous");
+    TORCH_CHECK(weights.dim() == 1 && weights.numel() == amplitudes,
+                "observable weight count must match state width");
+  }
 
   const int64_t* kind_data = gate_kinds.const_data_ptr<int64_t>();
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
@@ -902,6 +911,15 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
     scalar_t* ket_data = ket.data_ptr<scalar_t>();
     scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
     const real_t* angle_data = angles.const_data_ptr<real_t>();
+    const real_t* observable_weight_data = nullptr;
+    if (seed_observable) {
+      TORCH_CHECK(
+          observable_weights.value().scalar_type() ==
+              c10::CppTypeToScalarType<real_t>::value,
+          "observable weight dtype must match state precision");
+      observable_weight_data =
+          observable_weights.value().const_data_ptr<real_t>();
+    }
     const real_t* rzz_angle_data = nullptr;
     std::vector<scalar_t> rzz_inverses;
     if (fuse_rzz) {
@@ -991,8 +1009,15 @@ at::Tensor fused_rotation_segment_adjoint_cpu(
           }
           base += row * amplitudes;
           for (int64_t local = 0; local < local_size; ++local) {
-            ket_values[local] = ket_data[base + offsets[local]];
-            adjoint_values[local] = adjoint_data[base + offsets[local]];
+            const int64_t item_index = base + offsets[local];
+            ket_values[local] = ket_data[item_index];
+            if (seed_observable && segment_start == 0) {
+              const int64_t basis = item_index - row * amplitudes;
+              adjoint_values[local] = ket_values[local] *
+                  (real_t{2} * observable_weight_data[basis]);
+            } else {
+              adjoint_values[local] = adjoint_data[item_index];
+            }
           }
           for (int64_t gate = segment_start; gate < segment_end; ++gate) {
             const int64_t local_mask = local_masks[gate];
@@ -1332,7 +1357,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "bool aggregate_shared_parameter, int max_tile_wires, "
       "bool enable_pair_fast_path, bool fuse_preceding_hadamards, "
       "Tensor? rzz_angles=None, "
-      "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None) -> Tensor");
+      "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
+      "Tensor? observable_weights=None) -> Tensor");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor first_wires, Tensor second_wires, int n_wires, "
