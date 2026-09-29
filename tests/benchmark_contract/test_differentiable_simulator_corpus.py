@@ -40,6 +40,9 @@ OBSERVABLE_ROTATION_RESULT_NAME = (
 FORWARD_WIDE_TILE_RESULT_NAME = (
     "native_cpu_forward_wide_rotation_tiles_cpu_arm64_20260929.json"
 )
+TERMINAL_NO_RESTORE_RESULT_NAME = (
+    "native_cpu_adjoint_terminal_no_restore_cpu_arm64_20260929.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -355,6 +358,72 @@ def test_forward_wide_tile_rollback_engine_restores_environment(
     support = payload["support_matrix"][rollback]
     assert support["included"] is True
     assert "legacy six-wire forward rotation tiles" in support["contract"]
+
+
+def test_flat_pair_simd_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    variable = "FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD"
+    monkeypatch.setenv(variable, "custom")
+    rollback = "flagquantum_adjoint_flat_pair_simd_rollback"
+    payload = run_benchmark(
+        workloads=("hardware_efficient_vqe",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ[variable] == "custom"
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert "nested rotation-pair traversal" in support["contract"]
+
+
+@pytest.mark.parametrize(
+    ("variable", "rollback", "contract"),
+    (
+        (
+            "FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION",
+            "flagquantum_adjoint_cx_rotation_fusion_rollback",
+            "separate CX gather",
+        ),
+        (
+            "FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE",
+            "flagquantum_adjoint_terminal_no_restore_rollback",
+            "state restoration enabled",
+        ),
+    ),
+)
+def test_adjoint_layer_rollback_engines_restore_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    variable: str,
+    rollback: str,
+    contract: str,
+) -> None:
+    monkeypatch.setenv(variable, "custom")
+    payload = run_benchmark(
+        workloads=("hardware_efficient_vqe",),
+        n_wires=(4,),
+        layers=1,
+        engines=("flagquantum_adjoint", rollback),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ[variable] == "custom"
+    support = payload["support_matrix"][rollback]
+    assert support["included"] is True
+    assert contract in support["contract"]
 
 
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
@@ -713,6 +782,38 @@ def test_checked_in_forward_wide_tile_comparison_is_reproducible() -> None:
     assert report.read_text(encoding="utf-8") == _render_markdown(
         payload, artifact_name=path.name
     )
+
+
+def test_checked_in_terminal_no_restore_comparison_is_reproducible() -> None:
+    path = (
+        ROOT / "benchmarks" / "results" / "comparison" / TERMINAL_NO_RESTORE_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_terminal_no_restore_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == ["flagquantum_adjoint", rollback]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 2
+    case = payload["cases"][0]
+    assert case["correctness"]["passed"] is True
+    assert case["stability"]["passed"] is True
+    assert case["engines"]["flagquantum_adjoint"]["backward"]["sample_count"] == 41
+    ratio = case["comparison"]["engine_over_flagquantum_median"][rollback]
+    assert ratio["backward"] > 1.35
+    assert ratio["value_and_grad"] > 1.20
+
+    report = path.with_name(
+        "NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE_CPU_ARM64_20260929.md"
+    ).read_text(encoding="utf-8")
+    assert "98.069" in report
+    assert "137.573" in report
+    assert "1.403x" in report
+    assert "FlagQuantum example" in report
+    assert "## Reproduce" in report
 
 
 @pytest.mark.parametrize(

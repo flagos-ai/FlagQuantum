@@ -202,6 +202,9 @@ def _flagquantum_executor(
     forward_shared_rzz_fusion: bool | None = None,
     forward_specialized_rotations: bool | None = None,
     forward_wide_rotation_tiles: bool | None = None,
+    flat_pair_simd: bool | None = None,
+    cx_rotation_fusion: bool | None = None,
+    terminal_no_restore: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -227,6 +230,9 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES": (
                     forward_wide_rotation_tiles
                 ),
+                "FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD": flat_pair_simd,
+                "FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION": cx_rotation_fusion,
+                "FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE": terminal_no_restore,
             }
         ):
             forward_started = time.perf_counter()
@@ -428,6 +434,30 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             forward_wide_rotation_tiles=False,
+        )
+    if engine == "flagquantum_adjoint_flat_pair_simd_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            flat_pair_simd=False,
+        )
+    if engine == "flagquantum_adjoint_cx_rotation_fusion_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            cx_rotation_fusion=False,
+        )
+    if engine == "flagquantum_adjoint_terminal_no_restore_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            terminal_no_restore=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(

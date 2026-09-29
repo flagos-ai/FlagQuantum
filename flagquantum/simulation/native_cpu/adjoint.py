@@ -57,6 +57,31 @@ def _rotation_pair_fast_path_enabled() -> bool:
     }
 
 
+def _flat_rotation_pair_simd_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def native_cpu_cx_rotation_adjoint_fusion_available() -> bool:
+    """Return whether a CX permutation may feed a native rotation adjoint."""
+
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def native_cpu_terminal_adjoint_no_restore_available() -> bool:
+    """Return whether the earliest Euler layer may omit unused state restoration."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and _rotation_pair_fast_path_enabled()
+        and _flat_rotation_pair_simd_enabled()
+    )
+
+
 def native_cpu_shared_rotation_gradient_available() -> bool:
     """Return whether shared rotation segments may aggregate one VJP in native code."""
 
@@ -243,7 +268,7 @@ def fused_rotation_adjoint_(
         )
 
 
-def fused_rotation_segment_adjoint_(
+def _fused_rotation_segment_adjoint_result(
     ket: torch.Tensor,
     adjoint: torch.Tensor,
     angles: torch.Tensor,
@@ -257,8 +282,10 @@ def fused_rotation_segment_adjoint_(
     rzz_second_wires: torch.Tensor | None = None,
     fuse_preceding_hadamards: bool = False,
     observable_weights: torch.Tensor | None = None,
-) -> torch.Tensor | None:
-    """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
+    cx_index: torch.Tensor | None = None,
+    restore_state: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    """Run the native rotation adjoint with an optional preceding CX gather."""
 
     rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
     if (
@@ -313,11 +340,21 @@ def fused_rotation_segment_adjoint_(
                 or not observable_weights.is_contiguous()
             )
         )
+        or (
+            cx_index is not None
+            and (
+                not native_cpu_cx_rotation_adjoint_fusion_available()
+                or cx_index.device.type != "cpu"
+                or cx_index.dtype not in {torch.int32, torch.int64}
+                or cx_index.shape != (ket.shape[1],)
+                or not cx_index.is_contiguous()
+            )
+        )
     ):
         return None
     with torch.no_grad():
         return cast(
-            torch.Tensor,
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor],
             torch.ops.flagquantum_native.fused_rotation_segment_adjoint_(
                 ket,
                 adjoint,
@@ -328,14 +365,82 @@ def fused_rotation_segment_adjoint_(
                 aggregate_shared_parameter,
                 _rotation_segment_tile_wires(),
                 _rotation_pair_fast_path_enabled(),
+                _flat_rotation_pair_simd_enabled(),
+                restore_state,
                 fuse_preceding_hadamards
                 and native_cpu_adjoint_rzz_h_fusion_available(),
                 rzz_angles,
                 rzz_first_wires,
                 rzz_second_wires,
                 observable_weights,
+                cx_index,
             ),
         )
+
+
+def fused_rotation_segment_adjoint_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    angles: torch.Tensor,
+    gate_kinds: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+    aggregate_shared_parameter: bool = False,
+    rzz_angles: torch.Tensor | None = None,
+    rzz_first_wires: torch.Tensor | None = None,
+    rzz_second_wires: torch.Tensor | None = None,
+    fuse_preceding_hadamards: bool = False,
+    observable_weights: torch.Tensor | None = None,
+    restore_state: bool = True,
+) -> torch.Tensor | None:
+    """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
+
+    result = _fused_rotation_segment_adjoint_result(
+        ket,
+        adjoint,
+        angles,
+        gate_kinds,
+        wires,
+        n_wires=n_wires,
+        aggregate_shared_parameter=aggregate_shared_parameter,
+        rzz_angles=rzz_angles,
+        rzz_first_wires=rzz_first_wires,
+        rzz_second_wires=rzz_second_wires,
+        fuse_preceding_hadamards=fuse_preceding_hadamards,
+        observable_weights=observable_weights,
+        restore_state=restore_state,
+    )
+    return None if result is None else result[0]
+
+
+def fused_cx_rotation_segment_adjoint(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    cx_index: torch.Tensor,
+    angles: torch.Tensor,
+    gate_kinds: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+    aggregate_shared_parameter: bool = False,
+    observable_weights: torch.Tensor | None = None,
+    restore_state: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    """Undo a CX segment and following rotation segment in one native boundary."""
+
+    return _fused_rotation_segment_adjoint_result(
+        ket,
+        adjoint,
+        angles,
+        gate_kinds,
+        wires,
+        n_wires=n_wires,
+        aggregate_shared_parameter=aggregate_shared_parameter,
+        observable_weights=observable_weights,
+        cx_index=cx_index,
+        restore_state=restore_state,
+    )
 
 
 def fused_rzz_segment_adjoint_(

@@ -67,6 +67,18 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "same native adjoint with legacy six-wire forward rotation tiles",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_flat_pair_simd_rollback": (
+            "same native adjoint with nested rotation-pair traversal",
+            "statevector_adjoint",
+        ),
+        "flagquantum_adjoint_cx_rotation_fusion_rollback": (
+            "same native adjoint with separate CX gather and rotation traversal",
+            "statevector_adjoint",
+        ),
+        "flagquantum_adjoint_terminal_no_restore_rollback": (
+            "same native adjoint with earliest-layer state restoration enabled",
+            "statevector_adjoint",
+        ),
         "pennylane_lightning_adjoint": (
             "lightning.qubit adjoint through the PyTorch interface",
             "statevector_adjoint",
