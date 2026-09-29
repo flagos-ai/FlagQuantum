@@ -26,6 +26,11 @@ import flagquantum as fq
 from flagquantum import algorithms as fqa
 
 from .contract import runtime_metadata, write_json_atomic
+from .differentiable_adjoint_report import render_adjoint_markdown
+from .differentiable_regression_report import (
+    render_forward_cx_markdown,
+    render_observable_cache_markdown,
+)
 from .simulator_compare import SEED
 from .simulator_workload_corpus import extract_features
 
@@ -41,6 +46,8 @@ EngineName = Literal[
     "flagquantum_adjoint",
     "flagquantum_adjoint_python_fallback",
     "flagquantum_adjoint_gather_rollback",
+    "flagquantum_adjoint_forward_cx_rollback",
+    "flagquantum_adjoint_observable_cache_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -58,7 +65,13 @@ ADJOINT_ENGINE_NAMES: tuple[EngineName, ...] = (
     "pennylane_lightning_adjoint",
 )
 ALL_ENGINE_NAMES = (
-    ENGINE_NAMES + ADJOINT_ENGINE_NAMES + ("flagquantum_adjoint_gather_rollback",)
+    ENGINE_NAMES
+    + ADJOINT_ENGINE_NAMES
+    + (
+        "flagquantum_adjoint_gather_rollback",
+        "flagquantum_adjoint_forward_cx_rollback",
+        "flagquantum_adjoint_observable_cache_rollback",
+    )
 )
 
 _WORKLOAD_LABELS: dict[WorkloadName, str] = {
@@ -71,6 +84,12 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_adjoint": "FlagQuantum adjoint",
     "flagquantum_adjoint_python_fallback": "FlagQuantum adjoint Python fallback",
     "flagquantum_adjoint_gather_rollback": "FlagQuantum adjoint gather rollback",
+    "flagquantum_adjoint_forward_cx_rollback": (
+        "FlagQuantum adjoint forward CX rollback"
+    ),
+    "flagquantum_adjoint_observable_cache_rollback": (
+        "FlagQuantum adjoint observable-cache rollback"
+    ),
     "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
 
@@ -179,16 +198,28 @@ def _flagquantum_executor(
     differentiation: Literal["autograd", "adjoint"],
     cpu_direct: bool | None = None,
     native_cpu_adjoint: bool | None = None,
+    native_cpu_cx_gather: bool | None = None,
+    observable_cache: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
     def execute() -> _Execution:
         prior_direct = os.environ.get("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT")
         prior_native = os.environ.get("FQ_NATIVE_CPU_ADJOINT")
+        prior_cx_gather = os.environ.get("FQ_NATIVE_CPU_CX_GATHER")
+        prior_observable_cache = os.environ.get(
+            "FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"
+        )
         if cpu_direct is not None:
             os.environ["FQ_STATEVECTOR_ADJOINT_CPU_DIRECT"] = "1" if cpu_direct else "0"
         if native_cpu_adjoint is not None:
             os.environ["FQ_NATIVE_CPU_ADJOINT"] = "1" if native_cpu_adjoint else "0"
+        if native_cpu_cx_gather is not None:
+            os.environ["FQ_NATIVE_CPU_CX_GATHER"] = "1" if native_cpu_cx_gather else "0"
+        if observable_cache is not None:
+            os.environ["FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"] = (
+                "1" if observable_cache else "0"
+            )
         try:
             forward_started = time.perf_counter()
             if differentiation == "adjoint":
@@ -216,6 +247,18 @@ def _flagquantum_executor(
                     os.environ.pop("FQ_NATIVE_CPU_ADJOINT", None)
                 else:
                     os.environ["FQ_NATIVE_CPU_ADJOINT"] = prior_native
+            if native_cpu_cx_gather is not None:
+                if prior_cx_gather is None:
+                    os.environ.pop("FQ_NATIVE_CPU_CX_GATHER", None)
+                else:
+                    os.environ["FQ_NATIVE_CPU_CX_GATHER"] = prior_cx_gather
+            if observable_cache is not None:
+                if prior_observable_cache is None:
+                    os.environ.pop("FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE", None)
+                else:
+                    os.environ["FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"] = (
+                        prior_observable_cache
+                    )
         return _Execution(
             value=float(loss.detach()),
             gradient=gradient.detach(),
@@ -326,6 +369,22 @@ def _engine_callable(
             build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=False,
+        )
+    if engine == "flagquantum_adjoint_forward_cx_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            native_cpu_cx_gather=False,
+        )
+    if engine == "flagquantum_adjoint_observable_cache_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            observable_cache=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
@@ -743,6 +802,16 @@ def run_benchmark(
                 "contract": "rollback to per-gate full-state gather indices",
                 "gradient_method": "statevector_adjoint",
             },
+            "flagquantum_adjoint_forward_cx_rollback": {
+                "included": "flagquantum_adjoint_forward_cx_rollback" in engines,
+                "contract": "same native adjoint with forward CX gather disabled",
+                "gradient_method": "statevector_adjoint",
+            },
+            "flagquantum_adjoint_observable_cache_rollback": {
+                "included": "flagquantum_adjoint_observable_cache_rollback" in engines,
+                "contract": "same native adjoint with observable-weight cache disabled",
+                "gradient_method": "statevector_adjoint",
+            },
             "pennylane_lightning_adjoint": {
                 "included": "pennylane_lightning_adjoint" in engines,
                 "contract": "lightning.qubit adjoint through the PyTorch interface",
@@ -772,10 +841,20 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
 
     if tuple(payload["engines"]) == (
         "flagquantum_adjoint",
+        "flagquantum_adjoint_forward_cx_rollback",
+    ):
+        return render_forward_cx_markdown(payload, artifact_name=artifact_name)
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_observable_cache_rollback",
+    ):
+        return render_observable_cache_markdown(payload, artifact_name=artifact_name)
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
         "flagquantum_adjoint_python_fallback",
         "pennylane_lightning_adjoint",
     ):
-        return _render_adjoint_markdown(payload, artifact_name=artifact_name)
+        return render_adjoint_markdown(payload, artifact_name=artifact_name)
     methodology = payload["methodology"]
     cases = payload["cases"]
     engines = tuple(payload["engines"])
@@ -995,147 +1074,6 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
             "  --layers " + str(payload["layers"]) + " --threads 1 \\",
             f"  --warmup {methodology['warmup']} --iterations {methodology['iterations']} \\",
             f"  --calls-per-sample {methodology['calls_per_sample']} \\",
-            f"  --json-output {artifact_name} --markdown-output REPORT.md",
-            "```",
-            "",
-        )
-    )
-    return "\n".join(lines)
-
-
-def _render_adjoint_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
-    """Render the method-matched adjoint comparison without changing backprop claims."""
-
-    cases = payload["cases"]
-    methodology = payload["methodology"]
-    lines = [
-        "# Adjoint differentiable simulator corpus (Apple arm64 CPU)",
-        "",
-        f"This report is generated from [`{artifact_name}`]({artifact_name}). It is a",
-        "separate method-matched track from the backpropagation corpus: FlagQuantum's",
-        "fused native reversible adjoint is compared with its Python fallback and",
-        "PennyLane Lightning's adjoint.",
-        "Both compute one exact weighted Z/ZZ expectation and its gradient with respect",
-        "to every circuit parameter; construction and optimizer updates are excluded.",
-        "",
-        "## Results",
-        "",
-        "| Workload | Qubits | Gates | Params | FQ forward (ms) | FQ backward (ms) | FQ total (ms) | Python backward (ms) | Python total (ms) | Native backward speedup | PennyLane Lightning total (ms) | PennyLane Lightning / FlagQuantum total | Max gradient error |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-    ]
-
-    def milliseconds(engine: Mapping[str, Any], metric: str) -> float:
-        return 1000.0 * float(engine[metric]["median_seconds"])
-
-    ratios = []
-    backward_speedups = []
-    total_speedups = []
-    errors = []
-    for case in cases:
-        workload = case["workload"]
-        native = case["engines"]["flagquantum_adjoint"]
-        python_fallback = case["engines"]["flagquantum_adjoint_python_fallback"]
-        external = case["engines"]["pennylane_lightning_adjoint"]
-        ratio = case["comparison"]["engine_over_flagquantum_median"][
-            "pennylane_lightning_adjoint"
-        ]["value_and_grad"]
-        error = case["correctness"]["engines"]["pennylane_lightning_adjoint"][
-            "gradient_max_abs_error"
-        ]
-        ratios.append(ratio)
-        backward_speedup = (
-            python_fallback["backward"]["median_seconds"]
-            / native["backward"]["median_seconds"]
-        )
-        total_speedup = (
-            python_fallback["value_and_grad"]["median_seconds"]
-            / native["value_and_grad"]["median_seconds"]
-        )
-        backward_speedups.append(backward_speedup)
-        total_speedups.append(total_speedup)
-        errors.append(error)
-        values = (
-            _WORKLOAD_LABELS[workload["name"]],
-            workload["n_wires"],
-            workload["gate_count"],
-            workload["parameter_count"],
-            f"{milliseconds(native, 'forward'):.3f}",
-            f"{milliseconds(native, 'backward'):.3f}",
-            f"{milliseconds(native, 'value_and_grad'):.3f}",
-            f"{milliseconds(python_fallback, 'backward'):.3f}",
-            f"{milliseconds(python_fallback, 'value_and_grad'):.3f}",
-            f"{backward_speedup:.2f}x",
-            f"{milliseconds(external, 'value_and_grad'):.3f}",
-            f"{ratio:.2f}x",
-            f"{error:.3e}",
-        )
-        lines.append("| " + " | ".join(map(str, values)) + " |")
-
-    lines.extend(
-        (
-            "",
-            "A PennyLane Lightning/FlagQuantum ratio above one means FlagQuantum was "
-            "faster. Peak RSS was",
-            "not measured in this timing run. These are local, non-release",
-            "single-device results, not a universal framework ranking or scaling claim.",
-            "",
-            "## Meaning and current level",
-            "",
-            f"All {len(cases)} cases passed the 1e-9 value/gradient tolerance; maximum "
-            f"gradient error was {max(errors):.3e}. One-pass forward RZZ segments and "
-            "native disjoint one-qubit H/rotation layers complement the fused "
-            "RX/RY/RZ/RZZ adjoint operators, commuting shared-parameter RZZ segments, "
-            "shared rotation-layer adjoints with native shared-gradient reduction, "
-            "allocation-free reverse H blocks, same-wire forward "
-            "composition, CX-sequence permutations, reuse of the observable diagonal, "
-            "bounded structural planning reuse, cached accelerator capability probes, "
-            "parameter-free adjoint IR template reuse, once-per-parameter binding "
-            "validation, and analytic Pauli-rotation VJPs. The native adjoint operators "
-            "accelerated backward by "
-            f"{min(backward_speedups):.2f}x to {max(backward_speedups):.2f}x and total "
-            f"value-and-gradient by {min(total_speedups):.2f}x to "
-            f"{max(total_speedups):.2f}x. Total PennyLane Lightning/FlagQuantum ratios "
-            "ranged from "
-            f"{min(ratios):.2f}x to {max(ratios):.2f}x on this host. Hardware-efficient "
-            "VQE stresses many independent rotation gradients; QAOA stresses repeated "
-            "shared parameters. This establishes functional local adjoint support for real "
-            "weighted Z/ZZ Hamiltonians at complex128, not a universal performance or "
-            "general Pauli-support claim. The QAOA path now reduces repeated planning and "
-            "shared-parameter bookkeeping overhead; repeated optimization steps also "
-            "avoid rebuilding detached IR snapshots while preserving fresh parameter "
-            "values and autograd contexts.",
-            "",
-            "## FlagQuantum example",
-            "",
-            "```python",
-            "import torch",
-            "import flagquantum as fq",
-            "from flagquantum import algorithms as fqa",
-            "",
-            "theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)",
-            "circuit = fq.Circuit(3, dtype=torch.complex128).ry(0, theta).cx(0, 1)",
-            "hamiltonian = fqa.Hamiltonian((",
-            '    fqa.pauli_term(0.7, "ZZ", (0, 1)),',
-            '    fqa.pauli_term(0.2, "Z", (2,)),',
-            "))",
-            'energy = hamiltonian.expectation(circuit, differentiation="adjoint")',
-            "energy.backward()",
-            "print(energy.item(), theta.grad)",
-            "```",
-            "",
-            "## Reproduction",
-            "",
-            "```bash",
-            "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \\",
-            "flagquantum-benchmark run differentiable_simulator_corpus \\",
-            "  --engines flagquantum_adjoint "
-            "flagquantum_adjoint_python_fallback pennylane_lightning_adjoint \\",
-            "  --workloads hardware_efficient_vqe qaoa_path_maxcut \\",
-            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
-            f"  --layers {payload['layers']} --threads 1 --warmup {methodology['warmup']} \\",
-            f"  --iterations {methodology['iterations']} --calls-per-sample "
-            f"{methodology['calls_per_sample']} \\",
-            "  --skip-memory-probe \\",
             f"  --json-output {artifact_name} --markdown-output REPORT.md",
             "```",
             "",

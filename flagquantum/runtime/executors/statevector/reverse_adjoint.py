@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+from collections import OrderedDict
+from threading import Lock
 from typing import Any
 
 import torch
@@ -21,6 +24,84 @@ from .checkpointing import StatevectorCheckpointPolicy
 from .forward import _storage_global_indices
 from .reverse_adjoint_sweep import _ReversibleAdjointSweep
 from .reverse_support import BackwardExecutionEvidence, _reverse_chunk_amplitudes
+
+_OBSERVABLE_WEIGHT_CACHE_MAX_BYTES = 256 * 1024 * 1024
+_OBSERVABLE_WEIGHT_CACHE_MAX_ENTRIES = 8
+_ObservableWeightKey = tuple[
+    int,
+    tuple[tuple[float, tuple[int, ...]], ...],
+    torch.dtype,
+    str,
+    int,
+]
+_OBSERVABLE_WEIGHT_CACHE: OrderedDict[_ObservableWeightKey, torch.Tensor] = (
+    OrderedDict()
+)
+_OBSERVABLE_WEIGHT_CACHE_LOCK = Lock()
+
+
+def _observable_weight_cache_enabled() -> bool:
+    return os.getenv(
+        "FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def _observable_weight_cache_key(
+    shard_state: Any,
+    *,
+    plan: Any,
+    n_wires: int,
+    terms: tuple[tuple[float, tuple[int, ...]], ...],
+) -> _ObservableWeightKey | None:
+    """Identify safe, canonical single-process CPU observable diagonals."""
+
+    if (
+        not _observable_weight_cache_enabled()
+        or plan.world_size != 1
+        or shard_state.rank != 0
+        or shard_state.shard.amplitude_start != 0
+        or shard_state.amplitudes.device.type != "cpu"
+    ):
+        return None
+    return (
+        n_wires,
+        terms,
+        shard_state.amplitudes.real.dtype,
+        str(shard_state.amplitudes.device),
+        shard_state.shard.local_amplitudes,
+    )
+
+
+def _cached_observable_weights(key: _ObservableWeightKey) -> torch.Tensor | None:
+    with _OBSERVABLE_WEIGHT_CACHE_LOCK:
+        weights = _OBSERVABLE_WEIGHT_CACHE.get(key)
+        if weights is not None:
+            _OBSERVABLE_WEIGHT_CACHE.move_to_end(key)
+        return weights
+
+
+def _cache_observable_weights(key: _ObservableWeightKey, weights: torch.Tensor) -> None:
+    if weights.numel() * weights.element_size() > _OBSERVABLE_WEIGHT_CACHE_MAX_BYTES:
+        return
+    with _OBSERVABLE_WEIGHT_CACHE_LOCK:
+        _OBSERVABLE_WEIGHT_CACHE[key] = weights
+        _OBSERVABLE_WEIGHT_CACHE.move_to_end(key)
+        while _OBSERVABLE_WEIGHT_CACHE and (
+            len(_OBSERVABLE_WEIGHT_CACHE) > _OBSERVABLE_WEIGHT_CACHE_MAX_ENTRIES
+            or sum(
+                item.numel() * item.element_size()
+                for item in _OBSERVABLE_WEIGHT_CACHE.values()
+            )
+            > _OBSERVABLE_WEIGHT_CACHE_MAX_BYTES
+        ):
+            _OBSERVABLE_WEIGHT_CACHE.popitem(last=False)
+
+
+def _clear_observable_weight_cache() -> None:
+    """Clear retained diagonals for deterministic tests and long-lived workers."""
+
+    with _OBSERVABLE_WEIGHT_CACHE_LOCK:
+        _OBSERVABLE_WEIGHT_CACHE.clear()
 
 
 def _local_expectation_z(
@@ -122,20 +203,31 @@ def _local_expectation_z_hamiltonian_and_weights(
     """Evaluate one Hamiltonian and retain its real diagonal for backward."""
 
     local_count = shard_state.shard.local_amplitudes
-    weights = torch.empty(
-        local_count,
-        dtype=shard_state.amplitudes.real.dtype,
-        device=shard_state.amplitudes.device,
+    chunk_amplitudes = _reverse_chunk_amplitudes()
+    cache_key = _observable_weight_cache_key(
+        shard_state,
+        plan=plan,
+        n_wires=n_wires,
+        terms=terms,
     )
-    for start in range(0, local_count, _reverse_chunk_amplitudes()):
-        end = min(local_count, start + _reverse_chunk_amplitudes())
-        indices = _storage_global_indices(shard_state, start, end, plan=plan)
-        weights[start:end] = z_hamiltonian_weights(
-            indices,
-            n_wires=n_wires,
-            terms=terms,
-            dtype=weights.dtype,
+    weights = None if cache_key is None else _cached_observable_weights(cache_key)
+    if weights is None:
+        weights = torch.empty(
+            local_count,
+            dtype=shard_state.amplitudes.real.dtype,
+            device=shard_state.amplitudes.device,
         )
+        for start in range(0, local_count, chunk_amplitudes):
+            end = min(local_count, start + chunk_amplitudes)
+            indices = _storage_global_indices(shard_state, start, end, plan=plan)
+            weights[start:end] = z_hamiltonian_weights(
+                indices,
+                n_wires=n_wires,
+                terms=terms,
+                dtype=weights.dtype,
+            )
+        if cache_key is not None:
+            _cache_observable_weights(cache_key, weights)
     value = (shard_state.amplitudes.abs().square() * weights.reshape(1, -1)).sum()
     return value, weights
 

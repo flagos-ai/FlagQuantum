@@ -11,7 +11,9 @@ from .adjoint import (
 )
 from .permutation import (
     fused_cx_adjoint_gather,
+    fused_cx_gather_out,
     native_cpu_cx_adjoint_gather_available,
+    native_cpu_cx_gather_available,
 )
 from .rotation import (
     fused_rotation_block_forward_,
@@ -32,7 +34,9 @@ __all__ = [
     "native_cpu_rotation_available",
     "native_cpu_one_qubit_layer_available",
     "fused_cx_adjoint_gather",
+    "fused_cx_gather_out",
     "native_cpu_cx_adjoint_gather_available",
+    "native_cpu_cx_gather_available",
     "fused_rzz_segment_forward_",
     "native_cpu_rzz_available",
 ]
