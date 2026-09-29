@@ -25,6 +25,8 @@ from .rotation import (
     native_cpu_hadamard_block_adjoint_available,
     native_cpu_one_qubit_layer_available,
     native_cpu_rotation_available,
+    native_cpu_shared_rzz_forward_fusion_available,
+    native_cpu_specialized_forward_rotations_available,
 )
 from .rzz import fused_rzz_segment_forward_, native_cpu_rzz_available
 
@@ -43,6 +45,8 @@ __all__ = [
     "fused_hadamard_block_adjoint_",
     "fused_rotation_block_adjoint_",
     "native_cpu_rotation_available",
+    "native_cpu_shared_rzz_forward_fusion_available",
+    "native_cpu_specialized_forward_rotations_available",
     "native_cpu_one_qubit_layer_available",
     "native_cpu_hadamard_block_adjoint_available",
     "fused_cx_adjoint_gather",

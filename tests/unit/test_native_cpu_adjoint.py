@@ -332,6 +332,96 @@ def test_native_rotation_block_has_explicit_environment_rollback(
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_block_fuses_preceding_shared_rzz(
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(2031)
+    n_wires = 4
+    state = (
+        torch.randn((2, 1 << n_wires), generator=generator)
+        + 1j * torch.randn((2, 1 << n_wires), generator=generator)
+    ).to(dtype)
+    angle = torch.tensor(0.23, dtype=real_dtype)
+    rzz_angles = angle.expand(3).contiguous()
+    first_wires = torch.tensor((0, 1, 2), dtype=torch.int64)
+    second_wires = torch.tensor((1, 2, 3), dtype=torch.int64)
+    matrices = torch.stack(
+        tuple(_rotation_matrix("rx", angle, dtype) for _ in range(n_wires))
+    ).contiguous()
+    phase = torch.exp(-0.5j * angle).to(dtype)
+    inverse_phase = phase.conj()
+    rzz_matrix = torch.diag(torch.stack((phase, inverse_phase, inverse_phase, phase)))
+    expected = state.clone()
+    for wires in zip(first_wires.tolist(), second_wires.tolist(), strict=True):
+        expected = _apply_matrix(expected, rzz_matrix, wires, n_wires)
+    for matrix, wire in zip(matrices, range(n_wires), strict=True):
+        expected = _apply_matrix(expected, matrix, (wire,), n_wires)
+
+    applied = fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.arange(n_wires, dtype=torch.int64),
+        n_wires=n_wires,
+        rzz_angles=rzz_angles,
+        rzz_first_wires=first_wires,
+        rzz_second_wires=second_wires,
+    )
+
+    assert applied
+    tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
+def test_specialized_forward_rotation_arithmetic_has_explicit_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    angle = torch.tensor(0.31, dtype=torch.float64)
+    matrices = torch.stack(
+        (_rotation_matrix("rx", angle, torch.complex128),) * 2
+    ).contiguous()
+    initial = torch.arange(4, dtype=torch.float64).to(torch.complex128).reshape(1, 4)
+    specialized = initial.clone()
+    rollback = initial.clone()
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "1")
+    assert fused_rotation_block_forward_(
+        specialized, matrices, torch.tensor((0, 1)), n_wires=2
+    )
+    monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "0")
+    assert fused_rotation_block_forward_(
+        rollback, matrices, torch.tensor((0, 1)), n_wires=2
+    )
+
+    torch.testing.assert_close(specialized, rollback, atol=2e-12, rtol=2e-12)
+
+
+def test_native_rotation_block_rejects_nonshared_rzz_without_mutation() -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    state = torch.ones((1, 8), dtype=torch.complex128)
+    initial = state.clone()
+    matrices = torch.eye(2, dtype=torch.complex128).expand(2, -1, -1).contiguous()
+
+    applied = fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.tensor((0, 1), dtype=torch.int64),
+        n_wires=3,
+        rzz_angles=torch.tensor((0.1, 0.2), dtype=torch.float64),
+        rzz_first_wires=torch.tensor((0, 1), dtype=torch.int64),
+        rzz_second_wires=torch.tensor((1, 2), dtype=torch.int64),
+    )
+
+    assert not applied
+    torch.testing.assert_close(state, initial)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 @pytest.mark.parametrize("wire_count", (2, 6, 11))
 def test_native_hadamard_block_adjoint_matches_two_sequential_states(
     dtype: torch.dtype, wire_count: int

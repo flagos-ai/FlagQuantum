@@ -35,6 +35,7 @@ from .differentiable_regression_report import (
     render_observable_cache_markdown,
     render_rotation_tile_markdown,
 )
+from .differentiable_support import build_support_matrix
 from .simulator_compare import SEED
 from .simulator_workload_corpus import extract_features
 
@@ -56,6 +57,7 @@ EngineName = Literal[
     "flagquantum_adjoint_euler_triple_rollback",
     "flagquantum_adjoint_observable_boundary_rollback",
     "flagquantum_adjoint_shared_rzz_rollback",
+    "flagquantum_adjoint_forward_rzz_rotation_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -83,6 +85,7 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_euler_triple_rollback",
         "flagquantum_adjoint_observable_boundary_rollback",
         "flagquantum_adjoint_shared_rzz_rollback",
+        "flagquantum_adjoint_forward_rzz_rotation_rollback",
     )
 )
 
@@ -113,6 +116,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_adjoint_shared_rzz_rollback": (
         "FlagQuantum adjoint shared-RZZ rollback"
+    ),
+    "flagquantum_adjoint_forward_rzz_rotation_rollback": (
+        "FlagQuantum adjoint forward RZZ/rotation rollback"
     ),
     "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
@@ -228,6 +234,8 @@ def _flagquantum_executor(
     euler_triple_fusion: bool | None = None,
     observable_boundary_fusion: bool | None = None,
     shared_rzz_fusion: bool | None = None,
+    forward_shared_rzz_fusion: bool | None = None,
+    forward_specialized_rotations: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -242,6 +250,10 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES": euler_triple_fusion,
                 "FQ_NATIVE_CPU_OBSERVABLE_BOUNDARY": observable_boundary_fusion,
                 "FQ_NATIVE_CPU_ADJOINT_RX_RZZ_FUSION": shared_rzz_fusion,
+                "FQ_NATIVE_CPU_SHARED_RZZ_FORWARD_FUSION": (forward_shared_rzz_fusion),
+                "FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS": (
+                    forward_specialized_rotations
+                ),
             }
         ):
             forward_started = time.perf_counter()
@@ -417,6 +429,15 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             shared_rzz_fusion=False,
+        )
+    if engine == "flagquantum_adjoint_forward_rzz_rotation_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            forward_shared_rzz_fusion=False,
+            forward_specialized_rotations=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
@@ -808,78 +829,7 @@ def run_benchmark(
             "hidden_fallback_allowed": False,
             "memory_measured_in_isolated_process": measure_memory,
         },
-        support_matrix={
-            "flagquantum_native": {
-                "included": "flagquantum_native" in engines,
-                "contract": "native PyTorch reverse-mode autograd",
-                "gradient_method": "backpropagation through exact statevector",
-            },
-            "pennylane_default_qubit": {
-                "included": "pennylane_default_qubit" in engines,
-                "contract": "default.qubit backprop through the PyTorch interface",
-                "gradient_method": "torch_reverse_mode_autograd",
-            },
-            "flagquantum_adjoint": {
-                "included": "flagquantum_adjoint" in engines,
-                "contract": "native reversible statevector adjoint",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_python_fallback": {
-                "included": "flagquantum_adjoint_python_fallback" in engines,
-                "contract": "same direct-layout adjoint with native operator disabled",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_gather_rollback": {
-                "included": "flagquantum_adjoint_gather_rollback" in engines,
-                "contract": "rollback to per-gate full-state gather indices",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_forward_cx_rollback": {
-                "included": "flagquantum_adjoint_forward_cx_rollback" in engines,
-                "contract": "same native adjoint with forward CX gather disabled",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_observable_cache_rollback": {
-                "included": "flagquantum_adjoint_observable_cache_rollback" in engines,
-                "contract": "same native adjoint with observable-weight cache disabled",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_rotation_tile_rollback": {
-                "included": "flagquantum_adjoint_rotation_tile_rollback" in engines,
-                "contract": "same native adjoint with legacy two-wire rotation tiles",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_euler_triple_rollback": {
-                "included": "flagquantum_adjoint_euler_triple_rollback" in engines,
-                "contract": "same native adjoint with Euler fast path disabled",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_observable_boundary_rollback": {
-                "included": (
-                    "flagquantum_adjoint_observable_boundary_rollback" in engines
-                ),
-                "contract": "same native adjoint with eager observable boundary",
-                "gradient_method": "statevector_adjoint",
-            },
-            "flagquantum_adjoint_shared_rzz_rollback": {
-                "included": "flagquantum_adjoint_shared_rzz_rollback" in engines,
-                "contract": "same native adjoint with shared-RZZ fusion disabled",
-                "gradient_method": "statevector_adjoint",
-            },
-            "pennylane_lightning_adjoint": {
-                "included": "pennylane_lightning_adjoint" in engines,
-                "contract": "lightning.qubit adjoint through the PyTorch interface",
-                "gradient_method": "statevector_adjoint",
-            },
-            "qiskit_aer": {
-                "included": False,
-                "reason": "FlagQuantum's Aer bridge has no native PyTorch gradient contract",
-            },
-            "cirq_simulator": {
-                "included": False,
-                "reason": "FlagQuantum's Cirq bridge has no native PyTorch gradient contract",
-            },
-        },
+        support_matrix=build_support_matrix(engines),
         workloads=tuple(workloads),
         n_wires=tuple(n_wires),
         layers=layers,
