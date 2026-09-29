@@ -427,6 +427,26 @@ owner = "noise runtime maintainers"
 limitations = "Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback."
 focused_tests = "tests/test_noise.py"
 
+[capabilities.continuous_time_lindblad]
+title = "Continuous-time Lindblad density-matrix evolution"
+summary = "Evolve small Markovian open systems on explicit time grids with physical collapse rates and time-resolved diagnostics."
+category = "simulation_and_training"
+user_goals = ["Simulate driven amplitude damping", "Inspect time-resolved populations and observables", "Audit trace drift and numerical provenance"]
+public_apis = ["flagquantum.lindblad.run", "flagquantum.lindblad.plan", "flagquantum.lindblad.LindbladPlan", "flagquantum.lindblad.amplitude_damping"]
+runtime_modes = ["continuous_time_density_matrix"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/lindblad_evolution.py"
+documentation = "flagquantum/simulation/README.md"
+level = "production_supported"
+owner = "simulation maintainers"
+limitations = "Time-independent dense Hamiltonians, finite strictly increasing grids, Markovian Lindblad collapse operators, and CPU complex64/complex128 execution only. The explicit grid controls fixed-step fourth-order Runge-Kutta accuracy. Non-Markovian environments, stochastic trajectories, gradients, sparse solvers, GPU/distributed execution, hardware submission, and arbitrary time-dependent generators are unsupported."
+focused_tests = "tests/unit/test_lindblad_evolution.py"
+integration_tests = "tests/unit/test_lindblad_evolution.py"
+hardware_evidence = ".github/workflows/ci.yml"
+operational_runbook = "flagquantum/simulation/README.md"
+
 [capabilities.cloud_deployment]
 title = "Circuit packaging and cloud deployment"
 summary = "Package trained circuits, export provider formats, and route them through deployment provider abstractions."

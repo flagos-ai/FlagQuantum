@@ -16,6 +16,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | MPS updates, factorization, and truncation | [mps/](mps/README.md) |
 | Contraction, slicing, and pullbacks | [tensor_network/](tensor_network/README.md) |
 | Exact noisy evolution | [density_matrix.py](density_matrix.py) |
+| Continuous-time Lindblad evolution | [lindblad.py](lindblad.py) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 
@@ -33,6 +34,68 @@ Choose the suite for the affected representation, then broaden by the
 against independent references; truncation and emulated precision need their
 own error envelope. Local numerical changes must not introduce a dependency on
 Runtime orchestration.
+
+## Continuous-time open-system evolution
+
+`flagquantum.simulation.evolve_density_matrix` integrates the Lindblad master
+equation on an explicit, strictly increasing output grid. Collapse entries pair
+an operator with a physical rate; the named `amplitude_damping` operator is
+`sqrt(rate) * |0><1|`, so its rate is never confused with the dimensionless
+probability accepted by the instruction-level noise channel.
+
+The deterministic CPU implementation uses two fourth-order Runge--Kutta steps
+per output interval. Results report the actual method, order, maximum internal
+step, precision, basis populations, requested observables, maximum trace drift,
+and whether populations stayed within the documented tolerance (`1e-9` for
+complex128 and `2e-5` for complex64). Density matrices are returned only when
+requested. `plan_density_matrix_evolution` validates the identical request and
+reports dimensions and retained-trajectory memory without evolving it.
+
+The issue #234 reference problem can be run directly:
+
+```bash
+python -m examples.lindblad_evolution
+```
+
+The minimal SDK call is:
+
+```python
+import torch
+import flagquantum as fq
+import flagquantum.lindblad as fql
+
+result = fql.run(
+    0.5 * fq.X(0) + 0.1 * fq.Z(0),
+    "1",
+    torch.linspace(0.0, 8.0, 161),
+    collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+    outputs=fq.expectation(fq.Z(0), name="z"),
+)
+
+print(result.populations.shape)          # torch.Size([161, 2])
+print(result.expectation("z")[-1])
+print(result.maximum_trace_drift)
+print(result.population_bounded)
+```
+
+For an inspectable or cross-process workflow, serialize the sealed plan and run
+the restored request without semantic overrides:
+
+```python
+plan = fql.plan(
+    0.5 * fq.X(0) + 0.1 * fq.Z(0),
+    "1",
+    torch.linspace(0.0, 8.0, 161),
+    collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+    outputs=fq.expectation(fq.Z(0), name="z"),
+)
+restored = fql.LindbladPlan.from_json(plan.to_json())
+result = fql.run(restored)
+assert result.plan is restored
+```
+
+Set `return_density_matrices=True` when the complete density trajectory is
+needed. Otherwise it is omitted from the returned result.
 
 [Detailed source map](IMPLEMENTATION.md) locates shared gate primitives,
 rank-local kernels, specialized precision paths, and numerical migration rules.

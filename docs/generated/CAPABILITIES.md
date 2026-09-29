@@ -76,6 +76,9 @@ This catalog is generated from the machine-validated
 | Validate small noisy circuits exactly | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Evaluate low-entanglement noisy circuits with MPS trajectories | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Resume reproducible trajectory ensembles | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
+| Simulate driven amplitude damping | Continuous-time Lindblad density-matrix evolution | Production supported | [Run example](../../examples/lindblad_evolution.py) |
+| Inspect time-resolved populations and observables | Continuous-time Lindblad density-matrix evolution | Production supported | [Run example](../../examples/lindblad_evolution.py) |
+| Audit trace drift and numerical provenance | Continuous-time Lindblad density-matrix evolution | Production supported | [Run example](../../examples/lindblad_evolution.py) |
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
@@ -356,6 +359,20 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 - **Start:** [quick example](../../examples/noisy_simulation_v1.py)
 - **Documentation:** [guide](../../docs/guides/NOISY_SIMULATION.md)
 - **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
+
+### Continuous-time Lindblad density-matrix evolution
+
+Evolve small Markovian open systems on explicit time grids with physical collapse rates and time-resolved diagnostics.
+
+- **Maturity:** Production supported
+- **Public API:** `flagquantum.lindblad.run`, `flagquantum.lindblad.plan`, `flagquantum.lindblad.LindbladPlan`, `flagquantum.lindblad.amplitude_damping`
+- **Runtime modes:** `continuous_time_density_matrix`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/lindblad_evolution.py)
+- **Documentation:** [guide](../../flagquantum/simulation/README.md)
+- **Known boundary:** Time-independent dense Hamiltonians, finite strictly increasing grids, Markovian Lindblad collapse operators, and CPU complex64/complex128 execution only. The explicit grid controls fixed-step fourth-order Runge-Kutta accuracy. Non-Markovian environments, stochastic trajectories, gradients, sparse solvers, GPU/distributed execution, hardware submission, and arbitrary time-dependent generators are unsupported.
 
 ### Repetition-code memory experiment
 
