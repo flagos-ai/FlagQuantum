@@ -28,6 +28,7 @@ from ....simulation.statevector.operations import (
 )
 from ...distributed.flagos_runtime import current_flagos_device
 from ...distributed.identity import build_distributed_identity
+from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import (
     StatevectorExchangeWorkspace,
     TorchDistributedStatevectorResult,
@@ -38,7 +39,6 @@ from .forward import (
     _local_block_fusion_width,
     _single_process_cpu_direct_enabled,
     _triton_local_cx_decision,
-    _triton_local_cx_segment_enabled,
     _triton_transpose_1q_enabled,
     _vectorized_cross_shard_cx,
     _vectorized_local_cx_gate,
@@ -49,7 +49,7 @@ from .forward import (
     communication_aware_wire_layout,
 )
 from .forward_rzz_segment import apply_native_rzz_segment
-from .kernel_dispatch import KernelDispatchEvidence, triton_available
+from .kernel_dispatch import KernelDispatchEvidence
 from .layout import (
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,
@@ -215,15 +215,14 @@ class _ShardedForwardSweep:
                 self.half_shape, dtype=self.dtype, device=self.resolved_device
             )
             self.layout_receive_buffer = torch.empty_like(self.layout_send_buffer)
+        self.cx_segment_decision = _triton_local_cx_segment_tensor_decision(
+            self.ir,
+            self.shard_state.amplitudes,
+            runtime_supported=self.local_compilation,
+        )
         self.cx_segment_scratch = (
             torch.empty_like(self.shard_state.amplitudes)
-            if (
-                self.local_compilation
-                and triton_available()
-                and _triton_local_cx_segment_enabled(self.ir)
-                and self.resolved_device.type == "cuda"
-                and self.dtype == torch.complex64
-            )
+            if self.cx_segment_decision.accelerated
             else None
         )
         self.local_count = self.distributed_count = self.communication_count = (
@@ -449,6 +448,7 @@ class _ShardedForwardSweep:
                     target_bit_positions=targets,
                     output=cx_segment_scratch,
                 )
+                self.kernel_dispatch_evidence.record(self.cx_segment_decision)
                 self.shard_state = replace(
                     self.shard_state, amplitudes=cx_segment_scratch
                 )

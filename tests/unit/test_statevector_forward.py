@@ -7,11 +7,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR, Instruction
+from flagquantum.runtime.executors.statevector.cx_segment_dispatch import (
+    _triton_local_cx_segment_decision,
+    _triton_local_cx_segment_enabled,
+)
 from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
-    _triton_local_cx_segment_enabled,
     _vectorized_pair_exchange_gate,
     _wait_for_exchange,
     communication_aware_wire_layout,
@@ -77,6 +80,50 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     assert not _triton_local_cx_segment_enabled(scheduled)
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
     assert _triton_local_cx_segment_enabled(scheduled)
+
+
+def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_compiler_provenance",
+        lambda: ("triton", "3.7.1", "direct", "resolved"),
+    )
+
+    decision = _triton_local_cx_segment_decision(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert decision.accelerated
+    assert decision.semantic_id == "statevector.apply.cnot_sequence.local"
+    assert decision.implementation_id == "FQKI-TRITON-SV-003-A"
+    assert decision.catalog_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_local_cx_segment_decision_reports_catalog_mismatch(
+    monkeypatch, device_type, dtype, mismatch
+):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
+
+    decision = _triton_local_cx_segment_decision(
+        device_type=device_type,
+        dtype=dtype,
+    )
+
+    assert not decision.accelerated
+    assert decision.reason == "input_not_supported"
+    assert decision.implementation_id is None
+    assert decision.catalog_mismatches == (mismatch,)
 
 
 def test_cpu_cx_segment_gather_is_single_process_only(monkeypatch):
@@ -197,6 +244,28 @@ def test_local_cnot_triton_execution_records_catalog_identity(monkeypatch):
     )
     assert route["semantic_id"] == "statevector.apply.cnot.local"
     assert route["implementation_id"] == "FQKI-TRITON-SV-002-A"
+    assert route["catalog_mismatches"] == ()
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_local_cnot_sequence_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
+    circuit = fq.Circuit(3).x(0).cx(0, 1).cx(1, 2)
+
+    result = execute_torch_distributed_statevector(circuit, device="cuda")
+
+    torch.testing.assert_close(result.shard_state.amplitudes.cpu(), circuit.state())
+    record = next(
+        record
+        for record in result.summary()["kernel_dispatch"]["decisions"]
+        if record["feature"] == "local_cx_segment"
+    )
+    route = record["kernel_route"]
+    assert record["count"] == 1
+    assert route["semantic_id"] == "statevector.apply.cnot_sequence.local"
+    assert route["implementation_id"] == "FQKI-TRITON-SV-003-A"
     assert route["catalog_mismatches"] == ()
 
 

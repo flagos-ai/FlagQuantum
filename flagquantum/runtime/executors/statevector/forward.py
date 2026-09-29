@@ -135,25 +135,6 @@ def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
     )
 
 
-def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
-    raw = os.getenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
-    if not raw:
-        requested = bool(
-            ir is not None
-            and ir.metadata.get("statevector_dependency_schedule_changed", False)
-        )
-    else:
-        requested = raw.strip().lower() in {
-            "1",
-            "true",
-            "on",
-            "yes",
-        }
-    return bool(
-        select_triton_kernel("local_cx_segment", requested=requested).accelerated
-    )
-
-
 def _triton_transpose_1q_enabled() -> bool:
     requested = os.getenv(
         "FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1"

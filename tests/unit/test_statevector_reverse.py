@@ -509,12 +509,6 @@ def test_checkpoint_policy_is_versioned_and_fail_closed():
 def test_rematerialization_skips_reversible_cx_optimization(
     monkeypatch: pytest.MonkeyPatch, strategy: str
 ) -> None:
-    from flagquantum.runtime.executors.statevector import reverse_adjoint_sweep
-
-    monkeypatch.setattr(reverse_adjoint_sweep, "triton_available", lambda: True)
-    monkeypatch.setattr(
-        reverse_adjoint_sweep, "_triton_local_cx_segment_enabled", lambda ir: True
-    )
     monkeypatch.setenv("FQ_STATEVECTOR_PERSISTENT_INPLACE_LOCAL", "1")
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(3, dtype=torch.complex128)
@@ -667,6 +661,37 @@ def test_reverse_local_cnot_uses_cataloged_triton_route(monkeypatch):
     assert calls > 0
     torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
     torch.testing.assert_close(theta.grad, expected_gradient)
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_reverse_local_cnot_sequence_records_catalog_identity(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(3).ry(0, theta).cx(0, 1).cx(1, 2)
+    dense = circuit.expectation_z(2)
+    (expected_gradient,) = torch.autograd.grad(dense, theta, retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=2,
+        checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
+        device="cuda",
+    )
+    result.backward()
+
+    torch.testing.assert_close(result.value.cpu(), dense.detach().squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    record = next(
+        record
+        for record in result.summary()["kernel_dispatch"]["decisions"]
+        if record["feature"] == "local_cx_segment"
+    )
+    route = record["kernel_route"]
+    assert record["count"] == 2
+    assert route["semantic_id"] == "statevector.apply.cnot_sequence.local"
+    assert route["implementation_id"] == "FQKI-TRITON-SV-003-A"
 
 
 def test_reverse_executor_import_does_not_initialize_jax():
