@@ -142,3 +142,73 @@ def render_observable_cache_markdown(
         )
     )
     return "\n".join(lines)
+
+
+def render_rotation_tile_markdown(
+    payload: Mapping[str, Any], *, artifact_name: str
+) -> str:
+    """Render the native wide/legacy adjoint rotation-tile comparison."""
+
+    methodology = payload["methodology"]
+    rollback_name = "flagquantum_adjoint_rotation_tile_rollback"
+    lines = [
+        "# Native CPU adjoint rotation-tile comparison",
+        "",
+        f"This report is generated from [`{artifact_name}`]({artifact_name}). It compares",
+        "FlagQuantum's full-layer, structure-specialized native adjoint kernels with the",
+        "legacy 48-gate, two-wire rotation path. The optimized path also accumulates one",
+        "gradient subtotal per tile and applies adjacent fixed Hadamards to ket and",
+        "adjoint together in 11-wire tiles. Both paths execute the same exact",
+        "statevector-adjoint method and must return matching values and gradients.",
+        "",
+        "| Workload | Qubits | Rotations | Native backward (ms) | Rollback backward (ms) | Backward speedup | Native total (ms) | Rollback total (ms) | Total speedup | Max gradient error |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for case in payload["cases"]:
+        workload = case["workload"]
+        native = case["engines"]["flagquantum_adjoint"]
+        rollback = case["engines"][rollback_name]
+        ratio = case["comparison"]["engine_over_flagquantum_median"][rollback_name]
+        error = case["correctness"]["engines"][rollback_name]["gradient_max_abs_error"]
+        opcodes = case["features"]["opcode_histogram"]
+        rotations = sum(opcodes.get(name, 0) for name in ("rx", "ry", "rz"))
+        lines.append(
+            f"| {_WORKLOAD_LABELS[workload['name']]} | {workload['n_wires']} | "
+            f"{rotations} | {_milliseconds(native, 'backward'):.3f} | "
+            f"{_milliseconds(rollback, 'backward'):.3f} | {ratio['backward']:.2f}x | "
+            f"{_milliseconds(native, 'value_and_grad'):.3f} | "
+            f"{_milliseconds(rollback, 'value_and_grad'):.3f} | "
+            f"{ratio['value_and_grad']:.2f}x | {error:.3e} |"
+        )
+    lines.extend(
+        (
+            "",
+            "## Interpretation",
+            "",
+            "Hardware-efficient VQE has 66 adjacent RX/RY/RZ gates. The optimized",
+            "kernel processes the complete layer in bounded statevector tiles and uses",
+            "the known sparse rotation structure instead of general complex matrix",
+            "multiplication. Its tile-local gradient subtotal avoids a hot memory update for",
+            "every amplitude pair. QAOA has only 22 RX gates, but its 22 fixed Hadamards now",
+            "use a paired ket/adjoint real-arithmetic kernel, reducing eight full-state",
+            "kernel calls to two bounded tile calls. This is non-release single-device",
+            "evidence and is not a scaling claim.",
+            "",
+            "## Reproduce",
+            "",
+            "```bash",
+            "flagquantum-benchmark run differentiable_simulator_corpus \\",
+            "  --workloads " + " ".join(payload["workloads"]) + " \\",
+            "  --n-wires " + " ".join(map(str, payload["n_wires"])) + " \\",
+            "  --engines flagquantum_adjoint " + rollback_name + " \\",
+            f"  --layers {payload['layers']} --threads {payload['environment']['torch_threads']} \\",
+            f"  --warmup {methodology['warmup']} --iterations {methodology['iterations']} \\",
+            f"  --calls-per-sample {methodology['calls_per_sample']} --skip-memory-probe \\",
+            f"  --json-output {artifact_name} --markdown-output REPORT.md",
+            "```",
+            "",
+            "Set `FQ_NATIVE_CPU_ADJOINT_WIDE_TILES=0` for direct rollback.",
+            "",
+        )
+    )
+    return "\n".join(lines)

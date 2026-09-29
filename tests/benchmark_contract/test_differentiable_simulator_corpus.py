@@ -24,6 +24,7 @@ FORWARD_CX_RESULT_NAME = "native_cpu_forward_cx_gather_cpu_arm64_20260929.json"
 OBSERVABLE_CACHE_RESULT_NAME = (
     "native_cpu_adjoint_observable_cache_cpu_arm64_20260929.json"
 )
+ROTATION_TILE_RESULT_NAME = "native_cpu_adjoint_rotation_tiles_cpu_arm64_20260929.json"
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -141,6 +142,32 @@ def test_observable_cache_rollback_engine_restores_environment(
     assert "observable-weight cache disabled" in support["contract"]
 
 
+def test_rotation_tile_rollback_engine_restores_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "custom")
+    payload = run_benchmark(
+        workloads=("hardware_efficient_vqe",),
+        n_wires=(4,),
+        layers=1,
+        engines=(
+            "flagquantum_adjoint",
+            "flagquantum_adjoint_rotation_tile_rollback",
+        ),
+        threads=1,
+        warmup=0,
+        iterations=3,
+        calls_per_sample=1,
+        measure_memory=False,
+    )
+
+    assert payload["passed"] is True
+    assert os.environ["FQ_NATIVE_CPU_ADJOINT_WIDE_TILES"] == "custom"
+    support = payload["support_matrix"]["flagquantum_adjoint_rotation_tile_rollback"]
+    assert support["included"] is True
+    assert "legacy two-wire rotation tiles" in support["contract"]
+
+
 def test_checked_in_differentiable_corpus_is_reproducible() -> None:
     path = ROOT / "benchmarks" / "results" / "comparison" / RESULT_NAME
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -255,6 +282,41 @@ def test_checked_in_observable_cache_comparison_is_reproducible() -> None:
         )
 
     report = path.with_name("NATIVE_CPU_ADJOINT_OBSERVABLE_CACHE_CPU_ARM64_20260929.md")
+    assert report.read_text(encoding="utf-8") == _render_markdown(
+        payload, artifact_name=path.name
+    )
+
+
+def test_checked_in_rotation_tile_comparison_is_reproducible() -> None:
+    path = ROOT / "benchmarks" / "results" / "comparison" / ROTATION_TILE_RESULT_NAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["non_release_evidence"] is True
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["release_gate_allowed"] is False
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_rotation_tile_rollback",
+    ]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 8
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert case["engines"]["flagquantum_adjoint"]["backward"]["sample_count"] == 11
+
+    vqe = payload["cases"][0]
+    ratio = vqe["comparison"]["engine_over_flagquantum_median"][
+        "flagquantum_adjoint_rotation_tile_rollback"
+    ]
+    assert ratio["backward"] > 1.3
+    assert ratio["value_and_grad"] > 1.2
+
+    report = path.with_name("NATIVE_CPU_ADJOINT_ROTATION_TILES_CPU_ARM64_20260929.md")
     assert report.read_text(encoding="utf-8") == _render_markdown(
         payload, artifact_name=path.name
     )

@@ -35,6 +35,16 @@ def native_cpu_one_qubit_layer_available() -> bool:
     )
 
 
+def native_cpu_hadamard_block_adjoint_available() -> bool:
+    """Return whether paired wide Hadamard blocks are enabled and loadable."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_one_qubit_layer_available()
+    )
+
+
 def fused_rotation_block_forward_(
     state: torch.Tensor,
     matrices: torch.Tensor,
@@ -70,6 +80,57 @@ def fused_rotation_block_forward_(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_rotation_block_forward_(
                 state, matrices, wires, n_wires
+            ),
+        )
+    return True
+
+
+def fused_rotation_block_adjoint_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    matrices: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+) -> bool:
+    """Apply one legacy fixed block to ket and adjoint separately."""
+
+    if not fused_rotation_block_forward_(ket, matrices, wires, n_wires=n_wires):
+        return False
+    if not fused_rotation_block_forward_(adjoint, matrices, wires, n_wires=n_wires):
+        raise RuntimeError("native fixed block rejected a matching adjoint state")
+    return True
+
+
+def fused_hadamard_block_adjoint_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+) -> bool:
+    """Apply a disjoint Hadamard block to ket and adjoint in place."""
+
+    if (
+        not native_cpu_hadamard_block_adjoint_available()
+        or ket.device.type != "cpu"
+        or adjoint.device.type != "cpu"
+        or wires.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or adjoint.dtype != ket.dtype
+        or wires.dtype != torch.int64
+        or ket.ndim != 2
+        or adjoint.shape != ket.shape
+        or not 2 <= wires.numel() <= 11
+        or wires.ndim != 1
+        or not all(item.is_contiguous() for item in (ket, adjoint, wires))
+    ):
+        return False
+    with torch.no_grad():
+        cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_hadamard_block_adjoint_(
+                ket, adjoint, wires, n_wires
             ),
         )
     return True

@@ -30,6 +30,7 @@ from .differentiable_adjoint_report import render_adjoint_markdown
 from .differentiable_regression_report import (
     render_forward_cx_markdown,
     render_observable_cache_markdown,
+    render_rotation_tile_markdown,
 )
 from .simulator_compare import SEED
 from .simulator_workload_corpus import extract_features
@@ -48,6 +49,7 @@ EngineName = Literal[
     "flagquantum_adjoint_gather_rollback",
     "flagquantum_adjoint_forward_cx_rollback",
     "flagquantum_adjoint_observable_cache_rollback",
+    "flagquantum_adjoint_rotation_tile_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -71,6 +73,7 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_gather_rollback",
         "flagquantum_adjoint_forward_cx_rollback",
         "flagquantum_adjoint_observable_cache_rollback",
+        "flagquantum_adjoint_rotation_tile_rollback",
     )
 )
 
@@ -89,6 +92,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_adjoint_observable_cache_rollback": (
         "FlagQuantum adjoint observable-cache rollback"
+    ),
+    "flagquantum_adjoint_rotation_tile_rollback": (
+        "FlagQuantum adjoint rotation-tile rollback"
     ),
     "pennylane_lightning_adjoint": "PennyLane Lightning adjoint",
 }
@@ -200,6 +206,7 @@ def _flagquantum_executor(
     native_cpu_adjoint: bool | None = None,
     native_cpu_cx_gather: bool | None = None,
     observable_cache: bool | None = None,
+    wide_rotation_tiles: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -210,6 +217,7 @@ def _flagquantum_executor(
         prior_observable_cache = os.environ.get(
             "FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"
         )
+        prior_wide_rotation_tiles = os.environ.get("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES")
         if cpu_direct is not None:
             os.environ["FQ_STATEVECTOR_ADJOINT_CPU_DIRECT"] = "1" if cpu_direct else "0"
         if native_cpu_adjoint is not None:
@@ -219,6 +227,10 @@ def _flagquantum_executor(
         if observable_cache is not None:
             os.environ["FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"] = (
                 "1" if observable_cache else "0"
+            )
+        if wide_rotation_tiles is not None:
+            os.environ["FQ_NATIVE_CPU_ADJOINT_WIDE_TILES"] = (
+                "1" if wide_rotation_tiles else "0"
             )
         try:
             forward_started = time.perf_counter()
@@ -258,6 +270,13 @@ def _flagquantum_executor(
                 else:
                     os.environ["FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE"] = (
                         prior_observable_cache
+                    )
+            if wide_rotation_tiles is not None:
+                if prior_wide_rotation_tiles is None:
+                    os.environ.pop("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", None)
+                else:
+                    os.environ["FQ_NATIVE_CPU_ADJOINT_WIDE_TILES"] = (
+                        prior_wide_rotation_tiles
                     )
         return _Execution(
             value=float(loss.detach()),
@@ -385,6 +404,14 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             observable_cache=False,
+        )
+    if engine == "flagquantum_adjoint_rotation_tile_rollback":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            wide_rotation_tiles=False,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
@@ -812,6 +839,11 @@ def run_benchmark(
                 "contract": "same native adjoint with observable-weight cache disabled",
                 "gradient_method": "statevector_adjoint",
             },
+            "flagquantum_adjoint_rotation_tile_rollback": {
+                "included": "flagquantum_adjoint_rotation_tile_rollback" in engines,
+                "contract": "same native adjoint with legacy two-wire rotation tiles",
+                "gradient_method": "statevector_adjoint",
+            },
             "pennylane_lightning_adjoint": {
                 "included": "pennylane_lightning_adjoint" in engines,
                 "contract": "lightning.qubit adjoint through the PyTorch interface",
@@ -849,6 +881,11 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
         "flagquantum_adjoint_observable_cache_rollback",
     ):
         return render_observable_cache_markdown(payload, artifact_name=artifact_name)
+    if tuple(payload["engines"]) == (
+        "flagquantum_adjoint",
+        "flagquantum_adjoint_rotation_tile_rollback",
+    ):
+        return render_rotation_tile_markdown(payload, artifact_name=artifact_name)
     if tuple(payload["engines"]) == (
         "flagquantum_adjoint",
         "flagquantum_adjoint_python_fallback",

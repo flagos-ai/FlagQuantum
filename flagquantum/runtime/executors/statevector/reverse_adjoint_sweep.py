@@ -13,8 +13,10 @@ from ....compute import get_platform_runtime
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.native_cpu import (
-    fused_rotation_block_forward_,
+    fused_hadamard_block_adjoint_,
+    fused_rotation_block_adjoint_,
     fused_rzz_segment_adjoint_,
+    native_cpu_hadamard_block_adjoint_available,
     native_cpu_one_qubit_layer_available,
 )
 from ....simulation.statevector.adjoint import (
@@ -779,7 +781,6 @@ class _ReversibleAdjointSweep:
         active: list[int],
     ) -> bool:
         """Undo adjacent local Hadamards with one bounded dense state pass."""
-
         if not (
             self.inplace_local
             and self.reversible_state is not None
@@ -793,7 +794,11 @@ class _ReversibleAdjointSweep:
         segment: list[Instruction] = [execution_instruction]
         wires = {execution_instruction.wires[0]}
         cursor = index - 1
-        max_block_wires = 4 if self.plan.n_wires < 16 else 6
+        max_block_wires = (
+            min(11, self.plan.n_wires)
+            if native_cpu_hadamard_block_adjoint_available()
+            else (4 if self.plan.n_wires < 16 else 6)
+        )
         while cursor >= 0 and len(segment) < max_block_wires:
             if self.swaps_before.get(cursor) or self.slots_by_instruction.get(cursor):
                 break
@@ -819,23 +824,22 @@ class _ReversibleAdjointSweep:
         if native_cpu_one_qubit_layer_available():
             matrix_block = torch.stack(matrices).contiguous()
             wire_block = torch.tensor(block_wires, dtype=torch.int64)
-            applied_ket = fused_rotation_block_forward_(
-                self.reversible_state.amplitudes,
-                matrix_block,
-                wire_block,
-                n_wires=self.plan.n_wires,
-            )
-            if applied_ket:
-                applied_adjoint = fused_rotation_block_forward_(
+            if native_cpu_hadamard_block_adjoint_available():
+                applied = fused_hadamard_block_adjoint_(
+                    self.reversible_state.amplitudes,
+                    self.adjoint,
+                    wire_block,
+                    n_wires=self.plan.n_wires,
+                )
+            else:
+                applied = fused_rotation_block_adjoint_(
+                    self.reversible_state.amplitudes,
                     self.adjoint,
                     matrix_block,
                     wire_block,
                     n_wires=self.plan.n_wires,
                 )
-                if not applied_adjoint:
-                    raise RuntimeError(
-                        "native fixed-block adjoint rejected a validated matching state"
-                    )
+            if applied:
                 self.evidence.peak_scratch_bytes = max(
                     self.evidence.peak_scratch_bytes,
                     matrix_block.numel() * matrix_block.element_size()
