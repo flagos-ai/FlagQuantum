@@ -442,6 +442,24 @@ Torch-FL can select vendor-native kernels, compatibility boxing, FlagGems,
 FlagTree, or fallback paths. The actual route must be measured or supplied by
 an authoritative runtime/compiler interface.
 
+### Current `statevector.local_1q` user path
+
+Users do not call the Triton launch wrapper directly. They run an ordinary
+statevector circuit containing one-qubit gates, and the executor selects the
+kernel when the feature is requested and the input is eligible:
+
+```bash
+FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
+  python -m examples.triton_statevector_local_1q
+```
+
+The complete example uses `fq.Circuit`, `fq.ExecutionOptions`, and `fq.run`,
+then reads `result.runtime["kernel_dispatch"]` to verify the selected route. The
+current kernel requires a contiguous CUDA `complex64` statevector, an available
+`triton` module, a non-portable runtime mode, and a one-qubit gate on a local
+wire. Every wire is local on one GPU. With a sharded statevector, a wire is local
+only when both amplitudes in each affected pair are owned by the same rank.
+
 ## 12. Fallback Rules
 
 - `mode="auto"` may authorize initial selection; it does not automatically
