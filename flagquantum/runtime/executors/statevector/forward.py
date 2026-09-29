@@ -34,7 +34,6 @@ from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,
     select_cataloged_triton_kernel,
-    select_triton_kernel,
 )
 from .models import (
     DistributedStatevectorPlan,
@@ -133,18 +132,6 @@ def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
             dtype=dtype,
         ).accelerated
     )
-
-
-def _triton_transpose_1q_enabled() -> bool:
-    requested = os.getenv(
-        "FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1"
-    ).strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
-    return bool(select_triton_kernel("transpose_1q", requested=requested).accelerated)
 
 
 def _local_block_fusion_enabled() -> bool:

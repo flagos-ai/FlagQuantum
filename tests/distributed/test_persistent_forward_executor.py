@@ -101,3 +101,5 @@ def test_two_rank_nccl_persistent_layout_reaches_triton_paths():
         # The point of this test: the accelerated dispatch paths ran, not just
         # that the state came out right.
         assert summary["triton_execution_count"] > 0
+        assert summary["transpose_1q_execution_count"] > 0
+        assert summary["transpose_1q_implementation_id"] == "FQKI-TRITON-SV-006-A"
