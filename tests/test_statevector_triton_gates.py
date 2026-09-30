@@ -4,6 +4,7 @@ import torch
 import flagquantum as fq
 import flagquantum.simulation.statevector.cx_sequence_dispatch as cx_sequence_dispatch
 import flagquantum.simulation.statevector.ry_rz_dispatch as ry_rz_dispatch
+import flagquantum.simulation.statevector.single_qubit_matrix_dispatch as single_qubit_matrix_dispatch
 
 pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 
@@ -142,8 +143,28 @@ def test_constant_ry_rz_triton_path_with_cx_matches_cpu(monkeypatch) -> None:
     assert catalog_routes == ["FQKI-TRITON-SV-004-A"] * 10
 
 
-def test_generic_constant_single_qubit_regions_preserve_input_gradient() -> None:
+def test_generic_constant_single_qubit_regions_preserve_input_gradient(
+    monkeypatch,
+) -> None:
     _require_cuda()
+    catalog_routes = []
+    require_cataloged_kernel = (
+        single_qubit_matrix_dispatch._require_single_qubit_matrix_kernel
+    )
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        single_qubit_matrix_dispatch,
+        "_require_single_qubit_matrix_kernel",
+        capture_catalog_route,
+    )
     torch.manual_seed(7)
     cpu_input = torch.randn(1, 16, dtype=torch.complex64, requires_grad=True)
     cuda_input = cpu_input.detach().cuda().requires_grad_(True)
@@ -166,6 +187,7 @@ def test_generic_constant_single_qubit_regions_preserve_input_gradient() -> None
     assert (
         cuda._last_statevector_runtime["dependency_reordered_single_qubit_regions"] == 2
     )
+    assert catalog_routes == ["FQKI-TRITON-SV-001-B"] * 2
 
 
 def test_cx_sequence_catalog_path_matches_cpu_forward_and_backward(monkeypatch) -> None:
@@ -211,6 +233,24 @@ def test_cx_sequence_catalog_path_matches_cpu_forward_and_backward(monkeypatch) 
 def test_parameterized_ry_rz_uses_differentiable_fusion(monkeypatch) -> None:
     _require_cuda()
     monkeypatch.setenv("FQ_TRITON_PARAMETERIZED_SINGLE_QUBIT_MATRIX", "1")
+    catalog_routes = []
+    require_cataloged_kernel = (
+        single_qubit_matrix_dispatch._require_single_qubit_matrix_kernel
+    )
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        single_qubit_matrix_dispatch,
+        "_require_single_qubit_matrix_kernel",
+        capture_catalog_route,
+    )
     cpu_angle = torch.tensor(0.23, requires_grad=True)
     cuda_angle = cpu_angle.detach().cuda().requires_grad_(True)
     cpu = fq.Circuit(3, device="cpu", dtype=torch.complex64)
@@ -229,6 +269,7 @@ def test_parameterized_ry_rz_uses_differentiable_fusion(monkeypatch) -> None:
     assert cuda._last_statevector_runtime["triton_single_qubit_matrix_regions"] == 1
     assert cuda._last_statevector_runtime["triton_cx_sequence_regions"] == 1
     assert not cuda._statevector_constant_parameters
+    assert catalog_routes == ["FQKI-TRITON-SV-001-B"]
 
 
 def test_interleaved_parameterized_regions_match_all_gradients(monkeypatch) -> None:
