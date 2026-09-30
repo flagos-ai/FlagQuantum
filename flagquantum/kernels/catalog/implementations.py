@@ -181,6 +181,15 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MPS-003-A",
+        "mps.contract.one_site_gate",
+        "mps_one_site",
+        "fused_mps_one_site",
+        layouts=("mps_one_site",),
+        directions=("forward", "backward"),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-NUM-001-A",
         "numerics.matmul.complex_batched",
         "complex_bmm",

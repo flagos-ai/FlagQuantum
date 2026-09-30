@@ -26,6 +26,7 @@ class MPSPlanningMixin(ABC):
     truncation_records: list[MPSTruncationRecord]
     orthogonality_center: int | None
     local_swap_count: int
+    triton_one_site_regions: int
     triton_two_site_regions: int
     eager_two_site_regions: int
     svd_gradient_method: str
@@ -273,6 +274,11 @@ class MPSPlanningMixin(ABC):
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),
+            "triton_mps_one_site_enabled": os.getenv("FQ_TRITON_MPS_ONE_SITE", "0")
+            .strip()
+            .lower()
+            not in {"0", "false", "off", "no"},
+            "triton_mps_one_site_regions": self.triton_one_site_regions,
             "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "0")
             .strip()
             .lower()

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 _EXPORT_MODULES = {
     "fused_complex_bmm": "complex_bmm",
     "fused_complex_layout_bmm": "complex_bmm",
+    "fused_mps_one_site": "mps_one_site",
     "fused_mps_two_site": "mps_two_site",
     "heisenberg_hva_forward_tangents": "hva_forward_tangent",
     "cx_sequence": "statevector_gates",
@@ -31,6 +32,7 @@ _EXPORT_MODULES = {
 if TYPE_CHECKING:
     from .complex_bmm import fused_complex_bmm, fused_complex_layout_bmm
     from .hva_forward_tangent import heisenberg_hva_forward_tangents
+    from .mps_one_site import fused_mps_one_site
     from .mps_two_site import fused_mps_two_site
     from .single_qubit_loop import repeated_rx_rz, repeated_rx_rz_tangents
     from .statevector_gates import (
@@ -55,6 +57,7 @@ def __getattr__(name: str) -> Any:
 __all__ = [
     "fused_complex_bmm",
     "fused_complex_layout_bmm",
+    "fused_mps_one_site",
     "fused_mps_two_site",
     "heisenberg_hva_forward_tangents",
     "cx_sequence",
