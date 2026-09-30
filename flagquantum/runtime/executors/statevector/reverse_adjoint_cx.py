@@ -11,6 +11,7 @@ import torch
 from ....simulation.native_cpu import (
     fused_compact_cx_adjoint_gather,
     fused_cx_adjoint_gather,
+    fused_cx_adjoint_inplace_,
     native_cpu_cx_rotation_adjoint_fusion_available,
     use_compact_cpu_cx_mapping,
 )
@@ -110,6 +111,15 @@ def apply_or_defer_cpu_cx_adjoint_segment(
 
     controls = tuple(wires[0] for wires in reversed(segment_wires))
     targets = tuple(wires[1] for wires in reversed(segment_wires))
+    if sweep.policy.low_memory_cpu_cx and fused_cx_adjoint_inplace_(
+        sweep.reversible_state.amplitudes,
+        sweep.adjoint,
+        controls,
+        targets,
+        sweep.plan.n_wires,
+    ):
+        sweep.skipped_cx_indices.update(range(segment_start, index))
+        return True
     if (
         segment_start > 0
         and sweep.bound.instructions[segment_start - 1].name in {"rx", "ry", "rz"}

@@ -6,6 +6,10 @@ It measures the bounded-memory path used when a CPU adjoint workload cannot
 retain the reversible working set but can retain a small number of block
 checkpoints.
 
+The later low-memory native CX path supersedes this as the default at a 1 GiB
+planning budget. Set `FQ_NATIVE_CPU_CX_ADJOINT_INPLACE=0` when reproducing the
+historical block-checkpoint result below.
+
 ## Result
 
 | Planning budget | Selected strategy | Checkpoints | Replayed gates | Value evaluation | Autograd callback | Value + gradient | Speedup |
@@ -79,6 +83,7 @@ strategy but is not a hard operating-system limit on process RSS.
 Measure automatic block checkpointing with a 1 GiB planning budget:
 
 ```bash
+FQ_NATIVE_CPU_CX_ADJOINT_INPLACE=0 \
 FQ_STATEVECTOR_CHECKPOINT_BUDGET_BYTES=1073741824 \
 flagquantum-benchmark run differentiable_simulator_corpus \
   --workloads hardware_efficient_vqe --n-wires 24 --layers 1 --threads 2 \

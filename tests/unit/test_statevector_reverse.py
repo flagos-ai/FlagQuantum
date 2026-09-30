@@ -39,6 +39,7 @@ from flagquantum.runtime.executors.statevector.reverse_template import (
     _clear_adjoint_ir_template_cache,
     prepare_adjoint_ir_template,
 )
+from flagquantum.simulation.native_cpu import native_cpu_cx_adjoint_inplace_available
 
 pytestmark = pytest.mark.unit
 
@@ -776,7 +777,7 @@ def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():
 
 def test_checkpoint_policy_is_versioned_and_fail_closed():
     assert StatevectorCheckpointPolicy().strategy == "auto"
-    assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v3"
+    assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v4"
     assert StatevectorCheckpointPolicy(strategy="interval", interval=8).interval == 8
     with pytest.raises(ValueError, match="interval > 0"):
         StatevectorCheckpointPolicy(strategy="interval", interval=0)
@@ -849,6 +850,24 @@ def test_auto_checkpoint_selects_budgeted_blocks_for_cpu_cx_workload():
     assert policy.estimated_reversible_bytes == 5120
 
 
+def test_auto_checkpoint_selects_low_memory_reversible_cpu_cx_workload():
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(memory_budget_bytes=4096),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+        instruction_count=10,
+        contains_local_cx=True,
+        low_memory_cpu_cx_available=True,
+    )
+
+    assert policy.strategy == "reversible_adjoint"
+    assert policy.selection_reason == "low_memory_cpu_cx_reversible_fits_budget"
+    assert policy.estimated_required_bytes == 4096
+    assert policy.estimated_reversible_bytes == 4096
+    assert policy.estimated_fused_reversible_bytes == 5120
+    assert policy.low_memory_cpu_cx
+
+
 @pytest.mark.parametrize(
     ("budget", "expected_strategy", "expected_checkpoints"),
     [
@@ -873,7 +892,10 @@ def test_auto_checkpoint_respects_cpu_cx_budget_boundaries(
     assert policy.estimated_required_bytes <= budget
 
 
-def test_budgeted_block_checkpoints_reduce_replay_and_preserve_gradient():
+def test_budgeted_block_checkpoints_reduce_replay_and_preserve_gradient(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_INPLACE", "0")
     theta = torch.tensor([0.17, -0.23, 0.31], dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(3, dtype=torch.complex128)
     circuit.ry(0, theta[0]).rx(1, theta[1]).rz(2, theta[2])
@@ -895,6 +917,31 @@ def test_budgeted_block_checkpoints_reduce_replay_and_preserve_gradient():
     assert summary["checkpoint_policy"]["interval"] == 3
     assert summary["backward_checkpoint_count"] == 2
     assert summary["backward_rematerialized_gate_count"] == 9
+
+
+def test_low_memory_cpu_cx_reversible_path_preserves_gradient():
+    if not native_cpu_cx_adjoint_inplace_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor([0.17, -0.23, 0.31], dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(3, dtype=torch.complex128)
+    circuit.ry(0, theta[0]).rx(1, theta[1]).rz(2, theta[2])
+    circuit.cx(0, 1).cx(1, 2)
+    expected = circuit.expectation_z(2)
+    (expected_gradient,) = torch.autograd.grad(expected, theta)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=2,
+        checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=512),
+    )
+    result.backward()
+    summary = result.summary()
+
+    torch.testing.assert_close(result.value, expected.squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    assert summary["checkpoint_policy"]["strategy"] == "reversible_adjoint"
+    assert summary["checkpoint_policy"]["low_memory_cpu_cx"]
+    assert summary["backward_rematerialized_gate_count"] == 0
 
 
 def test_auto_checkpoint_uses_platform_memory_snapshot(monkeypatch):

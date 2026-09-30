@@ -13,6 +13,7 @@ import torch.distributed as dist
 
 from ....compute import resolve_platform_device
 from ....core.ir import CircuitIR, ensure_circuit_ir
+from ....simulation.native_cpu import native_cpu_cx_adjoint_inplace_available
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout
 from .forward_executor import execute_torch_distributed_statevector
@@ -564,13 +565,20 @@ def execute_torch_distributed_statevector_reverse(
         local_world_size=local_world_size,
         complex_bytes=complex_bytes,
     )
+    contains_local_cx = world_size == 1 and any(
+        instruction.name == "cx" for instruction in execution_ir.instructions
+    )
     policy = resolve_checkpoint_policy(
         requested_policy,
         local_state_bytes=plan.shards[rank].local_state_bytes,
         device=resolved_device,
         instruction_count=len(execution_ir.instructions),
-        contains_local_cx=world_size == 1
-        and any(instruction.name == "cx" for instruction in execution_ir.instructions),
+        contains_local_cx=contains_local_cx,
+        low_memory_cpu_cx_available=(
+            contains_local_cx
+            and resolved_device.type == "cpu"
+            and native_cpu_cx_adjoint_inplace_available()
+        ),
     )
     ownership = tuple(
         ParameterGradientOwnership(

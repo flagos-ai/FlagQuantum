@@ -77,6 +77,12 @@ rematerialization. It records the exact checkpoint plan, replayed-gate count,
 absolute 24-qubit time, rollback speedup, correctness coverage, and reproduction
 commands for the 1 GiB and 512 MiB policies.
 
+[`NATIVE_CPU_ADJOINT_LOW_MEMORY_CX_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_LOW_MEMORY_CX_CPU_ARM64_20260930.md)
+records the 24-qubit memory-tiered CPU CX adjoint path. It compares the native
+zero-state-scratch in-place kernel with budgeted block checkpoints and the
+faster two-state-scratch fused gather, including absolute time, peak RSS,
+correctness checks, public example, and exact reproduction commands.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
