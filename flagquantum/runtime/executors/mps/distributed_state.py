@@ -19,12 +19,13 @@ import torch.distributed as dist
 from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
+    MpsSplitInfo,
 )
 from ....simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
 from ....simulation.mps.rank_local import (
-    apply_two_mps_tensors as _apply_two_mps_tensors,
+    apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
 )
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
@@ -710,14 +711,20 @@ class ShardedMPSState:
 
     def apply_two_local(
         self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
-    ) -> float:
+    ) -> MpsSplitInfo:
+        """Apply a two-wire gate to two sites this rank owns.
+
+        Returns the split metadata instead of only the discarded weight: the
+        weight alone does not say which bond was truncated, so a caller holding
+        just the scalar cannot record the truncation.
+        """
         left_wire = int(left_wire)
         right_wire = left_wire + 1
         if left_wire not in self.local_tensors or right_wire not in self.local_tensors:
             raise ValueError(
                 f"Wires {left_wire} and {right_wire} are not both owned by rank {self.rank}."
             )
-        left, right, step_error = _apply_two_mps_tensors(
+        left, right, split_info = _apply_two_mps_tensors_with_info(
             self.local_tensors[left_wire],
             self.local_tensors[right_wire],
             matrix,
@@ -726,7 +733,7 @@ class ShardedMPSState:
         )
         self.local_tensors[left_wire] = left
         self.local_tensors[right_wire] = right
-        return step_error
+        return split_info
 
     def to_mps(self) -> MPSState:
         tensors_by_wire = self.gather_tensors()
