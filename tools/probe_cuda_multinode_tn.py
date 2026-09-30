@@ -1051,7 +1051,9 @@ def probe(
         network = _network_observation(network_log)
         evidence = payload["evidence"]
         evidence["observations"]["network"] = network
-        evidence["evidence_sha256"] = _canonical_sha256(evidence)
+        # One digest per artifact, over the evidence and nothing else. Recording
+        # it inside `evidence` too would put two disagreeing digests in one file
+        # and leave a reader no way to tell which one was authoritative.
         payload["evidence_sha256"] = _canonical_sha256(evidence)
     return payload
 
