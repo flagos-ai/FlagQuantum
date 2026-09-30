@@ -9,19 +9,19 @@ from typing import Any
 import torch
 
 from ....simulation.native_cpu import (
+    compact_cpu_cx_adjoint_auxiliary_bytes,
     fused_compact_cx_adjoint_gather,
     fused_compact_cx_adjoint_inplace_,
     fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
     native_cpu_cx_rotation_adjoint_fusion_available,
+    use_compact_cpu_cx_adjoint_cycles,
     use_compact_cpu_cx_mapping,
 )
 from ....simulation.native_cpu.permutation import compact_cx_permutation_images
 from ....simulation.statevector.operations import (
     _cx_sequence_permutation_index,
 )
-
-_CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH = 8
 
 
 def cpu_cx_permutation_index(
@@ -120,16 +120,18 @@ def apply_or_defer_cpu_cx_adjoint_segment(
             targets,
             sweep.plan.n_wires,
         )
-        if len(
-            controls
-        ) >= _CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH and fused_compact_cx_adjoint_inplace_(
-            sweep.reversible_state.amplitudes,
-            sweep.adjoint,
-            images,
+        if (
+            sweep.policy.compact_cpu_cx_cycles
+            and use_compact_cpu_cx_adjoint_cycles(len(controls), sweep.plan.n_wires)
+            and fused_compact_cx_adjoint_inplace_(
+                sweep.reversible_state.amplitudes,
+                sweep.adjoint,
+                images,
+            )
         ):
             sweep.evidence.peak_scratch_bytes = max(
                 sweep.evidence.peak_scratch_bytes,
-                9 * sweep.reversible_state.amplitudes.shape[1],
+                compact_cpu_cx_adjoint_auxiliary_bytes(sweep.plan.n_wires),
             )
             sweep.skipped_cx_indices.update(range(segment_start, index))
             return True

@@ -26,6 +26,7 @@ from flagquantum.runtime.executors.statevector.reverse_adjoint_cx import (
     cpu_cx_permutation_index,
 )
 from flagquantum.simulation.native_cpu import (
+    compact_cpu_cx_adjoint_auxiliary_bytes,
     fused_compact_cx_adjoint_gather,
     fused_compact_cx_adjoint_inplace_,
     fused_compact_cx_gather_out,
@@ -48,6 +49,7 @@ from flagquantum.simulation.native_cpu import (
     native_cpu_parallel_build_available,
     native_cpu_rotation_available,
     native_cpu_rzz_available,
+    use_compact_cpu_cx_adjoint_cycles,
 )
 from flagquantum.simulation.native_cpu.rotation import (
     native_cpu_forward_rotation_tile_wires,
@@ -226,6 +228,19 @@ def test_native_compact_cx_adjoint_inplace_has_explicit_environment_rollback(
     images = torch.tensor((2, 1), dtype=torch.int64)
 
     assert not fused_compact_cx_adjoint_inplace_(ket, ket.clone(), images)
+
+
+def test_compact_cx_adjoint_cycle_planning_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_cx_adjoint_inplace_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    assert compact_cpu_cx_adjoint_auxiliary_bytes(24) == 144 << 20
+    assert not use_compact_cpu_cx_adjoint_cycles(7, 24)
+    assert use_compact_cpu_cx_adjoint_cycles(8, 24)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_CYCLES", "0")
+    assert not use_compact_cpu_cx_adjoint_cycles(8, 24)
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))

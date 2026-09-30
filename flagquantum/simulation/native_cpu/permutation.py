@@ -10,6 +10,9 @@ import torch
 
 from .adjoint import _load_extension, native_cpu_compact_cx_index_available
 
+_CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH = 8
+_CPU_CX_ADJOINT_CYCLE_BYTES_PER_AMPLITUDE = 9
+
 
 def compact_cx_permutation_images(
     controls: Sequence[int],
@@ -64,6 +67,34 @@ def native_cpu_cx_adjoint_inplace_available() -> bool:
         not in {"0", "false", "off", "no"}
         and _load_extension()
     )
+
+
+def native_cpu_cx_adjoint_cycles_available() -> bool:
+    """Return whether compact in-place CX cycles are enabled and loadable."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_CX_ADJOINT_CYCLES", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_cx_adjoint_inplace_available()
+    )
+
+
+def use_compact_cpu_cx_adjoint_cycles(cx_count: int, n_wires: int) -> bool:
+    """Use compact cycles for a sufficiently long representable CX segment."""
+
+    return (
+        cx_count >= _CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH
+        and 1 < n_wires < 31
+        and native_cpu_cx_adjoint_cycles_available()
+    )
+
+
+def compact_cpu_cx_adjoint_auxiliary_bytes(n_wires: int) -> int:
+    """Conservative cycle-index allocation bound for one amplitude row."""
+
+    if not 1 < n_wires < 31:
+        raise ValueError("compact CPU CX cycles require 2 to 30 wires")
+    return _CPU_CX_ADJOINT_CYCLE_BYTES_PER_AMPLITUDE * (1 << n_wires)
 
 
 def fused_cx_gather_out(
@@ -231,9 +262,7 @@ def fused_compact_cx_adjoint_inplace_(
     """Apply a compact inverse CX mapping in place through permutation cycles."""
 
     if (
-        os.getenv("FQ_NATIVE_CPU_CX_ADJOINT_CYCLES", "1").strip().lower()
-        in {"0", "false", "off", "no"}
-        or not native_cpu_cx_adjoint_inplace_available()
+        not native_cpu_cx_adjoint_cycles_available()
         or ket.requires_grad
         or adjoint.requires_grad
         or ket.device.type != "cpu"
