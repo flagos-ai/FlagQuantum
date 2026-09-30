@@ -937,7 +937,7 @@ def _apply_rx_rz_loop(
     n_wires: int,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    from ...kernels.triton import repeated_rx_rz
+    from .rx_rz_dispatch import _apply_cataloged_rx_rz_sequence
 
     rx_angles = []
     rz_angles = []
@@ -961,7 +961,7 @@ def _apply_rx_rz_loop(
         inverse[source] = axis
     tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
     paired = tensor.permute(permutation).reshape(state.shape[0], -1, 2)
-    output = repeated_rx_rz(paired, rx_values, rz_values)
+    output = _apply_cataloged_rx_rz_sequence(paired, rx_values, rz_values)
     if not isinstance(output, torch.Tensor):
         raise TypeError("RX/RZ loop kernel must return a tensor")
     return (
