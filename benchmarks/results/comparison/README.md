@@ -53,6 +53,12 @@ records an exact rollback A/B for branchless amplitude-pair traversal and the
 same-wire RZ/RY/RX Euler-triple reverse kernel. It reports absolute backward and
 total times, speedups, correctness, workload meaning, and reproduction steps.
 
+[`NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE_CPU_ARM64_20260929.md`](NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE_CPU_ARM64_20260929.md)
+records the 22-qubit VQE rollback A/B for terminal Euler-layer no-restore,
+CX-to-rotation boundary fusion, flat SIMD pair traversal, and reused Pauli
+bilinears. It includes exact backward and value-plus-gradient times,
+correctness, example code, limitations, and reproduction steps.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes

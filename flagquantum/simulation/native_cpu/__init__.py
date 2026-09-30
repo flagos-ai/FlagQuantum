@@ -1,6 +1,7 @@
 """Optional package-local CPU operators with explicit PyTorch fallbacks."""
 
 from .adjoint import (
+    fused_cx_rotation_segment_adjoint,
     fused_observable_adjoint_seed,
     fused_observable_expectation,
     fused_rotation_adjoint_,
@@ -8,12 +9,14 @@ from .adjoint import (
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
     native_cpu_adjoint_rzz_h_fusion_available,
+    native_cpu_cx_rotation_adjoint_fusion_available,
     native_cpu_observable_rotation_boundary_available,
     native_cpu_parallel_build_available,
     native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
     native_cpu_rotation_tile_wires,
     native_cpu_shared_rotation_gradient_available,
+    native_cpu_terminal_adjoint_no_restore_available,
 )
 from .permutation import (
     fused_cx_adjoint_gather,
@@ -34,12 +37,14 @@ from .rotation import (
 from .rzz import fused_rzz_segment_forward_, native_cpu_rzz_available
 
 __all__ = [
+    "fused_cx_rotation_segment_adjoint",
     "fused_observable_adjoint_seed",
     "fused_observable_expectation",
     "fused_rotation_adjoint_",
     "fused_rotation_segment_adjoint_",
     "fused_rzz_segment_adjoint_",
     "native_cpu_adjoint_available",
+    "native_cpu_cx_rotation_adjoint_fusion_available",
     "native_cpu_adjoint_rzz_h_fusion_available",
     "native_cpu_observable_rotation_boundary_available",
     "native_cpu_parallel_build_available",
@@ -47,6 +52,7 @@ __all__ = [
     "native_cpu_rotation_rzz_fusion_available",
     "native_cpu_rotation_tile_wires",
     "native_cpu_shared_rotation_gradient_available",
+    "native_cpu_terminal_adjoint_no_restore_available",
     "fused_rotation_block_forward_",
     "fused_hadamard_block_adjoint_",
     "fused_rotation_block_adjoint_",

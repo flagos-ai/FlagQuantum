@@ -19,6 +19,9 @@ EngineName = Literal[
     "flagquantum_adjoint_shared_rzz_rollback",
     "flagquantum_adjoint_forward_rzz_rotation_rollback",
     "flagquantum_adjoint_forward_wide_tile_rollback",
+    "flagquantum_adjoint_flat_pair_simd_rollback",
+    "flagquantum_adjoint_cx_rotation_fusion_rollback",
+    "flagquantum_adjoint_terminal_no_restore_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -45,5 +48,8 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_shared_rzz_rollback",
         "flagquantum_adjoint_forward_rzz_rotation_rollback",
         "flagquantum_adjoint_forward_wide_tile_rollback",
+        "flagquantum_adjoint_flat_pair_simd_rollback",
+        "flagquantum_adjoint_cx_rotation_fusion_rollback",
+        "flagquantum_adjoint_terminal_no_restore_rollback",
     )
 )

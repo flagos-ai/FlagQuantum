@@ -41,7 +41,7 @@ from .gradient_reduction import AsyncGradientReducer
 from .layout import distributed_swap_rank_local_bits, plan_persistent_statevector_layout
 from .local_execution import initialize_statevector_shard
 from .planning import plan_distributed_statevector
-from .reverse_adjoint_cx import apply_cpu_cx_adjoint_segment
+from .reverse_adjoint_cx import apply_or_defer_cpu_cx_adjoint_segment
 from .reverse_adjoint_kernels import (
     _apply_matrix_gate,
     _apply_one_gate,
@@ -137,6 +137,7 @@ class _ReversibleAdjointSweep:
         self.skipped_rotation_indices: set[int] = set()
         self.skipped_rzz_indices: set[int] = set()
         self.cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
+        self.pending_cpu_cx_index: torch.Tensor | None = None
         for index in range(len(self.bound.instructions) - 1, -1, -1):
             if (
                 index in self.skipped_cx_indices
@@ -695,25 +696,12 @@ class _ReversibleAdjointSweep:
                     for item in self.bound.instructions[segment_start : index + 1]
                 )
                 if self.reversible_state.amplitudes.device.type == "cpu":
-                    controls = tuple(wires[0] for wires in reversed(segment_wires))
-                    targets = tuple(wires[1] for wires in reversed(segment_wires))
-                    ket, adjoint = apply_cpu_cx_adjoint_segment(
-                        self.reversible_state.amplitudes,
-                        self.adjoint,
-                        controls,
-                        targets,
-                        self.plan.n_wires,
+                    return apply_or_defer_cpu_cx_adjoint_segment(
+                        self,
+                        segment_wires,
+                        segment_start=segment_start,
+                        index=index,
                     )
-                    self.reversible_state = replace(
-                        self.reversible_state, amplitudes=ket
-                    )
-                    self.adjoint = adjoint
-                    self.evidence.peak_scratch_bytes = max(
-                        self.evidence.peak_scratch_bytes,
-                        2 * ket.numel() * ket.element_size(),
-                    )
-                    self.skipped_cx_indices.update(range(segment_start, index))
-                    return True
                 from ....kernels.triton.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
