@@ -144,13 +144,11 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert training["uninterrupted_start_step"] == 0
     # The resumed leg computes the steps the uninterrupted run computed after
     # the checkpoint, and nothing else.
-    assert (
-        training["resumed_leg_losses"]
-        == (training["uninterrupted_leg_losses"][training["checkpoint_steps"] :])
+    assert training["resumed_leg_losses"] == (
+        training["uninterrupted_leg_losses"][training["checkpoint_steps"] :]
     )
-    assert (
-        training["first_leg_losses"]
-        == (training["uninterrupted_leg_losses"][: training["checkpoint_steps"]])
+    assert training["first_leg_losses"] == (
+        training["uninterrupted_leg_losses"][: training["checkpoint_steps"]]
     )
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2

@@ -62,9 +62,9 @@ def _communication_tiers(
         "reduction_tensor_bytes": int(reduction_tensor_bytes),
         "inter_node_collective_bytes": size if pure_inter_node else 0,
         "intra_node_collective_bytes": size if pure_intra_node else 0,
-        "unattributed_collective_bytes": 0
-        if (pure_inter_node or pure_intra_node)
-        else size,
+        "unattributed_collective_bytes": (
+            0 if (pure_inter_node or pure_intra_node) else size
+        ),
         "inter_node_collective_possible": bool(node_count > 1),
         "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
     }

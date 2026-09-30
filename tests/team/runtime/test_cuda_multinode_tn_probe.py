@@ -351,13 +351,11 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert training["resumed_completed_steps"] == training["resumed_steps"] == 4
     # The resumed leg computes the steps the uninterrupted run computed after
     # the checkpoint, and nothing else.
-    assert (
-        training["resumed_leg_losses"]
-        == (training["uninterrupted_leg_losses"][training["checkpoint_steps"] :])
+    assert training["resumed_leg_losses"] == (
+        training["uninterrupted_leg_losses"][training["checkpoint_steps"] :]
     )
-    assert (
-        training["first_leg_losses"]
-        == (training["uninterrupted_leg_losses"][: training["checkpoint_steps"]])
+    assert training["first_leg_losses"] == (
+        training["uninterrupted_leg_losses"][: training["checkpoint_steps"]]
     )
     assert sorted(training["parameter_owner_ranks"]) == [0, 1]
     assert training["tasks_by_rank"] == {"0": 2, "1": 2}

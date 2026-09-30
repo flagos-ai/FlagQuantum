@@ -211,9 +211,8 @@ def test_tn_amplitude_reports_sharded_semantics_and_every_rank_memory(
     )
     assert summary["local_memory_bytes_by_rank"][0] > 0
     assert summary["communication_tiers"]["collective"] == "all_reduce_sum"
-    assert (
-        summary["communication_tiers"]["inter_node_collective_bytes"]
-        == (summary["reduction_payload_bytes"])
+    assert summary["communication_tiers"]["inter_node_collective_bytes"] == (
+        summary["reduction_payload_bytes"]
     )
     assert summary["communication_tiers"]["intra_node_collective_bytes"] == 0
     assert summary["communication_tiers"]["unattributed_collective_bytes"] == 0
@@ -235,9 +234,8 @@ def test_tn_expectation_over_single_node_attributes_reduction_intra_node(
 
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["node_count"] == 1
-    assert (
-        summary["communication_tiers"]["intra_node_collective_bytes"]
-        == (summary["reduction_payload_bytes"])
+    assert summary["communication_tiers"]["intra_node_collective_bytes"] == (
+        summary["reduction_payload_bytes"]
     )
     assert summary["communication_tiers"]["inter_node_collective_bytes"] == 0
     assert summary["communication_tiers"]["inter_node_collective_possible"] is False
@@ -266,9 +264,8 @@ def test_tn_expectation_reports_placement_and_owner_counts(
     assert sum(summary["tasks_by_rank"].values()) == summary["slice_tasks"]
     # A mixed placement crosses a node boundary on some legs only, so no bytes
     # are attributed to either tier.
-    assert (
-        summary["communication_tiers"]["unattributed_collective_bytes"]
-        == (summary["reduction_payload_bytes"])
+    assert summary["communication_tiers"]["unattributed_collective_bytes"] == (
+        summary["reduction_payload_bytes"]
     )
     assert summary["communication_tiers"]["inter_node_collective_possible"] is True
 
