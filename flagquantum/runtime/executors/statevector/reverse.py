@@ -269,6 +269,10 @@ class TorchDistributedStatevectorGradientResult:
                 self.backward_evidence.inter_node_communication_bytes
             ),
             "saved_forward_state_reused": self.backward_evidence.saved_forward_state_reused,
+            "backward_checkpoint_count": self.backward_evidence.checkpoint_count,
+            "backward_rematerialized_gate_count": (
+                self.backward_evidence.rematerialized_gate_count
+            ),
             "backward_exchange_chunk_amplitudes": (
                 self.backward_evidence.exchange_chunk_amplitudes
             ),
@@ -410,6 +414,8 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         evidence.fused_parameter_adjoint_count = 0
         evidence.peak_scratch_bytes = 0
         evidence.saved_forward_state_reused = False
+        evidence.checkpoint_count = 0
+        evidence.rematerialized_gate_count = 0
         evidence.exchange_workspace_allocation_count = 0
         evidence.exchange_workspace_reuse_count = 0
         evidence.exchange_workspace_reserved_bytes = 0
@@ -562,6 +568,9 @@ def execute_torch_distributed_statevector_reverse(
         requested_policy,
         local_state_bytes=plan.shards[rank].local_state_bytes,
         device=resolved_device,
+        instruction_count=len(execution_ir.instructions),
+        contains_local_cx=world_size == 1
+        and any(instruction.name == "cx" for instruction in execution_ir.instructions),
     )
     ownership = tuple(
         ParameterGradientOwnership(

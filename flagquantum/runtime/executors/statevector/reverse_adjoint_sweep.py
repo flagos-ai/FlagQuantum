@@ -354,8 +354,13 @@ class _ReversibleAdjointSweep:
         if self.policy.strategy == "interval":
             assert self.initial is not None
             state = self.initial
+            instruction_count = len(self.bound.instructions)
+            checkpoint_indices = set(
+                range(self.policy.interval, instruction_count, self.policy.interval)
+            )
             with torch.no_grad():
-                for index in range(len(self.bound.instructions)):
+                for index in range(max(checkpoint_indices, default=0)):
+                    self.evidence.rematerialized_gate_count += 1
                     state = _apply_one_gate(
                         state,
                         instruction=self.bound.instructions[index],
@@ -365,10 +370,11 @@ class _ReversibleAdjointSweep:
                         evidence=self.evidence,
                         workspace=self.exchange_workspace,
                     )
-                    if (index + 1) % self.policy.interval == 0:
+                    if index + 1 in checkpoint_indices:
                         self.checkpoints[index + 1] = replace(
                             state, amplitudes=state.amplitudes.detach().clone()
                         )
+        self.evidence.checkpoint_count = len(self.checkpoints)
 
     def _state_before(self, stop: int) -> Any:
         """Replay forward from the nearest checkpoint at or before `stop`."""
@@ -381,6 +387,7 @@ class _ReversibleAdjointSweep:
         state = replace(checkpoint, amplitudes=checkpoint.amplitudes.detach())
         with torch.no_grad():
             for index in range(start, stop):
+                self.evidence.rematerialized_gate_count += 1
                 state = _apply_one_gate(
                     state,
                     instruction=self.bound.instructions[index],
