@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-09-30T17:45:48.712633+00:00",
+    "captured_at": "2026-09-30T22:08:28.152561+00:00",
     "claim_blockers": [
       "two_node_pair_only_no_wider_topology",
       "inter_node_cut_width_not_swept",
@@ -13,7 +13,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "03e324d9ba0e3de57f976ffce8d8d2870f293da3",
+      "source_revision": "23feef0cb1e855504628f18c8d1d30043f381e25",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -22,7 +22,8 @@
         "backend": "nccl",
         "configured_interface": "ens22f0",
         "configured_interface_observed": true,
-        "debug_log_sha256": "423995c0d9d809788032c7d9527e61df77fbc3ff68d0cce06a39db3c082e3f46",
+        "debug_log_scope": "rank",
+        "debug_log_sha256": "abaeef94e2ec9f76a8c51cdf4276ff90b49594e5cc6e76e800b26798780c65cc",
         "evidence_level": "observed_debug_log",
         "ib_disabled": true,
         "route": "socket",
@@ -331,7 +332,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.0002982616424560547,
+            "collective_seconds": 0.0027442071586847305,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -339,7 +340,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.00039361976087093353,
+              "execution_seconds": 0.00038555264472961426,
               "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
               "learning_rate": 0.05,
               "local_world_size": 1,
@@ -388,12 +389,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.0002982616424560547,
+              "collective_seconds": 0.0027442071586847305,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.03372161649167538,
+              "local_execution_seconds": 0.028433015570044518,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -735,7 +736,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.008011456578969955,
+            "collective_seconds": 0.00033408962190151215,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -743,7 +744,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.0003576800227165222,
+              "execution_seconds": 0.0003776978701353073,
               "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
               "learning_rate": 0.05,
               "local_world_size": 1,
@@ -792,12 +793,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.008011456578969955,
+              "collective_seconds": 0.00033408962190151215,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.024830928072333336,
+              "local_execution_seconds": 0.029978040605783463,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -958,6 +959,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "860b397591d73bda27924ddd6bbd9442ef6788f4697e1ebe68889205acba403b",
+  "evidence_sha256": "aa0ae86dc2f29ba435705f6e5cde8f40465f198c8d2d3b1cb1d953e4ab05ba0c",
   "schema": "flagquantum.cuda_multinode_tn_artifact.v1"
 }
