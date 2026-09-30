@@ -43,6 +43,7 @@ FORWARD_WIDE_TILE_RESULT_NAME = (
 TERMINAL_NO_RESTORE_RESULT_NAME = (
     "native_cpu_adjoint_terminal_no_restore_cpu_arm64_20260929.json"
 )
+COMPACT_CX_RESULT_NAME = "native_cpu_adjoint_compact_cx_cpu_arm64_20260930.json"
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -397,6 +398,11 @@ def test_flat_pair_simd_rollback_engine_restores_environment(
             "FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE",
             "flagquantum_adjoint_terminal_no_restore_rollback",
             "state restoration enabled",
+        ),
+        (
+            "FQ_NATIVE_CPU_COMPACT_CX_INDEX",
+            "flagquantum_adjoint_compact_cx_index_rollback",
+            "materialized full-state CX index",
         ),
     ),
 )
@@ -812,6 +818,43 @@ def test_checked_in_terminal_no_restore_comparison_is_reproducible() -> None:
     assert "98.069" in report
     assert "137.573" in report
     assert "1.403x" in report
+    assert "FlagQuantum example" in report
+    assert "## Reproduce" in report
+
+
+def test_checked_in_compact_cx_comparison_is_reproducible() -> None:
+    path = ROOT / "benchmarks" / "results" / "comparison" / COMPACT_CX_RESULT_NAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_compact_cx_index_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        rollback,
+        "pennylane_lightning_adjoint",
+    ]
+    assert payload["n_wires"] == [22]
+    assert payload["environment"]["torch_threads"] == 2
+    case = payload["cases"][0]
+    assert case["correctness"]["passed"] is True
+    assert case["stability"]["passed"] is True
+    assert case["engines"]["flagquantum_adjoint"]["backward"]["sample_count"] == 41
+    assert case["engines"]["flagquantum_adjoint"]["memory"]["peak_rss_bytes"] < (
+        case["engines"][rollback]["memory"]["peak_rss_bytes"]
+    )
+
+    report = path.with_name(
+        "NATIVE_CPU_ADJOINT_COMPACT_CX_CPU_ARM64_20260930.md"
+    ).read_text(encoding="utf-8")
+    assert "158.922" in report
+    assert "155.526" in report
+    assert "600.766" in report
+    assert "699.312" in report
+    assert "95,325x" in report
+    assert "PennyLane Lightning adjoint" in report
     assert "FlagQuantum example" in report
     assert "## Reproduce" in report
 

@@ -18,7 +18,10 @@ from ....simulation.native_cpu import (
     native_cpu_shared_rotation_gradient_available,
     native_cpu_terminal_adjoint_no_restore_available,
 )
-from .reverse_adjoint_cx import apply_cpu_cx_adjoint_index
+from .reverse_adjoint_cx import (
+    apply_cpu_compact_cx_adjoint_segment,
+    apply_cpu_cx_adjoint_index,
+)
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
 from .reverse_observable import materialize_pending_observable_adjoint
 
@@ -29,16 +32,31 @@ def _materialize_pending_cpu_cx(sweep: Any) -> None:
     """Apply a deferred CPU CX permutation before leaving its fusion boundary."""
 
     index = getattr(sweep, "pending_cpu_cx_index", None)
-    if index is None:
+    images = getattr(sweep, "pending_cpu_cx_images", None)
+    if index is None and images is None:
         return
-    ket, adjoint = apply_cpu_cx_adjoint_index(
-        sweep.reversible_state.amplitudes,
-        sweep.adjoint,
-        index,
-    )
+    if images is not None:
+        ket, adjoint = apply_cpu_compact_cx_adjoint_segment(
+            sweep.reversible_state.amplitudes,
+            sweep.adjoint,
+            images,
+            sweep.pending_cpu_cx_controls,
+            sweep.pending_cpu_cx_targets,
+            sweep.plan.n_wires,
+        )
+    else:
+        assert index is not None
+        ket, adjoint = apply_cpu_cx_adjoint_index(
+            sweep.reversible_state.amplitudes,
+            sweep.adjoint,
+            index,
+        )
     sweep.reversible_state = replace(sweep.reversible_state, amplitudes=ket)
     sweep.adjoint = adjoint
     sweep.pending_cpu_cx_index = None
+    sweep.pending_cpu_cx_images = None
+    sweep.pending_cpu_cx_controls = ()
+    sweep.pending_cpu_cx_targets = ()
 
 
 def _fusable_rzz_layer(
@@ -213,7 +231,10 @@ def _apply_local_rotation_segment(
     wire_tensor = torch.tensor(mapped_wires, dtype=torch.int64)
     gradients: torch.Tensor | None = None
     pending_cx_index = getattr(sweep, "pending_cpu_cx_index", None)
-    if pending_cx_index is not None and rzz_layer is None:
+    pending_cx_images = getattr(sweep, "pending_cpu_cx_images", None)
+    if (
+        pending_cx_index is not None or pending_cx_images is not None
+    ) and rzz_layer is None:
         fused = fused_cx_rotation_segment_adjoint(
             sweep.reversible_state.amplitudes,
             sweep.adjoint,
@@ -224,12 +245,16 @@ def _apply_local_rotation_segment(
             n_wires=sweep.plan.n_wires,
             aggregate_shared_parameter=shared_parameter,
             observable_weights=sweep.pending_observable_weights,
+            cx_images=pending_cx_images,
             restore_state=not terminal_euler_layer,
         )
         if fused is not None:
             gradients, ket, sweep.adjoint = fused
             sweep.reversible_state = replace(sweep.reversible_state, amplitudes=ket)
             sweep.pending_cpu_cx_index = None
+            sweep.pending_cpu_cx_images = None
+            sweep.pending_cpu_cx_controls = ()
+            sweep.pending_cpu_cx_targets = ()
             sweep.evidence.peak_scratch_bytes = max(
                 sweep.evidence.peak_scratch_bytes,
                 2 * ket.numel() * ket.element_size(),

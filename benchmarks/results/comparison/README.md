@@ -59,6 +59,12 @@ CX-to-rotation boundary fusion, flat SIMD pair traversal, and reused Pauli
 bilinears. It includes exact backward and value-plus-gradient times,
 correctness, example code, limitations, and reproduction steps.
 
+[`NATIVE_CPU_ADJOINT_COMPACT_CX_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_COMPACT_CX_CPU_ARM64_20260930.md)
+records the opt-in 22-qubit compact CX mapping comparison against the full
+permutation-index rollback and PennyLane Lightning adjoint. It includes exact
+timings, isolated peak RSS, metadata size, correctness, example code, the
+time-memory tradeoff, and an exact reproduction command.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
