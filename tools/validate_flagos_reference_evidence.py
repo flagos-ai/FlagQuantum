@@ -10,6 +10,19 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+try:
+    from tools.evidence_provenance import (
+        REVISION_UNAVAILABLE,
+        is_full_revision,
+        source_revision_errors,
+    )
+except ModuleNotFoundError:  # direct script execution
+    from evidence_provenance import (
+        REVISION_UNAVAILABLE,
+        is_full_revision,
+        source_revision_errors,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOCK = ROOT / "ci" / "flagos_cuda_reference.lock.json"
 DEFAULT_PROFILE = (
@@ -113,14 +126,17 @@ def evidence_errors(
                 errors.append(f"environment_{field}_mismatch")
 
     source = payload.get("source")
-    if not isinstance(source, Mapping) or source.get("revision") in {
-        None,
-        "",
-        "unavailable",
-    }:
+    revision = source.get("revision") if isinstance(source, Mapping) else None
+    if not isinstance(source, Mapping) or revision in {None, "", REVISION_UNAVAILABLE}:
         errors.append("source_revision_missing")
     elif source.get("tree_dirty") is not False:
         errors.append("source_tree_dirty")
+    elif not is_full_revision(revision):
+        errors.append("source_revision_missing")
+    else:
+        errors.extend(
+            source_revision_errors(source, label="FlagOS CUDA-reference evidence")
+        )
 
     blockers = set(payload.get("claim_blockers", ()))
     required_blockers = {

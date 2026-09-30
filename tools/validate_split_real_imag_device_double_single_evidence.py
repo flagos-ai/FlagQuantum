@@ -13,6 +13,14 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
+try:
+    from tools.evidence_provenance import is_full_revision, source_revision_errors
+except ModuleNotFoundError:  # direct script execution
+    from evidence_provenance import (
+        is_full_revision,
+        source_revision_errors,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = (
     ROOT / "artifacts/split_real_imag_device_double_single_a800_20260825.json"
@@ -44,10 +52,12 @@ def evidence_errors(payload: dict[str, Any]) -> tuple[str, ...]:
 
     source = payload.get("source", {})
     if (
-        len(str(source.get("revision", ""))) != 40
+        not is_full_revision(source.get("revision"))
         or source.get("tree_dirty") is not False
     ):
         errors.append("split P4 A800 evidence requires a clean full source revision")
+    else:
+        errors.extend(source_revision_errors(source, label="split P4 A800 evidence"))
     if len(str(source.get("archive_sha256", ""))) != 64:
         errors.append("split P4 A800 source archive hash is missing")
 
