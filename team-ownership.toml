@@ -10,10 +10,14 @@ protected_paths = [
     "contracts/**",
     ".github/**",
     "pyproject.toml",
-    "requirements*.txt",
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
+    # FlagQuantum IR is the single source of truth. It is a flat module today,
+    # and `flagquantum/core/ir/**` stays reserved for the package split so the
+    # protection survives that refactor. A pattern ending in `/**` does not match
+    # a same-named file, so both forms are required.
+    "flagquantum/core/ir.py",
     "flagquantum/core/ir/**",
     "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
     "docs/architecture/decisions/**",
@@ -36,9 +40,11 @@ worktree = "FlagQuantum-vNext-core"
 owns = [
     "flagquantum/core/**",
     "flagquantum/circuit.py",
+    "flagquantum/experimental/**",
     "flagquantum/noise/**",
     "flagquantum/ops/**",
     "flagquantum/observables/**",
+    "flagquantum/qec/**",
 ]
 
 [teams.compiler]
@@ -63,6 +69,8 @@ branch = "refactor/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
+    "flagquantum/kernels/**",
+    "flagquantum/lindblad/**",
     "flagquantum/runtime/executors/**",
 ]
 
@@ -72,6 +80,7 @@ worktree = "FlagQuantum-vNext-platform"
 owns = [
     "flagquantum/compute/**",
     "flagquantum/devices/**",
+    "flagquantum/twin/**",
 ]
 
 [teams.remote]
@@ -96,6 +105,21 @@ branch = "refactor/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
     "flagquantum/services/**",
+]
+
+[teams.algorithms]
+branch = "refactor/vnext-team-algorithms"
+worktree = "FlagQuantum-vNext-algorithms"
+owns = [
+    "flagquantum/algorithms/**",
+]
+
+[teams.verification]
+branch = "refactor/vnext-team-verification"
+worktree = "FlagQuantum-vNext-verification"
+owns = [
+    "flagquantum/benchmarking/**",
+    "flagquantum/testing/**",
 ]
 
 [teams.docs]
