@@ -17,6 +17,17 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added the experimental
+  `flagquantum.experimental.distributed.train_distributed_tensor_network`
+  workflow, which slices one logical tensor-network contraction across ranks and
+  keeps gradient, optimizer, and checkpoint semantics on a declared cut.
+  Distributed summaries report rank ownership, memory and communication, and
+  keep `scalability_claim_allowed` and `release_gate_allowed` false with their
+  blockers attached. The automatic slicer now excludes labels carried only by
+  state-copy nodes, which would otherwise yield ranks whose partial is exactly
+  zero while the run reported sharded execution. See the
+  [two-node runbook](../guides/MULTINODE_RUNBOOK.md).
+
 - Added `TwinRegionRelease.assess_support(...)` to distinguish exact released
   circuits from unseen circuits that only fit a regional release's frozen
   mapping, topology, operation, instruction-count, and depth envelope. Only an

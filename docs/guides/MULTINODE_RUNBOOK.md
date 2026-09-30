@@ -328,8 +328,8 @@ python tools/multinode_launch_plan.py --run \
   --report-directory hardware-run
 ```
 
-`--probe` selects the workload and defaults to `statevector`; everything else
-is shared.
+`--probe` selects the workload: `statevector` (the default), `mps`, or `tn`.
+Everything else is shared.
 
 It takes three shared paths, and the names matter because the lane empties two
 of them:
@@ -367,7 +367,7 @@ must not be reported as capacity scaling.
 
 ## Recorded two-node evidence
 
-Two artifacts have been recorded from this lane, both taken on the eight-A800
+Three artifacts have been recorded from this lane, all taken on the eight-A800
 pair with two ranks on one device each.
 
 `artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json` covers
@@ -411,6 +411,36 @@ both claim flags false. Unlike the statevector artifact it belongs to a
 capability that also claims single-host and multi-GPU support, so it is the
 multi-node leg of a broader entry rather than an entry of its own.
 
+`artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
+slice-sharded tensor-network workload. Five wires are contracted along a cut of
+two labels, which the workload declares rather than leaving to the automatic
+slicer:
+
+- four amplitudes at four distinct bitstrings, plus a single-amplitude
+  projection through the other output path, each compared with the exact
+  complex128 statevector;
+- the expectation and its gradient, where the two ranks report the same
+  reduced expectation but different per-rank gradient contributions, so a
+  reduction that dropped a rank would change the answer;
+- three optimizer legs that checkpoint and resume, compared step for step with
+  an uninterrupted run of the same length;
+- the committed checkpoint generation read back from the shared directory, so
+  the check covers every rank's file and not just the one that wrote it.
+
+Its numerical metrics are at round-off, every byte of its reduction is
+attributed to the inter-node tier, and both ranks report accelerator runtime
+evidence rather than a CPU collective. It carries six blockers, including
+`inter_node_cut_width_not_swept`, `rdma_not_tested` and
+`slice_count_fixed_at_world_size`, and reports both claim flags false.
+
+The cut is declared because the automatic slicer selects by peak memory, and on
+this circuit the cheapest cut is a label carried only by state-copy nodes: a
+tensor with fewer than two dimensions above one. Every branch but one already
+carries a zero on such a label, so slicing it yields ranks whose partial is
+exactly zero and lets a run report sharded execution while one rank does the
+arithmetic. The slicer now excludes those labels and this workload passes its
+cut explicitly.
+
 ## Evidence boundary
 
 SSH success, 16 visible GPUs, matching package versions, successful pings, and
@@ -427,6 +457,6 @@ A multi-node scalability result must still satisfy the repository contracts:
 - the two-node lane in `.github/workflows/scheduled-hardware.yml` passes, and
   the benchmark/release audits pass.
 
-The recorded artifact above satisfies the first four. It is not a scalability
+The recorded artifacts above satisfy the first four. None is a scalability
 claim; promoting one requires the audited benchmark payload the release gate
 validates.

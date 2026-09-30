@@ -447,8 +447,28 @@ quick_start = "examples/vqe_switch_sv_mps_tn.py"
 documentation = "docs/reference/KNOWN_LIMITATIONS.md"
 level = "experimental"
 owner = "tensor-network maintainers"
-limitations = "General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector."
+limitations = "General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector. Execution spanning more than one host is the separate two-node capability, whose evidence covers one declared cut on one recorded pair and does not extend back to arbitrary host counts, automatic slicing, or wider cuts."
 focused_tests = "tests/test_tensor_network.py"
+
+[capabilities.two_node_tensor_network_training]
+title = "Two-node tensor-network training"
+summary = "Slice one logical tensor-network contraction across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one tensor-network workload across two nodes", "Resume a multi-node tensor-network run from its checkpoint", "Inspect inter-node slice-boundary communication and rank placement"]
+public_apis = ["flagquantum.simulation.tensor_network.run_tensor_network", "flagquantum.experimental.distributed.train_distributed_tensor_network"]
+runtime_modes = ["distributed_tensor_network"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TENSOR_NETWORK_DISTRIBUTED_CONTRACT.md"
+level = "production_supported"
+owner = "tensor-network maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one five-wire complex128 circuit with toy parameters, and a cut of exactly two labels declared by the workload. Slice-boundary reduction, the exact slice-gradient sum, an owner-sharded optimizer step, and a checkpoint generation resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The cut is declared rather than chosen by the automatic slicer, which selects by peak memory and would here pick a label carried only by state-copy nodes whose partial is zero on every rank but one; slicing such a label would report sharded execution while one rank did the arithmetic. Cut width was not swept, slice count is fixed at the world size, congestion and capacity were not measured, RDMA was not used or tested, the sliced full state is gathered for validation only, and topologies wider than one device per host are not covered, so this evidence does not establish behaviour as the cut widens or as nodes are added."
+focused_tests = "tests/test_tensor_network.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_tn_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.noisy_simulation]
 title = "Exact and trajectory-based noisy simulation"

@@ -79,6 +79,9 @@ This catalog is generated from the machine-validated
 | Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Evaluate a circuit with tensor-network contraction | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
 | Compare statevector, MPS, and tensor-network modes | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
+| Train one tensor-network workload across two nodes | Two-node tensor-network training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Resume a multi-node tensor-network run from its checkpoint | Two-node tensor-network training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Inspect inter-node slice-boundary communication and rank placement | Two-node tensor-network training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
 | Validate small noisy circuits exactly | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Evaluate low-entanglement noisy circuits with MPS trajectories | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Resume reproducible trajectory ensembles | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
@@ -350,7 +353,7 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 - **Distribution semantics:** `manual_sliced_tensor_contraction`
 - **Start:** [quick example](../../examples/vqe_switch_sv_mps_tn.py)
 - **Documentation:** [guide](../../docs/reference/KNOWN_LIMITATIONS.md)
-- **Known boundary:** General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector.
+- **Known boundary:** General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector. Execution spanning more than one host is the separate two-node capability, whose evidence covers one declared cut on one recorded pair and does not extend back to arbitrary host counts, automatic slicing, or wider cuts.
 
 ### Exact and trajectory-based noisy simulation
 
@@ -662,6 +665,20 @@ Shard one logical matrix product state by site across two hosts and keep gradien
 - **Start:** [quick example](../../docs/guides/MULTINODE_RUNBOOK.md)
 - **Documentation:** [guide](../../docs/development/TESTING.md)
 - **Known boundary:** Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, a bond limit that truncates nothing, and a cut width that was not swept. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The tiny full MPS is gathered for validation only; congestion, capacity and production performance were not measured; RDMA was not used or tested; topologies wider than one device per host are not covered, so this evidence does not establish behaviour as the cut widens or as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take.
+
+### Two-node tensor-network training
+
+Slice one logical tensor-network contraction across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce.
+
+- **Maturity:** Production supported
+- **Public API:** `flagquantum.simulation.tensor_network.run_tensor_network`, `flagquantum.experimental.distributed.train_distributed_tensor_network`
+- **Runtime modes:** `distributed_tensor_network`
+- **Hardware:** `multi_node`, `nvidia_a800_sxm4_80gb`
+- **Gradient support:** `exact`
+- **Distribution semantics:** `sharded_across_ranks`
+- **Start:** [quick example](../../docs/guides/MULTINODE_RUNBOOK.md)
+- **Documentation:** [guide](../../docs/development/TENSOR_NETWORK_DISTRIBUTED_CONTRACT.md)
+- **Known boundary:** Scope is the recorded pair: two A800 hosts with one device per host, one five-wire complex128 circuit with toy parameters, and a cut of exactly two labels declared by the workload. Slice-boundary reduction, the exact slice-gradient sum, an owner-sharded optimizer step, and a checkpoint generation resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The cut is declared rather than chosen by the automatic slicer, which selects by peak memory and would here pick a label carried only by state-copy nodes whose partial is zero on every rank but one; slicing such a label would report sharded execution while one rank did the arithmetic. Cut width was not swept, slice count is fixed at the world size, congestion and capacity were not measured, RDMA was not used or tested, the sliced full state is gathered for validation only, and topologies wider than one device per host are not covered, so this evidence does not establish behaviour as the cut widens or as nodes are added.
 
 
 ## Deployment and extension

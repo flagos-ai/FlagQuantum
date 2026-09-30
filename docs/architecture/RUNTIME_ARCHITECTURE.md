@@ -67,6 +67,39 @@ fail-closed degeneracy check is taken directly from the singular values of the
 primary QR/SVD split. The runtime does not reconstruct the pair and launch a
 second `svdvals` operation solely for diagnostics.
 
+## Sharded Tensor-Network Training
+
+`flagquantum.experimental.distributed.train_distributed_tensor_network(...)`
+composes the sliced contraction, the slice-gradient sum, and optimizer and
+checkpoint ownership. The implementation lives in
+`runtime/executors/tensor_network`; the contraction and slicing kernels live in
+`simulation/tensor_network`.
+
+A slice plan partitions the contraction's slice tasks across ranks and the plan
+is reported per rank, so an execution that placed every task on one rank is
+refused rather than reported as sharded. The observable reduction is a real
+collective, and every rank reports the same reduced expectation. Gradients are
+different: the collective covers the expectation, not the parameter gradient, so
+each rank holds a partial forward contribution and the total is formed by the
+documented reduction. A caller reading a per-rank gradient must read it as a
+partial.
+
+Tensor-network training checkpoints are rank-local files holding the replicated
+parameter vector: the owner all-gathers the updated parameters before writing, so
+each rank's file is the whole resumed state and the two files carry the same
+parameter digest. A resumed leg reports the absolute target step count while its
+loss record holds only the steps that leg ran.
+
+Slicing is a correctness property before it is a tuning knob. A label carried
+only by a "state-copy" node -- a tensor with fewer than two dimensions above one
+-- is already zero on every branch but one, so slicing it produces ranks whose
+partial is exactly zero and can make one rank's arithmetic look like a
+partition. The automatic slicer excludes those labels and selects by peak
+memory; a workload that needs a specific cut declares it. Every summary reports
+the labels it sliced and the task count per rank, so a reader can check that the
+cut used is the cut the workload asked for, but the summary does not distinguish
+a declared cut from a chosen one.
+
 ## Executor Boundaries and Evidence
 
 Backend-neutral execution requests and records are defined in
