@@ -389,6 +389,12 @@ python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multin
 python tools/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn
 ```
 
+The tier passes no `--source-revision`, because the launch host stages from a
+git checkout and the probe reads the revision from it. A host that stages from a
+copied tree instead -- one without `.git`, which is what a rebuild host usually
+has -- must export `FLAGQUANTUM_SOURCE_REVISION` for the tier, or every probe
+fails closed on a revision it cannot resolve.
+
 No test carries `distributed_multinode`. The seven that did need a launcher
 rather than a second node and were renamed to `distributed_launch`; the marker
 stays declared because the two-node evidence comes from the probe above rather
