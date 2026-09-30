@@ -79,10 +79,17 @@ print(energy.item(), theta.grad)
 
 ## Reproduce
 
+The table above records the checkpoint-policy v4 run made with a 1 GiB
+statevector budget. Checkpoint-policy v5 also accounts for the 144 MiB
+conservative cycle-index bound, so current code requires a 1 GiB + 144 MiB
+budget to select the same kernel. See
+[`NATIVE_CPU_ADJOINT_MEMORY_TIERS_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_MEMORY_TIERS_CPU_ARM64_20260930.md)
+for the refreshed tier boundaries.
+
 Measure compact permutation cycles:
 
 ```bash
-FQ_STATEVECTOR_CHECKPOINT_BUDGET_BYTES=1073741824 \
+FQ_STATEVECTOR_CHECKPOINT_BUDGET_BYTES=1224736768 \
 flagquantum-benchmark run differentiable_simulator_corpus \
   --workloads hardware_efficient_vqe --n-wires 24 --layers 1 --threads 2 \
   --engines flagquantum_adjoint \

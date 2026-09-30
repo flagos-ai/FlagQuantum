@@ -777,7 +777,7 @@ def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():
 
 def test_checkpoint_policy_is_versioned_and_fail_closed():
     assert StatevectorCheckpointPolicy().strategy == "auto"
-    assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v4"
+    assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v5"
     assert StatevectorCheckpointPolicy(strategy="interval", interval=8).interval == 8
     with pytest.raises(ValueError, match="interval > 0"):
         StatevectorCheckpointPolicy(strategy="interval", interval=0)
@@ -858,6 +858,7 @@ def test_auto_checkpoint_selects_low_memory_reversible_cpu_cx_workload():
         instruction_count=10,
         contains_local_cx=True,
         low_memory_cpu_cx_available=True,
+        compact_cpu_cx_auxiliary_bytes=512,
     )
 
     assert policy.strategy == "reversible_adjoint"
@@ -865,7 +866,30 @@ def test_auto_checkpoint_selects_low_memory_reversible_cpu_cx_workload():
     assert policy.estimated_required_bytes == 4096
     assert policy.estimated_reversible_bytes == 4096
     assert policy.estimated_fused_reversible_bytes == 5120
+    assert policy.estimated_compact_reversible_bytes == 4608
     assert policy.low_memory_cpu_cx
+    assert not policy.compact_cpu_cx_cycles
+
+
+def test_auto_checkpoint_selects_budgeted_compact_cpu_cx_cycles():
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(memory_budget_bytes=4608),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+        instruction_count=10,
+        contains_local_cx=True,
+        low_memory_cpu_cx_available=True,
+        compact_cpu_cx_auxiliary_bytes=512,
+    )
+
+    assert policy.strategy == "reversible_adjoint"
+    assert policy.selection_reason == "compact_cpu_cx_cycles_reversible_fits_budget"
+    assert policy.estimated_required_bytes == 4608
+    assert policy.estimated_reversible_bytes == 4608
+    assert policy.estimated_compact_reversible_bytes == 4608
+    assert policy.estimated_fused_reversible_bytes == 5120
+    assert policy.low_memory_cpu_cx
+    assert policy.compact_cpu_cx_cycles
 
 
 @pytest.mark.parametrize(
@@ -941,6 +965,44 @@ def test_low_memory_cpu_cx_reversible_path_preserves_gradient():
     torch.testing.assert_close(theta.grad, expected_gradient)
     assert summary["checkpoint_policy"]["strategy"] == "reversible_adjoint"
     assert summary["checkpoint_policy"]["low_memory_cpu_cx"]
+    assert not summary["checkpoint_policy"]["compact_cpu_cx_cycles"]
+    assert summary["backward_rematerialized_gate_count"] == 0
+
+
+def test_budgeted_compact_cpu_cx_cycles_preserve_gradient():
+    if not native_cpu_cx_adjoint_inplace_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    theta = torch.tensor([0.17, -0.23, 0.31], dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(4, dtype=torch.complex128)
+    circuit.ry(0, theta[0]).rx(1, theta[1]).rz(3, theta[2])
+    for control, target in (
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 0),
+        (0, 2),
+        (2, 1),
+        (1, 3),
+        (3, 2),
+    ):
+        circuit.cx(control, target)
+    expected = circuit.expectation_z(3)
+    (expected_gradient,) = torch.autograd.grad(expected, theta)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=3,
+        checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=1168),
+    )
+    result.backward()
+    summary = result.summary()
+
+    torch.testing.assert_close(result.value, expected.squeeze())
+    torch.testing.assert_close(theta.grad, expected_gradient)
+    assert summary["checkpoint_policy"]["strategy"] == "reversible_adjoint"
+    assert summary["checkpoint_policy"]["compact_cpu_cx_cycles"]
+    assert summary["checkpoint_policy"]["estimated_required_bytes"] == 1168
+    assert summary["peak_backward_scratch_bytes"] == 144
     assert summary["backward_rematerialized_gate_count"] == 0
 
 

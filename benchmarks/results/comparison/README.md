@@ -83,6 +83,15 @@ zero-state-scratch in-place kernel with budgeted block checkpoints and the
 faster two-state-scratch fused gather, including absolute time, peak RSS,
 correctness checks, public example, and exact reproduction commands.
 
+[`NATIVE_CPU_ADJOINT_CX_CYCLES_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_CX_CYCLES_CPU_ARM64_20260930.md)
+records the compact in-place permutation-cycle kernel and its performance and
+memory gap to both per-CNOT pairs and fused dual-state gather.
+
+[`NATIVE_CPU_ADJOINT_MEMORY_TIERS_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_MEMORY_TIERS_CPU_ARM64_20260930.md)
+records checkpoint-policy v5 selecting fused gather, compact cycles, or
+zero-auxiliary CNOT pairs from explicit modeled memory requirements. It includes
+absolute timing, peak RSS, correctness, usage, and reproduction commands.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes

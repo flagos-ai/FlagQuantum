@@ -20,6 +20,7 @@ from .adjoint import (
     native_cpu_terminal_adjoint_no_restore_available,
 )
 from .permutation import (
+    compact_cpu_cx_adjoint_auxiliary_bytes,
     compact_cx_permutation_images,
     fused_compact_cx_adjoint_gather,
     fused_compact_cx_adjoint_inplace_,
@@ -27,9 +28,11 @@ from .permutation import (
     fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
     fused_cx_gather_out,
+    native_cpu_cx_adjoint_cycles_available,
     native_cpu_cx_adjoint_gather_available,
     native_cpu_cx_adjoint_inplace_available,
     native_cpu_cx_gather_available,
+    use_compact_cpu_cx_adjoint_cycles,
     use_compact_cpu_cx_mapping,
 )
 from .rotation import (
@@ -72,15 +75,18 @@ __all__ = [
     "native_cpu_hadamard_block_adjoint_available",
     "fused_cx_adjoint_gather",
     "fused_cx_adjoint_inplace_",
+    "compact_cpu_cx_adjoint_auxiliary_bytes",
     "compact_cx_permutation_images",
     "fused_compact_cx_adjoint_gather",
     "fused_compact_cx_adjoint_inplace_",
     "fused_compact_cx_gather_out",
     "fused_cx_gather_out",
     "native_cpu_cx_adjoint_gather_available",
+    "native_cpu_cx_adjoint_cycles_available",
     "native_cpu_cx_adjoint_inplace_available",
     "native_cpu_cx_gather_available",
     "use_compact_cpu_cx_mapping",
+    "use_compact_cpu_cx_adjoint_cycles",
     "fused_rzz_segment_forward_",
     "native_cpu_rzz_available",
 ]
