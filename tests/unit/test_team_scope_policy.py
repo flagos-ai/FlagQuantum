@@ -9,7 +9,14 @@ from pathlib import Path
 import pytest
 
 from tools.check_architecture import CONFIG as ARCHITECTURE
-from tools.check_team_scope import load_policy, owner_for, policy_errors, scope_errors
+from tools.check_team_scope import (
+    classification_errors,
+    load_policy,
+    owner_for,
+    owners_for,
+    policy_errors,
+    scope_errors,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -207,3 +214,77 @@ def test_integration_team_can_coordinate_any_path() -> None:
         )
         == ()
     )
+
+
+def test_classification_accepts_protected_shared_and_owned_paths() -> None:
+    policy = load_policy()
+    assert (
+        classification_errors(
+            [
+                "team-ownership.toml",
+                "tests/unit/test_team_scope_policy.py",
+                "tools/check_team_scope.py",
+                "flagquantum/compiler/pipeline.py",
+                "docs/development/MULTI_TEAM_DEVELOPMENT.md",
+            ],
+            policy,
+        )
+        == ()
+    )
+
+
+def test_classification_rejects_unowned_and_ambiguous_paths() -> None:
+    policy = load_policy()
+    errors = classification_errors(["CHANGELOG.md", "setup.cfg"], policy)
+    assert len(errors) == 2
+    assert all("no rule classifies this path" in error for error in errors)
+
+    # Simulate an ambiguity the policy cannot currently produce: two teams
+    # claiming the same pattern equally specifically.
+    ambiguous = {
+        **policy,
+        "teams": {
+            **policy["teams"],
+            "core": {
+                **policy["teams"]["core"],
+                "owns": [*policy["teams"]["core"]["owns"], "flagquantum/x.py"],
+            },
+        },
+    }
+    ambiguous["teams"]["runtime"] = {
+        **ambiguous["teams"]["runtime"],
+        "owns": [*ambiguous["teams"]["runtime"]["owns"], "flagquantum/x.py"],
+    }
+    errors = classification_errors(["flagquantum/x.py"], ambiguous)
+    assert len(errors) == 1
+    assert "ambiguous ownership" in errors[0]
+
+
+def test_classification_stays_team_independent() -> None:
+    """The same path is rejected for every team, so no team can be blamed for it.
+
+    A gate built only on `scope_errors` cannot catch an unowned path until a
+    team has already been named, which is why the changed-path check does not
+    take `--team`.
+    """
+
+    policy = load_policy()
+    assert scope_errors("core", ["CHANGELOG.md"], policy)
+    assert scope_errors("integration", ["CHANGELOG.md"], policy) == ()
+    assert classification_errors(["CHANGELOG.md"], policy)
+
+
+def test_owner_summary_counts_teams_and_marks_shared_paths() -> None:
+    policy = load_policy()
+    counts = owners_for(
+        [
+            "flagquantum/compiler/pipeline.py",
+            "flagquantum/runtime/execution.py",
+            "flagquantum/runtime/contracts.py",
+            "tests/unit/test_team_scope_policy.py",
+            "team-ownership.toml",
+            "docs/development/MULTI_TEAM_DEVELOPMENT.md",
+        ],
+        policy,
+    )
+    assert counts == {"compiler": 1, "runtime": 2, "(shared)": 2, "(protected)": 1}
