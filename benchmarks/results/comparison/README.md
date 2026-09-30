@@ -65,6 +65,12 @@ permutation-index rollback and PennyLane Lightning adjoint. It includes exact
 timings, isolated peak RSS, metadata size, correctness, example code, the
 time-memory tradeoff, and an exact reproduction command.
 
+[`NATIVE_CPU_ADJOINT_HOST_MEMORY_BUDGET_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_HOST_MEMORY_BUDGET_CPU_ARM64_20260930.md)
+records the 24-qubit complex128 CPU adjoint checkpoint cliff, the host-aware
+default's absolute forward/backward/total time and peak RSS, and a censored
+static-512-MiB rollback. It includes the cgroup safety boundary, public example,
+limitations, and exact reproduction commands.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
