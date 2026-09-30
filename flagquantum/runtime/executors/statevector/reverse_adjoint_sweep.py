@@ -138,6 +138,9 @@ class _ReversibleAdjointSweep:
         self.skipped_rzz_indices: set[int] = set()
         self.cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
         self.pending_cpu_cx_index: torch.Tensor | None = None
+        self.pending_cpu_cx_images: torch.Tensor | None = None
+        self.pending_cpu_cx_controls: tuple[int, ...] = ()
+        self.pending_cpu_cx_targets: tuple[int, ...] = ()
         for index in range(len(self.bound.instructions) - 1, -1, -1):
             if (
                 index in self.skipped_cx_indices

@@ -22,9 +22,12 @@ from flagquantum.runtime.executors.statevector.reverse import (
 )
 from flagquantum.runtime.executors.statevector.reverse_adjoint_cx import (
     apply_cpu_cx_adjoint_index,
+    cpu_cx_permutation_images,
     cpu_cx_permutation_index,
 )
 from flagquantum.simulation.native_cpu import (
+    fused_compact_cx_adjoint_gather,
+    fused_compact_cx_gather_out,
     fused_cx_adjoint_gather,
     fused_cx_gather_out,
     fused_cx_rotation_segment_adjoint,
@@ -147,6 +150,60 @@ def test_native_cx_adjoint_gather_has_explicit_environment_rollback(
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_compact_cx_adjoint_gather_matches_permutation_table(
+    dtype: torch.dtype,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
+    generator = torch.Generator().manual_seed(21987)
+    ket = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    controls = (5, 1, 4, 0, 3, 2)
+    targets = (6, 4, 2, 3, 1, 5)
+    index = cpu_cx_permutation_index(ket, controls, targets, 7)
+    images = cpu_cx_permutation_images(controls, targets, 7)
+
+    actual = fused_compact_cx_adjoint_gather(ket, adjoint, images)
+
+    assert actual is not None
+    assert images.numel() == 7
+    torch.testing.assert_close(actual[0], torch.index_select(ket, 1, index))
+    torch.testing.assert_close(actual[1], torch.index_select(adjoint, 1, index))
+
+
+def test_compact_cx_adjoint_gather_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    images = torch.tensor((2, 1), dtype=torch.int64)
+
+    assert fused_compact_cx_adjoint_gather(ket, ket, images) is None
+
+
+def test_compact_cx_runtime_threshold_and_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", raising=False)
+    assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
+    assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(21)
+    assert reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "0")
+    assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 @pytest.mark.parametrize("index_dtype", (torch.int32, torch.int64))
 @pytest.mark.parametrize("batch", (1, 2))
 def test_native_cx_gather_out_matches_index_select(
@@ -182,6 +239,29 @@ def test_native_cx_gather_out_preserves_autograd_and_has_rollback(
     assert not fused_cx_gather_out(differentiable.detach(), index, output)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_compact_cx_gather_out_matches_permutation_table(
+    dtype: torch.dtype,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
+    generator = torch.Generator().manual_seed(8441)
+    state = (
+        torch.randn((2, 128), generator=generator)
+        + 1j * torch.randn((2, 128), generator=generator)
+    ).to(dtype)
+    controls = (0, 4, 1, 5, 2, 3)
+    targets = (3, 6, 4, 2, 5, 1)
+    index = cpu_cx_permutation_index(state, controls, targets, 7)
+    images = cpu_cx_permutation_images(controls, targets, 7)
+    output = torch.empty_like(state)
+
+    assert fused_compact_cx_gather_out(state, images, output)
+    torch.testing.assert_close(output, torch.index_select(state, 1, index))
+
+
 def test_forward_sweep_reuses_native_cx_gather_workspace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -212,6 +292,47 @@ def test_forward_sweep_reuses_native_cx_gather_workspace(
 
     assert len(calls) == 2
     assert calls[0] == (calls[1][1], calls[1][0])
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+
+def test_forward_sweep_compact_cx_avoids_full_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_cx_gather_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    circuit = fq.Circuit(6, dtype=torch.complex128)
+    circuit.h(0).cx(0, 1).cx(1, 2).h(3).cx(2, 4).cx(4, 5)
+    expected = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+    calls = 0
+    native = forward_sweep.fused_compact_cx_gather_out
+
+    def counted(*args: object, **kwargs: object) -> bool:
+        nonlocal calls
+        calls += 1
+        return native(*args, **kwargs)  # type: ignore[arg-type]
+
+    def reject_full_index(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("compact forward CX must not build a full index")
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
+    monkeypatch.setattr(
+        forward_sweep,
+        "use_compact_cpu_cx_mapping",
+        lambda n_wires: True,
+    )
+    monkeypatch.setattr(forward_sweep, "fused_compact_cx_gather_out", counted)
+    monkeypatch.setattr(
+        forward_sweep,
+        "_cx_sequence_permutation_index",
+        reject_full_index,
+    )
+    actual = execute_torch_distributed_statevector(
+        circuit, dtype=torch.complex128
+    ).shard_state.amplitudes
+
+    assert calls == 2
     torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
 
 
@@ -1078,9 +1199,11 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_native_cx_rotation_adjoint_matches_sequential_boundary(
     dtype: torch.dtype,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     if not native_cpu_adjoint_available():
         pytest.skip("native CPU extension is not built in this source checkout")
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     generator = torch.Generator().manual_seed(19723)
     initial_ket = (
@@ -1094,6 +1217,11 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
     wires = torch.tensor((6, 6, 6, 3, 3, 3, 0, 0, 0), dtype=torch.int64)
     index = cpu_cx_permutation_index(
         initial_ket,
+        controls=(5, 4, 3, 2, 1, 0),
+        targets=(6, 5, 4, 3, 2, 1),
+        n_wires=7,
+    )
+    images = cpu_cx_permutation_images(
         controls=(5, 4, 3, 2, 1, 0),
         targets=(6, 5, 4, 3, 2, 1),
         n_wires=7,
@@ -1122,6 +1250,17 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         n_wires=7,
         observable_weights=weights,
     )
+    compact = fused_cx_rotation_segment_adjoint(
+        initial_ket,
+        initial_adjoint,
+        None,
+        angles,
+        kinds,
+        wires,
+        n_wires=7,
+        observable_weights=weights,
+        cx_images=images,
+    )
     terminal_input = initial_ket.clone()
     terminal = fused_cx_rotation_segment_adjoint(
         terminal_input,
@@ -1137,8 +1276,10 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
 
     assert reference_gradients is not None
     assert fused is not None
+    assert compact is not None
     assert terminal is not None
     gradients, ket, adjoint = fused
+    compact_gradients, compact_ket, compact_adjoint = compact
     terminal_gradients, _, _ = terminal
     tolerance = 7e-5 if dtype == torch.complex64 else 5e-12
     torch.testing.assert_close(
@@ -1147,6 +1288,15 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
     torch.testing.assert_close(ket, reference_ket, atol=tolerance, rtol=tolerance)
     torch.testing.assert_close(
         adjoint, reference_adjoint, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(
+        compact_gradients, reference_gradients, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(
+        compact_ket, reference_ket, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(
+        compact_adjoint, reference_adjoint, atol=tolerance, rtol=tolerance
     )
     torch.testing.assert_close(
         terminal_gradients, reference_gradients, atol=tolerance, rtol=tolerance
@@ -1515,7 +1665,24 @@ def test_reverse_sweep_fuses_cx_and_rotation_segments(
         counted,
     )
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION", "1")
+    monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE", "1")
+    monkeypatch.setattr(
+        reverse_adjoint_cx,
+        "use_compact_cpu_cx_mapping",
+        lambda n_wires: True,
+    )
+
+    def reject_full_index(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError(
+            "compact CX fusion must not build a full permutation table"
+        )
+
+    monkeypatch.setattr(
+        reverse_adjoint_cx,
+        "cpu_cx_permutation_index",
+        reject_full_index,
+    )
     actual = execute_torch_distributed_statevector_reverse(circuit)
     actual.backward()
 

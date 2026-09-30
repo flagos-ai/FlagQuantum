@@ -9,6 +9,7 @@ from .adjoint import (
     fused_rzz_segment_adjoint_,
     native_cpu_adjoint_available,
     native_cpu_adjoint_rzz_h_fusion_available,
+    native_cpu_compact_cx_index_available,
     native_cpu_cx_rotation_adjoint_fusion_available,
     native_cpu_observable_rotation_boundary_available,
     native_cpu_parallel_build_available,
@@ -19,10 +20,14 @@ from .adjoint import (
     native_cpu_terminal_adjoint_no_restore_available,
 )
 from .permutation import (
+    compact_cx_permutation_images,
+    fused_compact_cx_adjoint_gather,
+    fused_compact_cx_gather_out,
     fused_cx_adjoint_gather,
     fused_cx_gather_out,
     native_cpu_cx_adjoint_gather_available,
     native_cpu_cx_gather_available,
+    use_compact_cpu_cx_mapping,
 )
 from .rotation import (
     fused_hadamard_block_adjoint_,
@@ -45,6 +50,7 @@ __all__ = [
     "fused_rzz_segment_adjoint_",
     "native_cpu_adjoint_available",
     "native_cpu_cx_rotation_adjoint_fusion_available",
+    "native_cpu_compact_cx_index_available",
     "native_cpu_adjoint_rzz_h_fusion_available",
     "native_cpu_observable_rotation_boundary_available",
     "native_cpu_parallel_build_available",
@@ -62,9 +68,13 @@ __all__ = [
     "native_cpu_one_qubit_layer_available",
     "native_cpu_hadamard_block_adjoint_available",
     "fused_cx_adjoint_gather",
+    "compact_cx_permutation_images",
+    "fused_compact_cx_adjoint_gather",
+    "fused_compact_cx_gather_out",
     "fused_cx_gather_out",
     "native_cpu_cx_adjoint_gather_available",
     "native_cpu_cx_gather_available",
+    "use_compact_cpu_cx_mapping",
     "fused_rzz_segment_forward_",
     "native_cpu_rzz_available",
 ]

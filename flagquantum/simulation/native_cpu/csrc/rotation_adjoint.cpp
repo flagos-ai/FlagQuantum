@@ -14,7 +14,14 @@
 #include <type_traits>
 #include <vector>
 
+#include "linear_permutation.h"
+
 namespace {
+
+using flagquantum_native::LinearLookup;
+using flagquantum_native::apply_linear_lookup;
+using flagquantum_native::build_linear_lookup;
+using flagquantum_native::linear_shift_mode;
 
 at::Tensor fused_observable_expectation_cpu(
     const at::Tensor& ket,
@@ -827,7 +834,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     const c10::optional<at::Tensor>& rzz_first_wires,
     const c10::optional<at::Tensor>& rzz_second_wires,
     const c10::optional<at::Tensor>& observable_weights,
-    const c10::optional<at::Tensor>& cx_index) {
+    const c10::optional<at::Tensor>& cx_index,
+    const c10::optional<at::Tensor>& cx_images) {
   TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
   TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
   TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
@@ -864,7 +872,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
   TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const bool fuse_rzz = rzz_angles.has_value();
   const bool seed_observable = observable_weights.has_value();
-  const bool fuse_cx = cx_index.has_value();
+  const bool fuse_cx_index = cx_index.has_value();
+  const bool fuse_cx_images = cx_images.has_value();
+  const bool fuse_cx = fuse_cx_index || fuse_cx_images;
+  TORCH_CHECK(
+      !(fuse_cx_index && fuse_cx_images),
+      "CX index and compact images are mutually exclusive");
   TORCH_CHECK(
       !fuse_preceding_hadamards || fuse_rzz,
       "preceding Hadamards require a fused RZZ boundary");
@@ -912,7 +925,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     TORCH_CHECK(weights.dim() == 1 && weights.numel() == amplitudes,
                 "observable weight count must match state width");
   }
-  if (fuse_cx) {
+  if (fuse_cx_index) {
     const at::Tensor& index = cx_index.value();
     TORCH_CHECK(index.device().is_cpu(), "CX index must be on CPU");
     TORCH_CHECK(index.is_contiguous(), "CX index must be contiguous");
@@ -920,6 +933,14 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                 "CX index width must match state width");
     TORCH_CHECK(index.scalar_type() == at::kInt || index.scalar_type() == at::kLong,
                 "CX index must be int32 or int64");
+  }
+  if (fuse_cx_images) {
+    const at::Tensor& images = cx_images.value();
+    TORCH_CHECK(images.device().is_cpu(), "CX images must be on CPU");
+    TORCH_CHECK(images.is_contiguous(), "CX images must be contiguous");
+    TORCH_CHECK(images.dim() == 1 && images.numel() == n_wires,
+                "CX image count must match n_wires");
+    TORCH_CHECK(images.scalar_type() == at::kLong, "CX images must be int64");
   }
 
   const int64_t* kind_data = gate_kinds.const_data_ptr<int64_t>();
@@ -973,12 +994,20 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     const scalar_t* source_adjoint_data = adjoint.const_data_ptr<scalar_t>();
     scalar_t* ket_data = transformed_ket.data_ptr<scalar_t>();
     scalar_t* adjoint_data = transformed_adjoint.data_ptr<scalar_t>();
-    const int32_t* cx_index32 = fuse_cx && cx_index.value().scalar_type() == at::kInt
+    const int32_t* cx_index32 = fuse_cx_index && cx_index.value().scalar_type() == at::kInt
         ? cx_index.value().const_data_ptr<int32_t>()
         : nullptr;
-    const int64_t* cx_index64 = fuse_cx && cx_index.value().scalar_type() == at::kLong
+    const int64_t* cx_index64 = fuse_cx_index && cx_index.value().scalar_type() == at::kLong
         ? cx_index.value().const_data_ptr<int64_t>()
         : nullptr;
+    const int64_t cx_chunk_count = fuse_cx_images ? (n_wires + 7) / 8 : 0;
+    const LinearLookup cx_lookup = fuse_cx_images
+        ? build_linear_lookup(cx_images.value())
+        : LinearLookup{};
+    const int64_t cx_shift_mode = fuse_cx_images
+        ? linear_shift_mode(cx_images.value())
+        : 0;
+    const uint64_t cx_state_mask = (uint64_t{1} << n_wires) - 1;
     const real_t* angle_data = angles.const_data_ptr<real_t>();
     const real_t* observable_weight_data = nullptr;
     if (seed_observable) {
@@ -1121,7 +1150,14 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               const int64_t destination = item_index - row * amplitudes;
               const int64_t source = cx_index32 != nullptr
                   ? static_cast<int64_t>(cx_index32[destination])
-                  : cx_index64[destination];
+                  : cx_index64 != nullptr
+                      ? cx_index64[destination]
+                      : apply_linear_lookup(
+                            static_cast<uint64_t>(destination),
+                            cx_lookup,
+                            cx_chunk_count,
+                            cx_shift_mode,
+                            cx_state_mask);
               source_index = row * amplitudes + source;
             }
             ket_values[local] = load_source
@@ -1555,7 +1591,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "bool fuse_preceding_hadamards, "
       "Tensor? rzz_angles=None, "
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
-      "Tensor? observable_weights=None, Tensor? cx_index=None) "
+      "Tensor? observable_weights=None, Tensor? cx_index=None, "
+      "Tensor? cx_images=None) "
       "-> (Tensor, Tensor, Tensor)");
   library.def(
       "fused_rzz_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "

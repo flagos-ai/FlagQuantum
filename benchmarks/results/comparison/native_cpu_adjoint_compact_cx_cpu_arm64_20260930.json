@@ -1,0 +1,791 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "cross_framework_differentiable_simulator_workload_corpus",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_compact_cx_index_rollback": {
+            "backward": 0.9792850624415012,
+            "forward": 0.9831870439826672,
+            "value_and_grad": 0.9786310215633874
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.012610072070105149,
+            "forward": 22.35239940005437,
+            "value_and_grad": 8.894762822065372
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_compact_cx_index_rollback": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 9.529599331870031e-13,
+            "passed": true,
+            "value_max_abs_error": 1.2972733998140029e-11
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.1879830830002902,
+            "mean_seconds": 0.10169815760930694,
+            "median_seconds": 0.09418724999704864,
+            "min_seconds": 0.08211041700269561,
+            "relative_median_absolute_deviation": 0.07060403606564895,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.08753725000133272,
+              0.09911675000330433,
+              0.139237833005609,
+              0.09418724999704864,
+              0.08761695800058078,
+              0.08876508299726993,
+              0.0912271670094924,
+              0.08211041700269561,
+              0.08678104198770598,
+              0.08527795899135526,
+              0.0901148330012802,
+              0.11113366700010374,
+              0.12133295899548102,
+              0.10295929199492093,
+              0.121629875007784,
+              0.10809929198876489,
+              0.10288958399905823,
+              0.09933029201056343,
+              0.08876379199500661,
+              0.10703699999430683,
+              0.09079804198700003,
+              0.08690420800121501,
+              0.11646404099883512,
+              0.10303800000110641,
+              0.11068574999808334,
+              0.10735316699719988,
+              0.09126112500962336,
+              0.09335958299925551,
+              0.10014370900171343,
+              0.09908054200059269,
+              0.09250670899928082,
+              0.1879830830002902,
+              0.15649583299818914,
+              0.10311658399587031,
+              0.09299483300128486,
+              0.08947216700471472,
+              0.09465087500575464,
+              0.08600329099863302,
+              0.091977832998964,
+              0.09192729200003669,
+              0.0882595000002766
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.1470712089940207,
+            "mean_seconds": 0.06827064534108347,
+            "median_seconds": 0.06319037498906255,
+            "min_seconds": 0.05742833401018288,
+            "relative_median_absolute_deviation": 0.06317351317219298,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.05770433299767319,
+              0.06998754199594259,
+              0.09416229199268855,
+              0.06220054198638536,
+              0.06611075000546407,
+              0.05955054199148435,
+              0.06019387500418816,
+              0.0628869170031976,
+              0.05970604199683294,
+              0.05907312499766704,
+              0.0710202080081217,
+              0.07086433299991768,
+              0.08457558399823029,
+              0.06778241701249499,
+              0.06666391700855456,
+              0.06608279199281242,
+              0.08478737498808187,
+              0.06319037498906255,
+              0.05919841700233519,
+              0.06483050000679214,
+              0.05929337500128895,
+              0.057752749999053776,
+              0.07084833300905302,
+              0.08023754101304803,
+              0.06880125000316184,
+              0.060240916995098814,
+              0.06700316700153053,
+              0.05880558300123084,
+              0.060663124997518025,
+              0.06836624999414198,
+              0.060546458000317216,
+              0.1470712089940207,
+              0.09859808300097939,
+              0.0677961659966968,
+              0.06592708299285732,
+              0.059566040989011526,
+              0.05742833401018288,
+              0.06124145801004488,
+              0.05942999999388121,
+              0.06044987500354182,
+              0.05845758299983572
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": 629948416,
+            "scope": "isolated_process_peak_rss_including_import_build_and_one_value_and_grad"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.3350542919943109,
+            "mean_seconds": 0.1699688029503904,
+            "median_seconds": 0.15892191599414218,
+            "min_seconds": 0.1443510839890223,
+            "relative_median_absolute_deviation": 0.07347738612649686,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.1452415829990059,
+              0.16910429199924693,
+              0.23340012499829754,
+              0.156387791983434,
+              0.15372770800604485,
+              0.14831562498875428,
+              0.15142104201368056,
+              0.1449973340058932,
+              0.1464870839845389,
+              0.1443510839890223,
+              0.1611350410094019,
+              0.18199800000002142,
+              0.2059085429937113,
+              0.17074170900741592,
+              0.18829379201633856,
+              0.1741820839815773,
+              0.1876769589871401,
+              0.16252066699962597,
+              0.1479622089973418,
+              0.17186750000109896,
+              0.15009141698828898,
+              0.1446569580002688,
+              0.18731237400788814,
+              0.18327554101415444,
+              0.17948700000124518,
+              0.1675940839922987,
+              0.15826429201115388,
+              0.15216516600048635,
+              0.16080683399923146,
+              0.16744679199473467,
+              0.15305316699959803,
+              0.3350542919943109,
+              0.25509391599916853,
+              0.17091274999256711,
+              0.15892191599414218,
+              0.14903820799372625,
+              0.15207920901593752,
+              0.1472447490086779,
+              0.15140783299284521,
+              0.1523771670035785,
+              0.14671708300011232
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_compact_cx_index_rollback": {
+          "backward": {
+            "max_seconds": 0.1501611659914488,
+            "mean_seconds": 0.09996371438958193,
+            "median_seconds": 0.09223616699455306,
+            "min_seconds": 0.0843947079993086,
+            "relative_median_absolute_deviation": 0.0480487551485716,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.08796229198924266,
+              0.10706495901104063,
+              0.09223616699455306,
+              0.08956079199560918,
+              0.09643966700241435,
+              0.0967815409967443,
+              0.10571750000235625,
+              0.0894632090057712,
+              0.0851149170048302,
+              0.08580824999080505,
+              0.10046912499819882,
+              0.13986395800020546,
+              0.14292745800048579,
+              0.1501611659914488,
+              0.1187892500020098,
+              0.10179950000019744,
+              0.14119812501303386,
+              0.09608550000120886,
+              0.08846954199543688,
+              0.0843947079993086,
+              0.08876491599949077,
+              0.08704099999158643,
+              0.08816858299542218,
+              0.10747762498795055,
+              0.09900800000468735,
+              0.08780433399078902,
+              0.08931162500812206,
+              0.09259804199973587,
+              0.08964970799570438,
+              0.09838641599344555,
+              0.09213979099877179,
+              0.09132675000000745,
+              0.10434987500775605,
+              0.13779187499312684,
+              0.1016848330036737,
+              0.08895450001000427,
+              0.09058891600579955,
+              0.09285912499763072,
+              0.09145270800217986,
+              0.08922362499288283,
+              0.08962241699919105
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.13115554201067425,
+            "mean_seconds": 0.06614788404769525,
+            "median_seconds": 0.06212795799365267,
+            "min_seconds": 0.05662566599494312,
+            "relative_median_absolute_deviation": 0.06448921106718573,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.057292957993922755,
+              0.06526299999677576,
+              0.06328975000360515,
+              0.06111195799894631,
+              0.06140641699312255,
+              0.06051254100748338,
+              0.07064133298990782,
+              0.06727450000471435,
+              0.05815558400354348,
+              0.05736566599807702,
+              0.0769892499956768,
+              0.09645712499332149,
+              0.09212104200560134,
+              0.08226183299848344,
+              0.06549899998935871,
+              0.062288584013003856,
+              0.13115554201067425,
+              0.06507495800906327,
+              0.057943250008975156,
+              0.05723154099541716,
+              0.0574503329989966,
+              0.05662566599494312,
+              0.05782354199618567,
+              0.0664560419972986,
+              0.06514424999477342,
+              0.05889862499316223,
+              0.0595644999993965,
+              0.06305574999714736,
+              0.058121374997426756,
+              0.06279308399825823,
+              0.057641583000076935,
+              0.059360665996791795,
+              0.0786074589996133,
+              0.06963779099169187,
+              0.0698417910025455,
+              0.0582974999997532,
+              0.06384445799631067,
+              0.058629082996048965,
+              0.06212795799365267,
+              0.06153620799886994,
+              0.05726975000288803
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": 733282304,
+            "scope": "isolated_process_peak_rss_including_import_build_and_one_value_and_grad"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.2723536670237081,
+            "mean_seconds": 0.16611159843727719,
+            "median_seconds": 0.1555259169981582,
+            "min_seconds": 0.14162624899472576,
+            "relative_median_absolute_deviation": 0.05672982474240255,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.1452552499831654,
+              0.1723279590078164,
+              0.1555259169981582,
+              0.1506727499945555,
+              0.1578460839955369,
+              0.15729408200422768,
+              0.17635883299226407,
+              0.15673770901048556,
+              0.14327050100837369,
+              0.14317391598888207,
+              0.17745837499387562,
+              0.23632108299352694,
+              0.23504850000608712,
+              0.23242299898993224,
+              0.1842882499913685,
+              0.1640880840132013,
+              0.2723536670237081,
+              0.16116045801027212,
+              0.14641279200441204,
+              0.14162624899472576,
+              0.14621524899848737,
+              0.14366666598652955,
+              0.14599212499160785,
+              0.17393366698524915,
+              0.16415224999946076,
+              0.14670295898395125,
+              0.14887612500751857,
+              0.15565379199688323,
+              0.14777108299313113,
+              0.16117949999170378,
+              0.14978137399884872,
+              0.15068741599679925,
+              0.18295733400736935,
+              0.2074296659848187,
+              0.1715266240062192,
+              0.14725200000975747,
+              0.1544333740021102,
+              0.15148820799367968,
+              0.15358066599583253,
+              0.15075983299175277,
+              0.14689216700207908
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.008323292000568472,
+            "mean_seconds": 0.0015853383924766648,
+            "median_seconds": 0.0011877080105477944,
+            "min_seconds": 0.0009767080046003684,
+            "relative_median_absolute_deviation": 0.1430974625132658,
+            "sample_count": 41,
+            "samples_seconds": [
+              0.0021177500020712614,
+              0.0012363749992800876,
+              0.001112625002861023,
+              0.0011578340054256842,
+              0.0014419170038308948,
+              0.0010313750099157915,
+              0.0018569579988252372,
+              0.001073459003237076,
+              0.0009999580070143566,
+              0.0025790829968173057,
+              0.0011691669933497906,
+              0.0010867920063901693,
+              0.0021461249998537824,
+              0.0012182500067865476,
+              0.0011944170109927654,
+              0.001116250001359731,
+              0.002303749992279336,
+              0.0014277500013122335,
+              0.000993042005575262,
+              0.0010964579996652901,
+              0.0009929579973686486,
+              0.0009795829973882064,
+              0.0015896669938229024,
+              0.002010541007621214,
+              0.0011877080105477944,
+              0.002182583004469052,
+              0.0011205000046174973,
+              0.0010177500080317259,
+              0.001058333000401035,
+              0.0012951250100741163,
+              0.0012232080043759197,
+              0.008323292000568472,
+              0.003737499995622784,
+              0.0019510840065777302,
+              0.0012117499863961712,
+              0.0010253330110572278,
+              0.00097870800527744,
+              0.0016407910006819293,
+              0.0010920000058831647,
+              0.0009767080046003684,
+              0.0010444169893162325
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 2.380895624999539,
+            "mean_seconds": 1.4620573201707263,
+            "median_seconds": 1.4124564999947324,
+            "min_seconds": 1.2391661669971654,
+            "relative_median_absolute_deviation": 0.07647734072062556,
+            "sample_count": 41,
+            "samples_seconds": [
+              1.4989324580092216,
+              1.5338337499997579,
+              1.3378767499962123,
+              1.3923705829947721,
+              1.4131815840082709,
+              1.264157667013933,
+              1.4351897500018822,
+              1.304435582991573,
+              1.242949999999837,
+              1.691313415998593,
+              1.5870179589983309,
+              1.3955007499898784,
+              1.9430704160040477,
+              1.4834807910083327,
+              1.4426971249922644,
+              1.4124564999947324,
+              1.5864102089981316,
+              1.6513600839971332,
+              1.252357999997912,
+              1.2391661669971654,
+              1.2645222089922754,
+              1.273403083003359,
+              1.3654542919975938,
+              1.5246657079987926,
+              1.4180030830029864,
+              1.2696988750103628,
+              1.4185592499998165,
+              1.3872594999993453,
+              1.3962792090023868,
+              1.555787417004467,
+              1.454617416995461,
+              2.380895624999539,
+              1.916570999994292,
+              1.8070463339972775,
+              1.4723723330098437,
+              1.329070292005781,
+              1.3245972080039792,
+              1.3821305409946945,
+              1.2674425419972977,
+              1.2982241669960786,
+              1.3299905000021681
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": 758923264,
+            "scope": "isolated_process_peak_rss_including_import_build_and_one_value_and_grad"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 2.3892189170001075,
+            "mean_seconds": 1.463642658563203,
+            "median_seconds": 1.4135727499960922,
+            "min_seconds": 1.2402626249968307,
+            "relative_median_absolute_deviation": 0.07644722070482811,
+            "sample_count": 41,
+            "samples_seconds": [
+              1.5010502080112929,
+              1.535070124999038,
+              1.3389893749990733,
+              1.3935284170001978,
+              1.4146235010121018,
+              1.2651890420238487,
+              1.4370467080007074,
+              1.30550904199481,
+              1.2439499580068514,
+              1.6938924989954103,
+              1.5881871259916807,
+              1.3965875419962686,
+              1.9452165410039015,
+              1.4846990410151193,
+              1.4438915420032572,
+              1.4135727499960922,
+              1.588713958990411,
+              1.6527878339984454,
+              1.2533510420034872,
+              1.2402626249968307,
+              1.265515166989644,
+              1.2743826660007471,
+              1.3670439589914167,
+              1.5266762490064139,
+              1.4191907910135342,
+              1.2718814580148319,
+              1.419679750004434,
+              1.388277250007377,
+              1.3973375420027878,
+              1.557082542014541,
+              1.455840624999837,
+              2.3892189170001075,
+              1.9203084999899147,
+              1.8089974180038553,
+              1.4735840829962399,
+              1.3300956250168383,
+              1.3255759160092566,
+              1.3837713319953764,
+              1.2685345420031808,
+              1.299200875000679,
+              1.3310349169914844
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "cd21e37194059421dc575112c40d6f22a6660e00c91b0e192f8ff27220fc8484",
+        "gate_count": 87,
+        "gate_density_per_wire": 3.9545454545454546,
+        "logical_depth": 24,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 21,
+          "rx": 22,
+          "ry": 22,
+          "rz": 22
+        },
+        "parameterized_gate_count": 66,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 66,
+        "two_qubit_gate_count": 21,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_compact_cx_index_rollback": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 87,
+        "ir_content_hash": "3132177566e6efbdc057aeeea13e56893fad38caf23e46eef86b1b01a1d14556",
+        "layers": 1,
+        "logical_statevector_bytes": 67108864,
+        "n_wires": 22,
+        "name": "hardware_efficient_vqe",
+        "observable": "0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
+        "observable_term_count": 43,
+        "parameter_count": 66,
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_device_fast_path",
+  "engines": [
+    "flagquantum_adjoint",
+    "flagquantum_adjoint_compact_cx_index_rollback",
+    "pennylane_lightning_adjoint"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "2",
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "torch": "2.13.0",
+    "torch_default_dtype": "float64",
+    "torch_threads": 2
+  },
+  "hostname": "redacted",
+  "layers": 1,
+  "methodology": {
+    "calls_per_sample": 1,
+    "circuit_and_device_construction_included": false,
+    "cross_engine_phase_comparison_allowed": false,
+    "engine_order": "rotated_per_iteration_within_one_process",
+    "exact_statevector": true,
+    "expectation_evaluation_included": true,
+    "gradient_zeroing_included": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 41,
+    "measurement_scope": "expectation_forward_plus_full_reverse_mode_parameter_gradient",
+    "memory_measured_in_isolated_process": true,
+    "optimizer_step_included": false,
+    "parameter_initialization_included": false,
+    "phase_metric_labels": {
+      "backward": "autograd_callback",
+      "forward": "value_evaluation"
+    },
+    "primary_performance_metric": "value_and_grad",
+    "warmup": 5
+  },
+  "n_wires": [
+    22
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "differentiable_simulator_corpus",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.differentiable_simulator_corpus.v1",
+  "support_matrix": {
+    "cirq_simulator": {
+      "included": false,
+      "reason": "FlagQuantum's Cirq bridge has no native PyTorch gradient contract"
+    },
+    "flagquantum_adjoint": {
+      "contract": "native reversible statevector adjoint",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_compact_cx_index_rollback": {
+      "contract": "same native adjoint with a materialized full-state CX index",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_cx_rotation_fusion_rollback": {
+      "contract": "same native adjoint with separate CX gather and rotation traversal",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_euler_triple_rollback": {
+      "contract": "same native adjoint with Euler fast path disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_flat_pair_simd_rollback": {
+      "contract": "same native adjoint with nested rotation-pair traversal",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_cx_rollback": {
+      "contract": "same native adjoint with forward CX gather disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_rzz_rotation_rollback": {
+      "contract": "same native adjoint with the backward RZZ/H boundary fusion, forward shared-RZZ fusion, and specialized rotation arithmetic disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_wide_tile_rollback": {
+      "contract": "same native adjoint with legacy six-wire forward rotation tiles",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_gather_rollback": {
+      "contract": "rollback to per-gate full-state gather indices",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_boundary_rollback": {
+      "contract": "same native adjoint with eager observable boundary",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_cache_rollback": {
+      "contract": "same native adjoint with observable-weight cache disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_rotation_rollback": {
+      "contract": "same native adjoint with observable seeding separate from the first reverse rotation tile",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_python_fallback": {
+      "contract": "same direct-layout adjoint with native operator disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_rotation_tile_rollback": {
+      "contract": "same native adjoint with legacy two-wire rotation tiles",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_shared_rzz_rollback": {
+      "contract": "same native adjoint with shared-RZZ fusion disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_terminal_no_restore_rollback": {
+      "contract": "same native adjoint with earliest-layer state restoration enabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_native": {
+      "contract": "native PyTorch reverse-mode autograd",
+      "gradient_method": "backpropagation through exact statevector",
+      "included": false
+    },
+    "pennylane_default_qubit": {
+      "contract": "default.qubit backprop through the PyTorch interface",
+      "gradient_method": "torch_reverse_mode_autograd",
+      "included": false
+    },
+    "pennylane_lightning_adjoint": {
+      "contract": "lightning.qubit adjoint through the PyTorch interface",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "qiskit_aer": {
+      "included": false,
+      "reason": "FlagQuantum's Aer bridge has no native PyTorch gradient contract"
+    }
+  },
+  "workloads": [
+    "hardware_efficient_vqe"
+  ],
+  "world_size": 1
+}

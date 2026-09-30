@@ -71,6 +71,16 @@ def native_cpu_cx_rotation_adjoint_fusion_available() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
+def native_cpu_compact_cx_index_available() -> bool:
+    """Return whether CPU CX mappings may use compact basis images."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "0").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and _load_extension()
+    )
+
+
 def native_cpu_terminal_adjoint_no_restore_available() -> bool:
     """Return whether the earliest Euler layer may omit unused state restoration."""
 
@@ -283,6 +293,7 @@ def _fused_rotation_segment_adjoint_result(
     fuse_preceding_hadamards: bool = False,
     observable_weights: torch.Tensor | None = None,
     cx_index: torch.Tensor | None = None,
+    cx_images: torch.Tensor | None = None,
     restore_state: bool = True,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
     """Run the native rotation adjoint with an optional preceding CX gather."""
@@ -350,6 +361,17 @@ def _fused_rotation_segment_adjoint_result(
                 or not cx_index.is_contiguous()
             )
         )
+        or (
+            cx_images is not None
+            and (
+                not native_cpu_compact_cx_index_available()
+                or cx_images.device.type != "cpu"
+                or cx_images.dtype != torch.int64
+                or cx_images.shape != (n_wires,)
+                or not cx_images.is_contiguous()
+            )
+        )
+        or (cx_index is not None and cx_images is not None)
     ):
         return None
     with torch.no_grad():
@@ -374,6 +396,7 @@ def _fused_rotation_segment_adjoint_result(
                 rzz_second_wires,
                 observable_weights,
                 cx_index,
+                cx_images,
             ),
         )
 
@@ -417,7 +440,7 @@ def fused_rotation_segment_adjoint_(
 def fused_cx_rotation_segment_adjoint(
     ket: torch.Tensor,
     adjoint: torch.Tensor,
-    cx_index: torch.Tensor,
+    cx_index: torch.Tensor | None,
     angles: torch.Tensor,
     gate_kinds: torch.Tensor,
     wires: torch.Tensor,
@@ -425,6 +448,7 @@ def fused_cx_rotation_segment_adjoint(
     n_wires: int,
     aggregate_shared_parameter: bool = False,
     observable_weights: torch.Tensor | None = None,
+    cx_images: torch.Tensor | None = None,
     restore_state: bool = True,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
     """Undo a CX segment and following rotation segment in one native boundary."""
@@ -439,6 +463,7 @@ def fused_cx_rotation_segment_adjoint(
         aggregate_shared_parameter=aggregate_shared_parameter,
         observable_weights=observable_weights,
         cx_index=cx_index,
+        cx_images=cx_images,
         restore_state=restore_state,
     )
 

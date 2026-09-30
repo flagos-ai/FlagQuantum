@@ -79,6 +79,10 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "same native adjoint with earliest-layer state restoration enabled",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_compact_cx_index_rollback": (
+            "same native adjoint with a materialized full-state CX index",
+            "statevector_adjoint",
+        ),
         "pennylane_lightning_adjoint": (
             "lightning.qubit adjoint through the PyTorch interface",
             "statevector_adjoint",
