@@ -62,6 +62,7 @@ from .distributed_state import (
     _broadcast_mps_site_tensor,
     _mps_shards,
 )
+from .metadata_transport import all_gather_json
 from .planning import (
     _boundary_sync_record,
     _instruction_is_boundary_local,
@@ -373,6 +374,14 @@ def _allreduce_adaptive_plan(
     *,
     context: TorchDistributedContext | None,
 ) -> MPSAdaptiveBondPlan:
+    """Merge the rank-local adaptive plans into the plan every rank acts on.
+
+    A rank measures only the bonds it owns, so its local plan describes that
+    rank rather than the run. Merging the observed error alone is not enough:
+    a rank that measured nothing reports "no bond needs to grow", and each rank
+    then reruns at its own bond limit. Hot bonds merge by union and suggestions
+    by maximum, so the rerun limit covers every rank's measurement.
+    """
     if context is None or not context.initialized or context.world_size <= 1:
         return plan
     value = torch.tensor(
@@ -388,15 +397,35 @@ def _allreduce_adaptive_plan(
         if plan.global_error_budget is not None
         else observed == 0.0
     )
+    gathered = all_gather_json(
+        {
+            "hot_bonds": [int(bond) for bond in plan.hot_bonds],
+            "unmeasured_bonds": [int(bond) for bond in plan.unmeasured_bonds],
+            "per_bond_suggestions": [
+                [int(bond), int(bound)] for bond, bound in plan.per_bond_suggestions
+            ],
+        }
+    )
+    hot_bonds = tuple(sorted({bond for item in gathered for bond in item["hot_bonds"]}))
+    unmeasured_bonds = tuple(
+        sorted({bond for item in gathered for bond in item["unmeasured_bonds"]})
+    )
+    merged: dict[int, int] = {}
+    for item in gathered:
+        for bond, bound in item["per_bond_suggestions"]:
+            merged[int(bond)] = max(merged.get(int(bond), 0), int(bound))
+    suggestions = tuple(sorted(merged.items()))
     return MPSAdaptiveBondPlan(
         current_max_bond=plan.current_max_bond,
-        suggested_max_bond=plan.suggested_max_bond,
+        suggested_max_bond=int(
+            max((bound for _, bound in suggestions), default=plan.current_max_bond)
+        ),
         global_error_budget=plan.global_error_budget,
         observed_error=observed,
         budget_satisfied=budget_satisfied,
-        hot_bonds=plan.hot_bonds,
-        per_bond_suggestions=plan.per_bond_suggestions,
-        unmeasured_bonds=plan.unmeasured_bonds,
+        hot_bonds=hot_bonds,
+        per_bond_suggestions=suggestions,
+        unmeasured_bonds=unmeasured_bonds,
     )
 
 
@@ -1075,13 +1104,19 @@ def _run_mps_site_sharded_sync(
                 device=context.device,
                 dtype=mps.dtype,
             )
-            step_error = local_sharded.apply_two_local(
+            split_info = local_sharded.apply_two_local(
                 matrix, left_wire, reverse=first > second
             )
             mps.tensors[left_wire] = local_sharded.local_tensors[left_wire]
             mps.tensors[left_wire + 1] = local_sharded.local_tensors[left_wire + 1]
+            step_error = float(split_info["discarded_weight"])
             if step_error > 0:
                 mps.truncation_errors.append(step_error)
+            split_record = _truncation_record_from_split_info(
+                split_info, bond=left_wire, config=mps.config
+            )
+            if split_record is not None:
+                mps.truncation_records.append(split_record)
             owned_instruction_count += 1
             sharded_kernel_count += 1
         elif context.rank == owner and not boundary_local:
