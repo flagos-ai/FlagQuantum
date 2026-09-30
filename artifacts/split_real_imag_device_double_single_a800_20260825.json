@@ -4,6 +4,7 @@
   "status": "passed",
   "source": {
     "revision": "bbbd1dc301afdddd3de5bc7686766f84003ab1bc",
+    "revision_origin": "producing_host_history",
     "archive_sha256": "348a8d7060fb4381a6d577abc17952ecd8b00a90a586ef0660fc77e0e3ad9d77",
     "tree_dirty": false
   },

@@ -39,7 +39,14 @@ jobs:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
+      # The evidence provenance gate below resolves each artifact's recorded
+      # source revision against this repository's history. A depth-1 clone
+      # cannot tell a revision it never fetched from one the repository never
+      # contained, and tools/evidence_provenance.py fails closed on that
+      # ambiguity rather than reading it as a pass.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

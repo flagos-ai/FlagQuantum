@@ -50,6 +50,7 @@
   "schema": "flagquantum_flagos_cuda_reference_evidence_v2",
   "source": {
     "revision": "837bc06f82f46d02df8317eb088368fedfff70c4",
+    "revision_origin": "producing_host_history",
     "tree_dirty": false
   },
   "statevector_dtype": "torch.complex64",

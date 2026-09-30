@@ -13,6 +13,14 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
+try:
+    from tools.evidence_provenance import is_full_revision, source_revision_errors
+except ModuleNotFoundError:  # direct script execution
+    from evidence_provenance import (
+        is_full_revision,
+        source_revision_errors,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = ROOT / "artifacts/split_real_imag_optimizer_a800_20260825.json"
 CONTRACT = (
@@ -41,11 +49,15 @@ def evidence_errors(payload: dict[str, Any]) -> tuple[str, ...]:
 
     source = payload.get("source", {})
     if (
-        len(str(source.get("revision", ""))) != 40
+        not is_full_revision(source.get("revision"))
         or source.get("tree_dirty") is not False
         or len(str(source.get("archive_sha256", ""))) != 64
     ):
         errors.append("split P5 optimizer evidence source identity is incomplete")
+    else:
+        errors.extend(
+            source_revision_errors(source, label="split P5 optimizer evidence")
+        )
 
     if payload.get("operator_profile") != HISTORICAL_OPERATOR_PROFILE:
         errors.append("split P5 optimizer historical operator profile identity drifted")
