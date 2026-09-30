@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import hashlib
 import os
 import socket
 from collections.abc import Mapping
@@ -156,9 +157,23 @@ def _communication_tier(src_rank: int, dst_rank: int, *, local_world_size: int) 
     )
 
 
+def _hostname_sha256(hostname: str) -> str:
+    """Identify a host without naming it, so placement evidence is publishable."""
+
+    return hashlib.sha256(hostname.encode("utf-8")).hexdigest() if hostname else ""
+
+
 def _rank_placement_summary(
     context: TorchDistributedContext | None, *, world_size: int | None = None
 ) -> dict[str, Any]:
+    """The placement a distributed result reports, in publishable form.
+
+    This summary is recorded in result evidence, and result evidence is checked
+    in, so it identifies a host by digest rather than by name: two ranks on one
+    host and two ranks on two hosts stay distinguishable, and no result summary
+    has to be rewritten before it can be shared.
+    """
+
     resolved_world_size = int(
         world_size if world_size is not None else (context.world_size if context else 1)
     )
@@ -175,7 +190,7 @@ def _rank_placement_summary(
         "local_world_size": local_world_size,
         "node_rank": context.node_rank if context else 0,
         "node_count": node_count,
-        "hostname": context.hostname if context else "",
+        "hostname_sha256": _hostname_sha256(context.hostname if context else ""),
         "device": str(context.device) if context else "cpu",
         "distributed_identity": (
             context.identity.to_dict()

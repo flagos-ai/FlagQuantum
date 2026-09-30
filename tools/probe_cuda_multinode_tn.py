@@ -1012,9 +1012,12 @@ def probe(
         record = expectation_summary
         record.update(
             {
-                "hostname_sha256": hashlib.sha256(
-                    platform.node().encode("utf-8")
-                ).hexdigest(),
+                # The runtime resolved the placement, so its host digest is the
+                # authority; the record repeats it at the top level only to keep
+                # the per-rank shape the other two probes' artifacts already have.
+                "hostname_sha256": expectation_summary["rank_placement"][
+                    "hostname_sha256"
+                ],
                 "device_name": properties.name,
                 "device_uuid": str(getattr(properties, "uuid", "")),
                 "distributed_expectation": distributed_expectation,
