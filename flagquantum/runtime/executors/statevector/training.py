@@ -241,6 +241,17 @@ def _raise_control_plane_timeout(
     control_group = dist.new_group(
         backend="gloo", timeout=timedelta(seconds=timeout_seconds)
     )
+    if not isinstance(control_group, dist.ProcessGroup):
+        # `new_group` returns the not-a-member sentinel on a rank that was left
+        # out of the group. Every rank calls it here, so this cannot happen --
+        # but entering a barrier on the sentinel would hang instead of raising,
+        # and a fault-injection path must not be the thing that hangs a run.
+        raise DistributedTrainingError(
+            "collective_timeout",
+            rank=rank,
+            phase="collective",
+            operation="control_group_not_joined",
+        )
     try:
         if rank == 0:
             time.sleep(timeout_seconds * 1.5)
