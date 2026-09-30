@@ -36,8 +36,19 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 TOOL = "tools/multinode_launch_plan.py"
-PROBE = "tools/probe_cuda_multinode_statevector.py"
 WATCHDOG = "tools/run_multinode_watchdog.py"
+
+# One two-node workload per probe. Each owns its own circuit, its own evidence
+# schema and its own capability entry; they share the plan, the preflight and
+# the watchdog, because those are properties of the pair rather than of what is
+# run on it.
+PROBES = {
+    "statevector": "tools/probe_cuda_multinode_statevector.py",
+    "mps": "tools/probe_cuda_multinode_mps.py",
+}
+DEFAULT_PROBE = "statevector"
+# The lane the runbook and the launch-plan tests describe.
+PROBE = PROBES[DEFAULT_PROBE]
 
 # Two ranks, one per node. The probe refuses anything else.
 NODE_COUNT = 2
@@ -61,8 +72,10 @@ STAGING_PREFIX = "fq-multinode"
 # carry RoCE devices; using them is a separate change with its own evidence.
 DEFAULT_INTERFACE = "ens22f0"
 
-# Passed to `pkill -f`. Long enough to name the launcher and nothing else.
-LAUNCHER_PATTERN = "probe_cuda_multinode_statevector"
+# Passed to `pkill -f`. Long enough to name a two-node probe launcher and
+# nothing else: it is the stem both probes share, and `cleanup` runs on a node
+# this lane gives one probe at a time, so it cannot reach an unrelated process.
+LAUNCHER_PATTERN = "probe_cuda_multinode"
 
 SSH_OPTIONS = (
     "-o",
@@ -272,6 +285,7 @@ def rank_command(
     master_address: str,
     master_port: int,
     interface: str,
+    probe: str = PROBE,
     source_revision: str | None = None,
 ) -> list[str]:
     return [
@@ -298,7 +312,7 @@ def rank_command(
         "--master-port",
         str(master_port),
         # Absolute, so the peer does not depend on where ssh leaves it.
-        str(Path(staging) / PROBE),
+        str(Path(staging) / probe),
         "--output",
         str(Path(output_directory) / f"rank-{node_rank}.json"),
         # Both ranks write their owner-sharded checkpoint here and both read it
@@ -351,6 +365,7 @@ def build_plan(
     python: str,
     master_port: int = DEFAULT_MASTER_PORT,
     interface: str = DEFAULT_INTERFACE,
+    probe: str = PROBE,
     source_revision: str | None = None,
 ) -> dict[str, Any]:
     """Write the watchdog's config: two ranks, one node each."""
@@ -364,6 +379,7 @@ def build_plan(
             master_address=launch_address,
             master_port=master_port,
             interface=interface,
+            probe=probe,
             source_revision=source_revision,
         )
         for node_rank in range(NODE_COUNT)
@@ -376,6 +392,7 @@ def build_plan(
         "peer_host": peer_host,
         "master_port": master_port,
         "interface": interface,
+        "probe": probe,
         "staging_directory": staging,
         "output_directory": output_directory,
         "checkpoint_directory": checkpoint_directory,
@@ -798,6 +815,12 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--python", default=sys.executable)
+    parser.add_argument(
+        "--probe",
+        choices=sorted(PROBES),
+        default=DEFAULT_PROBE,
+        help="which two-node workload to run on the pair",
+    )
     parser.add_argument("--master-port", type=int, default=DEFAULT_MASTER_PORT)
     parser.add_argument("--interface", default=DEFAULT_INTERFACE)
     parser.add_argument("--source-revision", default=None)
@@ -918,6 +941,7 @@ def _governed_run(args: argparse.Namespace) -> int:
         python=args.python,
         master_port=master_port,
         interface=args.interface,
+        probe=PROBES[args.probe],
         source_revision=args.source_revision,
     )
     _write(report / "plan.json", plan)
@@ -1012,6 +1036,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         python=args.python,
         master_port=args.master_port,
         interface=args.interface,
+        probe=PROBES[args.probe],
         source_revision=args.source_revision,
     )
     encoded = json.dumps(plan, indent=2, sort_keys=True) + "\n"

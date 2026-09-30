@@ -191,6 +191,7 @@ class TorchDistributedMPSGradientResult:
     gradient_policy: str
     gradient_tolerance: float
     world_size: int
+    local_world_size: int
     rank: int
     _backward: Any
     objective_scan_pairs: int = 0
@@ -272,6 +273,8 @@ class TorchDistributedMPSGradientResult:
         return {
             "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
             "world_size": self.world_size,
+            "local_world_size": self.local_world_size,
+            "node_count": resolve_node_count(self.world_size, self.local_world_size),
             "rank": self.rank,
             "distribution_semantics": "sharded_across_ranks",
             "mps_backward_execution": self._backward_status,
@@ -327,6 +330,7 @@ class TorchDistributedMPSGradientResult:
             "statevector_fallback": False,
             "full_mps_reconstruction": False,
             "jax_required": False,
+            "scalability_claim_allowed": False,
             "blockers": (),
         }
 
@@ -378,11 +382,7 @@ class TorchDistributedMPSForwardResult:
             "claim_evidence_type": (
                 "accelerator_semantics"
                 if self.backend in {"nccl", "flagos"}
-                else (
-                    "local_semantics"
-                    if world_size == 1
-                    else "development_semantics"
-                )
+                else ("local_semantics" if world_size == 1 else "development_semantics")
             ),
             "world_size": world_size,
             "local_world_size": local_world_size,
