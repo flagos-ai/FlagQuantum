@@ -165,7 +165,7 @@ def _fused_layout_bmm(
     right: torch.Tensor,
     layout: _CanonicalBMMLayout,
 ) -> torch.Tensor:
-    from ..kernels.triton.complex_bmm import fused_complex_layout_bmm
+    from .complex_bmm_dispatch import _apply_cataloged_layout_complex_bmm
 
     (
         left_permutation,
@@ -176,7 +176,7 @@ def _fused_layout_bmm(
         shapes,
     ) = layout
     try:
-        result = fused_complex_layout_bmm(
+        result = _apply_cataloged_layout_complex_bmm(
             left, right, left_permutation, right_permutation, shapes
         ).reshape(output_shape)
     except ValueError as error:

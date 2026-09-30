@@ -3,6 +3,7 @@ import importlib.util
 import pytest
 import torch
 
+import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
 import flagquantum.simulation.real_imag_kernels as kernels_runtime
 from flagquantum.simulation.real_imag_kernels import (
     _CANONICAL_LAYOUT_CACHE,
@@ -174,6 +175,22 @@ def test_memory_pressure_keeps_canonical_fused_bmm(monkeypatch) -> None:
 def test_fused_layout_route_does_not_materialize_canonical_inputs(
     monkeypatch,
 ) -> None:
+    catalog_routes = []
+    require_cataloged_kernel = complex_bmm_dispatch._require_layout_complex_bmm_kernel
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        complex_bmm_dispatch,
+        "_require_layout_complex_bmm_kernel",
+        capture_catalog_route,
+    )
     monkeypatch.setattr(kernels_runtime, "_FUSED_WORKING_SET_BYTES", 0)
 
     def unexpected_materialization(*args, **kwargs):
@@ -211,6 +228,7 @@ def test_fused_layout_route_does_not_materialize_canonical_inputs(
     torch.testing.assert_close(
         actual_gradients[1], reference_gradients[1], atol=3e-5, rtol=3e-5
     )
+    assert catalog_routes == ["FQKI-TRITON-NUM-002-A"]
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
