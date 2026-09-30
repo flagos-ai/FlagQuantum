@@ -687,7 +687,10 @@ def _training_observations(
         "parameter_owner_ranks": list(resumed_summary["parameter_owner_ranks"]),
         "checkpoint_storage_semantics": resumed_summary["checkpoint_storage_semantics"],
         "resumed_leg_checkpoint_writes": len(resumed_summary["checkpoint_files"]),
-        "resumed_leg_checkpoint_names": sorted(
+        # These are the files the artifact's own rank wrote; the cross-rank
+        # generation check is `checkpoint_generation`, which reads the shared
+        # directory rather than either rank's view of it.
+        "artifact_rank_checkpoint_names": sorted(
             {Path(path).name for path in resumed_summary["checkpoint_files"]}
         ),
         "interrupted_leg_checkpoint_writes": len(first_summary["checkpoint_files"]),
@@ -737,6 +740,12 @@ def _artifact(
             "rank_records": rank_records,
             "production_full_state_materialization": False,
             "reference": "exact_complex128_statevector_single_device",
+            # The executor all-reduces the slice partials of the expectation and
+            # returns the reduced value, so `distributed_expectation` is a
+            # distributed result. It does not reduce parameter gradients on this
+            # path, so the global gradient the probe compares is the sum of the
+            # per-rank contributions it gathered itself.
+            "gradient_reduction": "probe_summed_rank_partials",
         },
         "claim_blockers": [
             "two_node_pair_only_no_wider_topology",
@@ -852,14 +861,20 @@ def probe(
             raise RuntimeError("the expectation leg materialized the full state")
         expectation.value.reshape(-1)[0].backward()
         _synchronize(device)
-        local_gradients = tuple(
+        # Every rank sees the same expectation because the executor all-reduces
+        # the slice partials before it returns, so this value is a distributed
+        # result rather than a rank-local one. The parameter gradients are the
+        # opposite: autograd leaves this rank's own partial on `parameter.grad`,
+        # and the reduction below is the probe summing them, which is the only
+        # reason the number it checks is a global gradient.
+        rank_gradients = tuple(
             float(parameter.grad.detach().cpu()) for parameter in parameters
         )
-        local_expectation = float(expectation.value.detach().cpu().reshape(-1)[0])
-        gathered_gradients = _gather_floats(local_gradients, device=device)
+        distributed_expectation = float(expectation.value.detach().cpu().reshape(-1)[0])
+        gathered_gradients = _gather_floats(rank_gradients, device=device)
         reduced_gradients = tuple(
             sum(row[index] for row in gathered_gradients)
-            for index in range(len(local_gradients))
+            for index in range(len(rank_gradients))
         )
         rank_contribution_magnitudes = [
             max(abs(value) for value in row) for row in gathered_gradients
@@ -867,7 +882,9 @@ def probe(
 
         reference_expectation, reference_gradients = _reference_expectation()
         gradient_metrics = {
-            "expectation_value_error": abs(local_expectation - reference_expectation),
+            "expectation_value_error": abs(
+                distributed_expectation - reference_expectation
+            ),
             "gradient_max_abs_error": max(
                 abs(actual - expected)
                 for actual, expected in zip(
@@ -1000,8 +1017,8 @@ def probe(
                 ).hexdigest(),
                 "device_name": properties.name,
                 "device_uuid": str(getattr(properties, "uuid", "")),
-                "local_expectation": local_expectation,
-                "local_gradient_contribution": list(local_gradients),
+                "distributed_expectation": distributed_expectation,
+                "rank_gradient_contribution": list(rank_gradients),
                 "reduced_gradient": list(reduced_gradients),
                 "reference_gradient": list(reference_gradients),
                 "communication": communication,
