@@ -1081,9 +1081,9 @@ class MPSState(MPSPlanningMixin):
             and not reverse
             and contraction_volume >= fused_threshold
         ):
-            from ...kernels.triton.mps_two_site import fused_mps_two_site
+            from .two_site_dispatch import _apply_cataloged_mps_two_site
 
-            fused = fused_mps_two_site(left, matrix, right)
+            fused = _apply_cataloged_mps_two_site(left, matrix, right)
             self._split_pair(
                 fused.reshape(self.bsz, left.shape[1], 2, 2, right.shape[3]),
                 int(left_wire),
@@ -1148,9 +1148,11 @@ class MPSState(MPSPlanningMixin):
                 and volume >= 2**18
             )
             if use_triton:
-                from ...kernels.triton.mps_two_site import fused_mps_two_site
+                from .two_site_dispatch import _apply_cataloged_mps_two_site
 
-                matrix = fused_mps_two_site(flat_left, flat_gates, flat_right)
+                matrix = _apply_cataloged_mps_two_site(
+                    flat_left, flat_gates, flat_right
+                )
                 self.triton_two_site_regions += bond_count
             else:
                 theta = torch.einsum("kblsm,kbmtr->kblstr", left, right).reshape(
