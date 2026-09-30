@@ -214,11 +214,21 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
 
     # The forward exchange happened, and it happened between the nodes: one
     # rank per node means every boundary message is an inter-node message. The
-    # figures inside a rank record are that rank's own contribution, which is a
-    # different thing from the workload's.
+    # workload totals are the ones in the numerical metrics; the figures inside
+    # a rank record are that rank's own contribution, which is a different
+    # thing, so the two are checked against each other rather than both being
+    # read as the workload's. The convention matters: a rank can observe a gate
+    # spanning two other ranks' sites and take no part in it, so a workload
+    # total that was one rank's count would understate the exchange.
     communicate = [item["communication"] for item in ranks]
     assert all(item["forward_boundary_messages"] >= 1 for item in communicate)
     assert all(item["forward_boundary_bytes"] > 0 for item in communicate)
+    assert metrics["forward_boundary_messages"] == sum(
+        item["forward_boundary_messages"] for item in communicate
+    )
+    assert metrics["forward_boundary_bytes"] == sum(
+        item["forward_boundary_bytes"] for item in communicate
+    )
     communication = communicate[0]
     # The reverse prefetches the layer-boundary halo rather than reconstructing
     # it, and the assembler attributes those bytes to the inter-node tier.
