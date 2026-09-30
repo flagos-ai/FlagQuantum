@@ -726,6 +726,13 @@ def probe(
             uninterrupted_losses[0] - uninterrupted_losses[-1]
         )
         metrics["training_final_loss"] = float(uninterrupted_losses[-1])
+        # The optimizer minimizes the expectation the reverse leg computed, so
+        # the first training loss is that same number reached from the same
+        # parameters. Comparing them ties the training objective to the exact
+        # statevector reference instead of leaving it self-referential.
+        metrics["first_leg_initial_expectation_error"] = abs(
+            float(training["first_leg_losses"][0]) - reference_expectation
+        )
         if int(training["resumed_start_step"]) != CHECKPOINT_STEPS:
             raise RuntimeError(
                 "the resumed leg did not continue from the checkpoint: "
