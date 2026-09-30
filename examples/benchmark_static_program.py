@@ -97,7 +97,7 @@ def main() -> None:
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(mode=MODES[args.mode]),
             observable="z_sum",
-            observable_wires=wires,
+            observable_qubits=wires,
         ),
     )
 
@@ -115,7 +115,7 @@ def main() -> None:
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(mode=MODES[args.mode]),
             observable="z_sum",
-            observable_wires=wires,
+            observable_qubits=wires,
         ),
     )
 

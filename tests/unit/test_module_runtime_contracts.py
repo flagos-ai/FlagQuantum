@@ -182,7 +182,7 @@ def test_execution_result_fields_and_backend_selection_are_stable() -> None:
             execution_options=fq.ExecutionOptions(
                 backend="jax", allow_backend_fallback=True
             ),
-            observable_wires=(1,),
+            observable_qubits=(1,),
         ),
     )
     result = module.execute()
@@ -458,7 +458,7 @@ def test_module_state_dict_round_trip_includes_runtime_policy() -> None:
         build_circuit,
         2,
         init=torch.tensor([0.4, -0.6]),
-        policy=fq.RuntimePolicy(observable="z_sum", observable_wires=(0, 1)),
+        policy=fq.RuntimePolicy(observable="z_sum", observable_qubits=(0, 1)),
     )
     buffer = io.BytesIO()
     torch.save(source.state_dict(), buffer)
@@ -600,7 +600,7 @@ def test_module_returns_multiple_z_observables_in_one_execution(mode) -> None:
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(mode=mode),
             observable="z",
-            observable_wires=(0, 1),
+            observable_qubits=(0, 1),
         ),
     )
 
@@ -632,7 +632,7 @@ def test_batched_module_returns_batch_by_observable_shape() -> None:
     module = fq.Module(
         batched,
         2,
-        policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+        policy=fq.RuntimePolicy(observable="z", observable_qubits=(0, 1)),
     )
     inputs = torch.randn(5, 2, requires_grad=True)
     value = module(inputs)
@@ -647,7 +647,7 @@ def test_local_forward_uses_tensor_only_fast_path(monkeypatch) -> None:
     module = fq.Module(
         build_circuit,
         2,
-        policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+        policy=fq.RuntimePolicy(observable="z", observable_qubits=(0, 1)),
     )
 
     def reject_execute(*args, **kwargs):

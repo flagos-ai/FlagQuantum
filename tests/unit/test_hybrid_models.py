@@ -160,7 +160,7 @@ def test_variational_energy_same_model_switches_native_and_jax_policy() -> None:
                 backend="jax", allow_backend_fallback=False
             ),
             observable="hamiltonian",
-            observable_wires=(0, 1),
+            observable_qubits=(0, 1),
         )
     )
     jax.quantum.parameters_tensor.data.copy_(native.quantum.parameters_tensor.data)
@@ -202,7 +202,7 @@ def test_classifier_policy_switch_does_not_change_model_class() -> None:
     model.set_runtime_policy(
         fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(mode="statevector"),
-            observable_wires=(1,),
+            observable_qubits=(1,),
         )
     )
     assert isinstance(model, HybridQuantumClassifier)

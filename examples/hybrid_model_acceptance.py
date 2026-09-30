@@ -79,7 +79,7 @@ def energy_run(steps: int, backend: str) -> dict[str, object]:
             backend=backend, allow_backend_fallback=False
         ),
         observable="hamiltonian",
-        observable_wires=(0, 1),
+        observable_qubits=(0, 1),
     )
     model = VariationalEnergyModel(policy=policy)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
