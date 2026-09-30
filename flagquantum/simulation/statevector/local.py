@@ -610,10 +610,10 @@ def _apply_fused_gate_step(
             and not ry_angles.requires_grad
             and not rz_angles.requires_grad
         ):
-            from ...kernels.triton import ry_rz_pair
+            from .ry_rz_dispatch import _apply_cataloged_ry_rz_pair
 
             circuit._last_statevector_runtime["triton_ry_rz_pair_executed"] += 1
-            result: torch.Tensor = ry_rz_pair(
+            result: torch.Tensor = _apply_cataloged_ry_rz_pair(
                 state,
                 ry_angles,
                 rz_angles,

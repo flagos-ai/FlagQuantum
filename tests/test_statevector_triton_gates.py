@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.simulation.statevector.ry_rz_dispatch as ry_rz_dispatch
 
 pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 
@@ -96,8 +97,24 @@ def test_local_cx_segment_matches_reverse_source_permutation() -> None:
     torch.testing.assert_close(actual, expected)
 
 
-def test_constant_ry_rz_triton_path_with_cx_matches_cpu() -> None:
+def test_constant_ry_rz_triton_path_with_cx_matches_cpu(monkeypatch) -> None:
     _require_cuda()
+    catalog_routes = []
+    require_cataloged_kernel = ry_rz_dispatch._require_ry_rz_pair_kernel
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        ry_rz_dispatch,
+        "_require_ry_rz_pair_kernel",
+        capture_catalog_route,
+    )
     cpu = fq.Circuit(5, device="cpu", dtype=torch.complex64)
     cuda = fq.Circuit(5, device="cuda", dtype=torch.complex64)
     for circuit in (cpu, cuda):
@@ -121,6 +138,7 @@ def test_constant_ry_rz_triton_path_with_cx_matches_cpu() -> None:
         key: value.data_ptr()
         for key, value in cuda._statevector_constant_parameters.items()
     } == cached_pointers
+    assert catalog_routes == ["FQKI-TRITON-SV-004-A"] * 10
 
 
 def test_generic_constant_single_qubit_regions_preserve_input_gradient() -> None:
