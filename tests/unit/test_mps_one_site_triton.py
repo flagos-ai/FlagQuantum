@@ -3,9 +3,11 @@ from __future__ import annotations
 import pytest
 import torch
 
+pytest.importorskip("triton")
+
 from flagquantum.kernels.triton.mps_one_site import fused_mps_one_site
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 
 
 def _reference(tensor: torch.Tensor, gate: torch.Tensor) -> torch.Tensor:
