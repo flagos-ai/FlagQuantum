@@ -14,7 +14,7 @@ from ....compute import get_platform_runtime
 class StatevectorCheckpointPolicy:
     """Versioned rematerialization policy for deep sharded circuits."""
 
-    version: str = "statevector_checkpoint_v3"
+    version: str = "statevector_checkpoint_v4"
     strategy: str = "auto"
     interval: int = 0
     memory_budget_bytes: int | None = None
@@ -22,7 +22,9 @@ class StatevectorCheckpointPolicy:
     estimated_local_state_bytes: int = 0
     estimated_required_bytes: int = 0
     estimated_reversible_bytes: int = 0
+    estimated_fused_reversible_bytes: int = 0
     estimated_checkpoint_count: int = 0
+    low_memory_cpu_cx: bool = False
 
     def __post_init__(self) -> None:
         if self.strategy not in {
@@ -67,6 +69,7 @@ def resolve_checkpoint_policy(
     device: Any,
     instruction_count: int = 0,
     contains_local_cx: bool = False,
+    low_memory_cpu_cx_available: bool = False,
 ) -> StatevectorCheckpointPolicy:
     """Resolve ``auto`` using a conservative rank-local peak-memory model."""
 
@@ -75,8 +78,10 @@ def resolve_checkpoint_policy(
         raise ValueError("local_state_bytes must be positive")
     if instruction_count < 0:
         raise ValueError("instruction_count must be non-negative")
-    reversible_states = 5 if device.type == "cpu" and contains_local_cx else 4
-    reversible_required = state_bytes * reversible_states
+    cpu_cx_workload = device.type == "cpu" and contains_local_cx
+    fused_reversible_states = 5 if cpu_cx_workload else 4
+    fused_reversible_required = state_bytes * fused_reversible_states
+    low_memory_reversible_required = state_bytes * 4
     if policy.strategy != "auto":
         checkpoint_count = (
             (instruction_count - 1) // policy.interval + 1
@@ -84,7 +89,7 @@ def resolve_checkpoint_policy(
             else 0
         )
         if policy.strategy == "reversible_adjoint":
-            required = reversible_required
+            required = fused_reversible_required
         elif policy.strategy == "interval":
             required = state_bytes * (checkpoint_count + 2)
         else:
@@ -94,19 +99,37 @@ def resolve_checkpoint_policy(
             selection_reason="explicit_strategy",
             estimated_local_state_bytes=state_bytes,
             estimated_required_bytes=required,
-            estimated_reversible_bytes=reversible_required,
+            estimated_reversible_bytes=fused_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
             estimated_checkpoint_count=checkpoint_count,
         )
     budget = _checkpoint_memory_budget(policy, device=device)
-    if reversible_required <= budget:
+    if fused_reversible_required <= budget:
         return replace(
             policy,
             strategy="reversible_adjoint",
             memory_budget_bytes=budget,
             selection_reason="forward_state_reuse_fits_budget",
             estimated_local_state_bytes=state_bytes,
-            estimated_required_bytes=reversible_required,
-            estimated_reversible_bytes=reversible_required,
+            estimated_required_bytes=fused_reversible_required,
+            estimated_reversible_bytes=fused_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+        )
+    if (
+        cpu_cx_workload
+        and low_memory_cpu_cx_available
+        and low_memory_reversible_required <= budget
+    ):
+        return replace(
+            policy,
+            strategy="reversible_adjoint",
+            memory_budget_bytes=budget,
+            selection_reason="low_memory_cpu_cx_reversible_fits_budget",
+            estimated_local_state_bytes=state_bytes,
+            estimated_required_bytes=low_memory_reversible_required,
+            estimated_reversible_bytes=low_memory_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            low_memory_cpu_cx=True,
         )
     # An interval sweep retains its block-boundary checkpoints plus one adjoint
     # and one rematerialized ket. The initial state is itself a checkpoint.
@@ -123,7 +146,12 @@ def resolve_checkpoint_policy(
             selection_reason="budgeted_block_checkpoints",
             estimated_local_state_bytes=state_bytes,
             estimated_required_bytes=required,
-            estimated_reversible_bytes=reversible_required,
+            estimated_reversible_bytes=(
+                low_memory_reversible_required
+                if cpu_cx_workload and low_memory_cpu_cx_available
+                else fused_reversible_required
+            ),
+            estimated_fused_reversible_bytes=fused_reversible_required,
             estimated_checkpoint_count=checkpoint_count,
         )
     return replace(
@@ -133,7 +161,12 @@ def resolve_checkpoint_policy(
         selection_reason="checkpoint_working_set_exceeds_budget",
         estimated_local_state_bytes=state_bytes,
         estimated_required_bytes=state_bytes * 3,
-        estimated_reversible_bytes=reversible_required,
+        estimated_reversible_bytes=(
+            low_memory_reversible_required
+            if cpu_cx_workload and low_memory_cpu_cx_available
+            else fused_reversible_required
+        ),
+        estimated_fused_reversible_bytes=fused_reversible_required,
         estimated_checkpoint_count=1,
     )
 

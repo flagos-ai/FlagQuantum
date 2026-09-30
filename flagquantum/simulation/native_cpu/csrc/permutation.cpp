@@ -4,6 +4,7 @@
 #include <torch/library.h>
 
 #include <tuple>
+#include <utility>
 
 #include "linear_permutation.h"
 
@@ -259,6 +260,63 @@ std::tuple<at::Tensor, at::Tensor> fused_compact_cx_adjoint_gather_cpu(
   return std::make_tuple(gathered_ket, gathered_adjoint);
 }
 
+void fused_cx_adjoint_inplace_cpu(
+    at::Tensor& ket,
+    at::Tensor& adjoint,
+    const at::Tensor& controls,
+    const at::Tensor& targets,
+    int64_t n_wires) {
+  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  TORCH_CHECK(controls.device().is_cpu(), "controls must be on CPU");
+  TORCH_CHECK(targets.device().is_cpu(), "targets must be on CPU");
+  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  TORCH_CHECK(controls.is_contiguous(), "controls must be contiguous");
+  TORCH_CHECK(targets.is_contiguous(), "targets must be contiguous");
+  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
+  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
+  TORCH_CHECK(
+      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(controls.dim() == 1, "controls must be one-dimensional");
+  TORCH_CHECK(targets.sizes() == controls.sizes(), "targets shape must match controls");
+  TORCH_CHECK(controls.scalar_type() == at::kLong, "controls must be int64");
+  TORCH_CHECK(targets.scalar_type() == at::kLong, "targets must be int64");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "wire count must be in [2, 62]");
+  const int64_t width = ket.size(1);
+  TORCH_CHECK(width == (int64_t{1} << n_wires), "wire count must match state width");
+  const int64_t batch = ket.size(0);
+  const int64_t* control_data = controls.const_data_ptr<int64_t>();
+  const int64_t* target_data = targets.const_data_ptr<int64_t>();
+
+  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_cx_adjoint_inplace_cpu", [&] {
+    scalar_t* ket_data = ket.data_ptr<scalar_t>();
+    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+    for (int64_t gate = 0; gate < controls.numel(); ++gate) {
+      const int64_t control = control_data[gate];
+      const int64_t target = target_data[gate];
+      TORCH_CHECK(control >= 0 && control < n_wires, "control wire is out of range");
+      TORCH_CHECK(target >= 0 && target < n_wires, "target wire is out of range");
+      TORCH_CHECK(control != target, "control and target wires must differ");
+      const int64_t control_mask = int64_t{1} << (n_wires - control - 1);
+      const int64_t target_mask = int64_t{1} << (n_wires - target - 1);
+      at::parallel_for(
+          int64_t{0}, batch * width, int64_t{4096}, [&](int64_t begin, int64_t end) {
+            for (int64_t item = begin; item < end; ++item) {
+              const int64_t basis = item % width;
+              if ((basis & control_mask) != 0 && (basis & target_mask) == 0) {
+                const int64_t peer = item ^ target_mask;
+                std::swap(ket_data[item], ket_data[peer]);
+                std::swap(adjoint_data[item], adjoint_data[peer]);
+              }
+            }
+          });
+    }
+  });
+}
+
 }  // namespace
 
 TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
@@ -274,6 +332,9 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
   library.def(
       "fused_compact_cx_adjoint_gather(Tensor ket, Tensor adjoint, "
       "Tensor images) -> (Tensor, Tensor)");
+  library.def(
+      "fused_cx_adjoint_inplace_(Tensor(a!) ket, Tensor(b!) adjoint, "
+      "Tensor controls, Tensor targets, int n_wires) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
@@ -283,4 +344,5 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl(
       "fused_compact_cx_adjoint_gather",
       fused_compact_cx_adjoint_gather_cpu);
+  library.impl("fused_cx_adjoint_inplace_", fused_cx_adjoint_inplace_cpu);
 }

@@ -56,6 +56,16 @@ def native_cpu_cx_gather_available() -> bool:
     )
 
 
+def native_cpu_cx_adjoint_inplace_available() -> bool:
+    """Return whether the zero-state-scratch adjoint CX path is available."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_CX_ADJOINT_INPLACE", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and _load_extension()
+    )
+
+
 def fused_cx_gather_out(
     state: torch.Tensor,
     index: torch.Tensor,
@@ -173,3 +183,41 @@ def fused_compact_cx_adjoint_gather(
                 ket, adjoint, images
             ),
         )
+
+
+def fused_cx_adjoint_inplace_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_wires: int,
+) -> bool:
+    """Apply an inverse CX sequence to ket and adjoint without state scratch."""
+
+    if (
+        not native_cpu_cx_adjoint_inplace_available()
+        or ket.requires_grad
+        or adjoint.requires_grad
+        or ket.device.type != "cpu"
+        or adjoint.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or adjoint.dtype != ket.dtype
+        or ket.ndim != 2
+        or adjoint.shape != ket.shape
+        or ket.shape[1] != 1 << n_wires
+        or len(controls) != len(targets)
+        or not ket.is_contiguous()
+        or not adjoint.is_contiguous()
+    ):
+        return False
+    control_tensor = torch.tensor(tuple(controls), dtype=torch.int64)
+    target_tensor = torch.tensor(tuple(targets), dtype=torch.int64)
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_cx_adjoint_inplace_(
+            ket,
+            adjoint,
+            control_tensor,
+            target_tensor,
+            n_wires,
+        )
+    return True

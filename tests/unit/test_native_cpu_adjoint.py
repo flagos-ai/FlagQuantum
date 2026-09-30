@@ -29,6 +29,7 @@ from flagquantum.simulation.native_cpu import (
     fused_compact_cx_adjoint_gather,
     fused_compact_cx_gather_out,
     fused_cx_adjoint_gather,
+    fused_cx_adjoint_inplace_,
     fused_cx_gather_out,
     fused_cx_rotation_segment_adjoint,
     fused_hadamard_block_adjoint_,
@@ -41,6 +42,7 @@ from flagquantum.simulation.native_cpu import (
     fused_rzz_segment_forward_,
     native_cpu_adjoint_available,
     native_cpu_cx_adjoint_gather_available,
+    native_cpu_cx_adjoint_inplace_available,
     native_cpu_cx_gather_available,
     native_cpu_parallel_build_available,
     native_cpu_rotation_available,
@@ -147,6 +149,43 @@ def test_native_cx_adjoint_gather_has_explicit_environment_rollback(
     index = torch.arange(4, dtype=torch.int32)
 
     assert fused_cx_adjoint_gather(ket, ket, index) is None
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batch", (1, 2))
+def test_native_cx_adjoint_inplace_matches_sequence_gather(
+    dtype: torch.dtype,
+    batch: int,
+) -> None:
+    if not native_cpu_cx_adjoint_inplace_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(12873 + batch)
+    ket = (
+        torch.randn((batch, 128), generator=generator)
+        + 1j * torch.randn((batch, 128), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((batch, 128), generator=generator)
+        + 1j * torch.randn((batch, 128), generator=generator)
+    ).to(dtype)
+    controls = (5, 1, 4, 0, 3, 2)
+    targets = (6, 4, 2, 3, 1, 5)
+    index = cpu_cx_permutation_index(ket, controls, targets, 7).to(torch.int64)
+    expected_ket = torch.index_select(ket, 1, index)
+    expected_adjoint = torch.index_select(adjoint, 1, index)
+
+    assert fused_cx_adjoint_inplace_(ket, adjoint, controls, targets, 7)
+    torch.testing.assert_close(ket, expected_ket)
+    torch.testing.assert_close(adjoint, expected_adjoint)
+
+
+def test_native_cx_adjoint_inplace_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_INPLACE", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+
+    assert not fused_cx_adjoint_inplace_(ket, ket.clone(), (0,), (1,), 2)
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
