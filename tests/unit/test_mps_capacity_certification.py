@@ -1,5 +1,7 @@
 import copy
 import hashlib
+import json
+import math
 
 import pytest
 
@@ -11,6 +13,8 @@ from flagquantum.testing import (
 )
 
 pytestmark = pytest.mark.unit
+
+NONFINITE = (float("nan"), float("inf"), float("-inf"))
 
 
 def payload():
@@ -167,4 +171,21 @@ def test_capacity_contract_diagnoses_rank_evidence(field, value, message):
     invalid = payload()
     invalid["rank_records"][3][field] = value
     with pytest.raises(MPSCapacityCertificationError, match=message):
+        require_general_mps_capacity(invalid)
+
+
+@pytest.mark.parametrize("value", NONFINITE)
+def test_capacity_contract_rejects_nonfinite_discarded_weight(value):
+    """`NaN > budget` is false, so a NaN truncation certifies as in budget."""
+    invalid = payload()
+    invalid["discarded_weight"] = value
+    with pytest.raises(MPSCapacityCertificationError, match="not finite"):
+        require_general_mps_capacity(invalid)
+
+
+def test_capacity_contract_rejects_nan_that_survived_json():
+    invalid = json.loads(json.dumps(payload()))
+    invalid["discarded_weight"] = float("nan")
+    assert math.isnan(invalid["discarded_weight"])
+    with pytest.raises(MPSCapacityCertificationError, match="not finite"):
         require_general_mps_capacity(invalid)

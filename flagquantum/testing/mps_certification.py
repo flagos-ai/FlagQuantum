@@ -5,6 +5,28 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from ._finite import require_finite
+
+CASE_MEASUREMENTS = (
+    "boundary_directional_derivative_error",
+    "max_value_error",
+    "max_gradient_error",
+    "max_parameter_error",
+    "exact_discarded_weight",
+    "approximate_discarded_weight",
+    "approximate_error_budget",
+    "approximate_value_error",
+    "approximate_gradient_error",
+)
+TOLERANCE_LIMITS = (
+    "directional_atol",
+    "value_atol",
+    "gradient_atol",
+    "parameter_atol",
+    "approximate_value_atol",
+    "approximate_gradient_atol",
+)
+
 
 class MPSCertificationError(ValueError):
     """A correctness artifact does not satisfy the ISSUE-091 contract."""
@@ -21,7 +43,8 @@ def require_mps_numerical_certification(payload: Mapping[str, Any]) -> None:
     Raises:
         MPSCertificationError: if the schema is not the ISSUE-091 one, if either
             dtype or any of the required rank counts is missing from the grid,
-            or if the run is too short to have reached a steady state.
+            if any tolerance or measurement is missing or not finite, or if the
+            run is too short to have reached a steady state.
     """
     if payload.get("schema") != "flagquantum.issue091.mps_correctness_matrix.v1":
         raise MPSCertificationError("unexpected ISSUE-091 schema")
@@ -62,44 +85,52 @@ def require_mps_numerical_certification(payload: Mapping[str, Any]) -> None:
         not item.get("sha256") or not item.get("path") for item in required_sources
     ):
         raise MPSCertificationError("MPS certification source provenance is incomplete")
-    for case in cases:
+    limits = {
+        name: require_finite(
+            tolerances.get(name),
+            error_type=MPSCertificationError,
+            label=f"tolerances.{name}",
+        )
+        for name in TOLERANCE_LIMITS
+    }
+    for index, case in enumerate(cases):
         if case.get("gradient_ownership") != "deterministic_all_reduce":
             raise MPSCertificationError("gradient ownership is not certified")
         if not case.get("boundary_directional_derivative_passed"):
             raise MPSCertificationError("boundary directional derivative failed")
-        if float(
-            case.get("boundary_directional_derivative_error", float("inf"))
-        ) > float(tolerances["directional_atol"]):
+        measured = {
+            name: require_finite(
+                case.get(name),
+                error_type=MPSCertificationError,
+                label=f"cases[{index}].{name}",
+            )
+            for name in CASE_MEASUREMENTS
+        }
+        if (
+            measured["boundary_directional_derivative_error"]
+            > limits["directional_atol"]
+        ):
             raise MPSCertificationError(
                 "boundary directional derivative exceeds tolerance"
             )
-        if float(case.get("max_value_error", float("inf"))) > float(
-            tolerances["value_atol"]
-        ):
+        if measured["max_value_error"] > limits["value_atol"]:
             raise MPSCertificationError("MPS value error exceeds tolerance")
-        if float(case.get("max_gradient_error", float("inf"))) > float(
-            tolerances["gradient_atol"]
-        ):
+        if measured["max_gradient_error"] > limits["gradient_atol"]:
             raise MPSCertificationError("MPS gradient error exceeds tolerance")
-        if float(case.get("max_parameter_error", float("inf"))) > float(
-            tolerances["parameter_atol"]
-        ):
+        if measured["max_parameter_error"] > limits["parameter_atol"]:
             raise MPSCertificationError(
                 "MPS optimizer parameter error exceeds tolerance"
             )
-        if float(case.get("exact_discarded_weight", float("inf"))) != 0.0:
+        if measured["exact_discarded_weight"] != 0.0:
             raise MPSCertificationError("exact MPS execution discarded weight")
-        if float(case.get("approximate_discarded_weight", float("inf"))) > float(
-            case.get("approximate_error_budget", -1.0)
+        if (
+            measured["approximate_discarded_weight"]
+            > measured["approximate_error_budget"]
         ):
             raise MPSCertificationError("MPS truncation budget exceeded")
-        if float(case.get("approximate_value_error", float("inf"))) > float(
-            tolerances["approximate_value_atol"]
-        ):
+        if measured["approximate_value_error"] > limits["approximate_value_atol"]:
             raise MPSCertificationError("approximate MPS value error exceeds tolerance")
-        if float(case.get("approximate_gradient_error", float("inf"))) > float(
-            tolerances["approximate_gradient_atol"]
-        ):
+        if measured["approximate_gradient_error"] > limits["approximate_gradient_atol"]:
             raise MPSCertificationError(
                 "approximate MPS gradient error exceeds tolerance"
             )

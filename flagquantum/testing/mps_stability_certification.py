@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from ._finite import require_finite
+
 
 class MPSStabilityCertificationError(ValueError):
     pass
@@ -54,10 +56,17 @@ def _require_rank_timelines(soak: Mapping[str, Any]) -> None:
             )
         if not record.get("rank_useful_work"):
             raise MPSStabilityCertificationError("a soak rank completed no useful work")
-        if (
-            float(record.get("restart_parameter_error", 1.0)) > 1e-7
-            or float(record.get("restart_loss_error", 1.0)) > 1e-7
-        ):
+        restart_parameter_error = require_finite(
+            record.get("restart_parameter_error"),
+            error_type=MPSStabilityCertificationError,
+            label=f"rank {record.get('rank')} restart_parameter_error",
+        )
+        restart_loss_error = require_finite(
+            record.get("restart_loss_error"),
+            error_type=MPSStabilityCertificationError,
+            label=f"rank {record.get('rank')} restart_loss_error",
+        )
+        if max(restart_parameter_error, restart_loss_error) > 1e-7:
             raise MPSStabilityCertificationError("checkpoint numerical error exceeded")
         fingerprints.add(record.get("checkpoint_contract_fingerprint"))
         generations.add(int(record.get("restart_start_step", -1)))

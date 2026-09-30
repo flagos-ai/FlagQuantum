@@ -45,6 +45,12 @@ For MPS evidence validation, start with the matching
 Keep schema-specific validation beside its existing validator; do not add a
 generic certification manager or a second representation of execution evidence.
 
+`_finite.py` holds the one rule every validator shares, because it is a property
+of the transport rather than of any schema: artifacts arrive as JSON, which
+carries `NaN` and `Infinity`, and `NaN` compares false against every bound. Any
+number a gate compares against passes through it first. Schema rules stay in
+their own validator.
+
 ## Changing this domain
 
 When adding a rule, include one passing artifact and one focused injected-fault
