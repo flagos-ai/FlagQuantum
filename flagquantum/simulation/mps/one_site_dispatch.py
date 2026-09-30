@@ -18,6 +18,26 @@ from ..real_imag_kernels import complex_einsum_pair
 _IMPLEMENTATION_ID = "FQKI-TRITON-MPS-003-A"
 
 
+def _mps_one_site_kernel_enabled(tensor: torch.Tensor, gate: torch.Tensor) -> bool:
+    """Return whether the opt-in route supports this exact tensor pair."""
+
+    enabled = os.getenv("FQ_TRITON_MPS_ONE_SITE", "0").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+    contraction_volume = int(tensor.shape[0] * tensor.shape[1] * tensor.shape[3])
+    return bool(
+        enabled
+        and tensor.is_cuda
+        and tensor.dtype == torch.complex64
+        and gate.dtype == torch.complex64
+        and gate.device == tensor.device
+        and contraction_volume >= 2**12
+    )
+
+
 def _mps_one_site_kernel_match(*, device_type: str, dtype: str) -> KernelMatchResult:
     """Match the fused one-site contraction against its catalog contract."""
 
@@ -65,29 +85,37 @@ def _apply_mps_one_site(
 ) -> tuple[torch.Tensor, bool]:
     """Select the cataloged path only inside its evidenced opt-in window."""
 
-    enabled = os.getenv("FQ_TRITON_MPS_ONE_SITE", "0").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
-    contraction_volume = int(tensor.shape[0] * tensor.shape[1] * tensor.shape[3])
-    if (
-        enabled
-        and tensor.is_cuda
-        and tensor.dtype == torch.complex64
-        and gate.dtype == torch.complex64
-        and gate.device == tensor.device
-        and contraction_volume >= 2**12
-    ):
+    if _mps_one_site_kernel_enabled(tensor, gate):
         return _apply_cataloged_mps_one_site(tensor, gate), True
     equation = "pq,blqr->blpr" if gate.ndim == 2 else "bpq,blqr->blpr"
     return complex_einsum_pair(equation, gate, tensor), False
+
+
+def _try_apply_cataloged_mps_one_site_bucket(
+    tensors: torch.Tensor, gates: torch.Tensor
+) -> torch.Tensor | None:
+    """Flatten a spatial bucket and route it when MPS-003 authorizes the shape."""
+
+    if tensors.ndim != 5 or int(tensors.shape[3]) != 2:
+        raise ValueError(
+            "MPS one-site bucket must have shape [sites,batch,left,2,right]"
+        )
+    sites, batch, left_dim, _, right_dim = tensors.shape
+    if gates.shape != (sites, batch, 2, 2):
+        raise ValueError("MPS one-site bucket gates must have shape [sites,batch,2,2]")
+    flat_tensors = tensors.reshape(sites * batch, left_dim, 2, right_dim)
+    flat_gates = gates.reshape(sites * batch, 2, 2)
+    if not _mps_one_site_kernel_enabled(flat_tensors, flat_gates):
+        return None
+    output = _apply_cataloged_mps_one_site(flat_tensors, flat_gates)
+    return output.reshape(sites, batch, left_dim, 2, right_dim)
 
 
 __all__ = (
     "_apply_cataloged_mps_one_site",
     "_apply_mps_one_site",
     "_mps_one_site_kernel_match",
+    "_mps_one_site_kernel_enabled",
     "_require_mps_one_site_kernel",
+    "_try_apply_cataloged_mps_one_site_bucket",
 )
