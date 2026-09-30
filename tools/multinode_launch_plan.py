@@ -22,7 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
-import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -91,14 +91,15 @@ STAGING_EXCLUDES = (
 DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
 UNITLESS_FORMAT = "--format=csv,noheader,nounits"
 
+
 # `ssh host a b c` is joined into one string and re-split by the peer's login
-# shell, so a token carrying whitespace arrives as several arguments and a
-# token carrying a metacharacter is interpreted rather than passed.
-_UNSAFE_REMOTE_TOKEN = re.compile(r"[\s'\"`$&|;<>()*?\\\[\]{}~#!\x00-\x1f]")
-
-
+# shell, so a token carrying whitespace would arrive as several arguments and a
+# token carrying a metacharacter would be interpreted rather than passed. Every
+# token is therefore quoted into exactly one shell word, which is what lets a
+# `-c` program or a path with a space in it reach the peer intact. A NUL byte is
+# the one thing quoting cannot carry, because it cannot be an argument at all.
 class RemoteTokenError(ValueError):
-    """A token that cannot survive the trip to the peer as one argument."""
+    """An argument that could not reach the peer even after quoting."""
 
 
 class StagingError(ValueError):
@@ -106,12 +107,23 @@ class StagingError(ValueError):
 
 
 def remote_safe(token: str) -> str:
-    if not token or _UNSAFE_REMOTE_TOKEN.search(token):
+    """One shell word the peer's login shell reads back as exactly `token`."""
+    if "\x00" in token:
         raise RemoteTokenError(
-            f"{token!r} would not reach the peer as a single argument; the "
-            "peer's login shell re-splits the command"
+            f"{token!r} contains a NUL byte, which cannot be passed to the "
+            "peer as an argument at all"
         )
-    return token
+    return shlex.quote(token)
+
+
+def peer_command(remote: Sequence[str]) -> str:
+    """The single argument `ssh` forwards, which the peer re-splits exactly once.
+
+    Reading it back with `shlex.split` reproduces `remote` exactly; that
+    round-trip is what the tests assert, because it is the property the peer
+    depends on and the property a hand-built command string loses.
+    """
+    return " ".join(remote_safe(item) for item in remote)
 
 
 def checked_staging(staging: str | Path) -> Path:
@@ -143,6 +155,47 @@ def checked_output(staging: str | Path, output_directory: str | Path) -> Path:
     return output
 
 
+def clear_lane_directory(directory: Path) -> None:
+    """Empty a directory this lane owns, so the run starts from nothing.
+
+    The lane publishes whatever the output directory holds and the probe
+    resumes from the first checkpoint it finds, so a run that failed before
+    writing would otherwise be reported as the previous run's evidence and a
+    resumed leg could restore a checkpoint it did not write. It is created
+    rather than left absent because the ranks are told to write into it.
+    """
+
+    if directory.exists():
+        shutil.rmtree(directory)
+
+
+def checked_lane_directory(
+    staging: str | Path, directory: str | Path, *, purpose: str
+) -> Path:
+    """Refuse a directory this lane is not allowed to empty.
+
+    Staging is copied into with `--delete` and the output and checkpoint
+    directories are emptied before the runs that write them, so all three have
+    to be names this lane owns. The name is what makes the removal safe, and
+    nothing about the contents can substitute for it.
+
+    The output case is not merely tidiness: the lane copies whatever is in the
+    output directory into the report, so a `rank-0.json` left by an earlier run
+    would be published as this run's evidence if this one failed before writing
+    its own. The checkpoint case is the same hazard one step further in: the
+    probe resumes from the checkpoints its own first leg wrote, and a file left
+    behind would be restored instead.
+    """
+    path = checked_output(staging, directory)
+    if not path.name.startswith(STAGING_PREFIX):
+        raise StagingError(
+            f"{path} is this lane's {purpose} directory, which it empties, and "
+            f"only a directory named {STAGING_PREFIX}* is treated as this "
+            "lane's own"
+        )
+    return path
+
+
 @dataclass(frozen=True)
 class Check:
     """One preflight finding. `detail` is the evidence either way."""
@@ -153,7 +206,7 @@ class Check:
 
 
 def ssh_argv(peer_host: str, remote: Sequence[str]) -> list[str]:
-    return ["ssh", *SSH_OPTIONS, peer_host, *(remote_safe(item) for item in remote)]
+    return ["ssh", *SSH_OPTIONS, peer_host, peer_command(remote)]
 
 
 def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
@@ -215,6 +268,7 @@ def rank_command(
     python: str,
     staging: str,
     output_directory: str,
+    checkpoint_directory: str,
     master_address: str,
     master_port: int,
     interface: str,
@@ -247,6 +301,11 @@ def rank_command(
         str(Path(staging) / PROBE),
         "--output",
         str(Path(output_directory) / f"rank-{node_rank}.json"),
+        # Both ranks write their owner-sharded checkpoint here and both read it
+        # back on the resume leg, so it has to be a filesystem both nodes mount
+        # -- the same one the staged tree came from.
+        "--checkpoint-directory",
+        str(Path(checkpoint_directory)),
         # The probe writes its artifact on rank 0 only, because the artifact
         # carries both ranks' records. Rank 1 keeps the flag so that the file
         # NCCL is told to write and the file the probe would read stay the same
@@ -288,6 +347,7 @@ def build_plan(
     launch_address: str,
     staging: str,
     output_directory: str,
+    checkpoint_directory: str,
     python: str,
     master_port: int = DEFAULT_MASTER_PORT,
     interface: str = DEFAULT_INTERFACE,
@@ -300,6 +360,7 @@ def build_plan(
             python=python,
             staging=staging,
             output_directory=output_directory,
+            checkpoint_directory=checkpoint_directory,
             master_address=launch_address,
             master_port=master_port,
             interface=interface,
@@ -317,11 +378,12 @@ def build_plan(
         "interface": interface,
         "staging_directory": staging,
         "output_directory": output_directory,
+        "checkpoint_directory": checkpoint_directory,
         "jobs": [
             {
                 "name": "rank-0-launch-host",
                 "command": ranks[0],
-                "cwd": staging,
+                "cwd": rank_working_directory(staging),
                 "cleanup_command": cleanup_command(
                     node_rank=0, python=python, staging=staging
                 ),
@@ -331,7 +393,11 @@ def build_plan(
                 # ssh does not forward the launch host's environment, so the
                 # peer's rank carries its own copy of the same values.
                 "command": ssh_argv(peer_host, ranks[1]),
-                "cwd": staging,
+                # The peer's own directory is not something `ssh` can be given,
+                # so this `cwd` applies to the local ssh client only. The peer's
+                # rank resolves the staged tree through `PYTHONPATH`, which is
+                # what `import_check` measures on the far side.
+                "cwd": rank_working_directory(staging),
                 "cleanup_command": cleanup_command(
                     node_rank=1, python=python, staging=staging, peer_host=peer_host
                 ),
@@ -340,13 +406,16 @@ def build_plan(
     }
 
 
-def _run(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+def _run(
+    argv: Sequence[str], timeout: float, *, cwd: str | Path | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(item) for item in argv],
         check=False,
         capture_output=True,
         text=True,
         timeout=timeout,
+        cwd=cwd,
     )
 
 
@@ -618,6 +687,19 @@ def output_check(*, output_directory: str | Path) -> Check:
 IMPORT_PROBE = ("-c", "import flagquantum, sys; sys.stdout.write(flagquantum.__file__)")
 
 
+def rank_working_directory(staging: str | Path) -> str:
+    """The directory a rank runs from, on the node that starts it.
+
+    Named once because two places need the same answer: the plan gives both
+    ranks this `cwd`, and the import check has to run the probe from it. `''`
+    -- the working directory -- precedes `PYTHONPATH` on `sys.path`, so a check
+    that inherited the operator's own directory answers a different question
+    from the one the rank will answer, and answers it about a checkout the rank
+    never runs.
+    """
+    return str(staging)
+
+
 def import_check(
     *,
     node: str,
@@ -625,7 +707,7 @@ def import_check(
     python: str,
     peer_host: str | None = None,
     timeout: float = 120.0,
-    run: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]] = _run,
+    run: Callable[..., subprocess.CompletedProcess[str]] = _run,
 ) -> Check:
     """Each rank has to import the staged tree, and not some other copy.
 
@@ -639,19 +721,28 @@ def import_check(
     here, because the finder it installs is appended to `sys.meta_path` behind
     the default path finder. That is a property of how setuptools wrote the
     install, not a promise, so the lane asks both nodes instead of trusting it.
+
+    Each side is asked from the directory its rank will run from: the launch
+    host's rank is started by the watchdog with this `cwd`, and the peer's is
+    started by the peer's login shell, which `ssh` does not give a directory
+    either.
     """
     remote: list[str] = [
         python,
         *IMPORT_PROBE,
     ]
     environment = _env_prefix({"PYTHONPATH": staging})
-    command = (
-        [*environment, *remote]
-        if peer_host is None
-        else ssh_argv(peer_host, [*environment, *remote])
-    )
+    if peer_host is None:
+        command = [*environment, *remote]
+        working_directory: str | Path | None = rank_working_directory(staging)
+    else:
+        command = ssh_argv(peer_host, [*environment, *remote])
+        # Not this tool's own directory, and not a path only this node has: the
+        # peer's shell decides this one, so the check reproduces what the ranks
+        # get rather than what the operator happens to have.
+        working_directory = None
     try:
-        completed = run(command, timeout)
+        completed = run(command, timeout, cwd=working_directory)
     except (OSError, subprocess.TimeoutExpired) as error:
         return Check(
             f"{node}_imports_the_staged_tree", False, f"{type(error).__name__}: {error}"
@@ -697,6 +788,15 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--report-directory", default="hardware-run")
+    parser.add_argument(
+        "--checkpoint-directory",
+        default=None,
+        help=(
+            "shared, empty directory the training legs checkpoint into and "
+            "resume from; defaults to <staging>-checkpoints, and is emptied "
+            "before the run because the probe resumes from its own first leg"
+        ),
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--master-port", type=int, default=DEFAULT_MASTER_PORT)
     parser.add_argument("--interface", default=DEFAULT_INTERFACE)
@@ -755,8 +855,15 @@ def _governed_run(args: argparse.Namespace) -> int:
     report = Path(args.report_directory)
     report.mkdir(parents=True, exist_ok=True)
     staging = checked_staging(args.staging)
-    output_directory = checked_output(
-        staging, args.output_directory or f"{staging}-out"
+    output_directory = checked_lane_directory(
+        staging,
+        args.output_directory or f"{staging}-out",
+        purpose="output",
+    )
+    checkpoint_directory = checked_lane_directory(
+        staging,
+        args.checkpoint_directory or f"{staging}-checkpoints",
+        purpose="checkpoint",
     )
     peer_address = _peer_address(args.peer_host, args.preflight_timeout_seconds)
     # The address the checks pass against is the one the plan must use, so it
@@ -783,8 +890,12 @@ def _governed_run(args: argparse.Namespace) -> int:
 
     # Both of these happen after staging, which copies with `--delete` and
     # would remove a directory created before it.
+    for directory in (output_directory, checkpoint_directory):
+        clear_lane_directory(directory)
+
     after_staging = [
         output_check(output_directory=output_directory),
+        output_check(output_directory=checkpoint_directory),
         staging_check(peer_host=args.peer_host, staging=str(staging)),
         import_check(node="launch_host", staging=str(staging), python=args.python),
         import_check(
@@ -803,6 +914,7 @@ def _governed_run(args: argparse.Namespace) -> int:
         launch_address=launch_address,
         staging=str(staging),
         output_directory=str(output_directory),
+        checkpoint_directory=str(checkpoint_directory),
         python=args.python,
         master_port=master_port,
         interface=args.interface,
@@ -894,6 +1006,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         launch_address=args.launch_address,
         staging=args.staging,
         output_directory=args.output_directory,
+        checkpoint_directory=(
+            args.checkpoint_directory or f"{args.staging}-checkpoints"
+        ),
         python=args.python,
         master_port=args.master_port,
         interface=args.interface,

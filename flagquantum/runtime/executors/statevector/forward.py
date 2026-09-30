@@ -190,10 +190,19 @@ def communication_aware_wire_layout(
     ir: CircuitIR,
     *,
     world_size: int,
+    local_world_size: int | None = None,
     preferred_local_wires: Sequence[int] = (),
     optimization_target: str = "forward",
 ) -> tuple[CircuitIR, tuple[int, ...]]:
-    """Relabel wires to minimize forward or full-training-step communication."""
+    """Relabel wires to minimize forward or full-training-step communication.
+
+    ``local_world_size`` is the placement the plan resolved. It is passed rather
+    than read from ``LOCAL_WORLD_SIZE``: that variable describes the world
+    torchrun was handed, so a subgroup run reports a two-node world as
+    single-node, and an unlaunched process would let ambient environment decide
+    which wire carries the rank bit. When it is omitted the world is assumed to
+    be one node, which is the placement-free choice.
+    """
 
     rank_bits = int(world_size).bit_length() - 1
     identity = tuple(range(ir.n_wires))
@@ -202,11 +211,12 @@ def communication_aware_wire_layout(
     if world_size <= 1 or world_size & (world_size - 1) or rank_bits >= ir.n_wires:
         return ir, identity
     preferred = {int(wire) for wire in preferred_local_wires}
-    local_world_size = int(
-        os.environ.get("LOCAL_WORLD_SIZE")
-        or os.environ.get("NPROC_PER_NODE")
-        or world_size
-    )
+    if local_world_size is None:
+        local_world_size = int(world_size)
+    else:
+        local_world_size = int(local_world_size)
+    if local_world_size < 1:
+        raise ValueError("local_world_size must be a positive rank count")
     topology_aware = (
         _topology_aware_rank_bits_enabled() and world_size > local_world_size
     )
@@ -358,8 +368,21 @@ def _basis_owner_rank(
 
 @dataclass
 class StatevectorExchangeWorkspace:
-    """Reusable receive buffers for graph-free production forward execution."""
+    """Reusable receive buffers for graph-free production forward execution.
 
+    `local_world_size` and `rank` are the placement the plan resolved for the
+    sweeping rank. Deriving them again from the environment here disagreed with
+    the plan whenever the executor ran a subgroup `process_group`, because
+    torchrun's `LOCAL_WORLD_SIZE` describes the default world only -- and these
+    two counters are what a multi-node claim is read from.
+
+    The defaults describe the narrowest placement a bare workspace can stand
+    for: one rank on one host, so a peer at any other global rank counts as a
+    network hop. Every executor passes its plan's placement explicitly.
+    """
+
+    local_world_size: int = 1
+    rank: int = 0
     buffers: dict[tuple[int, str, torch.dtype], torch.Tensor] = field(
         default_factory=dict
     )
@@ -375,15 +398,10 @@ class StatevectorExchangeWorkspace:
     inter_node_bytes: int = 0
 
     def record_peer_exchange(self, global_peer: int, byte_count: int) -> None:
-        """Classify one rank's logical send bytes by torchrun node placement."""
+        """Classify one rank's logical send bytes by the plan's node placement."""
 
-        local_world_size = int(
-            os.environ.get("LOCAL_WORLD_SIZE")
-            or os.environ.get("NPROC_PER_NODE")
-            or (dist.get_world_size() if dist.is_initialized() else 1)
-        )
-        rank = dist.get_rank() if dist.is_initialized() else 0
-        if rank // local_world_size == int(global_peer) // local_world_size:
+        local_world_size = max(1, int(self.local_world_size))
+        if int(self.rank) // local_world_size == int(global_peer) // local_world_size:
             self.intra_node_message_count += 1
             self.intra_node_bytes += int(byte_count)
         else:

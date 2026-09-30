@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import ast
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ WORKFLOW = ROOT / ".github" / "workflows" / "scheduled-hardware.yml"
 PYTHON = "/opt/conda/envs/flagquantum/bin/python"
 STAGING = "/nfs/fq-multinode-unit"
 OUTPUT = "/nfs/fq-multinode-unit-out"
+CHECKPOINTS = "/nfs/fq-multinode-unit-checkpoints"
 
 
 def _plan(**overrides):
@@ -40,6 +42,7 @@ def _plan(**overrides):
         "launch_address": "10.0.0.1",
         "staging": STAGING,
         "output_directory": OUTPUT,
+        "checkpoint_directory": CHECKPOINTS,
         "python": PYTHON,
         "source_revision": "deadbeef",
     }
@@ -51,16 +54,27 @@ def _by_name(payload) -> dict[str, dict]:
     return {job["name"]: job for job in payload["jobs"]}
 
 
+def _peer_argv(command: list[str]) -> list[str]:
+    """The argument list the peer receives from an `ssh`-wrapped job.
+
+    Reading the wrapped command back with the shell's own rules is the check
+    as well as the convenience: it is what proves the peer sees the arguments
+    the launch host meant, rather than whatever the login shell made of them.
+    """
+    return shlex.split(command[-1]) if command[0] == "ssh" else command
+
+
 def _environment(command: list[str]) -> dict[str, str]:
     """The `env A=1` prefix, as a mapping, on either side of the ssh wrapper."""
-    assert command[0] in {"env", "ssh"}, command[:1]
-    stop = command.index(PYTHON)
-    start = command.index("env") + 1
-    return dict(token.split("=", 1) for token in command[start:stop])
+    remote = _peer_argv(command)
+    assert remote[0] == "env", remote[:1]
+    stop = remote.index(PYTHON)
+    return dict(token.split("=", 1) for token in remote[1:stop])
 
 
 def _flag(command: list[str], name: str) -> str:
-    return command[command.index(name) + 1]
+    remote = _peer_argv(command)
+    return remote[remote.index(name) + 1]
 
 
 # --- the plan the watchdog consumes -----------------------------------------
@@ -142,8 +156,7 @@ def test_only_the_peer_rank_crosses_ssh() -> None:
 def test_the_two_ranks_run_the_same_work_against_the_same_rendezvous() -> None:
     jobs = _by_name(_plan())
     launch = jobs["rank-0-launch-host"]["command"]
-    peer = jobs["rank-1-peer"]["command"]
-    peer = peer[peer.index("env") :]
+    peer = _peer_argv(jobs["rank-1-peer"]["command"])
 
     for flag in ("--nnodes", "--nproc-per-node", "--master-addr", "--master-port"):
         assert _flag(launch, flag) == _flag(peer, flag), flag
@@ -161,10 +174,81 @@ def test_the_staged_tool_is_the_one_the_cleanup_commands_name() -> None:
     # Cleanup runs after the run, on both nodes. The launch host's checkout is
     # not a path the peer has; only the staged tree is on both.
     for job in _plan()["jobs"]:
-        cleanup = job["cleanup_command"]
+        cleanup = _peer_argv(job["cleanup_command"])
         assert f"{STAGING}/{plan.TOOL}" in cleanup, cleanup
-        assert f"{PYTHON}" in cleanup
+        assert PYTHON in cleanup
         assert plan.LAUNCHER_PATTERN not in cleanup
+
+
+def test_both_ranks_checkpoint_where_both_ranks_can_read_the_resume_leg() -> None:
+    payload = _plan()
+
+    # The probe's second leg resumes from what its first leg wrote, so both
+    # ranks have to be handed one directory on a filesystem both nodes mount.
+    directories = {
+        _flag(job["command"], "--checkpoint-directory") for job in payload["jobs"]
+    }
+    assert directories == {CHECKPOINTS}
+    assert payload["checkpoint_directory"] == CHECKPOINTS
+    # Staging copies with `--delete`, so a checkpoint directory inside it would
+    # be removed by the next run's staging step rather than restored from.
+    assert not Path(CHECKPOINTS).is_relative_to(Path(STAGING))
+
+
+@pytest.mark.parametrize(
+    "directory",
+    [
+        STAGING,
+        f"{STAGING}/checkpoints",
+        "/nfs/checkpoints",
+        "/tmp/fq-not-a-lane-directory",
+    ],
+)
+def test_a_directory_this_lane_may_not_empty_is_refused(directory: str) -> None:
+    # The lane empties both of these before a run, so a mistyped path must not
+    # be removable. Inside the staging tree a directory would also be deleted by
+    # staging, which is the failure the location check exists to prevent.
+    for purpose in ("output", "checkpoint"):
+        with pytest.raises(plan.StagingError):
+            plan.checked_lane_directory(STAGING, directory, purpose=purpose)
+
+
+def test_this_lane_owns_the_directories_it_empties() -> None:
+    for purpose, directory in (("output", OUTPUT), ("checkpoint", CHECKPOINTS)):
+        assert plan.checked_lane_directory(
+            STAGING, directory, purpose=purpose
+        ) == Path(directory)
+        # Beside the staged tree, not inside it, and named so that the removal
+        # is a decision this lane has already made.
+        assert Path(directory).name.startswith(plan.STAGING_PREFIX)
+
+
+def test_a_run_starts_from_directories_holding_nothing_from_the_last_one(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "fq-multinode-unit-out"
+    checkpoints = tmp_path / "fq-multinode-unit-checkpoints"
+    for directory, name in ((output, "rank-0.json"), (checkpoints, "rank-0.pt")):
+        directory.mkdir(parents=True)
+        (directory / name).write_text("stale", encoding="utf-8")
+
+    for directory in (output, checkpoints):
+        plan.clear_lane_directory(directory)
+
+    # A stale rank record is the one that would be published if this run failed
+    # before writing its own, and a stale checkpoint is the one the resume leg
+    # would restore instead of the checkpoint it wrote.
+    for directory in (output, checkpoints):
+        assert not directory.exists()
+
+
+def test_clearing_a_directory_that_was_never_written_needs_no_decision(
+    tmp_path: Path,
+) -> None:
+    # The first run on a host has no directory to empty, which is not an error.
+    plan.clear_lane_directory(tmp_path / "fq-multinode-absent")
+
+    assert not (tmp_path / "fq-multinode-absent").exists()
 
 
 # --- what may cross to the peer ---------------------------------------------
@@ -172,11 +256,31 @@ def test_the_staged_tool_is_the_one_the_cleanup_commands_name() -> None:
 
 @pytest.mark.parametrize(
     "token",
-    ["/nfs/a b/x", "/nfs/x;y", "/nfs/x$y", "/nfs/x`y`", "/nfs/x\ty", "", "/nfs/x&y"],
+    ["/nfs/a b/x", "/nfs/x;y", "/nfs/x$y", "/nfs/x`y`", "/nfs/x\ty", "", "/nfs/x&y", "a'b"],
 )
-def test_a_remote_token_a_login_shell_would_split_is_refused(token: str) -> None:
+def test_an_argument_a_login_shell_would_split_reaches_the_peer_whole(
+    token: str,
+) -> None:
+    # `ssh host a b c` is joined into one string and re-split by the peer's
+    # login shell, so an argument is usable only if it survives that trip as
+    # one word. The round-trip is the property, rather than a hand-built list
+    # of allowed characters: the staging gate passes a `-c` program, which
+    # contains spaces and a semicolon, and a wrapper that refused those made
+    # this lane unable to reach its own import check.
+    command = plan.ssh_argv("peer-node", ["/usr/bin/python", "-c", token])
+
+    assert shlex.split(command[-1]) == ["/usr/bin/python", "-c", token]
+    # ssh, its options, the host, then exactly one forwarded argument, so the
+    # peer's shell has one thing to split and cannot see the launch host's own
+    # word boundaries.
+    assert shlex.split(command[-1])[0] == command[-1].split()[0]
+    assert len(command) == 2 + len(plan.SSH_OPTIONS) + 1
+
+
+def test_an_argument_no_quoting_can_carry_is_still_refused() -> None:
+    # A NUL byte cannot be an argv element at all, so there is nothing to quote.
     with pytest.raises(plan.RemoteTokenError):
-        plan.remote_safe(token)
+        plan.remote_safe("a\x00b")
 
 
 @pytest.mark.parametrize(
@@ -188,15 +292,21 @@ def test_a_remote_token_a_login_shell_would_split_is_refused(token: str) -> None
         "0",
     ],
 )
-def test_an_ordinary_remote_token_is_accepted(token: str) -> None:
-    # A guard that rejects everything passes the rule above while making the
-    # lane impossible, so the accepted side is asserted too.
-    assert plan.remote_safe(token) == token
+def test_an_ordinary_remote_token_is_carried_unchanged(token: str) -> None:
+    # An ordinary word in, the same word out: quoting that changed these would
+    # rewrite the paths the plan is made of.
+    assert shlex.split(plan.remote_safe(token)) == [token]
 
 
-def test_a_staging_path_a_login_shell_would_split_stops_the_plan() -> None:
-    with pytest.raises(plan.RemoteTokenError):
-        _plan(staging="/nfs/fq-multinode-with a space")
+def test_a_staging_path_a_login_shell_would_split_still_reaches_the_peer() -> None:
+    # A path this lane empties with `--delete` and then tells both ranks to run
+    # from. If it could not be named to the peer the plan would be unusable,
+    # which is a worse outcome than carrying it correctly.
+    staging = "/nfs/fq-multinode-with a space"
+    peer = _by_name(_plan(staging=staging))["rank-1-peer"]
+
+    assert f"PYTHONPATH={staging}" in _peer_argv(peer["command"])
+    assert staging in _peer_argv(peer["cleanup_command"])[1]
 
 
 # --- what may be emptied, and where evidence may be written ------------------
@@ -420,7 +530,7 @@ def test_the_staging_check_does_not_ask_a_peer_about_a_path_never_staged(
 
 
 def test_the_import_check_accepts_a_tree_inside_the_staging_directory() -> None:
-    def run(argv, timeout):
+    def run(argv, timeout, cwd=None):
         return subprocess.CompletedProcess(
             list(argv), 0, f"{STAGING}/flagquantum/__init__.py", ""
         )
@@ -434,6 +544,35 @@ def test_the_import_check_accepts_a_tree_inside_the_staging_directory() -> None:
     assert check.detail.startswith(STAGING)
 
 
+def test_the_import_check_runs_a_local_rank_where_the_rank_will_run() -> None:
+    """`''` precedes `PYTHONPATH` on `sys.path`, so the directory is the answer.
+
+    A check that inherited the operator's own directory answered about the
+    checkout the operator happened to be standing in: run this tool from the
+    repository root and the launch-host rank was reported as importing a tree
+    the lane never staged, while the rank it was asking about runs from the
+    staging directory and reads the staged tree.
+    """
+    seen: list[object] = []
+
+    def run(argv, timeout, cwd=None):
+        seen.append(cwd)
+        return subprocess.CompletedProcess(
+            list(argv), 0, f"{STAGING}/flagquantum/__init__.py", ""
+        )
+
+    plan.import_check(node="launch_host", staging=STAGING, python=PYTHON, run=run)
+    plan.import_check(
+        node="peer", staging=STAGING, python=PYTHON, peer_host="peer-node", run=run
+    )
+
+    # This node's rank is started by the watchdog, which is given a directory.
+    assert seen[0] == plan.rank_working_directory(STAGING) == STAGING
+    # The peer's is started by the peer's login shell, which `ssh` cannot be
+    # given one for, so the check leaves that side to the peer.
+    assert seen[1] is None
+
+
 def test_the_import_check_refuses_the_runners_own_checkout() -> None:
     """The failure this exists for: an editable install shadowing the staging.
 
@@ -442,7 +581,7 @@ def test_the_import_check_refuses_the_runners_own_checkout() -> None:
     staged -- and the artifact would then record a revision neither rank ran.
     """
 
-    def run(argv, timeout):
+    def run(argv, timeout, cwd=None):
         return subprocess.CompletedProcess(
             list(argv), 0, "/runner/_work/FlagQuantum/flagquantum/__init__.py", ""
         )
@@ -456,12 +595,43 @@ def test_the_import_check_refuses_the_runners_own_checkout() -> None:
 
 
 def test_the_import_check_fails_closed_when_the_interpreter_says_nothing() -> None:
-    def run(argv, timeout):
+    def run(argv, timeout, cwd=None):
         return subprocess.CompletedProcess(list(argv), 1, "", "ModuleNotFoundError")
 
     check = plan.import_check(node="peer", staging=STAGING, python=PYTHON, run=run)
 
     assert not check.ok
+
+
+def test_the_import_check_program_reaches_the_peer_as_one_argument() -> None:
+    """The staging gate's own `-c` program, through the real ssh wrapper.
+
+    The check exists to catch an editable install shadowing the staged tree on
+    either node. It carries a program with spaces and a semicolon in it, and a
+    wrapper that only accepted shell-ordinary words raised before the check
+    ever ran -- so the gate that exists to refuse a wrong revision was the one
+    thing that stopped the lane.
+    """
+    seen: list[list[str]] = []
+
+    def run(argv, timeout, cwd=None):
+        seen.append([str(item) for item in argv])
+        return subprocess.CompletedProcess(
+            list(argv), 0, f"{STAGING}/flagquantum/__init__.py", ""
+        )
+
+    check = plan.import_check(
+        node="peer",
+        staging=STAGING,
+        python=PYTHON,
+        peer_host="peer-node",
+        run=run,
+    )
+
+    assert check.ok
+    forwarded = _peer_argv(seen[0])
+    assert forwarded == ["env", f"PYTHONPATH={STAGING}", PYTHON, *plan.IMPORT_PROBE]
+    assert "import flagquantum" in forwarded[-1]
 
 
 def test_the_output_check_refuses_a_directory_it_cannot_write(tmp_path: Path) -> None:

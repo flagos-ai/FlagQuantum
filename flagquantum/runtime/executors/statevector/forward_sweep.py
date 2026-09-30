@@ -30,6 +30,7 @@ from ....simulation.statevector.operations import (
     _cx_sequence_permutation_index,
     _instruction_matrix,
 )
+from ...distributed.context import resolve_local_world_size
 from ...distributed.flagos_runtime import current_flagos_device
 from ...distributed.identity import build_distributed_identity
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
@@ -115,6 +116,14 @@ class _ShardedForwardSweep:
                 RuntimeWarning,
                 stacklevel=2,
             )
+        if local_world_size is None:
+            local_world_size = resolve_local_world_size(
+                self.world_size, subgroup=self.process_group is not None
+            )
+        # Resolved before the layout, not after: which wire carries the rank bit
+        # depends on whether more than one node is involved, and that is the
+        # same placement the plan is built on.
+        self.local_world_size = local_world_size
         if self.wire_layout not in {"canonical", "communication_aware"}:
             raise ValueError("wire_layout must be 'canonical' or 'communication_aware'")
         self.logical_to_physical = tuple(range(self.ir.n_wires))
@@ -122,6 +131,7 @@ class _ShardedForwardSweep:
             self.ir, self.logical_to_physical = communication_aware_wire_layout(
                 self.ir,
                 world_size=self.world_size,
+                local_world_size=self.local_world_size,
                 preferred_local_wires=self.preferred_local_wires,
             )
         if self.persistent_wire_layout and self.world_size > 1:
@@ -155,22 +165,10 @@ class _ShardedForwardSweep:
             raise ValueError("NCCL execution requires a CUDA device")
         if self.backend == "flagos" and self.resolved_device.type != "flagos":
             raise ValueError("FlagOS execution requires a flagos device")
-        if local_world_size is None:
-            if self.process_group is not None:
-                # Torchrun topology variables describe the default world and cannot
-                # safely describe an arbitrary subgroup.
-                local_world_size = self.world_size
-            else:
-                local_world_size = int(
-                    os.environ.get("LOCAL_WORLD_SIZE")
-                    or os.environ.get("NPROC_PER_NODE")
-                    or self.world_size
-                )
-        self.local_world_size = local_world_size
         self.plan = plan_distributed_statevector(
             self.ir,
             world_size=self.world_size,
-            local_world_size=local_world_size,
+            local_world_size=self.local_world_size,
             bsz=1,
             complex_bytes=torch.empty((), dtype=self.dtype).element_size(),
         )
@@ -179,6 +177,24 @@ class _ShardedForwardSweep:
             raise ValueError(
                 "invalid distributed statevector plan: "
                 + "; ".join(self.validation.errors)
+            )
+        if (
+            self.plan.world_size > 1
+            and self.plan.distribution != "qubit_address_sharded"
+        ):
+            # The planner describes an arbitrary shard count as
+            # `contiguous_amplitude_range` and plans an `indexed_all_to_all` for
+            # every gate, but this sweep implements qubit-address sharding only:
+            # with no sharded wires every gate resolves to a local kernel, no
+            # exchange is issued, and each rank would return its own contiguous
+            # slice of a gate it never applied -- wrong amplitudes reported as a
+            # successful distributed run. Refuse instead, and name the shape.
+            raise NotImplementedError(
+                "the PyTorch-native distributed statevector executor requires a "
+                f"power-of-two world_size (received {self.plan.world_size}); the "
+                f"planned {self.plan.distribution!r} distribution with "
+                "'indexed_all_to_all' gate exchange is available through "
+                "simulate_distributed_statevector_local, not on multiple devices"
             )
         self.precision = get_runtime_config().with_overrides(
             complex_dtype=str(self.dtype).removeprefix("torch.")
@@ -189,7 +205,9 @@ class _ShardedForwardSweep:
                 for item in self.ir.instructions
             )
         self.exchange_workspace = (
-            StatevectorExchangeWorkspace()
+            StatevectorExchangeWorkspace(
+                local_world_size=self.local_world_size, rank=self.rank
+            )
             if not any(matrix.requires_grad for matrix in self.matrices)
             else None
         )
@@ -241,7 +259,7 @@ class _ShardedForwardSweep:
         self.persistent_inter_node_ket_checkpoints: list[
             tuple[int, int, torch.Tensor]
         ] = []
-        self.local_rank_bits = int(local_world_size).bit_length() - 1
+        self.local_rank_bits = int(self.local_world_size).bit_length() - 1
         self.index = 0
 
     def run(self) -> TorchDistributedStatevectorResult:

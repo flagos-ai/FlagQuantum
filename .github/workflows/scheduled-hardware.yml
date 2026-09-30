@@ -203,12 +203,13 @@ jobs:
           mkdir -p hardware-run
           python tools/multinode_launch_plan.py --run \
             --staging "$STAGING" \
+            --checkpoint-directory "$STAGING-checkpoints" \
             --source . \
             --source-revision "${{ github.sha }}" \
             --report-directory hardware-run
       - name: Withdraw the shared staging tree
         if: always()
-        run: rm -rf "$STAGING" "$STAGING-out"
+        run: rm -rf "$STAGING" "$STAGING-out" "$STAGING-checkpoints"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

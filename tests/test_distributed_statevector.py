@@ -606,6 +606,81 @@ def test_distributed_statevector_plan_supports_non_power_of_two_world_size():
     assert tuple(shard.local_amplitudes for shard in plan.shards) == (3, 3, 2)
     assert all(gate.communication == "indexed_all_to_all" for gate in plan.gate_plans)
     assert plan.topology.summary()["communications"] == ("indexed_all_to_all",)
+    assert plan.validate().valid is True
+
+
+def test_distributed_statevector_plan_rejects_more_ranks_than_amplitudes():
+    """Sharding cannot give eleven of sixteen ranks an empty share of eight amplitudes.
+
+    The plan used to validate here: `_balanced_shards` handed ranks 8..15 zero
+    amplitudes while `world_size`, the communication plan, and the rank address
+    still counted them, and the rank address was four bits wide for a three-wire
+    circuit -- so the executor would have computed global indices no shard
+    covers.
+    """
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2)
+
+    plan = plan_distributed_statevector(circuit, world_size=16)
+    report = plan.validate()
+
+    assert report.valid is False
+    assert any(
+        error.startswith("world_size exceeds the amplitude count")
+        and "ranks [8, 9, 10, 11, 12, 13, 14, 15]" in error
+        and "empty share of 8" in error
+        for error in report.errors
+    )
+    assert "qubit address sharding needs at least 4 wires, plan has 3" in report.errors
+
+
+def test_multi_device_executor_refuses_a_plan_it_has_no_transport_for(monkeypatch):
+    """A three-rank world must refuse, not return amplitudes no collective produced.
+
+    The planner can describe an arbitrary number of contiguous amplitude shards,
+    but the multi-device executor implements qubit-address sharding only: with no
+    sharded wires every gate resolves to a local kernel, no exchange is issued,
+    and each rank would return its own slice of a gate it never applied. The
+    refusal has to arrive before any instruction runs, and the shape stays
+    available where it is honestly supported.
+    """
+    import torch.distributed as dist
+
+    from flagquantum.runtime.executors.statevector.forward_executor import (
+        execute_torch_distributed_statevector,
+    )
+
+    monkeypatch.setattr(dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(dist, "get_world_size", lambda group=None: 3)
+    monkeypatch.setattr(dist, "get_rank", lambda group=None: 0)
+    monkeypatch.setattr(dist, "get_backend", lambda group=None: "gloo")
+    circuit = fq.Circuit(3).h(0).cx(0, 2)
+
+    with pytest.raises(NotImplementedError) as refusal:
+        execute_torch_distributed_statevector(circuit, device=torch.device("cpu"))
+
+    assert "power-of-two world_size (received 3)" in str(refusal.value)
+    assert "simulate_distributed_statevector_local" in str(refusal.value)
+
+    simulated = simulate_distributed_statevector_local(circuit, world_size=3)
+    torch.testing.assert_close(
+        simulated.state, circuit.state().to(torch.complex64), atol=1e-5, rtol=1e-5
+    )
+    assert [shard.local_amplitudes for shard in simulated.plan.shards] == [3, 3, 2]
+
+
+@pytest.mark.parametrize("world_size", [1, 2, 4, 8])
+def test_distributed_statevector_plan_accepts_every_rank_that_owns_amplitudes(
+    world_size: int,
+):
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2)
+
+    plan = plan_distributed_statevector(circuit, world_size=world_size)
+
+    assert plan.validate().valid is True
+    assert all(shard.local_amplitudes >= 1 for shard in plan.shards)
+    assert sum(shard.local_amplitudes for shard in plan.shards) == 8
 
 
 def test_run_distributed_attaches_statevector_plan_summary():

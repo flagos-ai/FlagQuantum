@@ -30,6 +30,7 @@ from ....simulation.statevector.operations import (
     _apply_matrix,
     _instruction_matrix,
 )
+from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import StatevectorExchangeWorkspace, _storage_global_indices
@@ -275,15 +276,20 @@ class _ReversibleAdjointSweep:
             value.detach().to(self.device) for value in self.saved_parameters
         )
         self.bound = _bind_parameters(self.ir, self.slots, self.base_parameters)
+        self.local_world_size = resolve_local_world_size(
+            self.world_size, subgroup=self.process_group is not None
+        )
         self.plan = plan_distributed_statevector(
             self.bound,
             world_size=self.world_size,
-            local_world_size=self.world_size,
+            local_world_size=self.local_world_size,
             bsz=1,
             complex_bytes=torch.empty((), dtype=self.dtype).element_size(),
         )
         self.exchange_workspace = (
-            StatevectorExchangeWorkspace()
+            StatevectorExchangeWorkspace(
+                local_world_size=self.local_world_size, rank=self.rank
+            )
             if _reverse_exchange_workspace_enabled()
             else None
         )

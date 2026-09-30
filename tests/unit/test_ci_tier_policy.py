@@ -67,7 +67,8 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
     # lane directly instead.
     assert CI_TIERS["multinode-scheduled"].command_lines() == (
         "python tools/multinode_launch_plan.py --run --staging "
-        "/nfs/fq-multinode-tier --report-directory hardware-run",
+        "/nfs/fq-multinode-tier --checkpoint-directory "
+        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run",
     )
 
 
