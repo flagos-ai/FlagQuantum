@@ -18,6 +18,7 @@ from torch.profiler import record_function
 
 from ....compute import get_platform_runtime
 from ....core.ir import Instruction
+from ...distributed.context import resolve_local_world_size
 from .records import MPSReverseContractError
 from .state import RankOwnedMPSState
 from .transport import (
@@ -93,7 +94,7 @@ def begin_reverse_layer_halo_prefetch(
             requests = tuple(dist.batch_isend_irecv(operations))
     else:
         requests = tuple(dist.batch_isend_irecv(operations))
-    local_world_size = max(1, int(os.environ.get("LOCAL_WORLD_SIZE", state.world_size)))
+    local_world_size = resolve_local_world_size(state.world_size)
     payload_bytes = sum(value.numel() * value.element_size() for value in buffers)
     intra_node_payload_bytes = sum(
         value.numel() * value.element_size()

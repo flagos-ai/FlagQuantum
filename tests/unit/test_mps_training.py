@@ -427,6 +427,33 @@ def test_result_never_promotes_execution_without_speedup_and_capacity_evidence()
     assert step_summary["qr_factorization_count"] == 1
 
 
+def test_a_two_node_placement_is_reported_from_the_resolved_plan(monkeypatch):
+    # `LOCAL_WORLD_SIZE` describes the world torchrun was handed, and this rank
+    # was handed a single-host world. The placement the executor resolved says
+    # otherwise, and the summary must follow the resolved answer rather than
+    # re-deriving the topology from the environment.
+    monkeypatch.setenv("LOCAL_WORLD_SIZE", "2")
+
+    summary = ShardedMPSTrainingResult(
+        losses=(0.1,),
+        completed_steps=1,
+        start_step=0,
+        rank=1,
+        world_size=2,
+        local_world_size=1,
+        optimizer="sgd",
+        ownership=(),
+        steps=(),
+        checkpoint_files=(),
+        memory_growth_bytes=0,
+        suspected_memory_leak=False,
+    ).summary()
+
+    assert summary["node_count"] == 2
+    assert summary["world_size"] == 2
+    assert summary["local_world_size"] == 1
+
+
 def test_idle_rank_and_memory_growth_are_explicit_blockers():
     summary = ShardedMPSTrainingResult(
         losses=(),

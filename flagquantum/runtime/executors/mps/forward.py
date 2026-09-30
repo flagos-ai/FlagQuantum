@@ -18,6 +18,7 @@ from ....simulation.mps.rank_local import (
     tensor_nbytes,
 )
 from ....simulation.mps.state import MPSState
+from ...distributed.context import resolve_local_world_size
 from .canonicalization import canonicalize_rank_owned_mps
 from .compiled_layers import (
     _PreparedMPSOutput,
@@ -91,6 +92,7 @@ def execute_torch_distributed_mps_forward(
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     backend = str(dist.get_backend())
+    local_world_size = resolve_local_world_size(world_size)
     resolved_device = torch.device(device or "cpu")
     resolved_dtype = dtype or getattr(torch, ir.dtype)
     bsz = int(ir.metadata.get("batch_size", 1))
@@ -339,6 +341,7 @@ def execute_torch_distributed_mps_forward(
         error_budget_policy=error_budget_policy,
         truncation_gradient_policy=truncation_gradient_policy,
         backend=backend,
+        local_world_size=local_world_size,
         layer_lifecycle_records=tuple(layer_lifecycle_records),
         factorization_records=tuple(factorization_records),
         layer_cache_empty_at_return=True,
