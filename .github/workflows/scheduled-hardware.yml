@@ -207,6 +207,15 @@ jobs:
             --source . \
             --source-revision "${{ github.sha }}" \
             --report-directory hardware-run
+      - name: Run the MPS workload across the same two nodes
+        run: |
+          python tools/multinode_launch_plan.py --run \
+            --probe mps \
+            --staging "$STAGING" \
+            --checkpoint-directory "$STAGING-checkpoints" \
+            --source . \
+            --source-revision "${{ github.sha }}" \
+            --report-directory hardware-run-mps
       - name: Withdraw the shared staging tree
         if: always()
         run: rm -rf "$STAGING" "$STAGING-out" "$STAGING-checkpoints"
@@ -214,4 +223,6 @@ jobs:
         if: always()
         with:
           name: multinode-${{ github.sha }}
-          path: hardware-run/
+          path: |
+            hardware-run/
+            hardware-run-mps/

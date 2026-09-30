@@ -47,6 +47,9 @@ This catalog is generated from the machine-validated
 | Train a large low-entanglement system | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Distribute one MPS across several GPUs | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Inspect variable-bond MPS capacity | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
+| Train one MPS workload across two nodes | Two-node MPS training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Resume a multi-node MPS run from its checkpoint | Two-node MPS training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Inspect inter-node site-boundary communication and rank placement | Two-node MPS training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
 | Evaluate software-extended precision on FP32 hardware | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
 | Measure cancellation error against a float64 reference | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
 | Prepare a precision provider without changing the runtime | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
@@ -639,12 +642,26 @@ Train low-entanglement quantum systems with local or rank-owned matrix product s
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.simulation.mps.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`
 - **Runtime modes:** `mps`, `distributed_mps`
-- **Hardware:** `cpu`, `single_gpu`, `multi_gpu`, `multi_node`
+- **Hardware:** `cpu`, `single_gpu`, `multi_gpu`
 - **Gradient support:** `exact`
 - **Distribution semantics:** `sharded_across_ranks`
 - **Start:** [quick example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py)
 - **Documentation:** [guide](../../examples/distributed_mps/README.md)
-- **Known boundary:** Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete.
+- **Known boundary:** Single-node and multi-GPU execution plus matched checkpoint/restart have recorded evidence. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete.
+
+### Two-node MPS training
+
+Shard one logical matrix product state by site across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce.
+
+- **Maturity:** Production supported
+- **Public API:** `fq.plan`, `flagquantum.experimental.distributed.train_distributed_mps`
+- **Runtime modes:** `distributed_mps`
+- **Hardware:** `multi_node`, `nvidia_a800_sxm4_80gb`
+- **Gradient support:** `exact`
+- **Distribution semantics:** `sharded_across_ranks`
+- **Start:** [quick example](../../docs/guides/MULTINODE_RUNBOOK.md)
+- **Documentation:** [guide](../../docs/development/TESTING.md)
+- **Known boundary:** Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, a bond limit that truncates nothing, and a cut width that was not swept. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The tiny full MPS is gathered for validation only; congestion, capacity and production performance were not measured; RDMA was not used or tested; topologies wider than one device per host are not covered, so this evidence does not establish behaviour as the cut widens or as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take.
 
 
 ## Deployment and extension

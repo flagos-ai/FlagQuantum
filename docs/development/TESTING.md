@@ -335,11 +335,20 @@ second node:
   shard: forward, the adjoint gradient, an owner-sharded optimizer step, and a
   checkpoint that a restarted run resumes from. Its output is correctness and
   communication evidence only; it is not a scalability or release claim.
+- **Real two-node MPS transport.** The same pair, the same launcher, and
+  `tools/probe_cuda_multinode_mps.py`: one logical six-wire matrix product state
+  split by site, three owned sites per rank, with the middle adjacent gate
+  straddling the ownership boundary. It covers the same training path against an
+  exact complex128 statevector reference, and its reverse runs the compiled site
+  buckets so the layer-boundary halo is prefetched across the host boundary
+  rather than reconstructed locally. The training legs run eagerly by design,
+  because a checkpointed step is not a compiled-kernel step.
 
-`tools/multinode_launch_plan.py --run` drives that pair, and the `multinode` job
-in `.github/workflows/scheduled-hardware.yml` is one call to it. It runs manual
-dispatch only, on the runner label that only the launch host carries, because
-SSH reaches the peer from there and not the other way round.
+`tools/multinode_launch_plan.py --run` drives that pair, one workload per
+invocation selected by `--probe` (`statevector`, the default, or `mps`), and the
+`multinode` job in `.github/workflows/scheduled-hardware.yml` is one call to it.
+It runs manual dispatch only, on the runner label that only the launch host
+carries, because SSH reaches the peer from there and not the other way round.
 
 It stages the tree onto a filesystem both nodes mount, so the two ranks cannot
 disagree about which revision they are evidence about, and it runs them through
@@ -363,6 +372,7 @@ lane removes them and only a directory with that name is treated as its own.
 python tools/ci_tier.py multinode-scheduled
 # what that tier runs, on the launch host:
 python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run
+python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps
 ```
 
 No test carries `distributed_multinode`. The seven that did need a launcher

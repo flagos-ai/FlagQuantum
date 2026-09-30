@@ -6,10 +6,16 @@ one workload sharded across the node boundary. It records how two sites were
 prepared, the preflight the launcher performs, and the evidence a passing run
 produces.
 
+The lane runs one workload per invocation, selected by `--probe`: a statevector
+workload that shards amplitudes and an MPS workload that shards sites. They
+share the pair, the plan, the preflight and the watchdog, because those are
+properties of the pair; each brings its own circuit, its own artifact schema
+and its own capability entry.
+
 Preparing a pair and passing the preflight establishes readiness and transport
 health. It is not scalability evidence; the
-[evidence boundary](#evidence-boundary) section states what the recorded run
-does and does not establish.
+[evidence boundary](#evidence-boundary) section states what the recorded runs
+do and do not establish.
 
 ## Recorded sites
 
@@ -316,10 +322,14 @@ On the launch host, one command runs the whole lane:
 
 ```bash
 python tools/multinode_launch_plan.py --run \
+  --probe mps \
   --staging /nfs/fq-multinode-run \
   --checkpoint-directory /nfs/fq-multinode-run-checkpoints \
   --report-directory hardware-run
 ```
+
+`--probe` selects the workload and defaults to `statevector`; everything else
+is shared.
 
 It takes three shared paths, and the names matter because the lane empties two
 of them:
@@ -357,9 +367,11 @@ must not be reported as capacity scaling.
 
 ## Recorded two-node evidence
 
-`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json` is the
-current record from this lane, taken on the eight-A800 pair. On two ranks with
-one device each it covers:
+Two artifacts have been recorded from this lane, both taken on the eight-A800
+pair with two ranks on one device each.
+
+`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json` covers
+the amplitude-sharded statevector workload:
 
 - the sharded forward pass, validated against a single-device complex128
   reference;
@@ -374,6 +386,30 @@ amplitudes, and the communication it reports is inter-node with none
 intra-node. It carries six blockers, including `rdma_not_tested` and
 `production_performance_not_measured`, and reports `scalability_claim_allowed`
 and `release_gate_allowed` false.
+
+`artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json` covers the
+site-sharded MPS workload. Six wires at two ranks gives three owned sites per
+rank, so the middle adjacent gate straddles the ownership boundary and an
+ordinary gate exercises the exchange:
+
+- the sharded forward pass, gathered for validation and compared with the same
+  complex128 reference;
+- an exact reverse gradient, with the layer-boundary halo prefetched over the
+  inter-node transport rather than reconstructed, and one parameter that both
+  ranks own because it is bound on both halves;
+- three optimizer legs that checkpoint and resume, compared step for step with
+  an uninterrupted run of the same length;
+- the optimizer's initial loss checked against the reference expectation, so
+  the training objective is tied to the exact statevector rather than to
+  itself.
+
+Its numerical metrics are at round-off, the two ranks report distinct host and
+device identities, and the reverse attributes 32 bytes of layer halo to the
+inter-node tier and none to the intra-node tier. It carries six blockers,
+including `inter_node_cut_width_not_swept` and `rdma_not_tested`, and reports
+both claim flags false. Unlike the statevector artifact it belongs to a
+capability that also claims single-host and multi-GPU support, so it is the
+multi-node leg of a broader entry rather than an entry of its own.
 
 ## Evidence boundary
 

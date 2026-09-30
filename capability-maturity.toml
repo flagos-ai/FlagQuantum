@@ -181,14 +181,14 @@ category = "distributed_execution"
 user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
 public_apis = ["flagquantum.simulation.mps.run_mps", "flagquantum.experimental.distributed.train_distributed_mps"]
 runtime_modes = ["mps", "distributed_mps"]
-hardware = ["cpu", "single_gpu", "multi_gpu", "multi_node"]
+hardware = ["cpu", "single_gpu", "multi_gpu"]
 gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
 documentation = "examples/distributed_mps/README.md"
 level = "development_evidence"
 owner = "MPS maintainers"
-limitations = "Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
+limitations = "Single-node and multi-GPU execution plus matched checkpoint/restart have recorded evidence. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
 focused_tests = "tests/unit/test_mps_training.py"
 development_artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
 
@@ -259,6 +259,26 @@ format = "string"
 label = "Topology fingerprint"
 selector = "topology_fingerprint"
 format = "string"
+
+[capabilities.two_node_mps_training]
+title = "Two-node MPS training"
+summary = "Shard one logical matrix product state by site across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one MPS workload across two nodes", "Resume a multi-node MPS run from its checkpoint", "Inspect inter-node site-boundary communication and rank placement"]
+public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_mps"]
+runtime_modes = ["distributed_mps"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TESTING.md"
+level = "production_supported"
+owner = "MPS maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, a bond limit that truncates nothing, and a cut width that was not swept. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The tiny full MPS is gathered for validation only; congestion, capacity and production performance were not measured; RDMA was not used or tested; topologies wider than one device per host are not covered, so this evidence does not establish behaviour as the cut widens or as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take."
+focused_tests = "tests/unit/test_mps_reverse_contracts.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_mps_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.double_single_fp32]
 title = "Double-Single FP32 numerical primitives"
