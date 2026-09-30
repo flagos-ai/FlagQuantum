@@ -29,6 +29,9 @@ This catalog is generated from the machine-validated
 | Train one statevector workload across multiple ranks | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Plan distributed statevector ownership | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Inspect communication and sharding semantics | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
+| Train one statevector workload across two nodes | Two-node statevector training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Resume a multi-node statevector run from its checkpoint | Two-node statevector training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
+| Inspect inter-node statevector communication and rank placement | Two-node statevector training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
 | Check FlagQuantum and Torch-FL integration | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
 | Audit the statevector operator profile | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
 | Compare complex numerical behavior with a CPU complex128 reference | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
@@ -566,12 +569,26 @@ Partition one logical statevector workload across ranks while preserving differe
 - **Maturity:** Production supported
 - **Public API:** `fq.plan`, `flagquantum.experimental.distributed.train_distributed_statevector`
 - **Runtime modes:** `distributed_statevector`
-- **Hardware:** `multi_gpu`, `multi_node`
+- **Hardware:** `cpu`, `multi_gpu`
 - **Gradient support:** `exact`
 - **Distribution semantics:** `sharded_across_ranks`
 - **Start:** [quick example](../../examples/distributed_statevector_topologies/run.sh)
 - **Documentation:** [guide](../../examples/distributed_statevector_topologies/README.md)
-- **Known boundary:** Multi-node release certification remains dependent on promoted audited hardware evidence.
+- **Known boundary:** Target hardware is one host: the required two-GPU gate covers forward, backward, and training on two local devices with NCCL. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts.
+
+### Two-node statevector training
+
+Shard one logical statevector workload across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce.
+
+- **Maturity:** Production supported
+- **Public API:** `fq.plan`, `flagquantum.experimental.distributed.train_distributed_statevector`
+- **Runtime modes:** `distributed_statevector`
+- **Hardware:** `multi_node`, `nvidia_a800_sxm4_80gb`
+- **Gradient support:** `exact`
+- **Distribution semantics:** `sharded_across_ranks`
+- **Start:** [quick example](../../docs/guides/MULTINODE_RUNBOOK.md)
+- **Documentation:** [guide](../../docs/development/TESTING.md)
+- **Known boundary:** Scope is the recorded pair: two A800 hosts with one device per host and one five-wire complex128 circuit. Inter-node shard exchange, the exact adjoint gradient, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. Congestion behaviour and capacity were not measured, RDMA was not used or tested, topologies wider than one device per host are not covered, and the tiny full state is gathered for validation only.
 
 ### FlagOS distributed statevector workloads
 

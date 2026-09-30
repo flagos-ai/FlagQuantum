@@ -69,18 +69,38 @@ category = "distributed_execution"
 user_goals = ["Train one statevector workload across multiple ranks", "Plan distributed statevector ownership", "Inspect communication and sharding semantics"]
 public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_statevector"]
 runtime_modes = ["distributed_statevector"]
-hardware = ["multi_gpu", "multi_node"]
+hardware = ["cpu", "multi_gpu"]
 gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "examples/distributed_statevector_topologies/run.sh"
 documentation = "examples/distributed_statevector_topologies/README.md"
 level = "production_supported"
 owner = "PyTorch distributed maintainers"
-limitations = "Multi-node release certification remains dependent on promoted audited hardware evidence."
+limitations = "Target hardware is one host: the required two-GPU gate covers forward, backward, and training on two local devices with NCCL. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts."
 focused_tests = "tests/unit/test_statevector_training.py"
 integration_tests = "tests/distributed/statevector_training_runtime.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
+
+[capabilities.two_node_statevector_training]
+title = "Two-node statevector training"
+summary = "Shard one logical statevector workload across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one statevector workload across two nodes", "Resume a multi-node statevector run from its checkpoint", "Inspect inter-node statevector communication and rank placement"]
+public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TESTING.md"
+level = "production_supported"
+owner = "PyTorch distributed maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host and one five-wire complex128 circuit. Inter-node shard exchange, the exact adjoint gradient, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. Congestion behaviour and capacity were not measured, RDMA was not used or tested, topologies wider than one device per host are not covered, and the tiny full state is gathered for validation only."
+focused_tests = "tests/unit/test_statevector_forward.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_statevector_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.flagos_statevector_reference]
 title = "FlagOS local statevector CUDA reference"

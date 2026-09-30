@@ -8,7 +8,7 @@ studies.
 
 - [Local simulation, measurement, and training](LOCAL_WORKFLOWS.md)
 - [Service and protocol integration](SERVICE_INTEGRATION.md)
-- [Multi-node A100 runbook](MULTINODE_A100_RUNBOOK.md)
+- [Two-node distributed runbook](MULTINODE_RUNBOOK.md)
 - [Performance and memory engineering](PERFORMANCE_ENGINEERING.md)
 - [PyTorch operator requirements for FlagGems](PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)
 - [JAX JIT performance case](JAX_JIT_PERFORMANCE_CASE.md)
