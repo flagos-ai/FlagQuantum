@@ -221,3 +221,39 @@ def fused_cx_adjoint_inplace_(
             n_wires,
         )
     return True
+
+
+def fused_compact_cx_adjoint_inplace_(
+    ket: torch.Tensor,
+    adjoint: torch.Tensor,
+    images: torch.Tensor,
+) -> bool:
+    """Apply a compact inverse CX mapping in place through permutation cycles."""
+
+    if (
+        os.getenv("FQ_NATIVE_CPU_CX_ADJOINT_CYCLES", "1").strip().lower()
+        in {"0", "false", "off", "no"}
+        or not native_cpu_cx_adjoint_inplace_available()
+        or ket.requires_grad
+        or adjoint.requires_grad
+        or ket.device.type != "cpu"
+        or adjoint.device.type != "cpu"
+        or images.device.type != "cpu"
+        or ket.dtype not in {torch.complex64, torch.complex128}
+        or adjoint.dtype != ket.dtype
+        or images.dtype != torch.int64
+        or ket.ndim != 2
+        or adjoint.shape != ket.shape
+        or images.ndim != 1
+        or not 1 < images.numel() < 31
+        or ket.shape[1] != 1 << images.numel()
+        or not all(item.is_contiguous() for item in (ket, adjoint, images))
+    ):
+        return False
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_compact_cx_adjoint_inplace_(
+            ket,
+            adjoint,
+            images,
+        )
+    return True

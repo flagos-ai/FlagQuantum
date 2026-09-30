@@ -10,6 +10,7 @@ import torch
 
 from ....simulation.native_cpu import (
     fused_compact_cx_adjoint_gather,
+    fused_compact_cx_adjoint_inplace_,
     fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
     native_cpu_cx_rotation_adjoint_fusion_available,
@@ -19,6 +20,8 @@ from ....simulation.native_cpu.permutation import compact_cx_permutation_images
 from ....simulation.statevector.operations import (
     _cx_sequence_permutation_index,
 )
+
+_CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH = 8
 
 
 def cpu_cx_permutation_index(
@@ -111,15 +114,34 @@ def apply_or_defer_cpu_cx_adjoint_segment(
 
     controls = tuple(wires[0] for wires in reversed(segment_wires))
     targets = tuple(wires[1] for wires in reversed(segment_wires))
-    if sweep.policy.low_memory_cpu_cx and fused_cx_adjoint_inplace_(
-        sweep.reversible_state.amplitudes,
-        sweep.adjoint,
-        controls,
-        targets,
-        sweep.plan.n_wires,
-    ):
-        sweep.skipped_cx_indices.update(range(segment_start, index))
-        return True
+    if sweep.policy.low_memory_cpu_cx:
+        images = cpu_cx_permutation_images(
+            controls,
+            targets,
+            sweep.plan.n_wires,
+        )
+        if len(
+            controls
+        ) >= _CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH and fused_compact_cx_adjoint_inplace_(
+            sweep.reversible_state.amplitudes,
+            sweep.adjoint,
+            images,
+        ):
+            sweep.evidence.peak_scratch_bytes = max(
+                sweep.evidence.peak_scratch_bytes,
+                9 * sweep.reversible_state.amplitudes.shape[1],
+            )
+            sweep.skipped_cx_indices.update(range(segment_start, index))
+            return True
+        if fused_cx_adjoint_inplace_(
+            sweep.reversible_state.amplitudes,
+            sweep.adjoint,
+            controls,
+            targets,
+            sweep.plan.n_wires,
+        ):
+            sweep.skipped_cx_indices.update(range(segment_start, index))
+            return True
     if (
         segment_start > 0
         and sweep.bound.instructions[segment_start - 1].name in {"rx", "ry", "rz"}

@@ -27,6 +27,7 @@ from flagquantum.runtime.executors.statevector.reverse_adjoint_cx import (
 )
 from flagquantum.simulation.native_cpu import (
     fused_compact_cx_adjoint_gather,
+    fused_compact_cx_adjoint_inplace_,
     fused_compact_cx_gather_out,
     fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
@@ -186,6 +187,45 @@ def test_native_cx_adjoint_inplace_has_explicit_environment_rollback(
     ket = torch.ones((1, 4), dtype=torch.complex128)
 
     assert not fused_cx_adjoint_inplace_(ket, ket.clone(), (0,), (1,), 2)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("batch", (1, 2))
+def test_native_compact_cx_adjoint_inplace_matches_sequence_gather(
+    dtype: torch.dtype,
+    batch: int,
+) -> None:
+    if not native_cpu_cx_adjoint_inplace_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(13921 + batch)
+    ket = (
+        torch.randn((batch, 128), generator=generator)
+        + 1j * torch.randn((batch, 128), generator=generator)
+    ).to(dtype)
+    adjoint = (
+        torch.randn((batch, 128), generator=generator)
+        + 1j * torch.randn((batch, 128), generator=generator)
+    ).to(dtype)
+    controls = (5, 2, 0, 6, 3)
+    targets = (6, 4, 1, 3, 5)
+    index = cpu_cx_permutation_index(ket, controls, targets, 7)
+    images = cpu_cx_permutation_images(controls, targets, 7)
+    expected_ket = torch.index_select(ket, 1, index)
+    expected_adjoint = torch.index_select(adjoint, 1, index)
+
+    assert fused_compact_cx_adjoint_inplace_(ket, adjoint, images)
+    torch.testing.assert_close(ket, expected_ket)
+    torch.testing.assert_close(adjoint, expected_adjoint)
+
+
+def test_native_compact_cx_adjoint_inplace_has_explicit_environment_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_CYCLES", "0")
+    ket = torch.ones((1, 4), dtype=torch.complex128)
+    images = torch.tensor((2, 1), dtype=torch.int64)
+
+    assert not fused_compact_cx_adjoint_inplace_(ket, ket.clone(), images)
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))

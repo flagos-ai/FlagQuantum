@@ -3,8 +3,11 @@
 #include <ATen/Parallel.h>
 #include <torch/library.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "linear_permutation.h"
 
@@ -14,6 +17,11 @@ using flagquantum_native::LinearLookup;
 using flagquantum_native::apply_linear_lookup;
 using flagquantum_native::build_linear_lookup;
 using flagquantum_native::linear_shift_mode;
+
+inline uint64_t insert_zero_bit(uint64_t value, int64_t position) {
+  const uint64_t low_mask = (uint64_t{1} << position) - 1;
+  return (value & low_mask) | ((value & ~low_mask) << 1);
+}
 
 template <typename scalar_t, typename index_t>
 void gather_state_out(
@@ -300,21 +308,133 @@ void fused_cx_adjoint_inplace_cpu(
       TORCH_CHECK(control >= 0 && control < n_wires, "control wire is out of range");
       TORCH_CHECK(target >= 0 && target < n_wires, "target wire is out of range");
       TORCH_CHECK(control != target, "control and target wires must differ");
-      const int64_t control_mask = int64_t{1} << (n_wires - control - 1);
-      const int64_t target_mask = int64_t{1} << (n_wires - target - 1);
-      at::parallel_for(
-          int64_t{0}, batch * width, int64_t{4096}, [&](int64_t begin, int64_t end) {
-            for (int64_t item = begin; item < end; ++item) {
-              const int64_t basis = item % width;
-              if ((basis & control_mask) != 0 && (basis & target_mask) == 0) {
-                const int64_t peer = item ^ target_mask;
-                std::swap(ket_data[item], ket_data[peer]);
-                std::swap(adjoint_data[item], adjoint_data[peer]);
+      const int64_t control_position = n_wires - control - 1;
+      const int64_t target_position = n_wires - target - 1;
+      const int64_t low_position = std::min(control_position, target_position);
+      const int64_t high_position = std::max(control_position, target_position);
+      const uint64_t control_mask = uint64_t{1} << control_position;
+      const uint64_t target_mask = uint64_t{1} << target_position;
+      const int64_t pair_count = width / 4;
+      const auto swap_pair = [&](int64_t row, uint64_t ordinal) {
+        uint64_t basis = insert_zero_bit(ordinal, low_position);
+        basis = insert_zero_bit(basis, high_position) | control_mask;
+        const int64_t item = row * width + static_cast<int64_t>(basis);
+        const int64_t peer = item ^ static_cast<int64_t>(target_mask);
+        std::swap(ket_data[item], ket_data[peer]);
+        std::swap(adjoint_data[item], adjoint_data[peer]);
+      };
+      if (batch == 1) {
+        at::parallel_for(
+            int64_t{0}, pair_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+              for (int64_t pair = begin; pair < end; ++pair) {
+                swap_pair(0, static_cast<uint64_t>(pair));
               }
-            }
-          });
+            });
+      } else {
+        at::parallel_for(
+            int64_t{0}, batch * pair_count, int64_t{4096},
+            [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / pair_count;
+                swap_pair(row, static_cast<uint64_t>(item - row * pair_count));
+              }
+            });
+      }
     }
   });
+}
+
+void fused_compact_cx_adjoint_inplace_cpu(
+    at::Tensor& ket,
+    at::Tensor& adjoint,
+    const at::Tensor& images) {
+  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  TORCH_CHECK(images.device().is_cpu(), "CX images must be on CPU");
+  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  TORCH_CHECK(images.is_contiguous(), "CX images must be contiguous");
+  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
+  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
+  TORCH_CHECK(
+      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(images.dim() == 1, "CX images must be one-dimensional");
+  TORCH_CHECK(images.scalar_type() == at::kLong, "CX images must be int64");
+  const int64_t n_wires = images.numel();
+  TORCH_CHECK(n_wires > 1 && n_wires < 31, "CX image count must be in [2, 30]");
+  const int64_t width = ket.size(1);
+  TORCH_CHECK(width == (int64_t{1} << n_wires),
+              "CX image count must match state width");
+
+  const int64_t batch = ket.size(0);
+  const int64_t chunk_count = (n_wires + 7) / 8;
+  const LinearLookup lookup = build_linear_lookup(images);
+  const int64_t shift_mode = linear_shift_mode(images);
+  const uint64_t state_mask = (uint64_t{1} << n_wires) - 1;
+  std::vector<int32_t> permutation(static_cast<size_t>(width));
+  at::parallel_for(
+      int64_t{0}, width, int64_t{4096}, [&](int64_t begin, int64_t end) {
+        for (int64_t destination = begin; destination < end; ++destination) {
+          permutation[static_cast<size_t>(destination)] = static_cast<int32_t>(
+              apply_linear_lookup(
+                  static_cast<uint64_t>(destination),
+                  lookup,
+                  chunk_count,
+                  shift_mode,
+                  state_mask));
+        }
+      });
+
+  std::vector<uint8_t> visited(static_cast<size_t>(width), uint8_t{0});
+  std::vector<int32_t> leaders;
+  leaders.reserve(static_cast<size_t>(width / 16));
+  for (int64_t start = 0; start < width; ++start) {
+    if (visited[static_cast<size_t>(start)] != 0) {
+      continue;
+    }
+    leaders.push_back(static_cast<int32_t>(start));
+    int32_t current = static_cast<int32_t>(start);
+    do {
+      TORCH_CHECK(
+          visited[static_cast<size_t>(current)] == 0,
+          "CX images must define a bijection");
+      visited[static_cast<size_t>(current)] = uint8_t{1};
+      current = permutation[static_cast<size_t>(current)];
+    } while (current != start);
+  }
+
+  AT_DISPATCH_COMPLEX_TYPES(
+      ket.scalar_type(), "fused_compact_cx_adjoint_inplace_cpu", [&] {
+        scalar_t* ket_data = ket.data_ptr<scalar_t>();
+        scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+        const int64_t cycle_count = static_cast<int64_t>(leaders.size());
+        at::parallel_for(
+            int64_t{0}, batch * cycle_count, int64_t{64},
+            [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / cycle_count;
+                const int32_t leader = leaders[static_cast<size_t>(
+                    item - row * cycle_count)];
+                int32_t current = leader;
+                const scalar_t first_ket = ket_data[row * width + leader];
+                const scalar_t first_adjoint =
+                    adjoint_data[row * width + leader];
+                int32_t next = permutation[static_cast<size_t>(current)];
+                while (next != leader) {
+                  ket_data[row * width + current] =
+                      ket_data[row * width + next];
+                  adjoint_data[row * width + current] =
+                      adjoint_data[row * width + next];
+                  current = next;
+                  next = permutation[static_cast<size_t>(current)];
+                }
+                ket_data[row * width + current] = first_ket;
+                adjoint_data[row * width + current] = first_adjoint;
+              }
+            });
+      });
 }
 
 }  // namespace
@@ -335,6 +455,9 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
   library.def(
       "fused_cx_adjoint_inplace_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor controls, Tensor targets, int n_wires) -> ()");
+  library.def(
+      "fused_compact_cx_adjoint_inplace_(Tensor(a!) ket, Tensor(b!) adjoint, "
+      "Tensor images) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
@@ -345,4 +468,7 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
       "fused_compact_cx_adjoint_gather",
       fused_compact_cx_adjoint_gather_cpu);
   library.impl("fused_cx_adjoint_inplace_", fused_cx_adjoint_inplace_cpu);
+  library.impl(
+      "fused_compact_cx_adjoint_inplace_",
+      fused_compact_cx_adjoint_inplace_cpu);
 }
