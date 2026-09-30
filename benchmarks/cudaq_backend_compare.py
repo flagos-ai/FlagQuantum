@@ -509,11 +509,22 @@ def main() -> None:
         "schema": SCHEMA,
         "benchmark": "cudaq_backend_compare",
         # A cross-framework comparison is never release evidence: it measures
-        # this machine on this workload, not capacity expansion.
-        "benchmark_evidence_class": "comparison",
+        # this machine on this workload, not capacity expansion. The value comes
+        # from the closed vocabulary tests/benchmark_contract enforces.
+        "benchmark_evidence_class": "comparison_non_release",
         "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "distribution_semantics": "single_device_fast_path",
+        "scalability_blockers": [
+            "One device ran one logical workload. Nothing was partitioned across "
+            "ranks, so no capacity-expansion statement follows from this payload.",
+            "This is a cross-framework comparison, and the two sides do not execute "
+            "the same schedule: the CUDA-Q side issues one host-side call per "
+            "gradient evaluation while the FlagQuantum side calls one fused "
+            "compiled program. A ratio here measures call structure as well as "
+            "numeric throughput.",
+        ],
         "n_wires": int(args.n_wires),
         "layers": int(args.layers),
         "batch_size": int(args.batch_size),

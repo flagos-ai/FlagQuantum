@@ -37,14 +37,25 @@ settle, and `contracts/cudaq-parity-matrix.toml` registers both under
 | `benchmarks/cudaq_gradient_capability_probe.py` | Which gradient strategies the installed CUDA-Q exposes, by runtime public-symbol inspection rather than by reading documentation. |
 | `benchmarks/cudaq_backend_compare.py` | Whether one FlagQuantum JAX kernel and one CUDA-Q target agree numerically on a matched circuit, observable, dtype, gradient method, warmup, and iteration count, and how long each took. |
 
-Both are registered at `status = "runnable"`, which means the script starts and
-emits its schema. It does not mean a payload has been recorded: no CI lane in
-this repository installs CUDA-Q, because the PyPI `cudaq` release is a source
-distribution whose build hook resolves a platform binary wheel at install time,
-so a lane cannot install the pinned version from a fixed index without a CUDA
-runtime present. A probe whose payload has been captured and landed under
-`benchmarks/results/` is promoted to `status = "measured"`, and that promotion
-is what a scale or ratio statement would need before it can be repeated.
+They carry different statuses, because they stand on different evidence.
+
+`benchmarks/cudaq_gradient_capability_probe.py` is `status = "runnable"`, which
+means the script starts and emits its schema. It does not mean a payload has been
+recorded.
+
+`benchmarks/cudaq_backend_compare.py` is `status = "measured"`, which means a
+payload from a named machine is landed under `benchmarks/results/` with its
+source revision, container image, environment, and methodology recorded next to
+it, and `benchmarks/audit_results.py` accepts it. That payload is
+`benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json`, read in
+`benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md`. It was
+captured by hand on 2026-09-30 on `jp-a800-172` against CUDA-Q 0.16.0.post1.
+
+No CI lane in this repository installs CUDA-Q, so a payload is only ever
+captured by hand: the PyPI `cudaq` release is a source distribution whose build
+hook resolves a platform binary wheel at install time, and a lane cannot install
+the pinned version from a fixed index without a CUDA runtime present. That is a
+property of how CUDA-Q ships, not a choice this repository made.
 
 Consequences of that method, stated so they are not mistaken for strengths:
 
@@ -54,8 +65,10 @@ Consequences of that method, stated so they are not mistaken for strengths:
 - A capability listed as present is listed because it is documented or shipped in
   the pinned versions, not because it was reproduced here.
 - Backend behaviour under a workload, rather than the existence of the backend, is
-  out of scope for this survey. That is exactly the part the two probes measure,
-  and it stays out of scope until a payload is landed.
+  out of scope for this survey. That is the part the probes measure, and one
+  workload on one machine is now recorded. A recorded payload is still not a
+  survey finding: it describes the machine, revision, and workload it names, and
+  no row of the matrix is restated from it.
 
 ## Scope
 
@@ -111,9 +124,11 @@ The validator enforces:
   recording the negative search that established an absence;
 - no row asserts scalability.
 
-A scale statement in the matrix stays out of scope until a probe's payload has
-been captured, landed under `benchmarks/results/`, and accepted by
-`benchmarks/audit_results.py`. Neither probe has a landed payload today.
+A scale statement in the matrix stays out of scope even after a payload lands:
+the matrix records capability presence and absence, and no row in it is a
+performance or capacity claim. The landed payload is registered in the contract
+because it is the evidence behind the probe's own status, not because it promotes
+any row.
 
 ## Relationship to the existing capability index
 

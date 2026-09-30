@@ -146,6 +146,23 @@ def probe_problems(contract: dict[str, Any]) -> list[str]:
                 f"baseline probe {path_text!r} matches no file; a probe that does "
                 "not exist cannot be runnable"
             )
+        if probe.get("status") != "measured":
+            continue
+        # `measured` is the stronger claim, so it has to carry the artifact that
+        # justifies it. A status word with no payload behind it is the failure
+        # mode this field exists to prevent.
+        for field in ("payload", "report"):
+            artifact = probe.get(field)
+            if not artifact:
+                problems.append(
+                    f"baseline probe {path_text!r}: status is 'measured' but no "
+                    f"{field} names the evidence"
+                )
+            elif not (REPO_ROOT / artifact).is_file():
+                problems.append(
+                    f"baseline probe {path_text!r}: {field} {artifact!r} matches no "
+                    "file, so the measured status rests on nothing"
+                )
     return problems
 
 
@@ -362,6 +379,12 @@ def render_document(contract: dict[str, Any]) -> str:
                 lines.append(
                     f"First capture, `{probe['path']}`: {probe['first_capture']}"
                 )
+            if probe.get("payload"):
+                lines.append("")
+                lines.append(f"Landed payload: `{probe['payload']}`")
+            if probe.get("report"):
+                lines.append("")
+                lines.append(f"Reading of that payload: `{probe['report']}`")
     related = contract.get("related_contracts", ())
     if related:
         lines.append("")

@@ -8,15 +8,18 @@ generated document.
 from __future__ import annotations
 
 import copy
+import json
 from pathlib import Path
 
 import pytest
 
+from flagquantum.runtime.audit.engine import audit_distributed_scalability
 from tools.parity_matrix import (
     CONTRACT_PATH,
     MATURITY_PATH,
     OUTPUT_PATH,
     load_inputs,
+    probe_problems,
     render_document,
     validate_contract,
     version_pin_problems,
@@ -176,3 +179,49 @@ def test_ci_gates_the_matrix_and_the_certified_cudaq_lane_agrees(
     assert "python tools/parity_matrix.py --check" in workflow
     pinned = " ".join(contract["cudaq_versions"])
     assert f'OPTIONAL_VERSIONS: "{pinned}"' in workflow
+
+
+def _probe(contract: dict, path: str) -> dict:
+    for probe in contract["baseline"]["probes"]:
+        if probe["path"] == path:
+            return probe
+    raise AssertionError(f"the contract does not register {path}")
+
+
+def test_a_measured_probe_must_name_a_landed_payload_and_its_report(
+    contract: dict,
+) -> None:
+    probe = _probe(contract, "benchmarks/cudaq_backend_compare.py")
+    assert probe["status"] == "measured"
+    for field in ("payload", "report"):
+        artifact = ROOT / probe[field]
+        assert artifact.is_file(), f"{probe[field]} is registered but absent"
+
+
+def test_contract_rejects_a_measured_probe_with_no_payload(contract: dict) -> None:
+    probe = _probe(contract, "benchmarks/cudaq_backend_compare.py")
+    probe.pop("payload")
+    errors = probe_problems(contract)
+    assert any(
+        "status is 'measured' but no payload names the evidence" in error
+        for error in errors
+    )
+
+
+def test_contract_rejects_a_measured_probe_pointing_at_a_missing_payload(
+    contract: dict,
+) -> None:
+    _probe(contract, "benchmarks/cudaq_backend_compare.py")[
+        "payload"
+    ] = "benchmarks/results/comparison/not_recorded.json"
+    errors = probe_problems(contract)
+    assert any("the measured status rests on nothing" in error for error in errors)
+
+
+def test_a_landed_payload_survives_the_benchmark_audit() -> None:
+    probe = _probe(load_inputs()[0], "benchmarks/cudaq_backend_compare.py")
+    payload = json.loads((ROOT / probe["payload"]).read_text(encoding="utf-8"))
+    audit = audit_distributed_scalability(payload)
+    assert audit.valid, audit.summary()
+    assert not audit.scalability_claim_allowed
+    assert not audit.release_gate_allowed

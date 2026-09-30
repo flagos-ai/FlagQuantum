@@ -11,14 +11,20 @@ This scoreboard is generated from `contracts/cudaq-parity-matrix.toml`. It compa
 
 Baseline probes:
 
-A probe is a runnable repository script whose JSON payload can be landed as evidence. `runnable` means the probe starts and emits its schema; it does not mean the payload behind it has been recorded. Every probe must declare a versioned schema identifier and a source identity.
+A probe is a runnable repository script whose JSON payload can be landed as evidence. `runnable` means the probe starts and emits its schema. `measured` means a payload from a named machine is landed under benchmarks/results with the source revision, container image, environment, and methodology recorded next to it, and that benchmarks/audit_results.py accepts it. Every probe must declare a versioned schema identifier and a source identity.
 
 | Probe | Status | What it measures |
 | --- | --- | --- |
 | `benchmarks/cudaq_gradient_capability_probe.py` | runnable | Which gradient strategies the installed CUDA-Q exposes through cudaq.gradients, by runtime public-symbol inspection. |
-| `benchmarks/cudaq_backend_compare.py` | runnable | Wall-clock and precision comparison of one FlagQuantum JAX kernel against one CUDA-Q target on a matched circuit, observable, dtype, gradient method, warmup, and iteration count. |
+| `benchmarks/cudaq_backend_compare.py` | measured | Wall-clock and precision comparison of one FlagQuantum JAX kernel against one CUDA-Q target on a matched circuit, observable, dtype, gradient method, warmup, and iteration count. |
 
 First capture, `benchmarks/cudaq_gradient_capability_probe.py`: CUDA-Q 0.16.0.post1 exported ParameterShift, CentralDifference, ForwardDifference, and gradient, and exposed no adjoint, reverse, or backprop symbol.
+
+First capture, `benchmarks/cudaq_backend_compare.py`: On 2026-09-30 on jp-a800-172, one A800-SXM4-80GB, CUDA-Q 0.16.0.post1, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured: the largest loss deviation was 8.6e-06 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.3x at 8 wires to 89x at 22 wires, while the FlagQuantum fused value-and-gradient program was faster per call.
+
+Landed payload: `benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json`
+
+Reading of that payload: `benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md`
 
 Related CUDA-Q contracts:
 
@@ -30,7 +36,8 @@ These contracts also describe CUDA-Q and answer different questions: the export 
 - Limitation: A capability absent from this matrix is not evidence that CUDA-Q lacks it; it is evidence that the survey did not record it.
 - Limitation: The pinned versions are the ones the repository already targets in contracts/cudaq-export-contract.toml. A CUDA-Q release outside that range requires a new capture.
 - Limitation: No row in this file is a performance comparison. Measured numbers belong in benchmarks/results and require an audited payload.
-- Limitation: A `runnable` probe is not a recorded measurement. CUDA-Q is not installable from the pinned public index as a binary wheel: the PyPI `cudaq` release is an sdist whose build hook resolves a platform binary distribution at install time. No CI lane in this repository therefore runs either probe, and every probe-backed statement here remains a survey statement until a payload from a named machine is landed under benchmarks/results.
+- Limitation: A `runnable` probe is not a recorded measurement. CUDA-Q is not installable from the pinned public index as a binary wheel: the PyPI `cudaq` release is an sdist whose build hook resolves a platform binary distribution at install time. No CI lane in this repository runs either probe, so a payload is only ever captured by hand on a machine that reaches a working CUDA-Q index. The gradient capability probe has no landed payload and remains a survey statement.
+- Limitation: A landed payload describes only the machine, revision, and workload it names. It is not scalability evidence and it does not generalise to other widths, observables, targets, or CUDA-Q releases.
 
 No row in this document is a performance comparison or a scalability claim.
 

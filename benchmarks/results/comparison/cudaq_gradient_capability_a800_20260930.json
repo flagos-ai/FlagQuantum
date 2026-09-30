@@ -1,0 +1,73 @@
+{
+  "schema": "flagquantum.benchmark.cudaq_gradient_capability_artifact.v1",
+  "benchmark": "cudaq_gradient_capability_probe",
+  "artifact_class": "capability_probe",
+  "benchmark_evidence_class": "comparison_non_release",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "claim_evidence_type": "unknown",
+  "distribution_semantics": "single_device_fast_path",
+  "world_size": 1,
+  "runner": "benchmarks/cudaq_gradient_capability_probe.py",
+  "runner_sha256": "3cce7218e097c74604f363c1f6330c14bad72b718718b2bb30e4e3235d5367bd",
+  "source_revision": "20f0ff7",
+  "container_image_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+  "host": "jp-a800-172",
+  "host_fqdn": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+  "environment": {
+    "cudaq": "0.16.0.post1",
+    "driver_version": "580.126.20",
+    "python": "3.12.13"
+  },
+  "methodology": {
+    "inspection_method": "runtime_public_python_symbol_inspection",
+    "independent_run_count": 3,
+    "runs_agree": true,
+    "note": "Symbol inspection reports which gradient strategies the installed CUDA-Q exposes. It does not measure their numerical accuracy, and it does not establish that a matched reverse-mode gradient is absent from CUDA-Q's compiled layers."
+  },
+  "cudaq_version": "0.16.0.post1",
+  "capability": {
+    "central_difference_available": true,
+    "exported_gradient_symbols": [
+      "CentralDifference",
+      "ForwardDifference",
+      "ParameterShift",
+      "gradient"
+    ],
+    "forward_difference_available": true,
+    "inspection_method": "runtime_public_python_symbol_inspection",
+    "matched_reverse_mode_symbols": [],
+    "matched_value_and_gradient_available": false,
+    "parameter_shift_available": true
+  },
+  "workload": {
+    "dtype": "complex64",
+    "layers": 8,
+    "n_wires": 31,
+    "name": "full_width_linear_hea",
+    "observable": "Z(15)",
+    "parameter_count": 248,
+    "requested_operation": "value_and_full_reverse_gradient"
+  },
+  "comparison_class": "capability_survey_measured_on_a_named_machine",
+  "official_documentation": {
+    "accessed": "2026-08-11",
+    "documented_gradient_strategies": [
+      "CentralDifference",
+      "ForwardDifference",
+      "ParameterShift"
+    ],
+    "url": "https://nvidia.github.io/cuda-quantum/latest/examples/python/optimizers_gradients.html"
+  },
+  "run_workload_sha256": [
+    "bfde4101077e6bc2cbacf1d56bd0b7ed6a43cea43c723a5058cf31da04e3ba97",
+    "bfde4101077e6bc2cbacf1d56bd0b7ed6a43cea43c723a5058cf31da04e3ba97",
+    "bfde4101077e6bc2cbacf1d56bd0b7ed6a43cea43c723a5058cf31da04e3ba97"
+  ],
+  "source_revision_full": "20f0ff775940e1aeacb84bcde7e3a7e58df84c8f",
+  "source_revision_note": "The runtime image carries no git binary, so the probe recorded a null commit. The link to the revision is the SHA-256 of the probe file, recorded as runner_sha256 and identical in this checkout and in the container that ran it.",
+  "scalability_blockers": [
+    "One process inspected the public Python symbols of one installed CUDA-Q. No workload ran and nothing was distributed."
+  ]
+}

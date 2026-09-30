@@ -134,10 +134,18 @@ def test_backend_compare_emits_a_non_release_payload_with_provenance() -> None:
 
     assert payload["schema"] == "flagquantum.external.cudaq_backend_compare.v1"
     assert payload["benchmark"] == "cudaq_backend_compare"
-    assert payload["benchmark_evidence_class"] == "comparison"
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
     assert payload["non_release_evidence"] is True
     assert payload["release_gate_allowed"] is False
     assert payload["scalability_claim_allowed"] is False
+    # A probe whose payload cannot be dropped into benchmarks/results is not a
+    # landable probe, so the fields the results contract requires are checked
+    # here rather than discovered when a capture is landed.
+    for field in (
+        "distribution_semantics",
+        "scalability_blockers",
+    ):
+        assert payload[field], field
     identity = payload["source_identity"]
     assert identity["container_digest"] == "sha256:contract-test"
     assert identity["commit"]
