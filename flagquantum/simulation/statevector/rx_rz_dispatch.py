@@ -10,6 +10,7 @@ from ...kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
+from .kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-005-A"
 
@@ -35,34 +36,10 @@ def _require_rx_rz_sequence_kernel(
 ) -> KernelImplementation:
     """Return the wired implementation or fail closed on catalog drift."""
 
-    match = _rx_rz_sequence_kernel_match(device_type=device_type, dtype=dtype)
-    candidate = next(
-        (
-            item.implementation
-            for item in match.candidates
-            if item.implementation.implementation_id == _IMPLEMENTATION_ID
-        ),
-        None,
-    )
-    if candidate is not None:
-        return candidate
-
-    rejection = next(
-        (
-            item
-            for item in match.rejections
-            if item.implementation.implementation_id == _IMPLEMENTATION_ID
-        ),
-        None,
-    )
-    mismatch_codes = (
-        tuple(mismatch.code for mismatch in rejection.mismatches)
-        if rejection is not None
-        else ("implementation_not_registered",)
-    )
-    raise RuntimeError(
-        "fused RX/RZ sequence kernel is not authorized by the kernel catalog: "
-        + ", ".join(mismatch_codes)
+    return _require_cataloged_kernel(
+        _rx_rz_sequence_kernel_match(device_type=device_type, dtype=dtype),
+        implementation_id=_IMPLEMENTATION_ID,
+        description="fused RX/RZ sequence kernel",
     )
 
 
