@@ -501,11 +501,17 @@ ordinary gate exercises the exchange:
 
 Its numerical metrics are at round-off, the two ranks report distinct host and
 device identities, and the reverse attributes 32 bytes of layer halo to the
-inter-node tier and none to the intra-node tier. It carries six blockers,
-including `inter_node_cut_width_not_swept` and `rdma_not_tested`, and reports
-both claim flags false. Unlike the statevector artifact it belongs to a
-capability that also claims single-host and multi-GPU support, so it is the
-multi-node leg of a broader entry rather than an entry of its own.
+inter-node tier and none to the intra-node tier. The forward boundary figures
+in `numerical_metrics` are the workload's totals -- four messages and 192 bytes
+-- while each rank record carries the 96 bytes that rank took part in; the two
+are separate fields because ownership is rebalanced as the circuit runs, so a
+rank can observe a boundary gate spanning two other ranks' sites without
+exchanging anything for it. The artifact is checked against that arithmetic. It
+carries six blockers, including `inter_node_cut_width_not_swept` and
+`rdma_not_tested`, and reports both claim flags false. Unlike the statevector
+artifact it belongs to a capability that also claims single-host and multi-GPU
+support, so it is the multi-node leg of a broader entry rather than an entry of
+its own.
 
 `artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
 slice-sharded tensor-network workload. Five wires are contracted along a cut of
