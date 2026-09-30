@@ -55,7 +55,7 @@ DEFAULT_MASTER_PORT = AUTO_MASTER_PORT
 STAGING_PREFIX = "fq-multinode"
 
 # The route the recorded two-node artifact was taken on
-# (`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260907.json`): the
+# (`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json`): the
 # management interface with InfiniBand disabled, so the NCCL debug log can be
 # checked for both the socket transport and this interface name. The hosts do
 # carry RoCE devices; using them is a separate change with its own evidence.
