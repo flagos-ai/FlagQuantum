@@ -800,12 +800,12 @@ def _apply_cx_sequence(
     """Apply a compiled CX sequence through the available local kernel."""
 
     if state.is_cuda and state.dtype == torch.complex64:
-        from ...kernels.triton import cx_sequence
+        from .cx_sequence_dispatch import _apply_cataloged_cx_sequence
 
         control_masks, target_masks, reverse_control_masks, reverse_target_masks = (
             _cx_sequence_masks(circuit, step, state.device)
         )
-        return cx_sequence(
+        return _apply_cataloged_cx_sequence(
             state,
             control_masks=control_masks,
             target_masks=target_masks,
