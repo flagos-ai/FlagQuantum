@@ -15,10 +15,10 @@ import ast
 import json
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
 import pytest
+import tomllib
 
 import flagquantum
 

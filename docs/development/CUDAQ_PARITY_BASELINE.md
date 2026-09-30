@@ -22,12 +22,29 @@ requires a new capture and a new row review.
 
 ## Capture method
 
-Capture method: `documented_capability_survey`.
+Capture method: `documented_capability_survey_with_probes`.
 
 The CUDA-Q capability set was read from the published CUDA-Q documentation, the
 public Python API surface, the documented backend roster, and the shipped
-repository tree of the pinned versions. No CUDA-Q build was executed, and no
-CUDA-Q measurement was taken on FlagQuantum hardware.
+repository tree of the pinned versions.
+
+Two repository probes back the parts of the baseline that a document cannot
+settle, and `contracts/cudaq-parity-matrix.toml` registers both under
+`[[baseline.probes]]`:
+
+| Probe | What it establishes |
+| --- | --- |
+| `benchmarks/cudaq_gradient_capability_probe.py` | Which gradient strategies the installed CUDA-Q exposes, by runtime public-symbol inspection rather than by reading documentation. |
+| `benchmarks/cudaq_backend_compare.py` | Whether one FlagQuantum JAX kernel and one CUDA-Q target agree numerically on a matched circuit, observable, dtype, gradient method, warmup, and iteration count, and how long each took. |
+
+Both are registered at `status = "runnable"`, which means the script starts and
+emits its schema. It does not mean a payload has been recorded: no CI lane in
+this repository installs CUDA-Q, because the PyPI `cudaq` release is a source
+distribution whose build hook resolves a platform binary wheel at install time,
+so a lane cannot install the pinned version from a fixed index without a CUDA
+runtime present. A probe whose payload has been captured and landed under
+`benchmarks/results/` is promoted to `status = "measured"`, and that promotion
+is what a scale or ratio statement would need before it can be repeated.
 
 Consequences of that method, stated so they are not mistaken for strengths:
 
@@ -37,7 +54,8 @@ Consequences of that method, stated so they are not mistaken for strengths:
 - A capability listed as present is listed because it is documented or shipped in
   the pinned versions, not because it was reproduced here.
 - Backend behaviour under a workload, rather than the existence of the backend, is
-  out of scope for this survey.
+  out of scope for this survey. That is exactly the part the two probes measure,
+  and it stays out of scope until a payload is landed.
 
 ## Scope
 
@@ -93,11 +111,9 @@ The validator enforces:
   recording the negative search that established an absence;
 - no row asserts scalability.
 
-Two probes are planned and do not exist yet:
-`benchmarks/cudaq_gradient_capability_probe.py` and
-`benchmarks/cudaq_backend_compare.py`. Until one of them exists and its payload
-is accepted by benchmark audit, every scale statement in the matrix stays out of
-scope, and no row may be promoted to a scalability claim.
+A scale statement in the matrix stays out of scope until a probe's payload has
+been captured, landed under `benchmarks/results/`, and accepted by
+`benchmarks/audit_results.py`. Neither probe has a landed payload today.
 
 ## Relationship to the existing capability index
 

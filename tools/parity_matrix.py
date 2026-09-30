@@ -359,7 +359,9 @@ def render_document(contract: dict[str, Any]) -> str:
         for probe in probes:
             if probe.get("first_capture"):
                 lines.append("")
-                lines.append(f"First capture, `{probe['path']}`: {probe['first_capture']}")
+                lines.append(
+                    f"First capture, `{probe['path']}`: {probe['first_capture']}"
+                )
     related = contract.get("related_contracts", ())
     if related:
         lines.append("")

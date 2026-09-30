@@ -286,9 +286,17 @@ def _cudaq_gradient_instance(cudaq: Any, method: str) -> Any:
     raise AttributeError(f"CUDA-Q gradients module does not expose any of {names}.")
 
 
-def _cudaq_gradient_compute(gradient: Any, loss_fn: Any, values: list[float]) -> list[float]:
+def _cudaq_gradient_compute(
+    gradient: Any, loss_fn: Any, values: list[float], value_at_x: float
+) -> list[float]:
+    # CUDA-Q 0.16.0.post1 binds ParameterShift.compute as
+    # compute(parameter_vector, function, funcAtX), so the loss value at the
+    # point is an argument rather than something the strategy recomputes. The
+    # other orders are kept because the binding is not a documented stable API
+    # and a future release may drop the third argument.
     attempts = []
     call_patterns = (
+        lambda: gradient.compute(values, loss_fn, value_at_x),
         lambda: gradient.compute(values, loss_fn),
         lambda: gradient.compute(loss_fn, values),
         lambda: gradient.compute(values),
@@ -336,13 +344,14 @@ def _cudaq_value_and_grad(
     for row in rows:
         values = _cudaq_flat_params(row)
         loss_fn = lambda vector: _cudaq_observe_loss(cudaq, kernel, hamiltonian, list(vector))
-        losses.append(loss_fn(values))
+        value_at_x = loss_fn(values)
+        losses.append(value_at_x)
         if forward_only:
             grads.append(torch.zeros_like(row))
         elif method == "finite-difference":
             grads.append(torch.tensor(_cudaq_finite_difference(loss_fn, values), dtype=torch.float32).reshape_as(row))
         else:
-            grads.append(torch.tensor(_cudaq_gradient_compute(gradient, loss_fn, values), dtype=torch.float32).reshape_as(row))
+            grads.append(torch.tensor(_cudaq_gradient_compute(gradient, loss_fn, values, value_at_x), dtype=torch.float32).reshape_as(row))
     loss = torch.tensor(float(sum(losses)), dtype=torch.float32)
     grad = grads[0] if not batched else torch.stack(grads, dim=0)
     return loss, grad
