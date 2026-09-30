@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The initial catalog describes the code that already exists. It contains 19
-semantics and 21 Triton implementation entry points; no planned kernel appears
+The initial catalog describes the code that already exists. It contains 20
+semantics and 22 Triton implementation entry points; no planned kernel appears
 as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -84,6 +84,7 @@ as an empty machine record.
 | FQK-MPS-001 | `mps.contract.two_site_gate` | `fused_mps_two_site` |
 | FQK-MPS-002 | `mps.contract.two_site_gate_projected` | `fused_mps_range_projection` |
 | FQK-MPS-003 | `mps.contract.one_site_gate` | `fused_mps_one_site` |
+| FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -210,7 +211,7 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 19 semantics and 21 implementations are implemented and
+The current 20 semantics and 22 implementations are implemented and
 experimental. The rest of the 100/800 portfolio is planned or candidate work,
 not shipped capability.
 
