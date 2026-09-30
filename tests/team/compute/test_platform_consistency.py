@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,6 +22,7 @@ from flagquantum.compute import (
     get_platform_runtime,
     list_platform_status,
 )
+from flagquantum.compute.pytorch import _cgroup_memory_snapshot
 from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     CapabilityResponse,
@@ -122,7 +124,14 @@ def test_cpu_platform_lifecycle_is_portable_and_self_consistent() -> None:
     assert discovered[0].provider == runtime.name
     assert runtime.identity().provider == runtime.name
     assert runtime.identity().device_type == runtime.device_type
-    assert runtime.memory_snapshot(device) == MemorySnapshot()
+    memory = runtime.memory_snapshot(device)
+    assert isinstance(memory, MemorySnapshot)
+    assert memory.allocated_bytes is None
+    assert memory.reserved_bytes is None
+    assert memory.free_bytes is None or memory.free_bytes >= 0
+    assert memory.total_bytes is None or memory.total_bytes > 0
+    if memory.free_bytes is not None and memory.total_bytes is not None:
+        assert memory.free_bytes <= memory.total_bytes
 
     rng_state = runtime.rng_state(device)
     runtime.restore_rng_state(device, rng_state)
@@ -134,6 +143,16 @@ def test_cpu_platform_lifecycle_is_portable_and_self_consistent() -> None:
     assert start.elapsed_time(end) >= 0.0
     with runtime.stream(device):
         pass
+
+
+def test_cpu_memory_snapshot_honors_cgroup_v2_limit(tmp_path: Path) -> None:
+    (tmp_path / "memory.max").write_text(str(4 << 30), encoding="utf-8")
+    (tmp_path / "memory.current").write_text(str(1 << 30), encoding="utf-8")
+
+    memory = _cgroup_memory_snapshot(tmp_path)
+
+    assert memory.total_bytes == 4 << 30
+    assert memory.free_bytes == 3 << 30
 
 
 def test_platform_uses_existing_extension_sdk_lifecycle_without_root_mutation() -> None:

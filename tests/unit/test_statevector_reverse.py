@@ -851,6 +851,69 @@ def test_auto_checkpoint_uses_platform_memory_snapshot(monkeypatch):
     assert policy.strategy == "full_rematerialization"
 
 
+def test_auto_checkpoint_uses_host_memory_snapshot_at_24_qubits(monkeypatch):
+    available = 2 << 30
+    platform = SimpleNamespace(
+        is_available=lambda: True,
+        memory_snapshot=lambda device: SimpleNamespace(free_bytes=available),
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.checkpointing.get_platform_runtime",
+        lambda device_type: platform,
+    )
+
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(),
+        local_state_bytes=256 << 20,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.memory_budget_bytes == int(available * 0.7)
+    assert policy.strategy == "reversible_adjoint"
+    assert policy.estimated_required_bytes == 1 << 30
+
+
+def test_auto_checkpoint_keeps_24_qubit_host_headroom(monkeypatch):
+    available = 1 << 30
+    platform = SimpleNamespace(
+        is_available=lambda: True,
+        memory_snapshot=lambda device: SimpleNamespace(free_bytes=available),
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.checkpointing.get_platform_runtime",
+        lambda device_type: platform,
+    )
+
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(),
+        local_state_bytes=256 << 20,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.memory_budget_bytes == int(available * 0.7)
+    assert policy.strategy == "full_rematerialization"
+
+
+def test_auto_checkpoint_handles_exhausted_platform_memory(monkeypatch):
+    platform = SimpleNamespace(
+        is_available=lambda: True,
+        memory_snapshot=lambda device: SimpleNamespace(free_bytes=0),
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.executors.statevector.checkpointing.get_platform_runtime",
+        lambda device_type: platform,
+    )
+
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.memory_budget_bytes == 1
+    assert policy.strategy == "full_rematerialization"
+
+
 def test_explicit_checkpoint_strategy_has_priority_over_auto_budget():
     policy = resolve_checkpoint_policy(
         StatevectorCheckpointPolicy(
