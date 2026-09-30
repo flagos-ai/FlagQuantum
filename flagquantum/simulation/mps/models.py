@@ -207,6 +207,11 @@ class MPSAdaptiveBondPlan:
     budget_satisfied: bool
     hot_bonds: tuple[int, ...]
     per_bond_suggestions: tuple[tuple[int, int], ...]
+    # Bonds with no recorded discarded weight, so the run holds no measurement
+    # of them. They also appear in `hot_bonds`, because an unmeasured bond has
+    # no evidence of being cold; keeping them in a separate field preserves the
+    # difference between "measured and small" and "never measured".
+    unmeasured_bonds: tuple[int, ...] = ()
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -217,6 +222,7 @@ class MPSAdaptiveBondPlan:
             "budget_satisfied": self.budget_satisfied,
             "hot_bonds": self.hot_bonds,
             "per_bond_suggestions": self.per_bond_suggestions,
+            "unmeasured_bonds": self.unmeasured_bonds,
         }
 
 
@@ -228,6 +234,7 @@ class MPSLocalRefinementPlan:
     hot_bonds: tuple[int, ...]
     suggested_max_bond: int
     observed_error: float
+    unmeasured_bonds: tuple[int, ...] = ()
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -235,6 +242,7 @@ class MPSLocalRefinementPlan:
             "hot_bonds": self.hot_bonds,
             "suggested_max_bond": self.suggested_max_bond,
             "observed_error": self.observed_error,
+            "unmeasured_bonds": self.unmeasured_bonds,
         }
 
 

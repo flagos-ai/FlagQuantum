@@ -10,6 +10,7 @@ across rank-local shards instead of replicating the full circuit per rank.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping, Sequence
 from typing import Any, TypedDict
 
@@ -379,7 +380,10 @@ def _allreduce_adaptive_plan(
     )
     dist.all_reduce(value, op=dist.ReduceOp.MAX)
     observed = float(value.item())
-    budget_satisfied = (
+    # `all_reduce` with MAX propagates NaN, so a single rank that never measured
+    # its discarded weight makes `observed` NaN and the comparison below false.
+    # Check for it explicitly rather than relying on that accident.
+    budget_satisfied = math.isfinite(observed) and (
         observed <= float(plan.global_error_budget)
         if plan.global_error_budget is not None
         else observed == 0.0
@@ -392,6 +396,7 @@ def _allreduce_adaptive_plan(
         budget_satisfied=budget_satisfied,
         hot_bonds=plan.hot_bonds,
         per_bond_suggestions=plan.per_bond_suggestions,
+        unmeasured_bonds=plan.unmeasured_bonds,
     )
 
 

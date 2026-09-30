@@ -132,6 +132,15 @@ class MPSPlanningMixin(ABC):
         threshold is zero, so only exact bonds are cold -- which is the honest
         reading of "no budget was given" rather than an implicit one being picked.
 
+        A bond whose recorded discarded weight is not finite was never measured;
+        the fixed-rank range QR route records `nan` because the exact Frobenius
+        weight would need the matrix that route exists to avoid. `nan` compares
+        false against every threshold, so such a bond would fall through the
+        comparison and read as cold, which would report "do not grow" for a bond
+        nothing is known about. Unmeasured bonds are therefore treated as hot and
+        listed in `unmeasured_bonds`, and the plan cannot satisfy its budget while
+        any of them remains.
+
         The plan is derived from errors already recorded by the run; it does not
         measure anything itself, so calling it before applying gates reports a plan
         over no evidence.
@@ -151,18 +160,31 @@ class MPSPlanningMixin(ABC):
             raise ValueError("min_increment must be >= 0.")
         observed_error = float(sum(self.truncation_errors))
         by_bond = self.truncation_error_by_bond()
+        unmeasured_bonds = tuple(
+            sorted(bond for bond, error in by_bond.items() if not math.isfinite(error))
+        )
+        measured_by_bond = {
+            bond: error for bond, error in by_bond.items() if math.isfinite(error)
+        }
         if global_error_budget is None:
             threshold = 0.0
-            budget_satisfied = observed_error == 0.0
+            budget_satisfied = observed_error == 0.0 and not unmeasured_bonds
         else:
             budget = float(global_error_budget)
             if not math.isfinite(budget) or budget < 0:
                 raise ValueError("global_error_budget must be finite and non-negative.")
-            budget_satisfied = observed_error <= budget
+            budget_satisfied = (
+                math.isfinite(observed_error)
+                and observed_error <= budget
+                and not unmeasured_bonds
+            )
             threshold = budget / max(1, len(by_bond)) if budget > 0 else 0.0
 
         hot_bonds = tuple(
-            sorted(bond for bond, error in by_bond.items() if error > threshold)
+            sorted(
+                [bond for bond, error in measured_by_bond.items() if error > threshold]
+                + list(unmeasured_bonds)
+            )
         )
         suggestions: list[tuple[int, int]] = []
         current_limit = self.config.max_bond or self.max_bond
@@ -185,6 +207,7 @@ class MPSPlanningMixin(ABC):
             budget_satisfied=budget_satisfied,
             hot_bonds=hot_bonds,
             per_bond_suggestions=tuple(suggestions),
+            unmeasured_bonds=unmeasured_bonds,
         )
 
     def local_refinement_plan(
@@ -218,6 +241,7 @@ class MPSPlanningMixin(ABC):
             hot_bonds=adaptive.hot_bonds,
             suggested_max_bond=adaptive.suggested_max_bond,
             observed_error=adaptive.observed_error,
+            unmeasured_bonds=adaptive.unmeasured_bonds,
         )
 
     def summary(self) -> dict[str, Any]:
@@ -245,6 +269,7 @@ class MPSPlanningMixin(ABC):
             "svd_gradient_method": self.svd_gradient_method,
             "adaptive_suggested_max_bond": refinement.suggested_max_bond,
             "adaptive_hot_bonds": refinement.hot_bonds,
+            "adaptive_unmeasured_bonds": refinement.unmeasured_bonds,
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),
