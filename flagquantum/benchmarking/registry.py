@@ -142,6 +142,18 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "benchmarks/results/comparison/differentiable-corpus.json"
         ),
     ),
+    "cpu_performance_gate": RunnerSpec(
+        name="cpu_performance_gate",
+        module="flagquantum.benchmarking.cpu_performance_gate",
+        attribute="main",
+        category="statevector",
+        summary="Gate CPU corpus regressions on a matching measurement profile.",
+        hardware="No execution; compares two CPU corpus artifacts",
+        example=(
+            "flagquantum-benchmark run cpu_performance_gate BASELINE.json "
+            "CURRENT.json --json-output gate.json"
+        ),
+    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
         module="flagquantum.benchmarking.statevector_weak_scaling",
