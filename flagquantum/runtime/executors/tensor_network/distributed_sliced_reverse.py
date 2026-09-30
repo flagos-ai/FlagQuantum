@@ -16,6 +16,7 @@ from ....simulation.tensor_network.models import (
     TensorNetworkExpectationPlan,
     TensorNetworkSlicingPlan,
 )
+from ...distributed.context import resolve_local_world_size
 from .distributed_optimizer import _packed_owner_layout, plan_tn_parameter_owners
 from .sliced_reverse import execute_sliced_tn_explicit_reverse
 from .sliced_tasks import DistributedTNSliceTaskPlan
@@ -30,6 +31,8 @@ class DistributedSlicedTNReverseResult:
     task_plan_identity: str
     rank: int
     world_size: int
+    local_world_size: int
+    node_count: int
     local_task_count: int
     local_slice_batch_size: int
     local_forward_operation_count: int
@@ -41,6 +44,7 @@ class DistributedSlicedTNReverseResult:
     nonfinite_cotangent_count: int
     nonfinite_parameter_gradient_count: int
     local_saved_tape_bytes: int
+    local_peak_slice_tensor_bytes: int
     local_rematerialized_operation_count: int
     gradient_aggregation_semantics: str
     parameter_gradient_owner_ranks: tuple[int, ...]
@@ -50,6 +54,16 @@ class DistributedSlicedTNReverseResult:
             "task_plan_identity": self.task_plan_identity,
             "rank": self.rank,
             "world_size": self.world_size,
+            "local_world_size": self.local_world_size,
+            "node_count": self.node_count,
+            "rank_placement": {
+                "rank": self.rank,
+                "local_rank": self.rank % max(1, self.local_world_size),
+                "world_size": self.world_size,
+                "local_world_size": self.local_world_size,
+                "node_rank": self.rank // max(1, self.local_world_size),
+                "node_count": self.node_count,
+            },
             "local_task_count": self.local_task_count,
             "local_slice_batch_size": self.local_slice_batch_size,
             "local_slice_batch_count": self.local_task_count
@@ -67,6 +81,7 @@ class DistributedSlicedTNReverseResult:
                 self.nonfinite_parameter_gradient_count
             ),
             "local_saved_tape_bytes": self.local_saved_tape_bytes,
+            "local_peak_slice_tensor_bytes": self.local_peak_slice_tensor_bytes,
             "local_rematerialized_operation_count": (
                 self.local_rematerialized_operation_count
             ),
@@ -116,6 +131,16 @@ def execute_distributed_sliced_tn_explicit_reverse(
         raise ValueError("gradient_reduction must be 'all_reduce' or 'owner_reduce'")
     if tasks.world_size != world_size:
         raise RuntimeError("TN slice task plan world size does not match process group")
+    # The task plan decides which node owns each slice, so a plan built from a
+    # different placement than the one this process group runs on would place
+    # slices on hosts that do not exist. Fail closed instead of reporting a
+    # topology the collective never used.
+    if tasks.local_world_size != resolve_local_world_size(world_size):
+        raise RuntimeError(
+            "TN slice task plan local world size does not match the process "
+            f"group placement: plan={tasks.local_world_size} "
+            f"placement={resolve_local_world_size(world_size)}"
+        )
     if (
         tasks.slicing_labels != slicing.sliced_labels
         or tasks.slice_shape != slicing.slice_shape
@@ -218,6 +243,8 @@ def execute_distributed_sliced_tn_explicit_reverse(
         task_plan_identity=tasks.identity,
         rank=rank,
         world_size=world_size,
+        local_world_size=tasks.local_world_size,
+        node_count=tasks.node_count,
         local_task_count=len(local_tasks),
         local_slice_batch_size=int(slice_batch_size),
         local_forward_operation_count=local.forward_operation_count,
@@ -229,6 +256,7 @@ def execute_distributed_sliced_tn_explicit_reverse(
         nonfinite_cotangent_count=local.nonfinite_cotangent_count,
         nonfinite_parameter_gradient_count=(local.nonfinite_parameter_gradient_count),
         local_saved_tape_bytes=local.saved_tape_bytes,
+        local_peak_slice_tensor_bytes=local.peak_slice_tensor_bytes,
         local_rematerialized_operation_count=(local.rematerialized_operation_count),
         gradient_aggregation_semantics=(
             "reduce_to_parameter_owner"

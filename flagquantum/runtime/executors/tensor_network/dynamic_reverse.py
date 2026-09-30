@@ -515,7 +515,7 @@ def execute_dynamic_tn_parameter_pullback(
     )
     if missing:
         raise ValueError(
-            "dynamic TN parameter pullback frontier is missing inputs " f"{missing}"
+            f"dynamic TN parameter pullback frontier is missing inputs {missing}"
         )
 
     nodes = []

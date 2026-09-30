@@ -11,6 +11,7 @@ import torch
 import torch.distributed as dist
 
 from ....compute import get_platform_runtime
+from ...distributed.context import resolve_local_world_size, resolve_node_count
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,7 @@ class DistributedTNOptimizerStepResult:
 
     rank: int
     world_size: int
+    local_world_size: int
     learning_rate: float
     owned_parameter_indices: tuple[int, ...]
     ownership: tuple[dict[str, Any], ...]
@@ -27,9 +29,20 @@ class DistributedTNOptimizerStepResult:
     execution_seconds: float
 
     def summary(self) -> dict[str, Any]:
+        node_count = resolve_node_count(self.world_size, self.local_world_size)
         return {
             "rank": self.rank,
             "world_size": self.world_size,
+            "local_world_size": self.local_world_size,
+            "node_count": node_count,
+            "rank_placement": {
+                "rank": self.rank,
+                "local_rank": self.rank % max(1, self.local_world_size),
+                "world_size": self.world_size,
+                "local_world_size": self.local_world_size,
+                "node_rank": self.rank // max(1, self.local_world_size),
+                "node_count": node_count,
+            },
             "optimizer_name": "rank_owned_sgd",
             "learning_rate": self.learning_rate,
             "training_step_count": 1,
@@ -183,6 +196,7 @@ def execute_rank_owned_tn_sgd_step(
     return DistributedTNOptimizerStepResult(
         rank=rank,
         world_size=world_size,
+        local_world_size=resolve_local_world_size(world_size),
         learning_rate=step_size,
         owned_parameter_indices=owned,
         ownership=ownership,

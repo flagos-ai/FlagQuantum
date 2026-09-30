@@ -105,7 +105,7 @@ CI_TIERS: dict[str, CITier] = {
     "multinode-scheduled": CITier(
         name="multinode-scheduled",
         trigger="Manual dispatch on the launch host, which is the node that can reach its peer over ssh; not scheduled, because the pair holds a device on each host.",
-        proves="Two workloads, each one partitioned across two nodes on one revision -- forward, backward, optimizer step and checkpoint resume -- with the NCCL route it took read back from the debug log.",
+        proves="Three workloads, each one partitioned across two nodes on one revision -- forward, backward, optimizer step and checkpoint resume -- with the NCCL route it took read back from the debug log.",
         does_not_prove="Release scalability: each probe reports release_gate_allowed and scalability_claim_allowed false, and the audit that could promote one runs separately.",
         commands=(
             (
@@ -131,6 +131,19 @@ CI_TIERS: dict[str, CITier] = {
                 "/nfs/fq-multinode-tier-checkpoints",
                 "--report-directory",
                 "hardware-run-mps",
+            ),
+            (
+                "{python}",
+                "tools/multinode_launch_plan.py",
+                "--run",
+                "--probe",
+                "tn",
+                "--staging",
+                "/nfs/fq-multinode-tier",
+                "--checkpoint-directory",
+                "/nfs/fq-multinode-tier-checkpoints",
+                "--report-directory",
+                "hardware-run-tn",
             ),
         ),
     ),

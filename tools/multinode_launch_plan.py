@@ -45,6 +45,7 @@ WATCHDOG = "tools/run_multinode_watchdog.py"
 PROBES = {
     "statevector": "tools/probe_cuda_multinode_statevector.py",
     "mps": "tools/probe_cuda_multinode_mps.py",
+    "tn": "tools/probe_cuda_multinode_tn.py",
 }
 DEFAULT_PROBE = "statevector"
 # The lane the runbook and the launch-plan tests describe.

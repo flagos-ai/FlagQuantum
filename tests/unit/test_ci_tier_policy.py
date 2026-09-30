@@ -72,6 +72,9 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
         "python tools/multinode_launch_plan.py --run --probe mps --staging "
         "/nfs/fq-multinode-tier --checkpoint-directory "
         "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps",
+        "python tools/multinode_launch_plan.py --run --probe tn --staging "
+        "/nfs/fq-multinode-tier --checkpoint-directory "
+        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn",
     )
 
 

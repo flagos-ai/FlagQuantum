@@ -9,7 +9,7 @@ handled by :mod:`distributed_execution`.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from math import ceil
 from pathlib import Path
 from typing import Any
@@ -52,7 +52,9 @@ from ...distributed.backend_policy import (
 )
 from ...distributed.context import (
     TorchDistributedContext,
+    _rank_placement_summary,
     init_torch_distributed,
+    resolve_node_count,
 )
 from ...planner.tn_calibration import TNWorkingSetCalibration
 from .joint_planning import (
@@ -70,6 +72,7 @@ from .state import (
     DistributedTensorNetworkExpectation,
     DistributedTensorNetworkExpectations,
     DistributedTensorNetworkState,
+    _context_claim_evidence_type,
 )
 
 
@@ -77,11 +80,10 @@ def _execution_slice_tasks(
     slicing: TensorNetworkSlicingPlan,
     *,
     world_size: int,
-    context: TorchDistributedContext | None,
+    local_world_size: int,
 ) -> tuple[DistributedTNSliceTask, ...]:
     """Use the canonical topology-aware task plan for TN execution."""
 
-    local_world_size = context.local_world_size if context is not None else world_size
     return plan_distributed_tn_slice_tasks(
         slicing,
         world_size=world_size,
@@ -246,11 +248,45 @@ def _sparse_working_set_preflight(
     return summary
 
 
+@dataclass(frozen=True)
+class _SparseContractionOutcome:
+    """One sparse-contraction result with the placement it actually used."""
+
+    value: torch.Tensor
+    tasks: tuple[DistributedTNSliceTask, ...]
+    rank_partial_bytes: dict[int, int]
+    semantics: str
+    scalability_blockers: tuple[str, ...]
+    working_set_preflight: dict[str, Any]
+
+
+def _gather_rank_partial_bytes(
+    local_bytes: int, *, local_tensor: torch.Tensor
+) -> dict[int, int]:
+    """Collect every rank's reduction payload, not just this rank's.
+
+    `local_memory_bytes_by_rank` is read as per-rank evidence, so reporting the
+    local rank's bytes and zeros for the others would describe a topology that
+    did not run. The gather rides the same device and dtype family as the
+    contracted tensor because a backend may reject a CPU collective (NCCL) or a
+    CPU-only process group may reject a CUDA one (gloo).
+    """
+
+    world_size = dist.get_world_size()
+    local = torch.tensor(
+        [int(local_bytes)], dtype=torch.int64, device=local_tensor.device
+    )
+    gathered = [torch.empty_like(local) for _ in range(world_size)]
+    dist.all_gather(gathered, local)
+    return {rank: int(value.item()) for rank, value in enumerate(gathered)}
+
+
 def _distributed_sparse_contraction(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],
     *,
     world_size: int,
+    local_world_size: int,
     context: Any | None,
     max_intermediate_size: int | None,
     max_intermediate_bytes: int | None,
@@ -262,13 +298,7 @@ def _distributed_sparse_contraction(
     sliced_labels: Sequence[int] | None,
     max_slices: int | None,
     max_recomputation_factor: float | None,
-) -> tuple[
-    torch.Tensor,
-    tuple[DistributedTNSliceTask, ...],
-    dict[int, int],
-    str,
-    dict[str, Any],
-]:
+) -> _SparseContractionOutcome:
     if working_set_safety_factor < 1.0:
         raise ValueError("working_set_safety_factor must be >= 1")
     if max_working_set_bytes is not None:
@@ -323,7 +353,7 @@ def _distributed_sparse_contraction(
                 representative_tasks = _execution_slice_tasks(
                     slicing,
                     world_size=world_size,
-                    context=context,
+                    local_world_size=local_world_size,
                 )
                 representative = _slice_nodes(
                     nodes,
@@ -371,7 +401,7 @@ def _distributed_sparse_contraction(
     tasks = _execution_slice_tasks(
         slicing,
         world_size=world_size,
-        context=context,
+        local_world_size=local_world_size,
     )
     partial_bytes: dict[int, int] = {}
     if context is not None and context.initialized:
@@ -386,9 +416,16 @@ def _distributed_sparse_contraction(
             local_tasks,
             steps=shared_steps,
         )
-        partial_bytes[context.rank] = _tensor_nbytes(value)
+        partial_bytes = _gather_rank_partial_bytes(
+            _tensor_nbytes(value), local_tensor=value
+        )
         value = _all_reduce_sum_autograd(value)
-        semantics = "slice_parallel_sparse_output_all_reduce"
+        # Distinct disjoint slices were contracted on distinct ranks and their
+        # sparse outputs were reduced across those ranks, so the returned scalar
+        # is genuine rank sharding. `run_distributed_tensor_network` reports a
+        # different value because it all-reduces the full state instead.
+        semantics = "sharded_across_ranks"
+        blockers: tuple[str, ...] = ()
     else:
         partials = []
         for task_rank in range(world_size):
@@ -403,25 +440,82 @@ def _distributed_sparse_contraction(
             if partials
             else _zero_for_output(nodes, output_labels)
         )
+        # One process contracted every simulated rank's slices, so the slice
+        # ownership is a development mirror rather than a placement.
         semantics = (
             "local_simulated_slice_parallel_sparse_output_reduction"
             if world_size > 1
             else "single_device_sparse_output"
         )
-    return value, tasks, partial_bytes, semantics, working_set_preflight
+        blockers = (
+            ("slice_parallel_local_development_simulator",) if world_size > 1 else ()
+        )
+    return _SparseContractionOutcome(
+        value=value,
+        tasks=tasks,
+        rank_partial_bytes=partial_bytes,
+        semantics=semantics,
+        scalability_blockers=blockers,
+        working_set_preflight=working_set_preflight,
+    )
+
+
+def _resolve_rank_placement(
+    *,
+    world_size: int,
+    local_world_size: int | None,
+    context: TorchDistributedContext | None,
+) -> dict[str, Any]:
+    """Resolve the placement this TN execution runs at, and where it came from.
+
+    Slice tasks are assigned to nodes through `local_world_size`, so a result
+    that reported one placement while the task plan used another would describe
+    a topology the collective never ran on. The caller's explicit value wins
+    because a caller that initialized its own process group knows its host
+    layout, and the process-group environment is the fallback.
+    """
+
+    if local_world_size is None:
+        if context is not None:
+            resolved = context.local_world_size
+            source = "process_group_environment"
+        else:
+            resolved = int(world_size)
+            source = "single_process"
+    else:
+        resolved = int(local_world_size)
+        source = "caller"
+    if resolved < 1:
+        raise ValueError("local_world_size must be a positive rank count")
+    if int(world_size) % resolved:
+        raise ValueError(
+            "local_world_size must divide world_size so every node hosts the "
+            f"same number of ranks: local_world_size={resolved} "
+            f"world_size={world_size}"
+        )
+    placement = _rank_placement_summary(context, world_size=int(world_size))
+    placement["local_world_size"] = resolved
+    placement["local_rank"] = (context.local_rank if context else 0) % resolved
+    placement["node_rank"] = (context.rank if context else 0) // resolved
+    placement["node_count"] = resolve_node_count(int(world_size), resolved)
+    placement["local_world_size_source"] = source
+    return placement
 
 
 def _prepare_distributed_context(
     *,
     world_size: int,
+    local_world_size: int | None,
     distributed_executor: str,
     backend: str | None,
     init_method: str,
     rank: int | None,
     local_rank: int | None,
     options: dict[str, Any],
-) -> tuple[DistributedBackendPolicy, TorchDistributedContext | None, int]:
-    """Resolve backend policy and initialize the requested process group."""
+) -> tuple[
+    DistributedBackendPolicy, TorchDistributedContext | None, int, dict[str, Any]
+]:
+    """Resolve backend policy, initialize the requested group, place the ranks."""
 
     backend_policy = _resolve_backend_policy(options)
     context = None
@@ -441,7 +535,12 @@ def _prepare_distributed_context(
         )
         world_size = context.world_size
         options["device"] = context.device
-    return backend_policy, context, world_size
+    placement = _resolve_rank_placement(
+        world_size=world_size,
+        local_world_size=local_world_size,
+        context=context,
+    )
+    return backend_policy, context, world_size, placement
 
 
 def distributed_tensor_network_amplitude(
@@ -464,12 +563,14 @@ def distributed_tensor_network_amplitude(
     init_method: str = "env://",
     rank: int | None = None,
     local_rank: int | None = None,
+    local_world_size: int | None = None,
     **options: Any,
 ) -> DistributedTensorNetworkAmplitude:
     """Compute one amplitude by distributing internal-edge slice tasks."""
 
-    _, context, world_size = _prepare_distributed_context(
+    _, context, world_size, placement = _prepare_distributed_context(
         world_size=world_size,
+        local_world_size=local_world_size,
         distributed_executor=distributed_executor,
         backend=backend,
         init_method=init_method,
@@ -485,10 +586,11 @@ def distributed_tensor_network_amplitude(
         dtype=options.get("dtype"),
     )
     nodes, output_labels = _amplitude_projection(plan, bitstring)
-    value, tasks, partial_bytes, semantics, preflight = _distributed_sparse_contraction(
+    outcome = _distributed_sparse_contraction(
         nodes,
         output_labels,
         world_size=world_size,
+        local_world_size=placement["local_world_size"],
         context=context,
         max_intermediate_size=max_intermediate_size,
         max_intermediate_bytes=max_intermediate_bytes,
@@ -502,12 +604,15 @@ def distributed_tensor_network_amplitude(
         max_recomputation_factor=max_recomputation_factor,
     )
     return DistributedTensorNetworkAmplitude(
-        value=value.reshape(plan.bsz),
+        value=outcome.value.reshape(plan.bsz),
         world_size=world_size,
-        tasks=tasks,
-        rank_partial_bytes=partial_bytes,
-        distribution_semantics=semantics,
-        working_set_preflight=preflight,
+        tasks=outcome.tasks,
+        rank_partial_bytes=outcome.rank_partial_bytes,
+        distribution_semantics=outcome.semantics,
+        working_set_preflight=outcome.working_set_preflight,
+        rank_placement=placement,
+        claim_evidence_type=_context_claim_evidence_type(context),
+        scalability_blockers=outcome.scalability_blockers,
     )
 
 
@@ -533,12 +638,14 @@ def distributed_tensor_network_expectation(
     init_method: str = "env://",
     rank: int | None = None,
     local_rank: int | None = None,
+    local_world_size: int | None = None,
     **options: Any,
 ) -> DistributedTensorNetworkExpectation:
     """Compute one Pauli-product expectation without materializing the state."""
 
-    _, context, world_size = _prepare_distributed_context(
+    _, context, world_size, placement = _prepare_distributed_context(
         world_size=world_size,
+        local_world_size=local_world_size,
         distributed_executor=distributed_executor,
         backend=backend,
         init_method=init_method,
@@ -554,10 +661,11 @@ def distributed_tensor_network_expectation(
         dtype=options.get("dtype"),
     )
     plan = build_tensor_network_expectation(ket_plan, x=x, y=y, z=z)
-    value, tasks, partial_bytes, semantics, preflight = _distributed_sparse_contraction(
+    outcome = _distributed_sparse_contraction(
         plan.nodes,
         plan.output_labels,
         world_size=world_size,
+        local_world_size=placement["local_world_size"],
         context=context,
         max_intermediate_size=max_intermediate_size,
         max_intermediate_bytes=max_intermediate_bytes,
@@ -571,13 +679,16 @@ def distributed_tensor_network_expectation(
         max_recomputation_factor=max_recomputation_factor,
     )
     return DistributedTensorNetworkExpectation(
-        value=torch.real(value.reshape(plan.bsz)),
+        value=torch.real(outcome.value.reshape(plan.bsz)),
         world_size=world_size,
-        tasks=tasks,
-        rank_partial_bytes=partial_bytes,
+        tasks=outcome.tasks,
+        rank_partial_bytes=outcome.rank_partial_bytes,
         observable_wires=plan.observable_wires,
-        distribution_semantics=semantics,
-        working_set_preflight=preflight,
+        distribution_semantics=outcome.semantics,
+        working_set_preflight=outcome.working_set_preflight,
+        rank_placement=placement,
+        claim_evidence_type=_context_claim_evidence_type(context),
+        scalability_blockers=outcome.scalability_blockers,
     )
 
 
@@ -601,12 +712,14 @@ def distributed_tensor_network_amplitudes(
     init_method: str = "env://",
     rank: int | None = None,
     local_rank: int | None = None,
+    local_world_size: int | None = None,
     **options: Any,
 ) -> DistributedTensorNetworkAmplitudes:
     """Compute a small amplitude batch with shared planning and contraction."""
 
-    _, context, world_size = _prepare_distributed_context(
+    _, context, world_size, placement = _prepare_distributed_context(
         world_size=world_size,
+        local_world_size=local_world_size,
         distributed_executor=distributed_executor,
         backend=backend,
         init_method=init_method,
@@ -622,10 +735,11 @@ def distributed_tensor_network_amplitudes(
         dtype=options.get("dtype"),
     )
     nodes, output_labels = _amplitude_batch_projection(plan, bitstrings)
-    value, tasks, partial_bytes, semantics, preflight = _distributed_sparse_contraction(
+    outcome = _distributed_sparse_contraction(
         nodes,
         output_labels,
         world_size=world_size,
+        local_world_size=placement["local_world_size"],
         context=context,
         max_intermediate_size=max_intermediate_size,
         max_intermediate_bytes=max_intermediate_bytes,
@@ -639,13 +753,16 @@ def distributed_tensor_network_amplitudes(
         max_recomputation_factor=max_recomputation_factor,
     )
     return DistributedTensorNetworkAmplitudes(
-        values=value.reshape(plan.bsz, len(bitstrings)),
+        values=outcome.value.reshape(plan.bsz, len(bitstrings)),
         world_size=world_size,
-        tasks=tasks,
-        rank_partial_bytes=partial_bytes,
+        tasks=outcome.tasks,
+        rank_partial_bytes=outcome.rank_partial_bytes,
         target_count=len(bitstrings),
-        distribution_semantics=semantics,
-        working_set_preflight=preflight,
+        distribution_semantics=outcome.semantics,
+        working_set_preflight=outcome.working_set_preflight,
+        rank_placement=placement,
+        claim_evidence_type=_context_claim_evidence_type(context),
+        scalability_blockers=outcome.scalability_blockers,
     )
 
 
@@ -669,12 +786,14 @@ def distributed_tensor_network_expectations(
     init_method: str = "env://",
     rank: int | None = None,
     local_rank: int | None = None,
+    local_world_size: int | None = None,
     **options: Any,
 ) -> DistributedTensorNetworkExpectations:
     """Compute several Pauli products through one distributed contraction."""
 
-    _, context, world_size = _prepare_distributed_context(
+    _, context, world_size, placement = _prepare_distributed_context(
         world_size=world_size,
+        local_world_size=local_world_size,
         distributed_executor=distributed_executor,
         backend=backend,
         init_method=init_method,
@@ -690,10 +809,11 @@ def distributed_tensor_network_expectations(
         dtype=options.get("dtype"),
     )
     nodes, output_labels = _expectation_batch_projection(plan, observables)
-    value, tasks, partial_bytes, semantics, preflight = _distributed_sparse_contraction(
+    outcome = _distributed_sparse_contraction(
         nodes,
         output_labels,
         world_size=world_size,
+        local_world_size=placement["local_world_size"],
         context=context,
         max_intermediate_size=max_intermediate_size,
         max_intermediate_bytes=max_intermediate_bytes,
@@ -707,13 +827,16 @@ def distributed_tensor_network_expectations(
         max_recomputation_factor=max_recomputation_factor,
     )
     return DistributedTensorNetworkExpectations(
-        values=torch.real(value.reshape(plan.bsz, len(observables))),
+        values=torch.real(outcome.value.reshape(plan.bsz, len(observables))),
         world_size=world_size,
-        tasks=tasks,
-        rank_partial_bytes=partial_bytes,
+        tasks=outcome.tasks,
+        rank_partial_bytes=outcome.rank_partial_bytes,
         observable_count=len(observables),
-        distribution_semantics=semantics,
-        working_set_preflight=preflight,
+        distribution_semantics=outcome.semantics,
+        working_set_preflight=outcome.working_set_preflight,
+        rank_placement=placement,
+        claim_evidence_type=_context_claim_evidence_type(context),
+        scalability_blockers=outcome.scalability_blockers,
     )
 
 
@@ -728,12 +851,14 @@ def run_distributed_tensor_network(
     init_method: str = "env://",
     rank: int | None = None,
     local_rank: int | None = None,
+    local_world_size: int | None = None,
     **options: Any,
 ) -> DistributedTensorNetworkState:
     """Run tensor-network contraction with torch.distributed slice parallelism."""
 
-    backend_policy, context, world_size = _prepare_distributed_context(
+    backend_policy, context, world_size, placement = _prepare_distributed_context(
         world_size=world_size,
+        local_world_size=local_world_size,
         distributed_executor=distributed_executor,
         backend=backend,
         init_method=init_method,
@@ -754,7 +879,7 @@ def run_distributed_tensor_network(
     tasks = _execution_slice_tasks(
         slicing,
         world_size=world_size,
-        context=context,
+        local_world_size=placement["local_world_size"],
     )
     state_cache = None
     local_simulation = False
@@ -764,7 +889,9 @@ def run_distributed_tensor_network(
         partial = _contract_assigned_tensor_slices(
             plan.nodes, plan.output_labels, local_tasks
         )
-        rank_partial_bytes[context.rank] = _tensor_nbytes(partial)
+        rank_partial_bytes = _gather_rank_partial_bytes(
+            _tensor_nbytes(partial), local_tensor=partial
+        )
         partial = _all_reduce_sum_autograd(partial)
         state_cache = partial.reshape(plan.bsz, 2**plan.n_wires)
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
@@ -802,6 +929,7 @@ def run_distributed_tensor_network(
         backend_policy=backend_policy,
         local_simulation=local_simulation,
         rank_partial_bytes=rank_partial_bytes,
+        rank_placement=placement,
     )
 
 

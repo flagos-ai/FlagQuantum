@@ -216,6 +216,15 @@ jobs:
             --source . \
             --source-revision "${{ github.sha }}" \
             --report-directory hardware-run-mps
+      - name: Run the tensor-network workload across the same two nodes
+        run: |
+          python tools/multinode_launch_plan.py --run \
+            --probe tn \
+            --staging "$STAGING" \
+            --checkpoint-directory "$STAGING-checkpoints" \
+            --source . \
+            --source-revision "${{ github.sha }}" \
+            --report-directory hardware-run-tn
       - name: Withdraw the shared staging tree
         if: always()
         run: rm -rf "$STAGING" "$STAGING-out" "$STAGING-checkpoints"
@@ -226,3 +235,4 @@ jobs:
           path: |
             hardware-run/
             hardware-run-mps/
+            hardware-run-tn/
