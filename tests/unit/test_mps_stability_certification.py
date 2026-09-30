@@ -1,10 +1,14 @@
 import copy
+import json
+import math
 
 import pytest
 
 from flagquantum.testing import MPSStabilityCertificationError, require_mps_stability
 
 pytestmark = pytest.mark.unit
+
+NONFINITE = (float("nan"), float("inf"), float("-inf"))
 
 
 def payload():
@@ -107,4 +111,23 @@ def test_v2_rejects_invalid_evidence(fault):
     else:
         invalid["source_artifacts"].pop()
     with pytest.raises(MPSStabilityCertificationError):
+        require_mps_stability(invalid)
+
+
+@pytest.mark.parametrize("field", ("restart_parameter_error", "restart_loss_error"))
+@pytest.mark.parametrize("value", NONFINITE)
+def test_v2_rejects_nonfinite_checkpoint_error(field, value):
+    """A NaN restart error is not a restart error below the 1e-7 bound."""
+    invalid = payload()
+    invalid["soaks"][0]["rank_records"][3][field] = value
+    with pytest.raises(MPSStabilityCertificationError, match="not finite"):
+        require_mps_stability(invalid)
+
+
+def test_v2_rejects_nan_that_survived_json():
+    invalid = json.loads(json.dumps(payload()))
+    record = invalid["soaks"][1]["rank_records"][0]
+    record["restart_loss_error"] = float("nan")
+    assert math.isnan(record["restart_loss_error"])
+    with pytest.raises(MPSStabilityCertificationError, match="not finite"):
         require_mps_stability(invalid)

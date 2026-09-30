@@ -8,6 +8,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from ._finite import require_finite
+
 ISSUE091_TRUNCATION_BUDGET = 0.1
 
 
@@ -66,7 +68,8 @@ def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
 
     Raises:
         MPSCapacityCertificationError: if any part of that evidence is absent,
-            inconsistent, or shaped so that it cannot support the claim.
+            inconsistent, non-finite, or shaped so that it cannot support the
+            claim.
     """
     if payload.get("schema") != "flagquantum.issue092.general_mps_capacity.v1":
         raise MPSCapacityCertificationError("unexpected ISSUE-092 schema")
@@ -118,7 +121,14 @@ def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
     expected_budget = 0.0 if exact_capacity else ISSUE091_TRUNCATION_BUDGET
     if float(payload.get("truncation_error_budget", float("inf"))) != expected_budget:
         raise MPSCapacityCertificationError("capacity truncation budget is not pinned")
-    if float(payload.get("discarded_weight", float("inf"))) > expected_budget:
+    if (
+        require_finite(
+            payload.get("discarded_weight"),
+            error_type=MPSCapacityCertificationError,
+            label="discarded_weight",
+        )
+        > expected_budget
+    ):
         raise MPSCapacityCertificationError("truncation error budget exceeded")
     records = payload.get("rank_records", ())
     if len(records) != world_size or {
