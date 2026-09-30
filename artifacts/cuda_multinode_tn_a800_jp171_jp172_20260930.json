@@ -1,0 +1,963 @@
+{
+  "evidence": {
+    "captured_at": "2026-09-30T16:06:21.485932+00:00",
+    "claim_blockers": [
+      "two_node_pair_only_no_wider_topology",
+      "inter_node_cut_width_not_swept",
+      "rdma_not_tested",
+      "production_performance_not_measured",
+      "toy_circuit_parameters_only",
+      "slice_count_fixed_at_world_size"
+    ],
+    "environment": {
+      "cuda_runtime": "13.0",
+      "nccl": "2.29.7",
+      "python": "3.12.13",
+      "source_revision": "0399920772a0c4c6e65545d7565e1d541af2098b",
+      "torch": "2.13.0+cu130"
+    },
+    "observations": {
+      "gradient_reduction": "probe_summed_rank_partials",
+      "network": {
+        "backend": "nccl",
+        "configured_interface": "ens22f0",
+        "configured_interface_observed": true,
+        "debug_log_sha256": "6ab2d2139012f3619a125041b7de60ababc6241a6507dd3ce251412f055a25cf",
+        "evidence_level": "observed_debug_log",
+        "ib_disabled": true,
+        "route": "socket",
+        "socket_transport_observed": true
+      },
+      "numerical_metrics": {
+        "amplitude_batch_max_abs_error": 1.1102230246251565e-16,
+        "expectation_value_error": 1.1102230246251565e-16,
+        "first_leg_initial_expectation_error": 1.1102230246251565e-16,
+        "gradient_max_abs_error": 2.220446049250313e-16,
+        "resume_prefix_max_abs_error": 0.0,
+        "resume_trajectory_max_abs_error": 0.0,
+        "single_amplitude_max_abs_error": 1.3010426069826053e-18,
+        "training_final_loss": 0.547463033952777,
+        "training_loss_decrease": 0.1181226327944429
+      },
+      "production_full_state_materialization": false,
+      "rank_records": [
+        {
+          "amplitudes": {
+            "claim_evidence_type": "production_runtime",
+            "communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 64,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 64,
+              "unattributed_collective_bytes": 0
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "full_state_materialized": false,
+            "local_memory_bytes_by_rank": [
+              64,
+              64
+            ],
+            "local_world_size": 1,
+            "node_count": 2,
+            "output_target": "few_amplitudes",
+            "rank_partial_bytes_by_rank": {
+              "0": 64,
+              "1": 64
+            },
+            "rank_placement": {
+              "device": "cuda:0",
+              "distributed_identity": {
+                "blockers": [
+                  "distributed_identity_is_not_collective_conformance_evidence"
+                ],
+                "communication_claim_allowed": false,
+                "flagcx_route_status": "not_applicable",
+                "flagcx_route_verified": false,
+                "host_staging_observed": null,
+                "inner_backend": "nccl",
+                "inner_backend_verified": true,
+                "logical_device": "cuda:0",
+                "outer_backend": "nccl",
+                "platform_identity": {},
+                "process_group_initialized": true,
+                "provider": "pytorch",
+                "provider_version": null,
+                "rank": 0,
+                "schema": "flagquantum_distributed_identity_v1",
+                "world_size": 2
+              },
+              "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+              "local_rank": 0,
+              "local_world_size": 1,
+              "local_world_size_source": "caller",
+              "node_count": 2,
+              "node_rank": 0,
+              "rank": 0,
+              "world_size": 2
+            },
+            "reduction_payload_bytes": 64,
+            "scalability_blockers": [],
+            "scalability_claim_allowed": false,
+            "shared_contraction": true,
+            "slice_labels": [
+              6,
+              7
+            ],
+            "slice_tasks": 4,
+            "state_mode": "distributed_tensor_network_amplitudes",
+            "target_count": 4,
+            "tasks_by_rank": {
+              "0": 2,
+              "1": 2
+            },
+            "working_set_preflight": {
+              "allocator_headroom_bytes": 384,
+              "budget_satisfied": true,
+              "communication_buffer_bytes": 0,
+              "fail_closed": true,
+              "kernel_workspace_bytes": 0,
+              "max_working_set_bytes": null,
+              "memory_calibration_identity": null,
+              "model": "calibrated_peak_safety_factor",
+              "predicted_working_set_bytes": 512,
+              "tensor_peak_bytes": 128,
+              "working_set_policy": null
+            },
+            "world_size": 2
+          },
+          "claim_evidence_type": "production_runtime",
+          "communication": {
+            "amplitudes_collective_bytes": 64,
+            "amplitudes_inter_node_collective_bytes": 64,
+            "amplitudes_intra_node_collective_bytes": 0,
+            "expectation_inter_node_collective_bytes": 8,
+            "expectation_rank_partial_bytes_by_rank": {
+              "0": 16,
+              "1": 16
+            },
+            "training_communication_bytes": 64,
+            "training_communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 64,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 64,
+              "unattributed_collective_bytes": 0
+            },
+            "training_local_memory_bytes_by_rank": [
+              1296,
+              1296
+            ],
+            "training_owned_parameter_bytes_by_rank": [
+              8,
+              8
+            ]
+          },
+          "communication_tiers": {
+            "collective": "all_reduce_sum",
+            "inter_node_collective_bytes": 8,
+            "inter_node_collective_possible": true,
+            "intra_node_collective_bytes": 0,
+            "model": "collective_topology_dependent",
+            "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+            "reduction_tensor_bytes": 8,
+            "unattributed_collective_bytes": 0
+          },
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
+          "distributed_expectation": 0.6655856667472199,
+          "distribution_semantics": "sharded_across_ranks",
+          "full_state_materialized": false,
+          "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+          "local_memory_bytes_by_rank": [
+            16,
+            16
+          ],
+          "local_world_size": 1,
+          "node_count": 2,
+          "observable_wires": [
+            0,
+            4
+          ],
+          "output_target": "local_observables",
+          "rank_gradient_contribution": [
+            -0.7694216480199071,
+            -0.045936328597235176
+          ],
+          "rank_partial_bytes_by_rank": {
+            "0": 16,
+            "1": 16
+          },
+          "rank_placement": {
+            "device": "cuda:0",
+            "distributed_identity": {
+              "blockers": [
+                "distributed_identity_is_not_collective_conformance_evidence"
+              ],
+              "communication_claim_allowed": false,
+              "flagcx_route_status": "not_applicable",
+              "flagcx_route_verified": false,
+              "host_staging_observed": null,
+              "inner_backend": "nccl",
+              "inner_backend_verified": true,
+              "logical_device": "cuda:0",
+              "outer_backend": "nccl",
+              "platform_identity": {},
+              "process_group_initialized": true,
+              "provider": "pytorch",
+              "provider_version": null,
+              "rank": 0,
+              "schema": "flagquantum_distributed_identity_v1",
+              "world_size": 2
+            },
+            "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+            "local_rank": 0,
+            "local_world_size": 1,
+            "local_world_size_source": "caller",
+            "node_count": 2,
+            "node_rank": 0,
+            "rank": 0,
+            "world_size": 2
+          },
+          "reduced_gradient": [
+            -0.8381165503270911,
+            -0.04532342403786074
+          ],
+          "reduction_payload_bytes": 8,
+          "reference_gradient": [
+            -0.8381165503270909,
+            -0.04532342403786073
+          ],
+          "scalability_blockers": [],
+          "scalability_claim_allowed": false,
+          "single_amplitude": {
+            "claim_evidence_type": "production_runtime",
+            "communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 16,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 16,
+              "unattributed_collective_bytes": 0
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "full_state_materialized": false,
+            "local_memory_bytes_by_rank": [
+              16,
+              16
+            ],
+            "local_world_size": 1,
+            "node_count": 2,
+            "output_target": "single_amplitude",
+            "rank_partial_bytes_by_rank": {
+              "0": 16,
+              "1": 16
+            },
+            "rank_placement": {
+              "device": "cuda:0",
+              "distributed_identity": {
+                "blockers": [
+                  "distributed_identity_is_not_collective_conformance_evidence"
+                ],
+                "communication_claim_allowed": false,
+                "flagcx_route_status": "not_applicable",
+                "flagcx_route_verified": false,
+                "host_staging_observed": null,
+                "inner_backend": "nccl",
+                "inner_backend_verified": true,
+                "logical_device": "cuda:0",
+                "outer_backend": "nccl",
+                "platform_identity": {},
+                "process_group_initialized": true,
+                "provider": "pytorch",
+                "provider_version": null,
+                "rank": 0,
+                "schema": "flagquantum_distributed_identity_v1",
+                "world_size": 2
+              },
+              "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+              "local_rank": 0,
+              "local_world_size": 1,
+              "local_world_size_source": "caller",
+              "node_count": 2,
+              "node_rank": 0,
+              "rank": 0,
+              "world_size": 2
+            },
+            "reduction_payload_bytes": 16,
+            "scalability_blockers": [],
+            "scalability_claim_allowed": false,
+            "slice_labels": [
+              6,
+              7
+            ],
+            "slice_tasks": 4,
+            "state_mode": "distributed_tensor_network_amplitude",
+            "tasks_by_rank": {
+              "0": 2,
+              "1": 2
+            },
+            "working_set_preflight": {
+              "allocator_headroom_bytes": 96,
+              "budget_satisfied": true,
+              "communication_buffer_bytes": 0,
+              "fail_closed": true,
+              "kernel_workspace_bytes": 0,
+              "max_working_set_bytes": null,
+              "memory_calibration_identity": null,
+              "model": "calibrated_peak_safety_factor",
+              "predicted_working_set_bytes": 128,
+              "tensor_peak_bytes": 32,
+              "working_set_policy": null
+            },
+            "world_size": 2
+          },
+          "slice_labels": [
+            6,
+            7
+          ],
+          "slice_tasks": 4,
+          "state_mode": "distributed_tensor_network_expectation",
+          "tasks_by_rank": {
+            "0": 2,
+            "1": 2
+          },
+          "training_step": {
+            "collective_count": 2,
+            "collective_seconds": 0.0016242265701293945,
+            "local_forward_operation_count": 46,
+            "local_reverse_operation_count": 46,
+            "local_task_count": 2,
+            "loss": 0.547463033952777,
+            "optimizer": {
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 8,
+              "execution_seconds": 0.0003921091556549072,
+              "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
+              "learning_rate": 0.05,
+              "local_world_size": 1,
+              "node_count": 2,
+              "optimizer_name": "rank_owned_sgd",
+              "optimizer_state_distribution": "rank_owned",
+              "optimizer_update_ownership": [
+                {
+                  "ownership": "rank_owned_optimizer_update",
+                  "parameter_indices": [
+                    0
+                  ],
+                  "rank": 0,
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "ownership": "rank_owned_optimizer_update",
+                  "parameter_indices": [
+                    1
+                  ],
+                  "rank": 1,
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "owned_parameter_indices": [
+                0
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "rank": 0,
+              "rank_placement": {
+                "local_rank": 0,
+                "local_world_size": 1,
+                "node_count": 2,
+                "node_rank": 0,
+                "rank": 0,
+                "world_size": 2
+              },
+              "training_step_count": 1,
+              "world_size": 2
+            },
+            "reverse": {
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 32,
+              "collective_seconds": 0.0016242265701293945,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_execution_seconds": 0.03107713721692562,
+              "local_forward_operation_count": 46,
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "local_peak_slice_tensor_bytes": 1296,
+              "local_rematerialized_operation_count": 0,
+              "local_reverse_operation_count": 46,
+              "local_saved_tape_bytes": 0,
+              "local_slice_batch_count": 2,
+              "local_slice_batch_size": 1,
+              "local_task_count": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "rank": 0,
+              "rank_placement": {
+                "local_rank": 0,
+                "local_world_size": 1,
+                "node_count": 2,
+                "node_rank": 0,
+                "rank": 0,
+                "world_size": 2
+              },
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ],
+              "scalability_claim_allowed": false,
+              "task_plan_identity": "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7",
+              "world_size": 2
+            },
+            "step": 3
+          },
+          "working_set_preflight": {
+            "allocator_headroom_bytes": 192,
+            "budget_satisfied": true,
+            "communication_buffer_bytes": 0,
+            "fail_closed": true,
+            "kernel_workspace_bytes": 0,
+            "max_working_set_bytes": null,
+            "memory_calibration_identity": null,
+            "model": "calibrated_peak_safety_factor",
+            "predicted_working_set_bytes": 256,
+            "tensor_peak_bytes": 64,
+            "working_set_policy": null
+          },
+          "world_size": 2
+        },
+        {
+          "amplitudes": {
+            "claim_evidence_type": "production_runtime",
+            "communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 64,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 64,
+              "unattributed_collective_bytes": 0
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "full_state_materialized": false,
+            "local_memory_bytes_by_rank": [
+              64,
+              64
+            ],
+            "local_world_size": 1,
+            "node_count": 2,
+            "output_target": "few_amplitudes",
+            "rank_partial_bytes_by_rank": {
+              "0": 64,
+              "1": 64
+            },
+            "rank_placement": {
+              "device": "cuda:0",
+              "distributed_identity": {
+                "blockers": [
+                  "distributed_identity_is_not_collective_conformance_evidence"
+                ],
+                "communication_claim_allowed": false,
+                "flagcx_route_status": "not_applicable",
+                "flagcx_route_verified": false,
+                "host_staging_observed": null,
+                "inner_backend": "nccl",
+                "inner_backend_verified": true,
+                "logical_device": "cuda:0",
+                "outer_backend": "nccl",
+                "platform_identity": {},
+                "process_group_initialized": true,
+                "provider": "pytorch",
+                "provider_version": null,
+                "rank": 1,
+                "schema": "flagquantum_distributed_identity_v1",
+                "world_size": 2
+              },
+              "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+              "local_rank": 0,
+              "local_world_size": 1,
+              "local_world_size_source": "caller",
+              "node_count": 2,
+              "node_rank": 1,
+              "rank": 1,
+              "world_size": 2
+            },
+            "reduction_payload_bytes": 64,
+            "scalability_blockers": [],
+            "scalability_claim_allowed": false,
+            "shared_contraction": true,
+            "slice_labels": [
+              6,
+              7
+            ],
+            "slice_tasks": 4,
+            "state_mode": "distributed_tensor_network_amplitudes",
+            "target_count": 4,
+            "tasks_by_rank": {
+              "0": 2,
+              "1": 2
+            },
+            "working_set_preflight": {
+              "allocator_headroom_bytes": 384,
+              "budget_satisfied": true,
+              "communication_buffer_bytes": 0,
+              "fail_closed": true,
+              "kernel_workspace_bytes": 0,
+              "max_working_set_bytes": null,
+              "memory_calibration_identity": null,
+              "model": "calibrated_peak_safety_factor",
+              "predicted_working_set_bytes": 512,
+              "tensor_peak_bytes": 128,
+              "working_set_policy": null
+            },
+            "world_size": 2
+          },
+          "claim_evidence_type": "production_runtime",
+          "communication": {
+            "amplitudes_collective_bytes": 64,
+            "amplitudes_inter_node_collective_bytes": 64,
+            "amplitudes_intra_node_collective_bytes": 0,
+            "expectation_inter_node_collective_bytes": 8,
+            "expectation_rank_partial_bytes_by_rank": {
+              "0": 16,
+              "1": 16
+            },
+            "training_communication_bytes": 64,
+            "training_communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 64,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 64,
+              "unattributed_collective_bytes": 0
+            },
+            "training_local_memory_bytes_by_rank": [
+              1296,
+              1296
+            ],
+            "training_owned_parameter_bytes_by_rank": [
+              8,
+              8
+            ]
+          },
+          "communication_tiers": {
+            "collective": "all_reduce_sum",
+            "inter_node_collective_bytes": 8,
+            "inter_node_collective_possible": true,
+            "intra_node_collective_bytes": 0,
+            "model": "collective_topology_dependent",
+            "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+            "reduction_tensor_bytes": 8,
+            "unattributed_collective_bytes": 0
+          },
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+          "distributed_expectation": 0.6655856667472199,
+          "distribution_semantics": "sharded_across_ranks",
+          "full_state_materialized": false,
+          "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+          "local_memory_bytes_by_rank": [
+            16,
+            16
+          ],
+          "local_world_size": 1,
+          "node_count": 2,
+          "observable_wires": [
+            0,
+            4
+          ],
+          "output_target": "local_observables",
+          "rank_gradient_contribution": [
+            -0.06869490230718396,
+            0.0006129045593744329
+          ],
+          "rank_partial_bytes_by_rank": {
+            "0": 16,
+            "1": 16
+          },
+          "rank_placement": {
+            "device": "cuda:0",
+            "distributed_identity": {
+              "blockers": [
+                "distributed_identity_is_not_collective_conformance_evidence"
+              ],
+              "communication_claim_allowed": false,
+              "flagcx_route_status": "not_applicable",
+              "flagcx_route_verified": false,
+              "host_staging_observed": null,
+              "inner_backend": "nccl",
+              "inner_backend_verified": true,
+              "logical_device": "cuda:0",
+              "outer_backend": "nccl",
+              "platform_identity": {},
+              "process_group_initialized": true,
+              "provider": "pytorch",
+              "provider_version": null,
+              "rank": 1,
+              "schema": "flagquantum_distributed_identity_v1",
+              "world_size": 2
+            },
+            "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+            "local_rank": 0,
+            "local_world_size": 1,
+            "local_world_size_source": "caller",
+            "node_count": 2,
+            "node_rank": 1,
+            "rank": 1,
+            "world_size": 2
+          },
+          "reduced_gradient": [
+            -0.8381165503270911,
+            -0.04532342403786074
+          ],
+          "reduction_payload_bytes": 8,
+          "reference_gradient": [
+            -0.8381165503270909,
+            -0.04532342403786073
+          ],
+          "scalability_blockers": [],
+          "scalability_claim_allowed": false,
+          "single_amplitude": {
+            "claim_evidence_type": "production_runtime",
+            "communication_tiers": {
+              "collective": "all_reduce_sum",
+              "inter_node_collective_bytes": 16,
+              "inter_node_collective_possible": true,
+              "intra_node_collective_bytes": 0,
+              "model": "collective_topology_dependent",
+              "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+              "reduction_tensor_bytes": 16,
+              "unattributed_collective_bytes": 0
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "full_state_materialized": false,
+            "local_memory_bytes_by_rank": [
+              16,
+              16
+            ],
+            "local_world_size": 1,
+            "node_count": 2,
+            "output_target": "single_amplitude",
+            "rank_partial_bytes_by_rank": {
+              "0": 16,
+              "1": 16
+            },
+            "rank_placement": {
+              "device": "cuda:0",
+              "distributed_identity": {
+                "blockers": [
+                  "distributed_identity_is_not_collective_conformance_evidence"
+                ],
+                "communication_claim_allowed": false,
+                "flagcx_route_status": "not_applicable",
+                "flagcx_route_verified": false,
+                "host_staging_observed": null,
+                "inner_backend": "nccl",
+                "inner_backend_verified": true,
+                "logical_device": "cuda:0",
+                "outer_backend": "nccl",
+                "platform_identity": {},
+                "process_group_initialized": true,
+                "provider": "pytorch",
+                "provider_version": null,
+                "rank": 1,
+                "schema": "flagquantum_distributed_identity_v1",
+                "world_size": 2
+              },
+              "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+              "local_rank": 0,
+              "local_world_size": 1,
+              "local_world_size_source": "caller",
+              "node_count": 2,
+              "node_rank": 1,
+              "rank": 1,
+              "world_size": 2
+            },
+            "reduction_payload_bytes": 16,
+            "scalability_blockers": [],
+            "scalability_claim_allowed": false,
+            "slice_labels": [
+              6,
+              7
+            ],
+            "slice_tasks": 4,
+            "state_mode": "distributed_tensor_network_amplitude",
+            "tasks_by_rank": {
+              "0": 2,
+              "1": 2
+            },
+            "working_set_preflight": {
+              "allocator_headroom_bytes": 96,
+              "budget_satisfied": true,
+              "communication_buffer_bytes": 0,
+              "fail_closed": true,
+              "kernel_workspace_bytes": 0,
+              "max_working_set_bytes": null,
+              "memory_calibration_identity": null,
+              "model": "calibrated_peak_safety_factor",
+              "predicted_working_set_bytes": 128,
+              "tensor_peak_bytes": 32,
+              "working_set_policy": null
+            },
+            "world_size": 2
+          },
+          "slice_labels": [
+            6,
+            7
+          ],
+          "slice_tasks": 4,
+          "state_mode": "distributed_tensor_network_expectation",
+          "tasks_by_rank": {
+            "0": 2,
+            "1": 2
+          },
+          "training_step": {
+            "collective_count": 2,
+            "collective_seconds": 0.0003622937947511673,
+            "local_forward_operation_count": 46,
+            "local_reverse_operation_count": 46,
+            "local_task_count": 2,
+            "loss": 0.547463033952777,
+            "optimizer": {
+              "collective_count": 1,
+              "collective_payload_bytes_per_rank": 8,
+              "execution_seconds": 0.00039887987077236176,
+              "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
+              "learning_rate": 0.05,
+              "local_world_size": 1,
+              "node_count": 2,
+              "optimizer_name": "rank_owned_sgd",
+              "optimizer_state_distribution": "rank_owned",
+              "optimizer_update_ownership": [
+                {
+                  "ownership": "rank_owned_optimizer_update",
+                  "parameter_indices": [
+                    0
+                  ],
+                  "rank": 0,
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                },
+                {
+                  "ownership": "rank_owned_optimizer_update",
+                  "parameter_indices": [
+                    1
+                  ],
+                  "rank": 1,
+                  "writeback_route": "owner_update_then_packed_all_gather"
+                }
+              ],
+              "optimizer_update_ownership_semantics": "sharded_across_ranks",
+              "optimizer_update_semantics": "sharded_across_ranks",
+              "owned_parameter_indices": [
+                1
+              ],
+              "parameter_distribution_after_step": "replicated_for_next_forward",
+              "parameter_ownership_semantics": "sharded_across_ranks",
+              "parameter_writeback_route": "owner_update_then_packed_all_gather",
+              "rank": 1,
+              "rank_placement": {
+                "local_rank": 0,
+                "local_world_size": 1,
+                "node_count": 2,
+                "node_rank": 1,
+                "rank": 1,
+                "world_size": 2
+              },
+              "training_step_count": 1,
+              "world_size": 2
+            },
+            "reverse": {
+              "backward_distribution_semantics": "sharded_across_ranks",
+              "collective_count": 2,
+              "collective_payload_bytes_per_rank": 32,
+              "collective_seconds": 0.0003622937947511673,
+              "distribution_semantics": "sharded_across_ranks",
+              "forward_distribution_semantics": "sharded_across_ranks",
+              "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+              "gradient_distribution_semantics": "sharded_across_ranks",
+              "local_execution_seconds": 0.029900511726737022,
+              "local_forward_operation_count": 46,
+              "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+              "local_peak_slice_tensor_bytes": 1296,
+              "local_rematerialized_operation_count": 0,
+              "local_reverse_operation_count": 46,
+              "local_saved_tape_bytes": 0,
+              "local_slice_batch_count": 2,
+              "local_slice_batch_size": 1,
+              "local_task_count": 2,
+              "local_world_size": 1,
+              "node_count": 2,
+              "nonfinite_cotangent_count": 0,
+              "nonfinite_parameter_gradient_count": 0,
+              "parameter_gradient_owner_ranks": [
+                0,
+                1
+              ],
+              "rank": 1,
+              "rank_placement": {
+                "local_rank": 0,
+                "local_world_size": 1,
+                "node_count": 2,
+                "node_rank": 1,
+                "rank": 1,
+                "world_size": 2
+              },
+              "scalability_blockers": [
+                "accelerator_capacity_evidence_pending",
+                "production_benchmark_audit_pending"
+              ],
+              "scalability_claim_allowed": false,
+              "task_plan_identity": "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7",
+              "world_size": 2
+            },
+            "step": 3
+          },
+          "working_set_preflight": {
+            "allocator_headroom_bytes": 192,
+            "budget_satisfied": true,
+            "communication_buffer_bytes": 0,
+            "fail_closed": true,
+            "kernel_workspace_bytes": 0,
+            "max_working_set_bytes": null,
+            "memory_calibration_identity": null,
+            "model": "calibrated_peak_safety_factor",
+            "predicted_working_set_bytes": 256,
+            "tensor_peak_bytes": 64,
+            "working_set_policy": null
+          },
+          "world_size": 2
+        }
+      ],
+      "reference": "exact_complex128_statevector_single_device",
+      "training": {
+        "artifact_rank_checkpoint_names": [
+          "rank-0-tn-training.pt"
+        ],
+        "checkpoint_generation": {
+          "committed_step": 4,
+          "rank_local_files_hold_replicated_parameters": true,
+          "shards": {
+            "0": {
+              "file": "rank-0-tn-training.pt",
+              "local_world_size": 1,
+              "node_count": 2,
+              "parameter_sha256": "fb9e699be1cd98a338c2a7713a68fa82eabdb3745d667d0aee73698210581fb5",
+              "parameter_sha256_prefix": "fb9e699be1cd98a3",
+              "schema_version": "flagquantum.tn_training_checkpoint.v1",
+              "step": 4,
+              "task_plan_identity": "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7",
+              "world_size": 2
+            },
+            "1": {
+              "file": "rank-1-tn-training.pt",
+              "local_world_size": 1,
+              "node_count": 2,
+              "parameter_sha256": "fb9e699be1cd98a338c2a7713a68fa82eabdb3745d667d0aee73698210581fb5",
+              "parameter_sha256_prefix": "fb9e699be1cd98a3",
+              "schema_version": "flagquantum.tn_training_checkpoint.v1",
+              "step": 4,
+              "task_plan_identity": "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7",
+              "world_size": 2
+            }
+          },
+          "task_plan_identity": "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7"
+        },
+        "checkpoint_steps": 2,
+        "checkpoint_storage_semantics": "rank_local_shared_filesystem",
+        "first_leg_losses": [
+          0.6655856667472199,
+          0.6294976708787184
+        ],
+        "interrupted_leg_checkpoint_writes": 2,
+        "learning_rate": 0.05,
+        "objective": "pauli_product_expectation_value",
+        "optimizer": "sgd",
+        "parameter_owner_ranks": [
+          0,
+          1
+        ],
+        "resumed_completed_steps": 4,
+        "resumed_leg_checkpoint_writes": 2,
+        "resumed_leg_losses": [
+          0.5900185713674774,
+          0.547463033952777
+        ],
+        "resumed_start_step": 2,
+        "resumed_steps": 4,
+        "slice_labels": [
+          6,
+          7
+        ],
+        "tasks_by_rank": {
+          "0": 2,
+          "1": 2
+        },
+        "uninterrupted_leg_checkpoint_writes": 4,
+        "uninterrupted_leg_losses": [
+          0.6655856667472199,
+          0.6294976708787184,
+          0.5900185713674774,
+          0.547463033952777
+        ],
+        "uninterrupted_start_step": 0
+      }
+    },
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum.cuda_multinode_tn_probe.v1",
+    "scope": {
+      "checked_bitstrings": [
+        "00000",
+        "10000",
+        "00001",
+        "10001"
+      ],
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
+      "local_world_size": 1,
+      "n_wires": 5,
+      "node_count": 2,
+      "observable_wires": [
+        0,
+        4
+      ],
+      "slice_count": 4,
+      "sliced_label_multiplicities": {
+        "6": 2,
+        "7": 2
+      },
+      "sliced_labels": [
+        6,
+        7
+      ],
+      "slices_per_rank": 2,
+      "world_size": 2
+    },
+    "status": "passed"
+  },
+  "evidence_sha256": "b879c718e752d521da04835d51ac2a9b36775d4be06cc24834bed05f25054bdb",
+  "schema": "flagquantum.cuda_multinode_tn_artifact.v1"
+}
