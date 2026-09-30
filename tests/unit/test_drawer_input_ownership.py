@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.drawer import draw
 from flagquantum.drawer.text_drawer import TextDrawer
 
 pytestmark = pytest.mark.unit
@@ -19,6 +20,17 @@ def test_text_drawer_copies_wire_order() -> None:
 
     assert drawer.wire_order == [1, 0]
     assert "H" in drawer.draw()
+
+
+def test_draw_defaults_to_text_and_rejects_an_unknown_format() -> None:
+    """An unrecognized renderer must not be answered with the text diagram."""
+
+    program = CircuitIR(n_wires=2, instructions=(Instruction("h", (0,)),))
+
+    assert "H" in draw(program)
+
+    with pytest.raises(ValueError, match="unknown draw format 'png'"):
+        draw(program, format="png")
 
 
 def test_mpl_options_can_be_reused_without_mutation() -> None:
