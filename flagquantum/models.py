@@ -52,7 +52,7 @@ class HybridQuantumClassifier(torch.nn.Module):
         self.quantum = Module(
             _classifier_circuit,
             2,
-            policy=policy or RuntimePolicy(observable_wires=(1,)),
+            policy=policy or RuntimePolicy(observable_qubits=(1,)),
         )
         self.bias = torch.nn.Parameter(torch.zeros(()))
 
@@ -123,7 +123,7 @@ class VariationalEnergyModel(torch.nn.Module):
             )
         )
         selected = policy or RuntimePolicy(
-            observable="hamiltonian", observable_wires=(0, 1)
+            observable="hamiltonian", observable_qubits=(0, 1)
         )
         self.quantum = Module(
             _energy_circuit,

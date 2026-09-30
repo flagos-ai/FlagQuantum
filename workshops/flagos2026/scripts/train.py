@@ -21,7 +21,7 @@ def main(steps=80):
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(device="cpu", mode="statevector"),
             observable="z_sum",
-            observable_wires=(0,),
+            observable_qubits=(0,),
         ),
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.08)

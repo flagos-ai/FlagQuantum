@@ -210,7 +210,7 @@ def test_module_routes_incomplete_release_evidence_to_native_local_mps():
         1,
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(mode="mps"),
-            observable_wires=(0,),
+            observable_qubits=(0,),
         ),
     )
     result = module.execute_production_mps(

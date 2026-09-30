@@ -36,7 +36,7 @@ layer = fq.Module(
             backend="jax",
             allow_backend_fallback=True,
         ),
-        observable_wires=(1,),
+        observable_qubits=(1,),
     ),
 )
 optimizer = torch.optim.Adam(layer.parameters(), lr=0.01)

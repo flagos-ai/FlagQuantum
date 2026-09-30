@@ -1,6 +1,7 @@
 """Public keyword migration preserves numerical and serialized behavior."""
 
 import dataclasses
+import warnings
 
 import pytest
 import torch
@@ -111,3 +112,21 @@ def test_historical_module_state_loads():
 def test_invalid_qubit_indices(factory):
     with pytest.raises((ValueError, TypeError)):
         factory(qubits=[-1])
+
+
+@pytest.mark.parametrize(
+    ("model_name", "expected_qubits"),
+    [
+        ("HybridQuantumClassifier", (1,)),
+        ("VariationalEnergyModel", (0, 1)),
+    ],
+)
+def test_public_model_defaults_avoid_deprecated_keywords(model_name, expected_qubits):
+    """A shipped default must not teach a keyword the release deprecates."""
+
+    from flagquantum import models
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        model = getattr(models, model_name)()
+    assert model.quantum.policy.observable_qubits == expected_qubits

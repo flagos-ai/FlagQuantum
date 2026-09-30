@@ -25,7 +25,7 @@ def circuit(parameters, inputs=None):
     program = fq.Circuit(2, device=parameters.device)
     return program.ry(0, parameters[0]).cx(0, 1).ry(1, parameters[1])
 
-model = fq.Module(circuit, 2, policy=fq.RuntimePolicy(observable_wires=(1,)))
+model = fq.Module(circuit, 2, policy=fq.RuntimePolicy(observable_qubits=(1,)))
 optimizer = torch.optim.Adam(model.parameters())
 loss = model().sum()
 loss.backward()
@@ -40,7 +40,7 @@ observable wires. The result keeps the observable axis instead of reducing it:
 features = fq.Module(
     circuit,
     2,
-    policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+    policy=fq.RuntimePolicy(observable="z", observable_qubits=(0, 1)),
 )()
 assert features.shape == (1, 2)
 ```

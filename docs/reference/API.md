@@ -184,7 +184,7 @@ def build_circuit(parameters, inputs=None):
 module = fq.Module(
     build_circuit,
     n_parameters=2,
-    policy=fq.RuntimePolicy(observable_wires=(1,)),
+    policy=fq.RuntimePolicy(observable_qubits=(1,)),
 )
 optimizer = torch.optim.Adam(module.parameters(), lr=0.01)
 
@@ -261,7 +261,7 @@ sums and real coefficients use ordinary arithmetic.
 outputs = (
     fq.expectation(fq.Z(0) + fq.Z(1), name="magnetization"),
     fq.expectation(fq.X(0) @ fq.Z(1), name="correlation"),
-    fq.samples(wires=(0, 1)),
+    fq.samples(qubits=(0, 1)),
 )
 plan = fq.plan(
     circuit,
@@ -295,7 +295,7 @@ and count reduction execute without returning the full statevector:
 result = fq.run(
     circuit,
     target="jiuding:gpu",
-    outputs=(fq.samples(wires=(0, 1)), fq.counts(wires=(0, 1))),
+    outputs=(fq.samples(qubits=(0, 1)), fq.counts(qubits=(0, 1))),
     shots=1024,
 )
 

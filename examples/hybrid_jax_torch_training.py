@@ -46,7 +46,7 @@ def main() -> None:
                 backend="jax", allow_backend_fallback=False
             ),
             observable="hamiltonian",
-            observable_wires=(0, 1, 2),
+            observable_qubits=(0, 1, 2),
         ),
         hamiltonian=hamiltonian,
     )

@@ -26,7 +26,7 @@ def main() -> None:
             build,
             2,
             init=initial,
-            policy=fq.RuntimePolicy(observable_wires=(1,)),
+            policy=fq.RuntimePolicy(observable_qubits=(1,)),
         )
         expected = local()
         expected_grad = torch.autograd.grad(expected.sum(), local.parameters_tensor)[0]
@@ -34,7 +34,7 @@ def main() -> None:
             build,
             2,
             init=initial,
-            policy=fq.RuntimePolicy(observable_wires=(1,)),
+            policy=fq.RuntimePolicy(observable_qubits=(1,)),
         )
         result = sharded.execute()
         assert result.value is not None

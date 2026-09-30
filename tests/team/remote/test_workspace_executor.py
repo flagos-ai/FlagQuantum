@@ -89,7 +89,7 @@ def test_cpu_executor_returns_samples_and_counts_without_statevector():
 
     ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
     measurements = lower_outputs(
-        (fq.samples(wires=(0, 1)), fq.counts(wires=(0, 1))),
+        (fq.samples(qubits=(0, 1)), fq.counts(qubits=(0, 1))),
         n_wires=2,
         shots=32,
         seed=7,

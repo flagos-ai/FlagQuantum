@@ -42,7 +42,7 @@ def main() -> None:
             build,
             2,
             init=initial,
-            policy=fq.RuntimePolicy(observable_wires=(1,)),
+            policy=fq.RuntimePolicy(observable_qubits=(1,)),
         )
         module.set_parallel_context(
             state_process_group=state_groups[replica], plan=plan
@@ -56,7 +56,7 @@ def main() -> None:
             build,
             2,
             init=initial,
-            policy=fq.RuntimePolicy(observable_wires=(1,)),
+            policy=fq.RuntimePolicy(observable_qubits=(1,)),
         )
         reference_values = torch.stack(
             [reference(torch.tensor(item)).sum() for item in (0.17, -0.41)]

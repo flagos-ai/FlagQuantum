@@ -61,7 +61,7 @@ def test_submit_program_builds_shared_bundle_without_user_script(
         }
 
     monkeypatch.setattr(client, "submit", submit)
-    output = fq.counts(wires=(0, 1))
+    output = fq.counts(qubits=(0, 1))
 
     receipt = client.submit_program(
         fq.Circuit(2).h(0).cx(0, 1),
@@ -95,7 +95,7 @@ def test_submit_program_manages_artifacts_when_receipt_is_omitted(monkeypatch) -
         fq.Circuit(2).h(0).cx(0, 1),
         target="jiuding:gpu",
         image="flagquantum-runtime:v1",
-        outputs=fq.counts(wires=(0, 1)),
+        outputs=fq.counts(qubits=(0, 1)),
         shots=1024,
     )
 

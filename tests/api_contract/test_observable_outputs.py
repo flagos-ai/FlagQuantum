@@ -66,8 +66,8 @@ def test_hamiltonian_expectation_preserves_autograd() -> None:
 def test_probability_sample_and_count_outputs() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
 
-    probabilities = fq.run(circuit, outputs=fq.probabilities(wires=(1, 0)))
-    samples = fq.run(circuit, outputs=fq.samples(wires=0), shots=8)
+    probabilities = fq.run(circuit, outputs=fq.probabilities(qubits=(1, 0)))
+    samples = fq.run(circuit, outputs=fq.samples(qubits=0), shots=8)
     counts = fq.run(circuit, outputs=fq.counts(), shots=16)
 
     torch.testing.assert_close(
