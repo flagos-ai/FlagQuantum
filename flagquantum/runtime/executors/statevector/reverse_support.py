@@ -141,6 +141,8 @@ class BackwardExecutionEvidence:
     fused_parameter_adjoint_count: int = 0
     peak_scratch_bytes: int = 0
     saved_forward_state_reused: bool = False
+    checkpoint_count: int = 0
+    rematerialized_gate_count: int = 0
     exchange_chunk_amplitudes: int = _DEFAULT_REVERSE_CHUNK_AMPLITUDES
     exchange_chunk_bytes: int = 0
     exchange_workspace_allocation_count: int = 0

@@ -71,6 +71,12 @@ default's absolute forward/backward/total time and peak RSS, and a censored
 static-512-MiB rollback. It includes the cgroup safety boundary, public example,
 limitations, and exact reproduction commands.
 
+[`NATIVE_CPU_ADJOINT_BUDGETED_BLOCK_CHECKPOINTS_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_BUDGETED_BLOCK_CHECKPOINTS_CPU_ARM64_20260930.md)
+measures the bounded-memory fallback between reversible adjoint and full
+rematerialization. It records the exact checkpoint plan, replayed-gate count,
+absolute 24-qubit time, rollback speedup, correctness coverage, and reproduction
+commands for the 1 GiB and 512 MiB policies.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
