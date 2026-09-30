@@ -462,8 +462,11 @@ class TorchDistributedMPSForwardResult:
             ),
             "scalability_claim_allowed": False,
             "blockers": (
-                "mps_sharded_backward_pending",
-                "mps_sharded_optimizer_pending",
+                # The backward and the optimizer paths exist as their own
+                # results; this one is the forward pass, so what it cannot
+                # support is stated as the scope it has rather than as work
+                # that is still missing.
+                "forward_only_result_excludes_backward_and_optimizer",
                 "accelerator_capacity_acceptance_pending",
             ),
         }
