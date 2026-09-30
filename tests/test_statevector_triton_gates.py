@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.simulation.statevector.cx_sequence_dispatch as cx_sequence_dispatch
 import flagquantum.simulation.statevector.ry_rz_dispatch as ry_rz_dispatch
 
 pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
@@ -165,6 +166,46 @@ def test_generic_constant_single_qubit_regions_preserve_input_gradient() -> None
     assert (
         cuda._last_statevector_runtime["dependency_reordered_single_qubit_regions"] == 2
     )
+
+
+def test_cx_sequence_catalog_path_matches_cpu_forward_and_backward(monkeypatch) -> None:
+    _require_cuda()
+    catalog_routes = []
+    require_cataloged_kernel = cx_sequence_dispatch._require_cx_sequence_kernel
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        cx_sequence_dispatch,
+        "_require_cx_sequence_kernel",
+        capture_catalog_route,
+    )
+    torch.manual_seed(41)
+    cpu_input = torch.randn(2, 16, dtype=torch.complex64, requires_grad=True)
+    cuda_input = cpu_input.detach().cuda().requires_grad_(True)
+    cpu = fq.Circuit(4, device="cpu", dtype=torch.complex64, inputs=cpu_input)
+    cuda = fq.Circuit(4, device="cuda", dtype=torch.complex64, inputs=cuda_input)
+    for circuit in (cpu, cuda):
+        circuit.cx(0, 1).cx(1, 2).cx(2, 3).cx(3, 0)
+
+    cpu_state = cpu.state()
+    cuda_state = cuda.state()
+    weights = torch.arange(1, 17, dtype=torch.float32)
+    cpu_loss = (cpu_state.real * weights).sum()
+    cuda_loss = (cuda_state.real * weights.cuda()).sum()
+    cpu_loss.backward()
+    cuda_loss.backward()
+
+    torch.testing.assert_close(cuda_state.cpu(), cpu_state)
+    torch.testing.assert_close(cuda_input.grad.cpu(), cpu_input.grad)
+    assert cuda._last_statevector_runtime["triton_cx_sequence_regions"] == 1
+    assert catalog_routes == ["FQKI-TRITON-SV-003-B"]
 
 
 def test_parameterized_ry_rz_uses_differentiable_fusion(monkeypatch) -> None:
