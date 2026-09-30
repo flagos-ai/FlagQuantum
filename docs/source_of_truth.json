@@ -33,6 +33,7 @@
   ],
   "intent_documents": [
     "docs/roadmap/FLAGQUANTUM_VISION.md",
-    "docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md"
+    "docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md",
+    "docs/roadmap/CUDAQ_PARITY_STRATEGY.md"
   ]
 }

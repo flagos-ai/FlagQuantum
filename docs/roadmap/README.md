@@ -16,3 +16,4 @@ targets.
 - [Exascale and Gordon Bell strategy](EXASCALE_GORDON_BELL_STRATEGY.md)
 - [Python-first hybrid quantum-classical compilation execution plan](PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md)
 - [Unified heterogeneous execution and cloud ecosystem roadmap](UNIFIED_HYBRID_EXECUTION_ROADMAP.md)
+- [CUDA-Q parity strategy](CUDAQ_PARITY_STRATEGY.md)
