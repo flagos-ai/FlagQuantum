@@ -8,7 +8,9 @@ import torch
 import flagquantum.simulation.mps.two_site_dispatch as two_site_dispatch
 from flagquantum.simulation.mps.state import MPSState
 from flagquantum.simulation.mps.two_site_dispatch import (
+    _mps_projected_two_site_kernel_match,
     _mps_two_site_kernel_match,
+    _require_mps_projected_two_site_kernel,
     _require_mps_two_site_kernel,
 )
 
@@ -49,6 +51,48 @@ def test_mps_two_site_dispatch_reports_catalog_mismatch(
 def test_mps_two_site_dispatch_fails_closed_on_unsupported_input() -> None:
     with pytest.raises(RuntimeError, match="not authorized.*dtype"):
         _require_mps_two_site_kernel(
+            device_type="cuda",
+            dtype="complex128",
+        )
+
+
+def test_mps_projected_two_site_dispatch_binds_exact_implementation() -> None:
+    implementation = _require_mps_projected_two_site_kernel(
+        device_type="cuda",
+        dtype="complex64",
+    )
+
+    assert implementation.semantic_id == "mps.contract.two_site_gate_projected"
+    assert implementation.implementation_id == "FQKI-TRITON-MPS-002-A"
+    assert implementation.symbol == "fused_mps_range_projection"
+    assert implementation.directions == ("forward",)
+
+
+@pytest.mark.parametrize(
+    ("device_type", "dtype", "mismatch"),
+    (("cpu", "complex64", "device"), ("cuda", "complex128", "dtype")),
+)
+def test_mps_projected_two_site_dispatch_reports_catalog_mismatch(
+    device_type: str,
+    dtype: str,
+    mismatch: str,
+) -> None:
+    match = _mps_projected_two_site_kernel_match(
+        device_type=device_type,
+        dtype=dtype,
+    )
+
+    rejection = next(
+        item
+        for item in match.rejections
+        if item.implementation.implementation_id == "FQKI-TRITON-MPS-002-A"
+    )
+    assert tuple(item.code for item in rejection.mismatches) == (mismatch,)
+
+
+def test_mps_projected_two_site_dispatch_fails_closed() -> None:
+    with pytest.raises(RuntimeError, match="not authorized.*dtype"):
+        _require_mps_projected_two_site_kernel(
             device_type="cuda",
             dtype="complex128",
         )
