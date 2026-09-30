@@ -84,6 +84,57 @@ def _triton_local_adjoint_vjp_tensor_decision(
     )
 
 
+def _triton_sharded_adjoint_vjp_decision(
+    *,
+    runtime_supported: bool = True,
+    device_type: str,
+    dtype: str,
+) -> KernelDecision:
+    """Select the exact evidenced sharded adjoint VJP implementation."""
+
+    return select_cataloged_triton_kernel(
+        "sharded_adjoint_vjp",
+        request=KernelRequest(
+            semantic_id="gradient.vjp.adjoint_1q.sharded",
+            device=device_type,
+            dtype=dtype,
+            layout="sharded_statevector",
+            direction="vjp",
+            addressing=("distributed",),
+            providers=("triton",),
+        ),
+        implementation_id="FQKI-TRITON-GR-003-A",
+        requested=_triton_vjp_adjoint_requested(),
+        runtime_supported=runtime_supported,
+        device_runtime_provider="pytorch",
+        compiler_backend="cuda",
+        capture_compiler_identity=True,
+    )
+
+
+def _triton_sharded_adjoint_vjp_tensor_decision(
+    before: torch.Tensor,
+    adjoint: torch.Tensor,
+    *,
+    runtime_supported: bool = True,
+) -> KernelDecision:
+    """Select the sharded adjoint VJP from its rank-local tensor contract."""
+
+    tensors_supported = bool(
+        before.ndim == 2
+        and before.is_contiguous()
+        and adjoint.shape == before.shape
+        and adjoint.device == before.device
+        and adjoint.dtype == before.dtype
+        and adjoint.is_contiguous()
+    )
+    return _triton_sharded_adjoint_vjp_decision(
+        runtime_supported=runtime_supported and tensors_supported,
+        device_type=before.device.type,
+        dtype=str(before.dtype).removeprefix("torch."),
+    )
+
+
 def _triton_local_reversible_vjp_decision(
     *,
     runtime_supported: bool = True,
@@ -146,10 +197,15 @@ def _triton_adjoint_vjp_tensor_decision(
     sharded: bool,
     runtime_supported: bool = True,
 ) -> KernelDecision:
-    """Use exact catalog identity only for the wired local one-qubit kernel."""
+    """Use exact catalog identity for the wired one-qubit VJP kernels."""
 
-    if wire_count == 1 and not sharded:
-        return _triton_local_adjoint_vjp_tensor_decision(
+    if wire_count == 1:
+        selector = (
+            _triton_sharded_adjoint_vjp_tensor_decision
+            if sharded
+            else _triton_local_adjoint_vjp_tensor_decision
+        )
+        return selector(
             before,
             adjoint,
             runtime_supported=runtime_supported,
@@ -170,5 +226,7 @@ __all__ = (
     "_triton_local_adjoint_vjp_tensor_decision",
     "_triton_local_reversible_vjp_decision",
     "_triton_local_reversible_vjp_tensor_decision",
+    "_triton_sharded_adjoint_vjp_decision",
+    "_triton_sharded_adjoint_vjp_tensor_decision",
     "_triton_vjp_adjoint_decision",
 )

@@ -55,8 +55,8 @@ def test_two_rank_nccl_persistent_layout_backward_matches_dense_autograd():
     """The one run that reaches the reversible-adjoint and fused-Triton branches.
 
     Every other lane leaves that half of `_explicit_sharded_adjoint` unexecuted:
-    `_triton_vjp_adjoint_decision` defaults to `disabled_by_policy`, so the
-    accelerated branches are unreachable unless a caller sets both the
+    adjoint VJP dispatch defaults to `disabled_by_policy`, so the accelerated
+    branches are unreachable unless a caller sets both the
     persistent-layout flags and a Triton-capable device, and no lane did. The
     harness asserts the accelerated path produced the gradients; this test
     asserts the harness ran, on both ranks.
@@ -78,4 +78,8 @@ def test_two_rank_nccl_persistent_layout_backward_matches_dense_autograd():
     assert (
         completed.stdout.count('"unpack_implementation_id": "FQKI-TRITON-SV-008-A"')
         == 2
+    )
+    assert completed.stdout.count('"implementation_id": "FQKI-TRITON-GR-003-A"') == 2
+    assert (
+        completed.stdout.count('"semantic_id": "gradient.vjp.adjoint_1q.sharded"') == 2
     )
