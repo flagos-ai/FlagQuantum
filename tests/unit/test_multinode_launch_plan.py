@@ -80,11 +80,15 @@ def _flag(command: list[str], name: str) -> str:
 # --- the plan the watchdog consumes -----------------------------------------
 
 
-def test_the_plan_is_two_ranks_one_per_node() -> None:
+def test_the_plan_is_two_nodes_and_the_shape_it_was_asked_for() -> None:
     payload = _plan()
 
     assert payload["node_count"] == plan.NODE_COUNT == 2
+    # One rank per node is the shape the recorded evidence was taken on, and a
+    # default that changed would silently make every recorded artifact describe
+    # a lane that no longer exists.
     assert payload["local_world_size"] == 1
+    assert payload["world_size"] == 2
     names = [job["name"] for job in payload["jobs"]]
     assert len(names) == len(set(names)), names
     assert sorted(_flag(job["command"], "--node-rank") for job in payload["jobs"]) == [
@@ -102,6 +106,109 @@ def test_the_plan_is_two_ranks_one_per_node() -> None:
         # plan without this leaves a launcher running on the other node.
         assert job["cleanup_command"]
     assert json.loads(json.dumps(payload)) == payload
+
+
+def test_a_wider_per_node_width_is_the_same_lane_with_more_ranks_each() -> None:
+    """2xN is the same two nodes; only the per-node rank count changes."""
+
+    narrow = _plan()
+    wide = _plan(local_world_size=4)
+
+    assert wide["node_count"] == narrow["node_count"] == 2
+    assert wide["local_world_size"] == 4
+    assert wide["world_size"] == 8
+    # Still one command per node, so still two jobs: a wider node is a wider
+    # `torchrun`, not more of them.
+    assert len(wide["jobs"]) == len(narrow["jobs"])
+    for job in wide["jobs"]:
+        assert _flag(job["command"], "--nproc-per-node") == "4"
+        assert _flag(job["command"], "--nnodes") == "2"
+    assert [_flag(job["command"], "--node-rank") for job in wide["jobs"]] == [
+        _flag(job["command"], "--node-rank") for job in narrow["jobs"]
+    ]
+
+
+@pytest.mark.parametrize("probe", sorted(plan.PROBES))
+def test_no_probe_is_offered_a_width_of_zero_or_less(probe: str) -> None:
+    # A node runs at least one rank, whatever the probe; `torchrun` would
+    # otherwise start nothing and the lane would report a shape it never ran.
+    for width in (0, -1):
+        with pytest.raises(SystemExit) as raised:
+            plan.checked_local_world_size(width, probe=probe)
+        assert "at least one" in str(raised.value)
+
+
+@pytest.mark.parametrize("width", [3, 5, 6])
+def test_a_per_node_width_the_statevector_executor_cannot_shard_is_refused(
+    width: int,
+) -> None:
+    """Three ranks on a node would shard the amplitudes unevenly.
+
+    The planner shards by rank-address bits, so anything but a power of two has
+    to be refused before a launch rather than after a run that reported a shape
+    the executor had already declined to execute.
+    """
+
+    with pytest.raises(SystemExit) as raised:
+        plan.checked_local_world_size(width, probe="statevector")
+
+    assert "power of two" in str(raised.value)
+
+
+@pytest.mark.parametrize("width", [1, 2, 4, 8])
+def test_a_per_node_width_the_statevector_executor_can_shard_is_accepted(
+    width: int,
+) -> None:
+    assert plan.checked_local_world_size(width, probe="statevector") == width
+
+
+def test_a_probe_that_can_serve_a_width_the_statevector_cannot_is_allowed_it() -> None:
+    """The width rule belongs to the probe, not to the lane.
+
+    A six-wire rank-owned MPS run is at its widest at six ranks, which is three
+    per node: a power-of-two rule applied to the lane refused a shape the MPS
+    executor serves exactly.
+    """
+
+    assert plan.checked_local_world_size(3, probe="mps") == 3
+    # Every rank owns at least one site, so a seventh rank has nothing to own.
+    with pytest.raises(SystemExit) as raised:
+        plan.checked_local_world_size(4, probe="mps")
+    assert "every rank owns at least one site" in str(raised.value)
+
+
+def test_a_tensor_network_width_has_to_divide_the_slice_count() -> None:
+    """The slice count is fixed, so only its divisors describe a whole partition."""
+
+    assert plan.checked_local_world_size(1, probe="tn") == 1
+    assert plan.checked_local_world_size(2, probe="tn") == 2
+    with pytest.raises(SystemExit) as raised:
+        plan.checked_local_world_size(3, probe="tn")
+    assert "divide it" in str(raised.value)
+
+
+def _literal(path: str, name: str) -> int:
+    """One integer constant, read out of a module without importing it.
+
+    The probes import torch and the launcher may not, so the launcher carries
+    the two widths its refusals are written in terms of. This is what keeps the
+    two copies from drifting: the numbers are read from the probe sources.
+    """
+    tree = ast.parse((ROOT / path).read_text(encoding="utf-8"), filename=path)
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            if name in targets and isinstance(node.value, ast.Constant):
+                return int(node.value.value)
+    raise AssertionError(f"{name} is not a module-level constant of {path}")
+
+
+def test_the_widths_the_lane_refuses_on_are_the_probes_own() -> None:
+    assert _literal("tools/probe_cuda_multinode_mps.py", "N_WIRES") == plan.MPS_WIRES
+    assert (
+        _literal("tools/probe_cuda_multinode_tn.py", "EXPECTED_SLICE_COUNT")
+        == plan.TN_SLICE_COUNT
+    )
 
 
 def test_both_ranks_are_given_the_same_network_environment() -> None:
@@ -127,12 +234,15 @@ def test_both_ranks_are_given_the_same_network_environment() -> None:
     assert ranks[0]["PYTHONPATH"] == ranks[1]["PYTHONPATH"] == STAGING
 
 
-def test_each_rank_writes_the_debug_log_the_probe_reads() -> None:
+def test_each_node_writes_the_debug_log_the_probe_reads() -> None:
     for job in _plan()["jobs"]:
         environment = _environment(job["command"])
         assert environment["NCCL_DEBUG_FILE"] == _flag(job["command"], "--network-log")
-    # Two ranks writing one file would interleave, and the probe would verify
-    # the route from a log that also holds its peer's view.
+    # Two nodes writing one file would interleave, and the probe would verify
+    # the route from a log that also holds its peer's view. The file is scoped
+    # to the node rather than to the rank because one `torchrun` starts all of a
+    # node's ranks from one environment; at one rank per node the two are the
+    # same file, and the probe reports which of the two it read.
     debug_logs = {
         _environment(job["command"])["NCCL_DEBUG_FILE"] for job in _plan()["jobs"]
     }
@@ -215,9 +325,9 @@ def test_a_directory_this_lane_may_not_empty_is_refused(directory: str) -> None:
 
 def test_this_lane_owns_the_directories_it_empties() -> None:
     for purpose, directory in (("output", OUTPUT), ("checkpoint", CHECKPOINTS)):
-        assert plan.checked_lane_directory(
-            STAGING, directory, purpose=purpose
-        ) == Path(directory)
+        assert plan.checked_lane_directory(STAGING, directory, purpose=purpose) == Path(
+            directory
+        )
         # Beside the staged tree, not inside it, and named so that the removal
         # is a decision this lane has already made.
         assert Path(directory).name.startswith(plan.STAGING_PREFIX)
@@ -228,7 +338,7 @@ def test_a_run_starts_from_directories_holding_nothing_from_the_last_one(
 ) -> None:
     output = tmp_path / "fq-multinode-unit-out"
     checkpoints = tmp_path / "fq-multinode-unit-checkpoints"
-    for directory, name in ((output, "rank-0.json"), (checkpoints, "rank-0.pt")):
+    for directory, name in ((output, "node-0.json"), (checkpoints, "rank-0.pt")):
         directory.mkdir(parents=True)
         (directory / name).write_text("stale", encoding="utf-8")
 
@@ -256,7 +366,16 @@ def test_clearing_a_directory_that_was_never_written_needs_no_decision(
 
 @pytest.mark.parametrize(
     "token",
-    ["/nfs/a b/x", "/nfs/x;y", "/nfs/x$y", "/nfs/x`y`", "/nfs/x\ty", "", "/nfs/x&y", "a'b"],
+    [
+        "/nfs/a b/x",
+        "/nfs/x;y",
+        "/nfs/x$y",
+        "/nfs/x`y`",
+        "/nfs/x\ty",
+        "",
+        "/nfs/x&y",
+        "a'b",
+    ],
 )
 def test_an_argument_a_login_shell_would_split_reaches_the_peer_whole(
     token: str,
@@ -365,6 +484,63 @@ def test_an_automatic_master_port_is_free_when_it_is_handed_over() -> None:
     assert 0 < chosen < 65536
     with plan.socket.socket(plan.socket.AF_INET, plan.socket.SOCK_STREAM) as probe:
         probe.bind(("127.0.0.1", chosen))
+
+
+# --- the tree that is staged -------------------------------------------------
+
+
+def _recorded(monkeypatch, tmp_path: Path, codes: list[int] | None = None) -> list[str]:
+    """A fake runner that records the argument lists the lane hands it."""
+    seen: list[str] = []
+    remaining = list(codes or [])
+
+    def run(argv, timeout, cwd=None):
+        seen.append(" ".join(str(item) for item in argv))
+        code = remaining.pop(0) if remaining else 0
+        return subprocess.CompletedProcess(list(argv), code, "", "")
+
+    monkeypatch.setattr(plan, "_run", run)
+    return seen
+
+
+def test_the_staged_tree_is_compiled_before_any_rank_starts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """The copies arrive without `__pycache__`, and every rank starts at once.
+
+    Two ranks of two nodes then compile the same modules and write the same
+    `.pyc` entries through atomic renames on the shared filesystem, where the
+    loser waits on an inode the winner holds. The lane met that as a
+    `job_timeout` with no rank past process-group creation, so the compile is
+    part of staging rather than of the run.
+    """
+    staging = str(tmp_path / f"{plan.STAGING_PREFIX}-stage")
+    seen = _recorded(monkeypatch, tmp_path)
+
+    report = plan.stage(source=tmp_path, staging=staging, python=PYTHON)
+
+    assert seen[0].startswith("rsync ")
+    assert seen[1] == f"{PYTHON} -m compileall -q {staging}"
+    assert report["bytecode_files"] == 0
+
+
+def test_a_staged_tree_that_cannot_be_compiled_stops_the_lane(
+    monkeypatch, tmp_path: Path
+) -> None:
+    staging = str(tmp_path / f"{plan.STAGING_PREFIX}-stage")
+    _recorded(monkeypatch, tmp_path, codes=[0, 1])
+
+    with pytest.raises(RuntimeError) as raised:
+        plan.stage(source=tmp_path, staging=staging, python=PYTHON)
+
+    assert "precompiling the staged tree" in str(raised.value)
+
+
+def test_the_ranks_are_told_not_to_write_bytecode_beside_each_other() -> None:
+    # A stale entry is worth rewriting to the rank that found it; it is not
+    # worth four ranks doing it at once on a shared mount.
+    for job in _plan()["jobs"]:
+        assert _environment(job["command"])["PYTHONDONTWRITEBYTECODE"] == "1"
 
 
 # --- the checks that answer a question a timeout would otherwise answer ------

@@ -26,7 +26,28 @@ def _artifact() -> dict:
     return json.loads(_A800_ARTIFACT.read_text(encoding="utf-8"))
 
 
-def test_the_two_rank_pair_is_the_only_placement_the_probe_accepts() -> None:
+def test_the_launched_shape_is_the_only_one_the_probe_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLD_SIZE", "6")
+    monkeypatch.setenv("LOCAL_WORLD_SIZE", "3")
+    assert _MODULE._declared_shape() == (6, 3)
+
+    for world_size, local_world_size in (
+        # One node wearing the pair's label.
+        (4, 4),
+        # Three nodes, which this lane cannot reach.
+        (6, 2),
+        # Ranks split unevenly, so a node holds fewer than it was told.
+        (6, 4),
+    ):
+        monkeypatch.setenv("WORLD_SIZE", str(world_size))
+        monkeypatch.setenv("LOCAL_WORLD_SIZE", str(local_world_size))
+        with pytest.raises(RuntimeError):
+            _MODULE._declared_shape()
+
+
+def test_each_declared_leg_has_to_report_the_launched_shape() -> None:
     good = {
         "world_size": 2,
         "local_world_size": 1,
@@ -34,19 +55,76 @@ def test_the_two_rank_pair_is_the_only_placement_the_probe_accepts() -> None:
         "distribution_semantics": "sharded_across_ranks",
     }
 
-    _MODULE._require_two_node_placement(good, leg="test")
+    _MODULE._require_two_node_placement(good, leg="test", expected_world_size=2)
+    # The check is against the launched width rather than a constant, so a
+    # two-rank leg and a four-rank leg are both accepted when both are what the
+    # caller asked for.
+    _MODULE._require_two_node_placement(
+        {**good, "world_size": 4, "local_world_size": 2},
+        leg="test",
+        expected_world_size=4,
+    )
 
     for wrong in (
-        # One node per rank is the claim; two ranks on one node is a different
-        # claim that this probe does not make.
+        # Two ranks on one node is a different claim that this probe does not
+        # make, however the ranks are counted.
         {**good, "local_world_size": 2, "node_count": 1},
         # A single rank would validate the arithmetic and nothing else.
         {**good, "world_size": 1, "node_count": 1},
+        # A leg that resolved a width the launch did not have means the declared
+        # placement never reached it.
+        {**good, "world_size": 4, "local_world_size": 2},
         # A bespoke semantics string would fail the shared evidence contract.
         {**good, "distribution_semantics": "site_sharded"},
     ):
         with pytest.raises(RuntimeError):
-            _MODULE._require_two_node_placement(wrong, leg="test")
+            _MODULE._require_two_node_placement(
+                wrong, leg="test", expected_world_size=2
+            )
+
+
+def test_a_sharded_parameter_has_to_cross_the_host_boundary() -> None:
+    """The reduction is only inter-node if the owners are on different hosts."""
+
+    def entry(owners: tuple[int, ...], count: int = 2) -> dict:
+        return {
+            "parameter_index": 0,
+            "owner_ranks": list(owners),
+            "occurrence_count": count,
+            "reduction": "all_reduce_sum",
+        }
+
+    # One rank per node: every pair of distinct ranks straddles the boundary.
+    assert _MODULE._split_parameter_ownership(
+        [entry((0, 1)), {"parameter_index": 1, "owner_ranks": [0]}],
+        local_world_size=1,
+    ) == entry((0, 1))
+    # Two ranks per node, which is what the recorded shape does not cover: the
+    # pair the reverse chose is ranks 1 and 3, not the adjacent 1 and 2.
+    assert _MODULE._split_parameter_ownership(
+        [entry((1, 3)), {"parameter_index": 1, "owner_ranks": [1]}],
+        local_world_size=2,
+    ) == entry((1, 3))
+
+    for refused, width in (
+        # Both owners inside one host, so the reduction never leaves it.
+        (
+            [entry((0, 1)), {"parameter_index": 1, "owner_ranks": [0]}],
+            2,
+        ),
+        # Every parameter owner-sharded would mean no wire is bound twice.
+        (
+            [
+                entry((0, 1)),
+                {"parameter_index": 1, "owner_ranks": [0, 1], "occurrence_count": 2},
+            ],
+            1,
+        ),
+        # No sharded parameter at all, so the collectives shed a partial.
+        ([{"parameter_index": 0, "owner_ranks": [0], "occurrence_count": 2}], 1),
+    ):
+        with pytest.raises(RuntimeError):
+            _MODULE._split_parameter_ownership(refused, local_world_size=width)
 
 
 def test_the_measured_objective_is_not_degenerate() -> None:
@@ -135,10 +213,13 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert all(item["local_gate_count"] >= 1 for item in ranks)
 
     # The forward exchange happened, and it happened between the nodes: one
-    # rank per node means every boundary message is an inter-node message.
-    communication = next(iter(ranks))["communication"]
-    assert communication["forward_boundary_messages"] >= 1
-    assert communication["forward_boundary_bytes"] > 0
+    # rank per node means every boundary message is an inter-node message. The
+    # figures inside a rank record are that rank's own contribution, which is a
+    # different thing from the workload's.
+    communicate = [item["communication"] for item in ranks]
+    assert all(item["forward_boundary_messages"] >= 1 for item in communicate)
+    assert all(item["forward_boundary_bytes"] > 0 for item in communicate)
+    communication = communicate[0]
     # The reverse prefetches the layer-boundary halo rather than reconstructing
     # it, and the assembler attributes those bytes to the inter-node tier.
     assert communication["backward_layer_halo_inter_node_bytes"] > 0
@@ -170,14 +251,20 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     # halo prefetch is compiled-only, which is why the tier is asserted on the
     # communication block rather than here.
     assert all(item["backward"]["blockers"] == [] for item in ranks)
-    # One parameter is owned by both ranks and the rest by exactly one, which is
-    # what makes the reduction an owner-sharded one.
+    # One parameter is owned by two ranks and the rest by exactly one, which is
+    # what makes the reduction an owner-sharded one. The two owners are on
+    # different hosts, so the reduction it needs leaves a node; which ranks they
+    # are follows from where the sharding put the wires the parameter is bound
+    # on, so the pair is derived here rather than written down.
     ownership = sorted(
         (item["parameter_index"], tuple(item["owner_ranks"]))
         for item in next(iter(ranks))["backward"]["parameter_ownership"]
     )
-    assert [owners for _, owners in ownership].count((0, 1)) == 1
-    assert all(len(owners) == 1 for _, owners in ownership if owners != (0, 1))
+    local_world_size = ranks[0]["local_world_size"]
+    spanning = [owners for _, owners in ownership if len(owners) == 2]
+    assert len(spanning) == 1
+    assert len({owner // local_world_size for owner in spanning[0]}) == 2
+    assert all(len(owners) == 1 for _, owners in ownership if len(owners) != 2)
 
     training = observations["training"]
     assert training["resumed_start_step"] == training["checkpoint_steps"] == 2

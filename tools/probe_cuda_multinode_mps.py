@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-"""Verify one CUDA MPS site shard per node across forward, backward and resume.
+"""Verify CUDA MPS site shards across two hosts, forward, backward and resume.
 
-The pair this runs on is the whole point and the whole limit: two ranks, one
-device each, on two hosts. What it establishes is that one logical MPS workload
-is partitioned across the two by site ownership, that a gate spanning the owned
-site boundary is exchanged over the inter-node transport rather than
+The pair of hosts this runs on is the whole point and the whole limit. Each host
+runs as many ranks as the caller asked for, one device each, and the artifact
+records the shape it got. What it establishes is that one logical MPS workload
+is partitioned across that shape by site ownership, that a gate spanning the
+owned site boundary is exchanged over the inter-node transport rather than
 reconstructed locally, that the partitioned gradient agrees with an exact
 statevector reference, and that an owner-sharded optimizer step survives a
 checkpoint and a restart. A forward-only probe cannot support a training claim,
@@ -28,9 +29,10 @@ import os
 import platform
 import shutil
 import subprocess
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import torch
 import torch.distributed as dist
@@ -218,7 +220,9 @@ def _reference_statevector() -> torch.Tensor:
     return _forward_circuit().state(refresh=True)[0].detach().cpu()
 
 
-def _network_observation(path: Path | None) -> dict[str, Any]:
+def _network_observation(
+    path: Path | None, *, local_world_size: int = 1
+) -> dict[str, Any]:
     configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
     ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
     observation: dict[str, Any] = {
@@ -227,6 +231,11 @@ def _network_observation(path: Path | None) -> dict[str, Any]:
         "ib_disabled": ib_disabled,
         "route": "socket" if ib_disabled else "nccl_auto",
         "evidence_level": "configured_only",
+        # The launcher gives one `torchrun` per node one debug log, so above one
+        # rank per node the file holds every local rank's view rather than one
+        # rank's. Recorded rather than assumed: the route check reads the same
+        # either way, but how much of the traffic it covers does not.
+        "debug_log_scope": "node" if local_world_size > 1 else "rank",
     }
     if path is None:
         return observation
@@ -263,6 +272,110 @@ def _collective_verdict(device: torch.device, *, accepted: bool) -> bool:
     return bool(int(verdict.item()))
 
 
+class _WorkloadGates(NamedTuple):
+    """What the forward leg's gates did, summed over the world.
+
+    The per-rank counts are not the workload's. Ownership is rebalanced as the
+    circuit runs, so a rank can observe a gate that spans two other ranks' sites
+    and take no part in it; and a rank can own a site that no one-site gate acts
+    on. What the probe has to refuse is a workload that never crossed an
+    owned-site boundary, and one that left a rank with nothing to do. Both are
+    properties of the sum, and neither is a property of one rank's count, so a
+    per-rank count is asserted against nothing here.
+    """
+
+    local_gates: int
+    boundary_gates: int
+    boundary_messages: int
+    boundary_bytes: int
+    least_busy_rank_gates: int
+
+
+def _workload_gates(
+    device: torch.device,
+    *,
+    local_gates: int,
+    boundary_gates: int,
+    boundary_messages: int,
+    boundary_bytes: int,
+) -> _WorkloadGates:
+    """Reduce this rank's gate accounting to the workload's.
+
+    Every rank reaches the same totals, so every rank reaches the same verdict
+    and a refusal is raised by all of them rather than leaving the others
+    waiting in the next collective.
+    """
+
+    totals = torch.tensor(
+        [local_gates, boundary_gates, boundary_messages, boundary_bytes],
+        dtype=torch.int64,
+        device=device,
+    )
+    dist.all_reduce(totals)
+    # The sum cannot show an idle rank: one rank's four gates and another's none
+    # add up to the same total as two each, so the least busy rank is asked
+    # separately.
+    least_busy = torch.tensor(
+        [local_gates + boundary_gates], dtype=torch.int64, device=device
+    )
+    dist.all_reduce(least_busy, op=dist.ReduceOp.MIN)
+    values = [int(value) for value in totals.tolist()]
+    return _WorkloadGates(
+        local_gates=values[0],
+        boundary_gates=values[1],
+        boundary_messages=values[2],
+        boundary_bytes=values[3],
+        least_busy_rank_gates=int(least_busy.item()),
+    )
+
+
+def _workload_total(device: torch.device, value: int) -> int:
+    """Sum one rank's byte counter into the workload's.
+
+    The reverse attributes a layer-boundary halo to the rank that received it,
+    so at a shape where the host boundary cuts the wire the halo crosses, the
+    ranks inside a node report nothing for it. A workload total is what says
+    the exchange happened at all; every rank reaches the same number, so every
+    rank reaches the same verdict.
+    """
+
+    total = torch.tensor([int(value)], dtype=torch.int64, device=device)
+    dist.all_reduce(total, op=dist.ReduceOp.SUM)
+    return int(total.item())
+
+
+def _split_parameter_ownership(
+    ownership: Sequence[Mapping[str, Any]], *, local_world_size: int
+) -> Mapping[str, Any]:
+    """The one parameter the reverse attributed to two ranks, across two hosts.
+
+    The parameter bound on both rank-owned halves of the site partition is why
+    the reverse reduces parameter gradients at all: a reverse that attributed
+    every parameter to a single rank would be shedding a partial gradient rather
+    than an owner-sharded one. Which ranks share it follows from where the
+    sharding put the wires the parameter is bound on, and that moves with the
+    shape, so the pair is derived from the placement instead of being written
+    down as one shape's answer. Two owners inside one host are refused: the
+    reduction would then never cross the node boundary this lane exists to
+    exercise.
+    """
+
+    spanning = [item for item in ownership if len(item["owner_ranks"]) == 2]
+    if len(spanning) != 1:
+        raise RuntimeError(
+            "the reverse did not attribute exactly one parameter to two ranks: "
+            f"{list(ownership)}"
+        )
+    owners = tuple(int(owner) for owner in spanning[0]["owner_ranks"])
+    if len({owner // local_world_size for owner in owners}) != 2:
+        raise RuntimeError(
+            f"the parameter the reverse attributed to ranks {owners} is owned "
+            "inside one host, so the reduction it needs never crosses the node "
+            "boundary"
+        )
+    return spanning[0]
+
+
 def _prepare_checkpoint_directory(
     directory: Path, *, rank: int, device: torch.device
 ) -> None:
@@ -296,6 +409,7 @@ def _training_observations(
     *,
     device: torch.device,
     checkpoint_directory: Path,
+    world_size: int,
 ) -> tuple[dict[str, Any], dict[str, float], dict[str, Any]]:
     """Run the legs that make the training claim, and describe them.
 
@@ -366,7 +480,9 @@ def _training_observations(
         ("uninterrupted", fresh_summary),
         ("resumed", resumed_summary),
     ):
-        _require_two_node_placement(summary, leg=f"training/{leg}")
+        _require_two_node_placement(
+            summary, leg=f"training/{leg}", expected_world_size=world_size
+        )
     metrics = {
         "resume_prefix_max_abs_error": max(
             (
@@ -417,6 +533,8 @@ def _artifact(
     rank_records: list[dict[str, Any]],
     metrics: dict[str, float],
     training: dict[str, Any],
+    world_size: int,
+    local_world_size: int,
 ) -> dict[str, Any]:
     evidence = {
         "schema": "flagquantum.cuda_multinode_mps_probe.v1",
@@ -432,10 +550,13 @@ def _artifact(
             "dtype": "complex128",
             "n_wires": N_WIRES,
             "max_bond": MAX_BOND,
-            "world_size": 2,
-            "local_world_size": 1,
-            "node_count": 2,
-            "site_ownership": [[0, 1, 2], [3, 4, 5]],
+            "world_size": world_size,
+            "local_world_size": local_world_size,
+            "node_count": world_size // local_world_size,
+            # Which sites each rank owned, read off the records rather than
+            # written down here: the partitions change with the world size, and
+            # a fixed pair of lists would have been a fact about one shape.
+            "site_ownership": [record["owned_sites"] for record in rank_records],
             "observable_wires": list(OBSERVABLE_WIRES),
             "distribution_semantics": "sharded_across_ranks",
             "execution": "forward_backward_optimizer_and_checkpoint_resume",
@@ -467,16 +588,26 @@ def _artifact(
     }
 
 
-def _require_two_node_placement(summary: dict[str, Any], *, leg: str) -> None:
-    if summary["local_world_size"] != 1 or summary["node_count"] != 2:
+def _require_two_node_placement(
+    summary: dict[str, Any], *, leg: str, expected_world_size: int
+) -> None:
+    """Refuse a leg the planner placed differently from the launched shape.
+
+    `expected_world_size` is what torchrun was told; what the runtime resolved
+    is compared against it, so a leg that quietly ran somewhere else -- or on
+    one node while the artifact says two -- is refused rather than recorded.
+    """
+
+    if summary["node_count"] != 2:
         raise RuntimeError(
             f"the {leg} leg did not resolve the two-node placement: "
             f"local_world_size={summary['local_world_size']} "
             f"node_count={summary['node_count']}"
         )
-    if summary["world_size"] != 2:
+    if summary["world_size"] != expected_world_size:
         raise RuntimeError(
-            f"the {leg} leg did not run at two ranks: world_size={summary['world_size']}"
+            f"the {leg} leg ran at {summary['world_size']} ranks where "
+            f"{expected_world_size} were launched"
         )
     if summary["distribution_semantics"] != "sharded_across_ranks":
         raise RuntimeError(
@@ -485,15 +616,44 @@ def _require_two_node_placement(summary: dict[str, Any], *, leg: str) -> None:
         )
 
 
+def _declared_shape() -> tuple[int, int]:
+    """The 2xN shape this probe was launched in, refused unless it is one.
+
+    The lane is a pair of hosts; how many ranks each host runs is the caller's
+    choice, and the artifact records whichever answer it got. Anything else --
+    one host standing in for a pair, or ranks placed unevenly across the two --
+    is refused here, before the process group is built, because a shape mismatch
+    found after it reports as a collective that never completes rather than as
+    the shape that was refused.
+    """
+
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", "1"))
+    if world_size < 1 or local_world_size < 1:
+        raise RuntimeError(
+            "probe needs a positive WORLD_SIZE and LOCAL_WORLD_SIZE, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    if world_size % local_world_size:
+        raise RuntimeError(
+            "probe needs ranks placed evenly across the nodes, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    node_count = world_size // local_world_size
+    if node_count != 2:
+        raise RuntimeError(
+            f"probe requires exactly two nodes, received {node_count} "
+            f"(world_size={world_size} local_world_size={local_world_size})"
+        )
+    return world_size, local_world_size
+
+
 def probe(
     *, network_log: Path | None, checkpoint_directory: Path
 ) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
-    if int(os.environ.get("WORLD_SIZE", "1")) != 2:
-        raise RuntimeError("probe requires exactly two torchrun ranks")
-    if int(os.environ.get("LOCAL_WORLD_SIZE", "1")) != 1:
-        raise RuntimeError("probe requires exactly one rank per node")
+    world_size, local_world_size = _declared_shape()
 
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
@@ -511,32 +671,50 @@ def probe(
         )
         _synchronize(device)
         forward_summary = forward.summary()
-        _require_two_node_placement(forward_summary, leg="forward")
+        _require_two_node_placement(
+            forward_summary, leg="forward", expected_world_size=world_size
+        )
         if forward_summary["claim_evidence_type"] != "accelerator_semantics":
             raise RuntimeError(
                 "the forward leg did not report accelerator semantics: "
                 f"{forward_summary['claim_evidence_type']}"
             )
-        if forward.local_gate_count < 1 or forward.boundary_gate_count < 1:
+        if forward.local_gate_count < 0 or forward.boundary_gate_count < 0:
             raise RuntimeError(
-                "the workload did not exercise an owned-site boundary: "
+                "the forward leg reported a negative gate count: "
                 f"local={forward.local_gate_count} "
                 f"boundary={forward.boundary_gate_count}"
             )
 
         # The forward result counts boundary messages and bytes but does not
-        # split them by node tier, so the split is not claimed here. What makes
-        # the count an inter-node fact is the placement: at one rank per node
-        # every boundary message has to leave the host.
+        # split them by node tier, so the split is not claimed here. At one rank
+        # per node the placement is the split: each rank is alone on its host,
+        # so every counted exchange left it. Above that the sum mixes the two
+        # tiers -- ranks on the same host exchange across their own boundaries
+        # too -- and the reverse leg's halo bytes, which are attributed by tier,
+        # are what keeps the inter-node transport evidenced at those shapes.
+        gates = _workload_gates(
+            device,
+            local_gates=forward.local_gate_count,
+            boundary_gates=forward.boundary_gate_count,
+            boundary_messages=forward.boundary_messages,
+            boundary_bytes=forward.boundary_bytes,
+        )
         metrics: dict[str, float] = {
-            "forward_boundary_messages": float(forward.boundary_messages),
-            "forward_boundary_bytes": float(forward.boundary_bytes),
+            "forward_boundary_messages": float(gates.boundary_messages),
+            "forward_boundary_bytes": float(gates.boundary_bytes),
         }
-        if forward.boundary_messages < 1 or forward.boundary_bytes <= 0:
+        if not _collective_verdict(
+            device,
+            accepted=(
+                gates.boundary_messages >= 1
+                and gates.boundary_bytes > 0
+                and gates.least_busy_rank_gates >= 1
+            ),
+        ):
             raise RuntimeError(
-                "the workload did not exchange anything across the owned-site "
-                f"boundary: messages={forward.boundary_messages} "
-                f"bytes={forward.boundary_bytes}"
+                "the workload did not exercise an owned-site boundary on every "
+                f"rank and exchange across it: {gates}"
             )
         if forward_summary["full_state_materialization"]:
             raise RuntimeError("the forward leg materialized the full state")
@@ -595,7 +773,9 @@ def probe(
         gradient.backward()
         _synchronize(device)
         gradient_summary = gradient.summary()
-        _require_two_node_placement(gradient_summary, leg="backward")
+        _require_two_node_placement(
+            gradient_summary, leg="backward", expected_world_size=world_size
+        )
         if gradient_summary["mps_backward_execution"] != "completed":
             raise RuntimeError(
                 "the backward leg did not complete: "
@@ -610,15 +790,31 @@ def probe(
             raise RuntimeError("the backward leg ran a replicated autograd")
         if gradient_summary["full_mps_reconstruction"]:
             raise RuntimeError("the backward leg reconstructed the full MPS")
-        if gradient_summary["layer_halo_inter_node_bytes"] <= 0:
+        # The tier attribution is what keeps the inter-node transport evidenced
+        # once a node holds more than one rank, where a rank's own forward
+        # boundary count no longer implies that the exchange left its host. The
+        # halo belongs to the rank that received it, so the figure the workload
+        # is judged on is the total over the ranks, not any one rank's.
+        halo_inter_node_bytes = _workload_total(
+            device, gradient_summary["layer_halo_inter_node_bytes"]
+        )
+        halo_intra_node_bytes = _workload_total(
+            device, gradient_summary["layer_halo_intra_node_bytes"]
+        )
+        if not _collective_verdict(device, accepted=halo_inter_node_bytes > 0):
             raise RuntimeError(
                 "the reverse layer halo was not attributed to the inter-node "
-                f"tier: {gradient_summary['layer_halo_inter_node_bytes']}"
+                f"tier anywhere in the workload: {halo_inter_node_bytes} bytes"
             )
-        if gradient_summary["layer_halo_intra_node_bytes"] != 0:
+        if local_world_size == 1 and halo_intra_node_bytes != 0:
+            # Above one rank per node an intra-node halo is expected -- the
+            # ranks sharing a host do exchange across their own site boundaries.
+            # At exactly one rank per node every rank is alone on its host, so a
+            # byte attributed to the intra-node tier means the tier split is
+            # wrong rather than that the workload grew.
             raise RuntimeError(
                 "one rank per node must attribute no reverse halo bytes to the "
-                f"intra-node tier: {gradient_summary['layer_halo_intra_node_bytes']}"
+                f"intra-node tier: {halo_intra_node_bytes}"
             )
         if (
             gradient_summary["gradient_collective_count"] < 1
@@ -629,19 +825,11 @@ def probe(
                 f"{gradient_summary['gradient_collective_count']} collectives, "
                 f"{gradient_summary['gradient_collective_bytes']} bytes"
             )
-        ownership = tuple(gradient_summary["parameter_ownership"])
-        # The parameter bound on both rank-owned halves is the reason the
-        # reduction above exists, and the gate that spans the owned-site
-        # boundary is why one of the other parameters is owned by rank 0 alone.
-        # If every parameter were owned everywhere, the collectives would be
-        # shedding a replicated gradient rather than an owner-sharded one.
-        spanning = [item for item in ownership if len(item["owner_ranks"]) == 2]
-        if len(spanning) != 1 or tuple(spanning[0]["owner_ranks"]) != (0, 1):
-            raise RuntimeError(
-                "the reverse did not attribute exactly one parameter to both "
-                f"ranks: {gradient_summary['parameter_ownership']}"
-            )
-        if spanning[0]["occurrence_count"] != 2:
+        split = _split_parameter_ownership(
+            gradient_summary["parameter_ownership"],
+            local_world_size=local_world_size,
+        )
+        if int(split["occurrence_count"]) != 2:
             raise RuntimeError(
                 "the parameter attributed to both ranks is not the one bound "
                 f"twice: {gradient_summary['parameter_ownership']}"
@@ -662,7 +850,10 @@ def probe(
             ),
         }
         # Counts and byte totals, kept out of the error metrics so that nothing
-        # downstream can read a byte count as a tolerance.
+        # downstream can read a byte count as a tolerance. Every figure here is
+        # this rank's own; the workload's totals are the ones in the numerical
+        # metrics, and the two only agree at a shape where no rank can observe a
+        # boundary gate without taking part in it.
         communication = {
             "forward_boundary_messages": forward.boundary_messages,
             "forward_boundary_bytes": forward.boundary_bytes,
@@ -700,7 +891,9 @@ def probe(
         metrics.update(gradient_metrics)
 
         training, training_metrics, training_summary = _training_observations(
-            device=device, checkpoint_directory=checkpoint_directory
+            device=device,
+            checkpoint_directory=checkpoint_directory,
+            world_size=world_size,
         )
         training_ok = all(
             value <= TRAINING_TOLERANCE for value in training_metrics.values()
@@ -791,20 +984,24 @@ def probe(
                 "training_step": training_summary["step_metrics"][-1],
             }
         )
-        rank_records: list[dict[str, Any] | None] = [None, None]
+        # One slot per rank: `all_gather_object` fills exactly the list it is
+        # given, so a fixed-length list would truncate a wider shape.
+        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
         dist.all_gather_object(rank_records, record)
         if rank == 0:
             payload = _artifact(
                 rank_records=[item for item in rank_records if item is not None],
                 metrics=metrics,
                 training=training,
+                world_size=world_size,
+                local_world_size=local_world_size,
             )
         dist.barrier()
     finally:
         dist.destroy_process_group()
 
     if rank == 0 and payload is not None:
-        network = _network_observation(network_log)
+        network = _network_observation(network_log, local_world_size=local_world_size)
         evidence = payload["evidence"]
         evidence["observations"]["network"] = network
         payload["evidence_sha256"] = _canonical_sha256(evidence)

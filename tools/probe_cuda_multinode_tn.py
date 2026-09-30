@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-"""Verify one CUDA tensor-network slice per rank across forward, gradient, training and resume.
+"""Verify CUDA tensor-network slices across two hosts, forward, gradient, training and resume.
 
-The pair this runs on is the whole point and the whole limit: two ranks, one
-device each, on two hosts. What it establishes is that one logical
-tensor-network workload is partitioned across the two by internal-edge slices,
-that each rank contracts only the slices it owns, that the sliced amplitudes and
-the sliced gradient agree with an exact statevector reference, and that an
+The pair of hosts this runs on is the whole point and the whole limit. Each host
+runs as many ranks as the caller asked for, one device each, and the artifact
+records the shape it got. What it establishes is that one logical tensor-network
+workload is partitioned across that shape by internal-edge slices, that each
+rank contracts only the slices it owns, that the sliced amplitudes and the
+sliced gradient agree with an exact statevector reference, and that an
 owner-sharded optimizer step survives a checkpoint and a restart. A forward-only
 probe cannot support a training claim, and a training claim that stops at the
 first optimizer step is not a training path either.
@@ -89,20 +90,21 @@ FORWARD_VALUES = (0.31, -0.23)
 #: that is not an eigenstate of the measured observable.
 PHASE_ROTATION = 0.6
 
-#: The two sliced internal labels, two slices each across two ranks. They are
-#: the contracted edges of the two multi-index nodes that carry the entangling
-#: `rxx`, which is what makes the pair well conditioned: the four slice values
-#: are 0.8177, -0.0109, -0.1431 and +0.0019, and the two rank sums are 0.6746 and
-#: -0.0090 against a total of 0.6656. A reduction that silently dropped either
-#: rank would be wrong by 0.0090, which is twelve orders of magnitude above the
-#: tolerance, rather than agreeing by accident.
+#: The two sliced internal labels, two slices each. They are the contracted
+#: edges of the two multi-index nodes that carry the entangling `rxx`, which is
+#: what makes the pair well conditioned: the four slice values are 0.8177,
+#: -0.0109, -0.1431 and +0.0019, and the rank sums against a total of 0.6656 are
+#: 0.6746 and -0.0090 at two ranks, or the four slice values themselves at four.
+#: A reduction that silently dropped any rank would be wrong by at least 0.0019,
+#: which is seven orders of magnitude above the tolerance, rather than agreeing
+#: by accident.
 SLICED_LABELS = (6, 7)
 
 #: The slice count the task plan must resolve to: two sliced labels of dimension
-#: two each, so four combinations and two per rank.
+#: two each, so four combinations. How many of those each rank owns is the world
+#: size divided into this, and the probe refuses a world size this does not
+#: divide rather than run a shape whose plan it cannot predict.
 EXPECTED_SLICE_COUNT = 4
-#: How many of those slices each rank owns.
-EXPECTED_SLICES_PER_RANK = 2
 
 #: The measured wires. They are the two ends of the entangling gate, so the
 #: observable spans the whole graph and the pair is not degenerate on this
@@ -260,7 +262,9 @@ def _sliced_label_multiplicities() -> dict[int, int]:
     return {label: counts[label] for label in SLICED_LABELS}
 
 
-def _network_observation(path: Path | None) -> dict[str, Any]:
+def _network_observation(
+    path: Path | None, *, local_world_size: int = 1
+) -> dict[str, Any]:
     configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
     ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
     observation: dict[str, Any] = {
@@ -269,6 +273,11 @@ def _network_observation(path: Path | None) -> dict[str, Any]:
         "ib_disabled": ib_disabled,
         "route": "socket" if ib_disabled else "nccl_auto",
         "evidence_level": "configured_only",
+        # The launcher gives one `torchrun` per node one debug log, so above one
+        # rank per node the file holds every local rank's view rather than one
+        # rank's. Recorded rather than assumed: the route check reads the same
+        # either way, but how much of the traffic it covers does not.
+        "debug_log_scope": "node" if local_world_size > 1 else "rank",
     }
     if path is None:
         return observation
@@ -354,18 +363,20 @@ def _verify_checkpoint_generation(
     *,
     resumed_step: int,
     expected_task_plan_identity: str,
+    world_size: int,
+    local_world_size: int,
     device: torch.device,
 ) -> dict[str, Any]:
     """Check the committed generation by reading it, not by trusting the writer.
 
-    Both ranks checkpoint into the same shared directory, so the directory is
+    Every rank checkpoints into the same shared directory, so the directory is
     the one place that shows the run produced exactly one generation per rank
     and that each generation is intact and stamped with the final step. A
     leftover generation would mean the resume restored something an earlier run
     wrote, which is the failure this whole leg exists to rule out.
     """
 
-    expected_ranks = list(range(2))
+    expected_ranks = list(range(world_size))
     observation: dict[str, Any] = {}
     accepted = True
     if dist.get_rank() == 0:
@@ -418,8 +429,8 @@ def _verify_checkpoint_generation(
                 )
             for rank, item in shards.items():
                 if (
-                    item["world_size"] != 2
-                    or item["local_world_size"] != 1
+                    item["world_size"] != world_size
+                    or item["local_world_size"] != local_world_size
                     or item["node_count"] != 2
                 ):
                     raise RuntimeError(
@@ -471,16 +482,27 @@ def _verify_checkpoint_generation(
     return observation
 
 
-def _require_two_node_placement(summary: dict[str, Any], *, leg: str) -> None:
-    if summary["local_world_size"] != 1 or summary["node_count"] != 2:
+def _require_two_node_placement(
+    summary: dict[str, Any], *, leg: str, expected_world_size: int
+) -> None:
+    """Refuse a leg the planner placed differently from the launched shape.
+
+    The probe declares the placement to every leg rather than reading it back,
+    so this compares what each leg reported against what the probe declared: a
+    leg that resolved somewhere else means the declared placement never reached
+    it, and the artifact would otherwise describe a shape nothing ran in.
+    """
+
+    if summary["node_count"] != 2:
         raise RuntimeError(
             f"the {leg} leg did not resolve the two-node placement: "
             f"local_world_size={summary['local_world_size']} "
             f"node_count={summary['node_count']}"
         )
-    if summary["world_size"] != 2:
+    if summary["world_size"] != expected_world_size:
         raise RuntimeError(
-            f"the {leg} leg did not run at two ranks: world_size={summary['world_size']}"
+            f"the {leg} leg ran at {summary['world_size']} ranks where "
+            f"{expected_world_size} were launched"
         )
     if summary["distribution_semantics"] != "sharded_across_ranks":
         raise RuntimeError(
@@ -494,7 +516,9 @@ def _require_two_node_placement(summary: dict[str, Any], *, leg: str) -> None:
         )
 
 
-def _require_slice_partition(summary: dict[str, Any], *, leg: str) -> None:
+def _require_slice_partition(
+    summary: dict[str, Any], *, leg: str, expected_world_size: int
+) -> None:
     """Every rank owns a slice, and the slices are the scope's.
 
     A leg whose plan gave one rank nothing, or resolved to a single slice, would
@@ -514,11 +538,13 @@ def _require_slice_partition(summary: dict[str, Any], *, leg: str) -> None:
     tasks_by_rank = {
         int(rank): int(count) for rank, count in summary["tasks_by_rank"].items()
     }
-    if set(tasks_by_rank) != {0, 1} or any(
-        count != EXPECTED_SLICES_PER_RANK for count in tasks_by_rank.values()
+    every_rank_owns = EXPECTED_SLICE_COUNT // expected_world_size
+    if set(tasks_by_rank) != set(range(expected_world_size)) or any(
+        count != every_rank_owns for count in tasks_by_rank.values()
     ):
         raise RuntimeError(
-            f"the {leg} leg did not give each rank one slice: {tasks_by_rank}"
+            f"the {leg} leg did not give each of {expected_world_size} ranks "
+            f"{every_rank_owns} slice(s): {tasks_by_rank}"
         )
     if summary["scalability_claim_allowed"] is not False:
         raise RuntimeError(f"the {leg} leg allowed a scalability claim")
@@ -536,18 +562,24 @@ def _require_sliced_labels_are_a_cut() -> dict[int, int]:
 
 
 def _contraction_arguments(
-    *, device: torch.device, rank: int, local_rank: int
+    *,
+    device: torch.device,
+    rank: int,
+    local_rank: int,
+    world_size: int,
+    local_world_size: int,
 ) -> dict[str, Any]:
     """The placement, slice scope, and dtype every distributed leg shares.
 
-    The two ranks are one process each on two hosts. Declaring the placement
-    rather than reading it back from the environment is what makes the
-    node_count each leg reports a claim the probe can be held to.
+    The shape is declared to the runtime rather than read back from the
+    environment, which is what makes the node_count each leg reports a claim the
+    probe can be held to: the legs cannot resolve a placement the probe did not
+    hand them.
     """
 
     return {
-        "world_size": 2,
-        "local_world_size": 1,
+        "world_size": world_size,
+        "local_world_size": local_world_size,
         "distributed_executor": "torch",
         "rank": rank,
         "local_rank": local_rank,
@@ -561,6 +593,7 @@ def _training_observations(
     *,
     device: torch.device,
     checkpoint_directory: Path,
+    world_size: int,
 ) -> tuple[dict[str, Any], dict[str, float], dict[str, Any]]:
     """Run the legs that make the training claim, and describe them.
 
@@ -629,8 +662,12 @@ def _training_observations(
         ("uninterrupted", fresh_summary),
         ("resumed", resumed_summary),
     ):
-        _require_two_node_placement(summary, leg=f"training/{leg}")
-        _require_slice_partition(summary, leg=f"training/{leg}")
+        _require_two_node_placement(
+            summary, leg=f"training/{leg}", expected_world_size=world_size
+        )
+        _require_slice_partition(
+            summary, leg=f"training/{leg}", expected_world_size=world_size
+        )
     if first.task_plan_identity != resumed.task_plan_identity:
         raise RuntimeError(
             "the resumed leg restored parameters under a different slice task "
@@ -705,6 +742,8 @@ def _artifact(
     metrics: dict[str, float],
     training: dict[str, Any],
     sliced_label_multiplicities: dict[int, int],
+    world_size: int,
+    local_world_size: int,
 ) -> dict[str, Any]:
     evidence = {
         "schema": "flagquantum.cuda_multinode_tn_probe.v1",
@@ -719,16 +758,16 @@ def _artifact(
         "scope": {
             "dtype": "complex128",
             "n_wires": N_WIRES,
-            "world_size": 2,
-            "local_world_size": 1,
-            "node_count": 2,
+            "world_size": world_size,
+            "local_world_size": local_world_size,
+            "node_count": world_size // local_world_size,
             "sliced_labels": list(SLICED_LABELS),
             "sliced_label_multiplicities": {
                 str(label): count
                 for label, count in sorted(sliced_label_multiplicities.items())
             },
             "slice_count": EXPECTED_SLICE_COUNT,
-            "slices_per_rank": EXPECTED_SLICES_PER_RANK,
+            "slices_per_rank": EXPECTED_SLICE_COUNT // world_size,
             "observable_wires": list(OBSERVABLE_WIRES),
             "checked_bitstrings": list(CHECKED_BITSTRINGS),
             "distribution_semantics": "sharded_across_ranks",
@@ -767,15 +806,49 @@ def _artifact(
     }
 
 
+def _declared_shape() -> tuple[int, int]:
+    """The 2xN shape this probe was launched in, refused unless it is one.
+
+    The lane is a pair of hosts; how many ranks each host runs is the caller's
+    choice, and the artifact records whichever answer it got. The slice count is
+    fixed by `SLICED_LABELS`, so a world size that does not divide it would give
+    the ranks an uneven share of the slices; that is refused here, before the
+    process group is built, because a shape mismatch found after it reports as a
+    collective that never completes rather than as the shape that was refused.
+    """
+
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", "1"))
+    if world_size < 1 or local_world_size < 1:
+        raise RuntimeError(
+            "probe needs a positive WORLD_SIZE and LOCAL_WORLD_SIZE, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    if world_size % local_world_size:
+        raise RuntimeError(
+            "probe needs ranks placed evenly across the nodes, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    node_count = world_size // local_world_size
+    if node_count != 2:
+        raise RuntimeError(
+            f"probe requires exactly two nodes, received {node_count} "
+            f"(world_size={world_size} local_world_size={local_world_size})"
+        )
+    if EXPECTED_SLICE_COUNT % world_size:
+        raise RuntimeError(
+            f"probe requires a world size dividing the {EXPECTED_SLICE_COUNT} "
+            f"slice scope, received {world_size}"
+        )
+    return world_size, local_world_size
+
+
 def probe(
     *, network_log: Path | None, checkpoint_directory: Path
 ) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
-    if int(os.environ.get("WORLD_SIZE", "1")) != 2:
-        raise RuntimeError("probe requires exactly two torchrun ranks")
-    if int(os.environ.get("LOCAL_WORLD_SIZE", "1")) != 1:
-        raise RuntimeError("probe requires exactly one rank per node")
+    world_size, local_world_size = _declared_shape()
 
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
@@ -793,12 +866,22 @@ def probe(
         amplitudes = distributed_tensor_network_amplitudes(
             forward_circuit,
             list(CHECKED_BITSTRINGS),
-            **_contraction_arguments(device=device, rank=rank, local_rank=local_rank),
+            **_contraction_arguments(
+                device=device,
+                rank=rank,
+                local_rank=local_rank,
+                world_size=world_size,
+                local_world_size=local_world_size,
+            ),
         )
         _synchronize(device)
         amplitudes_summary = amplitudes.summary()
-        _require_two_node_placement(amplitudes_summary, leg="amplitudes")
-        _require_slice_partition(amplitudes_summary, leg="amplitudes")
+        _require_two_node_placement(
+            amplitudes_summary, leg="amplitudes", expected_world_size=world_size
+        )
+        _require_slice_partition(
+            amplitudes_summary, leg="amplitudes", expected_world_size=world_size
+        )
         if amplitudes_summary["full_state_materialized"]:
             raise RuntimeError("the amplitudes leg materialized the full state")
 
@@ -807,12 +890,22 @@ def probe(
         single = distributed_tensor_network_amplitude(
             forward_circuit,
             CHECKED_BITSTRINGS[0],
-            **_contraction_arguments(device=device, rank=rank, local_rank=local_rank),
+            **_contraction_arguments(
+                device=device,
+                rank=rank,
+                local_rank=local_rank,
+                world_size=world_size,
+                local_world_size=local_world_size,
+            ),
         )
         _synchronize(device)
         single_summary = single.summary()
-        _require_two_node_placement(single_summary, leg="amplitude")
-        _require_slice_partition(single_summary, leg="amplitude")
+        _require_two_node_placement(
+            single_summary, leg="amplitude", expected_world_size=world_size
+        )
+        _require_slice_partition(
+            single_summary, leg="amplitude", expected_world_size=world_size
+        )
 
         accepted = True
         amplitude_metrics: dict[str, float] = {}
@@ -851,12 +944,22 @@ def probe(
         expectation = distributed_tensor_network_expectation(
             trainable,
             z=list(OBSERVABLE_WIRES),
-            **_contraction_arguments(device=device, rank=rank, local_rank=local_rank),
+            **_contraction_arguments(
+                device=device,
+                rank=rank,
+                local_rank=local_rank,
+                world_size=world_size,
+                local_world_size=local_world_size,
+            ),
         )
         _synchronize(device)
         expectation_summary = expectation.summary()
-        _require_two_node_placement(expectation_summary, leg="expectation")
-        _require_slice_partition(expectation_summary, leg="expectation")
+        _require_two_node_placement(
+            expectation_summary, leg="expectation", expected_world_size=world_size
+        )
+        _require_slice_partition(
+            expectation_summary, leg="expectation", expected_world_size=world_size
+        )
         if expectation_summary["full_state_materialized"]:
             raise RuntimeError("the expectation leg materialized the full state")
         expectation.value.reshape(-1)[0].backward()
@@ -914,7 +1017,9 @@ def probe(
         metrics.update(gradient_metrics)
 
         training, training_metrics, training_summary = _training_observations(
-            device=device, checkpoint_directory=checkpoint_directory
+            device=device,
+            checkpoint_directory=checkpoint_directory,
+            world_size=world_size,
         )
         if not _collective_verdict(
             device,
@@ -975,6 +1080,8 @@ def probe(
             checkpoint_directory,
             resumed_step=RESUMED_STEPS,
             expected_task_plan_identity=training_summary["task_plan_identity"],
+            world_size=world_size,
+            local_world_size=local_world_size,
             device=device,
         )
         training["checkpoint_generation"] = final_generation
@@ -1034,7 +1141,9 @@ def probe(
                 ),
             }
         )
-        rank_records: list[dict[str, Any] | None] = [None, None]
+        # One slot per rank: `all_gather_object` fills exactly the list it is
+        # given, so a fixed-length list would truncate a wider shape.
+        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
         dist.all_gather_object(rank_records, record)
         if rank == 0:
             payload = _artifact(
@@ -1042,13 +1151,15 @@ def probe(
                 metrics=metrics,
                 training=training,
                 sliced_label_multiplicities=sliced_label_multiplicities,
+                world_size=world_size,
+                local_world_size=local_world_size,
             )
         dist.barrier()
     finally:
         dist.destroy_process_group()
 
     if rank == 0 and payload is not None:
-        network = _network_observation(network_log)
+        network = _network_observation(network_log, local_world_size=local_world_size)
         evidence = payload["evidence"]
         evidence["observations"]["network"] = network
         # One digest per artifact, over the evidence and nothing else. Recording

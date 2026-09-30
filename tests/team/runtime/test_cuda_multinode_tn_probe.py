@@ -26,7 +26,30 @@ def _artifact() -> dict:
     return json.loads(_A800_ARTIFACT.read_text(encoding="utf-8"))
 
 
-def test_the_two_rank_pair_is_the_only_placement_the_probe_accepts() -> None:
+def test_the_launched_shape_is_the_only_one_the_probe_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLD_SIZE", "4")
+    monkeypatch.setenv("LOCAL_WORLD_SIZE", "2")
+    assert _MODULE._declared_shape() == (4, 2)
+
+    for world_size, local_world_size in (
+        # One node wearing the pair's label.
+        (2, 2),
+        # Three nodes, which this lane cannot reach.
+        (6, 2),
+        # Ranks split unevenly, so a node holds fewer than it was told.
+        (6, 4),
+        # Eight ranks would give the four declared slices out unevenly.
+        (8, 4),
+    ):
+        monkeypatch.setenv("WORLD_SIZE", str(world_size))
+        monkeypatch.setenv("LOCAL_WORLD_SIZE", str(local_world_size))
+        with pytest.raises(RuntimeError):
+            _MODULE._declared_shape()
+
+
+def test_each_declared_leg_has_to_report_the_launched_shape() -> None:
     good = {
         "world_size": 2,
         "local_world_size": 1,
@@ -35,14 +58,30 @@ def test_the_two_rank_pair_is_the_only_placement_the_probe_accepts() -> None:
         "claim_evidence_type": "production_runtime",
     }
 
-    _MODULE._require_two_node_placement(good, leg="test")
+    _MODULE._require_two_node_placement(good, leg="test", expected_world_size=2)
+    # The same summary is a valid four-rank leg, because the probe accepts any
+    # width and the check is against the shape that was launched rather than
+    # against a constant baked into the checker.
+    _MODULE._require_two_node_placement(
+        {
+            **good,
+            "world_size": 4,
+            "local_world_size": 2,
+            "node_count": 2,
+        },
+        leg="test",
+        expected_world_size=4,
+    )
 
     for wrong in (
-        # One node per rank is the claim; two ranks on one node is a different
-        # claim that this probe does not make.
+        # Two ranks on one node is a different claim that this probe does not
+        # make, however the ranks are counted.
         {**good, "local_world_size": 2, "node_count": 1},
         # A single rank would validate the arithmetic and nothing else.
         {**good, "world_size": 1, "node_count": 1},
+        # A leg that resolved fewer or more ranks than were launched means the
+        # declared placement never reached it.
+        {**good, "world_size": 4, "local_world_size": 2},
         # A bespoke semantics string would fail the shared evidence contract.
         {**good, "distribution_semantics": "local_simulated_slice_parallel"},
         # A CPU collective reduces correctly but is not accelerator transport,
@@ -50,19 +89,28 @@ def test_the_two_rank_pair_is_the_only_placement_the_probe_accepts() -> None:
         {**good, "claim_evidence_type": "development_smoke"},
     ):
         with pytest.raises(RuntimeError):
-            _MODULE._require_two_node_placement(wrong, leg="test")
+            _MODULE._require_two_node_placement(
+                wrong, leg="test", expected_world_size=2
+            )
 
 
 def test_the_slice_plan_is_the_declared_partition_and_not_a_scale_claim() -> None:
+    every_rank_owns = _MODULE.EXPECTED_SLICE_COUNT // 2
     summary = {
         "slice_tasks": _MODULE.EXPECTED_SLICE_COUNT,
         "slice_labels": list(_MODULE.SLICED_LABELS),
-        "tasks_by_rank": {0: _MODULE.EXPECTED_SLICES_PER_RANK}
-        | {1: _MODULE.EXPECTED_SLICES_PER_RANK},
+        "tasks_by_rank": {0: every_rank_owns, 1: every_rank_owns},
         "scalability_claim_allowed": False,
     }
 
-    _MODULE._require_slice_partition(summary, leg="test")
+    _MODULE._require_slice_partition(summary, leg="test", expected_world_size=2)
+    # The same four slices are a valid four-rank plan at one slice each, so the
+    # expected share is derived from the launched width rather than fixed.
+    _MODULE._require_slice_partition(
+        {**summary, "tasks_by_rank": dict.fromkeys(range(4), 1)},
+        leg="test",
+        expected_world_size=4,
+    )
 
     for wrong in (
         # One slice per rank would mean each rank is a whole contraction, which
@@ -73,11 +121,13 @@ def test_the_slice_plan_is_the_declared_partition_and_not_a_scale_claim() -> Non
         {**summary, "slice_labels": [1, 2]},
         # Uneven ownership is a legitimate plan, but not this probe's scope.
         {**summary, "tasks_by_rank": {0: 3, 1: 1}},
+        # A rank missing from the plan owns no slice and contributes nothing.
+        {**summary, "tasks_by_rank": {0: 2, 1: 2, 2: 0, 3: 0}},
         # The probe must never let a two-node pair look like a scale result.
         {**summary, "scalability_claim_allowed": True},
     ):
         with pytest.raises(RuntimeError):
-            _MODULE._require_slice_partition(wrong, leg="test")
+            _MODULE._require_slice_partition(wrong, leg="test", expected_world_size=2)
 
 
 def test_the_sliced_labels_are_a_cut_carried_by_two_nodes() -> None:

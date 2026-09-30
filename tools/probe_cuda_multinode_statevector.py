@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""Verify one CUDA statevector shard per node across forward, backward and resume.
+"""Verify CUDA statevector shards across two hosts, forward, backward and resume.
 
-The pair this runs on is the whole point and the whole limit: two ranks, one
-device each, on two hosts. What it establishes is that a single logical
-statevector workload is partitioned across the two, that the partitioned
+The pair of hosts this runs on is the whole point and the whole limit. Each host
+runs as many ranks as the caller asked for, one device each, and the artifact
+records the shape it got. What it establishes is that a single logical
+statevector workload is partitioned across that shape, that the partitioned
 gradient agrees with a single-device reference, and that an owner-sharded
 optimizer step survives a checkpoint and a restart -- because a forward-only
 probe cannot support a training claim and a training claim that stops at the
@@ -43,8 +44,9 @@ from flagquantum.runtime.executors.statevector.training import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-#: The forward scope. Five wires at two ranks leaves three wires per shard, and
-#: the circuit crosses the shard boundary, so the exchange is exercised.
+#: The forward scope. Five wires leaves `5 - log2(world_size)` wires per shard,
+#: so the circuit crosses the shard boundary at every shape this probe accepts
+#: and the exchange is exercised.
 N_WIRES = 5
 REAL_DTYPE = torch.float64
 COMPLEX_DTYPE = torch.complex128
@@ -198,7 +200,9 @@ def _validation_state(result: Any) -> torch.Tensor:
     return canonical
 
 
-def _network_observation(path: Path | None) -> dict[str, Any]:
+def _network_observation(
+    path: Path | None, *, local_world_size: int = 1
+) -> dict[str, Any]:
     configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
     ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
     observation: dict[str, Any] = {
@@ -207,6 +211,11 @@ def _network_observation(path: Path | None) -> dict[str, Any]:
         "ib_disabled": ib_disabled,
         "route": "socket" if ib_disabled else "nccl_auto",
         "evidence_level": "configured_only",
+        # The launcher gives one `torchrun` per node one debug log, so above one
+        # rank per node the file holds every local rank's view rather than one
+        # rank's. Recorded rather than assumed: the route check reads the same
+        # either way, but how much of the traffic it covers does not.
+        "debug_log_scope": "node" if local_world_size > 1 else "rank",
     }
     if path is None:
         return observation
@@ -365,6 +374,8 @@ def _artifact(
     metrics: dict[str, float],
     network: dict[str, Any],
     training: dict[str, Any],
+    world_size: int,
+    local_world_size: int,
 ) -> dict[str, Any]:
     evidence = {
         "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
@@ -379,9 +390,9 @@ def _artifact(
         "scope": {
             "dtype": "complex128",
             "n_wires": N_WIRES,
-            "world_size": 2,
-            "local_world_size": 1,
-            "node_count": 2,
+            "world_size": world_size,
+            "local_world_size": local_world_size,
+            "node_count": world_size // local_world_size,
             "distribution_semantics": "sharded_across_ranks",
             "execution": "forward_backward_optimizer_and_checkpoint_resume",
         },
@@ -413,15 +424,84 @@ def _artifact(
     }
 
 
+def _declared_shape() -> tuple[int, int]:
+    """The 2xN shape this probe was launched in, refused unless it is one.
+
+    The lane is a pair of hosts; how many ranks each host runs is the caller's
+    choice, and the artifact records whichever answer it got. Anything else --
+    one host standing in for a pair, ranks placed unevenly across the two, or a
+    world size the planner cannot shard -- is refused here, before the process
+    group is built, because a shape mismatch found after it reports as a
+    collective that never completes rather than as the shape that was refused.
+    """
+
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", "1"))
+    if world_size < 1 or local_world_size < 1:
+        raise RuntimeError(
+            "probe needs a positive WORLD_SIZE and LOCAL_WORLD_SIZE, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    if world_size % local_world_size:
+        raise RuntimeError(
+            f"probe needs ranks placed evenly across the nodes, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    node_count = world_size // local_world_size
+    if node_count != 2:
+        raise RuntimeError(
+            f"probe requires exactly two nodes, received {node_count} "
+            f"(world_size={world_size} local_world_size={local_world_size})"
+        )
+    # The statevector planner shards amplitudes by rank address bits, so ranks
+    # own unequal amplitude counts at any other world size and the executor
+    # refuses that distribution rather than running it.
+    if world_size & (world_size - 1):
+        raise RuntimeError(
+            f"probe requires a power-of-two world size, received {world_size}"
+        )
+    return world_size, local_world_size
+
+
+def _require_declared_placement(
+    summary: dict[str, Any],
+    *,
+    leg: str,
+    world_size: int,
+    local_world_size: int,
+) -> None:
+    """One leg has to have resolved the shape the launch declared.
+
+    A leg that ran at a different width, or with its ranks split differently
+    across the two hosts, is not the workload this probe set out to measure,
+    whatever it computed.
+    """
+
+    if summary["world_size"] != world_size:
+        raise RuntimeError(
+            f"the {leg} leg ran at {summary['world_size']} ranks where "
+            f"{world_size} were launched"
+        )
+    if summary["local_world_size"] != local_world_size:
+        raise RuntimeError(
+            f"the {leg} leg resolved {summary['local_world_size']} ranks per "
+            f"node where {local_world_size} were launched"
+        )
+    if summary["node_count"] != 2:
+        raise RuntimeError(
+            f"the {leg} leg resolved {summary['node_count']} nodes rather than "
+            f"the two hosts this probe requires "
+            f"(world_size={summary['world_size']} "
+            f"local_world_size={summary['local_world_size']})"
+        )
+
+
 def probe(
     *, network_log: Path | None, checkpoint_directory: Path
 ) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
-    if int(os.environ.get("WORLD_SIZE", "1")) != 2:
-        raise RuntimeError("probe requires exactly two torchrun ranks")
-    if int(os.environ.get("LOCAL_WORLD_SIZE", "1")) != 1:
-        raise RuntimeError("probe requires exactly one rank per node")
+    world_size, local_world_size = _declared_shape()
 
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
@@ -436,7 +516,11 @@ def probe(
             circuit,
             device=device,
             dtype=COMPLEX_DTYPE,
-            local_world_size=1,
+            # Pinned to the launched shape rather than left to the environment:
+            # the summary then reports `local_world_size_source == "caller"`, so
+            # the recorded placement is the one this probe asked for rather than
+            # whatever a stray variable happened to say.
+            local_world_size=local_world_size,
         )
         _synchronize(device)
         if result.shard_state.amplitudes.dtype != COMPLEX_DTYPE:
@@ -478,12 +562,12 @@ def probe(
         actual_gradients = tuple(
             float(parameter.grad.detach()) for parameter in parameters
         )
-        if gradient_probe.local_world_size != 1 or gradient_probe.node_count != 2:
-            raise RuntimeError(
-                "the backward probe did not resolve the two-node placement: "
-                f"local_world_size={gradient_probe.local_world_size} "
-                f"node_count={gradient_probe.node_count}"
-            )
+        _require_declared_placement(
+            gradient_probe.summary(),
+            leg="backward",
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
         metrics.update(
             {
                 "expectation_value_error": abs(
@@ -508,16 +592,12 @@ def probe(
             raise RuntimeError(
                 f"distributed training validation failed: {training_metrics}"
             )
-        if training_summary["local_world_size"] != 1:
-            raise RuntimeError(
-                "the training leg did not resolve the two-node placement: "
-                f"local_world_size={training_summary['local_world_size']}"
-            )
-        if training_summary["node_count"] != 2:
-            raise RuntimeError(
-                "the training leg did not resolve the two-node placement: "
-                f"node_count={training_summary['node_count']}"
-            )
+        _require_declared_placement(
+            training_summary,
+            leg="training",
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
         if float(training_summary["losses"][-1]) == float(
             training_summary["losses"][0]
         ):
@@ -557,7 +637,9 @@ def probe(
                 "training": training_summary,
             }
         )
-        rank_records: list[dict[str, Any] | None] = [None, None]
+        # One slot per rank: `all_gather_object` fills exactly the list it is
+        # given, so a fixed-length list would truncate a wider shape.
+        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
         dist.all_gather_object(rank_records, record)
         if rank == 0:
             payload = _artifact(
@@ -565,13 +647,15 @@ def probe(
                 metrics=metrics,
                 network={},
                 training=training,
+                world_size=world_size,
+                local_world_size=local_world_size,
             )
         dist.barrier()
     finally:
         dist.destroy_process_group()
 
     if rank == 0 and payload is not None:
-        network = _network_observation(network_log)
+        network = _network_observation(network_log, local_world_size=local_world_size)
         evidence = payload["evidence"]
         evidence["observations"]["network"] = network
         payload["evidence_sha256"] = _canonical_sha256(evidence)

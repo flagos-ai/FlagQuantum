@@ -21,6 +21,29 @@ _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 
 
+def test_the_launched_shape_is_the_only_one_the_probe_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLD_SIZE", "4")
+    monkeypatch.setenv("LOCAL_WORLD_SIZE", "2")
+    assert _MODULE._declared_shape() == (4, 2)
+
+    for world_size, local_world_size in (
+        # One node wearing the pair's label.
+        (2, 2),
+        # Three nodes, which this lane cannot reach.
+        (6, 2),
+        # Ranks split unevenly, so a node holds fewer than it was told.
+        (6, 4),
+        # A world size the amplitude planner cannot shard by address bits.
+        (3, 1),
+    ):
+        monkeypatch.setenv("WORLD_SIZE", str(world_size))
+        monkeypatch.setenv("LOCAL_WORLD_SIZE", str(local_world_size))
+        with pytest.raises(RuntimeError):
+            _MODULE._declared_shape()
+
+
 def test_network_observation_requires_the_declared_socket_route(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -121,11 +144,13 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert training["uninterrupted_start_step"] == 0
     # The resumed leg computes the steps the uninterrupted run computed after
     # the checkpoint, and nothing else.
-    assert training["resumed_leg_losses"] == (
-        training["uninterrupted_leg_losses"][training["checkpoint_steps"] :]
+    assert (
+        training["resumed_leg_losses"]
+        == (training["uninterrupted_leg_losses"][training["checkpoint_steps"] :])
     )
-    assert training["first_leg_losses"] == (
-        training["uninterrupted_leg_losses"][: training["checkpoint_steps"]]
+    assert (
+        training["first_leg_losses"]
+        == (training["uninterrupted_leg_losses"][: training["checkpoint_steps"]])
     )
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2

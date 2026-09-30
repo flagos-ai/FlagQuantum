@@ -235,6 +235,18 @@ copy. Use it rather than synchronizing by hand; a hand-copied tree and a staged
 tree can disagree, and the artifact would then name a revision neither host
 ran.
 
+The staged tree is then compiled once, on the launch host, and every rank is
+given `PYTHONDONTWRITEBYTECODE=1`. A shared `--staging` directory means every
+rank imports the same files, and left to itself each of them writes
+`__pycache__` beside the source it imported: two ranks from two hosts writing
+the same bytecode file over NFS race, and the loser can stall inside the kernel
+for long enough to exhaust the run timeout. Compiling once before any rank
+starts, and forbidding rank-side bytecode writes, removes the race rather than
+tolerating it. A staged tree that cannot be compiled stops the lane before a
+rank starts, and the staging report printed before either rank is released
+records how many bytecode files the staging directory held at that moment:
+`bytecode_files`, which is zero.
+
 If you must synchronize by hand, preview every synchronization first and treat
 the launch host as the single source of truth:
 
@@ -331,33 +343,75 @@ python tools/multinode_launch_plan.py --run \
 `--probe` selects the workload: `statevector` (the default), `mps`, or `tn`.
 Everything else is shared.
 
+The lane is always two nodes. `--local-world-size` says how many ranks each of
+them runs, and it defaults to one:
+
+```bash
+python tools/multinode_launch_plan.py --run \
+  --probe tn \
+  --local-world-size 2 \
+  --staging /nfs/fq-multinode-run-tn \
+  --checkpoint-directory /nfs/fq-multinode-run-tn-checkpoints \
+  --report-directory hardware-run-tn
+```
+
+The default stays at one because that is the shape every recorded artifact was
+taken on: a wider default would leave the checked-in evidence describing a lane
+that no longer exists. A width is refused unless it is one the selected
+workload can actually shard, and the rule is per workload rather than one rule
+for the lane:
+
+| Probe | Accepted widths | Why |
+| --- | --- | --- |
+| `statevector` | powers of two | the planner shards amplitudes by rank address bits |
+| `mps` | up to six | every rank has to own at least one of the circuit's six sites |
+| `tn` | one, two, or four | the probe splits four declared slices, so the width has to divide four |
+
+The refusal happens before the launch, and the probe refuses the same shapes
+again before it builds a process group, because a shape mismatch found after
+that reports as a collective that never completes rather than as the shape that
+was refused. The two widths the launcher has to know before a launch -- the MPS
+circuit's wire count and the tensor-network slice count -- are declared in both
+`tools/multinode_launch_plan.py` and the probe that enforces them, and a unit
+test reads both copies and fails if they drift apart.
+
+Each node runs one `torchrun` that starts all of its ranks from one environment,
+so the NCCL debug log is scoped to the node rather than to the rank. At one rank
+per node the two are the same file; above that the file holds every local rank's
+view, and the artifact records which of the two it read.
+
 It takes three shared paths, and the names matter because the lane empties two
 of them:
 
 | Flag | Role | How it is treated |
 | --- | --- | --- |
-| `--staging` | the tree both ranks execute | synchronized into with `--delete`; must be named `fq-multinode*` and sit outside the source tree |
-| `--output-directory` | per-rank JSON and NCCL debug logs (defaults to `<staging>-out`) | emptied before the ranks start |
+| `--staging` | the tree both ranks execute | synchronized into with `--delete` and byte-compiled once before any rank starts; must be named `fq-multinode*` and sit outside the source tree |
+| `--output-directory` | per-node JSON and NCCL debug logs (defaults to `<staging>-out`) | emptied before the ranks start |
 | `--checkpoint-directory` | the rank checkpoints a restarted rank resumes from | emptied before the ranks start; both ranks must see the same directory |
 
-The output and checkpoint directories are emptied for one reason: a stale rank
+The output and checkpoint directories are emptied for one reason: a stale node
 record left by an earlier run would otherwise be published as the evidence of a
 run that failed before writing its own, and a checkpoint left by an earlier run
 would be resumed from instead of the one this run wrote. All three names carry
 the `fq-multinode` prefix so a mistyped path cannot be wiped.
 
 The command refuses to start when any preflight answer is no, stages the tree,
-and supervises both ranks as one unit with `tools/run_multinode_watchdog.py`.
+and supervises both nodes as one unit with `tools/run_multinode_watchdog.py`.
 On exit the report directory holds:
 
 ```text
-plan.json                 the exact commands and environment both ranks were given
+plan.json                 the exact commands and environment both nodes were given
 preflight.json            the nine answers
-watchdog.json             which rank exited with which code, and why the run ended
-watchdog-logs/            one log per rank
-rank-0.json               the artifact, assembled by the rank that validated it
-nccl-rank-{0,1}.log       the transport both ranks negotiated
+watchdog.json             which node exited with which code, and why the run ended
+watchdog-logs/            one log per node
+node-0.json               the artifact: every rank's record, written by world rank 0
+nccl-node-{0,1}.log       the transport both nodes negotiated
 ```
+
+The artifact is written once, by the node holding world rank 0, because it
+carries every rank's record; a file per rank would be the same evidence written
+several times over. A run at a width above one therefore still produces exactly
+one `node-0.json`, and the shape it was taken at is in its `scope` block.
 
 The launch fails when the watchdog wrote no verdict, so a run that could not
 report is distinguishable from a run that reported a failure.
@@ -365,10 +419,52 @@ report is distinguishable from a run that reported a failure.
 Replicated per-rank execution can be used as a transport smoke test, but it
 must not be reported as capacity scaling.
 
+### Stopping a lane that will not stop
+
+The watchdog signals the process group it started, which is enough on the
+launch host. A remote rank reached over `ssh` is not in that group: killing the
+client leaves the remote `torchrun` and its workers running, still holding
+their devices and still joined to the rendezvous. A `torchrun` worker that is
+killed while a collective is outstanding does not necessarily finish
+unwinding either, so a lane can leave processes behind even when it was
+terminated cleanly from the outside.
+
+That matters because the leftovers are not inert. A stale worker holds its
+device, is still a member of a process group, and can answer a rendezvous a
+later lane dials. Two lanes sharing one rendezvous produce exactly the failure
+that reads as a FlagQuantum hang: one rank waiting inside a FlagQuantum
+exchange while its peer is already inside the next collective of a different
+run. Confirm the hosts are quiet before reading any multi-rank timeout as a
+product defect:
+
+```bash
+pkill -9 -f 'probe_cuda_multinode'
+pkill -9 -f 'torch[.]distributed[.]run'
+ps -eo args | grep -E 'probe_cuda_multinode|distributed[.]run' | grep -v grep
+nvidia-smi --query-compute-apps=pid --format=csv,noheader
+```
+
+Both listings have to be empty. The lane reaps on its own as well: when a run
+ends for any reason but success, the watchdog runs each job's cleanup command,
+which is the launcher's `--cleanup` on the launch host and the same command
+over `ssh` on the peer.
+
 ## Recorded two-node evidence
 
 Three artifacts have been recorded from this lane, all taken on the eight-A800
-pair with two ranks on one device each.
+pair at two nodes by one rank each, one device per rank. That shape is in each
+artifact's `scope` block. The lane can be run wider -- each probe accepts any
+width it can actually shard, up to the devices its host has -- but no wider
+recording has been made, so nothing here claims one.
+
+Widths above one have been exercised rather than recorded, on the same pair:
+statevector at two and four ranks per node, tensor network at two, MPS at two
+and three. Each shape completed with `status="passed"` and both claim flags
+false, at wall times within a second or two of the one-rank-per-node shape,
+because the workloads are small enough that the extra ranks divide work that
+was never the cost. They are reported here as a shape that runs, not as
+evidence of anything scaling: a wider artifact would need the same numerical
+comparisons the recorded one carries, and none of these was retained.
 
 `artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json` covers
 the amplitude-sharded statevector workload:

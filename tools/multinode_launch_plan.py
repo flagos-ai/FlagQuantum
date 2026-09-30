@@ -51,9 +51,22 @@ DEFAULT_PROBE = "statevector"
 # The lane the runbook and the launch-plan tests describe.
 PROBE = PROBES[DEFAULT_PROBE]
 
-# Two ranks, one per node. The probe refuses anything else.
+# Two nodes. `LOCAL_WORLD_SIZE` is the default number of ranks each node runs;
+# `--local-world-size` overrides it, so the same lane covers a 2x1 pair and a
+# 2xN one. One rank per node is what the recorded evidence was taken on, and a
+# default that changes the shape of an existing lane would invalidate it, so it
+# stays the default. The probes accept any power-of-two value.
 NODE_COUNT = 2
 LOCAL_WORLD_SIZE = 1
+
+# The two widths the probe workloads are built on, as the launcher has to know
+# them to refuse a shape before a launch: the MPS probe's circuit has six wires
+# and the tensor-network probe's has a fixed four-way slice count. Each probe
+# carries the same number and enforces it again before it builds a process
+# group; `tests/unit/test_multinode_launch_plan.py` reads both and fails if they
+# drift apart.
+MPS_WIRES = 6
+TN_SLICE_COUNT = 4
 # `--master-port 0` picks a port that is free at plan time. The hosts are
 # shared, and 29500 is the default every other rank-2 job on them reaches for:
 # a preflight against the fixed port refused a launch because a neighbour
@@ -194,7 +207,7 @@ def checked_lane_directory(
     nothing about the contents can substitute for it.
 
     The output case is not merely tidiness: the lane copies whatever is in the
-    output directory into the report, so a `rank-0.json` left by an earlier run
+    output directory into the report, so a `node-0.json` left by an earlier run
     would be published as this run's evidence if this one failed before writing
     its own. The checkpoint case is the same hazard one step further in: the
     probe resumes from the checkpoints its own first leg wrote, and a file left
@@ -237,6 +250,11 @@ def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
         "NCCL_SOCKET_IFNAME": interface,
         "NCCL_IB_DISABLE": "1",
         "NCCL_DEBUG": "INFO",
+        # Every rank reads the one staged tree over the shared filesystem, and
+        # they all start together. A rank that compiled a module would write its
+        # `__pycache__` entry next to everyone else's, so the ranks are told not
+        # to: `stage` compiles the tree once, before any of them starts.
+        "PYTHONDONTWRITEBYTECODE": "1",
     }
 
 
@@ -248,17 +266,22 @@ def rank_environment(
     output_directory: str,
     source_revision: str | None = None,
 ) -> dict[str, str]:
-    """One rank's environment. Only the debug log differs between ranks.
+    """One node's environment for every rank that node runs.
 
-    `NCCL_DEBUG_FILE` has to be per rank -- two ranks writing one file would
-    interleave -- and that is why it is here rather than in a workflow `env:`
-    block: a value that depends on the node is not something one block can
-    express, and a rank that quietly lacked it would fail after NCCL init
-    rather than before.
+    `NCCL_DEBUG_FILE` is scoped to the node, not to the rank. One `torchrun`
+    per node starts all of its ranks from one environment, so a per-rank value
+    is not something this plan can express: at `--local-world-size 1` the node's
+    log is exactly one rank's log, and above that the node's ranks share it.
+    The probe reports which of the two it read, so the difference is recorded
+    rather than assumed.
+
+    It lives here rather than in a workflow `env:` block because a value that
+    depends on the node is not something one block can express, and a node that
+    quietly lacked it would fail after NCCL init rather than before.
     """
     environment = {
         **shared_environment(staging=staging, interface=interface),
-        "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-rank-{node_rank}.log"),
+        "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     }
     if source_revision is not None:
         # The probe records the revision it is evidence about. The staged copy
@@ -288,6 +311,7 @@ def rank_command(
     interface: str,
     probe: str = PROBE,
     source_revision: str | None = None,
+    local_world_size: int = LOCAL_WORLD_SIZE,
 ) -> list[str]:
     return [
         *_env_prefix(
@@ -305,7 +329,7 @@ def rank_command(
         "--nnodes",
         str(NODE_COUNT),
         "--nproc-per-node",
-        str(LOCAL_WORLD_SIZE),
+        str(local_world_size),
         "--node-rank",
         str(node_rank),
         "--master-addr",
@@ -315,18 +339,21 @@ def rank_command(
         # Absolute, so the peer does not depend on where ssh leaves it.
         str(Path(staging) / probe),
         "--output",
-        str(Path(output_directory) / f"rank-{node_rank}.json"),
+        # One slot per node, and only the node holding world rank 0 fills it:
+        # the artifact carries every rank's record, so a file per rank would be
+        # the same evidence written several times over, once per process.
+        str(Path(output_directory) / f"node-{node_rank}.json"),
         # Both ranks write their owner-sharded checkpoint here and both read it
         # back on the resume leg, so it has to be a filesystem both nodes mount
         # -- the same one the staged tree came from.
         "--checkpoint-directory",
         str(Path(checkpoint_directory)),
-        # The probe writes its artifact on rank 0 only, because the artifact
-        # carries both ranks' records. Rank 1 keeps the flag so that the file
-        # NCCL is told to write and the file the probe would read stay the same
-        # path on both nodes.
+        # The probe writes its artifact on the world's rank 0 only, because the
+        # artifact carries every rank's record. Rank 0 of the peer node keeps
+        # the flag so that the file NCCL is told to write and the file the probe
+        # would read stay the same path on both nodes.
         "--network-log",
-        str(Path(output_directory) / f"nccl-rank-{node_rank}.log"),
+        str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     ]
 
 
@@ -368,8 +395,9 @@ def build_plan(
     interface: str = DEFAULT_INTERFACE,
     probe: str = PROBE,
     source_revision: str | None = None,
+    local_world_size: int = LOCAL_WORLD_SIZE,
 ) -> dict[str, Any]:
-    """Write the watchdog's config: two ranks, one node each."""
+    """Write the watchdog's config: two nodes, `local_world_size` ranks each."""
     ranks = {
         node_rank: rank_command(
             node_rank=node_rank,
@@ -382,13 +410,15 @@ def build_plan(
             interface=interface,
             probe=probe,
             source_revision=source_revision,
+            local_world_size=local_world_size,
         )
         for node_rank in range(NODE_COUNT)
     }
     return {
         "schema": "flagquantum.multinode_launch_plan.v1",
         "node_count": NODE_COUNT,
-        "local_world_size": LOCAL_WORLD_SIZE,
+        "local_world_size": local_world_size,
+        "world_size": NODE_COUNT * local_world_size,
         "launch_address": launch_address,
         "peer_host": peer_host,
         "master_port": master_port,
@@ -660,7 +690,18 @@ def staging_check(
 
 
 def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, Any]:
-    """Copy the tree both ranks will run onto the filesystem they share."""
+    """Copy the tree both ranks will run onto the filesystem they share.
+
+    The copy arrives without `__pycache__`, and every rank of both nodes starts
+    at once, so an uncompiled tree has all of them compiling the same modules
+    and writing the same `.pyc` files. Those writes are atomic renames, and on
+    the shared filesystem the loser waits on an inode the winner holds while it
+    is still paging its own libraries in. This lane met exactly that as a
+    `job_timeout` with no rank past process-group creation and no NCCL debug log
+    on the launch host. Compiling here, once and before any rank starts, is what
+    keeps the lane's startup a read. `PYTHONDONTWRITEBYTECODE` then keeps a rank
+    that finds a stale entry from writing one back.
+    """
     destination = checked_staging(staging)
     destination.mkdir(parents=True, exist_ok=True)
     command = ["rsync", "-a", "--delete"]
@@ -673,6 +714,12 @@ def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, 
             f"staging failed with exit {completed.returncode}: "
             f"{_first_line(completed.stderr)}"
         )
+    compiled = _run([python, "-m", "compileall", "-q", str(destination)], 900.0)
+    if compiled.returncode != 0:
+        raise RuntimeError(
+            f"precompiling the staged tree failed with exit "
+            f"{compiled.returncode}: {_first_line(compiled.stderr)}"
+        )
     return {
         "schema": "flagquantum.multinode_staging.v1",
         "source": str(Path(source).resolve()),
@@ -680,6 +727,7 @@ def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, 
         "excluded": list(STAGING_EXCLUDES),
         "python": python,
         "files": sum(1 for _ in destination.rglob("*.py")),
+        "bytecode_files": sum(1 for _ in destination.rglob("*.pyc")),
     }
 
 
@@ -825,6 +873,19 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--master-port", type=int, default=DEFAULT_MASTER_PORT)
     parser.add_argument("--interface", default=DEFAULT_INTERFACE)
     parser.add_argument("--source-revision", default=None)
+    parser.add_argument(
+        "--local-world-size",
+        type=int,
+        default=LOCAL_WORLD_SIZE,
+        help=(
+            "ranks each of the two nodes runs. One is the shape the recorded "
+            "evidence was taken on, and it stays the default. What a wider "
+            "value may be is the probe's business: a power of two for the "
+            "statevector workload, at most three for the MPS one, and one or "
+            "two for the tensor-network one. A width the probe would refuse is "
+            "refused here, before a rank is started"
+        ),
+    )
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--preflight-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--run-timeout-seconds", type=float, default=900.0)
@@ -836,7 +897,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--run",
         action="store_true",
-        help="preflight, stage, plan and supervise the two ranks as one unit",
+        help="preflight, stage, plan and supervise the two nodes as one unit",
     )
     parser.add_argument("--cleanup", action="store_true")
     parser.add_argument("--node-rank", type=int, default=0)
@@ -861,6 +922,50 @@ def _peer_address(peer_host: str, timeout: float) -> str:
 def _write(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
+
+
+def checked_local_world_size(value: int, *, probe: str) -> int:
+    """How many ranks one node runs, refused unless that probe can serve it.
+
+    Every probe shards over the whole world size and reports the placement it
+    resolved, so a node count and a per-node width are enough to describe the
+    shape. What each probe can serve differs, and the launcher refuses a shape
+    its probe would have refused anyway -- before a rank is started, which is
+    the earliest point the answer is knowable.
+
+    The two widths the probes are built on are mirrored here rather than
+    imported: the probes import torch and this tool installs nothing, which
+    `test_the_lane_runs_before_anything_is_installed` pins. They are pinned
+    against the probes' own constants instead.
+    """
+
+    size = int(value)
+    if size < 1:
+        raise SystemExit(
+            f"--local-world-size must be at least one, received {value}; a node "
+            "runs at least one rank"
+        )
+    world_size = size * NODE_COUNT
+    if probe == "statevector" and world_size & (world_size - 1):
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the statevector executor refuses: it shards by rank address "
+            "bits, so the world size has to be a power of two"
+        )
+    if probe == "mps" and world_size > MPS_WIRES:
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the rank-owned MPS executor refuses: every rank owns at "
+            f"least one site and the workload has {MPS_WIRES}"
+        )
+    if probe == "tn" and TN_SLICE_COUNT % world_size:
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the tensor-network executor refuses: the workload has a "
+            f"fixed {TN_SLICE_COUNT}-way slice count, so the world size has to "
+            "divide it"
+        )
+    return size
 
 
 def _report_checks(checks: Sequence[Check]) -> None:
@@ -944,6 +1049,9 @@ def _governed_run(args: argparse.Namespace) -> int:
         interface=args.interface,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,
+        local_world_size=checked_local_world_size(
+            args.local_world_size, probe=args.probe
+        ),
     )
     _write(report / "plan.json", plan)
     _write(report / "preflight.json", [check.__dict__ for check in checks])
@@ -1039,6 +1147,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         interface=args.interface,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,
+        local_world_size=checked_local_world_size(
+            args.local_world_size, probe=args.probe
+        ),
     )
     encoded = json.dumps(plan, indent=2, sort_keys=True) + "\n"
     if args.output is not None:
