@@ -12,10 +12,13 @@ from typing import Any
 import torch
 from torch.profiler import record_function
 
+from .one_site_dispatch import _try_apply_cataloged_mps_one_site_bucket
+
 
 @dataclass
 class SiteKernelStats:
     ry_bucket_calls: int = 0
+    triton_one_site_bucket_calls: int = 0
     rxx_bucket_calls: int = 0
     transfer_calls: int = 0
     compiled_calls: int = 0
@@ -369,6 +372,15 @@ def apply_ry_bucket(
         raise TypeError("site-sharded RY bucket requires complex tensors and matrices")
     if matrices.ndim == 3:
         matrices = matrices.unsqueeze(1).expand(-1, tensors.shape[1], -1, -1)
+    if compiled:
+        cataloged = _try_apply_cataloged_mps_one_site_bucket(tensors, matrices)
+        if cataloged is not None:
+            input_norm = torch.linalg.vector_norm(tensors, dim=(-3, -2, -1))
+            output_norm = torch.linalg.vector_norm(cataloged, dim=(-3, -2, -1))
+            if bool(torch.allclose(input_norm, output_norm, rtol=2e-5, atol=2e-6)):
+                _STATS.triton_one_site_bucket_calls += 1
+                _log_event("catalog_route", kind="ry", provider="triton")
+                return cataloged
     real_tensors = torch.view_as_real(tensors)
     real_matrices = torch.view_as_real(matrices)
     real_inputs = (real_tensors, real_matrices)

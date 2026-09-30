@@ -143,8 +143,10 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-003-A",
         "tests/unit/test_mps_one_site_triton.py::test_fused_mps_one_site_forward_and_backward",
+        "tests/unit/test_mps_one_site_catalog_dispatch.py::test_mps_one_site_bucket_uses_catalog_and_preserves_gradients",
         gradient_tests=(
             "tests/unit/test_mps_one_site_triton.py::test_fused_mps_one_site_forward_and_backward",
+            "tests/unit/test_mps_one_site_catalog_dispatch.py::test_mps_one_site_bucket_uses_catalog_and_preserves_gradients",
         ),
         capability_tests=(
             "tests/unit/test_mps_one_site_triton.py::test_fused_mps_one_site_cpu_fallback_matches_reference",
