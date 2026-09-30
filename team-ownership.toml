@@ -13,12 +13,12 @@ protected_paths = [
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
-    # FlagQuantum IR is the single source of truth. It is a flat module today,
-    # and `flagquantum/core/ir/**` stays reserved for the package split so the
-    # protection survives that refactor. A pattern ending in `/**` does not match
-    # a same-named file, so both forms are required.
+    # FlagQuantum IR is the single source of truth. It is a flat module today, so
+    # the protection names the module itself: `flagquantum/core/ir/**` was a
+    # reservation for a package split that never landed, and it matched no file,
+    # so it protected nothing. `tools/check_team_scope.py --validate` rejects a
+    # protected entry in that state instead of trusting the comment.
     "flagquantum/core/ir.py",
-    "flagquantum/core/ir/**",
     "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
     "docs/architecture/decisions/**",
     # `tools/**` implements the machine-checked rules: architecture boundaries,

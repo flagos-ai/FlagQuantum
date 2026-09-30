@@ -20,6 +20,7 @@ performance evidence, and API Change Proposals.
 | [ARCH-009](ARCH_009_NATIVE_CPU_OPERATOR_BOUNDARY.md) | Package-local native CPU operator boundary | Approved | Internal RX/RY/RZ CPU adjoint operator and build integration; no Stable Core or distributed support change. |
 | [ARCH-010](ARCH_010_QISKIT_FEATURE_SPACE_NON_GOALS.md) | Deliberate non-goals against the Qiskit feature space | Proposed | Planning and boundary record only; no code, public API, contract, or capability-level change. |
 | [ARCH-011](ARCH_011_COMPILER_RESPONSIBILITY_BOUNDARY.md) | Compiler responsibility boundary and pass infrastructure | Proposed | Resolve the boundary disagreement between `architecture.toml` and the long-horizon contract; no Stable Core, capability, or implementation authorization. |
+| [ARCH-012](ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md) | CUDA-Q parity control sequence and proprietary backend replacement | Approved | Amends the `AGENTS.md` control sequence to allow a replacement-gated second track, and sets dependency policy for replacing NVIDIA-proprietary simulation cores. No Stable Core, schema, or maturity change. |
 
 ## Mapping Rules to Machine Gates
 

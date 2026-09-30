@@ -15,6 +15,7 @@ from tools.check_team_scope import (
     owner_for,
     owners_for,
     policy_errors,
+    protected_path_errors,
     scope_errors,
 )
 
@@ -163,17 +164,12 @@ def test_the_ir_single_source_of_truth_is_protected() -> None:
 def test_protected_patterns_match_existing_paths() -> None:
     """A protected pattern that matches nothing gives false confidence."""
 
-    policy = load_policy()
-    existing = _existing_paths()
-    dead = [
-        pattern
-        for pattern in policy["policy"]["protected_paths"]
-        # `flagquantum/core/ir/**` is a documented forward reservation for a
-        # package split, so it is exempt from this check.
-        if pattern != "flagquantum/core/ir/**"
-        and not any(_matches(path, [pattern]) for path in existing)
-    ]
-    assert dead == []
+    # The exemption this test used to carry for `flagquantum/core/ir/**` is
+    # gone. That reservation matched no file, so it protected nothing while
+    # reading as a guarantee. The property is now enforced by the checker as
+    # well, so `tools/check_team_scope.py --validate` refuses a protected
+    # entry in that state instead of leaving it to whoever runs this file.
+    assert protected_path_errors(load_policy(), ROOT) == ()
 
 
 def test_owned_patterns_match_existing_paths() -> None:
@@ -357,3 +353,16 @@ def test_the_multi_team_document_marks_its_own_mode_optional() -> None:
         "2. Verify that the current branch matches the team's entry in "
         "`team-ownership.toml`." not in text
     )
+
+
+def test_a_protected_pattern_that_matches_nothing_is_rejected(tmp_path: Path) -> None:
+    """The check is mechanical; reading the policy's comments cannot replace it."""
+
+    (tmp_path / "present.toml").write_text("", encoding="utf-8")
+    policy = load_policy()
+    policy["policy"] = dict(policy["policy"])
+    policy["policy"]["protected_paths"] = ["present.toml", "absent/**"]
+    errors = protected_path_errors(policy, tmp_path)
+    assert len(errors) == 1
+    assert "'absent/**'" in errors[0]
+    assert "present.toml" not in errors[0]

@@ -24,6 +24,7 @@ must validate the resulting behavior directly.
 | --- | --- |
 | `*-interop-contract.toml` | Version lanes and semantic mappings for external frameworks. |
 | `interop-capability-gap-matrix.toml` | Evidence-linked comparison of adapter coverage and prioritized gaps. |
+| `cudaq-parity-matrix.toml` | CUDA-Q product capability baseline with a per-row FlagQuantum verdict, dependency class, and priority. |
 | `split-real-imag-statevector-*-contract.toml` | Statevector representation, precision, device, and training acceptance boundaries. |
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
@@ -54,3 +55,12 @@ same change. New capability contracts belong here, not at the repository root.
 `flagquantum/simulation/numerics/double-single-contract.toml` so installed conformance
 checks do not depend on a repository checkout. Unit and distribution-artifact
 checks reject drift or omission of that packaged mirror.
+
+Three contracts describe CUDA-Q. `cudaq-export-contract.toml` owns the adapter
+surface, `interop-capability-gap-matrix.toml` owns the adapter's per-format
+coverage, and `cudaq-parity-matrix.toml` owns the product capability comparison.
+They answer different questions and deliberately do not restate each other. The
+version pin is shared: `cudaq-parity-matrix.toml` must declare the same
+`cudaq_versions` as `cudaq-export-contract.toml`, and the gap matrix must keep
+pointing its `cudaq` framework at that export contract, or
+`python tools/parity_matrix.py --check` fails.

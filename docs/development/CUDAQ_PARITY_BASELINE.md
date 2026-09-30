@@ -1,0 +1,122 @@
+# CUDA-Q parity baseline
+
+Status: recorded baseline survey. This document does not claim parity; it records
+the external capability set that `contracts/cudaq-parity-matrix.toml` compares
+against.
+
+Owner: Integration
+
+Recorded: 2026-10-06
+
+Pinned baseline versions: `0.15.1`, `0.16.0.post1`
+
+## What this document is
+
+`contracts/cudaq-parity-matrix.toml` holds one row per CUDA-Q capability and the
+FlagQuantum verdict for it. This document records where the CUDA-Q side of those
+rows came from, so a reviewer can tell a measured fact from a survey entry.
+
+The pinned versions are the ones the repository already targets in
+`contracts/cudaq-export-contract.toml`. A CUDA-Q release outside that range
+requires a new capture and a new row review.
+
+## Capture method
+
+Capture method: `documented_capability_survey`.
+
+The CUDA-Q capability set was read from the published CUDA-Q documentation, the
+public Python API surface, the documented backend roster, and the shipped
+repository tree of the pinned versions. No CUDA-Q build was executed, and no
+CUDA-Q measurement was taken on FlagQuantum hardware.
+
+Consequences of that method, stated so they are not mistaken for strengths:
+
+- A capability absent from the matrix is not evidence that CUDA-Q lacks it. It is
+  evidence that this survey did not record it. An unrecorded capability is a
+  documentation defect in this baseline, not a FlagQuantum claim.
+- A capability listed as present is listed because it is documented or shipped in
+  the pinned versions, not because it was reproduced here.
+- Backend behaviour under a workload, rather than the existence of the backend, is
+  out of scope for this survey.
+
+## Scope
+
+In scope: capabilities observable from the public Python API, the documented
+backend and provider roster, and the shipped repository tree of the pinned
+versions, organized into the twelve domains declared by `domain_order` in
+`contracts/cudaq-parity-matrix.toml`.
+
+Out of scope:
+
+- performance and scale comparisons, which require an audited benchmark payload
+  in `benchmarks/results/`;
+- licensing or commercial terms of the CUDA-Q distribution;
+- the internal implementation of any CUDA-Q pass, kernel, or backend beyond what
+  determines whether a capability exists and which dependency it rests on;
+- CUDA-Q developer tooling that has no FlagQuantum counterpart and no product
+  consequence, such as its own test harness layout.
+
+## The dependency question
+
+The reason this baseline is recorded at all is that a CUDA-Q capability is not
+one thing to replace. Each row declares a `dependency_class`, and that class
+decides what closing the gap actually costs.
+
+| Class | Meaning | Consequence for FlagQuantum |
+| --- | --- | --- |
+| `A_nvidia_proprietary` | The CUDA-Q implementation rests on an NVIDIA-proprietary component. | This is the replacement battlefield. FlagQuantum must supply its own kernel or a FlagOS-family component. Depending on the original is not an option. |
+| `B_open_neutral` | The CUDA-Q implementation uses a component that is permissively licensed and vendor-neutral. | FlagQuantum may use the same component directly. The remaining work is integration, conformance, and ownership rather than research. |
+| `C_flagos_replacement` | FlagQuantum satisfies the capability through a FlagOS-family component. | The replacement target is named. The gap is maturity and evidence, not existence. |
+| `none` | The capability is not dependency-bearing. | The work is engineering, not replacement. |
+
+The framework layer of CUDA-Q does not itself depend on an NVIDIA component: its
+CPU statevector, density-matrix, and stabilizer backends run without one. That is
+why this baseline separates the two questions it is often collapsed into. A gap in
+the compiler or the language model is not a gap in the numeric cores, and closing
+one does not close the other.
+
+## How the baseline is consumed
+
+`tools/parity_matrix.py` validates `contracts/cudaq-parity-matrix.toml` against
+this document's existence, against `capability-maturity.toml`, and against the
+repository, then renders `docs/reference/CUDAQ_PARITY_MATRIX.md`. The generated
+document is the published scoreboard.
+
+The validator enforces:
+
+- every declared domain appears in `domain_order`, and every status, priority, and
+  dependency class is one of the declared values;
+- every `maturity_ref` names an entry that exists in `capability-maturity.toml`,
+  and a `supported` row has one;
+- every row carries evidence, taken from the row or from its domain default, and
+  every evidence item is either an existing repository path or a `search:` token
+  recording the negative search that established an absence;
+- no row asserts scalability.
+
+Two probes are planned and do not exist yet:
+`benchmarks/cudaq_gradient_capability_probe.py` and
+`benchmarks/cudaq_backend_compare.py`. Until one of them exists and its payload
+is accepted by benchmark audit, every scale statement in the matrix stays out of
+scope, and no row may be promoted to a scalability claim.
+
+## Relationship to the existing capability index
+
+`docs/reference/FEATURE_PARITY_MATRIX.md` is an index of FlagQuantum's own
+authoritative sources, and it states that planned capabilities do not appear as
+supported rows until executable manifests and tests exist. This baseline does not
+change that rule. Because every `supported` row in
+`contracts/cudaq-parity-matrix.toml` carries a `maturity_ref`, every such row
+already has a registered, executable FlagQuantum capability behind it.
+
+## Maintenance
+
+Refreshing this baseline is required when any of the following happens:
+
+- the pinned CUDA-Q version range changes;
+- a CUDA-Q capability that the matrix does not record becomes relevant to a
+  planned FlagQuantum feature;
+- a `maturity_ref` target changes level, is renamed, or is removed.
+
+The refresh updates both this document and `contracts/cudaq-parity-matrix.toml`
+in one change, and the generated document is regenerated from the contract. A
+hand edit to `docs/reference/CUDAQ_PARITY_MATRIX.md` is a defect.

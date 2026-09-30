@@ -9,6 +9,7 @@ This page is an index, not a second capability database.
 | Operators and backend lowerings | [`operator_manifest.json`](../operator_manifest.json) | Registered executable lowering; see the [generated table](../generated/OPERATOR_CAPABILITIES.md) |
 | Runtime evidence fields | [`runtime_contracts.schema.json`](../runtime_contracts.schema.json) | Typed/versioned vocabulary, not proof a run occurred |
 | Measured benchmark evidence | [`benchmarks/results/`](../../benchmarks/results/) | Audited artifacts with provenance; plans and fixtures are excluded |
+| External baseline comparison | [`contracts/cudaq-parity-matrix.toml`](../../contracts/cudaq-parity-matrix.toml) | CUDA-Q capability baseline with a per-row FlagQuantum verdict; see the [generated scoreboard](CUDAQ_PARITY_MATRIX.md) and the [recorded baseline](../development/CUDAQ_PARITY_BASELINE.md) |
 | Supported Python/dependencies | [`pyproject.toml`](../../pyproject.toml) | Installable support range and dependency groups |
 
 ## Current claim boundary
