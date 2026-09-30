@@ -629,10 +629,10 @@ def _apply_fused_gate_step(
         and state.dtype == torch.complex64
         and _triton_single_qubit_matrix_enabled()
     ):
-        from ...kernels.triton import single_qubit_matrix
+        from .single_qubit_matrix_dispatch import _apply_cataloged_single_qubit_matrix
 
         circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
-        result = single_qubit_matrix(
+        result = _apply_cataloged_single_qubit_matrix(
             state,
             constant_matrix,
             wire=step.wires[0],
@@ -658,10 +658,10 @@ def _apply_fused_gate_step(
             or _triton_parameterized_single_qubit_matrix_enabled()
         )
     ):
-        from ...kernels.triton import single_qubit_matrix
+        from .single_qubit_matrix_dispatch import _apply_cataloged_single_qubit_matrix
 
         circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
-        result = single_qubit_matrix(
+        result = _apply_cataloged_single_qubit_matrix(
             state,
             matrix,
             wire=step.wires[0],
