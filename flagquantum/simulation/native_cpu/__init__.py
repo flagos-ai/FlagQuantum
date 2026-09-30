@@ -22,6 +22,7 @@ from .adjoint import (
 from .permutation import (
     compact_cx_permutation_images,
     fused_compact_cx_adjoint_gather,
+    fused_compact_cx_adjoint_inplace_,
     fused_compact_cx_gather_out,
     fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
@@ -73,6 +74,7 @@ __all__ = [
     "fused_cx_adjoint_inplace_",
     "compact_cx_permutation_images",
     "fused_compact_cx_adjoint_gather",
+    "fused_compact_cx_adjoint_inplace_",
     "fused_compact_cx_gather_out",
     "fused_cx_gather_out",
     "native_cpu_cx_adjoint_gather_available",
