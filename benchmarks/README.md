@@ -148,6 +148,36 @@ These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing workload comparison question, not isolated kernel
 throughput.
 
+The [CPU phase-1 scorecard](results/comparison/CPU_PHASE1_SCORECARD_CPU_ARM64_20260930.md)
+summarizes the maintained Apple arm64 corpus: FlagQuantum wins all 20 recorded
+workload/width cases against each of Qiskit Aer, Cirq Simulator, and PennyLane
+Lightning, with concrete times, speedup ranges, provenance, limitations, and
+reproduction commands shown before the regression-gate details.
+
+### Profile-aware CPU regression gate
+
+After producing a candidate artifact on the same measurement profile as a
+checked-in baseline, enforce correctness, stability, sample count, case-matrix
+coverage, and a bounded median-time regression:
+
+```bash
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/simulator_workload_corpus_cpu_arm64_20260924.json \
+  candidate-workload-corpus.json --max-slowdown 1.20 \
+  --minimum-samples 5 --json-output cpu-forward-gate.json
+
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/adjoint_differentiable_simulator_corpus_cpu_arm64_20260928.json \
+  candidate-differentiable-corpus.json --max-slowdown 1.20 \
+  --minimum-samples 5 --json-output cpu-adjoint-gate.json
+```
+
+Exit status `0` means pass, `1` means a correctness, stability, coverage, or
+performance failure, and `2` means the artifacts are not comparable. Platform,
+Python and PyTorch version families, device, thread limits, measurement scope,
+and calls per sample must match. This prevents timings from an arbitrary CI
+runner from approving or rejecting a baseline recorded on different hardware.
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash

@@ -91,6 +91,7 @@ def test_every_registered_runner_declares_an_integer_exit_code(name: str) -> Non
 
 def test_runner_registry_is_lazy_and_sorted() -> None:
     assert names() == (
+        "cpu_performance_gate",
         "differentiable_simulator_corpus",
         "environment_probe",
         "simulator_compare",
