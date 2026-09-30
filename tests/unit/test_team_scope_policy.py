@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import fnmatch
+import shutil
+import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -29,6 +31,22 @@ def _existing_paths() -> tuple[str, ...]:
     )
 
 
+def _tracked_paths() -> tuple[str, ...]:
+    """Every tracked path, which is the set the ownership policy has to cover."""
+
+    executable = shutil.which("git")
+    if executable is None:
+        pytest.skip("git is unavailable; the tracked-file invariant needs a checkout")
+    completed = subprocess.run(
+        [executable, "ls-files"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return tuple(line for line in completed.stdout.splitlines() if line)
+
+
 def test_team_ownership_policy_is_valid_and_complete() -> None:
     policy = load_policy()
     assert policy_errors(policy) == ()
@@ -46,6 +64,33 @@ def test_team_ownership_policy_is_valid_and_complete() -> None:
         "verification",
         "docs",
     }
+
+
+def test_every_tracked_file_is_classified() -> None:
+    """Every tracked file must be protected, shared, or owned by exactly one team.
+
+    `scope_errors` depends on this. A file that matches no pattern resolves to
+    `None` and is reported as "unowned path", so no team is accountable for it
+    and any change to it is unassignable. A file matching equally specific
+    patterns in two teams is reported as ambiguous. Both make the ownership
+    policy advisory for that path.
+    """
+
+    policy = load_policy()
+    protected = policy["policy"]["protected_paths"]
+    shared = policy["policy"]["shared_paths"]
+
+    unresolved: dict[str, str] = {}
+    for path in _tracked_paths():
+        if _matches(path, protected) or _matches(path, shared):
+            continue
+        owner = owner_for(path, policy)
+        if owner is None or owner.startswith("AMBIGUOUS:"):
+            unresolved[path] = owner or "unowned"
+        if len(unresolved) >= 20:
+            break
+
+    assert unresolved == {}
 
 
 def test_domain_owner_resolution() -> None:
