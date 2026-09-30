@@ -6,6 +6,7 @@ from flagquantum.algorithms import zz_chain_hamiltonian
 pytest.importorskip("triton")
 
 import flagquantum as fq
+import flagquantum.simulation.statevector.rx_rz_dispatch as rx_rz_dispatch
 from flagquantum.kernels.triton import (
     repeated_rx_rz,
     repeated_rx_rz_tangents,
@@ -146,6 +147,22 @@ def test_circuit_ir_rx_rz_fusion_matches_eager_state_and_vqe_gradients(
     monkeypatch,
 ) -> None:
     torch.manual_seed(9)
+    catalog_routes: list[str] = []
+    require_cataloged_kernel = rx_rz_dispatch._require_rx_rz_sequence_kernel
+
+    def capture_catalog_route(*, device_type: str, dtype: str):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        rx_rz_dispatch,
+        "_require_rx_rz_sequence_kernel",
+        capture_catalog_route,
+    )
     parameters = torch.randn(3, 4, 2, device="cuda", requires_grad=True)
     reference_parameters = parameters.detach().clone().requires_grad_(True)
 
@@ -176,3 +193,4 @@ def test_circuit_ir_rx_rz_fusion_matches_eager_state_and_vqe_gradients(
     torch.testing.assert_close(
         actual_gradient, reference_gradient, atol=2e-4, rtol=2e-4
     )
+    assert catalog_routes == ["FQKI-TRITON-SV-005-A"] * 3
