@@ -24,6 +24,7 @@ from tools.parity_matrix import (
     validate_contract,
     version_pin_problems,
 )
+from tools.sanitize_public_evidence import sanitize_text
 
 pytestmark = pytest.mark.unit
 
@@ -191,11 +192,31 @@ def _probe(contract: dict, path: str) -> dict:
 def test_a_measured_probe_must_name_a_landed_payload_and_its_report(
     contract: dict,
 ) -> None:
-    probe = _probe(contract, "benchmarks/cudaq_backend_compare.py")
-    assert probe["status"] == "measured"
-    for field in ("payload", "report"):
-        artifact = ROOT / probe[field]
-        assert artifact.is_file(), f"{probe[field]} is registered but absent"
+    measured = [
+        probe
+        for probe in contract["baseline"]["probes"]
+        if probe["status"] == "measured"
+    ]
+    assert measured, "no probe is measured, so the promotion path is untested"
+    for probe in measured:
+        for field in ("payload", "report"):
+            artifact = ROOT / probe[field]
+            assert artifact.is_file(), f"{probe[field]} is registered but absent"
+
+
+def test_a_measured_probes_payload_is_sanitized_public_evidence() -> None:
+    """Promotion to `measured` must not carry a container hostname into the tree."""
+
+    contract = load_inputs()[0]
+    for probe in contract["baseline"]["probes"]:
+        if probe["status"] != "measured":
+            continue
+        payload = ROOT / probe["payload"]
+        text = payload.read_text(encoding="utf-8")
+        assert sanitize_text(text) == text, (
+            f"{probe['payload']} is registered as measured evidence but still "
+            "carries an infrastructure identifier"
+        )
 
 
 def test_contract_rejects_a_measured_probe_with_no_payload(contract: dict) -> None:

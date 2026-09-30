@@ -37,11 +37,17 @@ settle, and `contracts/cudaq-parity-matrix.toml` registers both under
 | `benchmarks/cudaq_gradient_capability_probe.py` | Which gradient strategies the installed CUDA-Q exposes, by runtime public-symbol inspection rather than by reading documentation. |
 | `benchmarks/cudaq_backend_compare.py` | Whether one FlagQuantum JAX kernel and one CUDA-Q target agree numerically on a matched circuit, observable, dtype, gradient method, warmup, and iteration count, and how long each took. |
 
-They carry different statuses, because they stand on different evidence.
+They now carry the same status, because both stand on landed evidence.
 
-`benchmarks/cudaq_gradient_capability_probe.py` is `status = "runnable"`, which
-means the script starts and emits its schema. It does not mean a payload has been
-recorded.
+`benchmarks/cudaq_gradient_capability_probe.py` is `status = "measured"`. Its
+payload is
+`benchmarks/results/comparison/cudaq_gradient_capability_a800_20260930.json`. The
+survey ran three times on each of two hosts on 2026-09-30 and returned a
+byte-identical capability record every time, so what it establishes is a property
+of the CUDA-Q release rather than of one installed wheel. Those hosts reached
+CUDA-Q through different binary distributions — `cuda-quantum-cu12` on
+`jp-a800-172` and `cuda-quantum-cu13` on `jp-a800-171` — which is the part that
+makes the agreement informative.
 
 `benchmarks/cudaq_backend_compare.py` is `status = "measured"`, which means a
 payload from a named machine is landed under `benchmarks/results/` with its
@@ -49,7 +55,19 @@ source revision, container image, environment, and methodology recorded next to
 it, and `benchmarks/audit_results.py` accepts it. That payload is
 `benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json`, read in
 `benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md`. It was
-captured by hand on 2026-09-30 on `jp-a800-172` against CUDA-Q 0.16.0.post1.
+captured by hand on 2026-09-30 on both `jp-a800-172` and `jp-a800-171` against
+CUDA-Q 0.16.0.post1, from two different base images. Every FlagQuantum figure in it
+agreed across the two hosts to within 10 percent.
+
+Two of its findings are recorded here because they bound how the payload may be
+cited. The forward-only gap is warmup-insensitive: the 22-wire case moves 0.1
+percent between one and three warmups, so the conclusion that CUDA-Q is faster at
+every width is a property of the implementations. The gradient ratio is not: the
+18-wire case moves monotonically from 13.6x to 16.3x between one and five warmups
+and has not converged. An earlier capture reported 7.9x for that configuration
+and is withdrawn rather than reproduced. A gradient ratio from this protocol is
+therefore quoted with its warmup count, and the payload carries the sweep under
+`protocol_sensitivity`.
 
 No CI lane in this repository installs CUDA-Q, so a payload is only ever
 captured by hand: the PyPI `cudaq` release is a source distribution whose build
@@ -66,9 +84,12 @@ Consequences of that method, stated so they are not mistaken for strengths:
   the pinned versions, not because it was reproduced here.
 - Backend behaviour under a workload, rather than the existence of the backend, is
   out of scope for this survey. That is the part the probes measure, and one
-  workload on one machine is now recorded. A recorded payload is still not a
-  survey finding: it describes the machine, revision, and workload it names, and
+  workload on two machines is now recorded. A recorded payload is still not a
+  survey finding: it describes the machines, revision, and workload it names, and
   no row of the matrix is restated from it.
+- Both probes measure a single process on a single device. Nothing in this baseline
+  observes how either framework distributes a workload, so no entry here carries a
+  capacity or multi-device meaning.
 
 ## Scope
 

@@ -50,15 +50,17 @@ probe_rule = "A probe is a runnable repository script whose JSON payload can be 
 
 [[baseline.probes]]
 path = "benchmarks/cudaq_gradient_capability_probe.py"
-status = "runnable"
+status = "measured"
 measures = "Which gradient strategies the installed CUDA-Q exposes through cudaq.gradients, by runtime public-symbol inspection."
-first_capture = "CUDA-Q 0.16.0.post1 exported ParameterShift, CentralDifference, ForwardDifference, and gradient, and exposed no adjoint, reverse, or backprop symbol."
+first_capture = "CUDA-Q 0.16.0.post1 exported ParameterShift, CentralDifference, ForwardDifference, and gradient, and exposed no adjoint, reverse, or backprop symbol. On 2026-09-30 the same survey ran three times on each of jp-a800-172 and jp-a800-171, against cuda-quantum-cu12 and cuda-quantum-cu13 respectively, and returned a byte-identical capability record on both hosts, so the statement is a property of the release rather than of one installed wheel."
+payload = "benchmarks/results/comparison/cudaq_gradient_capability_a800_20260930.json"
+report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
 
 [[baseline.probes]]
 path = "benchmarks/cudaq_backend_compare.py"
 status = "measured"
 measures = "Wall-clock and precision comparison of one FlagQuantum JAX kernel against one CUDA-Q target on a matched circuit, observable, dtype, gradient method, warmup, and iteration count."
-first_capture = "On 2026-09-30 on jp-a800-172, one A800-SXM4-80GB, CUDA-Q 0.16.0.post1, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured: the largest loss deviation was 8.6e-06 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.3x at 8 wires to 89x at 22 wires, while the FlagQuantum fused value-and-gradient program was faster per call."
+first_capture = "On 2026-09-30 on jp-a800-172 and jp-a800-171, one A800-SXM4-80GB per host and CUDA-Q 0.16.0.post1 on both, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured on both hosts: the largest loss deviation was 1.2e-05 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance, and every FlagQuantum timing agreed across hosts to within 10 percent. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.4x at 8 wires to 89x at 22 wires, and that conclusion was insensitive to the warmup count. The FlagQuantum fused value-and-gradient program was faster per call, but its 18-wire ratio moved monotonically from 13.6x to 16.3x between one and five warmups, so an earlier 7.9x reading of the same configuration is withdrawn as under-warmed rather than reproduced."
 payload = "benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json"
 report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
 
@@ -67,8 +69,10 @@ items = [
     "A capability absent from this matrix is not evidence that CUDA-Q lacks it; it is evidence that the survey did not record it.",
     "The pinned versions are the ones the repository already targets in contracts/cudaq-export-contract.toml. A CUDA-Q release outside that range requires a new capture.",
     "No row in this file is a performance comparison. Measured numbers belong in benchmarks/results and require an audited payload.",
-    "A `runnable` probe is not a recorded measurement. CUDA-Q is not installable from the pinned public index as a binary wheel: the PyPI `cudaq` release is an sdist whose build hook resolves a platform binary distribution at install time. No CI lane in this repository runs either probe, so a payload is only ever captured by hand on a machine that reaches a working CUDA-Q index. The gradient capability probe has no landed payload and remains a survey statement.",
-    "A landed payload describes only the machine, revision, and workload it names. It is not scalability evidence and it does not generalise to other widths, observables, targets, or CUDA-Q releases.",
+    "A `runnable` probe is not a recorded measurement. CUDA-Q is not installable from the pinned public index as a binary wheel: the PyPI `cudaq` release is an sdist whose build hook resolves a platform binary distribution at install time. No CI lane in this repository runs either probe, so a payload is only ever captured by hand on a machine that reaches a working CUDA-Q index.",
+    "A landed payload describes only the machines, revision, and workload it names. It is not scalability evidence and it does not generalise to other widths, observables, targets, or CUDA-Q releases.",
+    "A gradient-path ratio is not a simulation-throughput ratio. The two sides do not execute the same schedule, so a value-and-gradient comparison measures host call structure as well as arithmetic.",
+    "The recorded protocol has not been shown to reach steady state for the gradient configurations. A gradient ratio is only meaningful together with the warmup count that produced it, and a settled protocol needs a per-configuration convergence check rather than a fixed warmup count.",
 ]
 
 [policy]
