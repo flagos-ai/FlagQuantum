@@ -10,7 +10,7 @@ from ...kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-from .kernel_dispatch import _require_cataloged_kernel
+from ..kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-004-A"
 
