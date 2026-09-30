@@ -1,5 +1,6 @@
 """Tests for native FlagQuantum MPS execution."""
 
+import math
 from collections import OrderedDict
 from unittest.mock import PropertyMock, patch
 
@@ -512,6 +513,109 @@ def test_mps_adaptive_bond_plan_uses_truncation_hotspots():
     )
     assert mps.summary()["adaptive_suggested_max_bond"] >= plan.current_max_bond
     assert not mps.truncation_error_within_budget(0.0)
+
+
+def _unmeasured_record(bond: int) -> MPSTruncationRecord:
+    """A record from the fixed-rank range QR route, whose weight is unknown."""
+
+    return MPSTruncationRecord(
+        bond=bond,
+        kept_rank=1,
+        original_rank=2,
+        discarded_weight=float("nan"),
+        max_bond=1,
+        cutoff=0.0,
+        source="fixed_rank_range_qr_unmeasured",
+    )
+
+
+def test_adaptive_bond_plan_separates_unmeasured_bonds_from_cold_bonds():
+    """A bond nothing was measured about must not read as a cold bond.
+
+    `nan` compares false against every threshold, so an unmeasured bond fell
+    through `error > threshold` and the plan named it cold, suggesting no growth
+    for the one bond the run had no evidence about. A measured bond at zero
+    discarded weight is still cold, so the two cases must stay distinguishable.
+    """
+
+    circuit = fq.Circuit(4)
+    circuit.h(0).cx(0, 1).cx(1, 2).cx(2, 3)
+    mps = fqmps.run_mps(circuit, max_bond=1)
+
+    mps.truncation_records = [
+        _unmeasured_record(0),
+        MPSTruncationRecord(
+            bond=1,
+            kept_rank=1,
+            original_rank=2,
+            discarded_weight=0.0,
+            max_bond=1,
+            cutoff=0.0,
+        ),
+    ]
+    mps.truncation_errors = [
+        record.discarded_weight for record in mps.truncation_records
+    ]
+
+    plan = mps.adaptive_bond_plan(global_error_budget=0.0, growth_factor=2.0)
+
+    assert 0 in plan.hot_bonds
+    assert 1 not in plan.hot_bonds
+    assert not plan.budget_satisfied
+    assert dict(plan.per_bond_suggestions)[0] > plan.current_max_bond
+
+    refinement = mps.local_refinement_plan(global_error_budget=0.0)
+    assert any(left <= 0 < right for left, right in refinement.windows)
+
+    assert plan.unmeasured_bonds == (0,)
+    assert refinement.unmeasured_bonds == (0,)
+    assert mps.summary()["adaptive_unmeasured_bonds"] == (0,)
+
+
+def test_run_mps_fixed_rank_qr_reports_unmeasured_bonds_as_hot(monkeypatch):
+    """The real producer of an unmeasured record drives the plan, not a stub."""
+
+    monkeypatch.setenv("FQ_MPS_FIXED_RANK_QR", "1")
+    # A long-range gate forces the two-site swaps that reach the fixed-rank
+    # range QR route, which is the only producer of an unmeasured record.
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 1).cx(1, 2).cx(2, 3).cx(3, 4).ry(2, 0.7).cx(0, 4)
+
+    mps = fqmps.run_mps(circuit, max_bond=2)
+
+    assert mps.fixed_rank_qr_regions > 0
+    unmeasured = tuple(
+        bond
+        for bond, error in mps.truncation_error_by_bond().items()
+        if not math.isfinite(error)
+    )
+    assert unmeasured
+
+    plan = mps.adaptive_bond_plan(global_error_budget=0.0, growth_factor=2.0)
+
+    assert set(unmeasured) <= set(plan.hot_bonds)
+    assert not plan.budget_satisfied
+    assert plan.suggested_max_bond > plan.current_max_bond
+    assert set(plan.unmeasured_bonds) == set(unmeasured)
+
+
+def test_run_mps_adaptive_grows_bond_for_unmeasured_bonds(monkeypatch):
+    """An unmeasured bond is a growth reason, not a silent stop."""
+
+    monkeypatch.setenv("FQ_MPS_FIXED_RANK_QR", "1")
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 1).cx(1, 2).cx(2, 3).cx(3, 4).ry(2, 0.7).cx(0, 4)
+
+    result = run_mps_adaptive(
+        circuit,
+        global_error_budget=0.0,
+        initial_max_bond=2,
+        growth_factor=2.0,
+    )
+
+    assert result.rerun
+    assert result.state.max_bond > result.initial_state.max_bond
+    assert result.initial_plan.unmeasured_bonds
 
 
 @pytest.mark.parametrize("growth_factor", (float("nan"), float("inf"), -float("inf")))
