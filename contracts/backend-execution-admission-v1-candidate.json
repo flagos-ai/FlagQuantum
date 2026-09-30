@@ -1,0 +1,141 @@
+{
+  "schema": "flagquantum.backend_execution_admission_contract",
+  "version": "1.0",
+  "status": "candidate",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md",
+  "owner": "runtime",
+  "public_api_change": false,
+  "stable_core_change": false,
+  "root_manifest_change": false,
+  "default_path_change": false,
+  "existing_authorities": {
+    "extension_discovery_and_negotiation": "flagquantum.ecosystem.extensions.ExtensionRegistry",
+    "extension_entry_point_group": "flagquantum.extensions",
+    "backend_capability_record": "flagquantum.runtime.backend_registry.BackendCapabilities",
+    "backend_capability_registry": "flagquantum.runtime.backend_registry.register_backend",
+    "planning": "flagquantum.runtime.planner.plan",
+    "single_execution_attempt": "flagquantum.runtime.plan_execution.execute_plan",
+    "distribution_semantics_vocabulary": "flagquantum.runtime.audit.vocabulary"
+  },
+  "admission": {
+    "crossing": "flagquantum.ecosystem.extensions.admission.admit_backend_extension",
+    "declaration_member": "backend_capabilities",
+    "registration_call": "flagquantum.runtime.backend_registry.register_backend",
+    "second_registry_created": false,
+    "negotiation_per_execution": false,
+    "version_check_per_execution": false,
+    "admission_trigger": "explicit_call_only",
+    "sdk_version_check": "flagquantum.ecosystem.extensions.ExtensionRegistry.with_extension",
+    "re_admission_of_a_registered_name": "rejected_before_registration",
+    "re_admission_note": "register_backend raises ValueError for a name that already has a record, so a second admission of the same name fails before it can displace the first route.",
+    "host_side_module": "flagquantum.ecosystem.extensions.admission",
+    "sdk_namespace_change": "none",
+    "sdk_namespace_change_note": "Admission is a host-side operation, so it is not added to flagquantum.ecosystem.extensions.__all__, which contracts/extension-protocol-v1-candidate.json pins as an exact set. That contract stays approved and unmodified; adding these names to it would be a separate namespace change with its own proposal."
+  },
+  "execution_route": {
+    "protocol": "flagquantum.runtime.backend_registry.BackendExecutor",
+    "call": "execute(program: CircuitIR, *, options: Mapping[str, Any]) -> Any",
+    "close": "close() -> None",
+    "options_are_plan_facts": [
+      "backend",
+      "device",
+      "mode",
+      "dtype",
+      "batch_size",
+      "world_size",
+      "target",
+      "require_gradients",
+      "allow_approximate",
+      "runtime_config",
+      "distribution_semantics"
+    ],
+    "result_contract": "The returned object is normalized by flagquantum.runtime.result.normalize_execution_result, so a backend may return an ExecutionResult, a tensor state, or an object exposing state, samples, or summary.",
+    "sdk_protocol_unchanged": "flagquantum.ecosystem.extensions.sdk.ExecutionBackendExtension keeps execute(program, parameters=None). Its runtime-checkable form only requires an execute attribute, so an admitted route satisfies it as well. The plan-fact contract is Runtime-owned and additive."
+  },
+  "declaration": {
+    "shape": "mapping",
+    "keys": "exactly the BackendCapabilities field names that a backend owns",
+    "host_owned_keys": [
+      "name",
+      "executor",
+      "accelerators"
+    ],
+    "unknown_key": "fail_closed",
+    "missing_key": "fail_closed",
+    "gradient_capability_key": "supports_autograd",
+    "gradient_capability_key_note": "The proposal lists a supports_gradients field. BackendCapabilities.supports_autograd already answers exactly that question, so no second field is added. Two fields for one fact would be a second source of truth."
+  },
+  "capability_record_additions": {
+    "distribution_semantics": {
+      "type": "str",
+      "default": "single_device_fast_path",
+      "serialized": true,
+      "meaning": "The classification of AGENTS.md Required Development Workflow that this backend actually produces."
+    },
+    "scalability_claim_allowed": {
+      "type": "bool",
+      "default": false,
+      "serialized": true,
+      "meaning": "True only when one logical workload is partitioned across ranks. Defaults to false, so a backend cannot inherit a scalability claim by omission."
+    },
+    "blockers": {
+      "type": "tuple_of_str",
+      "default": "empty",
+      "serialized": true,
+      "meaning": "Declared, deterministic reasons a capability is unavailable. Reported verbatim in the fail-closed planning error."
+    },
+    "executor": {
+      "type": "backend_executor_or_none",
+      "default": "none",
+      "serialized": false,
+      "meaning": "The single execution route Runtime may call for this backend. It is a live object, never part of a serialized capability summary."
+    }
+  },
+  "invariants": [
+    "distribution_semantics is a member of the union of the vocabulary sets in flagquantum.runtime.audit.vocabulary",
+    "scalability_claim_allowed is false unless distribution_semantics is sharded_across_ranks",
+    "executor is present on exactly the backends admitted from an extension, and absent on built-in records",
+    "capability_summary never exposes executor",
+    "refresh_backend_registry preserves admitted backends and still drops ad hoc declarations without an executor",
+    "a name that already has an admitted route is rejected before registration rather than displaced"
+  ],
+  "fail_closed": {
+    "unknown_backend_at_planning": "CapabilityError naming the backend",
+    "declared_but_incapable_backend_at_planning": "CapabilityError naming the backend mode, device, or precision that is unavailable",
+    "declared_blockers_at_planning": "CapabilityError carrying every declared blocker verbatim",
+    "admission_error_type": "flagquantum.ecosystem.extensions.admission.BackendAdmissionError",
+    "execution_time_fallback": false,
+    "backend_substitution": false,
+    "silent_cpu_path": false,
+    "subordinate_to": "ExecutionOptions.allow_backend_fallback, which stays opt-in and adapter-level"
+  },
+  "builtin_fast_path": {
+    "builtin_backends": [
+      "pytorch",
+      "torch"
+    ],
+    "extension_lookup_on_the_builtin_path": false,
+    "negotiation_on_the_builtin_path": false,
+    "version_check_on_the_builtin_path": false,
+    "registry_access_on_the_builtin_path": false
+  },
+  "replacement_proof": {
+    "consumer_left_unmodified": "fq.run",
+    "chain": [
+      "admit_backend_extension",
+      "fq.ExecutionOptions(backend=<extension name>)",
+      "fq.plan",
+      "execute_plan",
+      "ExecutionResult"
+    ],
+    "second_implementation_required": true,
+    "scenario_test_required": true
+  },
+  "non_goals": [
+    "A stable C ABI for backends. That is a separate contract and must not be built before a real backend demands it.",
+    "A second extension registry, entry-point group, or manifest format.",
+    "Per-execution negotiation, version checks, or backend discovery.",
+    "Numerical ownership. An admitted backend executes its own numerics; Runtime does not move them into Simulation.",
+    "Any change to the Stable Core exports, ExecutionOptions, ExecutionResult, or the serialized execution schemas."
+  ]
+}

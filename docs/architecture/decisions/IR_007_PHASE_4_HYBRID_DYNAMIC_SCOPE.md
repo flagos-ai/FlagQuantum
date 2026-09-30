@@ -144,17 +144,34 @@ no public schema changed, rollback requires no migration and no deprecation cycl
 A public promotion made under `API_CHANGE_PROPOSAL_062` follows the standard
 deprecation process instead.
 
-A related defect is recorded here rather than silently inherited. `team-ownership.toml`
-lists `flagquantum/core/ir/**` as a protected path, but the public IR is the single
-module `flagquantum/core/ir.py` and no `flagquantum/core/ir/` directory exists. A
-glob of that form matches paths inside a directory and not a sibling module, so
-the public IR module is presently constrained by the public API snapshot, the
-public API contracts, and Core team ownership rather than by the protected-path
-mechanism. Whether this is a real gap depends on the matcher in
-`tools/check_team_scope.py`, which was not present in the checkout used to prepare
-this ADR and could not be inspected. The pattern must be verified and corrected if
-necessary. This ADR does not depend on the outcome: the internal levels go to
-`flagquantum/_compiler/**` either way.
+## Protected-path question, verified
+
+An earlier draft of this ADR recorded a suspected defect: that
+`team-ownership.toml` protected `flagquantum/core/ir/**`, a glob that cannot match
+the sibling module `flagquantum/core/ir.py`, leaving the public IR module outside
+the protected-path mechanism. That suspicion has been checked against the tree and
+is **not** a defect. It is recorded here because the earlier draft asked for the
+pattern to be verified, and the verification is the finding.
+
+Three checks were run.
+
+1. The entry is `flagquantum/core/ir.py`, a literal repository-relative path, not
+   `flagquantum/core/ir/**`. The `**` form appears nowhere in `protected_paths`.
+2. `tools/check_team_scope.py` is present in this checkout and matches protected
+   paths with `fnmatch.fnmatchcase`. Under that matcher `flagquantum/core/ir.py`
+   matches the literal entry and `flagquantum/core/ir/**` would not have, which is
+   why the distinction matters. The literal form is the correct one.
+3. The mechanism is enforced, not merely declared. `check_team_scope.py --team core
+   --files flagquantum/core/ir.py` exits non-zero with `protected integration
+   surface; submit a contract/ADR change`.
+
+`protected_path_errors()` additionally fails `--validate` when a protected entry
+matches no file in the worktree, so the entry cannot silently become stale. The
+sibling glob rule remains a real trap for any future entry of that shape; it is
+recorded here as guidance rather than as an open defect.
+
+This ADR does not depend on the outcome in either direction: the internal levels go
+to `flagquantum/_compiler/**`, per § 19.13.
 
 ## Acceptance
 

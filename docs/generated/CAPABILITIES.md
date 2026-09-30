@@ -921,7 +921,7 @@ Build and qualify optional extensions through the Ecosystem extension protocol.
 - **Distribution semantics:** `extension_defined`
 - **Start:** [quick example](../../docs/guides/COMPILER_PLUGINS.md)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
-- **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported.
+- **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported. An execution backend is admitted in-process through the host-side admission module and executes FlagQuantum IR; there is no stable C ABI, no out-of-process backend, no per-execution discovery, and no numerical equivalence certification between an admitted backend and the built-in engine.
 
 
 ## Validated public performance claims

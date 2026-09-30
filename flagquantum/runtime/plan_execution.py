@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from datetime import datetime
 from functools import lru_cache
 from math import isqrt
+from typing import Any
 
 import torch
 
 from ..compute.cpu_target_capabilities import (
     probe_local_cpu_target_capabilities,
 )
+from ..core.ir import CircuitIR, MeasurementNode
 from ..core.runtime_config import RuntimeConfig
 from ..core.target_capabilities import (
     CapabilityRequirement,
@@ -24,7 +27,7 @@ from ..core.target_capabilities import (
     RequirementStrength,
     TargetIdentity,
 )
-from ..errors import ExecutionError, FlagQuantumError
+from ..errors import CapabilityError, ExecutionError, FlagQuantumError
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
@@ -172,6 +175,100 @@ def _require_local_cpu_capabilities(
         raise ExecutionError(f"local CPU capability preflight failed: {details}")
 
 
+def _admitted_executor(name: str) -> Any | None:
+    """Return the admitted execution route for ``name``.
+
+    Only a backend the framework does not own is looked up. A route can disappear
+    between planning and execution only if the extension that admitted it was
+    withdrawn, which is reported instead of falling back to a framework backend.
+    """
+
+    from .backend_registry import BUILTIN_BACKEND_NAMES, resolve_backend_executor
+
+    if name.lower() in BUILTIN_BACKEND_NAMES:
+        return None
+    executor = resolve_backend_executor(name)
+    if executor is None:
+        raise ExecutionError(
+            f"backend {name!r} lost its execution route between planning and "
+            "execution; re-admit the extension that owns it"
+        )
+    return executor
+
+
+def _execute_through_backend(
+    executor: Any,
+    execution_plan: ExecutionPlan,
+    execution_ir: CircuitIR,
+    *,
+    source_ir: CircuitIR,
+    requests: Sequence[MeasurementNode],
+    mode: str,
+    decision: Mapping[str, Any],
+    target: str,
+    batch_size: int,
+    world_size: int,
+    precision: str,
+    selected_config: RuntimeConfig,
+) -> ExecutionResult:
+    """Execute one plan through an extension-admitted backend."""
+
+    from .backend_registry import get_backend_capabilities
+    from .execution import _normalize_execution_output
+
+    declared = get_backend_capabilities(str(decision["backend"]))
+    if not declared.scalability_claim_allowed and world_size > 1:
+        raise CapabilityError(
+            f"backend {declared.name!r} declares distribution_semantics="
+            f"{declared.distribution_semantics!r} and cannot serve a "
+            f"world_size={world_size} request"
+        )
+    try:
+        output = executor.execute(
+            execution_ir,
+            options={
+                "backend": declared.name,
+                "device": str(decision["device"]),
+                "mode": mode,
+                "dtype": precision,
+                "batch_size": batch_size,
+                "world_size": world_size,
+                "target": target,
+                "require_gradients": bool(decision["require_gradients"]),
+                "allow_approximate": bool(decision["allow_approximate"]),
+                "runtime_config": selected_config,
+                "distribution_semantics": declared.distribution_semantics,
+            },
+        )
+    except FlagQuantumError:
+        raise
+    except Exception as error:
+        raise ExecutionError(
+            f"backend {declared.name!r} execution failed: "
+            f"{type(error).__name__}: {error}"
+        ) from error
+    result = _normalize_execution_output(
+        output,
+        execution_plan,
+        source_ir=source_ir,
+        requests=requests,
+        mode=mode,
+        noise_model=None,
+        stamp_local_engine=False,
+    )
+    return replace(
+        result,
+        runtime={
+            **dict(result.runtime),
+            "backend": declared.name,
+            "execution_path": "admitted_extension_backend",
+            "simulation_engine": declared.tensor_backend,
+            "distribution_semantics": declared.distribution_semantics,
+            "scalability_claim_allowed": declared.scalability_claim_allowed,
+        },
+    )
+
+
 def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     """Execute one verified plan without invoking planner or compiler again."""
 
@@ -237,6 +334,27 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         real_dtype="float64" if precision == "complex128" else "float32",
         jax_enable_x64=precision == "complex128",
     )
+    executor = _admitted_executor(str(decision["backend"]))
+    if executor is not None:
+        if noise_model is not None:
+            raise CapabilityError(
+                f"backend {decision['backend']!r} has no noise contract; execute "
+                "the noisy plan with a backend that declares one"
+            )
+        return _execute_through_backend(
+            executor,
+            execution_plan,
+            execution_ir,
+            source_ir=source_ir,
+            requests=requests,
+            mode=mode,
+            decision=decision,
+            target=targets[str(decision["target"])],
+            batch_size=batch_size,
+            world_size=world_size,
+            precision=precision,
+            selected_config=selected_config,
+        )
     try:
         noisy_options: dict[str, object] = {}
         if mode == "noisy_mps":

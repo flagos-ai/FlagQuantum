@@ -1129,13 +1129,15 @@ def _normalize_execution_output(
     requests: Sequence[MeasurementNode],
     mode: str,
     noise_model: NoiseModel | None = None,
+    stamp_local_engine: bool = True,
 ) -> ExecutionResult:
     from .measurements import execute_measurements
     from .result import normalize_execution_result
 
     result = normalize_execution_result(output, mode=mode, plan=execution_plan)
     if (
-        mode == "statevector"
+        stamp_local_engine
+        and mode == "statevector"
         and execution_plan.world_size == 1
         and isinstance(result.state, torch.Tensor)
     ):

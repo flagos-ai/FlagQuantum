@@ -74,9 +74,15 @@ semantics honestly, so that a backend cannot present itself as more than it is:
 | --- | --- |
 | `distribution_semantics` | one of the classifications in `AGENTS.md` § Required Development Workflow |
 | `scalability_claim_allowed` | false unless one logical workload is partitioned across ranks |
-| `supports_gradients` | whether backward is available through this backend |
-| `artifact_formats` | accepted `ExecutableArtifact` formats |
 | `blockers` | declared, deterministic reasons a capability is unavailable |
+| `executor` | the live execution route, never serialized |
+
+The gradient question is already answered by the existing `supports_autograd`
+field, which the planner now consults when a plan requires gradients. No
+`supports_gradients` field is added: two fields for one fact would be a second
+source of truth. Accepted artifact formats are likewise not declared, because
+the extension protocol already fixes the program form as FlagQuantum IR at the
+`ExecutionBackendExtension.execute` boundary.
 
 A record that declares sharded distribution without the corresponding evidence
 requirement must not be usable to promote a scalability claim.

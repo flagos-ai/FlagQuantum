@@ -11,9 +11,9 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from contextvars import ContextVar
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 import torch
 
@@ -22,7 +22,37 @@ from ..compute import (
     get_platform_runtime,
     resolve_platform_device,
 )
+from ..core.ir import CircuitIR
 from ..core.runtime_config import get_runtime_config
+from .audit.vocabulary import (
+    INCOMPLETE_DISTRIBUTION_SEMANTICS,
+    REPLICATED_DISTRIBUTION_SEMANTICS,
+    SCALABLE_DISTRIBUTION_SEMANTICS,
+    SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
+)
+
+# Every classification AGENTS.md permits a backend to declare. A backend that
+# invents a classification would silently escape the audit vocabulary, so the
+# capability record refuses it at construction.
+DISTRIBUTION_SEMANTICS = frozenset(
+    SINGLE_DEVICE_DISTRIBUTION_SEMANTICS
+    | SCALABLE_DISTRIBUTION_SEMANTICS
+    | REPLICATED_DISTRIBUTION_SEMANTICS
+    | INCOMPLETE_DISTRIBUTION_SEMANTICS
+)
+
+BUILTIN_BACKEND_NAMES = frozenset({"pytorch", "torch"})
+
+
+@runtime_checkable
+class BackendExecutor(Protocol):
+    """One execution route for a backend whose numerics Runtime does not own."""
+
+    def execute(self, program: CircuitIR, *, options: Mapping[str, Any]) -> Any:
+        """Run one program and return a value normalize_execution_result accepts."""
+
+    def close(self) -> None:
+        """Release whatever the backend opened when it was admitted."""
 
 
 @dataclass(frozen=True)
@@ -52,6 +82,56 @@ class BackendCapabilities:
     supports_mps: bool
     preferred_device: str = "cpu"
     accelerators: tuple[AcceleratorInfo, ...] = ()
+    # Facts a backend must declare rather than inherit. ``distribution_semantics``
+    # defaults to the classification a fast local path actually produces, and
+    # ``scalability_claim_allowed`` defaults to false so that no backend can
+    # acquire a scalability claim by omission.
+    distribution_semantics: str = "single_device_fast_path"
+    scalability_claim_allowed: bool = False
+    blockers: tuple[str, ...] = ()
+    # A live route, never serialized. It is what makes the backend executable by
+    # Runtime; a record without one is a declaration, not an admission.
+    executor: BackendExecutor | None = field(
+        default=None, compare=False, repr=False, kw_only=True
+    )
+
+    def __post_init__(self) -> None:
+        if self.distribution_semantics not in DISTRIBUTION_SEMANTICS:
+            raise ValueError(
+                f"unknown distribution semantics {self.distribution_semantics!r}; "
+                "declare one of: " + ", ".join(sorted(DISTRIBUTION_SEMANTICS))
+            )
+        if (
+            self.scalability_claim_allowed
+            and self.distribution_semantics not in SCALABLE_DISTRIBUTION_SEMANTICS
+        ):
+            raise ValueError(
+                "scalability_claim_allowed requires "
+                "distribution_semantics='sharded_across_ranks'"
+            )
+        if self.executor is not None and self.name.lower() in BUILTIN_BACKEND_NAMES:
+            raise ValueError(
+                f"backend {self.name!r} is built in and cannot be replaced by an "
+                "executor"
+            )
+
+    def admission_blockers(
+        self,
+        *,
+        mode: str = "auto",
+        world_size: int = 1,
+        require_gradients: bool = False,
+    ) -> tuple[str, ...]:
+        """Return every reason this backend cannot serve one planned request."""
+
+        reasons = list(self.blockers)
+        if not self.supports_mode(mode):
+            reasons.append(f"mode {mode!r} is not supported")
+        if int(world_size) > 1 and not self.supports_distributed:
+            reasons.append("distributed execution is not supported")
+        if require_gradients and not self.supports_autograd:
+            reasons.append("gradients are required but autograd is not supported")
+        return tuple(reasons)
 
     def supports_mode(self, mode: str) -> bool:
         normalized = mode.lower()
@@ -139,11 +219,19 @@ def _build_pytorch_capabilities() -> BackendCapabilities:
 
 
 def refresh_backend_registry() -> dict[str, BackendCapabilities]:
-    """Refresh the built-in backend registry from the current runtime."""
+    """Refresh the built-in backend records.
+
+    An admitted execution route is preserved: refreshing the environment must not
+    silently unregister a backend whose numerics this process does not own, or a
+    plan that was valid at planning time would fail at execution time.
+    """
 
     pytorch = _build_pytorch_capabilities()
-    registry = MappingProxyType({"pytorch": pytorch, "torch": pytorch})
-    _BACKENDS.set(registry)
+    registry: dict[str, BackendCapabilities] = {"pytorch": pytorch, "torch": pytorch}
+    for name, capabilities in _BACKENDS.get().items():
+        if capabilities.executor is not None:
+            registry[name] = capabilities
+    _BACKENDS.set(MappingProxyType(registry))
     return dict(registry)
 
 
@@ -158,6 +246,22 @@ def register_backend(
         updated[alias.lower()] = capabilities
     _BACKENDS.set(MappingProxyType(updated))
     return capabilities
+
+
+def unregister_backend(name: str) -> bool:
+    """Withdraw one backend record. Returns whether a record was removed."""
+
+    if name.lower() in BUILTIN_BACKEND_NAMES:
+        raise ValueError(f"backend {name!r} is built in and cannot be withdrawn")
+    updated = dict(_BACKENDS.get())
+    removed = updated.pop(name.lower(), None) is not None
+    for alias, capabilities in tuple(updated.items()):
+        if capabilities.name.lower() == name.lower():
+            del updated[alias]
+            removed = True
+    if removed:
+        _BACKENDS.set(MappingProxyType(updated))
+    return removed
 
 
 def list_backends(*, refresh: bool = False) -> dict[str, BackendCapabilities]:
@@ -299,6 +403,22 @@ def with_accelerators(
     )
 
 
+def resolve_backend_executor(name: str) -> BackendExecutor | None:
+    """Return the admitted execution route for ``name``, if one exists.
+
+    A record that is merely declared -- registered without an executor -- is not
+    an execution route, so this returns ``None`` for it and the caller fails
+    closed instead of substituting a different backend.
+    """
+
+    registry = list_backends()
+    key = name.lower()
+    if key in BUILTIN_BACKEND_NAMES:
+        return None
+    record = registry.get(key)
+    return None if record is None else record.executor
+
+
 def capability_summary(
     name: str | None = None, *, refresh: bool = False
 ) -> Mapping[str, Any]:
@@ -316,6 +436,9 @@ def capability_summary(
         "supports_density_matrix": capabilities.supports_density_matrix,
         "supports_mps": capabilities.supports_mps,
         "preferred_device": capabilities.preferred_device,
+        "distribution_semantics": capabilities.distribution_semantics,
+        "scalability_claim_allowed": capabilities.scalability_claim_allowed,
+        "blockers": capabilities.blockers,
         "accelerators": tuple(
             {
                 "kind": item.kind,
@@ -334,8 +457,11 @@ refresh_backend_registry()
 
 
 __all__ = [
+    "BUILTIN_BACKEND_NAMES",
+    "DISTRIBUTION_SEMANTICS",
     "AcceleratorInfo",
     "BackendCapabilities",
+    "BackendExecutor",
     "backend_execution_options",
     "capability_summary",
     "detect_accelerators",
@@ -344,8 +470,10 @@ __all__ = [
     "list_backends",
     "refresh_backend_registry",
     "register_backend",
+    "resolve_backend_executor",
     "resolve_device",
     "resolve_dtype",
     "set_active_backend",
+    "unregister_backend",
     "with_accelerators",
 ]

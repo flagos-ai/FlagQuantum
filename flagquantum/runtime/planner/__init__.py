@@ -587,6 +587,53 @@ def plan_advanced(
     )
 
 
+def _require_executable_backend(
+    name: str,
+    *,
+    mode: str,
+    world_size: int,
+    require_gradients: bool,
+) -> None:
+    """Fail closed unless the requested backend can actually execute the plan.
+
+    A backend the framework does not own is executable only after an extension
+    admitted it into the capability registry. A registered but unadmitted record
+    is a declaration, so it is rejected here rather than at execution time.
+    """
+
+    from ..backend_registry import (
+        BUILTIN_BACKEND_NAMES,
+        get_backend_capabilities,
+        resolve_backend_executor,
+    )
+
+    key = name.lower()
+    if key in BUILTIN_BACKEND_NAMES:
+        return
+    try:
+        declared = get_backend_capabilities(name)
+    except KeyError as exc:
+        raise CapabilityError(
+            f"stable fq.run backend {name!r} is not available; admit it from an "
+            "extension with flagquantum.ecosystem.extensions.admit_backend_extension, "
+            "or use fq.Module for JAX kernels or the owning Runtime or Simulation "
+            "expert interface for backend-native execution"
+        ) from exc
+    if resolve_backend_executor(name) is None:
+        raise CapabilityError(
+            f"stable fq.run backend {declared.name!r} is declared but has no "
+            "execution route; it was not admitted by an extension"
+        )
+    blockers = declared.admission_blockers(
+        mode=mode, world_size=world_size, require_gradients=require_gradients
+    )
+    if blockers:
+        raise CapabilityError(
+            f"stable fq.run backend {declared.name!r} cannot serve this plan: "
+            + "; ".join(blockers)
+        )
+
+
 def _validated_plan_program(
     program: Circuit | CircuitIR,
     *,
@@ -663,12 +710,16 @@ def plan(
         program_constraints=circuit_execution_constraints(program),
         runtime_config=runtime_config,
     )
-    if resolved.backend not in {"auto", "pytorch"}:
-        raise CapabilityError(
-            f"stable fq.run backend {resolved.backend!r} is not available; "
-            "use fq.Module for JAX kernels or the owning Runtime or Simulation "
-            "expert interface for backend-native execution"
-        )
+    if resolved.backend == "auto":
+        backend_name = "pytorch"
+    else:
+        backend_name = resolved.backend
+    _require_executable_backend(
+        backend_name,
+        mode=resolved.mode,
+        world_size=resolve_distributed_backend_policy().effective_world_size,
+        require_gradients=bool(resolved.require_gradients),
+    )
     if noise_model is not None and resolved.mode not in {"auto", "density_matrix"}:
         raise ValidationError(
             "stable noisy execution supports mode='auto' or mode='density_matrix'"
