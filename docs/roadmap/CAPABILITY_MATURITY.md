@@ -26,6 +26,20 @@ its exact scope and metadata boundary. The documentation generator emits the
 same validated values into the README, capability catalog, and Known
 Limitations; edits inside generated regions are rejected by the CI check.
 
+Agreeing with the artifact is not enough for the recorded code version, because
+both values are written by the same check-in: a revision that names no commit
+satisfies that comparison exactly like one a reader can check out. Each claim
+therefore also declares `code_version_origin`. `repository_history` requires the
+revision to resolve against this repository, which is what makes the evidence
+reproducible and is the expected value for a run recorded from a merged
+integrator commit. `producing_host_history` states that the run happened in a
+history this repository does not contain; the pin is then published with that
+disclosure rather than presented as a revision to check out. The check fails
+closed in a shallow clone, which cannot separate a revision it never fetched from
+one the repository never contained, so repository-history pins are resolved by
+the full-history `quality` job. `tools/evidence_provenance.py` owns both values
+and applies the same rule to the checked-in evidence under `artifacts/`.
+
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its
 returned loss and `.grad` are explicitly FP32 delivery boundaries. A separate

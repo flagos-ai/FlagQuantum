@@ -1,3 +1,6 @@
+import hashlib
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -8,18 +11,45 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 from tools.check_capability_maturity import (
+    CODE_VERSION_ORIGIN_FIELD,
     EXPECTED_LEVELS,
     REQUIRED_USER_FIELDS,
     aggregate_claim_value,
     claim_values,
+    code_version_errors,
     maturity_errors,
+)
+from tools.evidence_provenance import (
+    ORIGIN_PRODUCING_HOST_HISTORY,
+    ORIGIN_REPOSITORY_HISTORY,
+    ProvenanceUnavailableError,
+    revision_resolves,
 )
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
+#: A full 40-character revision. It is shaped like a commit and names none.
+FABRICATED_REVISION = "0" * 40
+
+
+def _require_repository_history() -> None:
+    """Skip when this checkout cannot resolve a revision against its history.
+
+    Performance claims pin the revision their artifact was produced from, and
+    resolving that pin needs the commits themselves. A depth-1 clone cannot tell
+    a revision it never fetched from one the repository never contained, so the
+    checked-in matrix is validated in the full-history quality job instead.
+    """
+
+    try:
+        revision_resolves(FABRICATED_REVISION, ROOT)
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the capability matrix revision pins need full history: {error}")
+
 
 def test_repository_capability_maturity_matrix_is_valid():
+    _require_repository_history()
     data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
     assert maturity_errors(data, ROOT) == ()
 
@@ -50,6 +80,7 @@ def test_every_capability_has_user_discovery_metadata():
 
 
 def test_internal_experiments_may_have_no_public_api() -> None:
+    _require_repository_history()
     data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
     capability = data["capabilities"]["split_real_imag_statevector_p5_autograd_bridge"]
     assert capability["level"] == "experimental"
@@ -115,6 +146,229 @@ def test_performance_claim_fails_closed_when_artifact_or_environment_is_missing(
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     claim["environment"] = []
     assert any("missing environment" in error for error in maturity_errors(data, ROOT))
+
+
+def _git(root: Path, *arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _minimal_matrix(root: Path, code_version: str) -> dict:
+    """Build the smallest matrix that reaches the performance-claim checks.
+
+    ``root`` is also the repository the pin is resolved against, so the caller
+    decides whether it contains ``code_version``.
+    """
+
+    artifact = Path("benchmarks/results/local/claim.json")
+    payload = {"commit": code_version, "value": 1}
+    written = root / artifact
+    written.parent.mkdir(parents=True, exist_ok=True)
+    written.write_text(json.dumps(payload), encoding="utf-8")
+    for name in ("quick_start.md", "documentation.md", "focused_tests.py"):
+        (root / name).write_text("", encoding="utf-8")
+    return {
+        "schema": "flagquantum_capability_maturity_v2",
+        "levels": {
+            level: {"rank": rank, "required_evidence": []}
+            for rank, level in enumerate(EXPECTED_LEVELS)
+        },
+        "capabilities": {
+            "sharded_mps_training": {
+                "title": "Sharded MPS training",
+                "summary": "Train a sharded MPS.",
+                "category": "simulation_and_training",
+                "user_goals": ["Train a sharded MPS"],
+                "public_apis": [],
+                "runtime_modes": ["single_process"],
+                "hardware": ["cpu"],
+                "gradient_support": ["not_applicable"],
+                "distribution_semantics": ["sharded_across_ranks"],
+                "quick_start": "quick_start.md",
+                "documentation": "documentation.md",
+                "level": "development_evidence",
+                "owner": "simulation",
+                "limitations": "Development evidence only.",
+                "focused_tests": "focused_tests.py",
+                "development_artifact": "documentation.md",
+                "performance_claims": [
+                    {
+                        "id": "claim",
+                        "title": "Recorded claim",
+                        "artifact": str(artifact),
+                        "artifact_sha256": hashlib.sha256(
+                            written.read_bytes()
+                        ).hexdigest(),
+                        "code_version": code_version,
+                        "maturity": "development_evidence",
+                        "scope": "The recorded workload only.",
+                        "environment_limitations": "Development host.",
+                        "evidence_checks": {"value": 1},
+                        "metrics": [
+                            {
+                                "label": "Value",
+                                "selector": "value",
+                                "format": "integer",
+                            }
+                        ],
+                        "environment": [
+                            {
+                                "label": "Value",
+                                "selector": "value",
+                                "format": "integer",
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+    }
+
+
+def _commit_in(root: Path, name: str) -> str:
+    """Create one commit in ``root`` and return its revision."""
+
+    (root / name).write_text(name, encoding="utf-8")
+    _git(root, "add", name)
+    _git(
+        root,
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-m",
+        name,
+    )
+    return _git(root, "rev-parse", "HEAD")
+
+
+def test_performance_claim_code_version_must_resolve_in_repository_history(tmp_path):
+    """A faithful transcription of a revision that names no commit is not proof.
+
+    The matrix and the artifact both carry the pin, so agreeing with each other
+    proves only that the value was copied. Resolution is what a reader needs:
+    this repository contains the revision, or the claim says where it came from.
+    """
+
+    _git(tmp_path, "init")
+    data = _minimal_matrix(tmp_path, FABRICATED_REVISION)
+    errors = maturity_errors(data, tmp_path)
+    assert errors == (
+        f"sharded_mps_training/claim code_version {FABRICATED_REVISION} names no "
+        f"commit in this repository; record {CODE_VERSION_ORIGIN_FIELD} as "
+        f'"{ORIGIN_PRODUCING_HOST_HISTORY}" if the pin comes from the producing '
+        "host's history",
+    )
+
+    claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
+    claim[CODE_VERSION_ORIGIN_FIELD] = ORIGIN_PRODUCING_HOST_HISTORY
+    assert maturity_errors(data, tmp_path) == ()
+
+    claim[CODE_VERSION_ORIGIN_FIELD] = "somewhere_else"
+    assert maturity_errors(data, tmp_path) == (
+        f"sharded_mps_training/claim {CODE_VERSION_ORIGIN_FIELD} 'somewhere_else' is "
+        "not supported; use one of 'repository_history', 'producing_host_history'",
+    )
+
+
+def test_performance_claim_code_version_of_a_real_revision_needs_no_disclosure(
+    tmp_path,
+):
+    """A pin the repository contains is traceable on its own."""
+
+    _git(tmp_path, "init")
+    head = _commit_in(tmp_path, "recorded.txt")
+    data = _minimal_matrix(tmp_path, head)
+    assert maturity_errors(data, tmp_path) == ()
+    assert (
+        data["capabilities"]["sharded_mps_training"]["performance_claims"][0][
+            "code_version"
+        ]
+        == head
+    )
+
+
+def test_repository_performance_claims_declare_their_code_version_origin():
+    """Every claim either resolves here or says why it cannot."""
+
+    _require_repository_history()
+    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    for capability in data["capabilities"].values():
+        for claim in capability.get("performance_claims", ()):
+            assert (
+                code_version_errors(
+                    claim["code_version"],
+                    claim.get(CODE_VERSION_ORIGIN_FIELD, ORIGIN_REPOSITORY_HISTORY),
+                    label=claim["id"],
+                    root=ROOT,
+                )
+                == ()
+            )
+
+
+def test_performance_claim_code_version_must_be_a_full_revision():
+    assert code_version_errors("9d56a6e", ORIGIN_REPOSITORY_HISTORY, label="claim") == (
+        "claim requires a full hexadecimal code_version, not '9d56a6e'",
+    )
+
+
+def test_performance_claim_code_version_fails_closed_when_history_is_unavailable(
+    tmp_path,
+):
+    """An unusable checkout is not evidence that the pin is bad."""
+
+    errors = code_version_errors(
+        FABRICATED_REVISION,
+        ORIGIN_REPOSITORY_HISTORY,
+        label="claim",
+        root=tmp_path,
+    )
+    assert len(errors) == 1
+    assert "could not be checked" in errors[0]
+    assert "names no commit" not in errors[0]
+
+
+def test_performance_claim_code_version_fails_closed_in_a_shallow_clone(tmp_path):
+    """A shallow clone cannot tell a missing pin from one it never fetched."""
+
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    _git(origin, "init")
+    _commit_in(origin, "first.txt")
+    _commit_in(origin, "second.txt")
+
+    shallow = tmp_path / "shallow"
+    subprocess.run(
+        ["git", "clone", "--depth", "1", origin.as_uri(), str(shallow)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    errors = code_version_errors(
+        FABRICATED_REVISION,
+        ORIGIN_REPOSITORY_HISTORY,
+        label="claim",
+        root=shallow,
+    )
+    assert len(errors) == 1
+    assert "shallow clone" in errors[0]
+
+
+def test_performance_claim_code_version_origin_is_case_sensitive_and_validated():
+    errors = code_version_errors(
+        FABRICATED_REVISION,
+        ORIGIN_PRODUCING_HOST_HISTORY.upper(),
+        label="claim",
+        root=ROOT,
+    )
+    assert len(errors) == 1
+    assert "is not supported" in errors[0]
 
 
 def test_claim_selector_aggregates_artifact_values():

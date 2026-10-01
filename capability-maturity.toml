@@ -292,6 +292,14 @@ title = "Sharded MPS exact-workload capacity"
 artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
 artifact_sha256 = "df8c19b74cc173799e3894025fb8e72de72a786d4542a9aa5e67687298f482f5"
 code_version = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
+# The 16xA800 pair that produced this artifact ran from a history this
+# repository does not contain: the pin names a local commit on the producing
+# host, and neither this object database nor the GitHub repository holds it. The
+# value is kept rather than replaced, because substituting a revision this
+# repository does contain would fabricate provenance the run never had.
+# Declaring the origin is how the checked-in evidence under `artifacts/` states
+# the same thing.
+code_version_origin = "producing_host_history"
 maturity = "development_evidence"
 scope = "One batch-one, complex64, χ768 MPS training step for the checked-in all-rank and all-boundary workload. This is not arbitrary statevector capacity, fixed-plan strong scaling, or release evidence."
 environment_limitations = "The artifact records rank count, per-rank device memory, topology fingerprint, and CUDA allocator policy. It does not record the exact GPU model or Python, PyTorch, CUDA, NCCL, driver, host, and operating-system versions, so the claim is restricted to the recorded environment fields."

@@ -159,6 +159,19 @@ jobs:
         run: python tools/correctness_certification.py --check
       - name: Verify capability maturity claims
         run: python tools/check_capability_maturity.py
+      # The two modules below resolve each performance claim's recorded
+      # `code_version` against this repository's history. A depth-1 clone cannot
+      # separate a revision it never fetched from one the repository never
+      # contained, so those tests skip in every other lane rather than read that
+      # silence as a pass -- which leaves this job, the only one that fetches
+      # full history, as the only place they can reach a verdict. Running them
+      # here is what keeps the pin check live instead of nominally present.
+      - name: Verify performance claim provenance where history resolves
+        run: >-
+          python -m pytest
+          tests/unit/test_capability_maturity.py
+          tests/unit/test_docs_source_of_truth.py
+          -q
       - name: Verify checked-in FlagOS reference evidence
         run: >-
           python tools/validate_flagos_reference_evidence.py
