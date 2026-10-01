@@ -12,7 +12,10 @@ from typing import Any
 import torch
 from torch.profiler import record_function
 
-from .environment_dispatch import _try_apply_cataloged_mps_environment
+from .environment_dispatch import (
+    _try_apply_cataloged_mps_environment,
+    _try_apply_cataloged_mps_environment_channels,
+)
 from .one_site_dispatch import _try_apply_cataloged_mps_one_site_bucket
 
 
@@ -23,6 +26,7 @@ class SiteKernelStats:
     rxx_bucket_calls: int = 0
     transfer_calls: int = 0
     triton_environment_transfer_calls: int = 0
+    triton_environment_channels_calls: int = 0
     compiled_calls: int = 0
     compile_seconds: float = 0.0
     dynamo_graphs: int = 0
@@ -526,6 +530,15 @@ def environment_transfer_channels(
     """Propagate many observable channels through one site in one launch."""
 
     _STATS.transfer_calls += 1
+    cataloged = _try_apply_cataloged_mps_environment_channels(channels, tensor)
+    if cataloged is not None:
+        _STATS.triton_environment_channels_calls += 1
+        _log_event(
+            "catalog_route",
+            kind="transfer_observable_channels",
+            provider="triton",
+        )
+        return cataloged
     with record_function("flagquantum::mps::environment_transfer_channels"):
         return _run(
             _transfer_channels_complex,
