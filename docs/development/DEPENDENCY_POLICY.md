@@ -43,6 +43,19 @@ lower bounds are exercised by a dedicated compatibility lane and current local
 acceptance exercises the upper supported environment. Ranges describe tested
 support, not aspirational compatibility.
 
+The `dev` extra is bounded like the runtime extras, because it is the toolchain
+this repository installs to check itself: an unbounded entry lets an upstream
+release change that toolchain and break `main` with no commit and no diff.
+`python tools/check_dependency_policy.py` rejects an unbounded development
+requirement, so the bound is a checked property rather than a convention. The
+static gates record their oldest and newest verified release in `[tested]`, and
+the `dependency-bounds` lane installs exactly that floor and re-runs `ruff`,
+`black`, and `mypy` on it. A declared floor that cannot pass its own check
+therefore fails CI instead of being trusted: `ruff` before 0.15.0 flags the
+`_fields_` of a `ctypes.Structure` as a mutable class attribute, `black` before
+24.1.0 reformats 73 files, and mypy before 2.0.0 reports errors the current
+release does not.
+
 Dependency updates are reviewed monthly. Security updates are expedited.
 Lower-bound changes require a clean-install test; upper-bound or major-version
 changes require a dedicated compatibility pull request, runtime correctness and
