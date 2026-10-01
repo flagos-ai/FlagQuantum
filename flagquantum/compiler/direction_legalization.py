@@ -16,6 +16,47 @@ class DirectionLegalizationError(CompilationError):
     """A native circuit cannot satisfy an ordered coupling graph."""
 
 
+# Operand semantics of native two-wire instructions on an ordered physical
+# graph. ``False`` marks a control/target opcode whose physical direction must
+# match the declared edge; ``True`` marks an opcode whose unitary is invariant
+# under exchanging its two operands, so either direction of a physical link
+# satisfies it. The table is total over the two-wire opcodes of
+# ``flagquantum.core.operator_schema.OPERATOR_SCHEMAS``; an unlisted opcode is
+# refused instead of being guessed, and a test fails when a new two-wire opcode
+# is added to Core without an entry here.
+_TWO_WIRE_OPERAND_SYMMETRY: dict[str, bool] = {
+    "cx": False,
+    "cy": False,
+    "crx": False,
+    "cry": False,
+    "crz": False,
+    "cz": True,
+    "cphase": True,
+    "rxx": True,
+    "ryy": True,
+    "rzz": True,
+    "swap": True,
+}
+
+
+def _operand_symmetric(instruction: Instruction) -> bool:
+    """Report whether an instruction's two operands may be exchanged.
+
+    Raises:
+        DirectionLegalizationError: The instruction is a native two-wire
+            opcode with no recorded operand semantics, so no direction rule
+            can be applied to it.
+    """
+
+    symmetric = _TWO_WIRE_OPERAND_SYMMETRY.get(instruction.name)
+    if symmetric is None:
+        raise DirectionLegalizationError(
+            "directed topology does not define operand semantics for two-wire "
+            f"instruction {instruction.name!r}"
+        )
+    return symmetric
+
+
 @dataclass(frozen=True)
 class DirectionLegalizationResult:
     """Direction-legal CircuitIR and deterministic rewrite evidence."""
@@ -57,15 +98,16 @@ def _validate_direction_legal_program(
             )
         if len(instruction.wires) != 2:
             continue
-        if instruction.name == "cx" and not coupling_map.has_edge(*instruction.wires):
+        if _operand_symmetric(instruction):
+            if not coupling_map.has_weak_edge(*instruction.wires):
+                raise DirectionLegalizationError(
+                    f"direction-legal {instruction.name.upper()} instruction "
+                    f"{index} violates topology"
+                )
+        elif not coupling_map.has_edge(*instruction.wires):
             raise DirectionLegalizationError(
-                f"direction-legal CX instruction {index} violates ordered topology"
-            )
-        if instruction.name == "swap" and not coupling_map.has_weak_edge(
-            *instruction.wires
-        ):
-            raise DirectionLegalizationError(
-                f"direction-legal SWAP instruction {index} violates topology"
+                f"direction-legal {instruction.name.upper()} instruction "
+                f"{index} violates ordered topology"
             )
 
 
@@ -121,12 +163,21 @@ def legalize_directed_cx(
                 rewrite="none",
             )
             continue
-        if instruction.name == "swap":
-            if not coupling_map.has_weak_edge(*instruction.wires):
+        control, target = instruction.wires
+        if _operand_symmetric(instruction):
+            if not coupling_map.has_weak_edge(control, target):
                 raise DirectionLegalizationError(
-                    f"directed topology has no physical link for SWAP "
-                    f"{instruction.wires[0]}<->{instruction.wires[1]}"
+                    f"directed topology has no physical link for "
+                    f"{instruction.name.upper()} {control}<->{target}"
                 )
+            emit(
+                instruction,
+                native_index=native_index,
+                ordinal=0,
+                rewrite="none",
+            )
+            continue
+        if coupling_map.has_edge(control, target):
             emit(
                 instruction,
                 native_index=native_index,
@@ -136,18 +187,10 @@ def legalize_directed_cx(
             continue
         if instruction.name != "cx":
             raise DirectionLegalizationError(
-                f"directed topology does not define semantics for two-wire "
-                f"instruction {instruction.name!r}"
+                f"ordered two-wire instruction {instruction.name!r} requires "
+                f"the physical edge {control}->{target}; only CX operand "
+                "reversal is implemented"
             )
-        control, target = instruction.wires
-        if coupling_map.has_edge(control, target):
-            emit(
-                instruction,
-                native_index=native_index,
-                ordinal=0,
-                rewrite="none",
-            )
-            continue
         if not coupling_map.has_edge(target, control):
             raise DirectionLegalizationError(
                 f"directed CX edge {control}->{target} is unavailable"
