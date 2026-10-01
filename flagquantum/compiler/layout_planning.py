@@ -6,15 +6,15 @@ does not join. This module is the first half. It answers "where should this
 program start" before any SWAP is considered.
 
 A placement here is ``logical_to_physical[logical]``, one physical slot per
-logical wire, with distinct slots drawn from ``range(coupling_map.n_wires)``. It
-is deliberately *not* a :class:`~flagquantum.compiler.layout.Layout`: a device
-wider than the program leaves slots idle, and ``Layout`` requires a complete
-permutation of the program's own wires.
+logical wire, with distinct slots drawn from ``range(coupling_map.n_wires)``.
+These functions return it as a bare tuple, which is the argument
+``route_to_directed_topology`` takes and the entry the routed program later
+reports through :func:`~flagquantum.compiler.layout.final_layout`.
 
-The distinction carries the whole contract. Every routed program in this package
-restores its logical output order, so a placement that starts off the identity
-survives that restore only on a
-:class:`~flagquantum.compiler.directed_topology.DirectedCouplingMap`, whose
+The distinction from :class:`~flagquantum.compiler.layout.Layout` carries the
+whole contract. Every routed program in this package restores its logical output
+order, so a placement that starts off the identity survives that restore only on
+a :class:`~flagquantum.compiler.directed_topology.DirectedCouplingMap`, whose
 physical workspace owns the idle slots and is cleaned by the inverse routing
 SWAPs. A plain :class:`~flagquantum.compiler.routing.CouplingMap` refuses
 ``initial_layout`` outright, because routing one there may not reach through a

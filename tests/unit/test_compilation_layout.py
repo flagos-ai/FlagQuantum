@@ -12,9 +12,27 @@ from flagquantum.compiler import (
     remove_layout_restore,
     route_to_topology,
 )
+from flagquantum.compiler.directed_topology import (
+    DirectedCouplingMap,
+    route_to_directed_topology,
+)
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
+from flagquantum.deployment.routing_evidence import (
+    DeploymentRoutingEvidenceError,
+    validate_deployment_routing_plan,
+)
 
 pytestmark = pytest.mark.unit
+
+
+def _weakly_directed(coupling_map: CouplingMap) -> tuple[tuple[int, int], ...]:
+    """Return both directions of every edge, so a route may use an edge either way."""
+
+    return tuple(
+        (left, right)
+        for edge in coupling_map.edges
+        for left, right in (edge, (edge[1], edge[0]))
+    )
 
 
 def _random_two_wire_program(seed: int, n_wires: int, gate_count: int) -> CircuitIR:
@@ -142,6 +160,261 @@ def test_apply_layout_fails_closed_on_a_layout_that_does_not_cover_the_circuit()
         apply_layout(program, Layout((0, 1)))
     with pytest.raises(TypeError, match="must be a Layout"):
         apply_layout(program, (0, 1, 2))  # type: ignore[arg-type]
+
+
+def test_layout_carries_idle_physical_slots_of_a_wider_device() -> None:
+    layout = Layout((4, 5, 6, 7), 8)
+
+    assert layout.n_wires == 4
+    assert layout.physical_slot_count == 8
+    assert layout.has_idle_slots is True
+    # Physical wire 4 carries logical 0, and physical wires 0..3 carry nothing.
+    assert layout.physical_to_logical == (None, None, None, None, 0, 1, 2, 3)
+    assert layout.logical_of(4) == 0
+    assert layout.map_wires((0, 3)) == (4, 7)
+    assert layout.to_logical_order("abcdefgh") == ("e", "f", "g", "h")
+    assert str(layout) == "Layout((4, 5, 6, 7), 8)"
+
+    # The device width is what makes a placement legal, not the program width.
+    assert Layout((4, 5, 6, 7), 8).physical_slot_count == 8
+    with pytest.raises(ValueError, match="only 3 physical slots"):
+        Layout((4, 5, 6, 7), 3)
+    with pytest.raises(ValueError, match="outside its 8 physical slots"):
+        Layout((0, 8), 8)
+    with pytest.raises(ValueError, match="its own physical wire"):
+        Layout((4, 4), 8)
+    with pytest.raises(ValueError, match="must be an integer"):
+        Layout((0, 1), 8.0)  # type: ignore[arg-type]
+    # Without a declared width there is nowhere to leave idle, so the placement
+    # still has to be a permutation of the program's own wires.
+    with pytest.raises(ValueError, match="permutation"):
+        Layout((4, 5, 6, 7))
+    with pytest.raises(ValueError, match="has only -1 physical slots"):
+        Layout((0, 1, 2), -1)
+
+
+def test_layout_distinguishes_an_idle_slot_from_a_wire_outside_the_device() -> None:
+    layout = Layout((4,), 6)
+
+    with pytest.raises(ValueError, match="physical wire 0 holds no logical wire"):
+        layout.logical_of(0)
+    with pytest.raises(ValueError, match="physical wire 6 is outside the layout"):
+        layout.logical_of(6)
+    with pytest.raises(ValueError, match="outside the layout"):
+        layout.physical_of(1)
+    assert layout.to_logical_order("abcdef") == ("e",)
+    with pytest.raises(ValueError, match="for 6 wires"):
+        layout.to_logical_order("abc")
+
+
+def test_layout_swaps_a_logical_wire_into_and_out_of_an_idle_slot() -> None:
+    layout = Layout((4, 5), 6)
+
+    # A SWAP against an idle slot moves the wire the live position holds, which is
+    # how an allocated route reaches its workspace.
+    moved = layout.apply_swaps(((0, 4),))
+    assert moved == Layout((0, 5), 6)
+    assert moved.physical_to_logical == (0, None, None, None, None, 1)
+    assert moved.apply_swaps(((0, 4),)) == layout
+    with pytest.raises(ValueError, match="outside a 6-wire layout"):
+        layout.apply_swaps(((0, 6),))
+
+
+def test_apply_layout_refuses_a_layout_that_leaves_slots_idle() -> None:
+    program = CircuitIR(3, (Instruction("cx", (0, 2)),))
+
+    # A program cannot name a wire outside its own width, so placing it on a
+    # layout with idle slots would leave the assignment unreadable rather than
+    # partly applied.
+    with pytest.raises(ValueError, match="must cover exactly the circuit"):
+        apply_layout(program, Layout((4, 5, 6), 8))
+    with pytest.raises(ValueError, match="must cover exactly the circuit"):
+        apply_layout(program, Layout((0, 1)))
+    assert apply_layout(program, Layout((2, 0, 1))).n_wires == 3
+
+
+def test_final_layout_reports_the_device_width_of_an_allocating_route() -> None:
+    device = DirectedCouplingMap(8, _weakly_directed(CouplingMap.line(8)))
+    program = CircuitIR(
+        4,
+        (
+            Instruction("cx", (0, 1)),
+            Instruction("cx", (1, 2)),
+            Instruction("cx", (2, 3)),
+        ),
+        measurements=(MeasurementNode("samples", (0, 1, 2, 3)),),
+    )
+
+    routed = route_to_directed_topology(program, device, initial_layout=(4, 5, 6, 7))
+    layout = final_layout(routed)
+
+    # The routed program is widened to the device, so the layout has to report the
+    # device width and say which of its slots hold nothing.
+    assert routed.n_wires == 8
+    assert layout == Layout((4, 5, 6, 7), 8)
+    assert layout.physical_slot_count == 8
+    assert layout.has_idle_slots is True
+    assert layout.logical_of(4) == 0
+    assert layout.to_logical_order(tuple(range(8)))[:4] == (4, 5, 6, 7)
+    assert layout.map_wires((0, 1, 2, 3)) == (4, 5, 6, 7)
+
+    # A route that never allocates stays on the three wires the program owns, even
+    # on a wider device, so it reports no idle slot for the wires it never used.
+    narrow = final_layout(
+        route_to_topology(
+            CircuitIR(2, (Instruction("cx", (0, 1)),)), CouplingMap.line(5)
+        )
+    )
+    assert narrow == Layout((0, 1))
+    assert narrow.has_idle_slots is False
+
+
+def test_remove_layout_restore_reports_the_device_width_of_an_allocating_route() -> (
+    None
+):
+    device = DirectedCouplingMap(8, _weakly_directed(CouplingMap.line(8)))
+    program = CircuitIR(
+        4,
+        tuple(
+            Instruction("cx", wires)
+            for wires in ((0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3))
+        ),
+        measurements=(MeasurementNode("samples", (0, 1, 2, 3)),),
+    )
+
+    routed = route_to_directed_topology(program, device, initial_layout=(1, 2, 4, 5))
+    dropped = remove_layout_restore(routed)
+    layout = final_layout(dropped)
+
+    assert dropped.metadata["routing"]["removed_layout_restore_swap_count"] > 0
+    assert dropped.metadata["routing"]["mapping_restored"] is False
+    assert layout.physical_slot_count == 8
+    assert layout.has_idle_slots is True
+    assert layout.n_wires == 4
+    assert sorted(layout.logical_to_physical) != list(range(4))
+    # The restore walked every logical wire home, so the layout the reduced
+    # program reports has to be the one its SWAP evidence reached.
+    assert layout.logical_to_physical == tuple(
+        dropped.metadata["routing"]["final_logical_to_physical"]
+    )
+    # Renaming the restore away has to move every statement of the output layout,
+    # or the metadata would carry two answers to one question.
+    assert dropped.metadata["routing"]["logical_result_physical_slots"] == (
+        layout.logical_to_physical
+    )
+    assert dropped.metadata["routing"]["final_physical_to_logical"] == (
+        layout.physical_to_logical
+    )
+    # The routed program named its output on the layout the route declared, and
+    # the reduced program leaves the same outputs on its own layout, so the output
+    # node names the slots the pre-restore layout uses.
+    assert [node.wires for node in dropped.measurements] == [
+        tuple(layout.logical_to_physical[logical] for logical in range(program.n_wires))
+    ]
+
+
+def test_final_layout_fails_closed_when_the_reported_widths_disagree() -> None:
+    device = DirectedCouplingMap(8, _weakly_directed(CouplingMap.line(8)))
+    program = CircuitIR(
+        4,
+        (Instruction("cx", (0, 1)), Instruction("cx", (1, 2))),
+        measurements=(MeasurementNode("samples", (0, 1, 2, 3)),),
+    )
+    routed = route_to_directed_topology(program, device, initial_layout=(1, 2, 4, 5))
+
+    def tampered(**changes: object) -> CircuitIR:
+        routing = dict(routed.metadata["routing"]) | changes
+        return CircuitIR(
+            routed.n_wires,
+            routed.instructions,
+            metadata=dict(routed.metadata) | {"routing": routing},
+        )
+
+    # A width or a wire count the program cannot hold is read as tampering rather
+    # than as a layout.
+    with pytest.raises(ValueError, match="physical_slot_count as 3"):
+        final_layout(tampered(physical_slot_count=3))
+    with pytest.raises(ValueError, match="does not fit a 8-wire program"):
+        final_layout(tampered(logical_wire_count=9))
+    with pytest.raises(ValueError, match="physical_slot_count as 9"):
+        final_layout(tampered(physical_slot_count=9))
+
+    # A route that never allocates reports no width, so there its placement alone
+    # has to fit the program.
+    narrow = route_to_topology(
+        CircuitIR(3, (Instruction("cx", (0, 2)),)), CouplingMap.line(3)
+    )
+    routing = dict(narrow.metadata["routing"]) | {
+        "final_logical_to_physical": (0, 1, 3)
+    }
+    with pytest.raises(ValueError, match="outside its 3 physical slots"):
+        final_layout(
+            CircuitIR(
+                narrow.n_wires,
+                narrow.instructions,
+                metadata=dict(narrow.metadata) | {"routing": routing},
+            )
+        )
+
+
+def test_remove_layout_restore_preserves_the_state_of_an_allocating_route() -> None:
+    program = CircuitIR(
+        4,
+        (
+            Instruction("cx", (0, 1)),
+            Instruction("cx", (1, 2)),
+            Instruction("cx", (2, 3)),
+            Instruction("cx", (3, 0)),
+            Instruction("ry", (2,), params={"theta": 0.9}),
+        ),
+        measurements=(MeasurementNode("samples", (0, 1, 2, 3)),),
+    )
+    n_wires = 8
+    device = DirectedCouplingMap(
+        8, _weakly_directed(CouplingMap(8, [(2, 4), *CouplingMap.line(8).edges]))
+    )
+
+    routed = route_to_directed_topology(program, device, initial_layout=(1, 2, 4, 5))
+    dropped = remove_layout_restore(routed)
+    layout = final_layout(dropped)
+
+    # The workspace is cleaned, so every idle slot is back in |0> and the reduced
+    # program has to reproduce the routed state on the slots it occupies.
+    idle = [
+        physical
+        for physical, logical in enumerate(layout.physical_to_logical)
+        if logical is None
+    ]
+    assert len(idle) == n_wires - program.n_wires
+    assert torch.allclose(
+        _occupied_state(
+            routed, tuple(routed.metadata["routing"]["final_logical_to_physical"]), idle
+        ),
+        _occupied_state(dropped, layout.logical_to_physical, idle),
+        atol=1e-6,
+    )
+    assert dropped.metadata["routing"]["removed_layout_restore_swap_count"] > 0
+
+
+def _occupied_state(
+    program: CircuitIR,
+    placement: tuple[int, ...],
+    idle: list[int],
+) -> torch.Tensor:
+    """Read a widened program's state on the slots it occupies, in logical order.
+
+    Wire 0 is the most significant basis bit, so dropping an idle wire means
+    selecting index 0 on it, and the surviving axes then have to be permuted from
+    ascending physical order into logical order.
+    """
+
+    tensor = fq.Circuit.from_ir(program).state().reshape((2,) * program.n_wires)
+    for wire in sorted(idle, reverse=True):
+        tensor = tensor.select(wire, 0)
+    ascending = sorted(placement)
+    return tensor.permute(
+        [ascending.index(placement[logical]) for logical in range(len(placement))]
+    ).reshape(-1)
 
 
 def test_apply_layout_rejects_a_layout_that_is_not_a_permutation() -> None:
@@ -323,6 +596,28 @@ def test_remove_layout_restore_leaves_restore_after_each_gate_untouched() -> Non
         for instruction in routed
     )
     assert remove_layout_restore(routed) == routed
+
+
+def test_remove_layout_restore_reports_output_the_deployment_contract_refuses() -> None:
+    program = _random_two_wire_program(seed=0, n_wires=9, gate_count=36)
+    coupling_map = CouplingMap.grid(3, 3)
+
+    routed = route_to_topology(program, coupling_map, strategy="persistent_layout")
+    dropped = remove_layout_restore(routed)
+
+    assert dropped is not routed
+    # The routed plan is acceptable, so the refusal below is about the removed
+    # restore and not about the strategy or the schema.
+    validate_deployment_routing_plan(
+        routed.metadata["routing"], n_wires=9, coupling_map=coupling_map
+    )
+    with pytest.raises(
+        DeploymentRoutingEvidenceError,
+        match="must restore the final logical permutation",
+    ):
+        validate_deployment_routing_plan(
+            dropped.metadata["routing"], n_wires=9, coupling_map=coupling_map
+        )
 
 
 def test_remove_layout_restore_fails_closed_when_metadata_contradicts_the_swaps() -> (
