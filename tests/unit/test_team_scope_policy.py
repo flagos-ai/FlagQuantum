@@ -309,3 +309,51 @@ def test_owner_summary_counts_teams_and_marks_shared_paths() -> None:
         policy,
     )
     assert counts == {"compiler": 1, "runtime": 2, "(shared)": 2, "(protected)": 1}
+
+
+def _normalized(path: str) -> str:
+    return " ".join((ROOT / path).read_text(encoding="utf-8").split())
+
+
+def test_the_manual_does_not_require_a_team_branch_or_worktree() -> None:
+    """`AGENTS.md` must not instruct a flow that CI cannot merge.
+
+    The manual is the highest-authority instruction a session receives. It said
+    sessions "must use the branch and linked worktree assigned in
+    `team-ownership.toml`", while no branch with the `refactor/` prefix and no
+    `FlagQuantum-vNext*` worktree has ever existed here. A session that obeyed
+    produced a branch and a handoff record that could not merge.
+    """
+
+    manual = _normalized("AGENTS.md")
+    assert "must use the branch and linked worktree assigned" not in manual
+    assert "reserved names for that mode rather than current instructions" in manual
+    assert "do not cut one for ordinary work" in manual
+
+
+def test_the_manual_points_at_the_flow_that_reaches_main() -> None:
+    """The declared flow must be the one document that measures it."""
+
+    manual = _normalized("AGENTS.md")
+    assert "docs/development/INTEGRATION_WORKFLOW.md" in manual
+    assert "is a short-lived branch cut from `main` and merged by pull request" in (
+        manual
+    )
+
+
+def test_the_multi_team_document_marks_its_own_mode_optional() -> None:
+    """The optional mode may not present its startup checks as mandatory.
+
+    The document carries a correction header, but its body is long enough that a
+    reader arriving at the imperative sees only the instruction. The branch check
+    in particular named a branch that does not exist, so it must be scoped to the
+    optional mode rather than listed among the unconditional checks.
+    """
+
+    text = _normalized("docs/development/MULTI_TEAM_DEVELOPMENT.md")
+    assert "This document does not describe how changes reach `main` today." in text
+    assert "In this optional mode, also verify that the current branch matches" in text
+    assert (
+        "2. Verify that the current branch matches the team's entry in "
+        "`team-ownership.toml`." not in text
+    )

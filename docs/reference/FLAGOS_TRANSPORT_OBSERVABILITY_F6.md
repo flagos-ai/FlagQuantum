@@ -66,12 +66,15 @@ On an isolated eight-device FlagOS environment, run:
 
 ```bash
 python tools/observe_flagos_transport.py \
-  --world-sizes 2 4 8 \
   --output artifacts/flagos_transport_observability_f6_a800_20260827.json
 ```
 
-The controller launches a separate distributed job for each world size and
-aggregates rank-local records. The checked-in benchmark-contract test rebuilds
-the top-level profile from those records and rejects missing matrix cells,
-rank or revision drift, device-residency failures, forged transfer summaries,
-and route or no-staging overclaims.
+The controller launches a separate distributed job for each world size in
+`TRANSPORT_WORLD_SIZES` (`2`, `4`, `8`), which is fixed by
+`flagquantum/runtime/distributed/transport_observability.py` rather than selected
+on the command line, and aggregates rank-local records. The world-size set is a
+contract the profile is validated against, so the tool exposes no option to
+change it. The checked-in benchmark-contract test rebuilds the top-level profile
+from those records and rejects missing matrix cells, rank or revision drift,
+device-residency failures, forged transfer summaries, and route or no-staging
+overclaims.

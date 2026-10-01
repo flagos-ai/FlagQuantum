@@ -18,13 +18,16 @@
 ## Goal
 
 Multiple development sessions may work from one architecture baseline, but must
-not share Git working directories, staging areas, or uncommitted state.
-`FlagQuantum-vNext` is the integration workspace. Each team develops only in its
-own linked worktree and branch.
+not share Git working directories, staging areas, or uncommitted state. This
+document specifies the optional coordinated-round mode, in which one
+`FlagQuantum-vNext` workspace is the integration workspace and each team develops
+only in its own linked worktree and branch. Ordinary work does not use that mode;
+see [Integration workflow](INTEGRATION_WORKFLOW.md) for the flow that reaches
+`main` today.
 
-The root `team-ownership.toml` is the machine-readable authority for teams,
-branches, workspaces, and path ownership. This document does not maintain a
-second roster.
+The root `team-ownership.toml` is the machine-readable authority for teams and path
+ownership, and it carries the reserved `branch` and `worktree` names for this mode.
+This document does not maintain a second roster.
 
 ## Workspace Model
 
@@ -47,12 +50,16 @@ claims. Integration separately approves those changes.
 Before work, every session must:
 
 1. Read root `AGENTS.md` and the nearest `AGENTS.md` for edited directories.
-2. Verify that the current branch matches the team's entry in `team-ownership.toml`.
-3. Verify that the worktree is clean.
-4. Read the overall architecture, relevant domain designs, capability maturity,
+2. Verify that the worktree is clean.
+3. Read the overall architecture, relevant domain designs, capability maturity,
    and Stable Core protection policy.
-5. Identify input/output contracts, failure semantics, and acceptance tests.
-6. Run team-scope preflight before editing.
+4. Identify input/output contracts, failure semantics, and acceptance tests.
+5. Run team-scope preflight before editing.
+
+In this optional mode, also verify that the current branch matches the team's entry
+in `team-ownership.toml`. That check applies to a staffed coordinated round, where
+the team branches exist; ordinary work is a short-lived branch off `main` and has
+no team branch to match.
 
 Explicit-file preflight:
 
@@ -62,7 +69,7 @@ python tools/check_team_scope.py \
   --files flagquantum/compiler/pipeline.py tests/team/compiler/test_compiler_pipeline_replacement.py
 ```
 
-Completed-branch check:
+Completed-branch check, in this optional mode, against the integration branch:
 
 ```bash
 python tools/check_team_scope.py \
@@ -124,6 +131,10 @@ Do not change Core contracts, Compiler, Runtime, Simulation, and Provider togeth
 in one large change.
 
 ## Synchronization and Merging
+
+Every rule below governs the optional coordinated-round mode only. It describes how
+the integration worktree merges team branches in that mode, not how a change reaches
+`main` today.
 
 ### Sole Authoritative Version
 
