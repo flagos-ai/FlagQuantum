@@ -1,0 +1,293 @@
+schema = "flagquantum.evidence_revision_origins.v1"
+
+# Every revision recorded under `artifacts/` that this repository does not
+# contain, with the origin a reader can obtain it from.
+#
+# `tools/check_evidence_revisions.py` walks that directory and requires each of
+# these revisions to be listed here. Before this table existed, only the six
+# checked-in validators resolved a revision, and each had its artifact path
+# written into it, so an artifact no validator named was never asked: nineteen
+# artifacts recorded a dead pin and thirteen of them said nothing about it.
+#
+# `producing_host_history` states that the run happened in a history this
+# repository never held. It covers two populations, and the difference matters to
+# a reader:
+#
+#   * fourteen revisions are commits of the pre-release personal repository
+#     `FlagQuantum/FlagQuantum`, which is public and still serves them. The
+#     evidence checked in here was produced from that line of development before
+#     this repository's history existed, and `main` was subsequently re-authored,
+#     so the same commit subjects appear here under different object names with
+#     different trees. Re-pointing a pin at the look-alike object would present a
+#     run as having executed code it never executed, so the recorded revision is
+#     kept and its absence from this repository is stated instead.
+#   * seven revisions are present in no repository published to GitHub. The
+#     artifact's own payload and the archive hash recorded beside the pin are the
+#     only record of those runs, and nothing here can make them reproducible.
+#
+# `external_dependency` states that the revision belongs to the external Torch-FL
+# runtime the run recorded, which this repository does not vendor; `repository`
+# says where to obtain it. Two revisions are recorded this way:
+#
+#   1b19383c24d9aa54637dd23557a5a20ef6d52ec5
+#       flagos-ai/Torch-FL -- "fix(flaggems): make codegen vendor-agnostic (#72)"
+#   2e00b393cf80088706b460a187aef185d3a283f4
+#       flagos-ai/Torch-FL -- "feat: validate AMP support on MetaX (#146)"
+#
+# Add an entry only for a revision this repository does not contain. A revision
+# that resolves here needs no origin, and declaring one for it fails the gate.
+
+
+[[artifact]]
+path = "artifacts/cuda_target_capabilities_a800_jp171_20260906.json"
+
+[[artifact.revision]]
+value = "2f279cd6278989bf109784a36ca1f5dfcefef41e"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/cuda_target_capabilities_a800_jp172_20260906.json"
+
+[[artifact.revision]]
+value = "8cd803266684cfa42fe2bc11ed42b7d5c035beb8"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/development/quafu_auto_mapping_dongling_20260910.json"
+
+[[artifact.revision]]
+value = "9f1b0d113c647d564ac74f22beede55efbdb33bd"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "a5142274c6730e718e56708e7cfe9165cb6f6485"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "46584efde731aea9eec27b5466919b76fe5f3184"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/development/quafu_golden_path_dongling_20260910.json"
+
+[[artifact.revision]]
+value = "a24328ff406739baf93a8cc69acd85720abc768b"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "4e94976575310568b52135b1e458b3d40744a42e"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "a5142274c6730e718e56708e7cfe9165cb6f6485"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "46584efde731aea9eec27b5466919b76fe5f3184"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/flagos_cuda_reference_a100_20260821.json"
+
+[[artifact.revision]]
+value = "2c3440f3bf2a207a5487ee0690ef3e05ee44eb00"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_cuda_reference_a800_20260824.json"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+[[artifact.revision]]
+value = "837bc06f82f46d02df8317eb088368fedfff70c4"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/flagos_distributed_conformance_a800_20260825.json"
+
+[[artifact.revision]]
+value = "c92f4347b329161701973d2956835d188f2fb30d"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_distributed_conformance_a800_f11_20260825.json"
+
+[[artifact.revision]]
+value = "6d20e81daf67e7a9fbb946ddf067225aa9c6ddc5"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_statevector_capacity_f5_a800_20260827.json"
+
+[[artifact.revision]]
+value = "348482a8f1278bcd406f66126f99bdf52755e6f5"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_statevector_reverse_f31_a800_20260826.json"
+
+[[artifact.revision]]
+value = "af3b9e246317bb5e6fcb689e4cf0e3370bf515cb"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_statevector_scale_f2_a800_20260826.json"
+
+[[artifact.revision]]
+value = "21e220960e9756882ece2932614f3cc4d368a49a"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_statevector_training_f3_a800_20260826.json"
+
+[[artifact.revision]]
+value = "fa38063534edaaa5044c4cdcc8ade58013f55d0b"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_transport_observability_f6_a800_20260827.json"
+
+[[artifact.revision]]
+value = "4f4158f6250f9f6bf17cac7ae565eb5bf106cee1"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/flagos_workload_capability_f4_20260826.json"
+
+[[artifact.revision]]
+value = "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+[[artifact.revision]]
+value = "6d20e81daf67e7a9fbb946ddf067225aa9c6ddc5"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "21e220960e9756882ece2932614f3cc4d368a49a"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "fa38063534edaaa5044c4cdcc8ade58013f55d0b"
+origin = "producing_host_history"
+
+
+[[artifact]]
+path = "artifacts/split_real_imag_device_double_single_a800_20260825.json"
+
+[[artifact.revision]]
+value = "bbbd1dc301afdddd3de5bc7686766f84003ab1bc"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/split_real_imag_double_single_a800_20260824.json"
+
+[[artifact.revision]]
+value = "4e8c67c7026e4b080eb4cb1c26e7b6e40f66fa1b"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/split_real_imag_optimizer_a800_20260825.json"
+
+[[artifact.revision]]
+value = "8671e6601a00b2a8f3b2d874c1e79f7752ecafdc"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/split_real_imag_precision_a800_20260824.json"
+
+[[artifact.revision]]
+value = "71f69fb7e75e9e49d6db07876cc046d64e0f68d6"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"
+
+
+[[artifact]]
+path = "artifacts/split_real_imag_training_a800_20260824.json"
+
+[[artifact.revision]]
+value = "9ef1d0448011fb6a618f7651446eea7faefc3e94"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "2e00b393cf80088706b460a187aef185d3a283f4"
+origin = "external_dependency"
+repository = "flagos-ai/Torch-FL"

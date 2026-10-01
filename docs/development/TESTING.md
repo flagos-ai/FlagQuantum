@@ -450,8 +450,8 @@ The checked-in `ci.yml` defines fifteen jobs:
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
-  capability-maturity, Braket/Cirq/CUDA-Q/Qiskit/PennyLane interoperability
-  contracts, and repository-hygiene checks;
+  capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
+  PennyLane interoperability contracts, and repository-hygiene checks;
 - `cpu-core`: Python 3.10-3.12 smoke/unit coverage with core dependencies only;
   Python 3.12 additionally runs the repository-wide integration tier and the
   launched CPU-distributed proofs. This keeps interpreter compatibility broad

@@ -56,6 +56,12 @@ protected_paths = [
     "conftest.py",
     "dependency-policy.toml",
     "environment.yml",
+    # The declaration table `tools/check_evidence_revisions.py` reads. It records
+    # which revisions of the checked-in evidence are obtainable and which are not,
+    # so an edit to it changes what the repository discloses about its own
+    # evidence rather than what one team implements -- the same class as
+    # `capability-maturity.toml` above.
+    "evidence-revision-origins.toml",
     "pytest.ini",
     "setup.py",
     # Released version metadata, in the same class as `pyproject.toml`: a change

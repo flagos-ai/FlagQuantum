@@ -40,6 +40,24 @@ one the repository never contained, so repository-history pins are resolved by
 the full-history `quality` job. `tools/evidence_provenance.py` owns both values
 and applies the same rule to the checked-in evidence under `artifacts/`.
 
+Applying that rule to one artifact at a time left most of the directory
+unexamined. Only six checked-in validators resolved a revision, and each had its
+artifact path written into it, so an artifact no validator named was never asked:
+nineteen artifacts under `artifacts/` recorded revisions this repository does not
+contain, and thirteen of them said nothing about it. `tools/check_evidence_revisions.py`
+therefore walks `artifacts/` rather than a list, and every full-length revision at
+any depth in those files must either resolve against this repository or be
+declared in `evidence-revision-origins.toml`. That table names the origin a reader
+can obtain the revision from. `producing_host_history` covers the pre-release
+personal `FlagQuantum/FlagQuantum` line, whose commits this repository's
+re-authored `main` does not contain, and the revisions published in no repository
+at all, for which the artifact payload and its archive hash are the only record.
+`external_dependency` covers a revision of the external Torch-FL runtime the run
+recorded, which this repository does not vendor, and names the repository to
+obtain it from. A revision that resolves here needs no origin, and declaring one
+for it fails the gate, so the table cannot be used to hide a checkable pin behind
+a claim.
+
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its
 returned loss and `.grad` are explicitly FP32 delivery boundaries. A separate
