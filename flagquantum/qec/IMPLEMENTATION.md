@@ -147,10 +147,31 @@ are compared at distance three and distance five against rates sampled from an
 injected-shot circuit simulator. The comparison shares the injection helper with
 construction, so it does not independently re-derive the signatures; what it
 tests is that mechanisms compose by XOR in the simulator and that merging
-identical signatures yields the right marginals. The one genuinely independent
-check available — parsing the emitted text with the real `stim` package — was
-run at developer time and is not a committed test, because `stim` is not a
-dependency of this repository.
+identical signatures yields the right marginals.
+
+`tests/qec/test_dem_stim_reference_rates.py` is the independent check. It
+transcribes the memory circuit gate for gate into a `stim.Circuit` with the same
+phenomenological noise model and lets stim build a detector error model from it
+with stim's own error-analysis pass. Nothing is shared with the FlagQuantum side
+except the circuit's gate sequence and the noise model, which is the input the
+comparison is about. On the distance-2 and distance-3 configurations the two
+models declare the same shape, the same mechanism count, and detector marginals
+that agree within the sampling error of the stim side; the tolerance is four
+standard errors, while a transcription that applies the data flip after the
+round's gates instead of before it deviates by 0.038 and a terminal detector
+that omits the data readout deviates by 0.107.
+
+Construction is a forced execution, so it is bounded by the statevector amplitude
+ceiling rather than by the detector error model's own cost. A rotated surface
+code is `distance**2` data wires plus one ancilla per check: `distance=2` is 7
+wires and `distance=3` is 17, and both build in seconds, while `distance=4` is 31
+wires (2**31 amplitudes) and did not complete in forty-five minutes, and
+`distance=5` is 49 wires and fails on the allocator. The modelled
+rotated-surface distance is therefore three. Reaching five and seven needs a
+signature route that does not materialise the state — either a first-party
+Clifford propagation in this layer, which is a second implementation of an
+algorithm this layer otherwise does not own, or an explicit decision that the
+larger-distance curve is a reference-only comparison.
 
 The stim interchange is a text format, not a package dependency: nothing in
 `dem.py` imports `stim`, and the reader is exercised against real stim output by
