@@ -3,7 +3,12 @@
 This package transforms a Core-owned `CircuitIR` without executing it.
 `pipeline.py` owns the stable optimization, layer scheduling, and topology-aware
 compilation entry points. `routing.py` owns coupling maps and SWAP
-routing. `openqasm.py` and `qcis.py` own their target-format emission.
+routing, including the bounded all-pairs hop-count index that
+`CouplingMap.distance` and `CouplingMap.distance_matrix` expose.
+`sabre.py` owns the lookahead SWAP planner that `routing.py` exposes as the
+`sabre` routing strategy: it chooses one persistent layout for the whole
+program, and `routing.py` materializes that plan into Core `CircuitIR`.
+`openqasm.py` and `qcis.py` own their target-format emission.
 `noise.py` owns the deterministic `CircuitIR + NoiseModel` to channel-bearing
 `CircuitIR` transformation. `operator_lowering.py` owns the
 internal backend/operator capability registry used before lowering or
@@ -52,6 +57,7 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change local canonical optimization in `pipeline.py`.
 - Change instruction layer scheduling in `pipeline.py`.
 - Change coupling maps or SWAP routing in `routing.py`.
+- Change lookahead SWAP planning in `sabre.py`.
 - Change noise-model lowering in `noise.py`.
 - Change OpenQASM 2/3 target emission in `openqasm.py`.
 - Change QCIS target emission in `qcis.py`.

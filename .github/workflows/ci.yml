@@ -138,6 +138,13 @@ jobs:
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
         run: python tools/docs_source_of_truth.py --check
+      # `docs_source_of_truth.py --check` also resolves relative links, but only
+      # for the ten documents listed under `stable_documents` in
+      # `docs/source_of_truth.json`, and it never resolves anchors. A rename
+      # elsewhere in the tree therefore breaks a reader's link without failing
+      # any check. This step covers every tracked markdown file instead.
+      - name: Verify documentation links and anchors
+        run: python tools/check_docs_links.py
       - name: Verify retained Stable Core against migration baseline
         run: python tools/public_api_snapshot.py
       - name: Verify proposed Stable Core classification

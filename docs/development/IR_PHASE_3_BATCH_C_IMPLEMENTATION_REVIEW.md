@@ -1,5 +1,11 @@
 # FlagQuantum IR Phase 3 Batch C implementation review
 
+> The `tests/fixtures/internal_ir/` corpus, including the machine baselines and
+> budget files named below, is a private-worktree artifact. It is not published in
+> this repository, so the `benchmarks/internal/*_gate.py` scripts that read those
+> paths need the corpus supplied out of band. The recorded measurements and
+> approval status are unchanged.
+
 Updated: 2026-09-03
 
 ## Result

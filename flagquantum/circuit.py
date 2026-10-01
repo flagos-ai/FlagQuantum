@@ -139,6 +139,9 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     statevector_apply_count: int
     batched_rx_ry_rz_regions: int
     batched_rotation_sequence_regions: int
+    statevector_batch_chunk_size: int
+    statevector_batch_chunk_count: int
+    statevector_batch_chunk_budget_bytes: int
 
 
 class Circuit:
@@ -479,7 +482,7 @@ class Circuit:
         return circuit
 
     def initial_state(self) -> torch.Tensor:
-        from .simulation.statevector.local import _initial_state
+        from .simulation.statevector.batching import _initial_state
 
         # Statevector/TN kernels are functional: they never mutate this leaf.
         # It is therefore safe to share it across autograd graphs and avoid a

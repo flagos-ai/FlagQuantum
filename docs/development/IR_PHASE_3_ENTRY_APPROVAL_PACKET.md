@@ -4,6 +4,12 @@ Status: **Ready for owner review — implementation not authorized**
 
 Date: 2026-09-02
 
+> The `tests/fixtures/internal_ir/` corpus, the `tests/internal_ir/` suite,
+> and the private `flagquantum/_compiler/` tree named below are
+> private-worktree artifacts. They are not published in this repository, so
+> the paths are not runnable here. The recorded measurements and approval
+> status are unchanged.
+
 Prerequisite: IR Phase 2's private compiler pipeline is covered by the offline
 deployment, semantic differential, fail-closed, and performance regression
 tests listed in `IR_IMPLEMENTATION_STATUS.md`.

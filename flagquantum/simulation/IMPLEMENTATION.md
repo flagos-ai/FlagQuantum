@@ -110,9 +110,10 @@ It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
 Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
 The padded environment scan and generic Hamiltonian evaluation are also
 Simulation-owned.
-`jax/tensor_network.py` owns dependency-light local JAX node construction,
-observable and contracted-output loss evaluation, and contraction; Runtime
-retains backend selection and execution policy.
+`jax/tensor_network/` owns dependency-light local JAX node construction,
+observable and contracted-output loss evaluation, and contraction; `kernels.py`
+holds that mathematics and `models.py` the node types. Runtime retains backend
+selection and execution policy.
 
 `mps/rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.
@@ -130,10 +131,10 @@ selection, checkpointing, and evidence remain in Runtime.
 Forward preparation and reverse replay both use the same compiled-layer
 numerics; Runtime does not rebuild instruction buckets into kernel calls.
 
-`graph.py` is a frozen compatibility utility exported through the protected
-root API. No Compiler implementation currently imports it. Do not copy it into
-Compiler or introduce a second graph authority; relocation requires an approved
-public API migration and a concrete Compiler consumer.
+There is no `graph.py` compatibility utility in this repository and no root API
+export requires one. Do not add a graph authority in Simulation or Compiler;
+introducing a public graph type requires an approved public API change and a
+concrete consumer.
 
 For the current migration slice, `Circuit` still owns the initial-state and
 lifecycle cache containers. Do not duplicate them here or add a second request

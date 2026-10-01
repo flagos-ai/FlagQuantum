@@ -29,19 +29,19 @@ below describe shapes requiring Integration approval.
 | --- | --- | --- | --- |
 | User intent | `runtime/options.py::ExecutionOptions` | Mode, backend, device, target, batch, precision, shots, seed, memory limit, gradients, approximation, backend fallback | Precision mixes storage, effective, and native precision; no separate CPU fallback, dynamic-circuit, recovery, or real-time requirement |
 | Option resolution | `runtime/options_resolver.py` | Defaults -> config -> program constraints -> runtime policy -> call | IR dtype becomes precision without source/strength in matching evidence |
-| Public planning | `flagquantum/api.py`, `runtime/planner::plan`, `runtime/execution.py` | Resolve options, world size, backend; call planner | Planning, environment inference, and execution lack an explicit requirement/snapshot seam |
-| Plan environment | `compilation/execution_plan_contract.py` | Backend, device kind, precision, world size, distribution semantics, gradients, approximation | Infers `sharded_across_ranks` from `world_size > 1`; lacks actual devices, memory, topology, communication, shots/dynamic, checkpoint/realtime |
+| Public planning | `flagquantum/_api.py`, `runtime/planner::plan`, `runtime/execution.py` | Resolve options, world size, backend; call planner | Planning, environment inference, and execution lack an explicit requirement/snapshot seam |
+| Plan environment | `runtime/execution_plan_contract.py` | Backend, device kind, precision, world size, distribution semantics, gradients, approximation | Infers `sharded_across_ranks` from `world_size > 1`; lacks actual devices, memory, topology, communication, shots/dynamic, checkpoint/realtime |
 | Backend discovery | `runtime/backend_registry.py` | Devices, dtypes, autograd, distributed, statevector/density/MPS, preferred device, accelerator memory | Mostly booleans/static declarations; no unknown/unmeasured/not_exposed; broad PyTorch declarations can be mistaken for target facts; `flagos` bypasses device-support checks |
-| Compiler capabilities | `_compiler/target_capabilities.py` | Gates, results, formats, topology, dynamic/timing/pulse, shot/program limits | Same type for required/available; `False`, `None`, and absence cannot distinguish fact status and exposure |
-| Capability comparison | `_compiler/capability_comparison.py` | Required/available comparison | Comparison tends to fail closed, but types cannot distinguish unknown, unmeasured, unsupported, and hidden facts |
-| Device/dtype checks | `runtime/backend_registry.py::backend_execution_options`, `compilation/execution_plan_contract.py::validate_plan_environment` | Device, dtype, mode, world size | Compiler imports Runtime discovery; dtype checks inspect declared sets without native/software mechanisms |
+| Compiler capabilities | `core/target_capabilities.py` | Gates, results, formats, topology, dynamic/timing/pulse, shot/program limits | Same type for required/available; `False`, `None`, and absence cannot distinguish fact status and exposure |
+| Capability comparison | `core/_target_capability_matching.py`, `runtime/target_capability_matching.py` | Required/available comparison | Comparison tends to fail closed, but types cannot distinguish unknown, unmeasured, unsupported, and hidden facts |
+| Device/dtype checks | `runtime/backend_registry.py::backend_execution_options`, `runtime/execution_plan_contract.py::validate_plan_environment` | Device, dtype, mode, world size | Compiler imports Runtime discovery; dtype checks inspect declared sets without native/software mechanisms |
 | Distributed policy | `runtime/distributed/backend_policy.py` | Profiles, JAX/Torch backend, local/effective world size, torchrun/GPU policy | Environment/process groups prove orchestration state, not physical topology, communication, or sharding; development LocalTensor is simulated evidence |
 | Memory and costs | `runtime/planner/backend_selection.py`, `candidates.py`, `candidate_plans.py` | SV/MPS/TN estimates, costs, memory/communication/gradient plans | Workload estimates can be mistaken for available memory; division by world size does not prove allocation or communication feasibility |
 | Dynamic circuits | `runtime/dynamic/conformance.py`, `runtime/dynamic/deployment.py` | Mid-circuit measurement/reset, feed-forward, results, provider support | Local checks are not integrated into RequirementSet/Snapshot matching |
 | Shots/trajectories | `ExecutionOptions.shots`, `runtime/trajectories/**` | Shots, ownership, failure, statistics, checkpoints | Shots are requirements; trajectory completion is attempt evidence, not a target capability |
 | Training precision | `runtime/training_state.py::PrecisionPolicy`, training engines | Complex/parameter/accumulator dtype, mixed/full precision, downcast, gradients, optimizer state | Execution options and training policy duplicate precision representation; no shared software-extension mechanism |
 | Checkpoint/recovery | `runtime/training_state.py`, `runtime/trajectories/checkpoint.py`, training engines | Schema/version, topology, IR hash, RNG, atomic commit, space preflight, writer lease, resume | Recoverability is absent from generic requirements; storage/compatibility discovery has no shared snapshot |
-| Real-time sessions | `_compiler/TargetCapabilities` realtime/adaptive fields and some provider/dynamic paths | Booleans and latency bounds | No generic `RealtimeSession` lifecycle; unmeasured latency is not a satisfying fact |
+| Real-time sessions | `core/target_capabilities.py` realtime/adaptive fields and some provider/dynamic paths | Booleans and latency bounds | No generic `RealtimeSession` lifecycle; unmeasured latency is not a satisfying fact |
 | Fallback/routes | `runtime/fallback.py`, `runtime/routing.py`, result/evidence fields | Policy, route categories, events, host debug policy | Backend, CPU, algorithm, and precision fallback need independent authorization; absent events do not prove absent fallback |
 | Post-execution evidence | `runtime/observability/evidence.py`, backend result records | Actual provenance, fallback, distributed/memory/communication/result metadata | Evidence is scattered; must bind to attempts/resources and cannot automatically become a permanent capability |
 
@@ -260,7 +260,7 @@ replacement using at least two snapshot providers or fakes.
 
 1. Core ownership, versions, and serialization of `RequirementSet`,
    `CapabilitySnapshot`, status, and exposure vocabulary; no Runtime-private copies.
-2. Whether to split `_compiler.TargetCapabilities` required/available roles or
+2. Whether to split `core.target_capabilities.TargetCapabilities` required/available roles or
    retain it only for compiler target descriptions, with compatibility migration.
 3. Compatible separation of `ExecutionOptions.precision` into storage/effective/
    native, parameter/accumulator, and software mechanisms.

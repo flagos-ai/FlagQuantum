@@ -335,6 +335,7 @@ On the launch host, one command runs the whole lane:
 ```bash
 python tools/multinode_launch_plan.py --run \
   --probe mps \
+  --peer-host fq-node2 \
   --staging /nfs/fq-multinode-run \
   --checkpoint-directory /nfs/fq-multinode-run-checkpoints \
   --report-directory hardware-run
@@ -343,12 +344,18 @@ python tools/multinode_launch_plan.py --run \
 `--probe` selects the workload: `statevector` (the default), `mps`, or `tn`.
 Everything else is shared.
 
+`--peer-host` names the SSH target for node 1, so pass this site's alias as
+above. The tool's own default is the maintainer's launch host: it resolves
+there and will not resolve here, so a command that omits the flag reports a
+preflight failure against a host that has nothing to do with this pair.
+
 The lane is always two nodes. `--local-world-size` says how many ranks each of
 them runs, and it defaults to one:
 
 ```bash
 python tools/multinode_launch_plan.py --run \
   --probe tn \
+  --peer-host fq-node2 \
   --local-world-size 2 \
   --staging /nfs/fq-multinode-run-tn \
   --checkpoint-directory /nfs/fq-multinode-run-tn-checkpoints \

@@ -31,6 +31,10 @@ Be constructive, not rude.
 Be open to feedback, not defensive.
 That’s it. Let’s build something great together.
 
+What this standard means in review, and how a report is handled, are stated in
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Report a security vulnerability privately
+through [SECURITY.md](SECURITY.md) rather than the issue tracker.
+
 ---
 
 ## What should I know before I get started?
@@ -49,7 +53,10 @@ We aim to keep FlagQuantum:
 - **Modular** – components can be used independently
 - **Parsimonious** – no unnecessary dependencies or abstractions
 
-Major design decisions may be documented in the `README.md`. If you’re unsure why something works a certain way, check there first.
+Major design decisions are recorded in the [architecture documents](docs/architecture/README.md)
+and the [architecture decision records](docs/architecture/decisions/README.md);
+the [architecture map](ARCHITECTURE.md) explains which domain owns which code.
+If you're unsure why something works a certain way, check those first.
 
 ---
 

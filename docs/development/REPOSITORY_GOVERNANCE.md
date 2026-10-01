@@ -4,6 +4,10 @@ The FlagQuantum source repository is the product integration point. It is not
 the long-term store for raw profiler output, exploratory result matrices, or
 superseded research artifacts.
 
+This document covers what content belongs in the repository. For who decides what,
+and for where to report a vulnerability, see the repository-level
+[GOVERNANCE.md](../../GOVERNANCE.md) and [SECURITY.md](../../SECURITY.md).
+
 ## What belongs in the main repository
 
 | Content | Canonical location | Retention rule |

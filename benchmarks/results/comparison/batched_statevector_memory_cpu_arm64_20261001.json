@@ -1,0 +1,1678 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "batch_sizes": [
+    32
+  ],
+  "benchmark": "cross_framework_batched_statevector_peak_rss",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "cirq_simulator_bridge": 2.5996029578931696,
+          "flagquantum_native_monolithic_batch": 1.1437477332798678,
+          "flagquantum_native_serial": 0.8220472454408979,
+          "pennylane_lightning_bridge": 0.8938991850236717,
+          "qiskit_aer_bridge": 2.364651145067709
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "cirq_simulator_bridge": {
+            "max_abs_error": 3.589387267483526e-15,
+            "passed": true
+          },
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_monolithic_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_serial": {
+            "max_abs_error": 1.5433697402820017e-15,
+            "passed": true
+          },
+          "pennylane_lightning_bridge": {
+            "max_abs_error": 7.550332863779066e-16,
+            "passed": true
+          },
+          "qiskit_aer_bridge": {
+            "max_abs_error": 1.0007415106216803e-15,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "cirq_simulator_bridge": {
+          "batch_total": {
+            "max_seconds": 2.31658079099725,
+            "mean_seconds": 2.1200500228171055,
+            "median_seconds": 2.1142836250000983,
+            "min_seconds": 1.9117370419990038,
+            "relative_median_absolute_deviation": 0.05494376753799807,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.9117370419990038,
+              2.007782083004713,
+              2.3139188749992172,
+              2.31658079099725,
+              2.2304503330014995,
+              2.1725880840022,
+              2.1142836250000983,
+              1.9849295839958359,
+              2.108162666998396,
+              2.1625362079939805,
+              1.997580958995968
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 3.284223374997964,
+            "engine": "cirq_simulator_bridge",
+            "execution_peak_rss_growth_bytes": 456867840,
+            "maximum_norm_error": 1.6431300764452317e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 661061632,
+            "pre_execution_peak_rss_bytes": 204193792
+          },
+          "median_seconds_per_statevector": 0.06607136328125307,
+          "median_statevectors_per_second": 15.1351500913216,
+          "versions": {
+            "cirq-core": "1.7.0"
+          }
+        },
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 0.9827076669971575,
+            "mean_seconds": 0.8217996706364581,
+            "median_seconds": 0.81331020899961,
+            "min_seconds": 0.6244246670030407,
+            "relative_median_absolute_deviation": 0.05658183371160779,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.7811195000031148,
+              0.9137638749962207,
+              0.81331020899961,
+              0.9374505419982597,
+              0.7320993750035996,
+              0.8155159589950927,
+              0.7963768750050804,
+              0.859328792001179,
+              0.9827076669971575,
+              0.7836989159986842,
+              0.6244246670030407
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.6817048329976387,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 889978880,
+            "maximum_norm_error": 1.687538997430238e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1093173248,
+            "pre_execution_peak_rss_bytes": 203194368
+          },
+          "median_seconds_per_statevector": 0.025415944031237814,
+          "median_statevectors_per_second": 39.345380945556705,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_monolithic_batch": {
+          "batch_total": {
+            "max_seconds": 1.0729160420014523,
+            "mean_seconds": 0.8927612576351914,
+            "median_seconds": 0.9302217079966795,
+            "min_seconds": 0.6396824580006069,
+            "relative_median_absolute_deviation": 0.06758388829291252,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9580955419951351,
+              0.8887637500010896,
+              0.9302217079966795,
+              1.0729160420014523,
+              0.7656693750031991,
+              0.9930897079975693,
+              0.976478374999715,
+              0.7860436249975464,
+              0.9747470839938615,
+              0.6396824580006069,
+              0.8346661670002504
+            ]
+          },
+          "execution_strategy": "native_monolithic_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.0018941659945995,
+            "engine": "flagquantum_native_monolithic_batch",
+            "execution_peak_rss_growth_bytes": 1226014720,
+            "maximum_norm_error": 1.687538997430238e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1429536768,
+            "pre_execution_peak_rss_bytes": 203522048
+          },
+          "median_seconds_per_statevector": 0.029069428374896233,
+          "median_statevectors_per_second": 34.40040124296285,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_serial": {
+          "batch_total": {
+            "max_seconds": 1.0464995420043124,
+            "mean_seconds": 0.7184124660012788,
+            "median_seconds": 0.6685794169970904,
+            "min_seconds": 0.5878959580004448,
+            "relative_median_absolute_deviation": 0.027626860062231254,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.6501086670032237,
+              0.6093181670003105,
+              1.0464995420043124,
+              0.9828298749998794,
+              0.6785906670047552,
+              0.6685794169970904,
+              0.6555255000057514,
+              0.5878959580004448,
+              0.6714391659988905,
+              0.6565506669940078,
+              0.6951995000054012
+            ]
+          },
+          "execution_strategy": "repeated_single_item_native",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.8634319169941591,
+            "engine": "flagquantum_native_serial",
+            "execution_peak_rss_growth_bytes": 434159616,
+            "maximum_norm_error": 1.765254609153999e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 636928000,
+            "pre_execution_peak_rss_bytes": 202768384
+          },
+          "median_seconds_per_statevector": 0.020893106781159076,
+          "median_statevectors_per_second": 47.86267597606771,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_bridge": {
+          "batch_total": {
+            "max_seconds": 1.1439987080011633,
+            "mean_seconds": 0.7721309545456527,
+            "median_seconds": 0.7270173329961835,
+            "min_seconds": 0.7015211250036373,
+            "relative_median_absolute_deviation": 0.03029180323858067,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.7015211250036373,
+              0.7218385419982951,
+              0.7270173329961835,
+              0.7840888749997248,
+              0.7364650420058751,
+              0.7698696669976925,
+              0.7646987500047544,
+              0.7242970000006608,
+              1.1439987080011633,
+              0.7049946669940255,
+              0.7146507910001674
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.627322207998077,
+            "engine": "pennylane_lightning_bridge",
+            "execution_peak_rss_growth_bytes": 463798272,
+            "maximum_norm_error": 1.709743457922741e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 668368896,
+            "pre_execution_peak_rss_bytes": 204570624
+          },
+          "median_seconds_per_statevector": 0.022719291656130736,
+          "median_statevectors_per_second": 44.01545678164455,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer_bridge": {
+          "batch_total": {
+            "max_seconds": 2.073091583006317,
+            "mean_seconds": 1.88838220072979,
+            "median_seconds": 1.9231949170061853,
+            "min_seconds": 1.5389521670003887,
+            "relative_median_absolute_deviation": 0.0483999740125412,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.8301123330020346,
+              1.5389521670003887,
+              2.073091583006317,
+              2.043121875001816,
+              1.95361141700414,
+              1.9231949170061853,
+              1.9380454999991343,
+              1.8505616250040475,
+              1.733937083001365,
+              2.053713332999905,
+              1.8338623750023544
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.0844879590003984,
+            "engine": "qiskit_aer_bridge",
+            "execution_peak_rss_growth_bytes": 316489728,
+            "maximum_norm_error": 1.7319479184152442e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 520175616,
+            "pre_execution_peak_rss_bytes": 203685888
+          },
+          "median_seconds_per_statevector": 0.06009984115644329,
+          "median_statevectors_per_second": 16.638979084769016,
+          "versions": {
+            "qiskit": "2.5.2",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "cirq_simulator_bridge": true,
+          "flagquantum_native_batch": true,
+          "flagquantum_native_monolithic_batch": true,
+          "flagquantum_native_serial": true,
+          "pennylane_lightning_bridge": true,
+          "qiskit_aer_bridge": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 164,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "hardware_efficient_statevector",
+        "scalar_ir_content_hash": "d0aa0758f06d1d2cf4d908e4d83d3519db6010c1c0265d1498cacb9798e995aa"
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "cirq_simulator_bridge": 1.0594349561670182,
+          "flagquantum_native_monolithic_batch": 1.1418536871871994,
+          "flagquantum_native_serial": 0.8114259432010449,
+          "pennylane_lightning_bridge": 1.5084973331310771,
+          "qiskit_aer_bridge": 2.573022533411826
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "cirq_simulator_bridge": {
+            "max_abs_error": 5.009905725535909e-17,
+            "passed": true
+          },
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_monolithic_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_serial": {
+            "max_abs_error": 1.5636586103463754e-17,
+            "passed": true
+          },
+          "pennylane_lightning_bridge": {
+            "max_abs_error": 2.314409786063609e-17,
+            "passed": true
+          },
+          "qiskit_aer_bridge": {
+            "max_abs_error": 4.1345506463699336e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "cirq_simulator_bridge": {
+          "batch_total": {
+            "max_seconds": 1.0852949580003042,
+            "mean_seconds": 0.9306511173616111,
+            "median_seconds": 0.9152104999957373,
+            "min_seconds": 0.7970228749982198,
+            "relative_median_absolute_deviation": 0.04528803373369457,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9152104999957373,
+              0.9034913329960546,
+              0.9549343750040862,
+              1.0852949580003042,
+              1.0029881250011385,
+              0.8577402499940945,
+              0.7970228749982198,
+              0.8737624159984989,
+              0.997015166998608,
+              0.9083942919969559,
+              0.9413079999940237
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.732187374997011,
+            "engine": "cirq_simulator_bridge",
+            "execution_peak_rss_growth_bytes": 454590464,
+            "maximum_norm_error": 1.7319479184152442e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 657899520,
+            "pre_execution_peak_rss_bytes": 203309056
+          },
+          "median_seconds_per_statevector": 0.028600328124866792,
+          "median_statevectors_per_second": 34.96463381937712,
+          "versions": {
+            "cirq-core": "1.7.0"
+          }
+        },
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 1.145471333002206,
+            "mean_seconds": 0.9018255377271668,
+            "median_seconds": 0.863866625004448,
+            "min_seconds": 0.7518892090010922,
+            "relative_median_absolute_deviation": 0.055374384907847234,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.8189210829950753,
+              0.8210696250025649,
+              1.145471333002206,
+              0.9199423329991987,
+              0.8831290829984937,
+              1.0476676659964141,
+              0.8595533330008038,
+              0.9925400829961291,
+              0.7518892090010922,
+              0.8160305420024088,
+              0.863866625004448
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.8772434170023189,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 1019396096,
+            "maximum_norm_error": 1.6209256159527285e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1222705152,
+            "pre_execution_peak_rss_bytes": 203309056
+          },
+          "median_seconds_per_statevector": 0.026995832031389,
+          "median_statevectors_per_second": 37.04275529782764,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_monolithic_batch": {
+          "batch_total": {
+            "max_seconds": 1.2089961669989862,
+            "mean_seconds": 0.9582766553629137,
+            "median_seconds": 0.9864092909992905,
+            "min_seconds": 0.7349121250008466,
+            "relative_median_absolute_deviation": 0.07148490656143583,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9864092909992905,
+              1.086920541994914,
+              0.9486808750007185,
+              1.056922666997707,
+              0.7806984159979038,
+              1.0102994589979062,
+              1.0147986250012764,
+              0.7786011249991134,
+              0.933803917003388,
+              0.7349121250008466,
+              1.2089961669989862
+            ]
+          },
+          "execution_strategy": "native_monolithic_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.9846281669961172,
+            "engine": "flagquantum_native_monolithic_batch",
+            "execution_peak_rss_growth_bytes": 1281867776,
+            "maximum_norm_error": 1.6209256159527285e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1485078528,
+            "pre_execution_peak_rss_bytes": 203210752
+          },
+          "median_seconds_per_statevector": 0.03082529034372783,
+          "median_statevectors_per_second": 32.44089476041139,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_serial": {
+          "batch_total": {
+            "max_seconds": 0.9095277910018922,
+            "mean_seconds": 0.7250142081803378,
+            "median_seconds": 0.7009637909941375,
+            "min_seconds": 0.6402909590033232,
+            "relative_median_absolute_deviation": 0.06587049658002313,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.7045742079935735,
+              0.8161826659998042,
+              0.6547909579967381,
+              0.9095277910018922,
+              0.6402909590033232,
+              0.7381578339991393,
+              0.7009637909941375,
+              0.6601197499985574,
+              0.6905695419991389,
+              0.8108622079962515,
+              0.6491165830011596
+            ]
+          },
+          "execution_strategy": "repeated_single_item_native",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.6441758750006557,
+            "engine": "flagquantum_native_serial",
+            "execution_peak_rss_growth_bytes": 444727296,
+            "maximum_norm_error": 1.609823385706477e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 648396800,
+            "pre_execution_peak_rss_bytes": 203669504
+          },
+          "median_seconds_per_statevector": 0.021905118468566798,
+          "median_statevectors_per_second": 45.651430803032206,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_bridge": {
+          "batch_total": {
+            "max_seconds": 1.5628835840034299,
+            "mean_seconds": 1.3219114130009653,
+            "median_seconds": 1.3031405000001541,
+            "min_seconds": 1.158237083000131,
+            "relative_median_absolute_deviation": 0.031736664619531084,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.3445466670018504,
+              1.3031405000001541,
+              1.3957995419987128,
+              1.5628835840034299,
+              1.3008348750008736,
+              1.3047398339986103,
+              1.3003197920043021,
+              1.288696333002008,
+              1.344497833000787,
+              1.2373294999997597,
+              1.158237083000131
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.5502120000019204,
+            "engine": "pennylane_lightning_bridge",
+            "execution_peak_rss_growth_bytes": 500793344,
+            "maximum_norm_error": 1.6653345369377348e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 704086016,
+            "pre_execution_peak_rss_bytes": 203292672
+          },
+          "median_seconds_per_statevector": 0.04072314062500482,
+          "median_statevectors_per_second": 24.556062834357625,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer_bridge": {
+          "batch_total": {
+            "max_seconds": 2.5689619170007063,
+            "mean_seconds": 2.2821716666360525,
+            "median_seconds": 2.222748291998869,
+            "min_seconds": 2.0349170839981525,
+            "relative_median_absolute_deviation": 0.026488679446688427,
+            "sample_count": 11,
+            "samples_seconds": [
+              2.222748291998869,
+              2.260022709000623,
+              2.5689619170007063,
+              2.566934750000655,
+              2.252756957997917,
+              2.1638706250014366,
+              2.204388915997697,
+              2.0349170839981525,
+              2.14160208300018,
+              2.1916671660001157,
+              2.4960178330002236
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.258061542001087,
+            "engine": "qiskit_aer_bridge",
+            "execution_peak_rss_growth_bytes": 317390848,
+            "maximum_norm_error": 1.354472090042691e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 520716288,
+            "pre_execution_peak_rss_bytes": 203325440
+          },
+          "median_seconds_per_statevector": 0.06946088412496465,
+          "median_statevectors_per_second": 14.396591874657613,
+          "versions": {
+            "qiskit": "2.5.2",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "cirq_simulator_bridge": true,
+          "flagquantum_native_batch": true,
+          "flagquantum_native_monolithic_batch": true,
+          "flagquantum_native_serial": true,
+          "pennylane_lightning_bridge": true,
+          "qiskit_aer_bridge": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 285,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "truncated_qft_statevector",
+        "scalar_ir_content_hash": "4aa08d85943b755bd2d735127dbf795e115259b75ffa4710855a8df166fb91db"
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "cirq_simulator_bridge": 0.8799909079108661,
+          "flagquantum_native_monolithic_batch": 1.129464657895267,
+          "flagquantum_native_serial": 0.9024464827239065,
+          "pennylane_lightning_bridge": 0.3763783204302092,
+          "qiskit_aer_bridge": 1.498397590184904
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "cirq_simulator_bridge": {
+            "max_abs_error": 1.6719890847696449e-15,
+            "passed": true
+          },
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_monolithic_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_serial": {
+            "max_abs_error": 6.2474133870925e-17,
+            "passed": true
+          },
+          "pennylane_lightning_bridge": {
+            "max_abs_error": 5.589101634117221e-17,
+            "passed": true
+          },
+          "qiskit_aer_bridge": {
+            "max_abs_error": 1.8124332432935232e-16,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "cirq_simulator_bridge": {
+          "batch_total": {
+            "max_seconds": 1.150180625001667,
+            "mean_seconds": 0.9347387423635651,
+            "median_seconds": 0.9454141250025714,
+            "min_seconds": 0.759872708003968,
+            "relative_median_absolute_deviation": 0.06697197379136915,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.8057850419936585,
+              0.759872708003968,
+              0.7704201250016922,
+              0.9077867919986602,
+              0.9656827500002692,
+              0.9454141250025714,
+              1.150180625001667,
+              1.0087303750042338,
+              1.088027540994517,
+              0.9243751670001075,
+              0.9558509159978712
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.046126291999826,
+            "engine": "cirq_simulator_bridge",
+            "execution_peak_rss_growth_bytes": 450052096,
+            "maximum_norm_error": 8.72635297355373e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 653393920,
+            "pre_execution_peak_rss_bytes": 203341824
+          },
+          "median_seconds_per_statevector": 0.029544191406330356,
+          "median_statevectors_per_second": 33.847600912365216,
+          "versions": {
+            "cirq-core": "1.7.0"
+          }
+        },
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 1.4650537080015056,
+            "mean_seconds": 1.1281816060926013,
+            "median_seconds": 1.0743453330069315,
+            "min_seconds": 0.9507490000032703,
+            "relative_median_absolute_deviation": 0.08705375182983537,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9564714160005678,
+              1.0195227919975878,
+              0.9507490000032703,
+              1.0743453330069315,
+              1.021186541998759,
+              1.1678711250060587,
+              1.1303208340032143,
+              1.394217375003791,
+              1.4650537080015056,
+              1.200929416998406,
+              1.0293301249985234
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.007098207999661,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 1021067264,
+            "maximum_norm_error": 1.0702549957386509e-13,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1224310784,
+            "pre_execution_peak_rss_bytes": 203243520
+          },
+          "median_seconds_per_statevector": 0.03357329165646661,
+          "median_statevectors_per_second": 29.78558105747693,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_monolithic_batch": {
+          "batch_total": {
+            "max_seconds": 1.4433621670032153,
+            "mean_seconds": 1.22054902272926,
+            "median_seconds": 1.2134350840060506,
+            "min_seconds": 0.9764669170035631,
+            "relative_median_absolute_deviation": 0.1382452759258562,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9764669170035631,
+              1.0337307499939925,
+              1.1541345410005306,
+              1.3853304590011248,
+              1.2134350840060506,
+              1.3265799170039827,
+              1.4433621670032153,
+              1.4230613330000779,
+              1.3498838330051512,
+              1.0743708330046502,
+              1.0456834159995196
+            ]
+          },
+          "execution_strategy": "native_monolithic_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.0818323330022395,
+            "engine": "flagquantum_native_monolithic_batch",
+            "execution_peak_rss_growth_bytes": 1490829312,
+            "maximum_norm_error": 1.0702549957386509e-13,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1693974528,
+            "pre_execution_peak_rss_bytes": 203145216
+          },
+          "median_seconds_per_statevector": 0.03791984637518908,
+          "median_statevectors_per_second": 26.371414855053292,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_serial": {
+          "batch_total": {
+            "max_seconds": 1.1782132500011357,
+            "mean_seconds": 0.9657480453659611,
+            "median_seconds": 0.9695391670029494,
+            "min_seconds": 0.8103290409999317,
+            "relative_median_absolute_deviation": 0.07100877854133633,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9345289160046377,
+              0.8103290409999317,
+              0.8206947920043604,
+              1.0383849589998135,
+              0.9379985410050722,
+              0.9759110000013607,
+              1.1782132500011357,
+              0.852277417005098,
+              1.1298157080018427,
+              0.9755357079993701,
+              0.9695391670029494
+            ]
+          },
+          "execution_strategy": "repeated_single_item_native",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.9661803749986575,
+            "engine": "flagquantum_native_serial",
+            "execution_peak_rss_growth_bytes": 442662912,
+            "maximum_norm_error": 1.0702549957386509e-13,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 645988352,
+            "pre_execution_peak_rss_bytes": 203325440
+          },
+          "median_seconds_per_statevector": 0.03029809896884217,
+          "median_statevectors_per_second": 33.00537109699113,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_bridge": {
+          "batch_total": {
+            "max_seconds": 0.4564660840042052,
+            "mean_seconds": 0.39969632581844716,
+            "median_seconds": 0.40436029199918266,
+            "min_seconds": 0.34791033300280105,
+            "relative_median_absolute_deviation": 0.08862362775886219,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.3685244160005823,
+              0.35268679200089537,
+              0.3683193749966449,
+              0.4250367080021533,
+              0.41247554199799197,
+              0.4404048750002403,
+              0.41940154199983226,
+              0.40436029199918266,
+              0.4564660840042052,
+              0.4010736249983893,
+              0.34791033300280105
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.682601833002991,
+            "engine": "pennylane_lightning_bridge",
+            "execution_peak_rss_growth_bytes": 500482048,
+            "maximum_norm_error": 1.0691447727140257e-13,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 703791104,
+            "pre_execution_peak_rss_bytes": 203309056
+          },
+          "median_seconds_per_statevector": 0.012636259124974458,
+          "median_statevectors_per_second": 79.13734516757319,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer_bridge": {
+          "batch_total": {
+            "max_seconds": 1.9196524169965414,
+            "mean_seconds": 1.6037911742724562,
+            "median_seconds": 1.6097964580039843,
+            "min_seconds": 1.4616583329989226,
+            "relative_median_absolute_deviation": 0.04728291805315631,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.4810586669991608,
+              1.4616583329989226,
+              1.4902049579977756,
+              1.6324843750044238,
+              1.642976583003474,
+              1.6097964580039843,
+              1.9196524169965414,
+              1.5260634169972036,
+              1.6829633329980425,
+              1.66116379199957,
+              1.5336805839979206
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.7080498750001425,
+            "engine": "qiskit_aer_bridge",
+            "execution_peak_rss_growth_bytes": 315490304,
+            "maximum_norm_error": 1.0602629885170245e-13,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 520060928,
+            "pre_execution_peak_rss_bytes": 204570624
+          },
+          "median_seconds_per_statevector": 0.05030613931262451,
+          "median_statevectors_per_second": 19.87828948243393,
+          "versions": {
+            "qiskit": "2.5.2",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "cirq_simulator_bridge": true,
+          "flagquantum_native_batch": true,
+          "flagquantum_native_monolithic_batch": true,
+          "flagquantum_native_serial": true,
+          "pennylane_lightning_bridge": true,
+          "qiskit_aer_bridge": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 126,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "random_clifford_statevector",
+        "scalar_ir_content_hash": "b17e49ab4bed1cc75e171ea83ca405308088caec7d85f6ba458ea9c6881b9c67"
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "cirq_simulator_bridge": 2.1585761499168137,
+          "flagquantum_native_monolithic_batch": 1.1857727696224896,
+          "flagquantum_native_serial": 0.9183842267873323,
+          "pennylane_lightning_bridge": 0.9247072928877341,
+          "qiskit_aer_bridge": 1.7890227972409465
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "cirq_simulator_bridge": {
+            "max_abs_error": 2.8704301146921594e-16,
+            "passed": true
+          },
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_monolithic_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_serial": {
+            "max_abs_error": 1.3186466014651362e-16,
+            "passed": true
+          },
+          "pennylane_lightning_bridge": {
+            "max_abs_error": 8.441528768080324e-17,
+            "passed": true
+          },
+          "qiskit_aer_bridge": {
+            "max_abs_error": 9.770051323749143e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "cirq_simulator_bridge": {
+          "batch_total": {
+            "max_seconds": 3.9434112919989275,
+            "mean_seconds": 2.160704056999583,
+            "median_seconds": 2.0162972920006723,
+            "min_seconds": 1.7459012499966775,
+            "relative_median_absolute_deviation": 0.03590147261110353,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.943909249996068,
+              1.9028334590038867,
+              2.198844457998348,
+              1.7459012499966775,
+              2.0755450840006233,
+              1.840653207997093,
+              3.9434112919989275,
+              2.0162972920006723,
+              1.9978526670020074,
+              2.0794721670026775,
+              2.023024499998428
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 3.7854528749958263,
+            "engine": "cirq_simulator_bridge",
+            "execution_peak_rss_growth_bytes": 394739712,
+            "maximum_norm_error": 1.9984014443252818e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 599113728,
+            "pre_execution_peak_rss_bytes": 204374016
+          },
+          "median_seconds_per_statevector": 0.06300929037502101,
+          "median_statevectors_per_second": 15.870675483697138,
+          "versions": {
+            "cirq-core": "1.7.0"
+          }
+        },
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 1.1304143340021255,
+            "mean_seconds": 0.9921981553647625,
+            "median_seconds": 0.93408670899953,
+            "min_seconds": 0.8957055409991881,
+            "relative_median_absolute_deviation": 0.04108951302973863,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.0822917910045362,
+              0.8957055409991881,
+              0.9169640419931966,
+              0.9338009589991998,
+              0.93408670899953,
+              0.9102349170061643,
+              0.919883333001053,
+              1.1304143340021255,
+              0.9970090000060736,
+              1.067868375001126,
+              1.1259207080001943
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.0187226249981904,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 890765312,
+            "maximum_norm_error": 1.9984014443252818e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1093451776,
+            "pre_execution_peak_rss_bytes": 202686464
+          },
+          "median_seconds_per_statevector": 0.02919020965623531,
+          "median_statevectors_per_second": 34.25806158217813,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_monolithic_batch": {
+          "batch_total": {
+            "max_seconds": 1.4356072090013186,
+            "mean_seconds": 1.1201588334548764,
+            "median_seconds": 1.107614583997929,
+            "min_seconds": 0.8712306670058751,
+            "relative_median_absolute_deviation": 0.04827525456155056,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.1012560000017402,
+              1.216488958998525,
+              1.054144207999343,
+              0.8712306670058751,
+              1.1731108749954728,
+              0.9762532089953311,
+              1.1380060000010417,
+              1.148794541004463,
+              1.0992409160026,
+              1.4356072090013186,
+              1.107614583997929
+            ]
+          },
+          "execution_strategy": "native_monolithic_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.0516770419999375,
+            "engine": "flagquantum_native_monolithic_batch",
+            "execution_peak_rss_growth_bytes": 1226637312,
+            "maximum_norm_error": 1.9984014443252818e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1429667840,
+            "pre_execution_peak_rss_bytes": 203030528
+          },
+          "median_seconds_per_statevector": 0.03461295574993528,
+          "median_statevectors_per_second": 28.890916084271993,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_serial": {
+          "batch_total": {
+            "max_seconds": 1.263753874998656,
+            "mean_seconds": 0.8851986554535952,
+            "median_seconds": 0.8578504999968573,
+            "min_seconds": 0.7112674579984741,
+            "relative_median_absolute_deviation": 0.06728357679903225,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.8452598750009201,
+              0.9495638340013102,
+              1.263753874998656,
+              0.8001312499982305,
+              0.8809461249984452,
+              0.7877408339991234,
+              0.7112674579984741,
+              0.8720434580027359,
+              0.8145297919982113,
+              0.9540982089965837,
+              0.8578504999968573
+            ]
+          },
+          "execution_strategy": "repeated_single_item_native",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.9191879159989185,
+            "engine": "flagquantum_native_serial",
+            "execution_peak_rss_growth_bytes": 439304192,
+            "maximum_norm_error": 1.9984014443252818e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 641892352,
+            "pre_execution_peak_rss_bytes": 202588160
+          },
+          "median_seconds_per_statevector": 0.02680782812490179,
+          "median_statevectors_per_second": 37.30253698064783,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_bridge": {
+          "batch_total": {
+            "max_seconds": 1.546532541004126,
+            "mean_seconds": 0.9440728979097912,
+            "median_seconds": 0.863756792001368,
+            "min_seconds": 0.7781561669980874,
+            "relative_median_absolute_deviation": 0.04851539273880282,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.990994416999456,
+              1.0454277499957243,
+              0.8311665840010392,
+              0.8164125000039348,
+              0.8914923749980517,
+              0.8584020840062294,
+              1.546532541004126,
+              0.7781561669980874,
+              0.9056622919961228,
+              0.863756792001368,
+              0.8567983750035637
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.600178833003156,
+            "engine": "pennylane_lightning_bridge",
+            "execution_peak_rss_growth_bytes": 295124992,
+            "maximum_norm_error": 1.9761969838327786e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 499253248,
+            "pre_execution_peak_rss_bytes": 204128256
+          },
+          "median_seconds_per_statevector": 0.02699239975004275,
+          "median_statevectors_per_second": 37.04746555550016,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer_bridge": {
+          "batch_total": {
+            "max_seconds": 3.6384939580020728,
+            "mean_seconds": 1.8226659393641802,
+            "median_seconds": 1.6711024169999291,
+            "min_seconds": 1.473662542004604,
+            "relative_median_absolute_deviation": 0.031074197769263654,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.7186516669971752,
+              1.761295374999463,
+              3.6384939580020728,
+              1.5388392499953625,
+              1.6711024169999291,
+              1.599762500001816,
+              1.473662542004604,
+              1.6251021249991027,
+              1.7142534160011564,
+              1.6191742500013788,
+              1.688987833003921
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.2262274589957087,
+            "engine": "qiskit_aer_bridge",
+            "execution_peak_rss_growth_bytes": 316981248,
+            "maximum_norm_error": 1.9539925233402755e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 521519104,
+            "pre_execution_peak_rss_bytes": 204537856
+          },
+          "median_seconds_per_statevector": 0.052221950531247785,
+          "median_statevectors_per_second": 19.14903579485479,
+          "versions": {
+            "qiskit": "2.5.2",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "cirq_simulator_bridge": true,
+          "flagquantum_native_batch": true,
+          "flagquantum_native_monolithic_batch": true,
+          "flagquantum_native_serial": true,
+          "pennylane_lightning_bridge": true,
+          "qiskit_aer_bridge": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 196,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "local_brickwork_statevector",
+        "scalar_ir_content_hash": "671e4e97dfc252ff7d05b080b92dbaf347aee3c612f32f50127a0e88f50569eb"
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "cirq_simulator_bridge": 3.8536931194933777,
+          "flagquantum_native_monolithic_batch": 1.334307838198419,
+          "flagquantum_native_serial": 0.9275769891468547,
+          "pennylane_lightning_bridge": 1.2084495237532662,
+          "qiskit_aer_bridge": 7.017994130175227
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "cirq_simulator_bridge": {
+            "max_abs_error": 8.239936510889834e-18,
+            "passed": true
+          },
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_monolithic_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_serial": {
+            "max_abs_error": 7.37257477290143e-18,
+            "passed": true
+          },
+          "pennylane_lightning_bridge": {
+            "max_abs_error": 6.071532165918825e-18,
+            "passed": true
+          },
+          "qiskit_aer_bridge": {
+            "max_abs_error": 1.0408340855860843e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "cirq_simulator_bridge": {
+          "batch_total": {
+            "max_seconds": 2.34381804199802,
+            "mean_seconds": 1.7451733029989887,
+            "median_seconds": 1.692037665998214,
+            "min_seconds": 1.3947792500039213,
+            "relative_median_absolute_deviation": 0.11616757767852126,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.7985168749946752,
+              2.34381804199802,
+              1.546238708004239,
+              1.5226117079946562,
+              1.692037665998214,
+              1.4770680830042693,
+              1.3947792500039213,
+              1.5125267089970293,
+              2.030513958998199,
+              1.9901977499976056,
+              1.8885975829980453
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 2.797679541996331,
+            "engine": "cirq_simulator_bridge",
+            "execution_peak_rss_growth_bytes": 452657152,
+            "maximum_norm_error": 2.220446049250313e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 656719872,
+            "pre_execution_peak_rss_bytes": 204062720
+          },
+          "median_seconds_per_statevector": 0.052876177062444185,
+          "median_statevectors_per_second": 18.912108544062267,
+          "versions": {
+            "cirq-core": "1.7.0"
+          }
+        },
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 0.623610667003959,
+            "mean_seconds": 0.4751540682740266,
+            "median_seconds": 0.4390691250009695,
+            "min_seconds": 0.36120200000004843,
+            "relative_median_absolute_deviation": 0.10264813087106593,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.36120200000004843,
+              0.48413875000551343,
+              0.3914254580013221,
+              0.623610667003959,
+              0.4390691250009695,
+              0.467645958000503,
+              0.40639745900261914,
+              0.43077879199699964,
+              0.4048328330027289,
+              0.6053791669983184,
+              0.6122145420013112
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.4610222499977681,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 889307136,
+            "maximum_norm_error": 8.881784197001252e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1092599808,
+            "pre_execution_peak_rss_bytes": 203292672
+          },
+          "median_seconds_per_statevector": 0.013720910156280297,
+          "median_statevectors_per_second": 72.88146257136468,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_monolithic_batch": {
+          "batch_total": {
+            "max_seconds": 0.8905142910007271,
+            "mean_seconds": 0.5812284319082127,
+            "median_seconds": 0.585853374999715,
+            "min_seconds": 0.3716499579968513,
+            "relative_median_absolute_deviation": 0.09968663234297005,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.39079287499771453,
+              0.6978728339963709,
+              0.585853374999715,
+              0.5456406669982243,
+              0.6070741669973359,
+              0.5444034589963849,
+              0.47132375000364846,
+              0.3716499579968513,
+              0.6442551250001998,
+              0.6441322500031674,
+              0.8905142910007271
+            ]
+          },
+          "execution_strategy": "native_monolithic_parameter_batch",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.5191827919989009,
+            "engine": "flagquantum_native_monolithic_batch",
+            "execution_peak_rss_growth_bytes": 1224933376,
+            "maximum_norm_error": 8.881784197001252e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 1428291584,
+            "pre_execution_peak_rss_bytes": 203358208
+          },
+          "median_seconds_per_statevector": 0.018307917968741094,
+          "median_statevectors_per_second": 54.6211754775938,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_serial": {
+          "batch_total": {
+            "max_seconds": 0.49365420899994206,
+            "mean_seconds": 0.38476943181740353,
+            "median_seconds": 0.4072704169957433,
+            "min_seconds": 0.27564820800034795,
+            "relative_median_absolute_deviation": 0.16997142712306917,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.3380460829939693,
+              0.42945624999993015,
+              0.34877154100104235,
+              0.4072704169957433,
+              0.44110529200406745,
+              0.49365420899994206,
+              0.2958074589987518,
+              0.27564820800034795,
+              0.2895640829956392,
+              0.4912297920018318,
+              0.4219104160001734
+            ]
+          },
+          "execution_strategy": "repeated_single_item_native",
+          "isolated_memory": {
+            "cold_execution_seconds": 0.41845358399586985,
+            "engine": "flagquantum_native_serial",
+            "execution_peak_rss_growth_bytes": 439353344,
+            "maximum_norm_error": 8.881784197001252e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 642416640,
+            "pre_execution_peak_rss_bytes": 203063296
+          },
+          "median_seconds_per_statevector": 0.012727200531116978,
+          "median_statevectors_per_second": 78.57187427471428,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_bridge": {
+          "batch_total": {
+            "max_seconds": 0.9213920830006828,
+            "mean_seconds": 0.6156968181821867,
+            "median_seconds": 0.5305928750021849,
+            "min_seconds": 0.45645212499948684,
+            "relative_median_absolute_deviation": 0.1022113706422571,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.9213920830006828,
+              0.5305928750021849,
+              0.5080981669962057,
+              0.8529807919985615,
+              0.5157286670000758,
+              0.5110602080021636,
+              0.45645212499948684,
+              0.4763602499951958,
+              0.5687877500022296,
+              0.6801200410045567,
+              0.7510920420027105
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 1.937253750002128,
+            "engine": "pennylane_lightning_bridge",
+            "execution_peak_rss_growth_bytes": 500809728,
+            "maximum_norm_error": 7.771561172376096e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 704282624,
+            "pre_execution_peak_rss_bytes": 203472896
+          },
+          "median_seconds_per_statevector": 0.016581027343818278,
+          "median_statevectors_per_second": 60.309893908523044,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer_bridge": {
+          "batch_total": {
+            "max_seconds": 3.5205560000031255,
+            "mean_seconds": 3.078571147727251,
+            "median_seconds": 3.081384541997977,
+            "min_seconds": 2.7811751249973895,
+            "relative_median_absolute_deviation": 0.040213565464065654,
+            "sample_count": 11,
+            "samples_seconds": [
+              3.2048317500011763,
+              3.266277208997053,
+              3.0931093330000294,
+              3.081384541997977,
+              2.949550375000399,
+              2.9574710829983815,
+              2.7811751249973895,
+              3.0168269999994664,
+              2.8302651250050985,
+              3.1628350829996634,
+              3.5205560000031255
+            ]
+          },
+          "execution_strategy": "repeated_single_item_bridge",
+          "isolated_memory": {
+            "cold_execution_seconds": 3.3075889169995207,
+            "engine": "qiskit_aer_bridge",
+            "execution_peak_rss_growth_bytes": 316735488,
+            "maximum_norm_error": 1.1102230246251565e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 520601600,
+            "pre_execution_peak_rss_bytes": 203866112
+          },
+          "median_seconds_per_statevector": 0.09629326693743678,
+          "median_statevectors_per_second": 10.384942081669276,
+          "versions": {
+            "qiskit": "2.5.2",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "cirq_simulator_bridge": true,
+          "flagquantum_native_batch": true,
+          "flagquantum_native_monolithic_batch": true,
+          "flagquantum_native_serial": true,
+          "pennylane_lightning_bridge": true,
+          "qiskit_aer_bridge": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 207,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "dense_nonlocal_statevector",
+        "scalar_ir_content_hash": "d34add8608cf1e5c9929286ebcc5067860d4e4fa0e54e28925c67ec4b3983444"
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "one_fresh_process_per_engine_case",
+  "engines": [
+    "flagquantum_native_batch",
+    "flagquantum_native_monolithic_batch",
+    "flagquantum_native_serial",
+    "qiskit_aer_bridge",
+    "cirq_simulator_bridge",
+    "pennylane_lightning_bridge"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "torch": "2.13.0",
+    "torch_threads": 1,
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "hostname": "redacted",
+  "methodology": {
+    "circuit_construction_in_peak_rss": true,
+    "circuit_construction_in_timing": false,
+    "exact_statevector": true,
+    "external_bridge_batching": "repeated_single_item_bridge",
+    "iterations": 11,
+    "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+    "memory_probe_iterations": 1,
+    "memory_probe_warmup": 0,
+    "memory_scope": "fresh_process_high_water_resident_set",
+    "one_time_engine_initialization_in_timing": false,
+    "per_call_conversion_and_result_retrieval_in_timing": true,
+    "process_baseline_included": true,
+    "timing_scope": "complete_N_statevector_user_task",
+    "warmup": 2
+  },
+  "n_wires": [
+    18
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "batched_statevector_memory",
+  "scalability_blockers": [
+    "single_host_peak_rss_comparison"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.batched_statevector_memory.v1",
+  "workloads": [
+    "hardware_efficient_statevector",
+    "truncated_qft_statevector",
+    "random_clifford_statevector",
+    "local_brickwork_statevector",
+    "dense_nonlocal_statevector"
+  ],
+  "world_size": 1
+}

@@ -9,6 +9,10 @@ candidate-contract annotation now include MPSProductionPlan. The API checker
 previously rejected the unapproved annotation; the historical API baseline
 remains unchanged.
 
+All `/private/tmp` and `/tmp` paths below are ephemeral log locations on the
+machine that produced the record. They are not part of this repository and
+will not exist for a later reader.
+
 ## Changes and compatibility
 
 - `Module.parameter_groups` changes its return annotation from

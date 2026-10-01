@@ -441,7 +441,10 @@ root compatibility, update manifests/docs/import contracts. Target approximately
 Implementation record (2026-08-31):
 
 - `contracts/public-api-v1-candidate.json` classifies each of 60 exports exactly once.
-- Candidate Core has 22 entries: 20 retained plus `ExecutionOptions`/`ExecutionPlan`.
+- Candidate Core has 34 entries in `contracts/public-api-v1-candidate.json` at the
+  current revision, with `planned_additions` empty. It reached 22 at this
+  checkpoint: 20 retained plus `ExecutionOptions`/`ExecutionPlan`. Later approved
+  proposals settled the core at the 34 entries the manifest records today.
 - Remaining entries map to stable extensions, experimental, or pre-release removal.
 - `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` records migration; API owner approved
   classification/namespace migration on 2026-08-31. Final freeze remains separate.
@@ -457,9 +460,11 @@ Implementation record (2026-08-31):
 - Test batches removed 21 calls in 16 files, then 58 in 13 files, 113 in 2 files,
   and 152 in the last 6 files covering MPS/native/trajectory/JAX/planners.
   `contracts/legacy-root-api-test-debt.json` is now a zero baseline enforced by CI.
-- `fq.__all__`, `dir(fq)`, and `docs/public_api_v1.json` shrank from 60 to 22.
-  Proposal 002 approved ExecutionOptions; Proposal 003 implemented/approved
-  ExecutionPlan root listing. Overall freeze still awaited semantic proposals.
+- `fq.__all__`, `dir(fq)`, and `docs/public_api_v1.json` shrank from 60 to 22 at
+  this checkpoint, and later settled at the 34 exports `docs/public_api_v1.json`
+  lists today. Proposal 002 approved ExecutionOptions; Proposal 003
+  implemented/approved ExecutionPlan root listing. Overall freeze still awaited
+  semantic proposals.
   Historical lazy access was temporarily uncommitted compatibility, outside the
   manifest, with a separate removal inventory.
 - Proposal 001 migrated/removed entries are closed in root `__getattr__` with

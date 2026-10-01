@@ -1,13 +1,13 @@
 # Quantum Kernel Architecture Plan
 
-> **Status:** Phase 1 in progress; Phases 2-5 proposed
+> **Status:** Phases 0 and 1 complete in `a2f24e4`; Phases 2-5 proposed
 >
 > **Scope:** FlagQuantum accelerator kernels, Torch-FL integration, FlagTree
 > compilation, CPU reference implementations, kernel capability evidence, and
 > migration of `flagquantum/simulation/triton_kernels/`
 >
-> **Change boundary:** Phase 1 relocates private kernel modules without changing
-> their algorithms or the stable public API. It does not add a mandatory
+> **Change boundary:** Phase 1 relocated private kernel modules without changing
+> their algorithms or the stable public API. It did not add a mandatory
 > dependency or claim support for an unverified accelerator.
 
 ## 1. Decision Summary
@@ -15,7 +15,7 @@
 FlagQuantum introduces a first-class internal `flagquantum/kernels/` domain
 before the FlagTree integration surface grows.
 
-Phase 1 is a behavior-preserving relocation of the existing optional Triton
+Phase 1 was a behavior-preserving relocation of the existing optional Triton
 kernels from:
 
 ```text
@@ -496,7 +496,7 @@ directory is introduced:
 
 ## 14. Migration Plan
 
-### Phase 0: Approve the Boundary
+### Phase 0: Approve the Boundary (Complete)
 
 - Review this document with Runtime, Simulation, Torch-FL, and FlagTree owners.
 - Confirm `flagquantum/kernels/` is internal in the first release.
@@ -505,7 +505,7 @@ directory is introduced:
 
 Exit criterion: ownership and import direction are agreed before code moves.
 
-### Phase 1: Behavior-Preserving Directory Move (In Progress)
+### Phase 1: Behavior-Preserving Directory Move (Complete)
 
 - Create `flagquantum/kernels/triton/`.
 - Move existing Triton modules without algorithm changes.
@@ -522,6 +522,10 @@ Exit criteria:
 - no stable root exports change;
 - architecture and dependency-policy tests pass; and
 - old and new numerical outputs match existing references.
+
+Current state: `a2f24e4` moved the modules as a pure rename into
+`flagquantum/kernels/triton/`, and `flagquantum/simulation/triton_kernels/` no
+longer exists. No repository-owned import still names the old path.
 
 ### Phase 2: Kernel Provider and Identity
 

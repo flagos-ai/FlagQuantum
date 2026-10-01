@@ -2,6 +2,10 @@
 
 Status: implemented and verified on 2026-09-10 under the recorded approval.
 
+All `/private/tmp` and `/tmp` paths below are ephemeral log locations on the
+machine that produced the record. They are not part of this repository and
+will not exist for a later reader.
+
 ## Problem and scope
 
 Five strict-mypy diagnostics arise from incomplete or inaccurate public type

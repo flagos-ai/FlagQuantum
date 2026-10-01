@@ -22,7 +22,7 @@ must not be represented as validation of current Torch-FL main.
 The machine-readable payload is
 [`artifacts/flagos_distributed_conformance_a800_20260825.json`](../../artifacts/flagos_distributed_conformance_a800_20260825.json).
 Its SHA-256 digest is
-`fbb49fb45ec1b22a39f9c58d676917212f4753c381b4319ca4833dbcfcc70ea4`.
+`b95d2875cf359d0414085b92499034a82b7f71f09dfe867a2f1858145f9b1088`.
 
 ## Result
 

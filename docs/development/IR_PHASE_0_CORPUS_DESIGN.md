@@ -3,6 +3,12 @@
 Status: P0-003 technical implementation complete; final compiler/runtime/training
 owner reviews pending.
 Date: 2026-09-01
+
+> The `tests/fixtures/internal_ir/` corpus, the `tests/internal_ir/` suite,
+> and the private `flagquantum/_compiler/` tree named below are
+> private-worktree artifacts. They are not published in this repository, so
+> the paths are not runnable here. The recorded measurements and approval
+> status are unchanged.
 Dependencies: [`IR_PHASE_0_BASELINE.md`](IR_PHASE_0_BASELINE.md), IR-001–003 Proposed ADRs.
 
 ## 1. Goal

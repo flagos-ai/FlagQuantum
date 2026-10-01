@@ -383,6 +383,11 @@ python benchmarks/audit_results.py --input benchmarks/results
 python benchmarks/audit_results.py --input benchmarks/results/scalability --require-scalability
 ```
 
+The second command exits 2 whenever any audited file fails the release gate and
+also when `benchmarks/results/scalability/` contains no JSON at all. An empty
+directory is the current state and means no scalability claim is certified; it
+is not a passing result.
+
 Only promote a benchmark as scalability evidence if the audit passes and the
 payload demonstrates one logical workload sharded across ranks with release-gate
 claim evidence. Real multi-GPU or multi-node production claims require

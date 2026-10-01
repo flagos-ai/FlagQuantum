@@ -1,5 +1,15 @@
 # FlagQuantum Development Across Multiple Sessions
 
+> **This document does not describe how changes reach `main` today.** It is the
+> v0.2.0 migration workflow. Of 271 merged pull requests, one used the integration
+> branch named below (#15, 2026-09-11); the other 270 were per-change branches cut
+> from `main` and squash merged. The integration branch, the twelve team branches,
+> and the `FlagQuantum-vNext*` worktrees do not exist in this repository.
+>
+> See [Integration workflow](INTEGRATION_WORKFLOW.md) for the workflow actually in
+> use, the measurements behind that statement, and the open decision about which
+> of the two documents to correct.
+
 ## Goal
 
 Multiple development sessions may work from one architecture baseline, but must

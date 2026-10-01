@@ -166,8 +166,9 @@ Remaining boundary debt:
    return Torch objects or JSON-like scalars, but the contract does not prohibit
    unserializable vendor objects. Review this in the minimum contract.
 
-`flagquantum/api.py` exposes generic `AcceleratorInfo`, without Torch-FL/Hygon/CUDA
-SDK objects. `AcceleratorInfo` itself is Stable Core-related and unchanged this round.
+`flagquantum/runtime/backend_registry.py` exposes generic `AcceleratorInfo`, without
+Torch-FL/Hygon/CUDA SDK objects. `AcceleratorInfo` itself is Stable Core-related and
+unchanged this round.
 
 ## Minimum Compute Contract Proposal
 

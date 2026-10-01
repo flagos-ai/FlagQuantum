@@ -54,7 +54,7 @@ made.
 | Import | `import_qiskit`, `from_qiskit` | `QiskitImportResult(ir=CircuitIR, report=...)` or `CircuitIR` | Format interoperability | Correct object boundary; metadata caveat below |
 | Export | `export_qiskit`, `to_qiskit` | Qiskit object only in explicit `artifact`/`circuit` | Format interoperability | Correct boundary |
 | Semantic conversion | `qiskit_statevector_to_flagquantum`, `semantic_fingerprint`, `run_qiskit_conformance` | PyTorch tensor or owned conformance record | Result conversion/test | Correct boundary |
-| Execute | `run_qiskit_aer_dynamic`, `run_qiskit_aer_qasm3_round_trip` in `interop/qiskit/execution.py` | `DynamicExecutionResult` | Backend execution | Misclassified location; migrate after an execution-provider contract exists |
+| Execute | `run_qiskit_aer_dynamic`, `run_qiskit_aer_qasm3_round_trip` in `ecosystem/qiskit/execution.py` | `DynamicExecutionResult` | Backend execution | Misclassified location; migrate after an execution-provider contract exists |
 
 Import behavior is fail-closed by default. Barriers, arbitrary metadata,
 register flattening, unsupported control flow, unsafe multi-qubit unitary basis
@@ -99,7 +99,7 @@ The v0.1 device-coupled encoding API has been removed. Parameterized
 | Braket IQM dynamic QASM | `runtime/dynamic/dialects/braket_iqm.py` | Vendor backend dialect | Vendor vocabulary in Runtime; move to Execution Provider boundary |
 | QCIS v1 | `compiler/qcis.py` | Target format export | Compiler owns the only QCIS emitter |
 | Amazon Braket SDK | `remote/qpu/braket.py` | Provider discovery/submission | Correct provider boundary; SDK objects should never enter IR/runtime records |
-| Quafu/QuarkCircuit | `deployment/providers.py` and calibration helpers | Provider discovery/submission | Correct provider boundary; keep device/job objects local |
+| Quafu/QuarkCircuit | `remote/qpu/quafu.py` and its calibration helpers | Provider discovery/submission | Correct provider boundary; keep device/job objects local |
 
 `architecture.toml` already confines direct Qiskit and PennyLane imports to
 their interop namespaces. The new team tests additionally scan Core, Compiler,
@@ -146,12 +146,12 @@ adapter or alternate IR.
 
 | Severity | Location | Finding | Why it matters | Required owner/action |
 | --- | --- | --- | --- | --- |
-| P1 | `interop/qiskit/conversion.py` source provenance copy | Recognized `flagquantum_*` metadata values are copied recursively without an owned scalar/container validator. A caller can place an arbitrary external object under one of those keys and carry it into `CircuitIR.metadata`. | Potential real object leakage through an otherwise correct adapter. | Core must define canonical metadata value types and validation; Ecosystem then rejects or explicitly serializes unsupported values with an approved issue code. |
+| P1 | `ecosystem/qiskit/conversion.py` source provenance copy | Recognized `flagquantum_*` metadata values are copied recursively without an owned scalar/container validator. A caller can place an arbitrary external object under one of those keys and carry it into `CircuitIR.metadata`. | Potential real object leakage through an otherwise correct adapter. | Core must define canonical metadata value types and validation; Ecosystem then rejects or explicitly serializes unsupported values with an approved issue code. |
 | P1 | `ecosystem/extensions/sdk.py` protocols | `execute`, `value_and_grad`, `transform`, and `plan` accept/return `Any`. | Third-party objects can cross layers through a negotiated extension. | Ecosystem/integration must replace `Any` at cross-layer points with approved owned contracts. |
 | P2 | `runtime/dynamic/conformance.py` | Runtime compatibility wrappers import `interop.qiskit.execution`. | Dependency direction is Runtime -> Ecosystem. | Move Qiskit Aer implementation to Execution Provider; keep an Ecosystem format converter and a compatibility shim with an owned removal plan. |
-| P2 | `_compiler/importers/circuit_ir.py` | Compiler provenance allowlist names `qiskit_label`. | No external object leaks, but vendor vocabulary has entered Compiler. | Core defines vendor-neutral operation label/provenance semantics; Qiskit maps at the edge. |
+| P2 | `ecosystem/qiskit/conversion.py`, `ecosystem/qiskit/conformance.py` | The interop provenance allowlist names `qiskit_label`. | No external object leaks, but vendor vocabulary has entered Compiler. | Core defines vendor-neutral operation label/provenance semantics; Qiskit maps at the edge. |
 | P2 | `runtime/dynamic/dialects/braket_iqm.py` | Vendor-specific Braket/IQM lowering is implemented under Runtime. | Runtime owns orchestration, not vendor artifact dialects. | Execution Provider migration after a dynamic artifact contract is approved. |
-| P3 | `encoding/encoder.py` | Legacy PyTorch/device frontend directly invokes old device operations. | It bypasses the modern IR-centered user journey but does not import another ecosystem. | Migrate examples/users to `fq.Circuit`/`fq.Module`; retire only through compatibility policy. |
+| P3 | `examples/**` legacy direct-device scripts | Some historical scripts call device operations directly instead of going through `fq.Module`. | They bypass the modern IR-centered user journey but do not import another ecosystem. | Point users at `fq.Circuit`/`fq.Module`; retire the scripts only through compatibility policy. |
 
 The Runtime-to-Ecosystem reverse dependency recorded above has since been
 removed: dynamic conformance tests now invoke the Qiskit adapter at its owning
@@ -197,8 +197,8 @@ This is sequencing only; no bulk move is part of this change.
    JAX locality, round trips, semantic state equivalence, failure issue codes,
    and external-object containment.
 3. **Separate Qiskit execution from conversion.** Move Aer execution from
-   `interop/qiskit/execution.py` to the Execution Provider-owned location; keep
-   `interop/qiskit` for object/format translation. Remove the Runtime reverse
+   `ecosystem/qiskit/execution.py` to the Execution Provider-owned location; keep
+   `ecosystem/qiskit` for object/format translation. Remove the Runtime reverse
    dependency after a compatibility window.
 4. **Move vendor dynamic dialects.** Relocate Braket IQM lowering out of Runtime
    into Execution Provider adapters while Runtime consumes only the approved
@@ -262,8 +262,8 @@ Tests added under `tests/team/ecosystem/` provide:
 The repository's existing Qiskit/PennyLane contract and conformance suites
 remain authoritative for full opcode matrices and supported dependency lanes.
 OpenQASM/QCIS exact text, parse semantics, failure diagnostics, and hash
-determinism remain covered by `tests/internal_ir/test_phase2_text_emitters.py`
-and `tests/internal_ir/test_phase2_offline_deployment.py`; duplicating those
+determinism remain covered by `tests/hybrid_compiler/test_target_emission.py`
+and `tests/integration/test_artifact_deployment_dry_run.py`; duplicating those
 Compiler-owned fixtures here would create a second test specification.
 
 ## Execution evidence
@@ -280,7 +280,8 @@ Executed on 2026-09-03:
   first container run. Two failures were caused by the linked-worktree Git path
   not being mounted and passed after an absolute-path remount. The remaining
   pre-existing `tests/internal_ir/test_performance_budget.py::test_approved_import_verify_budget_is_machine_enforced`
-  timing gate failed twice in the container and was not retried again under the
+  timing gate (private-worktree corpus, not published in this repository)
+  failed twice in the container and was not retried again under the
   repository no-repeat policy. It is unrelated to the documentation and
   Ecosystem tests in this change, but the default gate is therefore not
   reported as wholly green.

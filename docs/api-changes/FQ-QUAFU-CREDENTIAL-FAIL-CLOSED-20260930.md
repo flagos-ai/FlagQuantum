@@ -99,8 +99,11 @@ configured; the message reports that no legacy fallback exists. A user cannot ac
 on it.
 
 Both the single-target probe and the per-target loop behind the table above are
-saved in the review workspace as `probe_quafu_failclosed.py` and
-`probe_quafu_targets.py`.
+saved in the maintainer's review workspace as `probe_quafu_failclosed.py` and
+`probe_quafu_targets.py`. Those two files are not part of this repository; the
+in-repository equivalent is the transport-injection pattern in
+`tests/api_contract/test_quafu_service_compile.py` named above, plus the
+regression test added under `tests/team/remote/`.
 
 ## Alternatives considered
 

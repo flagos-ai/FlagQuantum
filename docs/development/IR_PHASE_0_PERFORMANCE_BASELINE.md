@@ -1,5 +1,11 @@
 # FlagQuantum IR Phase 0 Performance Baseline and Phase 1 Budget Candidates
 
+> The `tests/fixtures/internal_ir/` corpus, including the machine baselines and
+> budget files named below, is a private-worktree artifact. It is not published in
+> this repository, so the `benchmarks/internal/*_gate.py` scripts that read those
+> paths need the corpus supplied out of band. The recorded measurements and
+> approval status are unchanged.
+
 Status: Phase 0 local CPU baseline measured; Phase 1 internal budget approved by the API owner.
 Benchmark: `benchmarks/internal/ir_phase0_baseline.py`
 Machine results: `tests/fixtures/internal_ir/phase0_performance_baseline.json`

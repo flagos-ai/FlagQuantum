@@ -22,7 +22,13 @@ python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps
 
 Examples 01 through 03 use the PyTorch-native path so the minimal installation
 works without optional accelerators. Examples 04 and 05 contain the dedicated
-JAX workflows.
+JAX workflows; install the `jax` extra from `pyproject.toml` first, because
+without it example 04 reports `status: skipped` and example 05 exits with
+`JAX backend requested but unavailable`:
+
+```bash
+pip install -e '.[jax]'
+```
 
 MPS correctness and scale diagnostics:
 

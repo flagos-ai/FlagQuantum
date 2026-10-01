@@ -17,7 +17,7 @@ production, release, or general scalability certification.
 - raw artifact:
   `artifacts/flagos_statevector_scale_f2_a800_20260826.json`;
 - compact artifact SHA-256:
-  `6e52215287bbbd15198bec9d8558935e19c9d21c07923e5306dbb7af9b93b899`.
+  `eb4112563edd2ec73f5f8aff187ab3bf34f598ae790c8f0f7d3e8076d325ef47`.
 
 Torch-FL was built only inside an isolated temporary validation environment
 with its optional FlagGems C++ and Python kernels disabled. It was not added to

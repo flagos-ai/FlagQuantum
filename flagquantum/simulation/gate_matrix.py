@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any
 
 import torch
@@ -15,6 +17,22 @@ from ..errors import ValidationError
 from .matrices import GATE_MAT_DICT
 
 _FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
+_PARAMETER_BATCH_WINDOW: ContextVar[tuple[int, int, int] | None] = ContextVar(
+    "flagquantum_parameter_batch_window", default=None
+)
+
+
+@contextmanager
+def _parameter_batch_window(
+    start: int, stop: int, full_batch_size: int
+) -> Iterator[None]:
+    """Select one execution window from otherwise full-batch gate parameters."""
+
+    token = _PARAMETER_BATCH_WINDOW.set((start, stop, full_batch_size))
+    try:
+        yield
+    finally:
+        _PARAMETER_BATCH_WINDOW.reset(token)
 
 
 def _parameter_rows(
@@ -87,6 +105,21 @@ def parameter_tensor(
     tensors = [
         value_to_tensor(value, device=device, dtype=real_dtype) for value in values
     ]
+    window = _PARAMETER_BATCH_WINDOW.get()
+    if window is not None:
+        start, stop, full_batch_size = window
+        # Validate against the public circuit batch before slicing. Otherwise a
+        # malformed vector whose length merely equals the internal chunk could
+        # be mistaken for one valid parameter row per circuit entry.
+        _parameter_rows(name, names, tensors, bsz=full_batch_size)
+        tensors = [
+            (
+                tensor[start:stop]
+                if tensor.ndim == 1 and int(tensor.shape[0]) == full_batch_size
+                else tensor
+            )
+            for tensor in tensors
+        ]
     rows = _parameter_rows(name, names, tensors, bsz=bsz)
     target = bsz if rows == 1 and bsz > 1 else rows
     columns = [

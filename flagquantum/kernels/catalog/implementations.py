@@ -190,6 +190,22 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MPS-004-A",
+        "mps.environment.transfer_identity_z",
+        "mps_environment",
+        "fused_mps_environment_transfer",
+        layouts=("mps_environment",),
+        internal_fallback=True,
+    ),
+    _triton(
+        "FQKI-TRITON-MPS-005-A",
+        "mps.environment.transfer_channels",
+        "mps_environment",
+        "fused_mps_environment_channels",
+        layouts=("mps_environment_channels",),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-NUM-001-A",
         "numerics.matmul.complex_batched",
         "complex_bmm",

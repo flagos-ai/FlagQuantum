@@ -9,6 +9,31 @@ from threading import Lock
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .sabre import plan_sabre_swaps
+
+# Dense distance-matrix entry for a physical wire pair with no coupling path.
+# A coupling map is a graph, so most pairs of a production device are far
+# apart but still reachable; this value is reserved for genuine disconnection.
+UNREACHABLE_DISTANCE = -1
+
+
+def _breadth_first_distances(
+    adjacency: tuple[tuple[int, ...], ...],
+    source: int,
+) -> tuple[int, ...]:
+    """Return undirected hop counts from one wire to every wire."""
+
+    distances = [UNREACHABLE_DISTANCE] * len(adjacency)
+    distances[source] = 0
+    queue: deque[int] = deque((source,))
+    while queue:
+        wire = queue.popleft()
+        level = distances[wire] + 1
+        for neighbor in adjacency[wire]:
+            if distances[neighbor] == UNREACHABLE_DISTANCE:
+                distances[neighbor] = level
+                queue.append(neighbor)
+    return tuple(distances)
 
 
 @dataclass(frozen=True)
@@ -49,6 +74,30 @@ class CouplingMap:
         hash=False,
     )
     _path_cache_evictions: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_rows: OrderedDict[int, tuple[int, ...]] = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_hits: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_misses: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_evictions: int = field(
         init=False,
         repr=False,
         compare=False,
@@ -100,6 +149,10 @@ class CouplingMap:
         object.__setattr__(self, "_path_cache_hits", 0)
         object.__setattr__(self, "_path_cache_misses", 0)
         object.__setattr__(self, "_path_cache_evictions", 0)
+        object.__setattr__(self, "_distance_rows", OrderedDict())
+        object.__setattr__(self, "_distance_hits", 0)
+        object.__setattr__(self, "_distance_misses", 0)
+        object.__setattr__(self, "_distance_evictions", 0)
 
     @classmethod
     def line(
@@ -236,6 +289,67 @@ class CouplingMap:
                         self._path_cache_evictions + 1,
                     )
 
+    def distance(self, left: int, right: int) -> int:
+        """Return the undirected hop count between two physical wires.
+
+        Raises:
+            ValueError: If either wire is outside the device or the two wires
+                are not connected by any coupling path.
+        """
+
+        left = self._validate_wire(left)
+        right = self._validate_wire(right)
+        distance = self._distance_row(left)[right]
+        if distance == UNREACHABLE_DISTANCE:
+            raise ValueError(f"No coupling path between wires {left} and {right}.")
+        return distance
+
+    def distance_matrix(self) -> tuple[tuple[int, ...], ...]:
+        """Return the dense hop-count matrix over every ordered wire pair.
+
+        Row and column indices are physical wire indices, so entry
+        ``matrix[left][right]`` is the undirected distance used by
+        :meth:`distance`. Entries equal to :data:`UNREACHABLE_DISTANCE` mean
+        the pair has no coupling path. The matrix is symmetric with a zero
+        diagonal, and building it costs one breadth-first search per wire.
+        """
+
+        return tuple(self._distance_row(source) for source in range(self.n_wires))
+
+    def distance_cache_info(self) -> dict[str, int]:
+        """Return bounded-cache diagnostics for the distance index."""
+
+        with self._path_cache_lock:
+            return {
+                "capacity": self.path_cache_capacity,
+                "size": len(self._distance_rows),
+                "hits": self._distance_hits,
+                "misses": self._distance_misses,
+                "evictions": self._distance_evictions,
+            }
+
+    def _distance_row(self, source: int) -> tuple[int, ...]:
+        """Return the cached all-wire distance row rooted at one wire."""
+
+        with self._path_cache_lock:
+            cached = self._distance_rows.get(source)
+            if cached is not None:
+                self._distance_rows.move_to_end(source)
+                object.__setattr__(self, "_distance_hits", self._distance_hits + 1)
+                return cached
+            object.__setattr__(self, "_distance_misses", self._distance_misses + 1)
+        row = _breadth_first_distances(self._adjacency, source)
+        if self.path_cache_capacity:
+            with self._path_cache_lock:
+                self._distance_rows[source] = row
+                self._distance_rows.move_to_end(source)
+                while len(self._distance_rows) > self.path_cache_capacity:
+                    self._distance_rows.popitem(last=False)
+                    object.__setattr__(
+                        self, "_distance_evictions", self._distance_evictions + 1
+                    )
+        return row
+
     def path_cache_info(self) -> dict[str, int]:
         """Return bounded-cache diagnostics for compiler observability."""
 
@@ -310,7 +424,8 @@ def estimate_routing_cost(
 
     if strategy not in {"restore_after_each_gate", "persistent_layout"}:
         raise ValueError(
-            "routing strategy must be 'restore_after_each_gate' or 'persistent_layout'"
+            "routing cost estimate supports 'restore_after_each_gate' or "
+            "'persistent_layout'; 'sabre' plans SWAPs instead of estimating them"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -644,6 +759,107 @@ def _route_persistent_layout(
     return replace(ir, instructions=tuple(routed), metadata=metadata)
 
 
+def _route_sabre(
+    ir: CircuitIR,
+    coupling: CouplingMap,
+    *,
+    path_cache_before: dict[str, int],
+) -> CircuitIR:
+    """Materialize one SABRE persistent layout, then restore the output layout.
+
+    Instructions are emitted in the order the planner placed them, not in source
+    order. The planner introduces a SWAP when a two-wire operation becomes
+    reachable, and every operation keeps its planned physical wires, so a source
+    order that disagrees with the plan would replay a different layout than the
+    one the plan was costed against.
+    """
+
+    strategy = "sabre"
+    plan = plan_sabre_swaps(ir, coupling)
+    routed: list[Instruction] = []
+    topology_gate_count = 0
+    # Counted against the source wires, exactly as the shortest-path strategies
+    # do, so the number describes the work the topology forces rather than the
+    # work this layout happened to arrange for free.
+    routed_gate_count = 0
+    skipped_channel_count = 0
+    swap_index = 0
+    placed_so_far = 0
+    for source_index in plan.sequence:
+        while (
+            swap_index < len(plan.swaps)
+            and plan.swap_placements[swap_index] == placed_so_far
+        ):
+            anchor_index = plan.swap_anchors[swap_index]
+            swap_left, swap_right = plan.swaps[swap_index]
+            routed.append(
+                _swap_instruction(
+                    swap_left,
+                    swap_right,
+                    ir.instructions[anchor_index],
+                    strategy=strategy,
+                    phase="forward",
+                    source_instruction_index=anchor_index,
+                )
+            )
+            swap_index += 1
+        placed_so_far += 1
+        instruction = ir.instructions[source_index]
+        placed_wires = plan.placements[source_index]
+        if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
+            if instruction.metadata.get("is_channel"):
+                skipped_channel_count += 1
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    placed_wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
+        topology_gate_count += 1
+        if not coupling.has_edge(*instruction.wires):
+            routed_gate_count += 1
+        routed.append(
+            _remap_instruction(
+                instruction,
+                placed_wires,
+                strategy=strategy,
+                source_instruction_index=source_index,
+            )
+        )
+    if swap_index != len(plan.swaps):
+        raise RuntimeError("SABRE routing plan did not place every inserted SWAP")
+    for restore_index in range(len(plan.swaps) - 1, -1, -1):
+        anchor_index = plan.swap_anchors[restore_index]
+        swap_left, swap_right = plan.swaps[restore_index]
+        routed.append(
+            _swap_instruction(
+                swap_left,
+                swap_right,
+                ir.instructions[anchor_index],
+                strategy=strategy,
+                phase="final_restore",
+                source_instruction_index=anchor_index,
+            )
+        )
+    metadata = dict(ir.metadata)
+    metadata["routing"] = _routing_metadata(
+        ir=ir,
+        coupling=coupling,
+        strategy=strategy,
+        topology_gate_count=topology_gate_count,
+        routed_gate_count=routed_gate_count,
+        inserted_swap_count=2 * len(plan.swaps),
+        skipped_channel_count=skipped_channel_count,
+        pre_restore_layout=plan.final_logical_to_physical,
+        path_cache_before=path_cache_before,
+        path_cache_after=coupling.path_cache_info(),
+    )
+    return replace(ir, instructions=tuple(routed), metadata=metadata)
+
+
 def route_to_topology(
     circuit_or_ir: Any,
     coupling_map: CouplingMap | Iterable[tuple[int, int]],
@@ -652,9 +868,10 @@ def route_to_topology(
 ) -> CircuitIR:
     """Insert SWAP gates so two-qubit operations respect hardware topology."""
 
-    if strategy not in {"restore_after_each_gate", "persistent_layout"}:
+    if strategy not in {"restore_after_each_gate", "persistent_layout", "sabre"}:
         raise ValueError(
-            "routing strategy must be 'restore_after_each_gate' or 'persistent_layout'"
+            "routing strategy must be 'restore_after_each_gate', "
+            "'persistent_layout', or 'sabre'"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -667,6 +884,12 @@ def route_to_topology(
     path_cache_before = coupling.path_cache_info()
     if strategy == "persistent_layout":
         return _route_persistent_layout(
+            ir,
+            coupling,
+            path_cache_before=path_cache_before,
+        )
+    if strategy == "sabre":
+        return _route_sabre(
             ir,
             coupling,
             path_cache_before=path_cache_before,
@@ -783,10 +1006,11 @@ def record_post_routing_optimization(ir: CircuitIR) -> CircuitIR:
     routing = ir.metadata.get("routing")
     if not isinstance(routing, dict):
         return ir
+    # ``routing_phase`` is the marker every strategy stamps on an inserted SWAP,
+    # so the count does not depend on a list of strategy names.
     retained_swap_count = sum(
         instruction.name == "swap"
-        and instruction.metadata.get("routing_strategy")
-        in {"restore_after_each_gate", "persistent_layout"}
+        and instruction.metadata.get("routing_phase") is not None
         for instruction in ir
     )
     metadata = dict(ir.metadata)

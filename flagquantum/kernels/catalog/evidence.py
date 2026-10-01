@@ -153,6 +153,28 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-MPS-004-A",
+        "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_cuda_matches_reference",
+        "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_product_path_uses_catalog",
+        capability_tests=(
+            "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_cpu_fallback_matches_reference_and_gradients",
+            "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_large_shape_uses_fallback",
+            "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_enforces_evidenced_window",
+            "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_rejects_gradients",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-MPS-005-A",
+        "tests/unit/test_mps_environment_channels_triton.py::test_fused_mps_environment_channels_cuda_matches_reference",
+        "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_product_path_uses_catalog",
+        capability_tests=(
+            "tests/unit/test_mps_environment_channels_triton.py::test_fused_mps_environment_channels_cpu_fallback_preserves_gradients",
+            "tests/unit/test_mps_environment_channels_triton.py::test_fused_mps_environment_channels_outside_window_uses_fallback",
+            "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_route_enforces_evidenced_window",
+            "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_route_rejects_gradients",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-NUM-001-A",
         "tests/unit/test_triton_complex_bmm.py::test_fused_complex_bmm_forward_and_backward_match_torch",
         gradient_tests=(

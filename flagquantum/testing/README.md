@@ -41,7 +41,8 @@ python -m pytest tests/unit/test_correctness_properties.py -q
 ```
 
 For MPS evidence validation, start with the matching
-`mps_*_certification.py` module and its `tests/unit/test_issue09*.py` scenario.
+`mps_*_certification.py` module and its `tests/unit/test_mps_*_certification.py`
+scenario.
 Keep schema-specific validation beside its existing validator; do not add a
 generic certification manager or a second representation of execution evidence.
 

@@ -28,6 +28,7 @@ and maintainers can find the right level of detail quickly.
 | [Reference](reference/README.md) | Public APIs, contracts, policies, and support matrices |
 | [Guides](guides/README.md) | Operational runbooks and performance case studies |
 | [Development](development/README.md) | Repository, testing, dependency, and release workflows |
+| [API change proposals](api-changes/README.md) | Approved and proposed Stable Core API changes |
 | [Roadmap](roadmap/README.md) | Vision, maturity, ecosystem, and delivery plans |
 | [Generated](generated/) | Machine-generated capability and stable-API inventories |
 

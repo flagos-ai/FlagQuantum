@@ -12,6 +12,10 @@ from typing import Any
 import torch
 from torch.profiler import record_function
 
+from .environment_dispatch import (
+    _try_apply_cataloged_mps_environment,
+    _try_apply_cataloged_mps_environment_channels,
+)
 from .one_site_dispatch import _try_apply_cataloged_mps_one_site_bucket
 
 
@@ -21,6 +25,8 @@ class SiteKernelStats:
     triton_one_site_bucket_calls: int = 0
     rxx_bucket_calls: int = 0
     transfer_calls: int = 0
+    triton_environment_transfer_calls: int = 0
+    triton_environment_channels_calls: int = 0
     compiled_calls: int = 0
     compile_seconds: float = 0.0
     dynamo_graphs: int = 0
@@ -494,6 +500,19 @@ def environment_transfer(
     """Real-channel identity/Z transfer used inside one rank's environment scan."""
 
     _STATS.transfer_calls += 1
+    cataloged = _try_apply_cataloged_mps_environment(
+        env,
+        tensor,
+        insert_z=z,
+    )
+    if cataloged is not None:
+        _STATS.triton_environment_transfer_calls += 1
+        _log_event(
+            "catalog_route",
+            kind="transfer_z" if z else "transfer_i",
+            provider="triton",
+        )
+        return cataloged
     signs = tensor.real.new_tensor((1.0, -1.0) if z else (1.0, 1.0))
     with record_function("flagquantum::mps::environment_transfer"):
         output = _run(
@@ -511,6 +530,15 @@ def environment_transfer_channels(
     """Propagate many observable channels through one site in one launch."""
 
     _STATS.transfer_calls += 1
+    cataloged = _try_apply_cataloged_mps_environment_channels(channels, tensor)
+    if cataloged is not None:
+        _STATS.triton_environment_channels_calls += 1
+        _log_event(
+            "catalog_route",
+            kind="transfer_observable_channels",
+            provider="triton",
+        )
+        return cataloged
     with record_function("flagquantum::mps::environment_transfer_channels"):
         return _run(
             _transfer_channels_complex,

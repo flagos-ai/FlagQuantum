@@ -42,6 +42,43 @@ operational_runbook = "docs/reference/PUBLIC_API_POLICY.md"
 release_gate = "tools/runtime_contract_schema.py"
 release_artifact = "docs/generated/STABLE_API.md"
 
+[capabilities.program_compilation]
+title = "Program optimization and target-aware compilation"
+summary = "Transform one FlagQuantum IR program without executing it: canonical optimization, logical layer scheduling, and lowering onto an explicit coupling topology."
+category = "build_and_compile"
+user_goals = ["Optimize a program without changing its numerical result", "Compile a program onto a constrained connectivity", "Inspect schedule layers and routing decisions before execution"]
+public_apis = ["flagquantum.compiler.optimize", "flagquantum.compiler.compile", "flagquantum.compiler.route_to_topology", "flagquantum.compiler.schedule_layers", "flagquantum.compiler.CouplingMap"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "examples/compiler_optimize.py"
+documentation = "flagquantum/compiler/README.md"
+level = "production_supported"
+owner = "compiler maintainers"
+limitations = "In-process transformation of one FlagQuantum IR v1 program on CPU; the compiler never executes a program or certifies hardware behavior. optimize() removes identity gates, merges self-inverse runs, and merges adjacent rotations to a fixed point. compile() runs that same fixed point, optionally routes onto one explicit CouplingMap, optimizes again, and records post-routing optimization. Routing offers two strategies, restore_after_each_gate and persistent_layout, plus a cost-estimate automatic selection; the topology is always caller-supplied and never discovered. Scheduling constructs deterministic logical ASAP layers with explicit wire and classical-data dependencies; it is not target timing or pulse scheduling. There is no directed acyclic graph intermediate, no composable pass manager, no pass analysis or preservation metadata, and no in-repository pass extension point: canonicalization functions are pipeline internals, and an installed external compiler is selected by name through the extension SDK rather than composed as a pass. Pulse-level, calibration-aware, and parameter-aware compilation, dynamic-circuit control flow, and noise-aware optimization beyond lower_noise_model are unsupported. The structured hybrid program slice under flagquantum/compiler/_hybrid is private and absent from public exports. Compilation is single-process; no distributed or multi-device compilation path exists."
+focused_tests = "tests/integration/test_compiler_optimize_golden_path.py"
+integration_tests = "tests/integration/test_target_aware_compilation_golden_path.py"
+hardware_evidence = ".github/workflows/ci.yml"
+operational_runbook = "flagquantum/compiler/README.md"
+
+[capabilities.circuit_drawing]
+title = "Circuit drawing"
+summary = "Render one circuit as terminal text or a Matplotlib figure through one shared layout, without executing it."
+category = "build_and_compile"
+user_goals = ["Inspect a circuit diagram in a terminal", "Render a figure for a document or notebook", "Check a program's wiring and gate order by eye", "Draw with Circuit.draw or the flagquantum.drawer entry points"]
+public_apis = ["flagquantum.drawer.draw", "flagquantum.drawer.draw_text", "flagquantum.drawer.use_style", "flagquantum.drawer.available_styles"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/drawer/README.md"
+documentation = "flagquantum/drawer/README.md"
+level = "experimental"
+owner = "drawer maintainers"
+limitations = "Presentation only. The drawer owns layout, labels, gate symbols, and styles; it does not execute, compile, validate, or route a circuit, and it changes no numerical result. The text renderer depends only on the standard library and Core, while Matplotlib is optional and is imported only by the figure renderer, so draw_mpl is absent from flagquantum.drawer when Matplotlib is not installed. The rendered text layout is not a frozen contract: no compatibility guarantee is made for exact spacing, gate symbols, column placement, or option names, and the only tests assert renderer self-consistency rather than a golden diagram. Rendering is single-process CPU work with no streaming or interactive backend. Structured hybrid programs, pulse-level schedules, and target timing diagrams are not drawable. The package README is the only user-facing documentation."
+focused_tests = "tests/test_drawer_ir.py"
+
 [capabilities.local_statevector]
 title = "Local statevector simulation and training"
 summary = "Run exact circuits and differentiable quantum workloads on a CPU or one GPU."
@@ -610,6 +647,57 @@ level = "experimental"
 owner = "interop maintainers"
 limitations = "The flagquantum.ecosystem.cirq bridge executes one fully bound, single-batch FlagQuantum circuit on local CPU Cirq Simulator and returns an owned ExecutionResult. It supports exact complex64 and complex128 statevectors and computational-basis samples or counts with explicit wire order and seed. Explicit qubit order preserves idle FlagQuantum wire extent. It does not support gradients, noise models, dynamic circuits, automatic routing, device selection, or fallback. Native fq.run remains unchanged."
 focused_tests = "tests/test_cirq_interop.py"
+
+[capabilities.cirq_interop]
+title = "Cirq circuit interoperability"
+summary = "Translate supported Cirq circuits to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported Cirq circuit", "Export FlagQuantum IR to Cirq", "Audit semantic loss at a framework boundary"]
+public_apis = ["flagquantum.ecosystem.cirq.from_cirq", "flagquantum.ecosystem.cirq.to_cirq", "flagquantum.ecosystem.cirq.import_cirq", "flagquantum.ecosystem.cirq.export_cirq"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "symbolic_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified against Cirq 1.6.1 and 1.7.0 on Python 3.11 or newer for static circuit conversion with complex128 numerical semantics, bidirectional and fail-closed unless allow_lossy is set. Moment structure is flattened and not preserved, and the contiguous-line-qubit mapping rejects non-line and non-contiguous line qubits. Arbitrary qid dimensions, CircuitOperation blocks, classical controls, MatrixGate, operation tags, and global-phase operations are unsupported, as are idle-wire extents and global phase in representation. Nineteen FlagQuantum opcodes have no Cirq lowering. The parameter subset is FlagQuantum add/multiply/negate after Cirq symbolic simplification with cirq.parameter_symbols discovery and cirq.resolve_parameters binding equivalence; function, power, complex-constant, and division-by-unbound-parameter nodes are rejected before an operation is created. Measurements convert only as terminal MeasurementGate instructions with distinct non-empty keys, and invert masks, confusion maps, and non-terminal measurements are not representable. Execution, gradients, noise, and hardware submission are out of scope; Cirq objects never enter Core, Compiler, Runtime, or Simulation, and the separate local Cirq Simulator bridge is declared as cirq_simulator_execution."
+focused_tests = "tests/test_cirq_interop_conformance.py"
+
+[capabilities.braket_interop]
+title = "Amazon Braket circuit interoperability"
+summary = "Translate supported Amazon Braket circuits to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported Amazon Braket circuit", "Export FlagQuantum IR to Amazon Braket", "Audit semantic loss at a framework boundary"]
+public_apis = ["flagquantum.ecosystem.braket.from_braket", "flagquantum.ecosystem.braket.to_braket", "flagquantum.ecosystem.braket.import_braket", "flagquantum.ecosystem.braket.export_braket"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "bound_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified against amazon-braket-sdk 1.117.0 and 1.127.1 on Python 3.11 or newer for bidirectional static circuit conversion, fail-closed unless allow_lossy is set. The Braket integer qubit index equals the FlagQuantum wire, and explicit identity preserves unreferenced FlagQuantum wires. Only bound finite real scalars are accepted; free parameters are rejected instead of converted, so no symbolic parameter expression survives the boundary. Global phase and measurement instructions are not represented, and measurements belong to the execution plan rather than to static circuit IR. Compiler directives, gate calibrations, noise instructions, pulse gates, verbatim boxes, result types, and wire-extent preservation are unsupported, and nine FlagQuantum opcodes have no Braket lowering. Core import, runtime execution, cloud submission, and autograd bridging are all prohibited at this boundary, and Braket objects never enter FlagQuantum runtime layers. docs/reference/API.md documents Braket through the adapter contract and the provider execution path only; it has no static-conversion section, so the contract file is the authoritative statement of scope."
+focused_tests = "tests/test_braket_interop_conformance.py"
+
+[capabilities.cudaq_interop]
+title = "CUDA-Q kernel export"
+summary = "Export supported FlagQuantum IR to a CUDA-Q kernel through an isolated, fail-closed control-plane adapter. Reverse conversion is not offered."
+category = "deployment_and_extension"
+user_goals = ["Export FlagQuantum IR to a CUDA-Q kernel", "Audit rejected operations before kernel construction", "Check CUDA-Q wire-order assumptions at the boundary"]
+public_apis = ["flagquantum.ecosystem.cudaq.to_cudaq", "flagquantum.ecosystem.cudaq.export_cudaq"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "bound_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified against CUDA-Q 0.15.1 and 0.16.0.post1 on Python 3.11 or newer, and only on linux_x86_64 and linux_aarch64. The boundary is export-only: FlagQuantum IR becomes a cudaq.Kernel built with cudaq.make_kernel_dynamic_builder, and reverse conversion is rejected with reverse_conversion_not_supported rather than approximated. CUDA-Q orders wire zero as the least significant bit, so an explicit conformance reordering is required and is enforced by the export contract. Only bound finite real scalars are accepted; symbolic parameters and kernel arguments are rejected, so no parameter expression crosses the boundary. Measurements are rejected from static unitary export. Arbitrary or decorated kernel import, classical control flow, kernel composition, qudit operations, state initialization, noise channels, and remote or hardware execution are unsupported, and twenty-three FlagQuantum opcodes have no CUDA-Q lowering. Core import and autograd bridging are prohibited, and CUDA-Q objects never enter FlagQuantum runtime layers."
+focused_tests = "tests/test_cudaq_export_conformance.py"
 
 [capabilities.simulator_advisor]
 title = "Evidence-based simulator advisor"

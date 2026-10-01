@@ -41,8 +41,9 @@ fq.run(program)
 Start in `planner/` for selection policy, `execution_plan.py` for the immutable
 plan product, `execution_plan_contract.py` for serialization and validation,
 `plan_execution.py` for exact-plan execution, and `execution.py` for local
-dispatch. Backend-specific lifecycle code belongs in `backends/`; numerical
-tensor operations do not.
+dispatch. Backend-specific lifecycle code belongs in `../compute/` and the
+backend registry; numerical tensor operations do not. The forwarding-only
+`flagquantum/backends/` package no longer exists.
 
 For program input, `fq.run(program)` invokes the stable planner once; that
 planning step compiles once and seals a canonical executable program into the
