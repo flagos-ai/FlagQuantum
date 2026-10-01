@@ -6,7 +6,7 @@ owns its compiler dependency and translation code. Installing a plugin does not
 import or activate it during `import flagquantum`.
 
 For QSteed installation and an offline compilation check, follow the
-[Quafu setup guide](QUAFU_BACKEND.md#install-the-compiler-plugin). The plugin
+[Quafu setup guide](QUAFU_BACKEND.md#optional-local-compiler-plugin). The plugin
 is maintained in [FlagQuantum-Compiler-QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed).
 
 ## Package registration

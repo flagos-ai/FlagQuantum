@@ -18,7 +18,7 @@ production, release, or general scalability certification.
 - raw artifact:
   `artifacts/flagos_statevector_training_f3_a800_20260826.json`;
 - artifact SHA-256:
-  `1aa945b2bc78dd5306e3234d5826028b3e7442fb91672c16c5b29ff16654460d`.
+  `13ff25cbe21fec697efccc359ed393da8b84c7f755cdc51516d3805a36d7351e`.
 
 Torch-FL was built only in an isolated temporary validation directory with its
 optional FlagGems C++ and Python kernels disabled. FlagQuantum did not modify
