@@ -155,9 +155,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-004-A",
         "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_cuda_matches_reference",
+        "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_product_path_uses_catalog",
         capability_tests=(
             "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_cpu_fallback_matches_reference_and_gradients",
             "tests/unit/test_mps_environment_triton.py::test_fused_mps_environment_large_shape_uses_fallback",
+            "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_enforces_evidenced_window",
+            "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_rejects_gradients",
         ),
     ),
     _evidence(

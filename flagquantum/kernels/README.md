@@ -119,6 +119,13 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+The MPS-004 identity/Pauli-Z environment-transfer route is opt-in through
+`FQ_TRITON_MPS_ENVIRONMENT=1`. Dispatch authorizes the exact catalog entry
+before importing Triton and selects it only for contiguous CUDA `complex64`
+forward inputs without gradients, bond dimensions at most 32, and contraction
+work at most `2**22`. Other inputs remain on the existing PyTorch eager or
+compiled path, and route counts are exposed through `site_kernel_stats()`.
+
 ## Capability matching
 
 `catalog.match_kernel_implementations` answers which cataloged implementations
