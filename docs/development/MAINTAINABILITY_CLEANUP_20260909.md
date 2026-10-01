@@ -3,6 +3,10 @@
 This change fixes a data-validation bug and simplifies existing execution and
 verification code. It adds no public API, dependency, or capability claim.
 
+All `/private/tmp` and `/tmp` paths in this record are ephemeral log locations
+on the machine that produced it. They are not part of this repository and will
+not exist for a later reader.
+
 ## Changes
 
 - QEC binary records validate values before conversion. Integer zeros and ones,

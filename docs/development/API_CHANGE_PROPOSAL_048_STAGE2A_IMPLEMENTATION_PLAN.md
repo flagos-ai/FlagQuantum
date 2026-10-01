@@ -1,5 +1,11 @@
 # QEC Detector Error Model (Stage 2a) Implementation Plan
 
+> Environment note: this plan was executed in the maintainer's site-local
+> setup. The worktree paths, container images, and remote hosts named below
+> record that environment; they are not reproducible from this repository, and
+> the `superpowers:*` sub-skills are not part of this project. The verification
+> commands are the ones that were actually run.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add `flagquantum/qec/dem.py` — an exact detector error model built from a `MemoryCircuit` and a phenomenological noise record, with parity matrices, exact marginal rates, seeded sampling, and a lossless stim text interchange.
