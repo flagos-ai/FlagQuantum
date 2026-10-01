@@ -21,6 +21,7 @@ try:
         SUPPORTED_REVISION_ORIGINS,
         ProvenanceUnavailableError,
         is_full_revision,
+        revision_is_published,
         revision_resolves,
     )
 except ModuleNotFoundError:  # direct script execution
@@ -30,6 +31,7 @@ except ModuleNotFoundError:  # direct script execution
         SUPPORTED_REVISION_ORIGINS,
         ProvenanceUnavailableError,
         is_full_revision,
+        revision_is_published,
         revision_resolves,
     )
 
@@ -189,9 +191,13 @@ def code_version_errors(
     ``code_version_origin = "producing_host_history"``, and a checkout that
     cannot answer is reported as unchecked rather than as a bad pin.
 
-    Presence in the object database is the test, matching every other evidence
-    record in this repository. Reachability from a published ref is not required,
-    so a checkout still resolves a pin whose pull request branch was deleted.
+    Resolution is necessary and not sufficient. The producing checkout holds the
+    commits its own branches made, so a pin it resolves may still be one no ref
+    reaches -- typically the head of the branch that recorded the evidence, which
+    is deleted once the change lands. Readers fetch refs, so that pin is gone for
+    every one of them while looking traceable here. A pin no ref reaches is
+    therefore reported, and the fix is to record the evidence at a revision
+    published history reaches.
 
     Args:
         code_version: The claim's recorded revision.
@@ -220,12 +226,22 @@ def code_version_errors(
         resolvable = revision_resolves(code_version, root)
     except ProvenanceUnavailableError as error:
         return (f"{label} code_version could not be checked: {error}",)
-    if resolvable:
+    if not resolvable:
+        return (
+            f"{label} code_version {code_version} names no commit in this repository; "
+            f'record {CODE_VERSION_ORIGIN_FIELD} as "{ORIGIN_PRODUCING_HOST_HISTORY}" '
+            "if the pin comes from the producing host's history",
+        )
+    try:
+        published = revision_is_published(code_version, root)
+    except ProvenanceUnavailableError as error:
+        return (f"{label} code_version could not be checked: {error}",)
+    if published:
         return ()
     return (
-        f"{label} code_version {code_version} names no commit in this repository; "
-        f'record {CODE_VERSION_ORIGIN_FIELD} as "{ORIGIN_PRODUCING_HOST_HISTORY}" if '
-        "the pin comes from the producing host's history",
+        f"{label} code_version {code_version} resolves here but no ref reaches it, so "
+        "a clone that fetches this repository does not obtain it; re-record the claim "
+        "at a revision published history reaches",
     )
 
 

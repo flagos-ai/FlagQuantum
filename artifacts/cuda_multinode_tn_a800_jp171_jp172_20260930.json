@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T16:21:01.884615+00:00",
+    "captured_at": "2026-10-01T23:05:15.607059+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
@@ -11,7 +11,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "dd874e0459e0795ac9c4d5729d84f51400e0575b",
+      "source_revision": "591401fac230213aa73a3b253a89aa2ef919e510",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -69,7 +69,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "ccdd5769fe5263aee08968f73bb7160b378beab3823af5179ba83fe7731b7c4e",
+        "debug_log_sha256": "f1f91a063eb3022fae41eaff4edb98bc92d600ea232fede48dd27fab81d62113",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -95,19 +95,19 @@
           "00001",
           "10001"
         ],
-        "maximum_seconds": 0.004245497286319733,
+        "maximum_seconds": 0.004558676853775978,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_tensor_network_amplitudes",
-        "median_seconds": 0.004198731854557991,
-        "minimum_seconds": 0.004168715327978134,
+        "median_seconds": 0.004207467660307884,
+        "minimum_seconds": 0.004187878221273422,
         "n_wires": 5,
         "seconds": [
-          0.004198731854557991,
-          0.004187032580375671,
-          0.004242992028594017,
-          0.004168715327978134,
-          0.004245497286319733
+          0.004194851964712143,
+          0.004207467660307884,
+          0.004551157355308533,
+          0.004558676853775978,
+          0.004187878221273422
         ],
         "sliced_labels": [
           6,
@@ -408,7 +408,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.00032217055559158325,
+            "collective_seconds": 0.00706879235804081,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -416,7 +416,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.000369267538189888,
+              "execution_seconds": 0.00040650926530361176,
               "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
               "learning_rate": 0.05,
               "local_world_size": 1,
@@ -465,12 +465,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.00032217055559158325,
+              "collective_seconds": 0.00706879235804081,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.0344210397452116,
+              "local_execution_seconds": 0.029729517176747322,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -812,7 +812,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.0031548067927360535,
+            "collective_seconds": 0.00035723112523555756,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -820,7 +820,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.00041788630187511444,
+              "execution_seconds": 0.0004392433911561966,
               "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
               "learning_rate": 0.05,
               "local_world_size": 1,
@@ -869,12 +869,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.0031548067927360535,
+              "collective_seconds": 0.00035723112523555756,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.030474592000246048,
+              "local_execution_seconds": 0.03732801601290703,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -1035,6 +1035,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "52abf8cebea03971e68f1245096841fd5ce47fc0ac2b158a989f5d5adee45f38",
+  "evidence_sha256": "7388e478a1bb7ae2665c12c3494f85a8b3193550ff1cadbb10c121c8aea78384",
   "schema": "flagquantum.cuda_multinode_tn_artifact.v1"
 }
