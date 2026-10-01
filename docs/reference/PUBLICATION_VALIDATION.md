@@ -27,6 +27,14 @@ benchmark-contract tier passed 113 with 12 skipped. These counts are different
 scopes and must not be added into a unique-test total. Skipped tests are not
 evidence of supported hardware or behavior.
 
+Those two counts belong to the 2026-09-11 run, not to the current tree, and the
+selected sets have grown since. Re-measure rather than quoting them:
+
+```bash
+python -m pytest -m "distributed_cpu" -q --collect-only
+python -m pytest -m "benchmark_contract or release_gate" -q --collect-only
+```
+
 The A800 environment was Python 3.12.13, PyTorch 2.13.0+cu130, CUDA 13.0 and
 NCCL 2.29.7, on A800-SXM4-80GB devices. Raw logs remain in the maintainer's private
 validation archive because they contain infrastructure metadata. This summary
