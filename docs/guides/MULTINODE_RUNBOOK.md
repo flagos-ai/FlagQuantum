@@ -568,6 +568,22 @@ exactly zero and lets a run report sharded execution while one rank does the
 arithmetic. The slicer now excludes those labels and this workload passes its
 cut explicitly.
 
+### Repeatability of the measured leg
+
+The three artifacts were produced by two independent invocations of the lane on
+the same pair: the recording run and a `multinode-scheduled` tier run, both over
+RoCE with the same `--measure` flag and the same revision of the probes. Their
+medians agree to within a few percent per workload -- 3.21 against 3.32 ms for
+the statevector forward, 22.0 against 20.4 ms for the MPS forward, and 4.18
+against 4.16 ms for the sliced amplitudes -- while the slowest of the five
+samples is in every case the first, which is why the probe warms up twice before
+it starts recording. The medians are therefore a property of the workload and
+the pair rather than of one scheduling accident, and the spread is reported
+alongside them so a reader can see how wide it is.
+
+This is an observation about the lane, not a recorded claim: the tier run's
+reports stay on the host, and the artifacts named above are the evidence.
+
 ## Evidence boundary
 
 SSH success, 16 visible GPUs, matching package versions, successful pings, and
