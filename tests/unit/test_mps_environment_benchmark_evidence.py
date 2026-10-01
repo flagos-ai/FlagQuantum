@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -21,6 +23,15 @@ from benchmarks.mps_environment_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _REPOSITORY_ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "mps_environment_dispatch_a800.json"
+)
 
 
 def _run(
@@ -187,6 +198,16 @@ def test_aggregate_allows_default_only_after_both_public_wins() -> None:
     )
 
     validate_evidence(payload)
+    assert payload["public_dispatch_win_over_eager_on_all_cases"]
+    assert payload["public_dispatch_win_over_compiled_on_all_cases"]
+    assert payload["dispatch_selection_decision"] == "eligible_for_default"
+
+
+def test_checked_in_a800_evidence_is_canonical_and_default_eligible() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["direct_kernel_win_on_all_cases"]
     assert payload["public_dispatch_win_over_eager_on_all_cases"]
     assert payload["public_dispatch_win_over_compiled_on_all_cases"]
     assert payload["dispatch_selection_decision"] == "eligible_for_default"

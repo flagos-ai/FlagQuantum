@@ -162,6 +162,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_enforces_evidenced_window",
             "tests/unit/test_mps_environment_catalog_dispatch.py::test_mps_environment_route_rejects_gradients",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_environment_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-MPS-005-A",
