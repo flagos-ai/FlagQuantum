@@ -69,7 +69,6 @@ def test_team_ownership_policy_is_valid_and_complete() -> None:
         "services",
         "algorithms",
         "verification",
-        "docs",
     }
 
 
@@ -173,6 +172,28 @@ def test_protected_patterns_match_existing_paths() -> None:
         # package split, so it is exempt from this check.
         if pattern != "flagquantum/core/ir/**"
         and not any(_matches(path, [pattern]) for path in existing)
+    ]
+    assert dead == []
+
+
+def test_owned_patterns_match_existing_paths() -> None:
+    """An `owns` pattern that matches nothing assigns nothing.
+
+    The sibling check above covers `protected_paths`. `owns` needs the same
+    treatment and did not have it: `policy_errors` reads the schema only, so a
+    team could be named as the owner of a directory that does not exist, and no
+    check reported it. The pattern is invisible in review because it still reads
+    as a claim about the architecture, and it is invisible to
+    `scope_errors`, which only ever asks about paths that were actually changed.
+    """
+
+    policy = load_policy()
+    existing = _existing_paths()
+    dead = [
+        f"{team}: {pattern}"
+        for team, config in policy["teams"].items()
+        for pattern in config["owns"]
+        if not any(_matches(path, [pattern]) for path in existing)
     ]
     assert dead == []
 
