@@ -184,6 +184,14 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "differentiable_simulation",
     ),
     _semantic(
+        "FQK-MPS-007",
+        "mps.measurement.wire_probabilities.local",
+        "mps",
+        "Reduce and normalize the two physical-index probabilities of one MPS site.",
+        "mps_sampling",
+        "measurement",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",

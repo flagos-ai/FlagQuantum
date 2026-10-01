@@ -215,6 +215,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MPS-007-A",
+        "mps.measurement.wire_probabilities.local",
+        "mps_wire_probabilities",
+        "fused_mps_wire_probabilities",
+        layouts=("mps_site_tensor",),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-NUM-001-A",
         "numerics.matmul.complex_batched",
         "complex_bmm",
