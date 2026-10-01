@@ -485,6 +485,17 @@ square, equal-sized, act on a power-of-two Hilbert space, and satisfy
 
 Invalid channels fail before compilation or execution.
 
+A rule that cannot apply is refused rather than ignored. Compiler lowering rejects
+a rule naming a wire outside the program width, and it rejects a model whose rules
+match no instruction in the program at all, naming the gate names the model
+declares and the opcodes the program contains. Partial application stays legal: a
+device model carries the gate vocabulary of the whole device and is routinely
+applied to a circuit that uses a subset of it, which is how the composed regional
+`twin` model works. The distinction is deliberate — a model with no effect at all
+is a caller error, while a model with some effect is not. Before this check,
+`NoiseModel().add(("not_a_gate",), fqn.depolarizing_channel(0.01))` ran a circuit
+successfully and returned clean samples.
+
 ## Reproducibility and identity
 
 `NoiseModel.to_dict()` returns the versioned

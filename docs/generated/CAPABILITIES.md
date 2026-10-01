@@ -420,7 +420,7 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 - **Distribution semantics:** `single_device_fast_path_or_rank_local_trajectory_partition`
 - **Start:** [quick example](../../examples/noisy_simulation_v1.py)
 - **Documentation:** [guide](../../docs/guides/NOISY_SIMULATION.md)
-- **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
+- **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Lowering refuses a rule naming a wire outside the program width and refuses a model whose rules match no instruction at all, so a misspelled gate name cannot yield a clean result; a model that matches some instructions stays legal. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
 
 ### Continuous-time Lindblad density-matrix evolution
 

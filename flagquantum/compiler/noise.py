@@ -63,15 +63,63 @@ def _profile_channel(
     )
 
 
+def _validate_rule_wires(noise_model: NoiseModel, *, n_wires: int) -> None:
+    """Refuse gate-noise rules addressing a wire the program does not have.
+
+    A rule held to a wire outside the program width can never match any
+    instruction, so it would be accepted and then contribute nothing. This
+    mirrors the check ``NoiseModel.add_readout`` already applies to readout
+    rules.
+    """
+
+    for rule in noise_model.rules:
+        for wire in rule.wires or ():
+            if wire < 0 or wire >= n_wires:
+                raise ValueError(
+                    f"noise rule for {rule.gate_names} names wire {wire}, "
+                    f"which is outside the program width of {n_wires}"
+                )
+
+
+def _require_a_matched_rule(
+    noise_model: NoiseModel, *, matched: bool, ir: CircuitIR
+) -> None:
+    """Refuse a model that applies no noise at all to this program.
+
+    Partial application is legitimate: a composed device model carries a gate
+    vocabulary wider than the circuit under study, and the ``twin`` region
+    model relies on that. Total absence is not. The gate-name axis therefore
+    cannot be checked per rule without breaking that caller, while the vacuous
+    model a misspelled gate name produces is exactly what must not pass
+    silently.
+    """
+
+    if matched or not noise_model.rules:
+        return
+    declared = sorted({name for rule in noise_model.rules for name in rule.gate_names})
+    present = sorted({instruction.name for instruction in ir})
+    raise ValueError(
+        f"noise model has no effect on this program: its rules name {declared}, "
+        f"and the program contains {present}"
+    )
+
+
 def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> CircuitIR:
-    """Insert channel instructions after matching unitary instructions."""
+    """Insert channel instructions after matching unitary instructions.
+
+    A rule that cannot apply to the program is refused rather than ignored: the
+    model must not leave a caller with a clean result produced without the noise
+    they asked for.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
     if noise_model is None:
         return ir
+    _validate_rule_wires(noise_model, n_wires=ir.n_wires)
     instructions: list[Instruction] = []
     profile = noise_model.device_profile
     wire_clock = [0.0] * ir.n_wires
+    matched = False
     for gate_index, instruction in enumerate(ir):
         if instruction.metadata.get("is_channel"):
             instructions.append(instruction)
@@ -109,7 +157,9 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
                     instructions.append(relaxation)
                 wire_clock[wire] = start + duration
         for channel, wires in noise_model.channels_for(instruction):
+            matched = True
             instructions.append(_encode_channel_instruction(channel, wires))
+    _require_a_matched_rule(noise_model, matched=matched, ir=ir)
     if profile is not None:
         makespan = max(wire_clock, default=0.0)
         for wire in range(ir.n_wires):

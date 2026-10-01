@@ -700,7 +700,7 @@ quick_start = "examples/noisy_simulation_v1.py"
 documentation = "docs/guides/NOISY_SIMULATION.md"
 level = "experimental"
 owner = "noise runtime maintainers"
-limitations = "Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback."
+limitations = "Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Lowering refuses a rule naming a wire outside the program width and refuses a model whose rules match no instruction at all, so a misspelled gate name cannot yield a clean result; a model that matches some instructions stays legal. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback."
 focused_tests = "tests/test_noise.py"
 
 [capabilities.continuous_time_lindblad]

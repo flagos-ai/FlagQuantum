@@ -502,7 +502,7 @@ status = "partial"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
-reason = "Noise lowering and a noise registry exist, but there is no per-gate and per-qubit callback model matching the CUDA-Q surface."
+reason = "Per-gate (`NoiseModel.add(gate_names, channel)`) and per-qubit (`wires=`) static injection both exist, and lowering now refuses a rule that cannot apply. The callback form is absent, and `NoiseRule` carries a `KrausChannel` fixed at construction. A callback cannot be added to `NoiseRule` as it stands: `NoiseModel.identity` is a SHA-256 digest of `to_dict()`, and checkpoint resume and execution-plan identity both bind to it, so a channel chosen by an arbitrary callable would make identity unreproducible. Any such rule must be registered under a declared name and parameterization before it can participate in a model identity."
 
 [[domains.capabilities]]
 id = "batched_trajectory"

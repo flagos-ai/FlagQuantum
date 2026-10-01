@@ -346,7 +346,9 @@ def test_batched_statevector_checkpoint_resume_matches_continuous(
 
 def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", bit_flip_channel(0.2))
+    # The model covers both gates used below, because a model that applies to
+    # neither circuit is refused before the checkpoint binding is examined.
+    model = fqn.NoiseModel().add(("x", "h"), bit_flip_channel(0.2))
     checkpoint_path = tmp_path / "statevector.pt"
     run_noisy_statevector(
         circuit,
@@ -358,7 +360,7 @@ def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
         max_batches_per_run=1,
     )
 
-    changed_noise = fqn.NoiseModel().add("x", bit_flip_channel(0.3))
+    changed_noise = fqn.NoiseModel().add(("x", "h"), bit_flip_channel(0.3))
     with pytest.raises(ValueError, match="noise model identity"):
         run_noisy_statevector(
             circuit,
@@ -594,6 +596,79 @@ def _device_profile(*, x0_duration=20.0, x1_duration=10.0):
         captured_at="2026-08-06T12:00:00+08:00",
         time_unit="ns",
     )
+
+
+def test_a_rule_naming_a_gate_absent_from_the_program_is_refused():
+    model = fqn.NoiseModel().add(
+        ("not_a_gate", "also_absent"), depolarizing_channel(0.01)
+    )
+
+    with pytest.raises(ValueError) as refused:
+        lower_noise_model(fq.Circuit(1).h(0), model)
+
+    message = str(refused.value)
+    assert "has no effect on this program" in message
+    assert "['also_absent', 'not_a_gate']" in message
+    assert "['h']" in message
+
+
+@pytest.mark.parametrize(
+    ("wires", "offending"),
+    [((5,), 5), ((1,), 1), ((-1,), -1), ((0, 3), 3), ((0, 1), 1)],
+)
+def test_a_rule_naming_a_wire_outside_the_program_is_refused(wires, offending):
+    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), wires=wires)
+
+    with pytest.raises(ValueError) as refused:
+        lower_noise_model(fq.Circuit(1).h(0), model)
+
+    message = str(refused.value)
+    assert f"names wire {offending}" in message
+    assert "outside the program width of 1" in message
+    assert "for ('h',)" in message
+
+
+def test_a_rule_held_to_a_wire_the_program_has_still_lowers():
+    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), wires=(0,))
+
+    lowered = lower_noise_model(fq.Circuit(1).h(0), model)
+    channels = [item for item in lowered if item.metadata.get("is_channel")]
+
+    assert [item.wires for item in channels] == [(0,)]
+
+
+def test_a_model_wider_than_the_program_still_lowers():
+    """Partial application is legitimate; only a wholly ineffective model is not.
+
+    A composed device model carries the gate vocabulary of the whole device and
+    is routinely applied to a circuit that uses a subset of it.
+    """
+
+    model = (
+        fqn.NoiseModel()
+        .add(("h", "cz", "rx"), depolarizing_channel(0.01))
+        .add(("cz",), fqn.two_qubit_depolarizing_channel(0.02))
+    )
+
+    lowered = lower_noise_model(fq.Circuit(1).h(0), model)
+    channels = [item for item in lowered if item.metadata.get("is_channel")]
+
+    assert [item.name for item in channels] == ["depolarizing"]
+
+
+def test_a_model_with_no_rules_still_lowers_unchanged():
+    """The refusal is about a rule that cannot apply, not about an absent model."""
+
+    lowered = lower_noise_model(fq.Circuit(1).h(0), fqn.NoiseModel())
+
+    assert [item.name for item in lowered] == ["h"]
+
+
+def test_a_vacuous_noise_model_fails_a_run_instead_of_being_dropped():
+    model = fqn.NoiseModel().add(("not_a_gate",), depolarizing_channel(0.01))
+
+    with pytest.raises(ValueError, match="has no effect on this program"):
+        fq.run(fq.Circuit(1).h(0), noise_model=model, outputs=fq.samples(), shots=8)
 
 
 def test_device_noise_profile_round_trip_and_model_identity():
