@@ -39,7 +39,11 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         workloads=("hardware_efficient_statevector",),
         n_wires=(4,),
         batch_sizes=(1, 3),
-        engines=("flagquantum_native_batch", "flagquantum_native_serial"),
+        engines=(
+            "flagquantum_native_batch",
+            "flagquantum_native_monolithic_batch",
+            "flagquantum_native_serial",
+        ),
         threads=1,
         warmup=0,
         iterations=3,
@@ -54,6 +58,12 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         assert case["correctness"]["passed"] is True
         assert (
             case["correctness"]["engines"]["flagquantum_native_serial"]["max_abs_error"]
+            <= 1e-10
+        )
+        assert (
+            case["correctness"]["engines"]["flagquantum_native_monolithic_batch"][
+                "max_abs_error"
+            ]
             <= 1e-10
         )
         for result in case["engines"].values():

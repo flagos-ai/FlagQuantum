@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import gc
 import json
+import os
 import platform
 import statistics
 import time
@@ -33,6 +34,7 @@ STABILITY_THRESHOLD = 0.20
 
 EngineName = Literal[
     "flagquantum_native_batch",
+    "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
     "qiskit_aer_bridge",
     "cirq_simulator_bridge",
@@ -41,6 +43,7 @@ EngineName = Literal[
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_batch",
+    "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
     "qiskit_aer_bridge",
     "cirq_simulator_bridge",
@@ -48,7 +51,8 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
 )
 
 _ENGINE_LABELS: dict[EngineName, str] = {
-    "flagquantum_native_batch": "FlagQuantum native batch",
+    "flagquantum_native_batch": "FlagQuantum native batch (budgeted)",
+    "flagquantum_native_monolithic_batch": "FlagQuantum native monolithic batch",
     "flagquantum_native_serial": "FlagQuantum serial",
     "qiskit_aer_bridge": "Qiskit Aer bridge",
     "cirq_simulator_bridge": "Cirq bridge",
@@ -125,9 +129,31 @@ def _engine_callable(
     if engine == "flagquantum_native_batch":
 
         def native_batch() -> torch.Tensor:
-            return cast(torch.Tensor, batched.state(refresh=True))
+            previous = os.environ.get("FQ_CPU_STATEVECTOR_BATCH_CHUNKING")
+            os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = "1"
+            try:
+                return cast(torch.Tensor, batched.state(refresh=True))
+            finally:
+                if previous is None:
+                    os.environ.pop("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", None)
+                else:
+                    os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = previous
 
         return native_batch
+    if engine == "flagquantum_native_monolithic_batch":
+
+        def native_monolithic_batch() -> torch.Tensor:
+            previous = os.environ.get("FQ_CPU_STATEVECTOR_BATCH_CHUNKING")
+            os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = "0"
+            try:
+                return cast(torch.Tensor, batched.state(refresh=True))
+            finally:
+                if previous is None:
+                    os.environ.pop("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", None)
+                else:
+                    os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = previous
+
+        return native_monolithic_batch
     if engine == "flagquantum_native_serial":
 
         def native_serial() -> torch.Tensor:
@@ -167,6 +193,7 @@ def _engine_callable(
 def _engine_versions(engine: EngineName) -> dict[str, str]:
     packages = {
         "flagquantum_native_batch": ("flagquantum",),
+        "flagquantum_native_monolithic_batch": ("flagquantum",),
         "flagquantum_native_serial": ("flagquantum",),
         "qiskit_aer_bridge": ("qiskit", "qiskit-aer"),
         "cirq_simulator_bridge": ("cirq-core",),
@@ -180,9 +207,13 @@ def _execution_strategy(engine: EngineName) -> str:
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
         else (
-            "repeated_single_item_native"
-            if engine == "flagquantum_native_serial"
-            else "repeated_single_item_bridge"
+            "native_monolithic_parameter_batch"
+            if engine == "flagquantum_native_monolithic_batch"
+            else (
+                "repeated_single_item_native"
+                if engine == "flagquantum_native_serial"
+                else "repeated_single_item_bridge"
+            )
         )
     )
 
