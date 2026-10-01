@@ -159,6 +159,16 @@ the caller to establish the Hermitian semantic invariant. Other inputs retain
 the existing per-site autograd path. Route and fallback counts are exposed by
 `site_kernel_stats()`, while catalog-route events report the exact semantic and
 implementation IDs plus the active Triton or FlagTree compiler provenance.
+The checked-in
+[`mps_observable_adjoint_dispatch_a800.json`](../../benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json)
+artifact preserves all 30 synchronized samples per case, peak memory, accuracy,
+compiler identity, and environment metadata from `jp-a800-171` and
+`jp-a800-172`. Its fixed four-shape matrix records a `5.20x` to `24.84x`
+speedup over the same PyTorch autograd semantic with stock Triton 3.7.1 and a
+`3.13x` to `9.97x` speedup with FlagTree 0.7.0. This is bounded development
+hardware evidence, not a release gate or scalability claim. Reproduce or
+validate it with
+[`benchmarks/mps_observable_adjoint_dispatch.py`](../../benchmarks/mps_observable_adjoint_dispatch.py).
 
 ## Capability matching
 
@@ -260,7 +270,7 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 21 semantics and 23 implementations are implemented and
+The current 22 semantics and 24 implementations are implemented and
 experimental. The rest of the 100/800 portfolio is planned or candidate work,
 not shipped capability.
 
