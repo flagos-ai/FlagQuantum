@@ -1,0 +1,249 @@
+{
+  "benchmark": "cuda_multinode_two_node_performance",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "commit": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+  "communication_bytes": 1616,
+  "derivation": "Each latency is copied from the recorded artifact named in the matching workloads[] entry, whose digest is recorded there as artifact_sha256. rank_shards[].local_memory_bytes is the largest local footprint that rank recorded across the three measured workloads, and communication_bytes sums the recorded per-rank traffic of all three.",
+  "distribution_semantics": "sharded_across_ranks",
+  "environment": {
+    "accelerator": "NVIDIA A800-SXM4-80GB",
+    "cuda_runtime": "13.0",
+    "dtype": "complex128",
+    "local_world_size": 1,
+    "measured_latencies": 3,
+    "measured_workloads": 3,
+    "nccl": "2.29.7",
+    "node_count": 2,
+    "python": "3.12.13",
+    "route": "infiniband",
+    "sample_count_maximum": 5,
+    "sample_count_minimum": 5,
+    "slowest_sample_seconds": 0.021361403167247772,
+    "torch": "2.13.0+cu130",
+    "warmup_iterations": 2,
+    "world_size": 2
+  },
+  "generated_by": "benchmarks/build_multinode_performance_claim.py",
+  "latency_seconds": {
+    "mps_forward_maximum": 0.021361403167247772,
+    "mps_forward_median": 0.020264338701963425,
+    "mps_forward_minimum": 0.019401343539357185,
+    "statevector_forward_maximum": 0.0031690318137407303,
+    "statevector_forward_median": 0.0031670480966567993,
+    "statevector_forward_minimum": 0.0030971989035606384,
+    "tensor_network_amplitudes_maximum": 0.0045400336384773254,
+    "tensor_network_amplitudes_median": 0.004283495247364044,
+    "tensor_network_amplitudes_minimum": 0.004230853170156479
+  },
+  "local_world_size": 1,
+  "node_count": 2,
+  "non_release_evidence": true,
+  "rank_shards": [
+    {
+      "communication_bytes": 808,
+      "local_memory_bytes": 320,
+      "local_rank": 0,
+      "node_rank": 0,
+      "owned_work": {
+        "mps": "sites 0,1,2",
+        "statevector": "0 + k*2, 0 <= k < 16",
+        "tensor_network": "2 of 4 slice tasks"
+      },
+      "rank": 0
+    },
+    {
+      "communication_bytes": 808,
+      "local_memory_bytes": 320,
+      "local_rank": 0,
+      "node_rank": 1,
+      "owned_work": {
+        "mps": "sites 3,4,5",
+        "statevector": "1 + k*2, 0 <= k < 16",
+        "tensor_network": "2 of 4 slice tasks"
+      },
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "host_staging_in_measured_region",
+    "inter_node_cut_width_not_swept",
+    "toy_circuit_parameters_only",
+    "two_node_pair_only_no_wider_topology",
+    "validation_only_tiny_full_mps_gather",
+    "validation_only_tiny_full_state_gather"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.multinode_performance_claim.v1",
+  "scope": "One sharded forward pass of each recorded two-node workload, timed between CUDA synchronizations on the recorded pair. This is a latency of a small circuit, not a scaling, throughput, or capacity claim, and both claim flags are false.",
+  "workloads": [
+    {
+      "artifact": "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json",
+      "artifact_sha256": "8a90ae6b7c365ca3ad26d628cb3d2899339963495efb18e731dddcf104006d5a",
+      "captured_at": "2026-10-01T10:53:45.584384+00:00",
+      "claim_blockers": [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather"
+      ],
+      "cuda_runtime": "13.0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "local_world_size": 1,
+      "max_bond": null,
+      "maximum_seconds": 0.0031690318137407303,
+      "measured": true,
+      "measured_iterations": 5,
+      "measurement": "sharded_statevector_forward",
+      "median_seconds": 0.0031670480966567993,
+      "minimum_seconds": 0.0030971989035606384,
+      "n_wires": 5,
+      "name": "statevector",
+      "nccl": "2.29.7",
+      "node_count": 2,
+      "python": "3.12.13",
+      "rank_evidence": [
+        {
+          "communication_bytes": 384,
+          "local_memory_bytes": 256,
+          "owned_work": "0 + k*2, 0 <= k < 16",
+          "rank": 0
+        },
+        {
+          "communication_bytes": 384,
+          "local_memory_bytes": 256,
+          "owned_work": "1 + k*2, 0 <= k < 16",
+          "rank": 1
+        }
+      ],
+      "route": "infiniband",
+      "seconds": [
+        0.003168206661939621,
+        0.0031670480966567993,
+        0.0031690318137407303,
+        0.0030971989035606384,
+        0.003112349659204483
+      ],
+      "source_revision": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+      "synchronized": true,
+      "torch": "2.13.0+cu130",
+      "warmup_iterations": 2,
+      "world_size": 2
+    },
+    {
+      "artifact": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
+      "artifact_sha256": "ba9963f1acdecf6186fa09cd79ac5586702d81eac04c414855ed6b94554b1838",
+      "captured_at": "2026-10-01T10:54:49.300808+00:00",
+      "claim_blockers": [
+        "host_staging_in_measured_region",
+        "inter_node_cut_width_not_swept",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_mps_gather"
+      ],
+      "cuda_runtime": "13.0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "local_world_size": 1,
+      "max_bond": 64,
+      "maximum_seconds": 0.021361403167247772,
+      "measured": true,
+      "measured_iterations": 5,
+      "measurement": "sharded_mps_forward",
+      "median_seconds": 0.020264338701963425,
+      "minimum_seconds": 0.019401343539357185,
+      "n_wires": 6,
+      "name": "mps",
+      "nccl": "2.29.7",
+      "node_count": 2,
+      "python": "3.12.13",
+      "rank_evidence": [
+        {
+          "communication_bytes": 360,
+          "local_memory_bytes": 320,
+          "owned_work": "sites 0,1,2",
+          "rank": 0
+        },
+        {
+          "communication_bytes": 360,
+          "local_memory_bytes": 320,
+          "owned_work": "sites 3,4,5",
+          "rank": 1
+        }
+      ],
+      "route": "infiniband",
+      "seconds": [
+        0.02043759636580944,
+        0.019401343539357185,
+        0.020175335928797722,
+        0.020264338701963425,
+        0.021361403167247772
+      ],
+      "source_revision": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+      "synchronized": true,
+      "torch": "2.13.0+cu130",
+      "warmup_iterations": 2,
+      "world_size": 2
+    },
+    {
+      "artifact": "artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json",
+      "artifact_sha256": "78e98c49576940c41ddaf70e835d4e0e4c7a79f65c9e8201b46b2148c663dc44",
+      "captured_at": "2026-10-01T10:55:47.843556+00:00",
+      "claim_blockers": [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather"
+      ],
+      "cuda_runtime": "13.0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "local_world_size": 1,
+      "max_bond": null,
+      "maximum_seconds": 0.0045400336384773254,
+      "measured": true,
+      "measured_iterations": 5,
+      "measurement": "sharded_tensor_network_amplitudes",
+      "median_seconds": 0.004283495247364044,
+      "minimum_seconds": 0.004230853170156479,
+      "n_wires": 5,
+      "name": "tensor_network",
+      "nccl": "2.29.7",
+      "node_count": 2,
+      "python": "3.12.13",
+      "rank_evidence": [
+        {
+          "communication_bytes": 64,
+          "local_memory_bytes": 64,
+          "owned_work": "2 of 4 slice tasks",
+          "rank": 0
+        },
+        {
+          "communication_bytes": 64,
+          "local_memory_bytes": 64,
+          "owned_work": "2 of 4 slice tasks",
+          "rank": 1
+        }
+      ],
+      "route": "infiniband",
+      "seconds": [
+        0.0043433476239442825,
+        0.004283495247364044,
+        0.004263196140527725,
+        0.004230853170156479,
+        0.0045400336384773254
+      ],
+      "source_revision": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+      "synchronized": true,
+      "torch": "2.13.0+cu130",
+      "warmup_iterations": 2,
+      "world_size": 2
+    }
+  ],
+  "world_size": 2
+}

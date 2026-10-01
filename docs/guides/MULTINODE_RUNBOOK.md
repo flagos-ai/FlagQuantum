@@ -571,18 +571,60 @@ cut explicitly.
 ### Repeatability of the measured leg
 
 The three artifacts were produced by two independent invocations of the lane on
-the same pair: the recording run and a `multinode-scheduled` tier run, both over
-RoCE with the same `--measure` flag and the same revision of the probes. Their
-medians agree to within a few percent per workload -- 3.21 against 3.32 ms for
-the statevector forward, 22.0 against 20.4 ms for the MPS forward, and 4.18
-against 4.16 ms for the sliced amplitudes -- while the slowest of the five
-samples is in every case the first, which is why the probe warms up twice before
-it starts recording. The medians are therefore a property of the workload and
-the pair rather than of one scheduling accident, and the spread is reported
-alongside them so a reader can see how wide it is.
+the same pair: the recording run and a `multinode-scheduled` tier run, both at
+the same source revision, over RoCE, with the same `--measure` flag and the same
+revision of the probes. Their medians agree to within a few percent per workload
+-- 3.167 against 3.242 ms for the statevector forward, 20.264 against 20.303 ms
+for the MPS forward, and 4.283 against 4.280 ms for the sliced amplitudes --
+while the slowest of the five samples is in every case the first, which is why
+the probe warms up twice before it starts recording. The medians are therefore a
+property of the workload and the pair rather than of one scheduling accident,
+and the spread is reported alongside them so a reader can see how wide it is.
 
 This is an observation about the lane, not a recorded claim: the tier run's
-reports stay on the host, and the artifacts named above are the evidence.
+reports stay on the host, and the artifacts named above are the evidence. The
+tier run shared both hosts with an unrelated container holding a small GPU
+allocation, so the agreement above is an agreement under light external load
+rather than on an otherwise idle pair. That is worth knowing in both directions:
+these small workloads did not measure a change from an idle pair, and the pair
+was not reserved for this lane while it was measured.
+
+### Publishing the measured leg
+
+The three artifacts above are correctness evidence, and each of them is shaped
+by the run that produced it: a training workload, a checkpoint, an optimizer
+leg. A capability matrix entry that wants to publish a latency needs an artifact
+whose selectors are stable and whose revision is one a reader can check out, so
+`benchmarks/build_multinode_performance_claim.py` reads the three recorded
+artifacts and writes one much smaller artifact that carries only the measured
+leg: `benchmarks/results/local/multinode_two_node_performance_20261001.json`.
+
+The builder copies no number it has not checked. It recomputes each recorded
+evidence digest, refuses a run whose performance leg did not measure or was not
+synchronized, refuses fewer than three samples or fewer than one warmup, refuses
+recorded extremes that disagree with the samples they summarize, refuses a route
+that was not read from the NCCL debug log as the fabric or that saw the socket
+fallback, refuses any run that still reports
+`production_performance_not_measured`, refuses either claim flag set true, and
+refuses three artifacts that do not name the same source revision. It then
+records that revision as the claim artifact's `commit`, which the capability
+matrix requires to equal the claim's `code_version`.
+
+The result is a latency claim, not a scaling claim. The artifact states
+`scalability_claim_allowed` and `release_gate_allowed` false, carries the union
+of the three blockers that survived, and reports the layout it measured --
+`distribution_semantics`, the world, local world and node counts, and one
+`rank_shards` entry per rank naming the work that rank owned, the largest local
+footprint it recorded, and the traffic it carried on the timed forward leg.
+That is what makes it auditable non-release evidence: the checked-in result
+audit inspects it instead of skipping it, classifies it
+`benchmark_evidence_class = "local_non_release"`, and still refuses to promote
+it, because it carries scalability blockers and
+`claim_evidence_type = "development_smoke"` rather than a release payload.
+Rebuild it with `python benchmarks/build_multinode_performance_claim.py`, and
+fail the build when it has drifted from the recorded evidence with the same
+command and `--check`. Rebuild it whenever an artifact it reads is re-recorded,
+because the digests it copies move with them.
 
 ## Evidence boundary
 

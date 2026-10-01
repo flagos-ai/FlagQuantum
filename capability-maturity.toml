@@ -139,6 +139,63 @@ integration_tests = "tests/team/runtime/test_cuda_multinode_statevector_probe.py
 hardware_evidence = "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json"
 operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
+[[capabilities.two_node_statevector_training.performance_claims]]
+id = "multinode-statevector-forward-latency-20261001"
+title = "Two-node statevector forward latency"
+artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
+artifact_sha256 = "461ca959d6ed3f17e819e2a3b05faa7edece78bf277a52acb01455cb5f527307"
+code_version = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+maturity = "production_supported"
+
+scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
+environment_limitations = "The artifact records the accelerator, node count, world and local world size, dtype, route, NCCL, CUDA runtime, PyTorch and Python versions, and the per-sample latencies. It does not record GPU clocks, power state, temperature, host CPU or memory, fabric congestion, or the driver version, so the numbers describe this pair at the recorded revision and nothing wider."
+
+[capabilities.two_node_statevector_training.performance_claims.evidence_checks]
+benchmark_evidence_class = "local_non_release"
+"distribution_semantics" = "sharded_across_ranks"
+"commit" = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+"environment.route" = "infiniband"
+"environment.node_count" = 2
+"environment.world_size" = 2
+"environment.measured_workloads" = 3
+"scalability_claim_allowed" = false
+"release_gate_allowed" = false
+
+[[capabilities.two_node_statevector_training.performance_claims.metrics]]
+label = "Minimum forward latency (s)"
+selector = "latency_seconds.statevector_forward_minimum"
+format = "scientific"
+
+[[capabilities.two_node_statevector_training.performance_claims.metrics]]
+label = "Median forward latency (s)"
+selector = "latency_seconds.statevector_forward_median"
+format = "scientific"
+
+[[capabilities.two_node_statevector_training.performance_claims.metrics]]
+label = "Maximum forward latency (s)"
+selector = "latency_seconds.statevector_forward_maximum"
+format = "scientific"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Warmup iterations before sampling"
+selector = "environment.warmup_iterations"
+format = "integer"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Synchronized samples"
+selector = "environment.sample_count_minimum"
+format = "integer"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Observed transport route"
+selector = "environment.route"
+format = "string"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Devices per node"
+selector = "environment.local_world_size"
+format = "integer"
+
 [capabilities.flagos_statevector_reference]
 title = "FlagOS local statevector CUDA reference"
 summary = "Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment."
@@ -316,6 +373,63 @@ focused_tests = "tests/unit/test_mps_reverse_contracts.py"
 integration_tests = "tests/team/runtime/test_cuda_multinode_mps_probe.py"
 hardware_evidence = "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json"
 operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
+
+[[capabilities.two_node_mps_training.performance_claims]]
+id = "multinode-mps-forward-latency-20261001"
+title = "Two-node MPS forward latency"
+artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
+artifact_sha256 = "461ca959d6ed3f17e819e2a3b05faa7edece78bf277a52acb01455cb5f527307"
+code_version = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+maturity = "production_supported"
+
+scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
+environment_limitations = "The artifact records the accelerator, node count, world and local world size, dtype, route, NCCL, CUDA runtime, PyTorch and Python versions, and the per-sample latencies. It does not record GPU clocks, power state, temperature, host CPU or memory, fabric congestion, or the driver version, so the numbers describe this pair at the recorded revision and nothing wider."
+
+[capabilities.two_node_mps_training.performance_claims.evidence_checks]
+benchmark_evidence_class = "local_non_release"
+"distribution_semantics" = "sharded_across_ranks"
+"commit" = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+"environment.route" = "infiniband"
+"environment.node_count" = 2
+"environment.world_size" = 2
+"environment.measured_workloads" = 3
+"scalability_claim_allowed" = false
+"release_gate_allowed" = false
+
+[[capabilities.two_node_mps_training.performance_claims.metrics]]
+label = "Minimum forward latency (s)"
+selector = "latency_seconds.mps_forward_minimum"
+format = "scientific"
+
+[[capabilities.two_node_mps_training.performance_claims.metrics]]
+label = "Median forward latency (s)"
+selector = "latency_seconds.mps_forward_median"
+format = "scientific"
+
+[[capabilities.two_node_mps_training.performance_claims.metrics]]
+label = "Maximum forward latency (s)"
+selector = "latency_seconds.mps_forward_maximum"
+format = "scientific"
+
+[[capabilities.two_node_mps_training.performance_claims.environment]]
+label = "Warmup iterations before sampling"
+selector = "environment.warmup_iterations"
+format = "integer"
+
+[[capabilities.two_node_mps_training.performance_claims.environment]]
+label = "Synchronized samples"
+selector = "environment.sample_count_minimum"
+format = "integer"
+
+[[capabilities.two_node_mps_training.performance_claims.environment]]
+label = "Observed transport route"
+selector = "environment.route"
+format = "string"
+
+[[capabilities.two_node_mps_training.performance_claims.environment]]
+label = "Devices per node"
+selector = "environment.local_world_size"
+format = "integer"
 
 [capabilities.double_single_fp32]
 title = "Double-Single FP32 numerical primitives"
@@ -506,6 +620,63 @@ focused_tests = "tests/test_tensor_network.py"
 integration_tests = "tests/team/runtime/test_cuda_multinode_tn_probe.py"
 hardware_evidence = "artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json"
 operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
+
+[[capabilities.two_node_tensor_network_training.performance_claims]]
+id = "multinode-tensor-network-amplitude-latency-20261001"
+title = "Two-node sliced amplitude latency"
+artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
+artifact_sha256 = "461ca959d6ed3f17e819e2a3b05faa7edece78bf277a52acb01455cb5f527307"
+code_version = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+maturity = "production_supported"
+
+scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
+environment_limitations = "The artifact records the accelerator, node count, world and local world size, dtype, route, NCCL, CUDA runtime, PyTorch and Python versions, and the per-sample latencies. It does not record GPU clocks, power state, temperature, host CPU or memory, fabric congestion, or the driver version, so the numbers describe this pair at the recorded revision and nothing wider."
+
+[capabilities.two_node_tensor_network_training.performance_claims.evidence_checks]
+benchmark_evidence_class = "local_non_release"
+"distribution_semantics" = "sharded_across_ranks"
+"commit" = "53a1d5c80ae8fde6c45210ca5a165c3b52727017"
+"environment.route" = "infiniband"
+"environment.node_count" = 2
+"environment.world_size" = 2
+"environment.measured_workloads" = 3
+"scalability_claim_allowed" = false
+"release_gate_allowed" = false
+
+[[capabilities.two_node_tensor_network_training.performance_claims.metrics]]
+label = "Minimum amplitude latency (s)"
+selector = "latency_seconds.tensor_network_amplitudes_minimum"
+format = "scientific"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.metrics]]
+label = "Median amplitude latency (s)"
+selector = "latency_seconds.tensor_network_amplitudes_median"
+format = "scientific"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.metrics]]
+label = "Maximum amplitude latency (s)"
+selector = "latency_seconds.tensor_network_amplitudes_maximum"
+format = "scientific"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.environment]]
+label = "Warmup iterations before sampling"
+selector = "environment.warmup_iterations"
+format = "integer"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.environment]]
+label = "Synchronized samples"
+selector = "environment.sample_count_minimum"
+format = "integer"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.environment]]
+label = "Observed transport route"
+selector = "environment.route"
+format = "string"
+
+[[capabilities.two_node_tensor_network_training.performance_claims.environment]]
+label = "Devices per node"
+selector = "environment.local_world_size"
+format = "integer"
 
 [capabilities.noisy_simulation]
 title = "Exact and trajectory-based noisy simulation"
