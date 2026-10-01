@@ -21,8 +21,10 @@ from tools.parity_matrix import (
     load_inputs,
     probe_problems,
     render_document,
+    surface_ownership_problems,
     validate_contract,
     version_pin_problems,
+    version_provenance_problems,
 )
 from tools.sanitize_public_evidence import sanitize_text
 
@@ -74,9 +76,8 @@ def test_every_supported_row_names_a_registry_entry(contract: dict) -> None:
     for domain in contract["domains"]:
         for row in domain["capabilities"]:
             if row["status"] == "supported":
-                assert row.get(
-                    "maturity_ref"
-                ), f"{row['id']} claims support with no registry entry"
+                named = row.get("maturity_refs") or row.get("maturity_ref")
+                assert named, f"{row['id']} claims support with no registry entry"
 
 
 def test_contract_rejects_unknown_status(
@@ -165,6 +166,139 @@ def test_cudaq_contracts_pin_the_same_versions(contract: dict) -> None:
     assert version_pin_problems(contract) == []
 
 
+def test_the_surface_owner_table_explains_the_inventories_it_attributes(
+    contract: dict,
+) -> None:
+    """The table is only worth having while it matches the surface lists."""
+
+    assert surface_ownership_problems(contract) == []
+    items = contract["baseline"]["surface_ownership"]["items"]
+    assert items, "no surface item is attributed to another component"
+    surfaces = {
+        item: domain["id"]
+        for domain in contract["domains"]
+        for item in domain.get("cudaq_surface", ())
+    }
+    for entry in items:
+        assert surfaces[entry["item"]] == "quantum_error_correction"
+
+
+def test_surface_ownership_gate_rejects_an_item_matching_no_inventory(
+    contract: dict,
+) -> None:
+    contract["baseline"]["surface_ownership"]["items"][0]["item"] = "not a surface item"
+    errors = surface_ownership_problems(contract)
+    assert any("matches 0 domain surface lists" in error for error in errors)
+
+
+def test_surface_ownership_gate_rejects_an_undeclared_owner(contract: dict) -> None:
+    contract["baseline"]["surface_ownership"]["items"][0]["owner"] = "cudaq-elsewhere"
+    errors = surface_ownership_problems(contract)
+    assert any("is not one of the declared owners" in error for error in errors)
+
+
+def test_surface_ownership_gate_rejects_an_attribution_with_no_consequence(
+    contract: dict,
+) -> None:
+    contract["baseline"]["surface_ownership"]["items"][0].pop("consequence")
+    errors = surface_ownership_problems(contract)
+    assert any("no consequence" in error for error in errors)
+
+
+def test_version_provenance_is_recorded_for_the_component(contract: dict) -> None:
+    """The QEC rows are read at a component version the core pin does not reach."""
+
+    assert version_provenance_problems(contract) == []
+    provenance = contract["baseline"]["version_provenance"]
+    line = provenance["component_release_line"]
+    assert provenance["component_version_recorded"] in line
+    pinned = set(contract["cudaq_versions"])
+    assert not pinned & set(line), (
+        "the component release line now meets the pin, so the provenance limit in "
+        "this contract no longer holds"
+    )
+
+
+def test_version_provenance_gate_rejects_a_recorded_version_off_the_line(
+    contract: dict,
+) -> None:
+    contract["baseline"]["version_provenance"]["component_version_recorded"] = "9.9.9"
+    errors = version_provenance_problems(contract)
+    assert any("is not on the recorded release line" in error for error in errors)
+
+
+def test_version_provenance_gate_rejects_a_mapping_across_disjoint_lines(
+    contract: dict,
+) -> None:
+    """A correspondence the release lines do not support is a claim, not a record."""
+
+    contract["baseline"]["version_provenance"]["version_mapping"] = {
+        "0.15.1": ["0.8.0"]
+    }
+    errors = version_provenance_problems(contract)
+    assert any("have no version in common" in error for error in errors)
+
+
+def test_version_provenance_gate_requires_a_mapping_once_the_lines_meet(
+    contract: dict,
+) -> None:
+    contract["cudaq_versions"] = ["0.8.0"]
+    errors = version_provenance_problems(contract)
+    assert any("record it in" in error for error in errors)
+
+
+def test_a_row_may_name_more_than_one_registry_entry(contract: dict) -> None:
+    """One capability can span two entries; the row says which, and neither drifts."""
+
+    _, maturity = load_inputs()
+    known = set(maturity["capabilities"])
+    plural = [
+        row
+        for domain in contract["domains"]
+        for row in domain["capabilities"]
+        if row.get("maturity_refs")
+    ]
+    assert plural, "no row exercises the plural form, so it is untested surface"
+    for row in plural:
+        assert "maturity_ref" not in row
+        assert len(row["maturity_refs"]) > 1
+        assert set(row["maturity_refs"]) <= known
+
+
+def test_contract_rejects_a_row_naming_both_registry_forms(
+    contract: dict, contract_and_registry: tuple[dict, dict]
+) -> None:
+    row = _first_row(contract)
+    row["maturity_ref"] = "detector_error_model"
+    row["maturity_refs"] = ["detector_error_model"]
+    errors = validate_contract(contract, contract_and_registry[1])
+    assert any("names both maturity_ref and maturity_refs" in error for error in errors)
+
+
+def test_contract_rejects_a_repeated_registry_entry(
+    contract: dict, contract_and_registry: tuple[dict, dict]
+) -> None:
+    row = _first_row(contract)
+    row.pop("maturity_ref", None)
+    row["maturity_refs"] = ["detector_error_model", "detector_error_model"]
+    errors = validate_contract(contract, contract_and_registry[1])
+    assert any("named twice" in error for error in errors)
+
+
+def test_contract_rejects_an_unregistered_maturity_reference_in_the_plural_form(
+    contract: dict, contract_and_registry: tuple[dict, dict]
+) -> None:
+    row = _first_row(contract)
+    row.pop("maturity_ref", None)
+    row["maturity_refs"] = ["detector_error_model", "not_a_registered_capability"]
+    errors = validate_contract(contract, contract_and_registry[1])
+    assert any(
+        "'not_a_registered_capability' is not declared in capability-maturity.toml"
+        in error
+        for error in errors
+    )
+
+
 def test_version_pin_gate_rejects_drift_against_the_export_contract(
     contract: dict,
 ) -> None:
@@ -232,9 +366,9 @@ def test_contract_rejects_a_measured_probe_with_no_payload(contract: dict) -> No
 def test_contract_rejects_a_measured_probe_pointing_at_a_missing_payload(
     contract: dict,
 ) -> None:
-    _probe(contract, "benchmarks/cudaq_backend_compare.py")[
-        "payload"
-    ] = "benchmarks/results/comparison/not_recorded.json"
+    _probe(contract, "benchmarks/cudaq_backend_compare.py")["payload"] = (
+        "benchmarks/results/comparison/not_recorded.json"
+    )
     errors = probe_problems(contract)
     assert any("the measured status rests on nothing" in error for error in errors)
 

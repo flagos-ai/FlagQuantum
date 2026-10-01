@@ -7,8 +7,10 @@ cannot drift from the contract.
 
 Validation is fail-closed. An unknown status, priority, or dependency class; a
 ``maturity_ref`` that is absent from ``capability-maturity.toml``; a `supported`
-row with no registry entry; a missing or malformed evidence item; or a stale
-generated document all exit non-zero.
+row with no registry entry; a missing or malformed evidence item; a stale
+generated document; a surface-ownership entry that does not match the inventory
+it explains; and a component version mapping the recorded release lines do not
+support all exit non-zero.
 
 Evidence is declared per row and falls back to the domain default. An item is
 either a repository-relative path, which must exist, or a ``search:`` token
@@ -166,6 +168,158 @@ def probe_problems(contract: dict[str, Any]) -> list[str]:
     return problems
 
 
+def _row_maturity_refs(row: dict[str, Any]) -> list[str]:
+    """Return the registry entries a row names, in contract order.
+
+    A row names one entry through ``maturity_ref`` or several through
+    ``maturity_refs``. Both forms are read here so the validator and the
+    renderer cannot disagree about which entries a row claims.
+    """
+    multiple = row.get("maturity_refs")
+    if multiple is not None:
+        return list(multiple)
+    single = row.get("maturity_ref")
+    return [] if single is None else [single]
+
+
+def surface_ownership_problems(contract: dict[str, Any]) -> list[str]:
+    """Check the surface ownership table against the domain inventories.
+
+    A domain's ``cudaq_surface`` list is an inventory of the surface a user
+    meets, and an inventory is not an attribution: entries belonging to another
+    CUDA-Q component appear in it. ``baseline.surface_ownership`` supplies that
+    attribution. The table is only worth having while it explains the inventory
+    it claims to, so every entry must match one surface item verbatim and
+    exactly, name a declared owner, and state the consequence for the row it
+    feeds.
+    """
+    problems: list[str] = []
+    table = contract.get("baseline", {}).get("surface_ownership", {})
+    if not table:
+        problems.append(
+            "baseline.surface_ownership must attribute the surface items that "
+            "belong to a CUDA-Q component other than the one this domain compares"
+        )
+        return problems
+
+    owners = tuple(table.get("owners", ()))
+    if not table.get("rule"):
+        problems.append("baseline.surface_ownership must state its rule")
+    if not owners:
+        problems.append("baseline.surface_ownership must declare the component owners")
+    default_owner = table.get("default_owner")
+    if default_owner not in owners:
+        problems.append(
+            f"baseline.surface_ownership.default_owner is {default_owner!r}, which is "
+            f"not one of the declared owners {list(owners)}"
+        )
+
+    inventories: dict[str, list[str]] = {}
+    for domain in contract.get("domains", ()):
+        for item in domain.get("cudaq_surface", ()):
+            inventories.setdefault(item, []).append(domain.get("id", "<unnamed>"))
+
+    for entry in table.get("items", ()):
+        item = entry.get("item")
+        if not item:
+            problems.append("a baseline.surface_ownership entry names no item")
+            continue
+        matches = inventories.get(item, [])
+        if len(matches) != 1:
+            problems.append(
+                f"baseline.surface_ownership item {item!r} matches {len(matches)} "
+                "domain surface lists; an attribution must match one inventory entry "
+                "verbatim and exactly once"
+            )
+            continue
+        if entry.get("owner") not in owners:
+            problems.append(
+                f"baseline.surface_ownership item {item!r}: owner "
+                f"{entry.get('owner')!r} is not one of the declared owners "
+                f"{list(owners)}"
+            )
+        if not entry.get("consequence"):
+            problems.append(
+                f"baseline.surface_ownership item {item!r}: no consequence, so a "
+                "reader cannot tell what the ownership means for the row it feeds"
+            )
+    return problems
+
+
+def version_provenance_problems(contract: dict[str, Any]) -> list[str]:
+    """Check that the component release line is recorded and not overread.
+
+    ``cudaq_versions`` pins CUDA-Q core. The QEC component ships on its own
+    release line, so a QEC row is only as strong as the component version it was
+    read at, and a reader must not infer that the core pin reaches it. The
+    failure this check prevents is a contract that quietly assumes the pin does:
+    a pin that also appears on the component release line means a
+    correspondence exists and must be recorded, and a recorded correspondence
+    across two lines that do not meet is a claim nothing supports.
+    """
+    problems: list[str] = []
+    provenance = contract.get("baseline", {}).get("version_provenance", {})
+    if not provenance:
+        problems.append(
+            "baseline.version_provenance must record the release line of the "
+            "component the quantum_error_correction rows were read at"
+        )
+        return problems
+
+    for field in (
+        "pinned_component",
+        "component",
+        "component_version_recorded",
+        "component_source",
+        "provenance_limit",
+    ):
+        if not provenance.get(field):
+            problems.append(f"baseline.version_provenance.{field} is required")
+
+    line = tuple(provenance.get("component_release_line", ()))
+    if not line:
+        problems.append(
+            "baseline.version_provenance.component_release_line is required, or the "
+            "recorded component version is unanchored"
+        )
+    recorded = provenance.get("component_version_recorded")
+    if line and recorded and recorded not in line:
+        problems.append(
+            f"baseline.version_provenance.component_version_recorded {recorded!r} is "
+            f"not on the recorded release line {list(line)}"
+        )
+
+    pinned = tuple(contract.get("cudaq_versions", ()))
+    overlap = sorted(version for version in pinned if version in line)
+    mapping = provenance.get("version_mapping", {})
+    if overlap and not mapping:
+        problems.append(
+            f"cudaq_versions {overlap} also appear on the component release line, so a "
+            "correspondence exists; record it in "
+            "baseline.version_provenance.version_mapping"
+        )
+    if not overlap and mapping:
+        problems.append(
+            f"baseline.version_provenance.version_mapping claims a correspondence "
+            f"between the pins {list(pinned)} and the component release line "
+            f"{list(line)}, but the two lines have no version in common"
+        )
+    for core_version, component_versions in mapping.items():
+        if core_version not in pinned:
+            problems.append(
+                f"baseline.version_provenance.version_mapping names {core_version!r}, "
+                f"which is not one of the pinned versions {list(pinned)}"
+            )
+        for component_version in component_versions:
+            if component_version not in line:
+                problems.append(
+                    "baseline.version_provenance.version_mapping names component "
+                    f"version {component_version!r}, which is not on the recorded "
+                    "release line"
+                )
+    return problems
+
+
 def validate_contract(contract: dict[str, Any], maturity: dict[str, Any]) -> list[str]:
     """Return the list of violations. An empty list means the contract is valid."""
     problems: list[str] = []
@@ -232,13 +386,27 @@ def validate_contract(contract: dict[str, Any], maturity: dict[str, Any]) -> lis
                     f"{where}: a row without a reason is a plan, not parity"
                 )
 
-            maturity_ref = row.get("maturity_ref")
-            if maturity_ref is not None and maturity_ref not in known_capabilities:
+            maturity_refs = _row_maturity_refs(row)
+            if (
+                row.get("maturity_refs") is not None
+                and row.get("maturity_ref") is not None
+            ):
                 problems.append(
-                    f"{where}: maturity_ref {maturity_ref!r} is not declared in "
-                    "capability-maturity.toml"
+                    f"{where}: names both maturity_ref and maturity_refs, and a row "
+                    "names its registry entries through one form or the other"
                 )
-            if row.get("status") == "supported" and maturity_ref is None:
+            if len(set(maturity_refs)) != len(maturity_refs):
+                problems.append(
+                    f"{where}: a maturity reference is named twice, so the row claims "
+                    "one registry entry as two"
+                )
+            for maturity_ref in maturity_refs:
+                if maturity_ref not in known_capabilities:
+                    problems.append(
+                        f"{where}: maturity_ref {maturity_ref!r} is not declared in "
+                        "capability-maturity.toml"
+                    )
+            if row.get("status") == "supported" and not maturity_refs:
                 problems.append(
                     f"{where}: 'supported' requires a maturity_ref, because a parity "
                     "claim with no registry entry has no owner and no evidence set"
@@ -272,6 +440,10 @@ def validate_contract(contract: dict[str, Any], maturity: dict[str, Any]) -> lis
         problems.append("baseline.instrument must name the recorded CUDA-Q survey")
 
     problems.extend(probe_problems(contract))
+
+    problems.extend(surface_ownership_problems(contract))
+
+    problems.extend(version_provenance_problems(contract))
 
     problems.extend(version_pin_problems(contract))
 
@@ -357,6 +529,23 @@ def render_document(contract: dict[str, Any]) -> str:
     )
     lines.append("")
     lines.append(f"- CUDA-Q baseline versions: {', '.join(contract['cudaq_versions'])}")
+    provenance = baseline.get("version_provenance", {})
+    if provenance:
+        lines.append(f"- Pinned component: {provenance.get('pinned_component')}")
+        lines.append(f"- Baseline component: {provenance.get('component')}")
+        lines.append(
+            "- Component release line: "
+            + ", ".join(provenance.get("component_release_line", ()))
+        )
+        lines.append(
+            "- Component version the `quantum_error_correction` rows were read at: "
+            f"{provenance.get('component_version_recorded')}"
+        )
+        lines.append(f"- Component release index: {provenance.get('component_source')}")
+        lines.append("")
+        lines.append(provenance.get("rule", ""))
+        lines.append("")
+        lines.append(f"Provenance limit: {provenance.get('provenance_limit')}")
     lines.append(f"- Baseline survey: `{baseline.get('instrument', 'unrecorded')}`")
     lines.append(f"- Capture method: {baseline.get('capture_method', 'unrecorded')}")
     lines.append(f"- Scope: {baseline.get('scope', 'unrecorded')}")
@@ -394,6 +583,23 @@ def render_document(contract: dict[str, Any]) -> str:
             lines.append(f"- `{path}`")
         lines.append("")
         lines.append(contract.get("related_contract_rule", ""))
+    ownership = baseline.get("surface_ownership", {})
+    ownership_items = ownership.get("items", ())
+    if ownership_items:
+        lines.append("")
+        lines.append("Baseline component ownership:")
+        lines.append("")
+        lines.append(ownership.get("rule", ""))
+        lines.append("")
+        lines.append("| CUDA-Q surface item | Owning component |")
+        lines.append("| --- | --- |")
+        for entry in ownership_items:
+            lines.append(f"| {entry['item']} | `{entry['owner']}` |")
+        lines.append("")
+        for entry in ownership_items:
+            lines.append(
+                f"- `{entry['owner']}`, {entry['item']}: {entry['consequence']}"
+            )
     lines.append("")
     for item in baseline.get("limitations", {}).get("items", ()):
         lines.append(f"- Limitation: {item}")
@@ -418,8 +624,11 @@ def render_document(contract: dict[str, Any]) -> str:
         )
         lines.append("| --- | --- | --- | --- | --- | --- | --- |")
         for row in domain["capabilities"]:
+            maturity_refs = _row_maturity_refs(row)
             maturity_cell = (
-                f"`{row['maturity_ref']}`" if row.get("maturity_ref") else "none"
+                ", ".join(f"`{ref}`" for ref in maturity_refs)
+                if maturity_refs
+                else "none"
             )
             reason_cell = row["reason"]
             if row.get("baseline_gap"):

@@ -64,6 +64,50 @@ first_capture = "On 2026-09-30 on jp-a800-172 and jp-a800-171, one A800-SXM4-80G
 payload = "benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json"
 report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
 
+[baseline.surface_ownership]
+default_owner = "cudaq-qec"
+owners = ["cudaq-qec", "cudaq-core", "cudaq-logical-preview"]
+rule = "A domain `cudaq_surface` list is an inventory of the surface a QEC user meets, and an inventory is not an attribution: three components of one product appear in those lists. Most items belong to cudaq-qec, which is the component this domain compares against. The entries below are the items whose owner is a different component, or whose owner is worth stating, and each records what that ownership means for the row it feeds. An attributed item must appear verbatim in exactly one domain surface list, so the table cannot drift from the inventory it explains, and an item owned by another component must state its consequence, so a reader cannot follow the inventory to the wrong owner. Only contested or non-obvious items are listed; the absence of an entry is not a claim about ownership."
+
+[[baseline.surface_ownership.items]]
+item = "detector, detectors, and logical_observable annotations in a kernel"
+owner = "cudaq-core"
+consequence = "These annotations are CUDA-Q core kernel syntax rather than a cudaq-qec API, and core's dem_from_kernel is what reads them back. The row the annotations feed therefore belongs to the core capability set, and whether FlagQuantum grows a kernel annotation surface is a language-level decision rather than a QEC library one."
+
+[[baseline.surface_ownership.items]]
+item = "dem, dem_from_kernel, and DEMResult"
+owner = "cudaq-core"
+consequence = "One surface item, two owners, so it must be read as two. dem_from_kernel and DEMResult are CUDA-Q core: both are documented on the core Python API page and neither appears in the cudaq-qec Python API, which exposes no dem_from_kernel and no DEMResult anchor at all. cudaq-qec's own construction entries are dem_from_stim_text, dem_from_memory_circuit with its x_ and z_ variants, and dem_from_css_matrices, and cudaq-qec consumes the core record rather than declaring it. Construction is only a cudaq-qec row when it is read against those entries; the core record is a dependency of the row, not its baseline."
+
+[[baseline.surface_ownership.items]]
+item = "extract_syndrome"
+owner = "cudaq-logical-preview"
+consequence = "extract_syndrome belongs to the CUDA-Q Logical preview layer, not to cudaq-qec: it appears in that layer's Stim emission material as the encoded operation a fabric call expands into, it is absent from the cudaq-qec Python API, and it is absent from the core Python API page. cudaq-qec's own extraction route is sample_memory_circuit with its x_ and z_ variants, feeding decoder_context_from_memory_circuit. Aligning to the preview layer would not deliver the detector error model this domain is built around, because that layer states of itself that it does not simulate, sample, or decode and emits no detector error models. Either the surface item is misattributed here, or the preview layer is a second target with a different deliverable."
+
+[[baseline.surface_ownership.items]]
+item = "the logical.* preview namespace"
+owner = "cudaq-logical-preview"
+consequence = "The namespace is preview-layer scope, not a cudaq-qec surface. The semantic core inside it -- lattice surgery, product rotation, distillation -- is what the qec_logical_operations row tracks through the Qualtran adaptation, while the namespace's patch, gadget, protocol, and program records are that layer's own shape and not a FlagQuantum target."
+
+[[baseline.surface_ownership.items]]
+item = "for-stim-users migration"
+owner = "cudaq-logical-preview"
+consequence = "cudaq-qec ships no for-Stim-users page. The only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. It is therefore not a cudaq-qec counterpart, and the qec_stim_user_migration document has to be written against cudaq-qec's own surface -- dem_from_stim_text, dem_sampling, the decoder framework, and decoding from Stim DEM text -- rather than translated from that page."
+
+[[baseline.surface_ownership.items]]
+item = "Stim integration"
+owner = "cudaq-qec"
+consequence = "Stim appears on both sides of the product split, so the item needs its cudaq-qec half named. Reading Stim detector error model text, and decoding from Stim DEM text, are cudaq-qec's: dem_from_stim_text and the decoder framework's Stim entry point are in the cudaq-qec Python API. Emitting Stim from a verified gadget is the preview layer's and is not a cudaq-qec capability. A row that reads only the second half would compare this repository against a component that does not decode."
+
+[baseline.version_provenance]
+rule = "The top-level cudaq_versions pin describes CUDA-Q core, which is the product both the export contract and this matrix describe. The QEC component ships on its own release line, so a quantum_error_correction row is only as strong as the component version it was read at, and this table records that version separately rather than implying that the pin reaches it. The tool fails closed in both directions: a pin that overlaps the component release line needs a mapping entry, and a mapping entry across two lines that do not overlap is refused as a correspondence nothing supports."
+pinned_component = "CUDA-Q core"
+component = "cudaq-qec, also shipped as libs/qec inside NVIDIA/cudaqx"
+component_release_line = ["0.1.0", "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.4.0.post1", "0.5.0", "0.5.0.post1", "0.6.0", "0.7.0", "0.8.0"]
+component_version_recorded = "0.8.0"
+component_source = "https://pypi.org/pypi/cudaq-qec/json"
+provenance_limit = "No cudaq-qec release maps to either pinned CUDA-Q version: the component's release line runs from 0.1.0 to 0.8.0 while the pin is 0.15.1 and 0.16.0.post1, and the two lines are disjoint. Every quantum_error_correction row therefore records the component surface as it stands at 0.8.0. That the same surface exists at the pinned CUDA-Q baseline is not established by this contract, so a QEC row must not be read as a statement about CUDA-Q 0.15.1 or 0.16.0.post1, and a row that needs to be is a new capture rather than a new reading."
+
 [baseline.limitations]
 items = [
     "A capability absent from this matrix is not evidence that CUDA-Q lacks it; it is evidence that the survey did not record it.",
@@ -83,6 +127,7 @@ status_rules = [
     "out_of_scope: the capability is absent by explicit decision, and `reason` names the decision.",
 ]
 maturity_ref_rule = "`maturity_ref` names the capability-maturity.toml entry that establishes the FlagQuantum side of the row, or the entry the row's implementation would extend. It is required for a `supported` row and optional elsewhere. It is traceability, not a maturity claim: the generated document prints the registered level beside it, and no parity status may be inferred from that level."
+maturity_refs_rule = "`maturity_refs` is the plural form, for a row whose implementation genuinely spans more than one registry entry, and a row names its entries through one form or the other and never both. It is not a way to strengthen a weak row: the entries must each cover a distinct part of the row's scope, and a row that needs two entries because one capability was split across two registry entries should say so in `reason` instead. Where a row's parts meet is what the row is about, so splitting the row to avoid the plural form would leave the meeting point in neither row."
 evidence_rule = "Every row carries evidence. An item is either a repository-relative path that must exist, or a `search:` token recording the negative search that established absence. A claim without evidence is a plan, not parity."
 dependency_class_rule = "A_nvidia_proprietary is the replacement battlefield: the CUDA-Q implementation depends on an NVIDIA-proprietary component and FlagQuantum must not. B_open_neutral marks a dependency FlagQuantum may use directly under a permissive licence. C_flagos_replacement marks a dependency FlagQuantum satisfies through a FlagOS-family component. none means the capability is not dependency-bearing."
 scalability_rule = "No row in this matrix may assert scalability. Scalability claims are read from capability-maturity.toml and require an audited benchmark payload naming a verified integration commit."
@@ -719,7 +764,8 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
-reason = "The repetition code and the rotated surface code are declared as code records and both produce a memory-experiment source with detector and observable layouts, so a distance-d rotated patch is expressible. Both are declared rather than constructed: an arbitrary parity-check matrix, a code with a mixed X-and-Z stabilizer, Steane, qLDPC, Reichardt and Floquet codes are absent, and nothing here decodes."
+reason = "The repetition code and the rotated surface code are declared as code records and both produce a memory-experiment source with detector and observable layouts, so a distance-d rotated patch is expressible. Both are declared rather than constructed: an arbitrary parity-check matrix, a code with a mixed X-and-Z stabilizer, Steane, qLDPC, Reichardt and Floquet codes are absent. The code records themselves still expose no decode entry point, because decoding belongs to the decoder row and reads a detector error model rather than a code."
+evidence = ["flagquantum/qec/codes.py", "flagquantum/qec/circuit.py", "tests/qec/test_codes.py", "tests/qec/test_surface_code.py"]
 
 [[domains.capabilities]]
 id = "qec_decoder_family"
@@ -727,8 +773,9 @@ cudaq = "Minimum-weight perfect matching, belief propagation with ordered statis
 status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "The existing decoder layer is basic. PyMatching and an LDPC belief-propagation implementation are Apache-2.0 licensed, so the plan is integration rather than reimplementation, with acceleration later through the FlagOS kernel path."
-evidence = ["flagquantum/qec/decoders.py"]
+maturity_ref = "detector_error_matching_decoder"
+reason = "Matching is now self-implemented rather than absent: the detector error model becomes a weighted decoding graph whose edge weight is log((1 - p) / p), and a syndrome is decoded exactly by enumerating the ways to pair its defective detectors and to route any of them to the graph's boundary. The row stays partial on scope, not on correctness. Matching needs a graphlike model and refuses a hyperedge rather than projecting it onto a pair, so a code whose mechanisms flip three or more detectors is outside this row's matching half. The pairing is enumerated, so a syndrome is bounded by a defect budget instead of decoded at scale. Belief propagation with ordered statistics decoding is absent, so the LDPC codes the baseline serves with it are not served here; the sliding-window decoder for a long-lived experiment is absent; and there is no decoder registry or plugin protocol, so a decoder is constructed directly rather than requested by name. The baseline's GPU decoders are deliberately not chased, because the CUDA-Q qLDPC decoder is a closed-source shared library, so only its interface position is a target and an Apache-2.0 implementation is the route if that scope is ever reached. The remaining work inside this row is a bit-for-bit cross-check against PyMatching as an independent implementation, which is a cross-check and never the authority for this row."
+evidence = ["flagquantum/qec/decoders.py", "flagquantum/qec/decoding_graph.py", "flagquantum/qec/matching.py", "tests/qec/test_matching_decoder.py"]
 
 [[domains.capabilities]]
 id = "qec_stim_integration"
@@ -736,9 +783,9 @@ cudaq = "Stim sampling and detector error model interoperability"
 status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-maturity_ref = "stabilizer_sampling"
-reason = "Both halves now exist, and the row is partial because they are not connected to each other. Stim-backed sampling landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half landed with the text reader and its own capability entry. What the row still lacks is the join: the sampling engine refuses a circuit carrying a noise instruction rather than tracking a Pauli frame through it, so a noisy circuit is declined rather than sampled, and that refusal is what stands between a circuit and the detector error model a decoder would consume. Decoding itself stays with the decoder row rather than being implied here."
-baseline_gap = "No decoding and no sampling of error-corrected logical operations. Detection events from a noisy Clifford circuit, sampling both from the circuit and from a detector error model derived from it, and pymatching- or stim-driven logical-error-rate estimation all remain absent, so a circuit carrying a noise instruction is declined rather than sampled; the stabilizer sampling half and the detector error model half exist but are not connected."
+maturity_refs = ["stabilizer_sampling", "detector_error_model"]
+reason = "Both halves now exist, and the row is partial because they are not connected to each other. Stim-backed sampling landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half landed with the text reader and its own capability entry. What the row still lacks is the join: the sampling engine refuses a circuit carrying a noise instruction rather than tracking a Pauli frame through it, so a noisy circuit is declined rather than sampled, and that refusal is what stands between a circuit and the detector error model a decoder would consume. Decoding itself stays with the decoder row rather than being implied here. The row names two registry entries because one capability genuinely spans two: the sampling half is `stabilizer_sampling` and the interchange half is `detector_error_model`, and the join the row is about is what would make them one entry. Splitting the row into two rows would not: each half is complete on its own, and the missing thing belongs to neither. The row is also read only against cudaq-qec, which is where the detector error models live; where the two components divide this surface is recorded in `baseline.surface_ownership`."
+baseline_gap = "No sampling of error-corrected logical operations and no join between the two halves. Detection events from a noisy Clifford circuit, sampling both from the circuit and from a detector error model derived from it, and pymatching- or stim-driven logical-error-rate estimation all remain absent, so a circuit carrying a noise instruction is declined rather than sampled. A detector error model can now be decoded, but only by reading its mechanisms directly: the decoder is not reachable from the stim sampling path, and the stabilizer sampling half and the detector error model half still feed nothing that consumes both."
 evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/qec/dem.py", "tests/qec/test_dem_stim_interop.py", "tests/integration/test_stabilizer_execution_mode.py"]
 
 [[domains.capabilities]]
@@ -772,7 +819,9 @@ cudaq = "A documented migration path for Stim users"
 status = "unsupported"
 priority = "next"
 dependency_class = "none"
-reason = "Absent. It is documentation and conformance work that only becomes meaningful once Stim integration exists."
+maturity_ref = "detector_error_model"
+reason = "Absent, and its upstream counterpart is not where the surface list implies. cudaq-qec publishes no for-Stim-users page: the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. So the document cannot be translated from that page, and reading the row's name as pointing at it would aim a `next`-priority capability at a component that produces no detector error model. The counterpart is cudaq-qec's own Stim surface: reading Stim detector error model text through dem_from_stim_text, sampling a model through dem_sampling, and decoding from a Stim DEM through the decoder framework. The document is conformance work rather than a new implementation, so it is still sequenced after the Stim integration row's halves are joined; until then a migration guide would describe a route that stops at the join."
+evidence = ["search:no for-Stim-users page in cudaq-qec, and no Stim-text writer anywhere in the CUDA-Q stack; the only such page is in the logical preview layer, which emits no detector error model and does no sampling or decoding"]
 
 [[domains]]
 id = "logical_and_ftqc_layer"

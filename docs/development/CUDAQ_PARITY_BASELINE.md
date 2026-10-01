@@ -10,6 +10,10 @@ Recorded: 2026-10-06
 
 Pinned baseline versions: `0.15.1`, `0.16.0.post1`
 
+Pinned component: CUDA-Q core. One matrix domain is read against a component that
+ships on its own release line; that separation is recorded under
+[component provenance](#component-provenance).
+
 ## What this document is
 
 `contracts/cudaq-parity-matrix.toml` holds one row per CUDA-Q capability and the
@@ -108,6 +112,40 @@ Out of scope:
 - CUDA-Q developer tooling that has no FlagQuantum counterpart and no product
   consequence, such as its own test harness layout.
 
+## Component provenance
+
+CUDA-Q is one product with more than one release line, and the `0.15.1` /
+`0.16.0.post1` pin reaches only the core. The `quantum_error_correction` domain is
+read against CUDA-Q QEC (`cudaq-qec`, also shipped as `libs/qec` inside
+`NVIDIA/cudaqx`), which releases independently: its release line runs from
+`0.1.0` to `0.8.0`, and `0.8.0` is the version every QEC row was read at.
+`contracts/cudaq-parity-matrix.toml` records this under
+`[[baseline.version_provenance]]`, including the release index the line was read
+from.
+
+The two lines are disjoint. No `cudaq-qec` release maps to either pinned core
+version, so nothing here establishes that a QEC row describes the same surface at
+the pinned baseline. A QEC row must therefore not be read as a statement about
+CUDA-Q core `0.15.1` or `0.16.0.post1`; a row that needs to be is a new capture.
+This is a limit of the survey, not a defect in the component.
+
+Two of the surface items the QEC domain lists belong to a component other than
+`cudaq-qec`, and one more is worth attributing. A `cudaq_surface` list is an
+inventory of the surface a user meets, not an attribution, so the attribution
+lives in `baseline.surface_ownership` in the contract, where the tool checks each
+entry against the inventory it claims to explain:
+
+| Surface item | Owner | What it means |
+| --- | --- | --- |
+| `dem, dem_from_kernel, and DEMResult` | CUDA-Q core | One item, two owners. `dem_from_kernel` and `DEMResult` are core and are read back by core; CUDA-Q QEC's own construction entries are `dem_from_stim_text`, `dem_from_memory_circuit` with its `x_` and `z_` variants, and `dem_from_css_matrices`. |
+| `extract_syndrome` | CUDA-Q Logical preview | Not a CUDA-Q QEC surface. CUDA-Q QEC's own extraction route is `sample_memory_circuit` with its `x_` and `z_` variants, feeding `decoder_context_from_memory_circuit`. |
+| `for-stim-users migration` | CUDA-Q Logical preview | CUDA-Q QEC publishes no such page. The only page with that title belongs to the preview layer, which states that it does not simulate, sample, or decode and emits no detector error models. |
+
+The consequence for this baseline is that a QEC row is read against CUDA-Q QEC's
+own surface, and that the two preview-layer items are attributed rather than
+adopted: the logical layer is a separate target with a different deliverable, and
+it produces no detector error model for a QEC row to align against.
+
 ## The dependency question
 
 The reason this baseline is recorded at all is that a CUDA-Q capability is not
@@ -139,10 +177,17 @@ The validator enforces:
 - every declared domain appears in `domain_order`, and every status, priority, and
   dependency class is one of the declared values;
 - every `maturity_ref` names an entry that exists in `capability-maturity.toml`,
-  and a `supported` row has one;
+  and a `supported` row has one; a row whose implementation spans two registry
+  entries names both through `maturity_refs` and uses one form or the other;
 - every row carries evidence, taken from the row or from its domain default, and
   every evidence item is either an existing repository path or a `search:` token
   recording the negative search that established an absence;
+- every `surface_ownership` entry matches exactly one domain surface item
+  verbatim, names a declared owner, and states the consequence for the row it
+  feeds;
+- the component release line is recorded, the version the QEC rows were read at is
+  on it, and a version mapping is present exactly when the two release lines have
+  a version in common;
 - no row asserts scalability.
 
 A scale statement in the matrix stays out of scope even after a payload lands:
@@ -158,16 +203,23 @@ authoritative sources, and it states that planned capabilities do not appear as
 supported rows until executable manifests and tests exist. This baseline does not
 change that rule. Because every `supported` row in
 `contracts/cudaq-parity-matrix.toml` carries a `maturity_ref`, every such row
-already has a registered, executable FlagQuantum capability behind it.
+already has a registered, executable FlagQuantum capability behind it. A row
+whose implementation spans two registry entries names both through
+`maturity_refs`, and the tool checks every entry it names.
 
 ## Maintenance
 
 Refreshing this baseline is required when any of the following happens:
 
 - the pinned CUDA-Q version range changes;
+- the CUDA-Q QEC release line moves, because that re-opens the provenance of every
+  `quantum_error_correction` row;
 - a CUDA-Q capability that the matrix does not record becomes relevant to a
   planned FlagQuantum feature;
-- a `maturity_ref` target changes level, is renamed, or is removed.
+- a `maturity_ref` or `maturity_refs` target changes level, is renamed, or is
+  removed.
+- the surface ownership of a `cudaq_surface` item changes, because that is what
+  decides which component a row is read against.
 
 The refresh updates both this document and `contracts/cudaq-parity-matrix.toml`
 in one change, and the generated document is regenerated from the contract. A

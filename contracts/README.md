@@ -63,4 +63,9 @@ They answer different questions and deliberately do not restate each other. The
 version pin is shared: `cudaq-parity-matrix.toml` must declare the same
 `cudaq_versions` as `cudaq-export-contract.toml`, and the gap matrix must keep
 pointing its `cudaq` framework at that export contract, or
-`python tools/parity_matrix.py --check` fails.
+`python tools/parity_matrix.py --check` fails. That pin describes CUDA-Q core.
+One parity domain is read against CUDA-Q QEC, which ships on its own release
+line, so `cudaq-parity-matrix.toml` also records that line, the component version
+its QEC rows were read at, and the limit that follows from the two lines being
+disjoint: the core pin does not reach the QEC component, and a QEC row must not
+be read as a statement about the pinned core versions.
