@@ -74,6 +74,7 @@ class _StatevectorDisjointDenseStep:
     regions: tuple[_StatevectorDenseRegion, ...]
     native_preferred: bool = False
     native_parameterized: bool = False
+    native_clifford: bool = False
 
 
 @dataclass(frozen=True)

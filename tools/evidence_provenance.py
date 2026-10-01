@@ -33,6 +33,11 @@ this repository never contained, records that with ``revision_origin`` inside
 The revision is kept, so the record loses nothing, and the reason it cannot be
 resolved here is stated instead of assumed. Artifacts that do not disclose an
 origin are held to ``repository_history``: their revision must resolve.
+
+Resolution and publication answer different questions, and a claim needs both.
+A revision that resolves may still be one no ref reaches -- a commit that only a
+deleted pull-request branch pointed at -- which the producing checkout holds and
+a fresh clone never fetches. ``revision_is_published`` is the second question.
 """
 
 from __future__ import annotations
@@ -130,6 +135,52 @@ def revision_resolves(revision: str, root: Path = ROOT) -> bool:
             "fetched from one this repository never contained; fetch full history"
         )
     return False
+
+
+def revision_is_published(revision: str, root: Path = ROOT) -> bool:
+    """Return whether a ref of ``root`` reaches ``revision``.
+
+    Presence is not obtainability. A commit that only a deleted branch pointed
+    at stays in the object database of the checkout that made it, and a clone
+    that fetches this repository's refs does not obtain it -- so a pin resolved
+    against the producing checkout passes while the same pin is unresolvable for
+    every reader. Reachability from a ref is the property a reader depends on,
+    and it is what separates a revision on published history from an orphan.
+
+    Args:
+        revision: Full hexadecimal revision recorded by the evidence producer.
+        root: Repository to resolve the revision against.
+
+    Returns:
+        True when some ref of ``root`` reaches the commit, and False when the
+        refs of a complete repository do not.
+
+    Raises:
+        ProvenanceUnavailableError: When the repository cannot answer, so that an
+            unusable checkout is never mistaken for an orphaned revision.
+    """
+
+    probe = _git(root, "rev-parse", "--git-dir")
+    if probe.returncode != 0:
+        raise ProvenanceUnavailableError(
+            f"{root} is not a usable git repository: {probe.stderr.strip()}"
+        )
+    shallow = _git(root, "rev-parse", "--is-shallow-repository")
+    if shallow.returncode == 0 and shallow.stdout.strip() == "true":
+        raise ProvenanceUnavailableError(
+            f"{root} is a shallow clone, whose refs reach only the fetched tips and "
+            "which therefore cannot separate an orphaned revision from one it never "
+            "fetched; fetch full history"
+        )
+    containing = _git(
+        root, "for-each-ref", "--contains", revision, "--format=%(refname)"
+    )
+    if containing.returncode != 0:
+        raise ProvenanceUnavailableError(
+            f"{root} could not list the refs reaching {revision}: "
+            f"{containing.stderr.strip()}"
+        )
+    return bool(containing.stdout.strip())
 
 
 def source_revision_errors(

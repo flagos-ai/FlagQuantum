@@ -42,6 +42,7 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         engines=(
             "flagquantum_native_batch",
             "flagquantum_native_fixed_layer_rollback",
+            "flagquantum_native_static_clifford_layer_rollback",
             "flagquantum_native_parameterized_layer_rollback",
             "flagquantum_native_clifford_matching_rollback",
             "flagquantum_native_clifford_phase_map_rollback",
@@ -65,6 +66,12 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
             case["correctness"]["engines"]["flagquantum_native_fixed_layer_rollback"][
                 "max_abs_error"
             ]
+            <= 1e-10
+        )
+        assert (
+            case["correctness"]["engines"][
+                "flagquantum_native_static_clifford_layer_rollback"
+            ]["max_abs_error"]
             <= 1e-10
         )
         assert (
