@@ -18,12 +18,14 @@ this review does not promote their maturity levels.
 | Digital twin | Calibration-conditioned predictions and program/task-bound comparisons | Retrospective replay is not general prospective prediction across circuits, devices or calibration epochs |
 | QEC and FTQC | Local three-data-qubit repetition-memory experiments with syndrome, decoder and correction records | General logical operations, threshold claims and real-time QPU feedback remain research goals |
 
-The reviewed CI run passed all 15 jobs. Its coverage job passed 2,455 tests,
-skipped 36 and measured **66.10% line coverage** under the repository's existing
-`.coveragerc` exclusions. The CPU distributed tier passed 402 tests with 28
-skipped; a separate benchmark-contract tier passed 113 with 12 skipped. These
-counts are different scopes and must not be added into a unique-test total.
-Skipped tests are not evidence of supported hardware or behavior.
+The reviewed CI run passed all 15 jobs. Its coverage job enforces the global
+line-coverage floor and the per-package floors declared in
+[`contracts/coverage-policy.toml`](../../contracts/coverage-policy.toml) through
+`tools/check_coverage.py`, so a passing coverage job measured at or above those
+floors. The CPU distributed tier passed 402 tests with 28 skipped; a separate
+benchmark-contract tier passed 113 with 12 skipped. These counts are different
+scopes and must not be added into a unique-test total. Skipped tests are not
+evidence of supported hardware or behavior.
 
 The A800 environment was Python 3.12.13, PyTorch 2.13.0+cu130, CUDA 13.0 and
 NCCL 2.29.7, on A800-SXM4-80GB devices. Raw logs remain in the maintainer's private
