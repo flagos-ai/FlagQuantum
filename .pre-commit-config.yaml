@@ -50,6 +50,11 @@ repos:
         entry: python -m tools.docs_source_of_truth --check
         language: system
         pass_filenames: false
+      - id: documentation-links
+        name: documentation links and anchors
+        entry: python tools/check_docs_links.py
+        language: system
+        pass_filenames: false
       - id: public-api-baseline
         name: public API migration baseline
         entry: python -m tools.public_api_snapshot

@@ -104,6 +104,7 @@ Run before submitting:
 python tools/check_architecture.py
 python tools/check_dependency_policy.py
 python tools/check_repository_hygiene.py
+python tools/check_docs_links.py
 pre-commit run --all-files
 ```
 
