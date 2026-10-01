@@ -46,6 +46,7 @@ import flagquantum.compiler.pipeline as compiler_pipeline
 import flagquantum.compiler.topology_legalization as topology_legalization
 import flagquantum.runtime.dynamic.routing as dynamic_routing
 from flagquantum.compiler import CouplingMap, compile, route_to_topology
+from flagquantum.compiler.layout import Layout
 from flagquantum.compiler.topology_legalization import legalize_circuit_topology
 from flagquantum.core.ir import (
     CircuitIR,
@@ -467,6 +468,105 @@ def test_a_routing_run_is_a_pure_function_of_its_request() -> None:
 def test_reusing_a_device_changes_only_its_cache_telemetry() -> None:
     assert not _warm_cache_failures(_shipped_router), "\n".join(
         _warm_cache_failures(_shipped_router)
+    )
+
+
+# ``compile`` optimizes the routed program a second time, and those passes are
+# allowed to delete an inserted SWAP: a forward SWAP and its matching restore SWAP
+# on the same physical wires cancel, as does a final restore another one undid.
+# They must not, however, leave a plan whose SWAP evidence no longer describes the
+# program. No optimization pass knows it is editing a routing artifact, so the
+# property has to be asserted from the outside, over the plan a consumer reads.
+
+
+def _optimizing_compiler(
+    program: CircuitIR, device: CouplingMap, strategy: str
+) -> CircuitIR:
+    """The shipped compile entry point with the post-routing optimization on."""
+
+    return compile(
+        program, coupling_map=device, routing_strategy=strategy, optimize=True
+    )
+
+
+def _optimization_evidence_failures(router: _Router) -> tuple[list[str], int]:
+    """Report plans the post-routing optimization left unable to describe itself.
+
+    Also returns how many cases lost an inserted SWAP, so the caller can require
+    that the check ran against the removals it exists for rather than passing
+    because nothing was ever removed.
+    """
+
+    failures: list[str] = []
+    removed_in = 0
+    for case in _cases():
+        optimized = router(case.program, case.device(), case.strategy)
+        routing = optimized.metadata.get("routing")
+        if not isinstance(routing, dict):
+            failures.append(f"{case.label}: the optimized program lost its plan")
+            continue
+        surviving = [
+            (str(instruction.metadata.get("routing_phase")), instruction.wires)
+            for instruction in optimized
+            if _is_inserted_swap(instruction)
+        ]
+        planned = routing.get("inserted_swap_count")
+        retained = routing.get("post_optimization_inserted_swap_count")
+        if retained != len(surviving):
+            failures.append(
+                f"{case.label}: the plan reports {retained!r} surviving inserted "
+                f"SWAPs but the program carries {len(surviving)}"
+            )
+        if routing.get("post_optimization_instruction_count") != len(optimized):
+            failures.append(
+                f"{case.label}: the plan reports "
+                f"{routing.get('post_optimization_instruction_count')!r} instructions "
+                f"but the program carries {len(optimized)}"
+            )
+        if not isinstance(planned, int) or not isinstance(retained, int):
+            continue
+        if retained > planned:
+            failures.append(
+                f"{case.label}: optimization raised the inserted SWAP count "
+                f"{planned} -> {retained}"
+            )
+        elif retained < planned:
+            removed_in += 1
+        try:
+            initial = Layout(tuple(routing["initial_logical_to_physical"]))
+            placed = initial.apply_swaps(
+                wires for phase, wires in surviving if phase != "final_restore"
+            )
+            reported = Layout(tuple(routing["pre_restore_logical_to_physical"]))
+            ended = initial.apply_swaps(wires for _, wires in surviving)
+            final = Layout(tuple(routing["final_logical_to_physical"]))
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(f"{case.label}: the plan cannot be replayed: {error}")
+            continue
+        if placed != reported:
+            failures.append(
+                f"{case.label}: the surviving non-restore SWAPs reach {placed} "
+                f"rather than the reported pre-restore layout {reported}"
+            )
+        if ended != final or routing.get("mapping_restored") is not True:
+            failures.append(
+                f"{case.label}: the surviving SWAPs reach {ended} rather than the "
+                f"reported output layout {final}"
+            )
+    return failures, removed_in
+
+
+def test_the_optimized_compile_keeps_the_routing_plan_replayable() -> None:
+    """The post-routing optimization may remove a routing SWAP, but not the plan."""
+
+    evidence_failures, removed_in = _optimization_evidence_failures(
+        _optimizing_compiler
+    )
+    failures = _device_legality_failures(_optimizing_compiler) + evidence_failures
+    assert not failures, "\n".join(failures)
+    assert removed_in > 0, (
+        "no case lost an inserted SWAP to the post-routing optimization, so this "
+        "check never ran against the removals it exists for"
     )
 
 
