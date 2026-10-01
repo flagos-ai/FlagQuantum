@@ -41,11 +41,13 @@ from .rotation import (
     fused_hadamard_block_adjoint_,
     fused_rotation_block_adjoint_,
     fused_rotation_block_forward_,
+    fused_static_clifford_layer_,
     native_cpu_hadamard_block_adjoint_available,
     native_cpu_one_qubit_layer_available,
     native_cpu_rotation_available,
     native_cpu_shared_rzz_forward_fusion_available,
     native_cpu_specialized_forward_rotations_available,
+    native_cpu_static_clifford_layer_available,
 )
 from .rzz import fused_rzz_segment_forward_, native_cpu_rzz_available
 
@@ -68,9 +70,11 @@ __all__ = [
     "native_cpu_shared_rotation_gradient_available",
     "native_cpu_terminal_adjoint_no_restore_available",
     "fused_rotation_block_forward_",
+    "fused_static_clifford_layer_",
     "fused_hadamard_block_adjoint_",
     "fused_rotation_block_adjoint_",
     "native_cpu_rotation_available",
+    "native_cpu_static_clifford_layer_available",
     "native_cpu_shared_rzz_forward_fusion_available",
     "native_cpu_specialized_forward_rotations_available",
     "native_cpu_one_qubit_layer_available",

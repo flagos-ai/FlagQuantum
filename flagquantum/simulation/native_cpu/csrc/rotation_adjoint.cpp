@@ -114,6 +114,194 @@ inline int64_t popcount(uint64_t value) {
   return count;
 }
 
+at::Tensor fused_static_clifford_layer_cpu(
+    at::Tensor state,
+    const at::Tensor& gate_codes,
+    const at::Tensor& wires,
+    int64_t n_wires) {
+  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  TORCH_CHECK(gate_codes.device().is_cpu(), "gate_codes must be on CPU");
+  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  TORCH_CHECK(
+      state.is_contiguous() && gate_codes.is_contiguous() && wires.is_contiguous(),
+      "Clifford layer inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(gate_codes.scalar_type() == at::kChar, "gate_codes must be int8");
+  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
+  TORCH_CHECK(
+      gate_codes.dim() == 1 && wires.dim() == 1 &&
+          gate_codes.numel() == wires.numel(),
+      "gate_codes and wires must be matching vectors");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+
+  const int64_t gate_count = wires.numel();
+  TORCH_CHECK(
+      gate_count >= 2 && gate_count <= n_wires,
+      "a Clifford layer must contain between two and n_wires gates");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+
+  const int8_t* code_data = gate_codes.const_data_ptr<int8_t>();
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  std::array<int64_t, 11> hadamard_masks{};
+  std::array<int64_t, 11> hadamard_positions{};
+  int64_t hadamard_count = 0;
+  uint64_t occupied_mask = 0;
+  uint64_t flip_mask = 0;
+  uint64_t s_mask = 0;
+  uint64_t sdg_mask = 0;
+  uint64_t z_mask = 0;
+  uint64_t y_mask = 0;
+  int64_t y_count = 0;
+  for (int64_t gate = 0; gate < gate_count; ++gate) {
+    TORCH_CHECK(
+        wire_data[gate] >= 0 && wire_data[gate] < n_wires,
+        "Clifford layer wire is out of range");
+    TORCH_CHECK(
+        code_data[gate] >= 1 && code_data[gate] <= 6,
+        "Clifford gate code is invalid");
+    const int64_t bit_position = n_wires - wire_data[gate] - 1;
+    const uint64_t mask = uint64_t{1} << bit_position;
+    TORCH_CHECK(
+        (occupied_mask & mask) == 0,
+        "Clifford layer wires must be unique");
+    occupied_mask |= mask;
+    if (code_data[gate] == 1) {
+      TORCH_CHECK(
+          hadamard_count < 11,
+          "a Clifford layer supports at most 11 Hadamards");
+      hadamard_masks[hadamard_count] = static_cast<int64_t>(mask);
+      hadamard_positions[hadamard_count] = bit_position;
+      ++hadamard_count;
+    } else if (code_data[gate] == 2) {
+      s_mask |= mask;
+    } else if (code_data[gate] == 3) {
+      sdg_mask |= mask;
+    } else if (code_data[gate] == 4) {
+      flip_mask |= mask;
+    } else if (code_data[gate] == 5) {
+      flip_mask |= mask;
+      y_mask |= mask;
+      ++y_count;
+    } else {
+      z_mask |= mask;
+    }
+  }
+  std::sort(
+      hadamard_positions.begin(),
+      hadamard_positions.begin() + hadamard_count);
+
+  const int64_t local_size = int64_t{1} << hadamard_count;
+  std::array<int64_t, 2048> offsets{};
+  for (int64_t local = 0; local < local_size; ++local) {
+    int64_t offset = 0;
+    for (int64_t wire = 0; wire < hadamard_count; ++wire) {
+      if ((local & (int64_t{1} << wire)) != 0) {
+        offset |= hadamard_masks[wire];
+      }
+    }
+    offsets[local] = offset;
+  }
+
+  const int64_t blocks_per_row = amplitudes >> hadamard_count;
+  const int64_t item_count = state.size(0) * blocks_per_row;
+  // X and Y exchange whole Hadamard blocks. Processing only the block with
+  // the anchor bit cleared lets one task load both sources before either is
+  // overwritten, so the transform remains in-place and race-free.
+  const uint64_t flip_anchor = flip_mask & (~flip_mask + 1);
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_static_clifford_layer_cpu", [&] {
+        using real_t = typename scalar_t::value_type;
+        scalar_t* state_data = state.data_ptr<scalar_t>();
+        const real_t normalization =
+            real_t{1} / std::sqrt(static_cast<real_t>(local_size));
+        const auto phase = [&](uint64_t basis) -> scalar_t {
+          // Encode every exact diagonal factor as a power of i. Y contributes
+          // -i before its X permutation and another sign on destination |1>.
+          const int64_t exponent =
+              (3 * y_count + popcount(basis & s_mask) +
+               3 * popcount(basis & sdg_mask) +
+               2 * popcount(basis & z_mask) +
+               2 * popcount(basis & y_mask)) &
+              3;
+          if (exponent == 0) {
+            return scalar_t(real_t{1}, real_t{0});
+          }
+          if (exponent == 1) {
+            return scalar_t(real_t{0}, real_t{1});
+          }
+          if (exponent == 2) {
+            return scalar_t(real_t{-1}, real_t{0});
+          }
+          return scalar_t(real_t{0}, real_t{-1});
+        };
+        const auto hadamard = [&](std::array<scalar_t, 2048>& values) {
+          for (int64_t stride = 1; stride < local_size; stride *= 2) {
+            for (int64_t block = 0; block < local_size; block += 2 * stride) {
+              for (int64_t offset = 0; offset < stride; ++offset) {
+                const int64_t zero = block + offset;
+                const int64_t one = zero + stride;
+                const scalar_t zero_value = values[zero];
+                const scalar_t one_value = values[one];
+                values[zero] = zero_value + one_value;
+                values[one] = zero_value - one_value;
+              }
+            }
+          }
+        };
+        at::parallel_for(
+            int64_t{0}, item_count, int64_t{64}, [&](int64_t begin, int64_t end) {
+              std::array<scalar_t, 2048> first{};
+              std::array<scalar_t, 2048> second{};
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / blocks_per_row;
+                int64_t base = item - row * blocks_per_row;
+                for (int64_t wire = 0; wire < hadamard_count; ++wire) {
+                  const int64_t position = hadamard_positions[wire];
+                  const int64_t lower_mask = (int64_t{1} << position) - 1;
+                  base = (base & lower_mask) | ((base & ~lower_mask) << 1);
+                }
+                if (flip_mask != 0 &&
+                    (static_cast<uint64_t>(base) & flip_anchor) != 0) {
+                  continue;
+                }
+                const int64_t paired = base ^ static_cast<int64_t>(flip_mask);
+                const int64_t row_offset = row * amplitudes;
+                for (int64_t local = 0; local < local_size; ++local) {
+                  first[local] = state_data[row_offset + base + offsets[local]];
+                  if (flip_mask != 0) {
+                    second[local] = state_data[row_offset + paired + offsets[local]];
+                  }
+                }
+                hadamard(first);
+                if (flip_mask != 0) {
+                  hadamard(second);
+                }
+                const scalar_t first_phase = phase(static_cast<uint64_t>(base));
+                const scalar_t paired_phase = phase(static_cast<uint64_t>(paired));
+                for (int64_t local = 0; local < local_size; ++local) {
+                  const int64_t first_position = row_offset + base + offsets[local];
+                  if (flip_mask == 0) {
+                    state_data[first_position] =
+                        first_phase * first[local] * normalization;
+                  } else {
+                    const int64_t paired_position = row_offset + paired + offsets[local];
+                    state_data[first_position] =
+                        first_phase * second[local] * normalization;
+                    state_data[paired_position] =
+                        paired_phase * first[local] * normalization;
+                  }
+                }
+              }
+            });
+      });
+  return state;
+}
+
 template <int64_t gate_kind, typename scalar_t>
 inline void apply_inverse_rotation_pair(
     typename scalar_t::value_type cosine,
@@ -1637,6 +1825,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
       "bool specialized_rotations=True) -> Tensor(a!)");
   library.def(
+      "fused_static_clifford_layer_(Tensor(a!) state, Tensor gate_codes, "
+      "Tensor wires, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_hadamard_block_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
   library.def(
@@ -1668,6 +1859,7 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl(
       "fused_observable_adjoint_seed", &fused_observable_adjoint_seed_cpu);
   library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
+  library.impl("fused_static_clifford_layer_", &fused_static_clifford_layer_cpu);
   library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
   library.impl("fused_rzz_segment_forward_", &fused_rzz_segment_forward_cpu);

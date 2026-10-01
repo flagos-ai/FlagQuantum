@@ -35,6 +35,50 @@ def native_cpu_one_qubit_layer_available() -> bool:
     )
 
 
+def native_cpu_static_clifford_layer_available() -> bool:
+    """Return whether exact static Clifford layer fusion is enabled."""
+
+    return (
+        os.getenv("FQ_CPU_NATIVE_STATIC_CLIFFORD_LAYER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_one_qubit_layer_available()
+    )
+
+
+def fused_static_clifford_layer_(
+    state: torch.Tensor,
+    gate_codes: torch.Tensor,
+    wires: torch.Tensor,
+    *,
+    n_wires: int,
+) -> bool:
+    """Apply one disjoint H/S/Sdg/X/Y/Z layer in place."""
+
+    if (
+        not native_cpu_static_clifford_layer_available()
+        or state.device.type != "cpu"
+        or gate_codes.device.type != "cpu"
+        or wires.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or gate_codes.dtype != torch.int8
+        or wires.dtype != torch.int64
+        or state.ndim != 2
+        or gate_codes.ndim != 1
+        or wires.shape != gate_codes.shape
+        or not 2 <= wires.numel() <= 62
+        or not all(item.is_contiguous() for item in (state, gate_codes, wires))
+    ):
+        return False
+    with torch.no_grad():
+        cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_static_clifford_layer_(
+                state, gate_codes, wires, n_wires
+            ),
+        )
+    return True
+
+
 def native_cpu_shared_rzz_forward_fusion_available() -> bool:
     """Return whether a shared RZZ segment may fuse into a rotation block."""
 
