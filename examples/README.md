@@ -179,13 +179,14 @@ These small commands are suitable for checking a development environment:
 ```bash
 python examples/single_machine_quantum_ai/00_local_fast_path_check.py
 python examples/single_machine_quantum_ai/01_vqe_statevector.py \
-  --backend torch --steps 2 --n-qubits 3
+  --steps 2 --n-qubits 3
 python examples/single_machine_quantum_ai/02_quantum_classifier.py --steps 2
 python examples/single_machine_quantum_ai/03_mps_training.py \
   --steps 2 --n-qubits 4 --max-bond 8
 ```
 
-Optional JAX check:
+Optional JAX check (requires the `jax` extra from `pyproject.toml`; without it
+the script reports `status: skipped`):
 
 ```bash
 python examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py \

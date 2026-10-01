@@ -1,5 +1,11 @@
 # QEC Code-Independent Records (Stage 1) Implementation Plan
 
+> Environment note: this plan was executed in the maintainer's site-local
+> setup. The worktree paths, container images, and remote hosts named below
+> record that environment; they are not reproducible from this repository, and
+> the `superpowers:*` sub-skills are not part of this project. The verification
+> commands are the ones that were actually run.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a code-independent QEC records layer — a phase-free `Pauli`, a `StabilizerCode` protocol with a distance-parameterized `RepetitionCode`, and a code-driven memory-circuit builder that derives detector and logical-observable layouts from the code instead of asserting them.

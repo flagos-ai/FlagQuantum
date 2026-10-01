@@ -25,7 +25,8 @@ live in `simulation/mps/canonicalization.py`.
 - Change the development result facade or sharded-state behavior in
   `distributed_state.py`.
 - Change production rank-owned state in `state.py`, ownership migration in
-  `distribution.py`, or transport sequencing in `communication.py`.
+  `distribution.py`, or transport sequencing in `metadata_transport.py` and
+  `reverse_transport.py`.
 - Change canonicalization sweep ownership or transport in `canonicalization.py`;
   change its tensor math in `simulation/mps/canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in

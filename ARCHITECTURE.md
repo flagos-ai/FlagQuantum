@@ -44,7 +44,9 @@ flagquantum/
 ├── core/                   # backend-neutral IR and shared semantics
 ├── compiler/               # validation, optimization, lowering, and code generation
 ├── runtime/                # planning, execution lifecycle, results, and coordination
-├── simulation/             # numerical methods and kernels
+├── simulation/             # numerical methods
+├── kernels/                # optional accelerator kernel catalog
+├── lindblad/               # continuous-time Lindblad evolution plans
 ├── noise/                  # backend-neutral noise models and channels
 ├── observables/            # user-facing measurement construction
 ├── qec/                    # error-correction workflows and domain models

@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+These entries were written while the release that shipped as `0.2.0` was still
+called the first alpha, which is why some of them say the "first-alpha API
+freeze" remains pending. That freeze landed as the protected Stable Core
+recorded in `docs/public_api_v1.json` and
+[Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
+are otherwise unchanged.
+
 - Added `TwinRegionRelease.assess_support(...)` to distinguish exact released
   circuits from unseen circuits that only fit a regional release's frozen
   mapping, topology, operation, instruction-count, and depth envelope. Only an

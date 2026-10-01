@@ -53,7 +53,10 @@ We aim to keep FlagQuantum:
 - **Modular** – components can be used independently
 - **Parsimonious** – no unnecessary dependencies or abstractions
 
-Major design decisions may be documented in the `README.md`. If you’re unsure why something works a certain way, check there first.
+Major design decisions are recorded in the [architecture documents](docs/architecture/README.md)
+and the [architecture decision records](docs/architecture/decisions/README.md);
+the [architecture map](ARCHITECTURE.md) explains which domain owns which code.
+If you're unsure why something works a certain way, check those first.
 
 ---
 

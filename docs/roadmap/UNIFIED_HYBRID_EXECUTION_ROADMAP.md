@@ -5,7 +5,9 @@ Status: in progress; IR Phase 1 has formally exited and Stage 2 is active.
 Scope: multi-level IR, Quafu end-to-end execution, multiple quantum clouds,
 classical compute clouds, and quantum-classical orchestration.
 
-Branch: `codex/open-source-api-convergence`
+Branch: the work was recorded on `codex/open-source-api-convergence` in the
+maintainer's development tree. That branch is not published here; use
+`origin/main` and the linked proposals as the authority.
 
 This roadmap does not authorize changes to Stable Core, public serialization
 schemas, or root exports.

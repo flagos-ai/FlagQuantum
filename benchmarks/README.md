@@ -25,13 +25,19 @@ flagquantum-benchmark run statevector_local \
   --warmup 1 --iterations 3 \
   --json-output benchmarks/results/local/statevector_cpu.json
 
-python benchmarks/flagship_mps_training.py \
-  --cases dimer:20 --steps 1 --iters 1 --warmup 0 \
-  --json-output benchmarks/results/local/mps_smoke.json
-
 python benchmarks/dynamic_trajectory.py \
   --shots 100 1000 --mid-circuit-measurements 1 2 4 \
   --json-output benchmarks/results/smoke/dynamic-trajectory.json
+```
+
+The flagship MPS training runner executes on the JAX kernel backend, so it
+needs the `jax` extra and exits with `JAX backend unavailable` without it:
+
+```bash
+pip install -e '.[jax]'
+python benchmarks/flagship_mps_training.py \
+  --cases dimer:20 --steps 1 --iters 1 --warmup 0 \
+  --json-output benchmarks/results/local/mps_smoke.json
 ```
 
 ### Interoperable simulator comparison

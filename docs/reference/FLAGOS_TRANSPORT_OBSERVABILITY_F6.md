@@ -8,7 +8,7 @@ infer the provider's inner transport from successful collective execution.
 The authoritative artifact is
 [`artifacts/flagos_transport_observability_f6_a800_20260827.json`](../../artifacts/flagos_transport_observability_f6_a800_20260827.json),
 with SHA-256
-`0a238e869e1219f2b1924e986305c67ba8ba09a0d55d2a03ebba1f64130db491`.
+`fd33aa41985ea07efeb7510ebd1c1dabb1608e9920502b18a112badf02d93c6a`.
 
 ## Measured result
 

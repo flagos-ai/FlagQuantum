@@ -22,7 +22,7 @@ validation of current Torch-FL main, which has a different PyTorch pin.
 The machine-readable payload is
 [`artifacts/flagos_distributed_conformance_a800_f11_20260825.json`](../../artifacts/flagos_distributed_conformance_a800_f11_20260825.json).
 Its SHA-256 digest is
-`b305852942c243a1febe817167169c619034b51c71101a73bd77d093acae82a2`.
+`2d0b41e6042086da89b9c5c6b03807f3beefe6f9a1c2962f136440b552a4663a`.
 
 ## Precision remediation
 
