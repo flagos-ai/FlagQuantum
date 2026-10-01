@@ -224,6 +224,12 @@ It encodes CZ signs in the cached CX gather map below 22 qubits and records a
 1.112x Random Clifford improvement. Its CZ-free local-brickwork control is
 explicitly classified as not applicable, while the compact wide-state fallback
 and measured PennyLane Lightning comparison remain visible.
+The static-layer arithmetic follow-up is documented in
+[`BATCHED_STATEVECTOR_STATIC_CLIFFORD_LAYER_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_STATIC_CLIFFORD_LAYER_CPU_ARM64_20261001_SCORECARD.md).
+It collapses exact H/S/Sdg/X/Y/Z layers into one native traversal and records a
+1.974x focused rollback speedup on the 18-qubit, batch-32 Random Clifford task.
+On this measured task, FlagQuantum is 1.468x faster than the same-run PennyLane
+Lightning bridge; the inapplicable local-brickwork control remains explicit.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a

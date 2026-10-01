@@ -92,6 +92,33 @@ def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
     assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_static_clifford_layer_fuses_wide_layer_with_exact_rollback(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    gate_names = ("h", "s", "sdg", "x", "y", "z") * 3
+    generator = torch.Generator().manual_seed(2203)
+    inputs = (
+        torch.randn((2, 2**18), generator=generator)
+        + 1j * torch.randn((2, 2**18), generator=generator)
+    ).to(dtype)
+    circuit = Circuit(18, bsz=2, dtype=dtype, inputs=inputs)
+    for wire, name in enumerate(gate_names):
+        getattr(circuit, name)(wire)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_STATIC_CLIFFORD_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_STATIC_CLIFFORD_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-6 if dtype == torch.complex64 else 2e-14
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 1
+        )
+
+
 def _parameterized_rotation_batch_circuit(
     inputs: torch.Tensor, angles: torch.Tensor
 ) -> Circuit:

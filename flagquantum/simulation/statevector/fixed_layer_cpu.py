@@ -12,6 +12,7 @@ from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix
 from ..native_cpu.rotation import (
     fused_rotation_block_forward_,
+    fused_static_clifford_layer_,
     native_cpu_one_qubit_layer_available,
 )
 from .program import (
@@ -24,6 +25,7 @@ _MAX_NATIVE_FIXED_LAYER_WIRES = 11
 _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES = 11
 _NATIVE_FIXED_GATES = frozenset({"h", "s", "sdg", "x", "y", "z"})
 _NATIVE_PARAMETERIZED_GATES = frozenset({"rx", "ry", "rz"})
+_NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "sdg": 3, "x": 4, "y": 5, "z": 6}
 
 
 def _native_layer_compile_safe(
@@ -108,7 +110,8 @@ def fuse_native_fixed_one_qubit_layers(
         group: list[_StatevectorGateStep] = []
         occupied: set[int] = set()
         cursor = index
-        while cursor < len(program) and len(group) < _MAX_NATIVE_FIXED_LAYER_WIRES:
+        hadamards = 0
+        while cursor < len(program):
             candidate = program[cursor]
             if not isinstance(candidate, _StatevectorGateStep):
                 break
@@ -120,15 +123,21 @@ def fuse_native_fixed_one_qubit_layers(
                 or canonical_opcode(instruction.name) not in _NATIVE_FIXED_GATES
             ):
                 break
+            opcode = canonical_opcode(instruction.name)
+            if opcode == "h" and hadamards == _MAX_NATIVE_FIXED_LAYER_WIRES:
+                break
             wire = int(instruction.wires[0])
             if wire in occupied:
                 break
             group.append(candidate)
             occupied.add(wire)
+            hadamards += opcode == "h"
             cursor += 1
         if len(group) >= 2:
             optimized.append(
-                _StatevectorDisjointDenseStep(tuple(group), native_preferred=True)
+                _StatevectorDisjointDenseStep(
+                    tuple(group), native_preferred=True, native_clifford=True
+                )
             )
             index = cursor
             continue
@@ -200,6 +209,20 @@ def apply_native_fixed_one_qubit_layer(
     gate_steps = tuple(
         region for region in step.regions if isinstance(region, _StatevectorGateStep)
     )
+    wires = tuple(int(region.instruction.wires[0]) for region in gate_steps)
+    output = state if owns_state else state.clone()
+    if step.native_clifford:
+        gate_codes = tuple(
+            _NATIVE_CLIFFORD_CODES[canonical_opcode(region.instruction.name)]
+            for region in gate_steps
+        )
+        if fused_static_clifford_layer_(
+            output,
+            torch.tensor(gate_codes, dtype=torch.int8, device=state.device),
+            torch.tensor(wires, dtype=torch.int64, device=state.device),
+            n_wires=n_wires,
+        ):
+            return output
     matrices = tuple(
         gate_matrix(
             region.instruction,
@@ -210,10 +233,9 @@ def apply_native_fixed_one_qubit_layer(
         )
         for region in gate_steps
     )
-    wires = tuple(int(region.instruction.wires[0]) for region in gate_steps)
     if (
         len(matrices) != len(wires)
-        or not 2 <= len(wires) <= _MAX_NATIVE_FIXED_LAYER_WIRES
+        or len(wires) < 2
         or any(matrix.ndim not in {2, 3} or matrix.requires_grad for matrix in matrices)
     ):
         return None
@@ -233,12 +255,18 @@ def apply_native_fixed_one_qubit_layer(
         ).contiguous()
     else:
         matrix_tensor = torch.stack(matrices).contiguous()
-    output = state if owns_state else state.clone()
-    if not fused_rotation_block_forward_(
-        output,
-        matrix_tensor,
-        torch.tensor(wires, dtype=torch.int64, device=state.device),
-        n_wires=n_wires,
-    ):
-        return None
+    start = 0
+    while start < len(wires):
+        width = min(_MAX_NATIVE_FIXED_LAYER_WIRES, len(wires) - start)
+        if len(wires) - start - width == 1:
+            width -= 1
+        stop = start + width
+        if not fused_rotation_block_forward_(
+            output,
+            matrix_tensor.narrow(-3, start, width),
+            torch.tensor(wires[start:stop], dtype=torch.int64, device=state.device),
+            n_wires=n_wires,
+        ):
+            return None
+        start = stop
     return output
