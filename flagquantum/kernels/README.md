@@ -110,6 +110,14 @@ Provider selection belongs in dispatch policy outside this catalog. The catalog
 describes capabilities and evidence; it does not choose a backend at import
 time.
 
+MPS canonical-transfer absorption is lowered to rank-three batched matrix
+multiplication before provider selection. Its current runtime path uses
+`torch.bmm`: A800 measurements show that the experimental NUM-001 Triton
+implementation is not yet competitive for these shapes. NUM-001 must establish
+a repeatable forward and backward win over this baseline before MPS dispatch
+selects it. This keeps the mathematical lowering stable while allowing a later
+Triton or FlagTree provider change without altering the MPS API.
+
 ## Capability matching
 
 `catalog.match_kernel_implementations` answers which cataloged implementations
