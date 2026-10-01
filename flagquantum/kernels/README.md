@@ -153,10 +153,12 @@ environments and a Hermitian two-by-two operator make the two Wirtinger terms
 equal, so the implementation computes one contraction and scales it by two.
 The Triton path supports contiguous CUDA `complex64` inputs, bond dimensions at
 most 64, and at most `2**25` scalar contraction work; its wrapper uses the same
-closed-form PyTorch contraction outside that measured window. The implementation
-is cataloged and directly testable here. Runtime routing remains on the current
-observable-adjoint path until a separate dispatch change supplies route and
-end-to-end evidence.
+closed-form PyTorch contraction outside that measured window. Runtime dispatch
+is opt-in through `FQ_TRITON_MPS_OBSERVABLE_ADJOINT=1` and additionally requires
+the caller to establish the Hermitian semantic invariant. Other inputs retain
+the existing per-site autograd path. Route and fallback counts are exposed by
+`site_kernel_stats()`, while catalog-route events report the exact semantic and
+implementation IDs plus the active Triton or FlagTree compiler provenance.
 
 ## Capability matching
 

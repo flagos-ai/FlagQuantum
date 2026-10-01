@@ -7,7 +7,15 @@ from collections.abc import Mapping, Sequence
 import torch
 
 from ..matrices import GATE_MAT_DICT
-from .site_kernels import environment_transfer, environment_transfer_channels
+from .observable_adjoint_dispatch import (
+    _try_apply_cataloged_mps_observable_adjoint,
+)
+from .site_kernels import (
+    _record_mps_observable_adjoint_fallback,
+    _record_mps_observable_adjoint_route,
+    environment_transfer,
+    environment_transfer_channels,
+)
 
 
 def transfer_mps_operator_environment(
@@ -48,8 +56,27 @@ def mps_local_observable_adjoint(
     right_environment: torch.Tensor,
     operator: torch.Tensor,
     weights: torch.Tensor,
+    *,
+    hermitian: bool = False,
 ) -> torch.Tensor:
-    """Differentiate one local tensor contribution to a weighted observable."""
+    """Differentiate one local tensor contribution to a weighted observable.
+
+    ``hermitian=True`` records that the caller has established the MPS-006
+    semantic invariant for both environments and the local operator.
+    """
+
+    cataloged = _try_apply_cataloged_mps_observable_adjoint(
+        tensor,
+        left_environment,
+        right_environment,
+        operator,
+        weights,
+        hermitian=hermitian,
+    )
+    if cataloged is not None:
+        _record_mps_observable_adjoint_route()
+        return cataloged
+    _record_mps_observable_adjoint_fallback()
 
     variable = tensor.detach().requires_grad_(True)
     local_values = torch.real(
