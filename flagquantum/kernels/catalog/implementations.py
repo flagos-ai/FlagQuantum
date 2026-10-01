@@ -206,6 +206,15 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MPS-006-A",
+        "mps.gradient.hermitian_observable_adjoint.local",
+        "mps_observable_adjoint",
+        "fused_mps_hermitian_observable_adjoint",
+        layouts=("mps_local_observable",),
+        directions=("vjp",),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-NUM-001-A",
         "numerics.matmul.complex_batched",
         "complex_bmm",

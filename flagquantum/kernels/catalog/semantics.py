@@ -175,6 +175,15 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "many_body_simulation",
     ),
     _semantic(
+        "FQK-MPS-006",
+        "mps.gradient.hermitian_observable_adjoint.local",
+        "mps",
+        "Evaluate the local tensor VJP for a Hermitian MPS observable term.",
+        "observable_estimation",
+        "distributed_mps",
+        "differentiable_simulation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",

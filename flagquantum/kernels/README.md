@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The initial catalog describes the code that already exists. It contains 21
-semantics and 23 Triton implementation entry points; no planned kernel appears
+The initial catalog describes the code that already exists. It contains 22
+semantics and 24 Triton implementation entry points; no planned kernel appears
 as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -86,6 +86,7 @@ as an empty machine record.
 | FQK-MPS-003 | `mps.contract.one_site_gate` | `fused_mps_one_site` |
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
+| FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -145,6 +146,17 @@ the exact PyTorch contraction as its explicit fallback outside that measured
 window. The same `FQ_TRITON_MPS_ENVIRONMENT=1` rollout switch routes eligible
 multi-channel transfers through the exact MPS-005 catalog entry and reports
 them separately through `site_kernel_stats()`.
+
+MPS-006 evaluates the local tensor VJP of a Hermitian observable contribution
+without constructing a per-site autograd graph. Hermitian left and right
+environments and a Hermitian two-by-two operator make the two Wirtinger terms
+equal, so the implementation computes one contraction and scales it by two.
+The Triton path supports contiguous CUDA `complex64` inputs, bond dimensions at
+most 64, and at most `2**25` scalar contraction work; its wrapper uses the same
+closed-form PyTorch contraction outside that measured window. The implementation
+is cataloged and directly testable here. Runtime routing remains on the current
+observable-adjoint path until a separate dispatch change supplies route and
+end-to-end evidence.
 
 ## Capability matching
 
