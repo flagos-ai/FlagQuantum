@@ -293,7 +293,13 @@ def test_the_sampling_target_refuses_an_encoding_it_does_not_produce() -> None:
     Returning bits under the `index` name would be a wrong answer rather than a
     missing one, so the target refuses the encoding it cannot honour instead of
     ignoring the argument.
+
+    This is the one test in the file that draws samples rather than planning
+    them, so it is also the one that needs the optional backend. The planning
+    contract above holds with the engine absent and keeps running there.
     """
+
+    pytest.importorskip("stim")
 
     from flagquantum.runtime.executors.stabilizer import StabilizerSamplingTarget
 

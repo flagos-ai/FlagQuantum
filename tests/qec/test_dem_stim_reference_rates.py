@@ -39,26 +39,25 @@ from __future__ import annotations
 
 import math
 from functools import lru_cache
-from typing import TYPE_CHECKING
 
-import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from flagquantum.qec import DetectorErrorModel, RotatedSurfaceCode, build_memory_circuit
 from flagquantum.qec.circuit import MemoryCircuit
 from flagquantum.qec.dem import DemError
 from flagquantum.qec.noise import PhenomenologicalNoise
 
-if TYPE_CHECKING:
-    import stim
-
-pytestmark = pytest.mark.integration
-
 # Stim is an optional distribution. Without it the comparison has no reference
 # side, so the suite skips rather than failing: the core environment installs no
-# stim and still runs the integration tier.
-stim = pytest.importorskip("stim")
+# stim and still runs the integration tier. NumPy arrives with stim and the
+# statistics below are written in it, so it is imported below the same guard.
+pytest.importorskip("stim")
+
+import numpy as np
+import stim
+from numpy.typing import NDArray
+
+pytestmark = pytest.mark.integration
 
 _SHOTS = 400_000
 _SIGMA = 4.0

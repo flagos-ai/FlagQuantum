@@ -22,7 +22,6 @@ import itertools
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
@@ -36,9 +35,15 @@ from flagquantum.simulation.stabilizer import (
     sample_stabilizer,
 )
 
-pytestmark = pytest.mark.unit
-
+# Stim is the backend the engine delegates to and an optional distribution, and
+# the gate set below is decided from dense unitaries. The core environment
+# installs no stim, so the file skips rather than failing to import; NumPy
+# arrives with stim and is imported below the same guard for that reason.
 pytest.importorskip("stim")
+
+import numpy as np
+
+pytestmark = pytest.mark.unit
 
 PACKAGE = (
     Path(__file__).resolve().parents[3] / "flagquantum" / "simulation" / "stabilizer"
