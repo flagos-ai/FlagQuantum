@@ -60,21 +60,31 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
         "python -m pytest -m distributed_accel and gpu -q",
         "python -m pytest -m triton and gpu -q",
     )
+
     # This tier used to select `distributed_multinode`, which no test carries:
     # the seven tests that did carry it need a launcher rather than a second
     # node and were renamed to `distributed_launch`. Selecting an empty marker
     # reports success having executed nothing, so the tier drives the two-node
     # lane directly instead, once per sharded workload.
+    # Each command names the route rather than leaving it to NCCL and asks for
+    # the measured leg. A lane that let the transport be chosen could record a
+    # socket run and leave the fabric untested while looking like a pass, and a
+    # lane that skipped the measurement would record one unsynchronized reading
+    # as the whole performance result.
+    def command(probe: str, report: str) -> str:
+        return (
+            "python tools/multinode_launch_plan.py --run"
+            + (f" --probe {probe}" if probe else "")
+            + " --staging /nfs/fq-multinode-tier"
+            " --checkpoint-directory /nfs/fq-multinode-tier-checkpoints"
+            f" --report-directory {report}"
+            " --interface ens22f0 --transport rdma --measure"
+        )
+
     assert CI_TIERS["multinode-scheduled"].command_lines() == (
-        "python tools/multinode_launch_plan.py --run --staging "
-        "/nfs/fq-multinode-tier --checkpoint-directory "
-        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run",
-        "python tools/multinode_launch_plan.py --run --probe mps --staging "
-        "/nfs/fq-multinode-tier --checkpoint-directory "
-        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps",
-        "python tools/multinode_launch_plan.py --run --probe tn --staging "
-        "/nfs/fq-multinode-tier --checkpoint-directory "
-        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn",
+        command("", "hardware-run"),
+        command("mps", "hardware-run-mps"),
+        command("tn", "hardware-run-tn"),
     )
 
 

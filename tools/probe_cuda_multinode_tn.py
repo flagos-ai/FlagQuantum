@@ -34,6 +34,7 @@ import os
 import platform
 import shutil
 import subprocess
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +44,25 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from flagquantum.runtime.audit.claim_boundary import (
+    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
+    BLOCKER_TWO_NODE_PAIR_ONLY,
+    BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+    ClaimBoundaryError,
+    claim_blockers,
+    configured_infiniband_state,
+    cut_width_claim_blockers,
+    gather_claim_blockers,
+    measured_performance,
+    measurement_claim_blockers,
+    observed_network_route,
+    slice_count_claim_blockers,
+    staging_claim_blockers,
+    transport_claim_blockers,
+)
+from flagquantum.runtime.distributed.transport_observability import (
+    classify_explicit_host_transfer,
+)
 from flagquantum.runtime.executors.tensor_network.execution import (
     distributed_tensor_network_amplitude,
     distributed_tensor_network_amplitudes,
@@ -86,6 +106,15 @@ TRAINABLE_VALUES = (0.23, -0.37)
 #: the point the gradient legs and the training trajectory start from.
 FORWARD_VALUES = (0.31, -0.23)
 
+#: The measurement leg `--measure` asks for. The training legs already report a
+#: duration per phase, but each is one unsynchronized reading of work thousands
+#: of times shorter than the launch that precedes it. These samples are taken
+#: between device synchronizations after a warmup every rank runs, and all of
+#: them are kept.
+MEASUREMENT = "sharded_tensor_network_amplitudes"
+MEASUREMENT_WARMUP_ITERATIONS = 2
+MEASUREMENT_ITERATIONS = 5
+
 #: A fixed rotation on wire 0, so the two trainable parameters act on a state
 #: that is not an eigenstate of the measured observable.
 PHASE_ROTATION = 0.6
@@ -105,6 +134,14 @@ SLICED_LABELS = (6, 7)
 #: size divided into this, and the probe refuses a world size this does not
 #: divide rather than run a shape whose plan it cannot predict.
 EXPECTED_SLICE_COUNT = 4
+
+#: The cut widths the sweep contracts, counted in sliced labels. The scope's cut
+#: is the widest; every shorter prefix of the same labels is a genuinely
+#: different partition of the same graph, with half as many slices. A width is
+#: only wide enough to count once it has crossed the hosts, which is why the
+#: observation carries the inter-node bytes alongside the width instead of the
+#: width alone.
+CUT_WIDTHS = tuple(range(1, len(SLICED_LABELS) + 1))
 
 #: The measured wires. They are the two ends of the entangling gate, so the
 #: observable spans the whole graph and the pair is not degenerate on this
@@ -265,38 +302,161 @@ def _sliced_label_multiplicities() -> dict[int, int]:
 def _network_observation(
     path: Path | None, *, local_world_size: int = 1
 ) -> dict[str, Any]:
-    configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
-    ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
-    observation: dict[str, Any] = {
-        "backend": "nccl",
-        "configured_interface": configured_interface,
-        "ib_disabled": ib_disabled,
-        "route": "socket" if ib_disabled else "nccl_auto",
-        "evidence_level": "configured_only",
-        # The launcher gives one `torchrun` per node one debug log, so above one
-        # rank per node the file holds every local rank's view rather than one
-        # rank's. Recorded rather than assumed: the route check reads the same
-        # either way, but how much of the traffic it covers does not.
-        "debug_log_scope": "node" if local_world_size > 1 else "rank",
-    }
-    if path is None:
-        return observation
-    content = path.read_text(encoding="utf-8", errors="replace")
-    socket_observed = "NET/Socket" in content
-    interface_observed = bool(configured_interface and configured_interface in content)
-    observation.update(
-        {
-            "debug_log_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
-            "socket_transport_observed": socket_observed,
-            "configured_interface_observed": interface_observed,
-            "evidence_level": "observed_debug_log",
-        }
+    """The route this run took, read from the debug log rather than the plan.
+
+    The log is read by the artifact's rank only, after the process group is
+    gone, so this is a report about the run rather than part of it.
+    """
+
+    content = (
+        None if path is None else path.read_text(encoding="utf-8", errors="replace")
     )
-    if ib_disabled and not (socket_observed and interface_observed):
-        raise RuntimeError(
-            "NCCL debug log does not confirm the configured socket route"
+    try:
+        return observed_network_route(
+            content,
+            configured_interface=os.environ.get("NCCL_SOCKET_IFNAME"),
+            infiniband_disabled=configured_infiniband_state(os.environ),
+            debug_log_scope="node" if local_world_size > 1 else "rank",
         )
+    except ClaimBoundaryError as error:
+        # The probe's failures are `RuntimeError`s, and this is one: the log the
+        # lane was told to expect is not the log the run produced.
+        raise RuntimeError(
+            f"NCCL debug log does not confirm the configured route: {error}"
+        ) from error
+
+
+def _performance_observations(
+    *, device: torch.device, arguments: dict[str, Any]
+) -> dict[str, Any]:
+    """Time the sliced amplitude reduction between synchronizations, repeatedly.
+
+    Every rank runs the same loop, because the loop contains collectives. The
+    warmup iterations let the costs that belong to the first call -- a kernel's
+    first launch, the allocator's first growth, the transport's first handshake
+    -- land outside the samples, and all the samples are kept so that the spread
+    is visible rather than summarized away.
+
+    The placement comes from the caller rather than from the environment, for
+    the same reason the other legs take it that way: a measured leg that
+    resolved its own placement could measure a shape the artifact does not
+    claim.
+    """
+
+    circuit = _forward_circuit(device=device)
+
+    def once() -> float:
+        _synchronize(device)
+        started = time.perf_counter()
+        amplitudes = distributed_tensor_network_amplitudes(
+            circuit, list(CHECKED_BITSTRINGS), **arguments
+        )
+        _synchronize(device)
+        if int(amplitudes.values.numel()) != len(CHECKED_BITSTRINGS):
+            raise RuntimeError("the measured workload returned no amplitudes")
+        return time.perf_counter() - started
+
+    for _ in range(MEASUREMENT_WARMUP_ITERATIONS):
+        once()
+    observation = measured_performance(
+        [once() for _ in range(MEASUREMENT_ITERATIONS)],
+        warmup_iterations=MEASUREMENT_WARMUP_ITERATIONS,
+        measurement=MEASUREMENT,
+    )
+    observation["n_wires"] = N_WIRES
+    observation["sliced_labels"] = list(SLICED_LABELS)
+    observation["checked_bitstrings"] = list(CHECKED_BITSTRINGS)
     return observation
+
+
+def _profiler_activities(device: torch.device) -> list[torch.profiler.ProfilerActivity]:
+    """The two scopes the staging question needs, CPU calls and device copies.
+
+    A CPU-only profile would show the launch of a transfer without showing
+    whether the device performed one, and a device-only profile would omit the
+    host side of a staging copy. Both are recorded, so a reader can see the
+    audit was scoped to the interchange rather than to one of its halves.
+    """
+
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    if device.type == "cuda":
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+    return activities
+
+
+def _profiler_unavailable_reason(device: torch.device) -> str | None:
+    """Start and stop an empty profile, to find out before the workload runs.
+
+    The answer has to be known before the profiled run rather than discovered
+    from its failure: a rank that skipped the run while its peer entered it
+    would be waiting in a different collective, which reports as a hang rather
+    than as the missing profiler that caused it.
+    """
+
+    try:
+        with torch.profiler.profile(activities=_profiler_activities(device)):
+            pass
+    except Exception as error:
+        return f"{type(error).__name__}: {error}"
+    return None
+
+
+def _host_staging_observation(
+    *, device: torch.device, arguments: dict[str, Any]
+) -> dict[str, Any]:
+    """Profile the sliced amplitude reduction for explicit host transfers.
+
+    What a profiler can show here is bounded, and the record keeps the bound. An
+    explicit host-to-device or device-to-host copy inside the profiled region is
+    a fact about this interchange; the absence of one is not proof that the
+    fabric carried it device-direct, and a profiler that could not be started
+    has shown nothing at all. Both leave the blocker in place, so a missing
+    profiler is recorded rather than raised -- fail-closed for the claim, and a
+    run that cannot audit its staging still produces an artifact that says so.
+
+    Availability is agreed on collectively. A rank that recorded "not audited"
+    while its peer entered the profiled run would be in a different collective
+    from it, and the lane would report a hang instead of the reason.
+    """
+
+    reason = _profiler_unavailable_reason(device)
+    agreed = torch.tensor([0 if reason else 1], device=device)
+    dist.all_reduce(agreed, op=dist.ReduceOp.MIN)
+    if int(agreed.item()) != 1:
+        return {
+            "profiled": False,
+            "profiler_error": reason or "the profiler is unavailable on another rank",
+        }
+
+    circuit = _forward_circuit(device=device)
+    with torch.profiler.profile(activities=_profiler_activities(device)) as profile:
+        distributed_tensor_network_amplitudes(
+            circuit, list(CHECKED_BITSTRINGS), **arguments
+        )
+        _synchronize(device)
+    events = list(profile.key_averages())
+    transfers = sorted(
+        (
+            {
+                "name": event.key,
+                "count": int(event.count),
+                "direction": direction,
+            }
+            for event in events
+            if (direction := classify_explicit_host_transfer(event.key)) is not None
+        ),
+        key=lambda transfer: (transfer["direction"], transfer["name"]),
+    )
+    return {
+        "profiled": True,
+        "profiled_activities": [
+            str(activity) for activity in _profiler_activities(device)
+        ],
+        "profiled_workload": MEASUREMENT,
+        "profiler_event_count": len(events),
+        "host_transfer_observed": bool(transfers),
+        "host_transfer_events": transfers,
+    }
 
 
 def _collective_verdict(device: torch.device, *, accepted: bool) -> bool:
@@ -589,6 +749,121 @@ def _contraction_arguments(
     }
 
 
+def _slices_for_width(width: int) -> int:
+    """The slice count a cut of `width` labels resolves to."""
+
+    return EXPECTED_SLICE_COUNT >> (len(SLICED_LABELS) - width)
+
+
+def _cut_width_observations(
+    *,
+    device: torch.device,
+    rank: int,
+    local_rank: int,
+    world_size: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    """Contract the same workload at every cut width this shape can partition.
+
+    The blockers this feeds are about a cut that never moved and a slice count
+    that never varied, so clearing them needs the widths the cut did move to and
+    the exchange each one actually performed. Every width is contracted from the
+    arguments the declared scope uses, with the sliced labels shortened to a
+    prefix of it, and a width only counts once the run crossed the hosts and
+    reproduced the exact reference. A width whose slice count does not divide the
+    world size is recorded as unexercised with the reason rather than dropped, so
+    a narrow shape reports the sweep it could not run instead of an empty one.
+
+    A width that runs and disagrees with the reference is a defect rather than a
+    narrow sweep, and it raises: recording it as a width that did not count would
+    quietly turn a wrong answer into a shorter list.
+    """
+
+    reference = _reference_statevector()
+    expected = torch.tensor(
+        [reference[int(bitstring, 2)] for bitstring in CHECKED_BITSTRINGS],
+        dtype=COMPLEX_DTYPE,
+    )
+    inter_node_bytes_by_width: dict[str, int] = {}
+    slices_by_count: dict[str, int] = {}
+    ranks_by_width: dict[str, list[int]] = {}
+    unexercised: list[dict[str, Any]] = []
+    for width in CUT_WIDTHS:
+        slices = _slices_for_width(width)
+        if slices % world_size:
+            unexercised.append(
+                {
+                    "width": width,
+                    "slices": slices,
+                    "reason": f"{slices} slices do not divide {world_size} ranks",
+                }
+            )
+            continue
+        arguments = _contraction_arguments(
+            device=device,
+            rank=rank,
+            local_rank=local_rank,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+        arguments["sliced_labels"] = SLICED_LABELS[:width]
+        amplitudes = distributed_tensor_network_amplitudes(
+            _forward_circuit(device=device), list(CHECKED_BITSTRINGS), **arguments
+        )
+        _synchronize(device)
+        summary = amplitudes.summary()
+        _require_two_node_placement(
+            summary, leg=f"cut_width_{width}", expected_world_size=world_size
+        )
+        if int(summary["slice_tasks"]) != slices:
+            raise RuntimeError(
+                f"the width-{width} leg resolved to {summary['slice_tasks']} "
+                f"slices rather than {slices}"
+            )
+        if summary["full_state_materialized"]:
+            raise RuntimeError(f"the width-{width} leg materialized the full state")
+        if summary["scalability_claim_allowed"] is not False:
+            raise RuntimeError(f"the width-{width} leg allowed a scalability claim")
+        error = None
+        if rank == 0:
+            actual = amplitudes.values.detach().cpu().reshape(-1)
+            error = float(torch.max(torch.abs(actual - expected)).item())
+        if not _collective_verdict(
+            device, accepted=error is None or error <= NUMERICAL_TOLERANCE
+        ):
+            raise RuntimeError(
+                f"the width-{width} leg disagreed with the exact reference: {error}"
+            )
+        bytes_crossed = int(
+            summary["communication_tiers"]["inter_node_collective_bytes"]
+        )
+        partial_bytes = {
+            int(rank_index): int(count)
+            for rank_index, count in summary["rank_partial_bytes_by_rank"].items()
+        }
+        # Every rank has to have contracted something at this width. A rank that
+        # owned no slice would leave the reduction correct while taking no part
+        # in it, which is the replicated shape the narrower width is meant to
+        # rule out rather than reproduce at a smaller size.
+        if set(partial_bytes) != set(range(world_size)) or any(
+            count <= 0 for count in partial_bytes.values()
+        ):
+            raise RuntimeError(
+                f"the width-{width} leg did not give each of {world_size} ranks a "
+                f"slice: {partial_bytes}"
+            )
+        inter_node_bytes_by_width[str(width)] = bytes_crossed
+        slices_by_count[str(slices)] = bytes_crossed
+        ranks_by_width[str(width)] = sorted(partial_bytes)
+    return {
+        "widths": list(CUT_WIDTHS),
+        "inter_node_bytes_by_width": inter_node_bytes_by_width,
+        "inter_node_bytes_by_slice_count": slices_by_count,
+        "ranks_by_width": ranks_by_width,
+        "unexercised_widths": unexercised,
+    }
+
+
 def _training_observations(
     *,
     device: torch.device,
@@ -744,7 +1019,16 @@ def _artifact(
     sliced_label_multiplicities: dict[int, int],
     world_size: int,
     local_world_size: int,
+    network: dict[str, Any],
+    performance: dict[str, Any] | None,
+    host_staging: dict[str, Any],
+    cut_widths: dict[str, Any],
 ) -> dict[str, Any]:
+    observations = {
+        "network": network,
+        "performance": performance,
+        "host_staging": host_staging,
+    }
     evidence = {
         "schema": "flagquantum.cuda_multinode_tn_probe.v1",
         "status": "passed",
@@ -785,15 +1069,28 @@ def _artifact(
             # path, so the global gradient the probe compares is the sum of the
             # per-rank contributions it gathered itself.
             "gradient_reduction": "probe_summed_rank_partials",
+            "network": network,
+            "performance": performance,
+            "host_staging": host_staging,
+            "cut_widths": cut_widths,
         },
-        "claim_blockers": [
-            "two_node_pair_only_no_wider_topology",
-            "inter_node_cut_width_not_swept",
-            "rdma_not_tested",
-            "production_performance_not_measured",
-            "toy_circuit_parameters_only",
-            "slice_count_fixed_at_world_size",
-        ],
+        # Both topology blockers are decided by what this run observed rather
+        # than by what the probe intended: the pair is fixed by the lane, the cut
+        # width and the slice count are whatever the sweep above managed to move,
+        # and the route, the measurement and the staging audit say for themselves
+        # whether they happened.
+        "claim_blockers": claim_blockers(
+            [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
+            gather_claim_blockers(
+                production_materialization=False,
+                blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+            ),
+            transport_claim_blockers(observations),
+            measurement_claim_blockers(observations),
+            staging_claim_blockers(observations),
+            cut_width_claim_blockers(cut_widths["inter_node_bytes_by_width"]),
+            slice_count_claim_blockers(cut_widths["inter_node_bytes_by_slice_count"]),
+        ),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -844,7 +1141,10 @@ def _declared_shape() -> tuple[int, int]:
 
 
 def probe(
-    *, network_log: Path | None, checkpoint_directory: Path
+    *,
+    network_log: Path | None,
+    checkpoint_directory: Path,
+    measure: bool = False,
 ) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
@@ -859,6 +1159,13 @@ def probe(
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
         sliced_label_multiplicities = _require_sliced_labels_are_a_cut()
+        placement = _contraction_arguments(
+            device=device,
+            rank=rank,
+            local_rank=local_rank,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
 
         # The amplitudes leg. Each rank contracts the slices it owns and the
         # partial amplitudes are reduced; the reference is the exact statevector.
@@ -1086,6 +1393,26 @@ def probe(
         )
         training["checkpoint_generation"] = final_generation
 
+        # The cut-width sweep, the measured leg and the staging audit all
+        # contain collectives, so they run while the process group is still up.
+        # The sweep goes first because it is the leg that re-partitions the
+        # workload; the measurement follows it so the first widths' plans are out
+        # of the allocator's way, and the profiled staging run goes last so its
+        # profiler cannot observe either of the others.
+        cut_widths = _cut_width_observations(
+            device=device,
+            rank=rank,
+            local_rank=local_rank,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+        performance = (
+            _performance_observations(device=device, arguments=placement)
+            if measure
+            else None
+        )
+        host_staging = _host_staging_observation(device=device, arguments=placement)
+
         communication = {
             "amplitudes_collective_bytes": amplitudes_summary["communication_tiers"][
                 "reduction_tensor_bytes"
@@ -1153,6 +1480,13 @@ def probe(
                 sliced_label_multiplicities=sliced_label_multiplicities,
                 world_size=world_size,
                 local_world_size=local_world_size,
+                # The route is read from the debug log after the group is gone,
+                # so the artifact is assembled with an empty report and the
+                # observation is written into it by the rank that read the log.
+                network={},
+                performance=performance,
+                host_staging=host_staging,
+                cut_widths=cut_widths,
             )
         dist.barrier()
     finally:
@@ -1186,6 +1520,15 @@ def main() -> int:
         type=Path,
         help="rank-zero NCCL debug log used to verify the selected network route",
     )
+    parser.add_argument(
+        "--measure",
+        action="store_true",
+        help=(
+            "time the sliced amplitude reduction between synchronizations after "
+            "a warmup, so the artifact carries a measured duration rather than "
+            "a single unsynchronized reading of the launch"
+        ),
+    )
     args = parser.parse_args()
     if not shutil.which("git") and not os.environ.get("FLAGQUANTUM_SOURCE_REVISION"):
         # The artifact has to name a revision; a checkout without git can still
@@ -1197,6 +1540,7 @@ def main() -> int:
     payload = probe(
         network_log=args.network_log,
         checkpoint_directory=args.checkpoint_directory,
+        measure=args.measure,
     )
     if payload is None:
         return 0

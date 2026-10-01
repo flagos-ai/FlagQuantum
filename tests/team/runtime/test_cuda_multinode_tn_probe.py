@@ -399,3 +399,168 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         "tensor_network_sharded_optimizer_pending",
     ):
         assert resolved not in json.dumps(evidence)
+
+
+def _artifact_kwargs(**overrides: object) -> dict:
+    """The shape `_artifact` needs, with every observation retracted by default."""
+
+    kwargs: dict = {
+        "rank_records": [],
+        "metrics": {},
+        "training": {},
+        "sliced_label_multiplicities": dict.fromkeys(_MODULE.SLICED_LABELS, 2),
+        "world_size": 2,
+        "local_world_size": 1,
+        "network": {
+            "evidence_level": "observed_debug_log",
+            "route": "infiniband",
+            "configured_interface": "ens22f0",
+            "configured_interface_observed": True,
+            "infiniband_transport_observed": True,
+            "socket_transport_observed": False,
+            "roce_transport_observed": True,
+            "gpu_direct_observed": True,
+            "configured_infiniband_disabled": False,
+        },
+        # Five synchronized samples after two warmups: the shape
+        # `measured_performance` returns, so the retraction is derived from a
+        # measurement rather than from the presence of a key.
+        "performance": {
+            "measured": True,
+            "synchronized": True,
+            "measurement": _MODULE.MEASUREMENT,
+            "warmup_iterations": _MODULE.MEASUREMENT_WARMUP_ITERATIONS,
+            "measured_iterations": _MODULE.MEASUREMENT_ITERATIONS,
+            "seconds": [0.001, 0.0011, 0.0009, 0.001, 0.0012],
+        },
+        "host_staging": {
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": False,
+            "host_transfer_events": [],
+        },
+        "cut_widths": {
+            "widths": list(_MODULE.CUT_WIDTHS),
+            "inter_node_bytes_by_width": {"1": 32, "2": 64},
+            "inter_node_bytes_by_slice_count": {"2": 32, "4": 64},
+            "ranks_by_width": {"1": [0, 1], "2": [0, 1]},
+            "unexercised_widths": [],
+        },
+    }
+    kwargs.update(overrides)
+    return kwargs
+
+
+def test_the_cut_width_sweep_derives_both_topology_blockers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cut that moved and stayed cut is the only thing that clears them."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+    evidence = _MODULE._artifact(**_artifact_kwargs())["evidence"]
+    blockers = set(evidence["claim_blockers"])
+
+    # The pair is fixed by the lane and the circuit is a toy one, so neither can
+    # be retracted by anything this run does. They have to stay.
+    assert {"two_node_pair_only_no_wider_topology", "toy_circuit_parameters_only"} <= (
+        blockers
+    )
+    assert "inter_node_cut_width_not_swept" not in blockers
+    assert "slice_count_fixed_at_world_size" not in blockers
+    assert "rdma_not_tested" not in blockers
+    assert "production_performance_not_measured" not in blockers
+    assert "hidden_host_staging_not_audited" not in blockers
+
+    # One width, or a width whose ranks exchanged nothing, is not a sweep: the
+    # whole point is that the cut moved and the exchange moved with it.
+    for degenerate in (
+        {"1": 32},
+        {"1": 0, "2": 0},
+        {"1": 32, "2": 0},
+    ):
+        swept = _MODULE._artifact(
+            **_artifact_kwargs(
+                cut_widths={
+                    "widths": list(_MODULE.CUT_WIDTHS),
+                    "inter_node_bytes_by_width": degenerate,
+                    "inter_node_bytes_by_slice_count": {"2": 32, "4": 64},
+                    "unexercised_widths": [],
+                }
+            )
+        )["evidence"]
+        assert "inter_node_cut_width_not_swept" in swept["claim_blockers"]
+
+    # The slice count carries the same condition: two counts, both crossed.
+    for degenerate_counts in ({"2": 32}, {"2": 32, "4": 0}):
+        swept = _MODULE._artifact(
+            **_artifact_kwargs(
+                cut_widths={
+                    "widths": list(_MODULE.CUT_WIDTHS),
+                    "inter_node_bytes_by_width": {"1": 32, "2": 64},
+                    "inter_node_bytes_by_slice_count": degenerate_counts,
+                    "unexercised_widths": [],
+                }
+            )
+        )["evidence"]
+        assert "slice_count_fixed_at_world_size" in swept["claim_blockers"]
+
+
+def test_the_route_measurement_and_staging_are_each_derived(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each retraction needs its own positive observation, not a declaration."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+
+    def blockers(**overrides: object) -> set[str]:
+        return set(
+            _MODULE._artifact(**_artifact_kwargs(**overrides))["evidence"][
+                "claim_blockers"
+            ]
+        )
+
+    # A socket run, or a run with no debug log to read, leaves the fabric
+    # untested: the route cannot be asserted from the configuration alone.
+    assert "rdma_not_tested" in blockers(
+        network={
+            "evidence_level": "observed_debug_log",
+            "route": "socket",
+            "socket_transport_observed": True,
+            "infiniband_transport_observed": False,
+        }
+    )
+    assert "rdma_not_tested" in blockers(network={})
+
+    # An absent measurement is not a measurement of zero, and a measurement is
+    # not a production one: the toy-circuit blocker survives both.
+    assert "production_performance_not_measured" in blockers(performance=None)
+
+    # A profiler that could not run has shown nothing, and a transfer it did see
+    # is a finding that keeps the blocker rather than one that hides it.
+    for staging in (
+        {"profiled": False, "profiler_error": "RuntimeError: no profiler"},
+        {
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": True,
+            "host_transfer_events": [
+                {"name": "memcpy_DtoH", "direction": "device_to_host"}
+            ],
+        },
+    ):
+        assert "hidden_host_staging_not_audited" in blockers(host_staging=staging)
+
+
+def test_the_sweep_widths_are_prefixes_of_the_declared_cut() -> None:
+    """A narrower cut is the declared one with one label fewer, and nothing else."""
+
+    assert tuple(range(1, len(_MODULE.SLICED_LABELS) + 1)) == _MODULE.CUT_WIDTHS
+    assert [_MODULE._slices_for_width(width) for width in _MODULE.CUT_WIDTHS] == [
+        2,
+        _MODULE.EXPECTED_SLICE_COUNT,
+    ]
+    # The widest width is the scope's own cut, so the sweep includes the shape
+    # the artifact declares rather than only shapes beside it.
+    assert _MODULE._slices_for_width(max(_MODULE.CUT_WIDTHS)) == (
+        _MODULE.EXPECTED_SLICE_COUNT
+    )
