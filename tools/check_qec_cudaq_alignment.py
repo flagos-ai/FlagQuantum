@@ -68,7 +68,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
 
 # Defaults are absolute, so the tool gives the same answer from any working
 # directory and a CI step does not have to name the repository it is standing in.

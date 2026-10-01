@@ -22,6 +22,20 @@ def _contract() -> dict[str, object]:
     return json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
 
 
+def _protocol_members(protocol: type) -> set[str]:
+    """The names a `Protocol` declares, on every Python this project supports.
+
+    `typing` publishes the set as `__protocol_attrs__` from 3.12 and keeps it on
+    the private `_get_protocol_attrs` before that; the private helper is gone
+    once the public attribute exists, so exactly one of the two answers.
+    """
+
+    published = getattr(protocol, "__protocol_attrs__", None)
+    if published is not None:
+        return set(published)
+    return set(protocol._get_protocol_attrs())
+
+
 def test_the_contract_names_only_existing_authorities() -> None:
     contract = _contract()
     assert contract["status"] == "candidate"
@@ -83,7 +97,7 @@ def test_the_execution_route_matches_the_executor_protocol() -> None:
     execute = inspect.signature(backend_registry.BackendExecutor.execute)
     assert list(execute.parameters) == ["self", "program", "options"]
     assert execute.parameters["options"].kind is inspect.Parameter.KEYWORD_ONLY
-    assert "close" in backend_registry.BackendExecutor.__protocol_attrs__
+    assert "close" in _protocol_members(backend_registry.BackendExecutor)
 
 
 def test_the_sdk_protocol_is_unchanged_and_separate_from_the_route() -> None:
