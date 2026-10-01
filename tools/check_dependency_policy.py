@@ -19,6 +19,11 @@ PYPROJECT = ROOT / "pyproject.toml"
 EXPECTED_SCHEMA = "flagquantum_dependency_policy_v2"
 EXPECTED_INTEROP_EXTRAS = ("braket", "cirq", "pennylane", "quafu", "qiskit")
 REQUIREMENT_NAME = re.compile(r"^\s*([A-Za-z0-9_.-]+)")
+# An environment marker such as ``python_version < '3.11'`` is not a bound, so a
+# version must start with a digit for the specifier to count.
+REQUIREMENT_BOUND = re.compile(
+    r"(?P<operator><=|>=|<|>|==)\s*(?P<version>[0-9][0-9A-Za-z.!+*-]*)"
+)
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -32,6 +37,77 @@ def distribution_name(requirement: str) -> str:
     return re.sub(r"[-_.]+", "-", match.group(1)).lower()
 
 
+def requirement_bounds(requirement: str) -> dict[str, str | None]:
+    """Return the lower and upper bound one requirement declares.
+
+    An exact pin sets both bounds to the same value, which is an upper bound as
+    well, so it satisfies the requirement for a bounded development entry.
+    """
+    bounds: dict[str, str | None] = {"lower": None, "upper": None}
+    for match in REQUIREMENT_BOUND.finditer(requirement):
+        operator, version = match.group("operator"), match.group("version")
+        if operator == ">=":
+            bounds["lower"] = version
+        elif operator == "<":
+            bounds["upper"] = version
+        elif operator == "==":
+            bounds["lower"] = bounds["upper"] = version
+    return bounds
+
+
+def version_numbers(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in re.findall(r"[0-9]+", version))
+
+
+def compare_versions(left: str, right: str) -> int:
+    """Compare release numbers, treating ``1.117`` and ``1.117.0`` as equal."""
+    width = max(len(version_numbers(left)), len(version_numbers(right)))
+    padded = []
+    for version in (left, right):
+        parts = version_numbers(version)
+        padded.append(parts + (0,) * (width - len(parts)))
+    return (padded[0] > padded[1]) - (padded[0] < padded[1])
+
+
+def declared_requirements(policy: dict[str, Any]) -> dict[str, str]:
+    """Map every declared distribution name to its requirement string."""
+    extras = policy.get("extras")
+    groups: list[object] = [policy.get("core")]
+    if isinstance(extras, dict):
+        groups.extend(extras.values())
+    declared: dict[str, str] = {}
+    for requirements in groups:
+        if not isinstance(requirements, list):
+            continue
+        for requirement in requirements:
+            if not isinstance(requirement, str) or not requirement.strip():
+                continue
+            try:
+                name = distribution_name(requirement)
+            except ValueError:
+                continue
+            declared.setdefault(name, requirement)
+    return declared
+
+
+def recorded_requirement(policy: dict[str, Any], name: str) -> str | None:
+    """Resolve one ``[tested]`` key to the requirement it records versions of.
+
+    A key is either the distribution it records (``torch``) or the name of the
+    extra that installs it under a different distribution (``cirq`` installs
+    ``cirq-core``).
+    """
+    declared = declared_requirements(policy)
+    if name in declared:
+        return declared[name]
+    extras = policy.get("extras")
+    requirements = extras.get(name) if isinstance(extras, dict) else None
+    if isinstance(requirements, list) and len(requirements) == 1:
+        requirement = requirements[0]
+        return requirement if isinstance(requirement, str) else None
+    return None
+
+
 def requirement_names(requirements: object) -> tuple[str, ...] | None:
     if not isinstance(requirements, list) or not all(
         isinstance(item, str) for item in requirements
@@ -41,6 +117,125 @@ def requirement_names(requirements: object) -> tuple[str, ...] | None:
         return tuple(distribution_name(item) for item in requirements)
     except ValueError:
         return None
+
+
+def development_bound_errors(
+    policy: dict[str, Any], policy_extras: dict[str, Any]
+) -> tuple[str, ...]:
+    """Require every development-class requirement to declare an upper bound.
+
+    The development extra is the build and test environment this repository
+    installs itself, so an unbounded entry lets an upstream release change the
+    toolchain and break `main` with no commit and no diff.
+    """
+    classes = policy.get("classes")
+    development = classes.get("development") if isinstance(classes, dict) else None
+    if not isinstance(development, list) or not development:
+        return ("dependency policy must classify a development extra",)
+    errors: list[str] = []
+    for extra in development:
+        requirements = policy_extras.get(extra)
+        if not isinstance(requirements, list):
+            errors.append(f"development extra {extra!r} is not declared")
+            continue
+        for requirement in requirements:
+            if not isinstance(requirement, str) or not requirement.strip():
+                continue
+            if requirement_bounds(requirement)["upper"] is None:
+                errors.append(
+                    f"development requirement {requirement!r} must declare an "
+                    "upper bound"
+                )
+    return tuple(errors)
+
+
+def recorded_version_errors(policy: dict[str, Any]) -> tuple[str, ...]:
+    """Check that every ``[tested]`` version lies inside the declared range.
+
+    The recorded floor is what the compatibility lanes install, so a recorded
+    version outside the range would name an environment the packaging metadata
+    does not allow.
+    """
+    recorded = policy.get("tested")
+    if not isinstance(recorded, dict):
+        return ("dependency policy is missing [tested]",)
+    errors: list[str] = []
+    for name, versions in recorded.items():
+        requirement = recorded_requirement(policy, name)
+        if requirement is None:
+            errors.append(f"recorded dependency {name!r} is not declared")
+            continue
+        if not isinstance(versions, list) or not versions:
+            errors.append(f"recorded dependency {name!r} must list exact versions")
+            continue
+        if not all(isinstance(version, str) and version for version in versions):
+            errors.append(f"recorded dependency {name!r} must list exact versions")
+            continue
+        bounds = requirement_bounds(requirement)
+        lower, upper = bounds["lower"], bounds["upper"]
+        if lower is None:
+            errors.append(f"recorded dependency {name!r} declares no lower bound")
+            continue
+        if upper is None:
+            errors.append(f"recorded dependency {name!r} declares no upper bound")
+            continue
+        if lower == upper:
+            # An exact pin admits one release, so every recorded version has to
+            # be that release; the range comparison below would call the pin
+            # itself out of range.
+            outside = [
+                version for version in versions if compare_versions(version, lower) != 0
+            ]
+            if outside:
+                errors.append(
+                    f"recorded dependency {name!r} is pinned to {lower!r} but "
+                    f"records {outside[0]!r}"
+                )
+            continue
+        if compare_versions(versions[0], lower) != 0:
+            errors.append(
+                f"recorded dependency {name!r} starts at {versions[0]!r} but "
+                f"{requirement!r} declares {lower!r}"
+            )
+        if compare_versions(versions[-1], upper) >= 0:
+            errors.append(
+                f"recorded dependency {name!r} records {versions[-1]!r}, which the "
+                f"declared range {requirement!r} does not allow"
+            )
+    return tuple(errors)
+
+
+def development_floor_pins(policy: dict[str, Any]) -> tuple[str, ...]:
+    """Return the ``distribution==version`` pins of the development floor.
+
+    The CI floor lane installs exactly these pins, so the versions this
+    repository claims as its oldest supported toolchain are exercised instead of
+    trusted.
+    """
+    extras = policy.get("extras")
+    classes = policy.get("classes")
+    recorded = policy.get("tested")
+    if not isinstance(extras, dict) or not isinstance(recorded, dict):
+        return ()
+    development = classes.get("development") if isinstance(classes, dict) else None
+    if not isinstance(development, list):
+        return ()
+    pins: list[str] = []
+    for extra in development:
+        requirements = extras.get(extra)
+        if not isinstance(requirements, list):
+            continue
+        for requirement in requirements:
+            if not isinstance(requirement, str) or not requirement.strip():
+                continue
+            try:
+                name = distribution_name(requirement)
+            except ValueError:
+                continue
+            versions = recorded.get(name)
+            if isinstance(versions, list) and versions:
+                pins.append(f"{name}=={versions[0]}")
+    return tuple(pins)
 
 
 def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[str, ...]:
@@ -148,6 +343,9 @@ def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[st
                     f"aggregate {aggregate!r} does not equal its component extras"
                 )
 
+    errors.extend(development_bound_errors(policy, policy_extras))
+    errors.extend(recorded_version_errors(policy))
+
     platforms = policy.get("external_platforms")
     flagos = platforms.get("flagos") if isinstance(platforms, dict) else None
     if not isinstance(flagos, dict):
@@ -199,11 +397,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", type=Path, default=POLICY)
     parser.add_argument("--pyproject", type=Path, default=PYPROJECT)
+    parser.add_argument(
+        "--print-floor",
+        action="store_true",
+        help="print the pinned development floor for the CI floor lane",
+    )
     args = parser.parse_args(argv)
-    errors = policy_errors(load_toml(args.policy), load_toml(args.pyproject))
+    policy = load_toml(args.policy)
+    errors = policy_errors(policy, load_toml(args.pyproject))
     if errors:
         print("\n".join(errors))
         return 1
+    if args.print_floor:
+        pins = development_floor_pins(policy)
+        if not pins:
+            print("the development class records no pinned floor")
+            return 1
+        print(" ".join(pins))
+        return 0
     print("dependency policy passed")
     return 0
 

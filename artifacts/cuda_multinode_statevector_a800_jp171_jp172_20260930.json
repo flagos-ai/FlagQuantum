@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T10:53:45.584384+00:00",
+    "captured_at": "2026-10-01T16:19:46.021536+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
@@ -11,7 +11,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+      "source_revision": "dd874e0459e0795ac9c4d5729d84f51400e0575b",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -30,7 +30,7 @@
           "ProfilerActivity.CUDA"
         ],
         "profiled_workload": "sharded_statevector_forward",
-        "profiler_event_count": 96
+        "profiler_event_count": 95
       },
       "network": {
         "backend": "nccl",
@@ -38,7 +38,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "f427c8f575f1eec308857115660b568da9a65c4141387bc53e27f1ccac53afb1",
+        "debug_log_sha256": "383520d43b43d9e7e299de0f67d4b8f2a380eea5c93d8c0b6fa15666cf361060",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -58,19 +58,19 @@
         "training_loss_decrease": 0.008632771508185422
       },
       "performance": {
-        "maximum_seconds": 0.0031690318137407303,
+        "maximum_seconds": 0.0032800473272800446,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_statevector_forward",
-        "median_seconds": 0.0031670480966567993,
-        "minimum_seconds": 0.0030971989035606384,
+        "median_seconds": 0.003188498318195343,
+        "minimum_seconds": 0.003114713355898857,
         "n_wires": 5,
         "seconds": [
-          0.003168206661939621,
-          0.0031670480966567993,
-          0.0031690318137407303,
-          0.0030971989035606384,
-          0.003112349659204483
+          0.003188498318195343,
+          0.003114713355898857,
+          0.003157423809170723,
+          0.003198450431227684,
+          0.0032800473272800446
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -409,8 +409,8 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
-              "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
+              "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
+              "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
@@ -788,8 +788,8 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-sv51-ckpt/rank-1.pt",
-              "/nfs/fq-multinode-sv51-ckpt/rank-1.pt"
+              "/nfs/fq-multinode-tier-checkpoints/rank-1.pt",
+              "/nfs/fq-multinode-tier-checkpoints/rank-1.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
@@ -838,8 +838,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
-          "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
+          "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
+          "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
         ],
         "checkpoint_steps": 2,
         "first_leg_losses": [
@@ -851,8 +851,8 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
-            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
+            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
+            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
@@ -906,8 +906,8 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
-            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
+            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
+            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
@@ -963,10 +963,10 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt"
+            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt"
           ],
           "communication_bytes": 192,
           "communication_events": 24,
@@ -1029,6 +1029,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "e71d236edb29eece48f3e7294bedff7db0112165d5a81211e2571478320dfe9f",
+  "evidence_sha256": "22294adc4900ef3a979b1198f9f9b8f907b7cdad9a2cf863317f15a971f96a2f",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }

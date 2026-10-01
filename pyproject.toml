@@ -21,20 +21,20 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-xdist>=3.0.0",
-    "ruff>=0.1.0",
-    "black>=23.0",
-    "mypy>=1.0",
-    "build>=1.2.0",
-    "pre-commit>=3.7.0",
-    "tomli>=2.0; python_version < '3.11'",
+    "pytest>=7.0.0,<10",
+    "pytest-cov>=4.0.0,<8",
+    "pytest-xdist>=3.0.0,<4",
+    "ruff>=0.15.0,<0.17",
+    "black>=24.1.0,<27",
+    "mypy>=2.0.0,<3",
+    "build>=1.2.0,<2",
+    "pre-commit>=3.7.0,<5",
+    "tomli>=2.0,<3; python_version < '3.11'",
     # The lane-policy tests read `.github/workflows/*.yml` as documents rather
     # than as text, so that a job's runner labels and its concurrency block are
     # compared as structure. `pre-commit` also pulls PyYAML in, but a test that
     # imports a library should say so itself.
-    "pyyaml>=6.0",
+    "pyyaml>=6.0,<7",
 ]
 
 jax = [
@@ -117,16 +117,16 @@ invertible = [
 ]
 
 all = [
-    "pytest>=7.0.0",
-     "pytest-cov>=4.0.0",
-     "pytest-xdist>=3.0.0",
-     "ruff>=0.1.0",
-     "black>=23.0",
-     "mypy>=1.0",
-     "build>=1.2.0",
-     "pre-commit>=3.7.0",
-     "tomli>=2.0; python_version < '3.11'",
-     "pyyaml>=6.0",
+    "pytest>=7.0.0,<10",
+     "pytest-cov>=4.0.0,<8",
+     "pytest-xdist>=3.0.0,<4",
+     "ruff>=0.15.0,<0.17",
+     "black>=24.1.0,<27",
+     "mypy>=2.0.0,<3",
+     "build>=1.2.0,<2",
+     "pre-commit>=3.7.0,<5",
+     "tomli>=2.0,<3; python_version < '3.11'",
+     "pyyaml>=6.0,<7",
      "matplotlib>=3.5.0",
      "jax>=0.10,<0.11",
      "datasets>=2.20.0",

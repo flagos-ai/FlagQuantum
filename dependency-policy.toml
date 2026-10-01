@@ -3,7 +3,11 @@ python = ["3.10", "3.11", "3.12"]
 core = ["torch>=2.5,<2.14"]
 
 [extras]
-dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0", "black>=23.0", "mypy>=1.0", "build>=1.2.0", "pre-commit>=3.7.0", "tomli>=2.0; python_version < '3.11'", "pyyaml>=6.0"]
+# The development extra is the toolchain this repository installs to check
+# itself, so every entry is bounded and its floor is recorded in [tested]. The
+# `dependency-bounds` lane installs exactly those floor pins and re-runs the
+# Python gates, so a floor that cannot pass its own gate fails CI.
+dev = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "ruff>=0.15.0,<0.17", "black>=24.1.0,<27", "mypy>=2.0.0,<3", "build>=1.2.0,<2", "pre-commit>=3.7.0,<5", "tomli>=2.0,<3; python_version < '3.11'", "pyyaml>=6.0,<7"]
 jax = ["jax>=0.10,<0.11"]
 cotengra = ["cotengra>=0.8,<0.9"]
 stim = ["stim>=1.16,<2"]
@@ -18,7 +22,7 @@ pennylane = ["pennylane>=0.44.1,<0.46; python_version >= '3.11'"]
 examples = ["datasets>=2.20.0", "transformers>=4.40.0"]
 viz = ["matplotlib>=3.5.0"]
 invertible = ["torch>=2.5,<2.14"]
-all = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0", "black>=23.0", "mypy>=1.0", "build>=1.2.0", "pre-commit>=3.7.0", "tomli>=2.0; python_version < '3.11'", "pyyaml>=6.0", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
+all = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "ruff>=0.15.0,<0.17", "black>=24.1.0,<27", "mypy>=2.0.0,<3", "build>=1.2.0,<2", "pre-commit>=3.7.0,<5", "tomli>=2.0,<3; python_version < '3.11'", "pyyaml>=6.0,<7", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
 interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-core>=1.6.1,<1.8; python_version >= '3.11'", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 
 [classes]
@@ -61,6 +65,15 @@ cirq = ["1.6.1", "1.7.0"]
 qiskit = ["2.0", "2.5"]
 pennylane = ["0.44.1", "0.45.1"]
 cudaq = ["0.15.1", "0.16.0.post1"]
+
+# Static gates. The first entry is the oldest release whose own check passes on
+# this repository; the last entry is the newest release it was verified against.
+# Before 0.15.0 `ruff check` flags the `_fields_` of a `ctypes.Structure` as a
+# mutable class attribute (`RUF012`), before 24.1.0 `black --check` reformats 73
+# files, and mypy before 2.0.0 reports errors that the current release does not.
+ruff = ["0.15.0", "0.16.9"]
+black = ["24.1.0", "26.5.1"]
+mypy = ["2.0.0", "2.3.1"]
 
 [updates]
 cadence = "monthly"

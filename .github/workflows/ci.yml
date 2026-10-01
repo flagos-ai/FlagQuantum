@@ -451,6 +451,20 @@ jobs:
       - run: python -m pip install pytest
       - run: python -m pip install -e . --no-deps
       - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
+      # The declared development floor is a claim about this repository's own
+      # toolchain, so it is installed and run rather than trusted. Only the 3.12
+      # lane runs the gates, because the strict type check targets 3.12.
+      - name: Install the declared development floor
+        if: matrix.python == '3.12'
+        run: >-
+          python -m pip install
+          $(python tools/check_dependency_policy.py --print-floor)
+      - name: Run the Python gates on the declared development floor
+        if: matrix.python == '3.12'
+        run: |
+          ruff check flagquantum tests tools
+          black --check flagquantum tests tools
+          mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 
   package:
     runs-on: ubuntu-latest
