@@ -265,11 +265,14 @@ A multi-node scalability result must still satisfy the repository contracts:
 On the launch host, one command runs the whole lane:
 
 ```bash
-python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-run
+python tools/multinode_launch_plan.py --run \
+  --peer-host fq-node2 --staging /nfs/fq-multinode-run
 ```
 
-It refuses to start on nine preflight questions, stages the tree onto a
-filesystem both nodes mount, and supervises both ranks as one unit with
+`--peer-host` names the SSH target for node 1, so pass this site's alias as
+above; the tool's own default is the maintainer's launch host and will not
+resolve here. It refuses to start on nine preflight questions, stages the tree
+onto a filesystem both nodes mount, and supervises both ranks as one unit with
 `tools/run_multinode_watchdog.py`. It stages nowhere but a directory named
 `fq-multinode*`, because it copies into it with `--delete`.
 

@@ -38,5 +38,8 @@ python benchmarks/audit_results.py --input benchmarks/results/scalability --requ
 ```
 
 `benchmarks/audit_results.py --require-scalability` is scoped to
-`benchmarks/results/scalability/`. Generated audit summary JSON files are not
-inputs to release-gate scans.
+`benchmarks/results/scalability/`. It exits 2 both when a payload fails the
+release gate and when the directory holds no JSON at all, so a nonzero exit on
+an empty `scalability/` means "nothing is certified yet", not "the tool is
+broken". Generated audit summary JSON files are not inputs to release-gate
+scans.
