@@ -220,6 +220,12 @@ def _cpu_disjoint_single_wire_fusion_enabled() -> bool:
     return _environment_flag("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", default=True)
 
 
+def _cpu_release_matrix_layout_input_enabled() -> bool:
+    """Whether inference may release a materialized input layout before output."""
+
+    return _environment_flag("FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT", default=True)
+
+
 def _compile_statevector_program(
     instructions: Sequence[Instruction],
     n_wires: int,
@@ -678,6 +684,12 @@ def _apply_matrix_layout(
     if matrix.ndim == 2:
         matrix = matrix.expand(bsz, -1, -1)
     out = torch.bmm(matrix, flat)
+    if (
+        _cpu_release_matrix_layout_input_enabled()
+        and not state.requires_grad
+        and not matrix.requires_grad
+    ):
+        del flat, tensor
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
 
 

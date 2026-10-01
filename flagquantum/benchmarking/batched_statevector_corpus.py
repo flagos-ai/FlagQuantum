@@ -35,6 +35,7 @@ STABILITY_THRESHOLD = 0.20
 
 EngineName = Literal[
     "flagquantum_native_batch",
+    "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -45,6 +46,7 @@ EngineName = Literal[
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_batch",
+    "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -55,6 +57,9 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
 
 _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native_batch": "FlagQuantum native batch (budgeted)",
+    "flagquantum_native_layout_retention": (
+        "FlagQuantum native batch (legacy layout retention)"
+    ),
     "flagquantum_native_functional_windows": (
         "FlagQuantum native batch (legacy functional windows)"
     ),
@@ -153,10 +158,23 @@ def _engine_callable(
                 FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
                 FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
                 FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
             ):
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_batch
+    if engine == "flagquantum_native_layout_retention":
+
+        def native_layout_retention() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_layout_retention
     if engine == "flagquantum_native_functional_windows":
 
         def native_functional_windows() -> torch.Tensor:
@@ -214,6 +232,7 @@ def _engine_callable(
 def _engine_versions(engine: EngineName) -> dict[str, str]:
     packages = {
         "flagquantum_native_batch": ("flagquantum",),
+        "flagquantum_native_layout_retention": ("flagquantum",),
         "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
         "flagquantum_native_serial": ("flagquantum",),
@@ -229,15 +248,19 @@ def _execution_strategy(engine: EngineName) -> str:
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
         else (
-            "native_parameter_batch_functional_windows"
-            if engine == "flagquantum_native_functional_windows"
+            "native_parameter_batch_legacy_layout_retention"
+            if engine == "flagquantum_native_layout_retention"
             else (
-                "native_monolithic_parameter_batch"
-                if engine == "flagquantum_native_monolithic_batch"
+                "native_parameter_batch_functional_windows"
+                if engine == "flagquantum_native_functional_windows"
                 else (
-                    "repeated_single_item_native"
-                    if engine == "flagquantum_native_serial"
-                    else "repeated_single_item_bridge"
+                    "native_monolithic_parameter_batch"
+                    if engine == "flagquantum_native_monolithic_batch"
+                    else (
+                        "repeated_single_item_native"
+                        if engine == "flagquantum_native_serial"
+                        else "repeated_single_item_bridge"
+                    )
                 )
             )
         )

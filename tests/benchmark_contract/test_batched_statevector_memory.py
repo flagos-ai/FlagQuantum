@@ -110,3 +110,33 @@ def test_checked_in_preallocation_artifact_uses_robust_memory_samples() -> None:
         )
         assert optimized["batch_total"]["relative_median_absolute_deviation"] <= 0.20
         assert legacy["batch_total"]["relative_median_absolute_deviation"] <= 0.20
+
+
+def test_checked_in_layout_lifetime_artifact_is_correct_stable_and_lower_rss() -> None:
+    path = (
+        REPOSITORY_ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "batched_statevector_layout_lifetime_cpu_arm64_20261001.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert len(payload["cases"]) == 2
+    for case in payload["cases"]:
+        assert set(case["engines"]) == {
+            "flagquantum_native_batch",
+            "flagquantum_native_layout_retention",
+        }
+        optimized = case["engines"]["flagquantum_native_batch"]
+        retained = case["engines"]["flagquantum_native_layout_retention"]
+        assert optimized["isolated_memory"]["sample_count"] == 3
+        assert len(optimized["isolated_memory"]["samples"]) == 3
+        assert (
+            optimized["isolated_memory"]["peak_rss_bytes"]
+            < retained["isolated_memory"]["peak_rss_bytes"]
+        )
+        assert optimized["batch_total"]["relative_median_absolute_deviation"] <= 0.20
+        assert retained["batch_total"]["relative_median_absolute_deviation"] <= 0.20

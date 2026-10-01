@@ -41,6 +41,7 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         batch_sizes=(1, 3),
         engines=(
             "flagquantum_native_batch",
+            "flagquantum_native_layout_retention",
             "flagquantum_native_monolithic_batch",
             "flagquantum_native_serial",
         ),
@@ -58,6 +59,12 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         assert case["correctness"]["passed"] is True
         assert (
             case["correctness"]["engines"]["flagquantum_native_serial"]["max_abs_error"]
+            <= 1e-10
+        )
+        assert (
+            case["correctness"]["engines"]["flagquantum_native_layout_retention"][
+                "max_abs_error"
+            ]
             <= 1e-10
         )
         assert (
