@@ -302,16 +302,40 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert len(training["checkpoint_files"]) >= 2
     assert training["optimizer_state_ownership_semantics"] == "sharded_across_ranks"
 
-    # The boundary is exactly these blockers. The fabric, the measured
-    # workload and the audited staging path are retired by the observation
-    # that justifies each, and the cut is declared because this lane's site
-    # plan cannot move it.
+    # The boundary is exactly these blockers. The fabric, the measured workload,
+    # the audited staging path and the cut width are each retired by the
+    # observation that justifies them; the pair and the circuit are declared.
     assert sorted(evidence["claim_blockers"]) == [
         "host_staging_in_measured_region",
-        "inter_node_cut_width_not_swept",
         "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
         "validation_only_tiny_full_mps_gather",
+    ]
+
+    # The cut width is retired by a sweep rather than by a declaration, so the
+    # sweep's own numbers are checked here: the boundary moved to more than one
+    # rank, and every width that moved carried bytes across the hosts.
+    cut_widths = observations["cut_widths"]
+    assert len(cut_widths["widths"]) >= 2
+    for width in cut_widths["widths"]:
+        assert cut_widths["inter_node_bytes_by_width"][str(width)] > 0
+    assert len(cut_widths["inter_node_bytes_by_width"]) >= 2
+    # Every plan this shape can hold was run, each against the exact reference.
+    assert len(cut_widths["plans"]) == _MODULE.N_WIRES - 1
+    assert {tuple(plan["cut_positions"]) for plan in cut_widths["plans"]} == {
+        (cut,) for cut in range(_MODULE.N_WIRES - 1)
+    }
+    for plan in cut_widths["plans"]:
+        assert plan["worst_error"] <= 1e-10
+        # A width is the exact Schmidt rank of the state at that cut, so it
+        # cannot exceed what the reference says the state holds there.
+        assert plan["width"] <= _MODULE.MAX_BOND
+    assert cut_widths["exact_schmidt_ranks"] == [
+        2,
+        4,
+        4,
+        4,
+        2,
     ]
 
     # The measured leg, and the two properties that make it a measurement: the
@@ -397,6 +421,29 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "cut_widths": {
+            "widths": [2, 4],
+            "exact_schmidt_ranks": [2, 4, 4, 4, 2],
+            "inter_node_bytes_by_width": {"2": 896, "4": 3520},
+            "plans": [
+                {
+                    "plan": [[0, 1], [2, 3, 4, 5]],
+                    "cut_positions": [1],
+                    "width": 4,
+                    "inter_node_bytes": 1344,
+                    "inter_node_messages": 6,
+                    "worst_error": 3.9e-16,
+                },
+                {
+                    "plan": [[0, 1, 2, 3, 4], [5]],
+                    "cut_positions": [4],
+                    "width": 2,
+                    "inter_node_bytes": 320,
+                    "inter_node_messages": 6,
+                    "worst_error": 3.9e-16,
+                },
+            ],
+        },
         "world_size": 2,
         "local_world_size": 1,
     }
@@ -416,13 +463,12 @@ def test_every_retracted_blocker_needs_its_own_observation(
         return set(payload["evidence"]["claim_blockers"])
 
     complete = blockers()
-    # The pair, the circuit and the single inter-node site boundary are declared
-    # boundaries. The site plan derives ownership from the world size alone, so
-    # this lane cannot move its cut and the blocker has to stay.
+    # The pair and the circuit are declared boundaries. The cut width is not:
+    # the sweep moved the site boundary and read back what each placement
+    # carried, so the blocker that says no cut ever moved is gone.
     assert complete == {
         "two_node_pair_only_no_wider_topology",
         "toy_circuit_parameters_only",
-        "inter_node_cut_width_not_swept",
         "validation_only_tiny_full_mps_gather",
     }
 

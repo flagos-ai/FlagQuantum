@@ -522,16 +522,35 @@ are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
 exchanging anything for it. The artifact is checked against that arithmetic. Its
 route was read from the NCCL debug log as RoCE, and it carries five
-synchronized forward samples taken after two warmups. It carries five blockers,
-including `inter_node_cut_width_not_swept` and
-`host_staging_in_measured_region`, and reports both claim flags false. The cut
-stays unswept because the site plan derives ownership from the world size
-alone, so a two-host pair holds exactly one boundary and this lane cannot move
-it; the staging blocker is the audit's finding that host transfers sit inside
-the measured region. Unlike the statevector
-artifact it belongs to a capability that also claims single-host and multi-GPU
-support, so it is the multi-node leg of a broader entry rather than an entry of
-its own.
+synchronized forward samples taken after two warmups. It carries four blockers
+-- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
+`validation_only_tiny_full_mps_gather` and
+`host_staging_in_measured_region` -- and reports both claim flags false. The
+staging blocker is the audit's finding that host transfers sit inside the
+measured region. Unlike the statevector artifact it belongs to a capability
+that also claims single-host and multi-GPU support, so it is the multi-node leg
+of a broader entry rather than an entry of its own.
+
+The cut width was swept rather than declared, and the sweep is a leg of its own
+rather than part of the declared workload. The declared circuit could not carry
+it: its Schmidt profile is flat at rank two across all five cuts, so moving the
+owned site boundary along it exchanges the same bond wherever it lands and any
+two numbers from it would be the same number. The sweep therefore binds its own
+circuit, which rotates each adjacent pair in turn and so has a profile the cuts
+can tell apart -- ranks `2, 4, 4, 4, 2`, read from the singular values of the
+exact statevector rather than from the run. The probe then re-runs the same
+`execute_torch_distributed_mps_reverse` the training loop uses, under every site
+plan the launched shape can hold with a boundary moved: at two ranks that is the
+five positions of the single boundary, and at a wider shape it walks each rank
+boundary across its neighbours in turn. Each leg is compared with the exact
+complex128 expectation and gradient and raises on disagreement, so a leg that
+cut the wrong circuit fails the run rather than being recorded as a narrow
+width. What each leg reports is its own inter-node layer halo, the counter the
+transport attributes per tier; the widths that crossed bytes are the ones
+`cut_width_claim_blockers` counts, so a placement that exchanged nothing leaves
+`inter_node_cut_width_not_swept` standing. In the recorded run the five
+placements crossed 576, 1344, 1344, 832 and 320 bytes at widths 2, 4, 4, 4 and
+2, each at round-off against the reference.
 
 `artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
 slice-sharded tensor-network workload. Five wires are contracted along a cut of
