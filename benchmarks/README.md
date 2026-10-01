@@ -204,6 +204,27 @@ The focused
 then measures early input-layout release against exact legacy retention on the
 Random Clifford and local-brickwork allocation hotspots.
 
+Gate a fresh run against that maintained batch profile without confusing a
+different machine, runtime family, timing scope, or memory API for a pass or a
+regression:
+
+```bash
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/batched_statevector_layout_lifetime_cpu_arm64_20261001.json \
+  candidate-batched-memory.json --max-slowdown 1.20 \
+  --max-memory-growth 1.10 --minimum-samples 5 \
+  --minimum-memory-probes 3 \
+  --json-output candidate-batched-memory-gate.json
+```
+
+For this schema the gate requires the complete workload/width/batch/hash case
+identity, exact-statevector correctness, stable native timing, at least the
+requested timing samples, and fresh-process peak-RSS probes. A runtime-profile
+or measurement-method mismatch returns `incomparable` rather than a false pass.
+The checked Apple-arm64 replay, exact times, RSS ratios, unchanged PennyLane
+Lightning context, and reproduction commands are in
+[`BATCHED_STATEVECTOR_REGRESSION_GATE_CPU_ARM64_20261001.md`](results/comparison/BATCHED_STATEVECTOR_REGRESSION_GATE_CPU_ARM64_20261001.md).
+
 FlagQuantum executes all bindings through its native parameter-batch path. The
 current Qiskit Aer, Cirq, and PennyLane bridges accept one statevector request at
 a time, so this runner repeats the public bridge call for each binding. It
