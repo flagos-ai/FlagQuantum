@@ -184,6 +184,19 @@ provenance. The switch remains an integration-validation route rather than a
 default performance selection: synchronized public-path measurements must show
 an end-to-end win before default dispatch is considered.
 
+The checked-in
+[`mps_wire_probability_dispatch_a800.json`](../../benchmarks/results/local/mps_wire_probability_dispatch_a800.json)
+artifact preserves 30 synchronized groups of 100 invocations for each case on
+`jp-a800-171` and `jp-a800-172`, under stock Triton 3.7.1 and FlagTree 0.7.0.
+Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
+`2.22x` to `3.40x` faster than the equivalent PyTorch reduction, with maximum
+absolute error `8.94e-8`. The complete public dispatch path is instead `4.8%`
+to `9.6%` slower because its per-wire safety checks synchronize the device.
+The canonical aggregate therefore records `retain_opt_in`; this is bounded
+development-hardware evidence, not a release gate or scalability claim.
+Reproduce or validate it with
+[`benchmarks/mps_wire_probability_dispatch.py`](../../benchmarks/mps_wire_probability_dispatch.py).
+
 ## Capability matching
 
 `catalog.match_kernel_implementations` answers which cataloged implementations
