@@ -620,10 +620,18 @@ def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportRes
             if matrix is None:
                 return False
             matrix = _reverse_local_basis_order(matrix, len(instruction.wires))
-            if hasattr(matrix, "detach"):
-                matrix = matrix.detach().cpu().numpy()
+            # `_validated_custom_unitary` returns ``torch.Tensor | None``, which
+            # makes that union the declared type of ``matrix``. The ``None``
+            # returned above handles one half of it, but the declaration stands,
+            # so detaching back into the same name would assign an ndarray to a
+            # variable declared as that union. The numpy form takes its own
+            # name. This step used to sit behind ``hasattr(matrix, "detach")``,
+            # a guard left from exporting the raw ``instruction.matrix`` field
+            # directly; it cannot narrow a union, so it never made the
+            # assignment checkable.
+            unitary = matrix.detach().cpu().numpy()
             circuit.unitary(
-                matrix,
+                unitary,
                 list(instruction.wires),
                 label=instruction.metadata.get("qiskit_label") or instruction.name,
             )
