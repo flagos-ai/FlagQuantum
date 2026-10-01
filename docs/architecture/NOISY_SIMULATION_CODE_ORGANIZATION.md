@@ -186,6 +186,11 @@ Responsibilities:
 - `validation.py`: probabilities, dimensions, CPTP, and composition rules.
 - `serialization.py`: schemas, digests, identities, and round trips.
 
+Current state: `__init__.py`, `channels.py`, `model.py`, and `device_profile.py`
+exist. Rule matching lives in `model.py` today, and validation plus
+serialization live in `channels.py`/`model.py`; splitting them into the
+separate modules above is still open work, not a description of the tree.
+
 ### 3.2 Noise Compilation
 
 ```text
@@ -199,7 +204,8 @@ schemas, not Circuit, Runtime, Simulation, or concrete backends.
 Noise backend selection and device calibration are execution policy. Their
 authoritative entry points are `flagquantum/runtime/planner/noise_selection.py`
 and `noise_calibration.py`. Subplans such as `NoisyExecutionPlan` temporarily
-remain with protected execution-plan products in `flagquantum/compilation/models.py`
+remain with protected execution-plan products in
+`flagquantum/runtime/execution_plan.py`
 and are assembled by `runtime/planner`. They are not Compiler execution policy.
 
 ### 3.3 Density-Matrix Numerics

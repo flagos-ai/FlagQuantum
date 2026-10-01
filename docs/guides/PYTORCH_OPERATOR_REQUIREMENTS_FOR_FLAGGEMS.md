@@ -92,7 +92,7 @@ Specific MPS requirements:
 
 Primary file:
 
-- `flagquantum/simulation/tensor.py`
+- `flagquantum/simulation/tensor_network/models.py` (`TensorNode`)
 
 Core shapes:
 
@@ -132,7 +132,7 @@ Primary files:
 
 Primary file:
 
-- `flagquantum/ops/matrices.py`
+- `flagquantum/simulation/matrices.py` and `flagquantum/simulation/gate_matrix.py`
 
 | Operator | Purpose | dtype | Autograd | Priority |
 | --- | --- | --- | --- | --- |
@@ -147,7 +147,8 @@ Primary files:
 
 - `flagquantum/algorithms/core.py`
 - `flagquantum/runtime/training.py`
-- PyTorch interface wrappers in `flagquantum/runtime/hybrid.py`.
+- PyTorch interface wrappers in `flagquantum/runtime/executors/jax/kernel.py`
+  (`_TorchJAXQuantumFunction`).
 
 | Operator | Purpose | dtype | Autograd | Priority |
 | --- | --- | --- | --- | --- |

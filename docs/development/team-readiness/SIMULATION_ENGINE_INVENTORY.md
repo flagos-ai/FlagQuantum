@@ -115,7 +115,7 @@ scaling. These semantics are not interchangeable.
 | `tensor_network/entrypoints.py` | Stable entry/amplitudes | Thin public adaptation, amplitude projection/contraction | No Runtime/Provider policy; split amplitude code only for concrete benefit |
 | `tensor_network/models.py` | Internal models | Nodes, contraction/slicing plans, compiled local schedules | Core proposals define stable cross-layer results/types |
 | `real_imag_kernels.py`, `kernels/triton/**` | Kernels/numerics | Eager/Triton forward/backward | Platform capabilities and Runtime policy decide availability/fallback |
-| `graph.py` | Protected compatibility | Root API compatibility export; no Compiler caller | Do not duplicate in Compiler; migrate only for a concrete caller and approved API change |
+| `statevector/cz_graph.py` | Numerics | CZ-graph fusion, parity-phase signs, CPU application | Private helpers consumed by `statevector/local.py`; no Compiler caller and no second graph authority |
 
 ## 5. Runtime Executor Ownership Matrix
 
@@ -123,7 +123,7 @@ scaling. These semantics are not interchangeable.
 | --- | --- | --- | --- |
 | `simulation/density_matrix.py` | Numerics | Construction, operator expansion, unitary/Kraus action, IR loop, measurement | Stable result projection remains Runtime/Core |
 | Density adapter in `runtime/noise_registry.py` | Execution adapter | No numerics | Validate/dispatch lowered IR; direct compatibility calls request Compiler lowering |
-| `statevector/split_real_imag*.py` | Mixed numerics/kernels | Evolution, precision extension, expectations/VJP; adjoint kernels in `kernels/triton/statevector_adjoint.py`; matrix generation moved to `simulation/double_single_*_gates.py` | Device identity, provider evidence, precision/fallback permissions, conformance |
+| `statevector/split_real_imag*.py` | Mixed numerics/kernels | Evolution, precision extension, expectations/VJP; adjoint kernels in `kernels/triton/statevector_adjoint.py`; matrix generation moved to `simulation/statevector/double_single_*_gates.py` | Device identity, provider evidence, precision/fallback permissions, conformance |
 | `statevector/forward.py`, `reverse_adjoint.py` | Distributed adaptation | Runtime-independent local gates, diagonal action, rank-pair/basis merging, derivatives, complex inner products | Groups, collectives, ranks/topology/ownership, global indices, chunks, Triton routing, switches, evidence; chunked local expectations depend on these semantics |
 | `statevector/reverse.py`, `gradient_reduction.py` | Mixed kernel/adaptation | Autograd bridges, local gradient math | Groups, bucket policy, all-reduce, ownership/evidence |
 | `statevector/local_execution.py` | Adapter | Matrix/diagonal actions delegated to `simulation/statevector/operations.py` | Backend policy, simulated ranks, shard indexing/ownership, real transport, reporting; no duplicate plan/shard types |
@@ -133,7 +133,7 @@ scaling. These semantics are not interchangeable.
 | `simulation/mps/rank_local.py`, `mps/site_kernels.py`, `mps/factorization.py` | Numerics/kernels | Gates, environment transfer, QR/SVD | Memory budgets, microbatches, workspace pools, Runtime error translation; old numerical modules removed |
 | `mps/forward.py`, `reverse.py`, `reverse_replay.py`, `reverse_*observables.py` | Mixed | Rank-local math, tape/VJP, observables | Ownership, transport sequence, collectives, lifecycle |
 | `mps/state.py`, `records.py` | Mixed state/ownership | Algorithm-internal tensors | Topology ownership and cross-layer Runtime/Core records |
-| `mps/communication.py`, `distribution.py`, `metadata_transport.py`, `reverse_transport.py` | Communication | Required communication operations only | Transport and process groups |
+| `mps/distribution.py`, `mps/metadata_transport.py`, `mps/reverse_transport.py` | Communication | Required communication operations only | Transport and process groups |
 | `mps/training*.py`, `checkpointing.py`, `production.py`, `profiling.py`, `device_resolution.py` | Resources/lifecycle/results | Local loss/gradient kernels may move | Device selection, parameter broadcast, optimizers, persistence, production gates, observation |
 | `tensor_network/sharded_kernels.py`, `sliced_reverse.py`, `reverse_dag.py` | Mixed adaptation | Pair contraction, individual/batched pullbacks, high-rank fallback, Kahan accumulation delegated | DAG/bucket schedule, tapes/cotangents, checkpoint plans, slice scheduling, reductions/transport |
 | `tensor_network/distributed_execution.py`, `distributed_sliced_reverse.py`, `redistribution.py`, `partial_mesh.py` | Communication/adaptation | Local contraction calls | Groups, P2P/all-to-all, rank lifecycle, aggregation |
@@ -141,9 +141,9 @@ scaling. These semantics are not interchangeable.
 | `tensor_network/dynamic_checkpoint.py`, `rematerialization.py`, `memory_evidence.py`, `distributed_optimizer.py` | Lifecycle/resources/results | Rematerialization costs, local update math | Durable checkpoints, budgets/evidence, optimizer ownership, execution policy |
 | `simulation/jax/primitives.py`, `simulation/jax/statevector/kernels.py`, `simulation/jax/tensor_network/{models,contraction,kernels}.py` | Numerics | Dtypes, instruction/Pauli matrices, initial shards/local execution, cross-rank gate math, local observables/losses, TN nodes, greedy/sliced contractions/output losses | No Runtime/Platform dependencies; Runtime owns shards, communication permutations, pmap/shard-map, collectives, evidence |
 | `simulation/jax/mps/kernels.py`, `simulation/jax/mps/batched.py`, `simulation/jax/mps/pullbacks.py` | Numerics | Initial states, single/pair/batched updates, swap routing math, statevector contraction, local observables/VJP, boundary and QR/SVD pullbacks | No Runtime/Platform dependencies; Runtime owns circuit loops, shards, parameters, communication, truncation policy, evidence |
-| `jax/kernel.py`, `mps/lowering.py`, representation Runtime modules | Adapter | Calls Simulation implementations | JAX backend/device selection, rank tasks, pmap/shard-map, collectives |
+| `jax/kernel.py`, `jax/mps/lowering.py`, representation Runtime modules | Adapter | Calls Simulation implementations | JAX backend/device selection, rank tasks, pmap/shard-map, collectives |
 | `jax/array_conversions.py` | Adapter | DLPack/array zero-copy semantics | Framework/fallback policy; external objects stop at boundary |
-| `jax/*execution.py`, `backend_dispatch.py`, `statevector/training.py`, `mps/gradients.py`, `tensor_network/gradients.py` | Mixed adaptation | Local kernels | Profiles/backends, device counts, shards, training lifecycle |
+| `jax/*execution.py`, `backend_dispatch.py`, `statevector/training.py`, `jax/mps/gradients.py`, `jax/tensor_network/gradients.py` | Mixed adaptation | Local kernels | Profiles/backends, device counts, shards, training lifecycle |
 | `jax/*planning.py`, `planning_core.py`, `runtime_environment.py`, `transport.py` | Resource/communication | Algorithm constraints/costs | Topology, environment, transport, device lifecycle |
 | `jax/*records.py`, `*result.py`, `evidence_collector.py`, `release_policy.py` | Results/facades | Internal diagnostics | Core results/evidence, Runtime aggregation, release policy |
 
@@ -157,7 +157,7 @@ Classify remaining JAX calls by responsibility rather than eliminating every
 Runtime. One-line zero allocation or matrix composition moves only if it
 constitutes duplicated algorithm authority, not to create tiny public helpers.
 The substantive MPS environment transfer and Z observable calculation after
-cross-rank tensor reconstruction in `mps/gradient_ownership.py` moved to
+cross-rank tensor reconstruction in `jax/mps/gradient_ownership.py` moved to
 `simulation/jax/mps/kernels.py`; Runtime adapts rank records to arguments.
 
 `statevector/kernels.py` retains instruction/plan adaptation, collective
@@ -175,13 +175,13 @@ do not depend on Runtime policy and records.
 
 `simulation/jax/mps/pullbacks.py` owns local parameter VJP, boundary RXX adjoints,
 and QR/SVD canonicalization/truncation pullbacks. Remaining
-`mps/backward.py`, `mps/pullbacks.py`, and `mps/canonicalization.py` logic is a
+`jax/mps/backward.py`, `jax/mps/pullbacks.py`, and `jax/mps/canonicalization.py` logic is a
 bounded rank protocol: placement, parameter ownership, exchanges, truncation
 policy, optimizer lifecycle, and evidence. Small analytic checks and tensor shapes
 verify protocol evidence; they are not another general MPS authority. No further
 fragmentation is warranted without a second independent production consumer.
 
-The unused JAX dtype `ContextVar` in `mps/lowering.py` was removed.
+The unused JAX dtype `ContextVar` in `jax/mps/lowering.py` was removed.
 `simulation/jax/primitives.py` remains the sole numerical precision context.
 
 ## 6. Logic Outside Simulation Ownership

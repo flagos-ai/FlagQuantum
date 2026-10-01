@@ -1,5 +1,11 @@
 # FlagQuantum IR Metadata Inventory
 
+> The `tests/fixtures/internal_ir/` corpus, including the machine baselines and
+> budget files named below, is a private-worktree artifact. It is not published in
+> this repository, so the `benchmarks/internal/*_gate.py` scripts that read those
+> paths need the corpus supplied out of band. The recorded measurements and
+> approval status are unchanged.
+
 Status: Phase 0 static inventory and importer-relevant typed destinations established.
 Machine inventory: `tests/fixtures/internal_ir/metadata_inventory.json`
 
