@@ -17,16 +17,21 @@ them:
 | --- | --- |
 | Which capabilities must exist, and their current status | `contracts/cudaq-parity-matrix.toml`, generated into `docs/reference/CUDAQ_PARITY_MATRIX.md` |
 | What FlagQuantum may depend on, and how a dependency is adopted | [`dependency-policy.toml`](../../dependency-policy.toml) plus engineering decision principle 6 |
-| Whether the programme is authorized to run beside the CPU vertical path | [ADR ARCH-010](../architecture/decisions/ARCH_010_CUDAQ_PARITY_CONTROL_SEQUENCE.md), currently **Proposed** |
+| Whether the programme is authorized to run beside the CPU vertical path | [ADR ARCH-012](../architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md), **Approved** |
 
-ARCH-010 is not yet approved, and the control sequence in
-[`AGENTS.md`](../../AGENTS.md) § Current Strategic Priority therefore still binds as
-written. That sequence forbids opening additional horizontal architecture tracks
-while the CPU vertical path is incomplete. This document does not amend it and
-carries no authorization of its own: until ARCH-010 is approved, the parity work
-admissible under the existing sequence is the part that extends or replaces an
-existing boundary — the `B_open_neutral` integrations of § 5 and the replacement
-work of § 4 — rather than the opening of new tracks.
+ARCH-012 is approved. The control sequence in
+[`AGENTS.md`](../../AGENTS.md) § Current Strategic Priority has been replaced by the
+one that ADR states, so the sequence that forbade opening additional horizontal
+architecture tracks while the CPU vertical path is incomplete no longer binds as
+written. The replacement sequence admits a second track under two conditions that
+this document inherits rather than loosens: a new horizontal abstraction must
+replace an existing implementation behind an existing boundary and carry a
+replacement test, and two tracks may run concurrently only where they do not share
+an unproven contract.
+
+This document still carries no authorization of its own beyond the strategy layer:
+it does not approve any contract, promote any capability maturity level, or complete
+any Multi-Level IR phase gate. Each of those remains its own decision.
 
 What remains is the strategy layer those three do not cover: how the goal is
 stated so that progress is measurable rather than asserted, which dependencies are
@@ -114,7 +119,7 @@ planner-selectable backend is a separate change.
 ## 4. What must be owned
 
 Three capabilities have no acceptable vendor-neutral substitute and are owned
-outright, as admitted by ARCH-010 Decision 3:
+outright, as admitted by ARCH-012 Decision 3:
 
 - **Statevector core**, replacing `cuStateVec`-class device statevector execution,
   including multi-rank sharding.
@@ -181,7 +186,7 @@ because several of these projects ship bundled components under different terms.
 | Ensmallen | BSD-3-Clause | classical optimiser coverage | Header-only C++. |
 | nlohmann/json | MIT | serialisation |  |
 | Eigen | MPL-2.0 | dense linear algebra | File-level copyleft. A few bundled modules carry other terms, including GPL-licensed optional external dependencies that must not be pulled in. |
-| GMP / MPFR | LGPL-3.0-or-later | exact and arbitrary-precision arithmetic for angle synthesis | Weak copyleft, not permissive. ARCH-010 lists both as vendor-neutral; they are usable under a dynamic-linking arrangement, but they cannot be statically absorbed into a FlagQuantum binary. See rule 4. |
+| GMP / MPFR | LGPL-3.0-or-later | exact and arbitrary-precision arithmetic for angle synthesis | Weak copyleft, not permissive. ARCH-012 lists both as vendor-neutral; they are usable under a dynamic-linking arrangement, but they cannot be statically absorbed into a FlagQuantum binary. See rule 4. |
 | NLopt | Not a single licence | classical optimiser coverage | Its own terms are permissive, but it bundles algorithms under other terms. Needs per-algorithm review before use. |
 
 Four rules govern this table.

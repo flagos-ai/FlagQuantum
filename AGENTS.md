@@ -427,25 +427,40 @@ workload is exact, approximate, sharded, sliced, or replicated.
 
 ## Current Strategic Priority
 
-The immediate vNext control sequence is binding:
+The immediate vNext control sequence is binding. It is stated and justified by
+[ARCH-012](docs/architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md),
+which replaces an earlier sequence that forbade a second track outright:
 
-1. freeze new horizontal abstractions;
-2. finish and simplify the current Compiler boundary;
-3. deliver the smallest complete CPU vertical path;
-4. move the code on that proven path into its authoritative target domains;
-5. delete or explicitly freeze legacy and transitional code in every round.
+1. every round extends a proven vertical path through input, validation,
+   planning, execution, result, failure, and evidence; breadth is earned by
+   completing such a path, not by declaring an abstraction;
+2. a new horizontal abstraction is admitted only when it **replaces** an
+   existing implementation behind an existing boundary, and admission requires a
+   replacement test in which at least one implementation is swapped without
+   modifying its consumers, per engineering decision principle 10;
+3. two tracks may develop concurrently only when they do not share an unproven
+   contract; where they would, the contract lands first on the integration
+   branch together with a contract fake and a conformance test, and each track
+   then synchronizes that baseline;
+4. legacy and transitional code is deleted or explicitly frozen in every round;
+5. no parity claim is made without a generated parity-matrix entry and the
+   evidence its maturity level requires; a capability present in CUDA-Q and
+   absent here appears as an explicit, owned gap rather than as silence.
 
-A new cross-domain contract or abstraction is allowed during this sequence only
-when the current vertical path cannot be completed with an existing
-authoritative type, and the change passes the proposal and subtraction review.
-Do not open additional horizontal architecture tracks while the CPU path is
-incomplete.
+Parity with CUDA-Q is a floor, not a ceiling, and the parity path must not depend
+on NVIDIA-proprietary components. Exactly three numerical cores are owned here,
+each admitted as a replacement under clause 2: the statevector core, the
+tensor-network core, and the dynamics core. Vendor-neutral components — LLVM/MLIR,
+the QIR specification, Stim, and comparable projects — may be used under
+engineering decision principle 6.
 
-Longer-term statevector, MPS, tensor-network, accelerator, QPU, and distributed
-training goals remain product outcomes, but they must grow by extending proven
-vertical paths rather than by accumulating parallel scaffolding. The target is
-a repository whose structure is obvious, whose code is restrained, and whose
-hard scientific and systems problems are handled deeply.
+The CPU vertical path keeps first-class status: this sequence does not authorize
+slowing local users down or deprioritizing CPU correctness. Longer-term
+statevector, MPS, tensor-network, accelerator, QPU, and distributed training goals
+remain product outcomes, but they must grow by extending proven vertical paths
+rather than by accumulating parallel scaffolding. The target is a repository
+whose structure is obvious, whose code is restrained, and whose hard scientific
+and systems problems are handled deeply.
 
 ## Execution Environment Safety
 
