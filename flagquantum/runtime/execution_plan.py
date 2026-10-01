@@ -12,7 +12,9 @@ from ..core.ir import Instruction
 if TYPE_CHECKING:
     from .performance_calibration import CalibratedPlanCost
 
-StateRepresentation = Literal["density_matrix", "statevector", "mps", "tensor_network"]
+StateRepresentation = Literal[
+    "density_matrix", "statevector", "mps", "tensor_network", "stabilizer"
+]
 EvolutionSemantics = Literal["exact_channel", "quantum_trajectory"]
 
 

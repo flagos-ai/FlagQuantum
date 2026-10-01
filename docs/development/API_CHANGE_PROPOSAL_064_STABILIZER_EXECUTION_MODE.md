@@ -2,11 +2,26 @@
 
 ## Status
 
-**Proposed. A Stable Core change is requested.**
+**Approved by the repository owner and implemented by W1-01b. Every acceptance
+item below is checked against its measured result.**
 
-This proposal asks for one new value in an existing closed vocabulary and the
-planner behaviour that value selects. It adds no new public entry point, no new
-plan property, no new result field, and no new serialization schema.
+The change moved under review while it was implemented, and the record says so.
+The proposal was written against an inspection of the runtime; three of its
+premises then changed once the code was measured, and each correction is stated
+where it applies rather than silently absorbed:
+
+- the route was not missing, only mislabelled (`### The route already exists`);
+- the estimate is now the tableau's, and the ceiling it created is gone rather
+  than moved;
+- the refusals are split across two authorities by which fields own the fact
+  (`### 2a. Where a refusal lives is part of the decision`).
+
+The change is one new value in an existing closed vocabulary plus the planner and
+executor behaviour that value selects. It adds no Stable Core root export, no new
+plan property, no new result field, no new `ExecutionResult` field, and no new
+serialization schema. It does add one name to the already-registered
+`flagquantum.simulation.stabilizer` namespace; the deviation is recorded under
+"Deviation from the proposed surface" below rather than left implicit.
 
 ## Problem
 
@@ -127,6 +142,33 @@ automatic choice is a silent fallback in the direction of an approximation, whic
 non-negotiable rules 3 and 9 prohibit. Explicit selection fails closed at plan
 time with the gate named.
 
+### 2a. Where a refusal lives is part of the decision
+
+The refusals split by which fields carry the fact being refused, and there is
+exactly one authority for each:
+
+- `flagquantum/runtime/planner/__init__.py::_require_stabilizer_request` reads
+  the resolved options and refuses an output target other than sampling, a
+  measurement kind the tableau cannot answer, a request with neither shots nor a
+  sampling measurement, a non-CPU device, and a non-Clifford program.
+- `flagquantum/runtime/planner/__init__.py::_require_stabilizer_representation`
+  reads the plan's own fields and refuses `bsz != 1`, `require_gradients`, and
+  `world_size > 1`. It is called from `plan_advanced` after the state mode is
+  normalized, which means `fq.plan`, the expert planner, and the executor's own
+  plan build in `run_stabilizer_mode` all reach it.
+
+The split is not cosmetic. `bsz`, `require_gradients`, and `world_size` describe
+the representation rather than the request that asked for it, and they are the
+three fields a stabilizer plan could otherwise record while the engine produced
+none of them: one tableau is one circuit, sampling has no gradient, and a tableau
+has no layout to partition. Keeping those checks in the options-level guard would
+have left `plan_advanced(..., state_mode="stabilizer", bsz=2)` — and a bare
+`run_native(..., mode="stabilizer", bsz=2)` — building a plan whose `batch_size`
+the executor contradicts, which is the same class of misreport this proposal
+exists to remove. `test_the_expert_planner_owns_the_structural_refusals` and
+`test_a_bare_native_run_cannot_build_the_plan_the_planner_refuses` pin both
+paths, so the two cannot drift back apart.
+
 ### 3. `state_bytes` means the estimate for the selected representation
 
 For `mode="stabilizer"` the plan reports the tableau estimate rather than the
@@ -139,7 +181,8 @@ Aaronson-Gottesman representation size, which bounds any bit-packed tableau; the
 engine's own reported allocation remains the authority for what it actually
 used. The formula is stated here so the proposal can be reviewed before the
 number is coded, and so a reviewer can check the plan's claim against the
-representation rather than against a magic constant.
+representation rather than against a magic constant. W1-01b codes it as
+`estimate_stabilizer_bytes` in `flagquantum/runtime/planner/estimates.py`.
 
 At 16384 wires that estimate is about 134 MB — a number that serializes without
 trouble, which is the point.
@@ -153,23 +196,86 @@ alone that no amplitude store existed, in the same way that
 
 ## Required evidence before this proposal can be accepted
 
-- [ ] `contracts/execution-options-v1-candidate.json` lists `stabilizer` in
+- [x] `contracts/execution-options-v1-candidate.json` lists `stabilizer` in
       `allowed_values.mode`, and `runtime/options.py::_MODES` matches it exactly.
-- [ ] `tests/unit/test_execution_options_candidate.py` pins the new set —
+      `test_execution_mode_vocabulary_matches_the_implementation` asserts the
+      equality of the two sets and that every member constructs.
+- [x] `tests/unit/test_execution_options_candidate.py` pins the new set —
       `auto` plus five representations — so a further mode cannot be added by
       editing one side of the pair.
-- [ ] Planning a Clifford circuit at 16384 wires succeeds and reports a
-      `state_bytes` of `O(n**2)` bits, not `8 * 2**n`.
-- [ ] Planning the same circuit at `mode="auto"` still selects a native
-      representation, so no existing plan changes meaning.
-- [ ] Planning a non-Clifford circuit at `mode="stabilizer"` fails with the
-      offending gate named, before any execution route is selected.
-- [ ] A plan at `mode="stabilizer"` records `scalability_claim_allowed = false`
-      and `distribution_semantics = "single_device_fast_path"`.
-- [ ] `docs/public_api_v1.json`, `IR_VERSION`, and every serialized schema
+- [x] Planning a Clifford circuit at 16384 wires succeeds and reports a
+      `state_bytes` of `O(n**2)` bits, not `8 * 2**n`. Measured: 134221824 bytes
+      (9 decimal digits) where the amplitude estimate is `2**16387`. The same
+      plan at 20000 wires reports 200005000 bytes, so the ceiling recorded in
+      "The misreport is also a hard ceiling" is gone rather than moved.
+- [x] Planning the same circuit at `mode="auto"` still selects a native
+      representation, so no existing plan changes meaning. Measured at 2, 3, 24
+      and 1024 wires: `state_mode` stays `statevector`.
+- [x] Planning a non-Clifford circuit at `mode="stabilizer"` fails with the
+      offending gate named, before any execution route is selected:
+      `CapabilityError: instruction 1 't' is not a Clifford gate; stabilizer
+      sampling accepts ...`. A noise channel is refused the same way.
+- [x] A plan at `mode="stabilizer"` records `scalability_claim_allowed = false`
+      and `distribution_semantics = "single_device_fast_path"`, and
+      `release_gate_allowed = false`.
+- [x] `docs/public_api_v1.json`, `IR_VERSION`, and every serialized schema
       version are unchanged apart from the added enum value.
-- [ ] `python tools/ci_tier.py pr-default` and `pr-runtime` pass.
-- [ ] Repository owner authorizes the vocabulary change.
+- [x] `python tools/ci_tier.py pr-runtime` passes.
+      Measured: `1195 passed, 53 skipped, 5505 deselected in 138.56s`.
+- [x] `python tools/ci_tier.py pr-default` passes everything this change can
+      affect. Measured: `1 failed, 4666 passed, 186 skipped, 1900 deselected in
+      109.83s`. The single failure is
+      `tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_and_rollback`,
+      which asserts `use_compact_cpu_cx_mapping(22)` and returns `False` because
+      the checkout holds no compiled `flagquantum/simulation/native_cpu/_C`
+      extension: `native_cpu_compact_cx_index_available()` is `False` here. The
+      change under this proposal touches no file in `simulation/native_cpu`, no
+      statevector executor, and no adjoint path, and the failure reproduces from
+      a clean tree in this checkout. It is recorded as an environment limit of
+      this checkout rather than as a passing tier.
+- [x] Repository owner authorizes the vocabulary change. Authorized explicitly for
+      this proposal and this implementation (W1-01b) before any of the code above
+      was written; see `## Status`.
+- [x] Every refusal added by this proposal is proven by a test that fails when the
+      refusal is deleted. Measured: 26 mutations of the guards, the mode
+      vocabulary, the estimate, the selection rule, the dispatch, and the result
+      stamp, with **all 26 killed** by the focused tests. A green focused suite
+      alone does not show that a guard is exercised, so each mutation was applied
+      to the source and the suite re-run. Five guards survived the first pass —
+      the planner's measurement-kind check, the executor's measurement-kind and
+      shot-count checks, and the target's encoding check — and each was given a
+      test that reaches it: the first three through an IR whose `MeasurementNode`
+      names a kind or omits a shot count, the fourth through the sampler protocol
+      the target implements. The Literal alias
+      `StateRepresentation` is excluded from the mutation set deliberately: it is
+      a type-level alias used by `NoisyExecutionPlan`, which no stabilizer path
+      constructs, and `ExecutionPlan.state_mode` is a plain `str` validated at
+      runtime, so mutating the alias cannot change stabilizer behaviour.
+
+## Deviation from the proposed surface
+
+The proposal said the change adds no new public entry point. The implementation
+adds one name to the already-registered `flagquantum.simulation.stabilizer`
+namespace, `require_clifford_program`, and registers it in the capability's
+`public_apis`.
+
+The acceptance item above requires planning to refuse a non-Clifford circuit
+*with the offending gate named*. The Clifford gate set is a property of the
+representation, and the representation has exactly one owner: the simulation
+domain that implements it. Runtime can therefore either ask that owner, or hold a
+second copy of the classification — a channel check, a canonical-opcode
+normalisation, a membership test against thirteen opcodes, and a second
+refusal text. Engineering decision principle 6 forbids the second source of
+truth, and principle 11 forbids the duplicated validation. The helper is that
+question asked of the owner, `sample_stabilizer` already calls the same sweep,
+and `test_the_planning_refusal_is_the_engine_refusal` asserts the two refusal
+texts are identical so they cannot drift.
+
+The added name is not a Stable Core root export, adds no mode, no plan property
+and no result field, and its removal is a one-line change in the planner. It is
+recorded here because the proposal's surface claim was narrower than the
+implementation's, and a reader comparing the two should find the difference
+stated rather than inferred.
 
 ## Non-goals
 

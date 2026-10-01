@@ -11,7 +11,9 @@ from ..errors import ValidationError
 EXECUTION_OPTIONS_SCHEMA = "flagquantum.execution_options"
 EXECUTION_OPTIONS_VERSION = "1.0"
 
-_MODES = frozenset({"auto", "statevector", "mps", "tensor_network", "density_matrix"})
+_MODES = frozenset(
+    {"auto", "statevector", "mps", "tensor_network", "density_matrix", "stabilizer"}
+)
 _TARGETS = frozenset({"auto", "state", "expectation", "samples", "amplitudes"})
 _PRECISIONS = frozenset({"complex64", "complex128"})
 

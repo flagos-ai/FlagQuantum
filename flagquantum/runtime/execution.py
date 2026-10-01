@@ -33,6 +33,7 @@ from .executors.jax import (
     run_jax_sharded_mps,
     run_jax_sharded_tensor_network,
 )
+from .executors.stabilizer import run_stabilizer_mode
 from .executors.statevector import (
     execute_torch_distributed_statevector,
     simulate_distributed_statevector_local,
@@ -875,6 +876,13 @@ def _run_standard_native_mode(
             plan_options=plan_options,
             provided_execution_plan=provided_execution_plan,
         )
+    if mode == "stabilizer":
+        return run_stabilizer_mode(
+            execution_ir,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
+        )
     return _run_tensor_network_mode(
         mode,
         circuit_or_ir,
@@ -1005,6 +1013,7 @@ def _run_native(
         "tensor_network",
         "distributed_tensor_network",
         "jax_sharded_tensor_network",
+        "stabilizer",
     }
     if mode in standard_modes:
         result, execution_plan = _run_standard_native_mode(
@@ -1030,7 +1039,7 @@ def _run_native(
         )
     else:
         raise ValueError(
-            "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'noisy_statevector', 'mps_trajectory', or 'noisy_mps'."
+            "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'noisy_statevector', 'mps_trajectory', 'noisy_mps', or 'stabilizer'."
         )
 
     if return_plan:
@@ -1135,6 +1144,20 @@ def _normalize_execution_output(
     from .result import normalize_execution_result
 
     result = normalize_execution_result(output, mode=mode, plan=execution_plan)
+    if mode == "stabilizer":
+        # The tableau is a single-device representation, so the run states that
+        # rather than leaving a reader to infer it from an absent field.
+        result = replace(
+            result,
+            runtime={
+                **dict(result.runtime),
+                "execution_path": "local_stabilizer",
+                "simulation_engine": "pauli_stabilizer_tableau",
+                "device": "cpu",
+                "distribution_semantics": "single_device_fast_path",
+                "scalability_claim_allowed": False,
+            },
+        )
     if (
         stamp_local_engine
         and mode == "statevector"

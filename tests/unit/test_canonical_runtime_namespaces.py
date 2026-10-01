@@ -31,7 +31,13 @@ def test_public_circuit_uses_canonical_implementation() -> None:
 def test_canonical_runtime_namespaces_are_importable() -> None:
     from flagquantum.runtime import audit, execution, training, training_state
     from flagquantum.runtime.distributed import protocols
-    from flagquantum.runtime.executors import jax, mps, statevector, tensor_network
+    from flagquantum.runtime.executors import (
+        jax,
+        mps,
+        stabilizer,
+        statevector,
+        tensor_network,
+    )
 
     assert audit is not None
     assert execution is not None
@@ -40,6 +46,7 @@ def test_canonical_runtime_namespaces_are_importable() -> None:
     assert protocols is not None
     assert jax is not None
     assert mps is not None
+    assert stabilizer is not None
     assert statevector is not None
     assert tensor_network is not None
 

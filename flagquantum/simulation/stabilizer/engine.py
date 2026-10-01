@@ -176,6 +176,26 @@ def _sampling_request(
     return ir, request
 
 
+def require_clifford_program(program: Any) -> CircuitIR:
+    """Return the program's IR, refusing anything this representation cannot hold.
+
+    The Clifford gate set is a property of the representation, so the module that
+    owns the representation is the only place that decides membership. Runtime
+    calls this while planning, before it selects a route, so a circuit this engine
+    cannot represent is reported by the stage that knows it instead of after a
+    plan has been published.
+
+    Raises:
+        CapabilityError: An instruction is a noise channel or is not a Clifford
+            gate. The message names the offending instruction and gate.
+        ValidationError: The program is not a valid circuit IR.
+    """
+
+    ir = ensure_circuit_ir(program)
+    _clifford_instructions(ir)
+    return ir
+
+
 def _clifford_instructions(ir: CircuitIR) -> tuple[tuple[str, tuple[int, ...]], ...]:
     """Return engine gate names and wires, or refuse the first gate outside the set."""
 

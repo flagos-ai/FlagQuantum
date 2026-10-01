@@ -665,6 +665,7 @@ def _validate_decision(decision: Mapping[str, object]) -> None:
         "mps",
         "tensor_network",
         "density_matrix",
+        "stabilizer",
     }:
         raise ExecutionPlanContractError(
             "identity_mismatch", f"invalid planned mode {decision['mode']!r}"
