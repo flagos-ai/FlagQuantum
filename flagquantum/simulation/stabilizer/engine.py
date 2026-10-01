@@ -90,8 +90,8 @@ _GATE_NAMES: dict[str, str] = {
     "swap": "SWAP",
 }
 
+# The opcodes this engine executes, as canonical FlagQuantum gate names.
 CLIFFORD_GATE_NAMES = frozenset(_GATE_NAMES)
-"""The opcodes this engine executes, as canonical FlagQuantum gate names."""
 
 _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 
