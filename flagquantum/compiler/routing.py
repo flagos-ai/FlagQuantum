@@ -16,6 +16,21 @@ from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 # apart but still reachable; this value is reserved for genuine disconnection.
 UNREACHABLE_DISTANCE = -1
 
+# The routing strategies a caller may request. This is the authoritative
+# vocabulary: the `program_compilation` limitations in `capability-maturity.toml`
+# are the user-facing statement of the same boundary, and
+# `tests/team/compiler/test_routing_strategy_documentation.py` fails when the two
+# disagree, so a strategy cannot be added here alone.
+ROUTING_STRATEGIES = (
+    "restore_after_each_gate",
+    "persistent_layout",
+    "sabre",
+    "sabre_layout",
+)
+
+# The two strategies that plan SWAPs from a search rather than estimating them.
+SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
+
 
 def _breadth_first_distances(
     adjacency: tuple[tuple[int, ...], ...],
@@ -882,15 +897,10 @@ def route_to_topology(
 ) -> CircuitIR:
     """Insert SWAP gates so two-qubit operations respect hardware topology."""
 
-    if strategy not in {
-        "restore_after_each_gate",
-        "persistent_layout",
-        "sabre",
-        "sabre_layout",
-    }:
+    if strategy not in ROUTING_STRATEGIES:
         raise ValueError(
-            "routing strategy must be 'restore_after_each_gate', "
-            "'persistent_layout', 'sabre', or 'sabre_layout'"
+            "routing strategy must be one of "
+            + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -907,7 +917,7 @@ def route_to_topology(
             coupling,
             path_cache_before=path_cache_before,
         )
-    if strategy in {"sabre", "sabre_layout"}:
+    if strategy in SABRE_ROUTING_STRATEGIES:
         return _route_sabre(
             ir,
             coupling,
