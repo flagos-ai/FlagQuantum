@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +22,15 @@ from benchmarks.mps_observable_adjoint_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _REPOSITORY_ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "mps_observable_adjoint_dispatch_a800.json"
+)
 
 
 def _run(host: str, lane: str) -> dict[str, object]:
@@ -115,5 +126,11 @@ def test_merge_requires_full_host_and_compiler_cross_product() -> None:
 
 def test_aggregate_round_trip_is_canonical() -> None:
     payload = merge_runs(_matrix(), required_hosts=("jp-a800-171", "jp-a800-172"))
+
+    validate_evidence(payload)
+
+
+def test_checked_in_a800_evidence_is_canonical() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)

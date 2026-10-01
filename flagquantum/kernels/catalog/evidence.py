@@ -189,6 +189,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_route_requires_hermitian_contract",
             "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_reference_path_reports_fallback",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-NUM-001-A",
