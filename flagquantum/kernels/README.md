@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The initial catalog describes the code that already exists. It contains 22
-semantics and 24 Triton implementation entry points; no planned kernel appears
+The initial catalog describes the code that already exists. It contains 23
+semantics and 25 Triton implementation entry points; no planned kernel appears
 as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -87,6 +87,7 @@ as an empty machine record.
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
+| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -169,6 +170,14 @@ speedup over the same PyTorch autograd semantic with stock Triton 3.7.1 and a
 hardware evidence, not a release gate or scalability claim. Reproduce or
 validate it with
 [`benchmarks/mps_observable_adjoint_dispatch.py`](../../benchmarks/mps_observable_adjoint_dispatch.py).
+
+MPS-007 fuses the complex magnitude, left/right bond reduction, and
+normalization needed to obtain the two physical-index probabilities at one MPS
+site. Its implementation supports contiguous CUDA `complex64` tensors without
+gradients and at most `2**12` left-by-right bond elements; the wrapper retains
+the exact PyTorch reduction for other inputs. The implementation is cataloged
+and compiler-compatible, but runtime sampling integration remains a separate
+reviewable change, so this PR does not alter the public sampling path.
 
 ## Capability matching
 
@@ -270,7 +279,7 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 22 semantics and 24 implementations are implemented and
+The current 23 semantics and 25 implementations are implemented and
 experimental. The rest of the 100/800 portfolio is planned or candidate work,
 not shipped capability.
 
