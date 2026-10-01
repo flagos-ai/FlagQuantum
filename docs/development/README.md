@@ -7,6 +7,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 - [CPU statevector performance characteristics](CPU_STATEVECTOR_PERFORMANCE_CHARACTERISTICS.md)
 - [Code organization](CODE_ORGANIZATION.md)
 - [Repository governance](REPOSITORY_GOVERNANCE.md)
+- [Integration workflow](INTEGRATION_WORKFLOW.md)
 - [Multi-team linked-worktree development](MULTI_TEAM_DEVELOPMENT.md)
 - [Multi-team handoff template](TEAM_HANDOFF_TEMPLATE.md)
 - [Public API protection](PUBLIC_API_PROTECTION.md)
