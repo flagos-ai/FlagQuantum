@@ -13,12 +13,6 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: check-ast
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.12.7"
-    hooks:
-      - id: ruff
-        files: ^(flagquantum|tests|tools)/.*\.py$
-        args: ["--fix"]
   - repo: local
     hooks:
       - id: english-repository-content
@@ -70,6 +64,20 @@ repos:
         entry: python -m tools.correctness_certification --check
         language: system
         pass_filenames: false
+      - id: ruff
+        name: ruff production and test surface
+        # The ruff this environment already has, not a second copy of it pinned
+        # here. CI's quality job installs `.[dev]` and then runs whatever ruff
+        # that resolved, so a `ruff-pre-commit` revision was an unbound second
+        # version of the same tool: the retired `v0.12.7` pin reported RUF012 on
+        # `flagquantum/compute/pytorch.py`, which the installed ruff does not,
+        # and it blocked every push through `tools/pre_push.py` from the day
+        # that file changed. `black-production-surface` below delegates the same
+        # way for the same reason.
+        entry: ruff check --force-exclude
+        language: system
+        files: ^(flagquantum|tests|tools)/.*\.py$
+        args: ["--fix"]
       - id: black-production-surface
         name: black production and test surface
         entry: black --check

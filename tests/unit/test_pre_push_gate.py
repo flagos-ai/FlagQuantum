@@ -5,10 +5,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools.pre_push import Check, checks, environment_executable, run_checks
 
 pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
@@ -225,3 +228,39 @@ def test_pre_push_gate_dry_run_does_not_spawn_processes(
         )
         == 0
     )
+
+
+def test_pre_push_lint_is_the_environments_ruff_and_not_a_pinned_second_copy() -> None:
+    """The pre-push gate must not be red on a checkout that CI accepts.
+
+    `run_checks` starts with `pre-commit run --all-files`, which installs
+    whatever revision each remote hook names. A `ruff-pre-commit` revision is a
+    second ruff that nothing keeps in step with the one CI's quality job
+    installs from `.[dev]`, and the two disagree about which findings exist as
+    soon as either moves. The retired `v0.12.7` pin reported RUF012 on
+    `flagquantum/compute/pytorch.py`, which the installed ruff does not report,
+    so the gate blocked every push from the day that file landed while
+    `main` stayed green. Lint therefore runs the installed tool, exactly as the
+    black hook beside it does.
+    """
+
+    config = yaml.safe_load((ROOT / ".pre-commit-config.yaml").read_text("utf-8"))
+    assert "https://github.com/astral-sh/ruff-pre-commit" not in {
+        repo["repo"] for repo in config["repos"]
+    }
+
+    hooks = {
+        hook["id"]: hook
+        for repo in config["repos"]
+        if repo["repo"] == "local"
+        for hook in repo["hooks"]
+    }
+    ruff = hooks["ruff"]
+    assert ruff["language"] == "system"
+    assert ruff["entry"] == "ruff check --force-exclude"
+    assert ruff["args"] == ["--fix"]
+    # The same three trees the CI quality job lints. `--force-exclude` keeps
+    # that true if a ruff exclusion is ever configured: without it, an explicit
+    # path argument overrides the exclusion and the hook would lint more than
+    # CI does.
+    assert ruff["files"] == r"^(flagquantum|tests|tools)/.*\.py$"
