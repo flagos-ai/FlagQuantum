@@ -177,6 +177,7 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-006-A",
         "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cuda_matches_autograd",
+        "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_runtime_uses_catalog",
         gradient_tests=(
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cuda_matches_autograd",
         ),
@@ -184,6 +185,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cpu_fallback_matches_autograd",
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_outside_window_uses_fallback",
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_noncontiguous_uses_fallback",
+            "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_route_enforces_evidenced_window",
+            "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_route_requires_hermitian_contract",
+            "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_reference_path_reports_fallback",
         ),
     ),
     _evidence(

@@ -173,6 +173,7 @@ def mps_expectation_and_adjoints(
                 right_envs[wire],
                 operator,
                 weights,
+                hermitian=True,
             )
     return value, adjoints
 

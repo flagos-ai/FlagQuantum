@@ -28,6 +28,8 @@ class SiteKernelStats:
     transfer_calls: int = 0
     triton_environment_transfer_calls: int = 0
     triton_environment_channels_calls: int = 0
+    triton_observable_adjoint_calls: int = 0
+    observable_adjoint_fallback_calls: int = 0
     compiled_calls: int = 0
     compile_seconds: float = 0.0
     dynamo_graphs: int = 0
@@ -145,10 +147,27 @@ def _log_event(
         del _EVENTS[: len(_EVENTS) - _MAX_EVENTS]
 
 
-def _log_triton_catalog_route(*, kind: str) -> None:
+def _log_triton_catalog_route(
+    *,
+    kind: str,
+    semantic_id: str | None = None,
+    implementation_id: str | None = None,
+) -> None:
     distribution, version, integration_path, identity_status = (
         triton_compiler_provenance()
     )
+    if semantic_id is None and implementation_id is None:
+        _log_event(
+            "catalog_route",
+            kind=kind,
+            provider="triton",
+            compiler_distribution=distribution,
+            compiler_version=version,
+            compiler_identity_source="python_package_metadata",
+            compiler_identity_status=identity_status,
+            integration_path=integration_path,
+        )
+        return
     _log_event(
         "catalog_route",
         kind=kind,
@@ -158,7 +177,26 @@ def _log_triton_catalog_route(*, kind: str) -> None:
         compiler_identity_source="python_package_metadata",
         compiler_identity_status=identity_status,
         integration_path=integration_path,
+        semantic_id=semantic_id,
+        implementation_id=implementation_id,
     )
+
+
+def _record_mps_observable_adjoint_route() -> None:
+    """Record one catalog-authorized MPS-006 execution."""
+
+    _STATS.triton_observable_adjoint_calls += 1
+    _log_triton_catalog_route(
+        kind="observable_adjoint",
+        semantic_id="mps.gradient.hermitian_observable_adjoint.local",
+        implementation_id="FQKI-TRITON-MPS-006-A",
+    )
+
+
+def _record_mps_observable_adjoint_fallback() -> None:
+    """Record one observable-adjoint request retained on the reference path."""
+
+    _STATS.observable_adjoint_fallback_calls += 1
 
 
 def _tensor_bytes(tensor: torch.Tensor) -> int:
