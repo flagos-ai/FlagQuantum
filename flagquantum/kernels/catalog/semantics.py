@@ -167,6 +167,14 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "many_body_simulation",
     ),
     _semantic(
+        "FQK-MPS-005",
+        "mps.environment.transfer_channels",
+        "mps",
+        "Transfer several MPS observable environments through one site.",
+        "observable_estimation",
+        "many_body_simulation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",
