@@ -29,6 +29,7 @@ from ...runtime.backend_registry import (
 )
 from .sdk import (
     CapabilityRequest,
+    CapabilityResponse,
     ExecutionBackendExtension,
     Extension,
     ExtensionConfig,
@@ -116,7 +117,7 @@ def _build(extension: Extension, declared: Mapping[str, Any]) -> BackendCapabili
         ) from exc
 
 
-def _negotiate(extension: Extension, declared: Mapping[str, Any]):
+def _negotiate(extension: Extension, declared: Mapping[str, Any]) -> CapabilityResponse:
     devices = tuple(declared.get("devices", ()))
     dtypes = tuple(declared.get("dtypes", ()))
     request = CapabilityRequest(
