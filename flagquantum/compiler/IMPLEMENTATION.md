@@ -12,6 +12,13 @@ for the whole program, and `routing.py` materializes that plan into Core
 the SABRE layout pass of routing the reversed program, and therefore restores the
 output layout with an explicit SWAP sequence instead of replaying the forward
 SWAPs in reverse.
+The planner swaps only between wires the program owns, so it plans on the
+coupling subgraph those wires induce rather than on the whole device. A device
+wider than the program is therefore supported exactly as far as the program's own
+wires connect it, and a program that the device connects only through a padding
+wire is refused rather than costed against a route the plan cannot emit. Routing
+through a physical ancilla remains the unsupported case it is for the
+shortest-path strategies.
 `layout.py` owns the logical-to-physical `Layout` value and the two
 transformations over it: applying a layout to a program by relabelling its wires,
 and removing the trailing restore SWAPs a routed program ends with. A routing

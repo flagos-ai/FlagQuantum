@@ -241,6 +241,56 @@ def test_sabre_layout_fails_closed_on_a_disconnected_pair() -> None:
         )
 
 
+def test_sabre_layout_fails_closed_when_only_wires_outside_the_program_connect_it() -> (
+    None
+):
+    # The program owns {0, 1}, and the device reaches 1 from 0 only through 2.
+    device = CouplingMap(4, ((0, 2), (1, 2), (1, 3)))
+    program = CircuitIR(2, (Instruction("cx", (0, 1)),))
+
+    with pytest.raises(ValueError, match="ancilla wires"):
+        route_to_topology(program, device, strategy="sabre_layout")
+
+
+def test_sabre_layout_routes_a_program_narrower_than_the_device() -> None:
+    device = CouplingMap.grid(4, 4)
+    program = _random_two_wire_program(seed=3, n_wires=6, gate_count=30)
+
+    routed = route_to_topology(program, device, strategy="sabre_layout")
+
+    assert routed.n_wires == program.n_wires
+    assert all(
+        len(instruction.wires) != 2
+        or instruction.metadata.get("is_channel")
+        or device.has_edge(*instruction.wires)
+        for instruction in routed
+    )
+    assert torch.allclose(
+        fq.Circuit.from_ir(routed).state(),
+        fq.Circuit.from_ir(program).state(),
+        atol=1e-6,
+    )
+
+
+def test_sabre_layout_on_a_wider_device_matches_its_induced_subgraph() -> None:
+    device = CouplingMap.grid(4, 4)
+    program = _random_two_wire_program(seed=3, n_wires=6, gate_count=30)
+    induced = CouplingMap(
+        program.n_wires,
+        tuple(edge for edge in device.edges if edge[1] < program.n_wires),
+    )
+
+    wider = route_to_topology(program, device, strategy="sabre_layout")
+    subgraph = route_to_topology(program, induced, strategy="sabre_layout")
+
+    assert wider.metadata["routing"]["initial_logical_to_physical"] == (
+        subgraph.metadata["routing"]["initial_logical_to_physical"]
+    )
+    assert tuple((item.name, item.wires) for item in wider) == tuple(
+        (item.name, item.wires) for item in subgraph
+    )
+
+
 def test_sabre_layout_fails_closed_on_an_invalid_initial_layout() -> None:
     program = _random_two_wire_program(seed=2, n_wires=4, gate_count=4)
 

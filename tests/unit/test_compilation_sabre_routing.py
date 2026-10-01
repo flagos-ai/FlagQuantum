@@ -271,6 +271,57 @@ def test_sabre_fails_closed_when_the_program_needs_a_disconnected_pair() -> None
         )
 
 
+def test_sabre_fails_closed_when_only_wires_outside_the_program_connect_it() -> None:
+    # The program owns {0, 1}, and the device reaches 1 from 0 only through 2.
+    device = CouplingMap(4, ((0, 2), (1, 2), (1, 3)))
+    program = CircuitIR(2, (Instruction("cx", (0, 1)),))
+
+    with pytest.raises(ValueError, match="ancilla wires"):
+        route_to_topology(program, device, strategy="sabre")
+
+
+def test_sabre_routes_a_program_narrower_than_the_device() -> None:
+    device = CouplingMap.grid(4, 4)
+    program = _random_two_wire_program(seed=3, n_wires=6, gate_count=30)
+
+    routed = route_to_topology(program, device, strategy="sabre")
+
+    assert routed.n_wires == program.n_wires
+    assert all(
+        len(instruction.wires) != 2
+        or instruction.metadata.get("is_channel")
+        or device.has_edge(*instruction.wires)
+        for instruction in routed
+    )
+    assert torch.allclose(
+        fq.Circuit.from_ir(routed).state(),
+        fq.Circuit.from_ir(program).state(),
+        atol=1e-6,
+    )
+
+
+def test_sabre_on_a_wider_device_routes_like_its_induced_subgraph() -> None:
+    # A padding wire of a wider device is not an ancilla the planner may swap on,
+    # so the plan must be a function of the subgraph the program's wires induce.
+    device = CouplingMap.grid(4, 4)
+    program = _random_two_wire_program(seed=3, n_wires=6, gate_count=30)
+    induced = CouplingMap(
+        program.n_wires,
+        tuple(edge for edge in device.edges if edge[1] < program.n_wires),
+    )
+
+    wider = route_to_topology(program, device, strategy="sabre")
+    subgraph = route_to_topology(program, induced, strategy="sabre")
+
+    assert tuple((item.name, item.wires) for item in wider) == tuple(
+        (item.name, item.wires) for item in subgraph
+    )
+    assert (
+        wider.metadata["routing"]["inserted_swap_count"]
+        == subgraph.metadata["routing"]["inserted_swap_count"]
+    )
+
+
 def test_sabre_uses_a_bounded_number_of_swaps_on_a_larger_device() -> None:
     coupling = CouplingMap.grid(4, 4)
     program = _random_two_wire_program(seed=7, n_wires=16, gate_count=60)
