@@ -492,6 +492,7 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
+evidence = ["flagquantum/noise/channels.py", "tests/unit/test_kraus_channel_surface.py"]
 reason = "A general Kraus constructor exists and is validated. `KrausChannel` accepts an arbitrary operator list, refuses a set that is not trace-preserving (completeness compared at `atol = rtol = 1e-6`) and a dimension that is not a positive power of two, serializes through the `flagquantum.kraus_channel.v1` schema, and reaches simulation through `NoiseModel.add` and `Circuit.noisy_density_matrix`. What is absent is the operator type the CUDA-Q surface builds a channel from: no matrix-valued operator participates in operator algebra, which is the gap `matrix_and_custom_operator` already records."
 
 [[domains.capabilities]]
