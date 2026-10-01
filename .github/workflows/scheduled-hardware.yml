@@ -191,6 +191,13 @@ jobs:
       # revision they are evidence about. `--run` copies into it with
       # `--delete`, so the name has to be one this lane owns.
       STAGING: /nfs/fq-multinode-${{ github.run_id }}
+      # The route both ranks are configured to use, named rather than left to
+      # NCCL: a lane that let the transport be chosen could record a socket run
+      # and leave the fabric untested while looking like a pass. The debug log
+      # the launch already keeps is what the probe reads back, and a log that
+      # does not confirm this route fails the probe rather than passing quietly.
+      NETWORK_INTERFACE: ens22f0
+      NETWORK_TRANSPORT: rdma
     steps:
       - uses: actions/checkout@v4
         with:
@@ -203,6 +210,9 @@ jobs:
           mkdir -p hardware-run
           python tools/multinode_launch_plan.py --run \
             --staging "$STAGING" \
+            --interface "$NETWORK_INTERFACE" \
+            --transport "$NETWORK_TRANSPORT" \
+            --measure \
             --checkpoint-directory "$STAGING-checkpoints" \
             --source . \
             --source-revision "${{ github.sha }}" \
@@ -212,6 +222,9 @@ jobs:
           python tools/multinode_launch_plan.py --run \
             --probe mps \
             --staging "$STAGING" \
+            --interface "$NETWORK_INTERFACE" \
+            --transport "$NETWORK_TRANSPORT" \
+            --measure \
             --checkpoint-directory "$STAGING-checkpoints" \
             --source . \
             --source-revision "${{ github.sha }}" \
@@ -221,6 +234,9 @@ jobs:
           python tools/multinode_launch_plan.py --run \
             --probe tn \
             --staging "$STAGING" \
+            --interface "$NETWORK_INTERFACE" \
+            --transport "$NETWORK_TRANSPORT" \
+            --measure \
             --checkpoint-directory "$STAGING-checkpoints" \
             --source . \
             --source-revision "${{ github.sha }}" \

@@ -384,10 +384,20 @@ lane removes them and only a directory with that name is treated as its own.
 ```bash
 python tools/ci_tier.py multinode-scheduled
 # what that tier runs, on the launch host:
-python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run
-python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps
-python tools/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn
+python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run --interface ens22f0 --transport rdma --measure
+python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps --interface ens22f0 --transport rdma --measure
+python tools/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn --interface ens22f0 --transport rdma --measure
 ```
+
+Each command names its route and asks for the measured leg. `--transport rdma`
+configures both ranks for the fabric and disables the socket transport rather
+than leaving the choice to NCCL: a lane that let the transport be chosen could
+record a socket run and leave the fabric untested while still reporting a pass.
+The launch keeps the NCCL debug log either way, and the probe reads the route
+back from it, so a log that does not confirm the configured route fails the
+probe instead of being recorded as the route the plan asked for. `--measure`
+adds a warmup and repeated samples between device synchronizations, so the
+artifact carries a measured duration rather than one unsynchronized reading.
 
 The tier passes no `--source-revision`, because the launch host stages from a
 git checkout and the probe reads the revision from it. A host that stages from a

@@ -486,9 +486,16 @@ the amplitude-sharded statevector workload:
 
 Every numerical metric in it is at round-off, both ranks own half the
 amplitudes, and the communication it reports is inter-node with none
-intra-node. It carries six blockers, including `rdma_not_tested` and
-`production_performance_not_measured`, and reports `scalability_claim_allowed`
-and `release_gate_allowed` false.
+intra-node. Its route was read from the NCCL debug log as RoCE rather than the
+socket fallback, on the interface the plan was given, and it carries five
+synchronized forward samples taken after two warmups. It carries four blockers
+-- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
+`validation_only_tiny_full_state_gather` and
+`host_staging_in_measured_region` -- and reports `scalability_claim_allowed`
+and `release_gate_allowed` false. The last of those four is a finding rather
+than a gap: the staging audit ran and found host transfers inside the region it
+profiled, so part of each measured sample is host staging rather than device
+work.
 
 `artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json` covers the
 site-sharded MPS workload. Six wires at two ranks gives three owned sites per
@@ -513,9 +520,15 @@ in `numerical_metrics` are the workload's totals -- four messages and 192 bytes
 -- while each rank record carries the 96 bytes that rank took part in; the two
 are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
-exchanging anything for it. The artifact is checked against that arithmetic. It
-carries six blockers, including `inter_node_cut_width_not_swept` and
-`rdma_not_tested`, and reports both claim flags false. Unlike the statevector
+exchanging anything for it. The artifact is checked against that arithmetic. Its
+route was read from the NCCL debug log as RoCE, and it carries five
+synchronized forward samples taken after two warmups. It carries five blockers,
+including `inter_node_cut_width_not_swept` and
+`host_staging_in_measured_region`, and reports both claim flags false. The cut
+stays unswept because the site plan derives ownership from the world size
+alone, so a two-host pair holds exactly one boundary and this lane cannot move
+it; the staging blocker is the audit's finding that host transfers sit inside
+the measured region. Unlike the statevector
 artifact it belongs to a capability that also claims single-host and multi-GPU
 support, so it is the multi-node leg of a broader entry rather than an entry of
 its own.
@@ -538,9 +551,14 @@ slicer:
 
 Its numerical metrics are at round-off, every byte of its reduction is
 attributed to the inter-node tier, and both ranks report accelerator runtime
-evidence rather than a CPU collective. It carries six blockers, including
-`inter_node_cut_width_not_swept`, `rdma_not_tested` and
-`slice_count_fixed_at_world_size`, and reports both claim flags false.
+evidence rather than a CPU collective. Its route was read from the NCCL debug
+log as RoCE, and it carries five synchronized amplitude samples taken after two
+warmups. The cut width was swept across both labels of the declared cut, which
+retired `inter_node_cut_width_not_swept` and
+`slice_count_fixed_at_world_size`. It carries four blockers --
+`toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
+`validation_only_tiny_full_state_gather` and
+`host_staging_in_measured_region` -- and reports both claim flags false.
 
 The cut is declared because the automatic slicer selects by peak memory, and on
 this circuit the cheapest cut is a label carried only by state-copy nodes: a
@@ -549,6 +567,22 @@ carries a zero on such a label, so slicing it yields ranks whose partial is
 exactly zero and lets a run report sharded execution while one rank does the
 arithmetic. The slicer now excludes those labels and this workload passes its
 cut explicitly.
+
+### Repeatability of the measured leg
+
+The three artifacts were produced by two independent invocations of the lane on
+the same pair: the recording run and a `multinode-scheduled` tier run, both over
+RoCE with the same `--measure` flag and the same revision of the probes. Their
+medians agree to within a few percent per workload -- 3.21 against 3.32 ms for
+the statevector forward, 22.0 against 20.4 ms for the MPS forward, and 4.18
+against 4.16 ms for the sliced amplitudes -- while the slowest of the five
+samples is in every case the first, which is why the probe warms up twice before
+it starts recording. The medians are therefore a property of the workload and
+the pair rather than of one scheduling accident, and the spread is reported
+alongside them so a reader can see how wide it is.
+
+This is an observation about the lane, not a recorded claim: the tier run's
+reports stay on the host, and the artifacts named above are the evidence.
 
 ## Evidence boundary
 

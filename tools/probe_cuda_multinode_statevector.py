@@ -23,6 +23,7 @@ import os
 import platform
 import shutil
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,23 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from flagquantum.runtime.audit.claim_boundary import (
+    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
+    BLOCKER_TWO_NODE_PAIR_ONLY,
+    BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+    ClaimBoundaryError,
+    claim_blockers,
+    configured_infiniband_state,
+    gather_claim_blockers,
+    measured_performance,
+    measurement_claim_blockers,
+    observed_network_route,
+    staging_claim_blockers,
+    transport_claim_blockers,
+)
+from flagquantum.runtime.distributed.transport_observability import (
+    classify_explicit_host_transfer,
+)
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
@@ -70,6 +88,15 @@ RESUMED_STEPS = 4
 #: The parameters the trainable circuit binds. Fixed so that the reference and
 #: the distributed run are the same function of the same numbers.
 TRAINABLE_VALUES = (0.23, -0.37)
+
+#: The measurement leg `--measure` asks for. The training legs already report a
+#: duration per phase, but each is one unsynchronized reading of work thousands
+#: of times shorter than the launch that precedes it. These samples are taken
+#: between device synchronizations after a warmup every rank runs, and all of
+#: them are kept.
+MEASUREMENT = "sharded_statevector_forward"
+MEASUREMENT_WARMUP_ITERATIONS = 2
+MEASUREMENT_ITERATIONS = 5
 
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:
@@ -203,38 +230,162 @@ def _validation_state(result: Any) -> torch.Tensor:
 def _network_observation(
     path: Path | None, *, local_world_size: int = 1
 ) -> dict[str, Any]:
-    configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
-    ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
-    observation: dict[str, Any] = {
-        "backend": "nccl",
-        "configured_interface": configured_interface,
-        "ib_disabled": ib_disabled,
-        "route": "socket" if ib_disabled else "nccl_auto",
-        "evidence_level": "configured_only",
-        # The launcher gives one `torchrun` per node one debug log, so above one
-        # rank per node the file holds every local rank's view rather than one
-        # rank's. Recorded rather than assumed: the route check reads the same
-        # either way, but how much of the traffic it covers does not.
-        "debug_log_scope": "node" if local_world_size > 1 else "rank",
-    }
-    if path is None:
-        return observation
-    content = path.read_text(encoding="utf-8", errors="replace")
-    socket_observed = "NET/Socket" in content
-    interface_observed = bool(configured_interface and configured_interface in content)
-    observation.update(
-        {
-            "debug_log_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
-            "socket_transport_observed": socket_observed,
-            "configured_interface_observed": interface_observed,
-            "evidence_level": "observed_debug_log",
-        }
+    """The route this run took, read from the debug log rather than the plan.
+
+    The log is read by the artifact's rank only, after the process group is
+    gone, so this is a report about the run rather than part of it.
+    """
+
+    content = (
+        None if path is None else path.read_text(encoding="utf-8", errors="replace")
     )
-    if ib_disabled and not (socket_observed and interface_observed):
-        raise RuntimeError(
-            "NCCL debug log does not confirm the configured socket route"
+    try:
+        return observed_network_route(
+            content,
+            configured_interface=os.environ.get("NCCL_SOCKET_IFNAME"),
+            infiniband_disabled=configured_infiniband_state(os.environ),
+            debug_log_scope="node" if local_world_size > 1 else "rank",
         )
+    except ClaimBoundaryError as error:
+        # The probe's failures are `RuntimeError`s, and this is one: the log the
+        # lane was told to expect is not the log the run produced.
+        raise RuntimeError(
+            f"NCCL debug log does not confirm the configured route: {error}"
+        ) from error
+
+
+def _performance_observations(
+    *, device: torch.device, local_world_size: int
+) -> dict[str, Any]:
+    """Time the sharded forward between synchronizations, with warmup and repeats.
+
+    Every rank runs the same loop, because the loop contains collectives. The
+    warmup iterations let the costs that belong to the first call -- a kernel's
+    first launch, the allocator's first growth, the transport's first handshake
+    -- land outside the samples, and all the samples are kept so that the spread
+    is visible rather than summarized away.
+    """
+
+    circuit = _forward_circuit()
+
+    def once() -> float:
+        _synchronize(device)
+        started = time.perf_counter()
+        result = execute_torch_distributed_statevector(
+            circuit,
+            device=device,
+            dtype=COMPLEX_DTYPE,
+            local_world_size=local_world_size,
+        )
+        _synchronize(device)
+        if result.inter_node_communication_count < 1:
+            raise RuntimeError(
+                "the measured workload did not exercise inter-node communication"
+            )
+        return time.perf_counter() - started
+
+    for _ in range(MEASUREMENT_WARMUP_ITERATIONS):
+        once()
+    observation = measured_performance(
+        [once() for _ in range(MEASUREMENT_ITERATIONS)],
+        warmup_iterations=MEASUREMENT_WARMUP_ITERATIONS,
+        measurement=MEASUREMENT,
+    )
+    observation["n_wires"] = N_WIRES
     return observation
+
+
+def _profiler_activities(device: torch.device) -> list[torch.profiler.ProfilerActivity]:
+    """The two scopes the staging question needs, CPU calls and device copies.
+
+    A CPU-only profile would show the launch of a transfer without showing
+    whether the device performed one, and a device-only profile would omit the
+    host side of a staging copy. Both are recorded, so a reader can see the
+    audit was scoped to the interchange rather than to one of its halves.
+    """
+
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    if device.type == "cuda":
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+    return activities
+
+
+def _profiler_unavailable_reason(device: torch.device) -> str | None:
+    """Start and stop an empty profile, to find out before the workload runs.
+
+    The answer has to be known before the profiled run rather than discovered
+    from its failure: a rank that skipped the run while its peer entered it
+    would be waiting in a different collective, which reports as a hang rather
+    than as the missing profiler that caused it.
+    """
+
+    try:
+        with torch.profiler.profile(activities=_profiler_activities(device)):
+            pass
+    except Exception as error:
+        return f"{type(error).__name__}: {error}"
+    return None
+
+
+def _host_staging_observation(
+    *, device: torch.device, local_world_size: int
+) -> dict[str, Any]:
+    """Profile the sharded forward for explicit host transfers.
+
+    What a profiler can show here is bounded, and the record keeps the bound. An
+    explicit host-to-device or device-to-host copy inside the profiled region is
+    a fact about this interchange; the absence of one is not proof that the
+    fabric carried it device-direct, and a profiler that could not be started
+    has shown nothing at all. Both leave the blocker in place, so a missing
+    profiler is recorded rather than raised -- fail-closed for the claim, and a
+    run that cannot audit its staging still produces an artifact that says so.
+
+    Availability is agreed on collectively. A rank that recorded "not audited"
+    while its peer entered the profiled run would be in a different collective
+    from it, and the lane would report a hang instead of the reason.
+    """
+
+    reason = _profiler_unavailable_reason(device)
+    agreed = torch.tensor([0 if reason else 1], device=device)
+    dist.all_reduce(agreed, op=dist.ReduceOp.MIN)
+    if int(agreed.item()) != 1:
+        return {
+            "profiled": False,
+            "profiler_error": reason or "the profiler is unavailable on another rank",
+        }
+
+    circuit = _forward_circuit()
+    with torch.profiler.profile(activities=_profiler_activities(device)) as profile:
+        execute_torch_distributed_statevector(
+            circuit,
+            device=device,
+            dtype=COMPLEX_DTYPE,
+            local_world_size=local_world_size,
+        )
+        _synchronize(device)
+    events = list(profile.key_averages())
+    transfers = sorted(
+        (
+            {
+                "name": event.key,
+                "count": int(event.count),
+                "direction": direction,
+            }
+            for event in events
+            if (direction := classify_explicit_host_transfer(event.key)) is not None
+        ),
+        key=lambda transfer: (transfer["direction"], transfer["name"]),
+    )
+    return {
+        "profiled": True,
+        "profiled_activities": [
+            str(activity) for activity in _profiler_activities(device)
+        ],
+        "profiled_workload": MEASUREMENT,
+        "profiler_event_count": len(events),
+        "host_transfer_observed": bool(transfers),
+        "host_transfer_events": transfers,
+    }
 
 
 def _prepare_checkpoint_directory(
@@ -368,15 +519,57 @@ def _training_observations(
     return observations, metrics, first_summary
 
 
+def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
+    """Every blocker this run's own observations can retract.
+
+    The declared part of the boundary -- the pair of hosts and the fixed circuit
+    -- is not decided here, because nothing inside the run can retract it. What
+    is decided here is only what the run observed.
+
+    Called once while the artifact is assembled and again after the route has
+    been read, because that observation arrives after the process group is gone
+    and the group is what writes the log it is read from. Deriving the list in
+    one place and applying it twice keeps the two passes from disagreeing.
+    """
+
+    return claim_blockers(
+        [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
+        gather_claim_blockers(
+            production_materialization=bool(
+                observations["production_full_state_materialization"]
+            ),
+            blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+        ),
+        transport_claim_blockers(observations),
+        measurement_claim_blockers(observations),
+        staging_claim_blockers(observations),
+    )
+
+
 def _artifact(
     *,
     rank_records: list[dict[str, Any]],
     metrics: dict[str, float],
     network: dict[str, Any],
     training: dict[str, Any],
+    performance: dict[str, Any] | None,
+    host_staging: dict[str, Any] | None,
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
+    # One dict, put into the evidence and then read back by the derivation, so
+    # the blockers cannot be decided from a different set of observations than
+    # the artifact publishes.
+    observations: dict[str, Any] = {
+        "numerical_metrics": metrics,
+        "training": training,
+        "rank_records": rank_records,
+        "network": network,
+        "performance": performance,
+        "host_staging": host_staging,
+        "validation_full_state_materialization": True,
+        "production_full_state_materialization": False,
+    }
     evidence = {
         "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
         "status": "passed",
@@ -396,22 +589,15 @@ def _artifact(
             "distribution_semantics": "sharded_across_ranks",
             "execution": "forward_backward_optimizer_and_checkpoint_resume",
         },
-        "observations": {
-            "numerical_metrics": metrics,
-            "training": training,
-            "rank_records": rank_records,
-            "network": network,
-            "validation_full_state_materialization": True,
-            "production_full_state_materialization": False,
-        },
-        "claim_blockers": [
-            "validation_only_tiny_full_state_gather",
-            "hidden_host_staging_not_audited",
-            "rdma_not_tested",
-            "production_performance_not_measured",
-            "two_node_pair_only_no_wider_topology",
-            "toy_circuit_parameters_only",
-        ],
+        "observations": observations,
+        # Two kinds of boundary, kept apart because only one of them can move.
+        # What this run declares -- a pair of hosts, one fixed circuit -- cannot
+        # be retracted by anything inside it, so it is stated. What the run
+        # observed is derived from the observations above, so a later run that
+        # records the missing observation drops its blocker without anyone
+        # editing a literal here. The route arrives after this call and is
+        # applied by `probe`.
+        "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -496,8 +682,41 @@ def _require_declared_placement(
         )
 
 
+def _apply_network_observation(
+    payload: dict[str, Any] | None,
+    *,
+    network_log: Path | None,
+    local_world_size: int,
+) -> dict[str, Any] | None:
+    """Read the route out of the debug log and settle the blockers again.
+
+    The route is the one observation that cannot be taken while the process
+    group exists, because the group is what writes the log it is read from. It
+    still decides `rdma_not_tested`, so the blockers are derived a second time
+    here rather than left as they were assembled without it: a probe that
+    derived them once, before the log was read, would report an untested fabric
+    on a run that used one.
+
+    The digest is recomputed because it covers the evidence, and the evidence
+    just changed.
+    """
+
+    if payload is None:
+        return None
+    evidence = payload["evidence"]
+    evidence["observations"]["network"] = _network_observation(
+        network_log, local_world_size=local_world_size
+    )
+    evidence["claim_blockers"] = _derived_claim_blockers(evidence["observations"])
+    payload["evidence_sha256"] = _canonical_sha256(evidence)
+    return payload
+
+
 def probe(
-    *, network_log: Path | None, checkpoint_directory: Path
+    *,
+    network_log: Path | None,
+    checkpoint_directory: Path,
+    measure: bool = False,
 ) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
@@ -509,6 +728,11 @@ def probe(
     dist.init_process_group("nccl", device_id=device)
     rank = dist.get_rank()
     payload: dict[str, Any] | None = None
+    rank_records: list[dict[str, Any]] = []
+    metrics: dict[str, float] = {}
+    training: dict[str, Any] = {}
+    performance: dict[str, Any] | None = None
+    host_staging: dict[str, Any] | None = None
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
         circuit = _forward_circuit()
@@ -620,6 +844,17 @@ def probe(
                 f"start_step={training['resumed_start_step']}"
             )
 
+        if measure:
+            # Both legs contain collectives, so every rank runs both of them and
+            # in this order. A rank that skipped one would reach the next
+            # collective alone and the lane would report a hang.
+            performance = _performance_observations(
+                device=device, local_world_size=local_world_size
+            )
+        host_staging = _host_staging_observation(
+            device=device, local_world_size=local_world_size
+        )
+
         properties = torch.cuda.get_device_properties(device)
         record = result.summary()
         record.update(
@@ -639,14 +874,17 @@ def probe(
         )
         # One slot per rank: `all_gather_object` fills exactly the list it is
         # given, so a fixed-length list would truncate a wider shape.
-        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
-        dist.all_gather_object(rank_records, record)
+        gathered: list[dict[str, Any] | None] = [None] * dist.get_world_size()
+        dist.all_gather_object(gathered, record)
+        rank_records = [item for item in gathered if item is not None]
         if rank == 0:
             payload = _artifact(
-                rank_records=[item for item in rank_records if item is not None],
+                rank_records=rank_records,
                 metrics=metrics,
                 network={},
                 training=training,
+                performance=performance,
+                host_staging=host_staging,
                 world_size=world_size,
                 local_world_size=local_world_size,
             )
@@ -654,11 +892,12 @@ def probe(
     finally:
         dist.destroy_process_group()
 
-    if rank == 0 and payload is not None:
-        network = _network_observation(network_log, local_world_size=local_world_size)
-        evidence = payload["evidence"]
-        evidence["observations"]["network"] = network
-        payload["evidence_sha256"] = _canonical_sha256(evidence)
+    if rank == 0:
+        # The route is read after the group is gone, because the debug log is
+        # still being written while it exists.
+        payload = _apply_network_observation(
+            payload, network_log=network_log, local_world_size=local_world_size
+        )
     return payload
 
 
@@ -679,6 +918,16 @@ def main() -> int:
         type=Path,
         help="rank-zero NCCL debug log used to verify the selected network route",
     )
+    parser.add_argument(
+        "--measure",
+        action="store_true",
+        help=(
+            "time the sharded workload with warmup and repeats and record every "
+            "sample. Without it the artifact reports no measurement at all "
+            "rather than the single unsynchronized reading the training legs "
+            "already carry. Every rank must be given the same flag"
+        ),
+    )
     args = parser.parse_args()
     if not shutil.which("git") and not os.environ.get("FLAGQUANTUM_SOURCE_REVISION"):
         # The artifact has to name a revision; a checkout without git can still
@@ -690,6 +939,7 @@ def main() -> int:
     payload = probe(
         network_log=args.network_log,
         checkpoint_directory=args.checkpoint_directory,
+        measure=args.measure,
     )
     if payload is None:
         return 0

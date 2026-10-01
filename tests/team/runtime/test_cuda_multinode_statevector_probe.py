@@ -113,11 +113,21 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # comparison agree for the wrong reason.
     assert abs(metrics["training_loss_decrease"]) > 0
 
+    # The route is what the debug log recorded, on the interface the planner was
+    # told to use, and it is the fabric rather than the socket fallback. A
+    # socket route here would mean the pair that produced this artifact never
+    # exercised the transport the run is evidence about.
     network = observations["network"]
-    assert network["route"] == "socket"
+    assert network["evidence_level"] == "observed_debug_log"
+    assert network["route"] == "infiniband"
+    assert network["configured_transport"] == "infiniband"
     assert network["configured_interface"] == "ens22f0"
-    assert network["socket_transport_observed"] is True
     assert network["configured_interface_observed"] is True
+    assert network["infiniband_transport_observed"] is True
+    assert network["roce_transport_observed"] is True
+    assert network["gpu_direct_observed"] is True
+    assert network["socket_transport_observed"] is False
+    assert network["backend"] == "nccl"
 
     ranks = observations["rank_records"]
     assert {item["rank"] for item in ranks} == {0, 1}
@@ -153,8 +163,207 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2
 
-    assert "production_performance_not_measured" in evidence["claim_blockers"]
+    # The boundary is exactly these blockers. Each of the three the pair used
+    # to carry -- an untested fabric, an unmeasured workload, an unaudited
+    # staging path -- is now retired by the observation that justifies it, so a
+    # reader cannot find it here and cannot find it silently missing either.
+    assert sorted(evidence["claim_blockers"]) == [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
+
+    # The measured leg, and the two properties that make it a measurement: the
+    # clock is synchronized across ranks, and the samples were taken after the
+    # warmup rather than as the warmup. The medians are recomputed from the
+    # samples so a hand-edited summary cannot disagree with the raw numbers it
+    # summarizes.
+    performance = observations["performance"]
+    assert performance["measurement"] == _MODULE.MEASUREMENT
+    assert performance["measured"] is True
+    assert performance["synchronized"] is True
+    assert performance["warmup_iterations"] >= 1
+    assert performance["measured_iterations"] >= 3
+    samples = performance["seconds"]
+    assert len(samples) == performance["measured_iterations"]
+    assert performance["minimum_seconds"] == min(samples)
+    assert performance["maximum_seconds"] == max(samples)
+    assert performance["minimum_seconds"] <= performance["median_seconds"]
+    assert performance["median_seconds"] <= performance["maximum_seconds"]
+
+    # The staging audit ran, and it found transfers inside the region it
+    # profiled. That is a finding about the workload, so it keeps a blocker --
+    # but not the one that says nobody looked.
+    staging = observations["host_staging"]
+    assert staging["profiled"] is True
+    assert staging["profiled_workload"] == _MODULE.MEASUREMENT
+    assert staging["host_transfer_observed"] is True
+    assert staging["host_transfer_events"]
+    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
     # The two blockers this probe exists to remove must be gone: a forward-only
     # artifact that still carried them would not support a training claim.
     assert "distributed_gradient_not_tested" not in evidence["claim_blockers"]
     assert "checkpoint_restart_not_tested" not in evidence["claim_blockers"]
+
+
+def _artifact_kwargs(**overrides: object) -> dict:
+    """The shape `_artifact` needs, with every observation retracted by default."""
+
+    kwargs: dict = {
+        "rank_records": [],
+        "metrics": {},
+        "network": {
+            "evidence_level": "observed_debug_log",
+            "route": "infiniband",
+            "configured_interface": "ens22f0",
+            "configured_interface_observed": True,
+            "infiniband_transport_observed": True,
+            "socket_transport_observed": False,
+            "roce_transport_observed": True,
+            "gpu_direct_observed": True,
+            "configured_transport": "infiniband",
+        },
+        "training": {},
+        "performance": {
+            "measured": True,
+            "synchronized": True,
+            "measurement": _MODULE.MEASUREMENT,
+            "warmup_iterations": _MODULE.MEASUREMENT_WARMUP_ITERATIONS,
+            "measured_iterations": _MODULE.MEASUREMENT_ITERATIONS,
+            "seconds": [0.001, 0.0011, 0.0009, 0.001, 0.0012],
+        },
+        "host_staging": {
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": False,
+            "host_transfer_events": [],
+        },
+        "world_size": 2,
+        "local_world_size": 1,
+    }
+    kwargs.update(overrides)
+    return kwargs
+
+
+def test_every_retracted_blocker_needs_its_own_observation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Absence is not evidence: each retraction is derived from a positive fact."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+
+    def blockers(**overrides: object) -> set[str]:
+        payload = _MODULE._artifact(**_artifact_kwargs(**overrides))
+        return set(payload["evidence"]["claim_blockers"])
+
+    complete = blockers()
+    # The pair and the circuit are declared boundaries, so nothing this run does
+    # can retract them.
+    assert {
+        "two_node_pair_only_no_wider_topology",
+        "toy_circuit_parameters_only",
+        "validation_only_tiny_full_state_gather",
+    } <= complete
+    assert (
+        complete
+        - {
+            "two_node_pair_only_no_wider_topology",
+            "toy_circuit_parameters_only",
+            "validation_only_tiny_full_state_gather",
+        }
+        == set()
+    )
+
+    # A socket run, and a run with no debug log to read, both leave the fabric
+    # untested: the route cannot be asserted from the configuration alone.
+    assert "rdma_not_tested" in blockers(
+        network={
+            "evidence_level": "observed_debug_log",
+            "route": "socket",
+            "socket_transport_observed": True,
+            "infiniband_transport_observed": False,
+        }
+    )
+    assert "rdma_not_tested" in blockers(network={})
+
+    # An absent measurement is not a measurement of zero.
+    assert "production_performance_not_measured" in blockers(performance=None)
+
+    # A profiler that could not run has shown nothing, and a transfer it did see
+    # is a finding that keeps the blocker rather than one that hides it.
+    for staging in (
+        {"profiled": False, "profiler_error": "RuntimeError: no profiler"},
+        {"profiled": True},
+    ):
+        assert "hidden_host_staging_not_audited" in blockers(host_staging=staging)
+
+    # An audit that ran and found a transfer reports the finding under its own
+    # name. Reporting "nobody looked" there would be false, and dropping the
+    # blocker altogether would retract a limitation the audit just confirmed.
+    found = blockers(
+        host_staging={
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": True,
+            "host_transfer_events": [
+                {"name": "memcpy_DtoH", "direction": "device_to_host"}
+            ],
+        }
+    )
+    assert "host_staging_in_measured_region" in found
+    assert "hidden_host_staging_not_audited" not in found
+
+
+@pytest.mark.parametrize("route", ["infiniband", "socket"])
+def test_the_route_is_applied_to_the_blockers_after_the_log_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, route: str
+) -> None:
+    """A run that used the fabric must not record it as untested.
+
+    The route is the one observation that arrives after the artifact is
+    assembled, because it is read from a log the process group is still writing
+    while it exists. `_apply_network_observation` is the seam that runs the
+    derivation a second time for it; this fails if the second pass is dropped,
+    and it fails if the second pass forgets to re-digest the evidence it
+    changed.
+    """
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+    monkeypatch.setenv("NCCL_SOCKET_IFNAME", "ens22f0")
+    log = tmp_path / "nccl.log"
+    if route == "infiniband":
+        log.write_text(
+            "NET/IB : Using [0]mlx5_101:1/RoCE [RO]; OOB ens22f0:10.1.15.172<0>\n"
+            "via NET/IB/0/GDRDMA\n"
+        )
+        monkeypatch.setenv("NCCL_IB_DISABLE", "0")
+    else:
+        log.write_text("NET/Socket : Using [0]ens22f0:10.1.15.172<0>\n")
+        monkeypatch.setenv("NCCL_IB_DISABLE", "1")
+
+    payload = _MODULE._artifact(**_artifact_kwargs(network={}))
+    assert "rdma_not_tested" in payload["evidence"]["claim_blockers"]
+
+    _MODULE._apply_network_observation(payload, network_log=log, local_world_size=1)
+    evidence = payload["evidence"]
+
+    assert evidence["observations"]["network"]["route"] == route
+    assert ("rdma_not_tested" in evidence["claim_blockers"]) == (route == "socket")
+    # The digest covers the evidence, and the evidence changed.
+    encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
+
+
+@pytest.mark.parametrize("payload", [None])
+def test_an_absent_artifact_has_no_route_to_record(payload: None) -> None:
+    """Only rank zero writes the artifact, and it does so through the same seam."""
+
+    assert (
+        _MODULE._apply_network_observation(
+            payload, network_log=None, local_world_size=1
+        )
+        is None
+    )

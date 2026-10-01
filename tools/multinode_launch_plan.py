@@ -79,12 +79,31 @@ DEFAULT_MASTER_PORT = AUTO_MASTER_PORT
 # is allowed to empty. Nothing else stops a mistyped path from being wiped.
 STAGING_PREFIX = "fq-multinode"
 
-# The route the recorded two-node artifact was taken on
-# (`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json`): the
-# management interface with InfiniBand disabled, so the NCCL debug log can be
-# checked for both the socket transport and this interface name. The hosts do
-# carry RoCE devices; using them is a separate change with its own evidence.
+# The route the recorded two-node artifacts were taken on: the management
+# interface with InfiniBand disabled, so the NCCL debug log can be checked for
+# both the socket transport and this interface name. It stays the default
+# because a lane's default decides what a run means, and the recorded evidence
+# was taken on this one.
+#
+# The hosts also carry RoCE devices, and `--transport rdma` is the lane that
+# uses them: it enables InfiniBand, keeps this interface as NCCL's out-of-band
+# bootstrap, and makes the preflight refuse a node whose fabric NCCL cannot
+# reach. Neither transport is inferred -- the plan spells it into both ranks'
+# environment, and the probe records the route the debug log shows, so a run
+# reported as one transport and observed on the other is refused rather than
+# recorded.
 DEFAULT_INTERFACE = "ens22f0"
+
+# The two transports a lane may be asked for. `socket` means InfiniBand is
+# disabled rather than absent: a host with a fabric that was not asked for is
+# not the same as a host without one, and the probe records which it saw.
+TRANSPORT_SOCKET = "socket"
+TRANSPORT_RDMA = "rdma"
+DEFAULT_TRANSPORT = TRANSPORT_SOCKET
+
+# Where a node's fabric devices are listed. Read instead of shelling out to
+# `ibstat`, which is not installed on every host that has the devices.
+INFINIBAND_DEVICES = Path("/sys/class/infiniband")
 
 # Passed to `pkill -f`. Long enough to name a two-node probe launcher and
 # nothing else: it is the stem both probes share, and `cleanup` runs on a node
@@ -236,7 +255,13 @@ def ssh_argv(peer_host: str, remote: Sequence[str]) -> list[str]:
     return ["ssh", *SSH_OPTIONS, peer_host, peer_command(remote)]
 
 
-def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
+def shared_environment(
+    *,
+    staging: str,
+    interface: str,
+    transport: str = DEFAULT_TRANSPORT,
+    infiniband_hcas: str | None = None,
+) -> dict[str, str]:
     """The variables both ranks need, and both ranks are given.
 
     Neither rank may take a different interface than its peer: NCCL does not
@@ -244,11 +269,17 @@ def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
     disagrees with the network evidence the probe is asked to verify. So the
     plan spells the same values into both commands rather than relying on one
     rank inheriting an environment the other one cannot.
+
+    `NCCL_IB_DISABLE` is always written, never left to the host's default. An
+    unset value means the host decides, and a lane whose transport depends on
+    which host it landed on is not a lane whose evidence can be compared with
+    another run's.
     """
-    return {
+
+    environment = {
         "PYTHONPATH": staging,
         "NCCL_SOCKET_IFNAME": interface,
-        "NCCL_IB_DISABLE": "1",
+        "NCCL_IB_DISABLE": "1" if transport == TRANSPORT_SOCKET else "0",
         "NCCL_DEBUG": "INFO",
         # Every rank reads the one staged tree over the shared filesystem, and
         # they all start together. A rank that compiled a module would write its
@@ -256,6 +287,12 @@ def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
         # to: `stage` compiles the tree once, before any of them starts.
         "PYTHONDONTWRITEBYTECODE": "1",
     }
+    if infiniband_hcas is not None:
+        # Pinned only when asked for: NCCL's own discovery skips a port that is
+        # down, and a hard-coded rail list would be a fact about these two hosts
+        # written into a tool that runs on others.
+        environment["NCCL_IB_HCA"] = infiniband_hcas
+    return environment
 
 
 def rank_environment(
@@ -265,6 +302,8 @@ def rank_environment(
     interface: str,
     output_directory: str,
     source_revision: str | None = None,
+    transport: str = DEFAULT_TRANSPORT,
+    infiniband_hcas: str | None = None,
 ) -> dict[str, str]:
     """One node's environment for every rank that node runs.
 
@@ -280,7 +319,12 @@ def rank_environment(
     quietly lacked it would fail after NCCL init rather than before.
     """
     environment = {
-        **shared_environment(staging=staging, interface=interface),
+        **shared_environment(
+            staging=staging,
+            interface=interface,
+            transport=transport,
+            infiniband_hcas=infiniband_hcas,
+        ),
         "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     }
     if source_revision is not None:
@@ -312,6 +356,9 @@ def rank_command(
     probe: str = PROBE,
     source_revision: str | None = None,
     local_world_size: int = LOCAL_WORLD_SIZE,
+    transport: str = DEFAULT_TRANSPORT,
+    infiniband_hcas: str | None = None,
+    measure: bool = False,
 ) -> list[str]:
     return [
         *_env_prefix(
@@ -321,6 +368,8 @@ def rank_command(
                 interface=interface,
                 output_directory=output_directory,
                 source_revision=source_revision,
+                transport=transport,
+                infiniband_hcas=infiniband_hcas,
             )
         ),
         python,
@@ -354,6 +403,11 @@ def rank_command(
         # would read stay the same path on both nodes.
         "--network-log",
         str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
+        # Both nodes carry the flag, not only the node that writes the
+        # artifact: a lane whose two ranks disagreed about how many times to
+        # run the workload would have them enter different numbers of
+        # collectives, which reports as a hang rather than as the mismatch.
+        *(["--measure"] if measure else []),
     ]
 
 
@@ -396,6 +450,9 @@ def build_plan(
     probe: str = PROBE,
     source_revision: str | None = None,
     local_world_size: int = LOCAL_WORLD_SIZE,
+    transport: str = DEFAULT_TRANSPORT,
+    infiniband_hcas: str | None = None,
+    measure: bool = False,
 ) -> dict[str, Any]:
     """Write the watchdog's config: two nodes, `local_world_size` ranks each."""
     ranks = {
@@ -411,6 +468,9 @@ def build_plan(
             probe=probe,
             source_revision=source_revision,
             local_world_size=local_world_size,
+            transport=transport,
+            infiniband_hcas=infiniband_hcas,
+            measure=measure,
         )
         for node_rank in range(NODE_COUNT)
     }
@@ -423,6 +483,12 @@ def build_plan(
         "peer_host": peer_host,
         "master_port": master_port,
         "interface": interface,
+        # Recorded rather than left to be read back out of the commands: the
+        # transport is the one property of a plan that decides what a run's
+        # route evidence is allowed to say, so a report states it directly.
+        "transport": transport,
+        "infiniband_hcas": infiniband_hcas,
+        "measure": measure,
         "probe": probe,
         "staging_directory": staging,
         "output_directory": output_directory,
@@ -513,6 +579,100 @@ def _device_answer(
     return bool(rows), f"{len(rows)} device(s): {completed.stdout.strip()!r}"
 
 
+def requested_fabric_hcas(value: str | None) -> tuple[str, ...]:
+    """The pinned device names, in the order they were given.
+
+    NCCL takes a comma-separated list and rejects an empty element, so an empty
+    or blank-only value is refused here rather than by a rank that has already
+    started.
+    """
+    if value is None:
+        return ()
+    names = tuple(name.strip() for name in value.split(","))
+    if not names or any(not name for name in names):
+        raise SystemExit(
+            f"--infiniband-hcas {value!r} is not a comma-separated list of "
+            "device names"
+        )
+    return names
+
+
+def _fabric_checks(
+    *,
+    peer_host: str,
+    infiniband_hcas: str | None,
+    timeout: float,
+    fabric_root: Path,
+    remote: Callable[[Sequence[str]], subprocess.CompletedProcess[str]],
+) -> list[Check]:
+    """The fabric devices a lane asked for are present on both nodes.
+
+    Read from `/sys/class/infiniband` rather than from `ibstat`, which is not
+    installed on every host that has the devices, and from the same path on both
+    nodes so the two answers are comparable.
+    """
+
+    checks: list[Check] = []
+    local = _fabric_devices(fabric_root)
+    checks.append(
+        Check(
+            "launch_host_has_the_fabric",
+            bool(local),
+            f"{fabric_root}: {', '.join(local) if local else 'no devices'}",
+        )
+    )
+    try:
+        completed = remote(["ls", "-1", str(fabric_root)])
+        peer = [
+            line.strip()
+            for line in completed.stdout.splitlines()
+            if line.strip() and completed.returncode == 0
+        ]
+        detail = (
+            ", ".join(peer)
+            if peer
+            else f"exit {completed.returncode}: {_first_line(completed.stderr)}"
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        peer, detail = [], f"{type(error).__name__}: {error}"
+    checks.append(Check("peer_has_the_fabric", bool(peer), f"on {peer_host}: {detail}"))
+
+    for name in requested_fabric_hcas(infiniband_hcas):
+        checks.append(
+            Check(
+                f"launch_host_has_fabric_device_{name}",
+                (fabric_root / name).is_dir(),
+                f"{fabric_root / name}",
+            )
+        )
+        try:
+            completed = remote(["test", "-d", f"{fabric_root / name}"])
+            present = completed.returncode == 0
+            detail = (
+                "present"
+                if present
+                else _first_line(completed.stderr) or f"exit {completed.returncode}"
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            present, detail = False, f"{type(error).__name__}: {error}"
+        checks.append(
+            Check(
+                f"peer_has_fabric_device_{name}",
+                present,
+                f"on {peer_host}: {detail}",
+            )
+        )
+    return checks
+
+
+def _fabric_devices(root: Path = INFINIBAND_DEVICES) -> list[str]:
+    """The fabric device names this node publishes, sorted and without a shell."""
+
+    if not root.is_dir():
+        return []
+    return sorted(entry.name for entry in root.iterdir())
+
+
 def preflight(
     *,
     peer_host: str,
@@ -521,8 +681,11 @@ def preflight(
     master_port: int,
     python: str,
     launch_address: str | None = None,
+    transport: str = DEFAULT_TRANSPORT,
+    infiniband_hcas: str | None = None,
     timeout: float = 30.0,
     interface_root: Path = Path("/sys/class/net"),
+    fabric_root: Path = INFINIBAND_DEVICES,
     run: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]] = _run,
 ) -> tuple[Check, ...]:
     """Establish what the plan needs to be true, before anything is launched.
@@ -619,6 +782,21 @@ def preflight(
     checks.append(
         Check("peer_has_the_interpreter", ok, f"{python} on {peer_host}: {detail}")
     )
+
+    # A lane asked for the fabric has to have one on both nodes. NCCL does not
+    # fail when it cannot find a device it was told to use: it falls back to
+    # whatever else is reachable, and the run then reports the transport it was
+    # configured for while the debug log shows another one.
+    if transport == TRANSPORT_RDMA:
+        checks.extend(
+            _fabric_checks(
+                peer_host=peer_host,
+                infiniband_hcas=infiniband_hcas,
+                timeout=timeout,
+                fabric_root=fabric_root,
+                remote=remote,
+            )
+        )
 
     # A rendezvous port already in use fails at init, after both ranks are up.
     try:
@@ -872,6 +1050,29 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--master-port", type=int, default=DEFAULT_MASTER_PORT)
     parser.add_argument("--interface", default=DEFAULT_INTERFACE)
+    parser.add_argument(
+        "--transport",
+        choices=(TRANSPORT_SOCKET, TRANSPORT_RDMA),
+        default=DEFAULT_TRANSPORT,
+        help=(
+            "the route both ranks are configured to use. `socket` disables "
+            "InfiniBand over the interface above, which is the route the "
+            "recorded evidence was taken on. `rdma` enables it and keeps the "
+            "interface as NCCL's out-of-band bootstrap. The probe records the "
+            "route the debug log shows, so a run configured for one transport "
+            "and observed on another is refused rather than recorded"
+        ),
+    )
+    parser.add_argument(
+        "--infiniband-hcas",
+        default=None,
+        help=(
+            "comma-separated fabric device names to pin for --transport rdma, "
+            "for example mlx5_101,mlx5_102. Left unset, NCCL discovers the "
+            "devices itself and skips a port that is down. The names are "
+            "checked on both nodes before anything is launched"
+        ),
+    )
     parser.add_argument("--source-revision", default=None)
     parser.add_argument(
         "--local-world-size",
@@ -884,6 +1085,16 @@ def _parser() -> argparse.ArgumentParser:
             "statevector workload, at most three for the MPS one, and one or "
             "two for the tensor-network one. A width the probe would refuse is "
             "refused here, before a rank is started"
+        ),
+    )
+    parser.add_argument(
+        "--measure",
+        action="store_true",
+        help=(
+            "ask the probe to time the sharded workload with warmup and "
+            "repeats and record the samples, instead of the single unsynced "
+            "reading the training legs already report. Both ranks are given "
+            "the flag; a lane whose ranks disagreed would hang"
         ),
     )
     parser.add_argument("--output", type=Path, default=None)
@@ -1005,6 +1216,8 @@ def _governed_run(args: argparse.Namespace) -> int:
         peer_host=args.peer_host,
         peer_address=peer_address,
         interface=args.interface,
+        transport=args.transport,
+        infiniband_hcas=args.infiniband_hcas,
         master_port=master_port,
         python=args.python,
         launch_address=launch_address,
@@ -1047,6 +1260,9 @@ def _governed_run(args: argparse.Namespace) -> int:
         python=args.python,
         master_port=master_port,
         interface=args.interface,
+        transport=args.transport,
+        infiniband_hcas=args.infiniband_hcas,
+        measure=args.measure,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,
         local_world_size=checked_local_world_size(
@@ -1113,6 +1329,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             peer_host=args.peer_host,
             peer_address=peer_address,
             interface=args.interface,
+            transport=args.transport,
+            infiniband_hcas=args.infiniband_hcas,
             master_port=master_port,
             python=args.python,
             launch_address=launch_address,
@@ -1145,6 +1363,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         python=args.python,
         master_port=args.master_port,
         interface=args.interface,
+        transport=args.transport,
+        infiniband_hcas=args.infiniband_hcas,
+        measure=args.measure,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,
         local_world_size=checked_local_world_size(

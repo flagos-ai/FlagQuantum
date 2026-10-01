@@ -224,6 +224,62 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # not perform on this path.
     assert observations["gradient_reduction"] == "probe_summed_rank_partials"
 
+    # The route is what the debug log recorded, on the interface the planner was
+    # told to use, and it is the fabric rather than the socket fallback. A
+    # socket route here would mean the pair that produced this artifact never
+    # exercised the transport the run is evidence about.
+    network = observations["network"]
+    assert network["evidence_level"] == "observed_debug_log"
+    assert network["route"] == "infiniband"
+    assert network["configured_transport"] == "infiniband"
+    assert network["configured_interface"] == "ens22f0"
+    assert network["configured_interface_observed"] is True
+    assert network["infiniband_transport_observed"] is True
+    assert network["roce_transport_observed"] is True
+    assert network["gpu_direct_observed"] is True
+    assert network["socket_transport_observed"] is False
+    assert network["backend"] == "nccl"
+
+    # The cut sweep moved, and the exchange moved with it, which is the whole
+    # difference between a swept cut and a cut that happens to be declared. Each
+    # width is listed with the bytes its ranks exchanged and the ranks that
+    # participated, so a width nobody exercised cannot hide in the summary.
+    cut = observations["cut_widths"]
+    assert cut["widths"] == [1, 2]
+    assert cut["unexercised_widths"] == []
+    assert set(cut["inter_node_bytes_by_width"]) == {"1", "2"}
+    assert all(bytes_ > 0 for bytes_ in cut["inter_node_bytes_by_width"].values())
+    assert sorted(cut["inter_node_bytes_by_slice_count"]) == ["2", "4"]
+    assert all(bytes_ > 0 for bytes_ in cut["inter_node_bytes_by_slice_count"].values())
+    assert all(ranks == [0, 1] for ranks in cut["ranks_by_width"].values())
+
+    # The measured leg, and the two properties that make it a measurement: the
+    # clock is synchronized across ranks, and the samples were taken after the
+    # warmup rather than as the warmup. The summary is recomputed from the
+    # samples so a hand-edited median cannot disagree with them.
+    performance = observations["performance"]
+    assert performance["measurement"] == "sharded_tensor_network_amplitudes"
+    assert performance["measured"] is True
+    assert performance["synchronized"] is True
+    assert performance["warmup_iterations"] >= 1
+    assert performance["measured_iterations"] >= 3
+    samples = performance["seconds"]
+    assert len(samples) == performance["measured_iterations"]
+    assert performance["minimum_seconds"] == min(samples)
+    assert performance["maximum_seconds"] == max(samples)
+    assert performance["minimum_seconds"] <= performance["median_seconds"]
+    assert performance["median_seconds"] <= performance["maximum_seconds"]
+
+    # The staging audit ran, and it found transfers inside the region it
+    # profiled. That is a finding about the workload, so it keeps a blocker --
+    # but not the one that says nobody looked.
+    staging = observations["host_staging"]
+    assert staging["profiled"] is True
+    assert staging["profiled_workload"] == performance["measurement"]
+    assert staging["host_transfer_observed"] is True
+    assert staging["host_transfer_events"]
+    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+
     ranks = observations["rank_records"]
     assert len(ranks) == 2
     placement = [item["rank_placement"] for item in ranks]
@@ -389,7 +445,16 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         assert shard["local_world_size"] == 1
         assert shard["node_count"] == 2
 
-    assert "production_performance_not_measured" in evidence["claim_blockers"]
+    # The boundary is exactly these blockers. The fabric, the measured workload,
+    # the audited staging path and the swept cut are each retired by the
+    # observation that justifies them, so a reader cannot find one here and
+    # cannot find one silently missing either.
+    assert sorted(evidence["claim_blockers"]) == [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
     # The blockers this probe exists to remove must be gone: an artifact that
     # still carried them would not support the training claim it makes.
     for resolved in (
@@ -399,3 +464,231 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         "tensor_network_sharded_optimizer_pending",
     ):
         assert resolved not in json.dumps(evidence)
+
+
+def _artifact_kwargs(**overrides: object) -> dict:
+    """The shape `_artifact` needs, with every observation retracted by default."""
+
+    kwargs: dict = {
+        "rank_records": [],
+        "metrics": {},
+        "training": {},
+        "sliced_label_multiplicities": dict.fromkeys(_MODULE.SLICED_LABELS, 2),
+        "world_size": 2,
+        "local_world_size": 1,
+        "network": {
+            "evidence_level": "observed_debug_log",
+            "route": "infiniband",
+            "configured_interface": "ens22f0",
+            "configured_interface_observed": True,
+            "infiniband_transport_observed": True,
+            "socket_transport_observed": False,
+            "roce_transport_observed": True,
+            "gpu_direct_observed": True,
+            "configured_transport": "infiniband",
+        },
+        # Five synchronized samples after two warmups: the shape
+        # `measured_performance` returns, so the retraction is derived from a
+        # measurement rather than from the presence of a key.
+        "performance": {
+            "measured": True,
+            "synchronized": True,
+            "measurement": _MODULE.MEASUREMENT,
+            "warmup_iterations": _MODULE.MEASUREMENT_WARMUP_ITERATIONS,
+            "measured_iterations": _MODULE.MEASUREMENT_ITERATIONS,
+            "seconds": [0.001, 0.0011, 0.0009, 0.001, 0.0012],
+        },
+        "host_staging": {
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": False,
+            "host_transfer_events": [],
+        },
+        "cut_widths": {
+            "widths": list(_MODULE.CUT_WIDTHS),
+            "inter_node_bytes_by_width": {"1": 32, "2": 64},
+            "inter_node_bytes_by_slice_count": {"2": 32, "4": 64},
+            "ranks_by_width": {"1": [0, 1], "2": [0, 1]},
+            "unexercised_widths": [],
+        },
+    }
+    kwargs.update(overrides)
+    return kwargs
+
+
+def test_the_cut_width_sweep_derives_both_topology_blockers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cut that moved and stayed cut is the only thing that clears them."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+    evidence = _MODULE._artifact(**_artifact_kwargs())["evidence"]
+    blockers = set(evidence["claim_blockers"])
+
+    # The pair is fixed by the lane and the circuit is a toy one, so neither can
+    # be retracted by anything this run does. They have to stay.
+    assert {"two_node_pair_only_no_wider_topology", "toy_circuit_parameters_only"} <= (
+        blockers
+    )
+    assert "inter_node_cut_width_not_swept" not in blockers
+    assert "slice_count_fixed_at_world_size" not in blockers
+    assert "rdma_not_tested" not in blockers
+    assert "production_performance_not_measured" not in blockers
+    assert "hidden_host_staging_not_audited" not in blockers
+
+    # One width, or a width whose ranks exchanged nothing, is not a sweep: the
+    # whole point is that the cut moved and the exchange moved with it.
+    for degenerate in (
+        {"1": 32},
+        {"1": 0, "2": 0},
+        {"1": 32, "2": 0},
+    ):
+        swept = _MODULE._artifact(
+            **_artifact_kwargs(
+                cut_widths={
+                    "widths": list(_MODULE.CUT_WIDTHS),
+                    "inter_node_bytes_by_width": degenerate,
+                    "inter_node_bytes_by_slice_count": {"2": 32, "4": 64},
+                    "unexercised_widths": [],
+                }
+            )
+        )["evidence"]
+        assert "inter_node_cut_width_not_swept" in swept["claim_blockers"]
+
+    # The slice count carries the same condition: two counts, both crossed.
+    for degenerate_counts in ({"2": 32}, {"2": 32, "4": 0}):
+        swept = _MODULE._artifact(
+            **_artifact_kwargs(
+                cut_widths={
+                    "widths": list(_MODULE.CUT_WIDTHS),
+                    "inter_node_bytes_by_width": {"1": 32, "2": 64},
+                    "inter_node_bytes_by_slice_count": degenerate_counts,
+                    "unexercised_widths": [],
+                }
+            )
+        )["evidence"]
+        assert "slice_count_fixed_at_world_size" in swept["claim_blockers"]
+
+
+def test_the_route_measurement_and_staging_are_each_derived(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each retraction needs its own positive observation, not a declaration."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+
+    def blockers(**overrides: object) -> set[str]:
+        return set(
+            _MODULE._artifact(**_artifact_kwargs(**overrides))["evidence"][
+                "claim_blockers"
+            ]
+        )
+
+    # A socket run, or a run with no debug log to read, leaves the fabric
+    # untested: the route cannot be asserted from the configuration alone.
+    assert "rdma_not_tested" in blockers(
+        network={
+            "evidence_level": "observed_debug_log",
+            "route": "socket",
+            "socket_transport_observed": True,
+            "infiniband_transport_observed": False,
+        }
+    )
+    assert "rdma_not_tested" in blockers(network={})
+
+    # An absent measurement is not a measurement of zero, and a measurement is
+    # not a production one: the toy-circuit blocker survives both.
+    assert "production_performance_not_measured" in blockers(performance=None)
+
+    # A profiler that could not run has shown nothing, and a transfer it did see
+    # is a finding that keeps the blocker rather than one that hides it.
+    for staging in (
+        {"profiled": False, "profiler_error": "RuntimeError: no profiler"},
+        {"profiled": True},
+    ):
+        assert "hidden_host_staging_not_audited" in blockers(host_staging=staging)
+
+    # An audit that ran and found a transfer reports the finding under its own
+    # name. Reporting "nobody looked" there would be false, and dropping the
+    # blocker altogether would retract a limitation the audit just confirmed.
+    found = blockers(
+        host_staging={
+            "profiled": True,
+            "profiled_workload": _MODULE.MEASUREMENT,
+            "host_transfer_observed": True,
+            "host_transfer_events": [
+                {"name": "memcpy_DtoH", "direction": "device_to_host"}
+            ],
+        }
+    )
+    assert "host_staging_in_measured_region" in found
+    assert "hidden_host_staging_not_audited" not in found
+
+
+def test_the_sweep_widths_are_prefixes_of_the_declared_cut() -> None:
+    """A narrower cut is the declared one with one label fewer, and nothing else."""
+
+    assert tuple(range(1, len(_MODULE.SLICED_LABELS) + 1)) == _MODULE.CUT_WIDTHS
+    assert [_MODULE._slices_for_width(width) for width in _MODULE.CUT_WIDTHS] == [
+        2,
+        _MODULE.EXPECTED_SLICE_COUNT,
+    ]
+    # The widest width is the scope's own cut, so the sweep includes the shape
+    # the artifact declares rather than only shapes beside it.
+    assert _MODULE._slices_for_width(max(_MODULE.CUT_WIDTHS)) == (
+        _MODULE.EXPECTED_SLICE_COUNT
+    )
+
+
+@pytest.mark.parametrize("route", ["infiniband", "socket"])
+def test_the_route_is_applied_to_the_blockers_after_the_log_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, route: str
+) -> None:
+    """A run that used the fabric must not record it as untested.
+
+    The route is the one observation that arrives after the artifact is
+    assembled, because it is read from a log the process group is still writing
+    while it exists. `_apply_network_observation` is the seam that runs the
+    derivation a second time for it; this fails if the second pass is dropped,
+    and it fails if the second pass forgets to re-digest the evidence it
+    changed.
+    """
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+    monkeypatch.setenv("NCCL_SOCKET_IFNAME", "ens22f0")
+    log = tmp_path / "nccl.log"
+    if route == "infiniband":
+        log.write_text(
+            "NET/IB : Using [0]mlx5_101:1/RoCE [RO]; OOB ens22f0:10.1.15.172<0>\n"
+            "via NET/IB/0/GDRDMA\n"
+        )
+        monkeypatch.setenv("NCCL_IB_DISABLE", "0")
+    else:
+        log.write_text("NET/Socket : Using [0]ens22f0:10.1.15.172<0>\n")
+        monkeypatch.setenv("NCCL_IB_DISABLE", "1")
+
+    payload = _MODULE._artifact(**_artifact_kwargs(network={}))
+    assert "rdma_not_tested" in payload["evidence"]["claim_blockers"]
+
+    _MODULE._apply_network_observation(payload, network_log=log, local_world_size=1)
+    evidence = payload["evidence"]
+
+    assert evidence["observations"]["network"]["route"] == route
+    assert ("rdma_not_tested" in evidence["claim_blockers"]) == (route == "socket")
+    # The digest covers the evidence, and the evidence changed.
+    encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
+
+
+@pytest.mark.parametrize("payload", [None])
+def test_an_absent_artifact_has_no_route_to_record(payload: None) -> None:
+    """Only rank zero writes the artifact, and it does so through the same seam."""
+
+    assert (
+        _MODULE._apply_network_observation(
+            payload, network_log=None, local_world_size=1
+        )
+        is None
+    )

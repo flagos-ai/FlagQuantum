@@ -59,10 +59,14 @@ yields ranks whose partial is exactly zero. Slicing such a label would let the
 run report `sharded_across_ranks` while one rank performed the arithmetic, so the
 slicer excludes those labels and the workload declares its cut instead.
 
-RDMA was not used or tested, cut width was not swept, no production performance
-was measured, and the recorded evidence covers one circuit with toy parameters.
-Cross-host behavior as the cut widens or as nodes are added is outside this
-contract.
+The recorded run took the RoCE fabric rather than the socket fallback, swept the
+cut width across both labels of the declared cut, and measured five synchronized
+amplitude samples after two warmups, so those are evidence rather than
+assumptions. What remains outside this contract is cross-host behavior at a cut
+wider than the declared one or at more nodes than the recorded pair; capacity and
+congestion were not measured; the profiled measurement region contains host
+transfers, which keeps a blocker of its own; and the recorded evidence still
+covers one circuit with toy parameters.
 
 ## Verified implementation
 
