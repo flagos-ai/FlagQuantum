@@ -29,6 +29,7 @@ Use `optimize(program)` for target-independent optimization and
 | Canonical optimization | [pipeline.py](pipeline.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Wire layouts and the layout restore | [layout.py](layout.py) |
+| Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
@@ -46,6 +47,13 @@ passes over it. That suite also runs an independent router and a replacement
 router through the compiler, the topology legalizer, and the dynamic-circuit
 runtime, which is how the boundary is shown to be replaceable rather than
 merely defined.
+
+A placement is a tuple of physical wires, one per logical wire, and not a
+[layout.py](layout.py) `Layout`, because a device wider than the program leaves
+slots idle and `Layout` covers exactly the program's wires. Routing on a plain
+`CouplingMap` may only use wires the program owns and so refuses `initial_layout`
+outright; a non-identity placement therefore requires a `DirectedCouplingMap`,
+where the idle slots are a workspace that the inverse routing SWAPs clean.
 
 [Implementation details](IMPLEMENTATION.md) document stage ownership and
 migration constraints. [Testing policy](../../docs/development/TESTING.md)
