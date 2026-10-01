@@ -175,6 +175,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-MPS-006-A",
+        "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cuda_matches_autograd",
+        gradient_tests=(
+            "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cuda_matches_autograd",
+        ),
+        capability_tests=(
+            "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cpu_fallback_matches_autograd",
+            "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_outside_window_uses_fallback",
+            "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_noncontiguous_uses_fallback",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-NUM-001-A",
         "tests/unit/test_triton_complex_bmm.py::test_fused_complex_bmm_forward_and_backward_match_torch",
         gradient_tests=(
