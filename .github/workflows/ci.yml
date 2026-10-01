@@ -74,6 +74,24 @@ jobs:
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
         run: python tools/check_team_scope.py --validate
+      # `--validate` reads the policy; it never resolves a path. A pull request
+      # that adds a file no rule covers therefore passes that step and only
+      # fails later in `cpu-core`, as an assertion diff from
+      # `tests/unit/test_team_scope_policy.py`. This step answers the same
+      # question about the changed paths directly, and names the owning teams so
+      # a reviewer can see a cross-team pull request at a glance. Crossing teams
+      # is reported, not rejected: 8 of the last 30 merges on `main` touched two
+      # teams, mostly `simulation` with `verification`, and that is a review
+      # question rather than a defect.
+      - name: Require every changed path to have an owner
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "no base revision is available for this event; skipping"
+            exit 0
+          fi
+          python tools/check_team_scope.py --require-classified --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
         run: python tools/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
