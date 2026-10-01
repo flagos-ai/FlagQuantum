@@ -145,6 +145,13 @@ title = "Two-node statevector forward latency"
 artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
 artifact_sha256 = "f67f2b7f7649d2d4d3fa9194b393838a3f4f6dd0adf72056879c659257e68c8c"
 code_version = "dd874e0459e0795ac9c4d5729d84f51400e0575b"
+# The A800 pair that produced this artifact ran from a revision no branch or
+# tag of this repository reaches, so the `fetch-depth: 0` checkout the quality
+# job performs cannot resolve it. The revision is genuine -- GitHub still serves
+# the object when it is asked for by hash -- but history alone does not carry
+# it. The value is kept rather than replaced, because substituting a revision
+# this repository does contain would fabricate provenance the run never had.
+code_version_origin = "producing_host_history"
 maturity = "production_supported"
 
 scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
@@ -388,6 +395,13 @@ title = "Two-node MPS forward latency"
 artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
 artifact_sha256 = "f67f2b7f7649d2d4d3fa9194b393838a3f4f6dd0adf72056879c659257e68c8c"
 code_version = "dd874e0459e0795ac9c4d5729d84f51400e0575b"
+# The A800 pair that produced this artifact ran from a revision no branch or
+# tag of this repository reaches, so the `fetch-depth: 0` checkout the quality
+# job performs cannot resolve it. The revision is genuine -- GitHub still serves
+# the object when it is asked for by hash -- but history alone does not carry
+# it. The value is kept rather than replaced, because substituting a revision
+# this repository does contain would fabricate provenance the run never had.
+code_version_origin = "producing_host_history"
 maturity = "production_supported"
 
 scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
@@ -635,6 +649,13 @@ title = "Two-node sliced amplitude latency"
 artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
 artifact_sha256 = "f67f2b7f7649d2d4d3fa9194b393838a3f4f6dd0adf72056879c659257e68c8c"
 code_version = "dd874e0459e0795ac9c4d5729d84f51400e0575b"
+# The A800 pair that produced this artifact ran from a revision no branch or
+# tag of this repository reaches, so the `fetch-depth: 0` checkout the quality
+# job performs cannot resolve it. The revision is genuine -- GitHub still serves
+# the object when it is asked for by hash -- but history alone does not carry
+# it. The value is kept rather than replaced, because substituting a revision
+# this repository does contain would fabricate provenance the run never had.
+code_version_origin = "producing_host_history"
 maturity = "production_supported"
 
 scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
