@@ -226,8 +226,8 @@ def test_module_routes_incomplete_release_evidence_to_native_local_mps():
     assert result.runtime["full_mps_materialization"] is False
 
 
-def test_release_artifact_requires_three_distinct_measured_gates():
-    records = (
+def measured_records(speedup_ci_low=1.05):
+    return (
         {
             "gate": "correctness",
             "evidence_source": "measured_runtime",
@@ -239,7 +239,7 @@ def test_release_artifact_requires_three_distinct_measured_gates():
             "evidence_source": "measured_runtime",
             "artifact_path": "speed.json",
             "artifact_sha256": "b" * 64,
-            "speedup_ci_low": 1.05,
+            "speedup_ci_low": speedup_ci_low,
         },
         {
             "gate": "capacity",
@@ -251,6 +251,41 @@ def test_release_artifact_requires_three_distinct_measured_gates():
             "full_mps_materialization": False,
         },
     )
+
+
+def crossover_surface(speedup_ci_low):
+    return {
+        "performance_gate": {"passed": True},
+        "scalability_claim_allowed": True,
+        "planner_crossover_surface": [
+            {
+                "family": "mps",
+                "sites": 16,
+                "max_bond": 64,
+                "depth": 4,
+                "boundary_rate": "0.0",
+                "truncation_policy": {"cutoff": 0.0, "max_bond": 64},
+                "topology": "1d_ring",
+                "decision": "distributed",
+                "speedup_ci_low": speedup_ci_low,
+            }
+        ],
+    }
+
+
+CROSSOVER_QUERY = {
+    "family": "mps",
+    "sites": 16,
+    "max_bond": 64,
+    "depth": 4,
+    "boundary_rate": "0.0",
+    "truncation_policy": {"cutoff": 0.0, "max_bond": 64},
+    "topology": "1d_ring",
+}
+
+
+def test_release_artifact_requires_three_distinct_measured_gates():
+    records = measured_records()
     artifact = fqxm.build_mps_release_artifact(gates=gates(), runtime_records=records)
     assert artifact["production_distributed_mps"] is True
     assert artifact["artifact_classification"] == "measured_production_release"
@@ -259,3 +294,38 @@ def test_release_artifact_requires_three_distinct_measured_gates():
     estimated = ({**records[0], "evidence_source": "estimated"},) + records[1:]
     with pytest.raises(fqxm.MPSProductionAcceptanceError, match="measured_runtime"):
         fqxm.build_mps_release_artifact(gates=gates(), runtime_records=estimated)
+
+
+def test_release_artifact_rejects_a_non_finite_performance_measurement():
+    """A ``NaN`` speedup must not read as a comfortable margin over the threshold.
+
+    ``NaN <= 1.0`` is false, so the promotion gate used to accept a non-finite
+    ``speedup_ci_low`` and emit a payload claiming
+    ``scalability_claim_allowed``.
+    """
+    with pytest.raises(fqxm.MPSProductionAcceptanceError, match="not finite"):
+        fqxm.build_mps_release_artifact(
+            gates=gates(), runtime_records=measured_records(float("nan"))
+        )
+
+
+def test_crossover_surface_rejects_a_non_finite_measured_speedup():
+    """A corrupt surface entry is a rejected artifact, not an unproven region.
+
+    ``NaN > 1.0`` is false, so the selection used to drop a non-finite point
+    and report ``no_matching_speedup_confidence_interval_excludes_one`` with
+    ``measured`` still true, describing corrupt evidence as a measured
+    decision.
+    """
+    with pytest.raises(fqxm.MPSProductionAcceptanceError, match="not finite"):
+        fqxm.select_mps_crossover_decision(
+            crossover_surface(float("nan")), **CROSSOVER_QUERY
+        )
+
+
+def test_crossover_surface_still_selects_a_measured_speedup_above_one():
+    decision = fqxm.select_mps_crossover_decision(
+        crossover_surface(1.4), **CROSSOVER_QUERY
+    )
+    assert decision["decision"] == "distributed"
+    assert decision["speedup_ci_low"] == 1.4

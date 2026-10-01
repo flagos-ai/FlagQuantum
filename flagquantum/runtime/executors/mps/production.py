@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -12,6 +13,34 @@ from .errors import NonlocalMPSCompilationError
 
 class MPSProductionAcceptanceError(RuntimeError):
     """A workload or evidence bundle cannot be promoted to production MPS."""
+
+
+def _measured_speedup(value: Any, *, label: str) -> float:
+    """Read a measured speedup from untrusted evidence, rejecting non-finite ones.
+
+    Measured surfaces and release records arrive as JSON, which carries ``NaN``.
+    Both promotion comparisons below are written against ``1.0``, and ``NaN``
+    compares false against every bound, so a non-finite measurement satisfies
+    ``value > 1.0`` and ``value <= 1.0`` exactly as a comfortable margin does.
+    Rejecting it here keeps each comparison meaning what it says.
+
+    Args:
+        value: the serialized speedup measurement.
+        label: field name used to identify the rejected value.
+
+    Raises:
+        MPSProductionAcceptanceError: if the value is not a finite number.
+    """
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise MPSProductionAcceptanceError(
+            f"{label} is missing or not a number: {value!r}"
+        ) from exc
+    if not math.isfinite(number):
+        raise MPSProductionAcceptanceError(f"{label} is not finite: {number}")
+    return number
 
 
 def select_mps_crossover_decision(
@@ -58,7 +87,11 @@ def select_mps_crossover_decision(
         point
         for point in matches
         if point.get("decision") == "distributed"
-        and float(point.get("speedup_ci_low", 0.0)) > 1.0
+        and _measured_speedup(
+            point.get("speedup_ci_low", 0.0),
+            label="planner crossover surface speedup_ci_low",
+        )
+        > 1.0
     ]
     if distributed:
         return max(distributed, key=lambda point: float(point["speedup_ci_low"]))
@@ -337,7 +370,11 @@ def build_mps_release_artifact(
             )
         if (
             record.get("gate") == "performance"
-            and float(record.get("speedup_ci_low", 0.0)) <= 1.0
+            and _measured_speedup(
+                record.get("speedup_ci_low", 0.0),
+                label="MPS performance record speedup_ci_low",
+            )
+            <= 1.0
         ):
             raise MPSProductionAcceptanceError(
                 "MPS performance confidence interval must exclude no improvement"
