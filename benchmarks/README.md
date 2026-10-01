@@ -203,6 +203,11 @@ The focused
 [`BATCHED_STATEVECTOR_LAYOUT_LIFETIME_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_LAYOUT_LIFETIME_CPU_ARM64_20261001_SCORECARD.md)
 then measures early input-layout release against exact legacy retention on the
 Random Clifford and local-brickwork allocation hotspots.
+The native static-Clifford layer follow-up is documented in
+[`BATCHED_STATEVECTOR_NATIVE_CLIFFORD_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_NATIVE_CLIFFORD_CPU_ARM64_20261001_SCORECARD.md).
+It compares the optimized path with its explicit rollback and PennyLane
+Lightning in the same run, including exact timing, peak RSS, correctness,
+applicability boundaries, and the full reproduction command.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a

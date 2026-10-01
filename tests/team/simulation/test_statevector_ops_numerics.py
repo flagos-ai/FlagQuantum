@@ -10,6 +10,7 @@ import flagquantum.simulation.statevector.product_state as product_state
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
+from flagquantum.simulation.native_cpu import native_cpu_one_qubit_layer_available
 from flagquantum.simulation.statevector.cz_graph import (
     _apply_cz_graph_cpu,
     _cz_graph_signs_cpu,
@@ -43,6 +44,52 @@ from flagquantum.simulation.statevector.two_qubit_cpu import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _fixed_clifford_batch_circuit(inputs: torch.Tensor) -> Circuit:
+    circuit = Circuit(6, bsz=inputs.shape[0], dtype=inputs.dtype, inputs=inputs)
+    for name, wire in (("h", 0), ("s", 1), ("x", 2), ("y", 3), ("z", 4), ("sdg", 5)):
+        getattr(circuit, name)(wire)
+    return circuit
+
+
+def test_native_fixed_clifford_batch_layer_has_rollback_and_preserves_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = torch.Generator().manual_seed(2129)
+    inputs = (
+        torch.randn((2, 64), generator=generator)
+        + 1j * torch.randn((2, 64), generator=generator)
+    ).to(torch.complex128)
+    original = inputs.clone()
+    circuit = _fixed_clifford_batch_circuit(inputs)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_FIXED_ONE_QUBIT_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
+    monkeypatch.setenv("FQ_CPU_NATIVE_FIXED_ONE_QUBIT_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 1
+        )
+
+
+def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inputs = torch.randn((2, 64), dtype=torch.complex128, requires_grad=True)
+    circuit = _fixed_clifford_batch_circuit(inputs)
+    monkeypatch.setenv("FQ_CPU_NATIVE_FIXED_ONE_QUBIT_LAYER", "1")
+
+    output = circuit.state(refresh=True)
+    output.real.sum().backward()
+
+    assert inputs.grad is not None
+    assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
 
 
 def test_single_qubit_fusion_preserves_wire_order_and_reordering_evidence() -> None:

@@ -31,6 +31,11 @@ from .controlled_phase import (
     _controlled_phase_graph_factors_cpu,
 )
 from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
+from .execution_metrics import initial_runtime_metrics
+from .fixed_layer_cpu import (
+    apply_native_fixed_one_qubit_layer,
+    native_fixed_layer_compile_enabled,
+)
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
@@ -81,7 +86,7 @@ from .program import (
 )
 
 if TYPE_CHECKING:
-    from ...circuit import Circuit, _StatevectorExecutionStatistics
+    from ...circuit import Circuit
 
 
 _CPU_DISJOINT_DENSE_MEDIUM_STATE_MIN_WIRES = 18
@@ -272,126 +277,6 @@ def _controlled_phase_graph_factors(
             )
         circuit._statevector_fused_matrices[key] = cached
     return cached, graph_wires
-
-
-def _initial_runtime_metrics(
-    program: Sequence[_StatevectorProgramStep], *, enable_triton_loop: bool
-) -> _StatevectorExecutionStatistics:
-    metric_steps = tuple(
-        region
-        for step in program
-        for region in (
-            step.regions
-            if isinstance(
-                step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
-            )
-            else (step,)
-        )
-    )
-    diagonal_metric_steps = tuple(
-        region
-        for step in program
-        for region in (
-            step.regions
-            if isinstance(step, _StatevectorCrossWireDiagonalStep)
-            else (step,)
-        )
-    )
-    loop_steps = tuple(
-        step for step in metric_steps if isinstance(step, _StatevectorRXRZLoopStep)
-    )
-    # Only flatten the dedicated diagonal wrapper for diagonal-path metrics.
-    # A diagonal region inside a mixed single-wire group is materialized in the
-    # group's dense Kronecker matrix and does not execute the elementwise path.
-    # Counting it here would misreport which kernel actually ran.
-    #
-    # The predicate is the one the dispatch routes on, deliberately, including
-    # its treatment of a supplied matrix: a gate named ``rz`` that carries a
-    # matrix of its own does not take the diagonal kernel, so counting it here
-    # would make the field disagree with the run it describes.
-    diagonal_unfused_gates = sum(
-        isinstance(step, _StatevectorGateStep) and _diagonal_region((step.instruction,))
-        for step in diagonal_metric_steps
-    )
-    diagonal_fused_regions = tuple(
-        step
-        for step in diagonal_metric_steps
-        if isinstance(step, _StatevectorFusedGateStep) and step.diagonal
-    )
-    controlled_phase_regions = tuple(
-        step
-        for step in metric_steps
-        if isinstance(step, _StatevectorControlledPhaseDecompositionStep)
-    )
-    controlled_phase_graph_regions = tuple(
-        step
-        for step in metric_steps
-        if isinstance(step, _StatevectorControlledPhaseGraphStep)
-    )
-    cz_graph_regions = tuple(
-        step for step in metric_steps if isinstance(step, _StatevectorCZGraphStep)
-    )
-    return {
-        "triton_single_qubit_loop_enabled": enable_triton_loop,
-        "triton_single_qubit_loop_regions": len(loop_steps),
-        "triton_single_qubit_loop_gates": sum(
-            2 * len(step.pairs) for step in loop_steps
-        ),
-        "triton_ry_rz_pair_candidates": sum(
-            isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == ("ry", "rz")
-            for step in metric_steps
-        ),
-        "triton_ry_rz_pair_executed": 0,
-        "triton_single_qubit_matrix_regions": 0,
-        "diagonal_elementwise_gates": diagonal_unfused_gates
-        + sum(len(step.instructions) for step in diagonal_fused_regions)
-        + 5 * len(controlled_phase_regions)
-        + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
-        + sum(len(step.edges) for step in cz_graph_regions),
-        "diagonal_fused_regions": len(diagonal_fused_regions)
-        + len(controlled_phase_regions)
-        + len(controlled_phase_graph_regions)
-        + len(cz_graph_regions),
-        "permutation_gates": sum(
-            isinstance(step, _StatevectorGateStep)
-            and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
-            for step in program
-        )
-        + sum(
-            len(step.controls)
-            for step in metric_steps
-            if isinstance(step, _StatevectorCXSequenceStep)
-        ),
-        "triton_cx_sequence_regions": sum(
-            isinstance(step, _StatevectorCXSequenceStep) for step in metric_steps
-        ),
-        "fixed_single_qubit_specialized_gates": sum(
-            isinstance(step, _StatevectorGateStep)
-            and canonical_opcode(step.instruction.name) == "y"
-            for step in program
-        ),
-        "fused_gate_regions": sum(
-            isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
-        )
-        + len(controlled_phase_regions)
-        + len(controlled_phase_graph_regions)
-        + len(cz_graph_regions),
-        "fused_gate_count": sum(
-            len(step.instructions)
-            for step in metric_steps
-            if isinstance(step, _StatevectorFusedGateStep)
-        )
-        + 5 * len(controlled_phase_regions)
-        + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
-        + sum(len(step.edges) for step in cz_graph_regions),
-        "dependency_reordered_single_qubit_regions": sum(
-            isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
-            for step in metric_steps
-        ),
-        "statevector_apply_count": len(program),
-    }
 
 
 def _prepare_batched_rotation_matrices(
@@ -834,6 +719,7 @@ def _execute_statevector_program(
     circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
         batched_rotation_matrices
     )
+    owns_output = False
     for step in program:
         if isinstance(step, _StatevectorControlledPhaseGraphStep):
             factors, wires = _controlled_phase_graph_factors(circuit, step, output)
@@ -854,14 +740,37 @@ def _execute_statevector_program(
             )
             continue
         if isinstance(step, _StatevectorDisjointDenseStep):
-            output = _apply_disjoint_dense_step(
-                circuit,
+            native_output = apply_native_fixed_one_qubit_layer(
                 step,
                 output,
-                parameter_bindings,
-                batched_rx_ry_rz_matrices,
-                batched_rotation_matrices,
+                n_wires=circuit.n_wires,
+                owns_state=owns_output,
             )
+            if native_output is not None:
+                output = native_output
+                owns_output = True
+                circuit._last_statevector_runtime[
+                    "native_cpu_one_qubit_layer_regions"
+                ] += 1
+                continue
+            fallback_steps = (
+                tuple(
+                    _StatevectorDisjointDenseStep(step.regions[start : start + 4])
+                    for start in range(0, len(step.regions), 4)
+                )
+                if step.native_preferred and len(step.regions) > 4
+                else (step,)
+            )
+            for fallback_step in fallback_steps:
+                output = _apply_disjoint_dense_step(
+                    circuit,
+                    fallback_step,
+                    output,
+                    parameter_bindings,
+                    batched_rx_ry_rz_matrices,
+                    batched_rotation_matrices,
+                )
+            owns_output = True
             continue
         if isinstance(step, _StatevectorCrossWireDiagonalStep):
             output = _apply_cross_wire_diagonal_step(
@@ -992,7 +901,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_clifford_matching=product_clifford_matching,
                 constant_cache=circuit._statevector_fused_matrices,
             )
-            circuit._last_statevector_runtime = _initial_runtime_metrics(
+            circuit._last_statevector_runtime = initial_runtime_metrics(
                 product_program, enable_triton_loop=False
             )
             circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = 0
@@ -1018,6 +927,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and _cpu_disjoint_single_wire_fusion_enabled()
             and not _cpu_single_wire_elementwise_enabled()
         )
+        enable_cpu_native_fixed_one_qubit_layer = native_fixed_layer_compile_enabled(
+            circuit._instructions,
+            parameter_bindings,
+            output,
+            batch_size=batch_size,
+        )
         max_cpu_two_wire_regions = (
             2 if enable_cpu_disjoint_single_wire and batch_size >= 2 else 1
         )
@@ -1040,6 +955,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_cz_graph,
             "cpu_disjoint_single_wire",
             enable_cpu_disjoint_single_wire,
+            "cpu_native_fixed_one_qubit_layer",
+            enable_cpu_native_fixed_one_qubit_layer,
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
             "cpu_controlled_phase_graph",
@@ -1058,6 +975,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
                 enable_cpu_cz_graph=enable_cpu_cz_graph,
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
+                enable_cpu_native_fixed_one_qubit_layer=(
+                    enable_cpu_native_fixed_one_qubit_layer
+                ),
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition
                 ),
@@ -1066,7 +986,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 max_dense_wires=max_cpu_dense_wires,
             )
             circuit._backend_programs[program_key] = program
-        circuit._last_statevector_runtime = _initial_runtime_metrics(
+        circuit._last_statevector_runtime = initial_runtime_metrics(
             program, enable_triton_loop=enable_triton_loop
         )
         batch_chunk_size = (

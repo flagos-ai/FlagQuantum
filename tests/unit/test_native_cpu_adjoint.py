@@ -504,6 +504,7 @@ def test_adjoint_observable_weight_cache_evicts_least_recent_entry(
         (3, 0, 4, 2),
         (5, 1, 4, 0, 3, 2),
         tuple(range(8)),
+        tuple(range(11)),
     ),
 )
 def test_native_rotation_block_matches_sequential_pytorch(
@@ -541,6 +542,42 @@ def test_native_rotation_block_matches_sequential_pytorch(
     )
 
     assert applied
+    tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wire_count", (2, 6, 11))
+def test_native_fixed_clifford_block_matches_sequential_pytorch(
+    dtype: torch.dtype, wire_count: int
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(1901 + wire_count)
+    state = (
+        torch.randn((2, 1 << wire_count), generator=generator)
+        + 1j * torch.randn((2, 1 << wire_count), generator=generator)
+    ).to(dtype)
+    scale = 2**-0.5
+    matrices_by_kind = (
+        torch.tensor(((scale, scale), (scale, -scale)), dtype=dtype),
+        torch.tensor(((0, 1), (1, 0)), dtype=dtype),
+        torch.tensor(((1, 0), (0, 1j)), dtype=dtype),
+    )
+    matrices = torch.stack(
+        tuple(matrices_by_kind[index % 3] for index in range(wire_count))
+    ).contiguous()
+    expected = state.clone()
+    for matrix, wire in zip(matrices, range(wire_count), strict=True):
+        expected = _apply_matrix(expected, matrix, (wire,), wire_count)
+
+    assert fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.arange(wire_count, dtype=torch.int64),
+        n_wires=wire_count,
+    )
+
     tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
     torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
 
@@ -639,6 +676,33 @@ def test_specialized_forward_rotation_arithmetic_has_explicit_rollback(
     assert fused_rotation_block_forward_(
         rollback, matrices, torch.tensor((0, 1)), n_wires=2
     )
+
+    torch.testing.assert_close(specialized, rollback, atol=2e-12, rtol=2e-12)
+
+
+def test_specialized_fixed_clifford_arithmetic_has_explicit_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    scale = 2**-0.5
+    matrices = torch.stack(
+        (
+            torch.tensor(((scale, scale), (scale, -scale)), dtype=torch.complex128),
+            torch.tensor(((0, 1), (1, 0)), dtype=torch.complex128),
+            torch.tensor(((1, 0), (0, 1j)), dtype=torch.complex128),
+        )
+    ).contiguous()
+    initial = torch.arange(8, dtype=torch.float64).to(torch.complex128).reshape(1, 8)
+    specialized = initial.clone()
+    rollback = initial.clone()
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "1")
+    assert fused_rotation_block_forward_(
+        specialized, matrices, torch.arange(3), n_wires=3
+    )
+    monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "0")
+    assert fused_rotation_block_forward_(rollback, matrices, torch.arange(3), n_wires=3)
 
     torch.testing.assert_close(specialized, rollback, atol=2e-12, rtol=2e-12)
 

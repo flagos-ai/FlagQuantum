@@ -26,6 +26,7 @@ from .diagonal_cpu import (
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
 )
+from .fixed_layer_cpu import fuse_native_fixed_one_qubit_layers
 from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
@@ -237,6 +238,7 @@ def _compile_statevector_program(
     enable_cpu_controlled_phase_decomposition: bool = False,
     enable_cpu_controlled_phase_graph: bool = False,
     enable_cpu_disjoint_clifford_matching: bool = False,
+    enable_cpu_native_fixed_one_qubit_layer: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -249,6 +251,8 @@ def _compile_statevector_program(
     if enable_cpu_controlled_phase_decomposition:
         program = controlled_phase._fuse_controlled_phase_decompositions(base_program)
     optimized: list[_StatevectorPreCXStep] = list(_fuse_gate_sequences(program))
+    if enable_cpu_native_fixed_one_qubit_layer:
+        optimized = fuse_native_fixed_one_qubit_layers(optimized)
     if enable_cpu_controlled_phase_graph:
         optimized = controlled_phase._fuse_controlled_phase_graphs(optimized)
     if enable_cpu_cz_graph:
