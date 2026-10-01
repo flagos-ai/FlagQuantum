@@ -12,6 +12,14 @@ for the whole program, and `routing.py` materializes that plan into Core
 the SABRE layout pass of routing the reversed program, and therefore restores the
 output layout with an explicit SWAP sequence instead of replaying the forward
 SWAPs in reverse.
+`layout.py` owns the logical-to-physical `Layout` value and the two
+transformations over it: applying a layout to a program by relabelling its wires,
+and removing the trailing restore SWAPs a routed program ends with. A routing
+strategy always returns a program that ends on the identity layout, because
+target legalization and the deployment routing evidence both require that
+postcondition; removing the restore is therefore an explicit opt-in
+transformation over an already routed program, not a routing strategy and not a
+routing result to hand back to legalization.
 `openqasm.py` and `qcis.py` own their target-format emission.
 `noise.py` owns the deterministic `CircuitIR + NoiseModel` to channel-bearing
 `CircuitIR` transformation. `operator_lowering.py` owns the
