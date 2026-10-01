@@ -1,0 +1,102 @@
+{
+  "schema": "flagquantum.cpu_adjoint_low_memory_cx.v1",
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "native_cpu_adjoint_low_memory_cx",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "unknown",
+  "date": "2026-09-30",
+  "platform": "macOS arm64",
+  "python": "3.12.14",
+  "torch": "2.13.0",
+  "threads": 2,
+  "distribution_semantics": "single_device_fast_path",
+  "workload": {
+    "name": "hardware_efficient_vqe",
+    "n_wires": 24,
+    "layers": 1,
+    "dtype": "complex128",
+    "logical_statevector_bytes": 268435456,
+    "gate_count": 95,
+    "parameter_count": 72,
+    "observable_term_count": 47
+  },
+  "low_memory_inplace_cx": {
+    "memory_budget_bytes": 1073741824,
+    "checkpoint_strategy": "reversible_adjoint",
+    "selection_reason": "low_memory_cpu_cx_reversible_fits_budget",
+    "full_state_scratch_bytes": 0,
+    "rematerialized_gate_count": 0,
+    "sample_count": 4,
+    "forward_median_seconds": 0.23990245849995517,
+    "backward_median_seconds": 0.5668313334999766,
+    "value_and_grad_median_seconds": 0.8064584589997139,
+    "value_and_grad_samples_seconds": [
+      0.7998866670004645,
+      0.8013193339997997,
+      0.8115975839996281,
+      0.8252662489999238
+    ],
+    "isolated_peak_rss_bytes": 1345060864,
+    "backward_completed": true
+  },
+  "fused_cx_gather": {
+    "memory_budget_bytes": 1342177280,
+    "checkpoint_strategy": "reversible_adjoint",
+    "selection_reason": "forward_state_reuse_fits_budget",
+    "full_state_scratch_bytes": 536870912,
+    "rematerialized_gate_count": 0,
+    "sample_count": 4,
+    "forward_median_seconds": 0.23942814599990925,
+    "backward_median_seconds": 0.40424589600024774,
+    "value_and_grad_median_seconds": 0.6433626460000141,
+    "value_and_grad_samples_seconds": [
+      0.6330002079994301,
+      0.6389692080001623,
+      0.647756083999866,
+      0.6605905420001363
+    ],
+    "isolated_peak_rss_bytes": 1546420224,
+    "backward_completed": true
+  },
+  "budgeted_block_checkpoint_rollback": {
+    "source": "native_cpu_adjoint_budgeted_block_checkpoints_cpu_arm64_20260930.json",
+    "memory_budget_bytes": 1073741824,
+    "checkpoint_strategy": "interval",
+    "checkpoint_interval": 48,
+    "rematerialized_gate_count": 2304,
+    "forward_seconds": 1.2133187500000986,
+    "backward_seconds": 49.54219891599996,
+    "value_and_grad_seconds": 50.75551766600006
+  },
+  "comparison": {
+    "block_to_low_memory_backward_speedup": 87.40201182968309,
+    "block_to_low_memory_value_and_grad_speedup": 62.93630762947706,
+    "low_memory_to_fused_value_and_grad_ratio": 1.2535052571263148,
+    "isolated_peak_rss_reduction_bytes": 201359360
+  },
+  "validation": {
+    "energy": 16.41756900554898,
+    "gradient_checksum": -16.4751489020745,
+    "native_kernel_dtypes": [
+      "complex64",
+      "complex128"
+    ],
+    "native_kernel_batch_sizes": [
+      1,
+      2
+    ],
+    "full_parameter_gradient_covered_by_unit_test": true
+  },
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "limitations": [
+    "single-device Apple arm64 CPU measurement",
+    "planning budget is a statevector working-set selector rather than a process-RSS cap",
+    "in-place CX trades one pass per CNOT for lower memory and is slower than fused gather",
+    "result is not distributed or release-grade scalability evidence"
+  ]
+}

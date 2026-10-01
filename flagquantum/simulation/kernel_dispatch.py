@@ -1,8 +1,8 @@
-"""Shared fail-closed authorization for cataloged statevector kernels."""
+"""Shared fail-closed authorization for cataloged simulation kernels."""
 
 from __future__ import annotations
 
-from ...kernels.catalog import KernelImplementation, KernelMatchResult
+from ..kernels.catalog import KernelImplementation, KernelMatchResult
 
 
 def _require_cataloged_kernel(

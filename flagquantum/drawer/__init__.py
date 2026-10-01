@@ -28,6 +28,9 @@ except ImportError:
     MPLDrawer = None  # type: ignore[assignment, misc]
 
 
+_FORMATS = ("text", "mpl")
+
+
 def draw(
     program: object, format: str = "text", **kwargs: Any
 ) -> str | tuple[Figure, Axes]:
@@ -42,8 +45,17 @@ def draw(
     Returns:
         For text mode: returns a string; for mpl mode: returns (fig, ax)
     Raises:
+        ValueError: When format is not one of the two supported renderers
         ImportError: When format="mpl" is used but matplotlib is not installed
     """
+    if format not in _FORMATS:
+        # Returning the text diagram for an unrecognized format silently answers
+        # a question the caller did not ask. A typo such as format="png" must
+        # surface as an error instead of a diagram the caller cannot save.
+        raise ValueError(
+            f"unknown draw format {format!r}; expected one of "
+            f"{', '.join(repr(name) for name in _FORMATS)}"
+        )
     if format == "mpl":
         if not _has_mpl:
             raise ImportError(

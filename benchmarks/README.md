@@ -148,6 +148,67 @@ These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing workload comparison question, not isolated kernel
 throughput.
 
+### Batched exact-statevector throughput
+
+Measure one user task that evaluates the same circuit structure for independent
+parameter bindings and returns one exact statevector per binding:
+
+```bash
+pip install -e '.[qiskit,cirq,pennylane]'
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+flagquantum-benchmark run batched_statevector_corpus \
+  --workloads hardware_efficient_statevector truncated_qft_statevector \
+    random_clifford_statevector local_brickwork_statevector \
+    dense_nonlocal_statevector \
+  --n-wires 10 14 18 --batch-sizes 1 8 32 \
+  --threads 1 --warmup 1 --iterations 5 \
+  --json-output benchmarks/results/comparison/batched-statevectors.json \
+  --markdown-output benchmarks/results/comparison/batched-statevectors.md
+```
+
+FlagQuantum executes all bindings through its native parameter-batch path. The
+current Qiskit Aer, Cirq, and PennyLane bridges accept one statevector request at
+a time, so this runner repeats the public bridge call for each binding. It
+therefore measures the complete task as exposed through FlagQuantum today; it
+does not claim to measure each external framework's best native batching API.
+The payload records total time, time per returned statevector, statevectors per
+second, raw samples, correctness, stability, execution strategy, and logical
+statevector storage. It does not measure process peak RSS.
+
+See the [Apple arm64 scorecard](results/comparison/BATCHED_STATEVECTOR_CPU_ARM64_20260930_SCORECARD.md)
+for the checked-in result, its important 18-qubit batching limitation, exact
+times, ratios, and the focused stability rerun.
+
+The [CPU phase-1 scorecard](results/comparison/CPU_PHASE1_SCORECARD_CPU_ARM64_20260930.md)
+summarizes the maintained Apple arm64 corpus: FlagQuantum wins all 20 recorded
+workload/width cases against each of Qiskit Aer, Cirq Simulator, and PennyLane
+Lightning, with concrete times, speedup ranges, provenance, limitations, and
+reproduction commands shown before the regression-gate details.
+
+### Profile-aware CPU regression gate
+
+After producing a candidate artifact on the same measurement profile as a
+checked-in baseline, enforce correctness, stability, sample count, case-matrix
+coverage, and a bounded median-time regression:
+
+```bash
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/simulator_workload_corpus_cpu_arm64_20260924.json \
+  candidate-workload-corpus.json --max-slowdown 1.20 \
+  --minimum-samples 5 --json-output cpu-forward-gate.json
+
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/adjoint_differentiable_simulator_corpus_cpu_arm64_20260928.json \
+  candidate-differentiable-corpus.json --max-slowdown 1.20 \
+  --minimum-samples 5 --json-output cpu-adjoint-gate.json
+```
+
+Exit status `0` means pass, `1` means a correctness, stability, coverage, or
+performance failure, and `2` means the artifacts are not comparable. Platform,
+Python and PyTorch version families, device, thread limits, measurement scope,
+and calls per sample must match. This prevents timings from an arbitrary CI
+runner from approving or rejecting a baseline recorded on different hardware.
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash

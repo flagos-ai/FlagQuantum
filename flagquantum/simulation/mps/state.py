@@ -12,7 +12,6 @@ from ...core.ir import Instruction
 from ...core.runtime_config import get_runtime_config
 from ..gate_matrix import gate_matrix, parameter_tensor
 from ..matrices import GATE_MAT_DICT
-from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix
 from .canonical import move_orthogonality_center as _move_orthogonality_center
 from .canonical import sweep_center_left as _sweep_center_left
@@ -27,6 +26,7 @@ from .models import (
     MPSConfig,
     MPSTruncationRecord,
 )
+from .one_site_dispatch import _apply_mps_one_site
 from .planning import MPSPlanningMixin
 
 
@@ -52,6 +52,7 @@ class MPSState(MPSPlanningMixin):
         self.truncation_records: list[MPSTruncationRecord] = []
         self.orthogonality_center: int | None = None
         self._canonical_center_valid = False
+        self.triton_one_site_regions = 0
         self.triton_two_site_regions = 0
         self.eager_two_site_regions = 0
         self.svd_gradient_method = "not_used"
@@ -854,8 +855,8 @@ class MPSState(MPSPlanningMixin):
     def apply_one(self, matrix: torch.Tensor, wire: int) -> None:
         self._validate_wire(int(wire))
         tensor = self.tensors[int(wire)]
-        equation = "pq,blqr->blpr" if matrix.ndim == 2 else "bpq,blqr->blpr"
-        self.tensors[int(wire)] = complex_einsum_pair(equation, matrix, tensor)
+        self.tensors[int(wire)], routed = _apply_mps_one_site(tensor, matrix)
+        self.triton_one_site_regions += int(routed)
 
     def apply_parametric_one(self, name: str, theta: Any, wire: int) -> None:
         """Apply one batched ``rx``/``ry``/``rz`` through the shared parameter rule.
@@ -1081,9 +1082,9 @@ class MPSState(MPSPlanningMixin):
             and not reverse
             and contraction_volume >= fused_threshold
         ):
-            from ...kernels.triton.mps_two_site import fused_mps_two_site
+            from .two_site_dispatch import _apply_cataloged_mps_two_site
 
-            fused = fused_mps_two_site(left, matrix, right)
+            fused = _apply_cataloged_mps_two_site(left, matrix, right)
             self._split_pair(
                 fused.reshape(self.bsz, left.shape[1], 2, 2, right.shape[3]),
                 int(left_wire),
@@ -1148,9 +1149,11 @@ class MPSState(MPSPlanningMixin):
                 and volume >= 2**18
             )
             if use_triton:
-                from ...kernels.triton.mps_two_site import fused_mps_two_site
+                from .two_site_dispatch import _apply_cataloged_mps_two_site
 
-                matrix = fused_mps_two_site(flat_left, flat_gates, flat_right)
+                matrix = _apply_cataloged_mps_two_site(
+                    flat_left, flat_gates, flat_right
+                )
                 self.triton_two_site_regions += bond_count
             else:
                 theta = torch.einsum("kblsm,kbmtr->kblstr", left, right).reshape(

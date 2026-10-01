@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+import flagquantum.simulation.mps.two_site_dispatch as two_site_dispatch
 from flagquantum.simulation.mps.low_rank import (
     fixed_rank_range_qr,
     fixed_rank_two_site_range_qr,
@@ -45,3 +46,50 @@ def test_fixed_rank_two_site_range_qr_shapes_and_gradient():
     for value in (left, gate, right):
         assert value.grad is not None
         assert torch.isfinite(value.grad).all()
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_fixed_rank_two_site_routes_inference_but_preserves_training_fallback(
+    monkeypatch,
+) -> None:
+    catalog_routes = []
+    require_cataloged_kernel = two_site_dispatch._require_mps_projected_two_site_kernel
+
+    def capture_catalog_route(*, device_type, dtype):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        catalog_routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        two_site_dispatch,
+        "_require_mps_projected_two_site_kernel",
+        capture_catalog_route,
+    )
+    left = torch.randn(2, 3, 2, 5, device="cuda", dtype=torch.complex64)
+    gate = torch.randn(2, 4, 4, device="cuda", dtype=torch.complex64)
+    right = torch.randn(2, 5, 2, 4, device="cuda", dtype=torch.complex64)
+
+    left_out, right_out = fixed_rank_two_site_range_qr(left, gate, right, 4)
+
+    assert left_out.shape == (2, 3, 2, 4)
+    assert right_out.shape == (2, 4, 2, 4)
+    assert catalog_routes == ["FQKI-TRITON-MPS-002-A"]
+
+    training_inputs = tuple(
+        value.detach().clone().requires_grad_(True) for value in (left, gate, right)
+    )
+    training_left, training_right = fixed_rank_two_site_range_qr(
+        *training_inputs,
+        4,
+    )
+    torch.real(
+        (training_left.reshape(2, 6, 4) @ training_right.reshape(2, 4, 8)).sum()
+    ).backward()
+
+    assert catalog_routes == ["FQKI-TRITON-MPS-002-A"]
+    assert all(value.grad is not None for value in training_inputs)

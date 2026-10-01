@@ -1,0 +1,120 @@
+{
+  "schema": "flagquantum.cpu_adjoint_cx_cycles.v1",
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "native_cpu_adjoint_cx_cycles",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "unknown",
+  "date": "2026-09-30",
+  "platform": "macOS arm64",
+  "python": "3.12.14",
+  "torch": "2.13.0",
+  "threads": 2,
+  "distribution_semantics": "single_device_fast_path",
+  "workload": {
+    "name": "hardware_efficient_vqe",
+    "n_wires": 24,
+    "layers": 1,
+    "dtype": "complex128",
+    "logical_statevector_bytes": 268435456,
+    "gate_count": 95,
+    "parameter_count": 72,
+    "observable_term_count": 47
+  },
+  "compact_cycle_inplace_cx": {
+    "memory_budget_bytes": 1073741824,
+    "checkpoint_strategy": "reversible_adjoint",
+    "selection_reason": "low_memory_cpu_cx_reversible_fits_budget",
+    "full_state_scratch_bytes": 0,
+    "maximum_auxiliary_index_bytes": 150994944,
+    "rematerialized_gate_count": 0,
+    "sample_count": 6,
+    "forward_median_seconds": 0.24228920799987463,
+    "backward_median_seconds": 0.4053726244997051,
+    "value_and_grad_median_seconds": 0.6482752494998749,
+    "value_and_grad_samples_seconds": [
+      0.6447156659996836,
+      0.6478249570000116,
+      0.6425791669998944,
+      0.6487255419997382,
+      0.6489499579993208,
+      0.6505845410001712
+    ],
+    "isolated_peak_rss_bytes": 1344880640,
+    "backward_completed": true
+  },
+  "per_cx_pair_rollback": {
+    "environment": "FQ_NATIVE_CPU_CX_ADJOINT_CYCLES=0",
+    "memory_budget_bytes": 1073741824,
+    "checkpoint_strategy": "reversible_adjoint",
+    "full_state_scratch_bytes": 0,
+    "rematerialized_gate_count": 0,
+    "sample_count": 8,
+    "forward_median_seconds": 0.2492642915003671,
+    "backward_median_seconds": 0.5227950204994158,
+    "value_and_grad_median_seconds": 0.7713451870004064,
+    "value_and_grad_samples_seconds": [
+      0.7959740839996812,
+      0.7663874589998159,
+      0.7609669159992336,
+      0.7754172499999186,
+      0.7552276239994171,
+      0.9263422499998342,
+      0.789177457999358,
+      0.7672731240008943
+    ],
+    "isolated_peak_rss_bytes": 1344962560,
+    "backward_completed": true
+  },
+  "fused_cx_gather": {
+    "memory_budget_bytes": 1342177280,
+    "checkpoint_strategy": "reversible_adjoint",
+    "full_state_scratch_bytes": 536870912,
+    "rematerialized_gate_count": 0,
+    "sample_count": 6,
+    "forward_median_seconds": 0.247584708499744,
+    "backward_median_seconds": 0.39632902049970653,
+    "value_and_grad_median_seconds": 0.6396932914994977,
+    "value_and_grad_samples_seconds": [
+      0.6360394999992423,
+      0.6724749160011925,
+      0.6298382909999418,
+      0.6433470829997532,
+      0.6324303749997853,
+      0.653605417000108
+    ],
+    "isolated_peak_rss_bytes": 1546698752,
+    "backward_completed": true
+  },
+  "comparison": {
+    "pair_to_cycle_backward_speedup": 1.2896653323460823,
+    "pair_to_cycle_value_and_grad_speedup": 1.1898421042535194,
+    "cycle_to_fused_backward_ratio": 1.0228184249253212,
+    "cycle_to_fused_value_and_grad_ratio": 1.013415738627273,
+    "cycle_peak_rss_reduction_vs_fused_bytes": 201818112
+  },
+  "validation": {
+    "energy": 16.41756900554898,
+    "gradient_checksum": -16.4751489020745,
+    "native_kernel_dtypes": [
+      "complex64",
+      "complex128"
+    ],
+    "native_kernel_batch_sizes": [
+      1,
+      2
+    ],
+    "full_parameter_gradient_covered_by_unit_test": true
+  },
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "limitations": [
+    "single-device Apple arm64 CPU measurement",
+    "planning budget is a statevector working-set selector rather than a process-RSS cap",
+    "auxiliary index accounting is a conservative upper bound",
+    "result is not distributed or release-grade scalability evidence"
+  ]
+}

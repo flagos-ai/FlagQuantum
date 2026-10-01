@@ -151,6 +151,14 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "distributed_mps",
     ),
     _semantic(
+        "FQK-MPS-003",
+        "mps.contract.one_site_gate",
+        "mps",
+        "Contract a one-site MPS tensor with a one-qubit gate.",
+        "tensor_network_simulation",
+        "variational_algorithms",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",

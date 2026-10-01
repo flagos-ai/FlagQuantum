@@ -1,0 +1,286 @@
+{
+  "artifact_class": "generated_comparison_report",
+  "benchmark": "cpu_performance_regression_gate",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "hardware_efficient_vqe/10/complex128/c8ba67d92201886f3c6bcd099c8defb7cc45015810aa8d736df95280ab15ccbd",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.0006677079982182477,
+          "current_median_seconds": 0.0005909169994993135,
+          "current_over_baseline": 0.8849931423259151,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.0012708750000456348,
+          "current_median_seconds": 0.0011085829992225626,
+          "current_over_baseline": 0.8722990059468912,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.0019511249993229285,
+          "current_median_seconds": 0.0016976239985524444,
+          "current_over_baseline": 0.8700744437909139,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "hardware_efficient_vqe/14/complex128/fc8c455d4ca139f5a4edd760a1fda918ec2c4e7a4907b20dc2c6bad32e244109",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.00212916700183996,
+          "current_median_seconds": 0.0012677499998972053,
+          "current_over_baseline": 0.5954206498605582,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.0025669159986136947,
+          "current_median_seconds": 0.0016621249997115228,
+          "current_over_baseline": 0.6475182672939749,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.0049210840043087956,
+          "current_median_seconds": 0.002931291999630048,
+          "current_over_baseline": 0.5956598174433665,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "hardware_efficient_vqe/18/complex128/e60e1cd0ef7ed7b83ee0277f8573d7b60263596794f9b05f31116f94845a3089",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.02815908300181036,
+          "current_median_seconds": 0.008814208000330837,
+          "current_over_baseline": 0.31301473843321415,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.020473959000810282,
+          "current_median_seconds": 0.00706204199923377,
+          "current_over_baseline": 0.34492801313875254,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.048421084000437986,
+          "current_median_seconds": 0.015817249000974698,
+          "current_over_baseline": 0.3266603655719815,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "hardware_efficient_vqe/22/complex128/3132177566e6efbdc057aeeea13e56893fad38caf23e46eef86b1b01a1d14556",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.5973262080005952,
+          "current_median_seconds": 0.16714300000057847,
+          "current_over_baseline": 0.27981862801575236,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.5075784170003317,
+          "current_median_seconds": 0.10792216700065183,
+          "current_over_baseline": 0.2126216627539963,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 1.104904625000927,
+          "current_median_seconds": 0.2756833750008809,
+          "current_over_baseline": 0.24950875284882587,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "qaoa_path_maxcut/10/complex128/743174cb94e59d41056538476203f2e69e9ddcb42894eb9ddfe12b15560a432a",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.0005860419987584464,
+          "current_median_seconds": 0.00028391600062604994,
+          "current_over_baseline": 0.4844635729649708,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.001119833999837283,
+          "current_median_seconds": 0.0010350409993407084,
+          "current_over_baseline": 0.9242807411554789,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.0017306259978795424,
+          "current_median_seconds": 0.001334165997832315,
+          "current_over_baseline": 0.7709152638796645,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "qaoa_path_maxcut/14/complex128/5d8b52dd0d21ea673e5484f4405c9f8b58994e9b65771e8e45734e7f207b2094",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.0017284579989791382,
+          "current_median_seconds": 0.0009582500006217742,
+          "current_over_baseline": 0.5543958841856359,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.0024277080010506324,
+          "current_median_seconds": 0.001503041999967536,
+          "current_over_baseline": 0.6191197620624345,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.004142417001276044,
+          "current_median_seconds": 0.0024962490006146254,
+          "current_over_baseline": 0.6026068838182328,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "qaoa_path_maxcut/18/complex128/eb1794d01143cdc7d275ba9aa82f419889531ea723e3b2ac0c088dae5458abe5",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.022989624998444924,
+          "current_median_seconds": 0.011058125001000008,
+          "current_over_baseline": 0.48100501864419304,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.02185095900131273,
+          "current_median_seconds": 0.010372708000431885,
+          "current_over_baseline": 0.47470264347705415,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.0449664589978056,
+          "current_median_seconds": 0.02156249999825377,
+          "current_over_baseline": 0.47952408259022655,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "qaoa_path_maxcut/22/complex128/a2b01dae139873d09ef74ca86f92421c4aa0e3c14b76714eaf0b13a1eb6bd8a3",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "backward": {
+          "baseline_median_seconds": 0.41628012499859324,
+          "current_median_seconds": 0.18807320799896843,
+          "current_over_baseline": 0.4517948292621561,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "forward": {
+          "baseline_median_seconds": 0.4145762080006534,
+          "current_median_seconds": 0.17480541599979915,
+          "current_over_baseline": 0.42164845118059363,
+          "current_sample_count": 7,
+          "passed": true
+        },
+        "value_and_grad": {
+          "baseline_median_seconds": 0.8382290419976925,
+          "current_median_seconds": 0.36355458299840393,
+          "current_over_baseline": 0.4337174743217794,
+          "current_sample_count": 7,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "distribution_semantics": "single_process_single_device",
+  "failures": [],
+  "missing_cases": [],
+  "non_release_evidence": true,
+  "passed": true,
+  "policy": {
+    "case_matrix_must_not_shrink": true,
+    "correctness_required": true,
+    "max_slowdown": 1.2,
+    "minimum_samples": 5,
+    "stability_required": true
+  },
+  "profile": {
+    "calls_per_sample": 1,
+    "device": "cpu",
+    "exact_statevector": true,
+    "machine": "arm64",
+    "measurement_scope": "expectation_forward_plus_full_reverse_mode_parameter_gradient",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python_family": "3.12",
+    "schema": "flagquantum.differentiable_simulator_corpus.v1",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "torch_family": "2.13",
+    "torch_threads": 1
+  },
+  "release_gate_allowed": false,
+  "runner": "cpu_performance_gate",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.cpu_performance_regression_gate.v1",
+  "unexpected_cases": [],
+  "verdict": "pass"
+}

@@ -46,9 +46,9 @@ def _literal_all(tree: ast.Module) -> set[str]:
 def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     validate_catalog()
 
-    assert len(SEMANTICS) == 18
-    assert len(IMPLEMENTATIONS) == 20
-    assert len(EVIDENCE) == 20
+    assert len(SEMANTICS) == 19
+    assert len(IMPLEMENTATIONS) == 21
+    assert len(EVIDENCE) == 21
     assert {semantic.domain for semantic in SEMANTICS} == {
         "gradient",
         "mps",

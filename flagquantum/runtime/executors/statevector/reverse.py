@@ -13,6 +13,11 @@ import torch.distributed as dist
 
 from ....compute import resolve_platform_device
 from ....core.ir import CircuitIR, ensure_circuit_ir
+from ....simulation.native_cpu import (
+    compact_cpu_cx_adjoint_auxiliary_bytes,
+    native_cpu_cx_adjoint_inplace_available,
+    use_compact_cpu_cx_adjoint_cycles,
+)
 from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout
@@ -39,6 +44,20 @@ def _communication_aware_layout_enabled() -> bool:
         "off",
         "no",
     }
+
+
+def _longest_cx_run(ir: CircuitIR) -> int:
+    """Return the longest consecutive CNOT segment in an execution IR."""
+
+    longest = 0
+    current = 0
+    for instruction in ir.instructions:
+        if instruction.name == "cx":
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
 
 
 def _communication_aware_wire_layout(
@@ -275,6 +294,10 @@ class TorchDistributedStatevectorGradientResult:
                 self.backward_evidence.inter_node_communication_bytes
             ),
             "saved_forward_state_reused": self.backward_evidence.saved_forward_state_reused,
+            "backward_checkpoint_count": self.backward_evidence.checkpoint_count,
+            "backward_rematerialized_gate_count": (
+                self.backward_evidence.rematerialized_gate_count
+            ),
             "backward_exchange_chunk_amplitudes": (
                 self.backward_evidence.exchange_chunk_amplitudes
             ),
@@ -416,6 +439,8 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         evidence.fused_parameter_adjoint_count = 0
         evidence.peak_scratch_bytes = 0
         evidence.saved_forward_state_reused = False
+        evidence.checkpoint_count = 0
+        evidence.rematerialized_gate_count = 0
         evidence.exchange_workspace_allocation_count = 0
         evidence.exchange_workspace_reuse_count = 0
         evidence.exchange_workspace_reserved_bytes = 0
@@ -560,10 +585,33 @@ def execute_torch_distributed_statevector_reverse(
         local_world_size=local_world_size,
         complex_bytes=complex_bytes,
     )
+    contains_local_cx = world_size == 1 and any(
+        instruction.name == "cx" for instruction in execution_ir.instructions
+    )
+    longest_local_cx_run = _longest_cx_run(execution_ir) if contains_local_cx else 0
+    compact_cpu_cx_cycles_available = (
+        resolved_device.type == "cpu"
+        and use_compact_cpu_cx_adjoint_cycles(
+            longest_local_cx_run,
+            plan.n_wires,
+        )
+    )
     policy = resolve_checkpoint_policy(
         requested_policy,
         local_state_bytes=plan.shards[rank].local_state_bytes,
         device=resolved_device,
+        instruction_count=len(execution_ir.instructions),
+        contains_local_cx=contains_local_cx,
+        low_memory_cpu_cx_available=(
+            contains_local_cx
+            and resolved_device.type == "cpu"
+            and native_cpu_cx_adjoint_inplace_available()
+        ),
+        compact_cpu_cx_auxiliary_bytes=(
+            compact_cpu_cx_adjoint_auxiliary_bytes(plan.n_wires)
+            if compact_cpu_cx_cycles_available
+            else 0
+        ),
     )
     ownership = tuple(
         ParameterGradientOwnership(

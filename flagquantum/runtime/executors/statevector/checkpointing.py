@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, replace
+from math import ceil
 from typing import Any
 
 from ....compute import get_platform_runtime
@@ -13,13 +14,19 @@ from ....compute import get_platform_runtime
 class StatevectorCheckpointPolicy:
     """Versioned rematerialization policy for deep sharded circuits."""
 
-    version: str = "statevector_checkpoint_v2"
+    version: str = "statevector_checkpoint_v5"
     strategy: str = "auto"
     interval: int = 0
     memory_budget_bytes: int | None = None
     selection_reason: str = "unresolved"
     estimated_local_state_bytes: int = 0
     estimated_required_bytes: int = 0
+    estimated_reversible_bytes: int = 0
+    estimated_fused_reversible_bytes: int = 0
+    estimated_compact_reversible_bytes: int = 0
+    estimated_checkpoint_count: int = 0
+    low_memory_cpu_cx: bool = False
+    compact_cpu_cx_cycles: bool = False
 
     def __post_init__(self) -> None:
         if self.strategy not in {
@@ -52,7 +59,7 @@ def _checkpoint_memory_budget(
         if free_bytes is not None:
             # Keep enough headroom for Python, Torch's allocator, shared
             # libraries, and concurrent host activity. The resulting budget is
-            # an execution ceiling, not a promise to consume all free memory.
+            # a planner input, not a process-RSS cap or allocation promise.
             return max(1, int(free_bytes * 0.7))
     return 512 << 20
 
@@ -62,39 +69,136 @@ def resolve_checkpoint_policy(
     *,
     local_state_bytes: int,
     device: Any,
+    instruction_count: int = 0,
+    contains_local_cx: bool = False,
+    low_memory_cpu_cx_available: bool = False,
+    compact_cpu_cx_auxiliary_bytes: int = 0,
 ) -> StatevectorCheckpointPolicy:
     """Resolve ``auto`` using a conservative rank-local peak-memory model."""
 
     state_bytes = int(local_state_bytes)
+    if state_bytes <= 0:
+        raise ValueError("local_state_bytes must be positive")
+    if instruction_count < 0:
+        raise ValueError("instruction_count must be non-negative")
+    if compact_cpu_cx_auxiliary_bytes < 0:
+        raise ValueError("compact CPU CX auxiliary bytes must be non-negative")
+    cpu_cx_workload = device.type == "cpu" and contains_local_cx
+    fused_reversible_states = 5 if cpu_cx_workload else 4
+    fused_reversible_required = state_bytes * fused_reversible_states
+    low_memory_reversible_required = state_bytes * 4
+    compact_reversible_required = (
+        low_memory_reversible_required + compact_cpu_cx_auxiliary_bytes
+        if cpu_cx_workload
+        and low_memory_cpu_cx_available
+        and compact_cpu_cx_auxiliary_bytes > 0
+        else 0
+    )
     if policy.strategy != "auto":
+        checkpoint_count = (
+            (instruction_count - 1) // policy.interval + 1
+            if policy.strategy == "interval" and instruction_count > 0
+            else 0
+        )
+        if policy.strategy == "reversible_adjoint":
+            required = fused_reversible_required
+        elif policy.strategy == "interval":
+            required = state_bytes * (checkpoint_count + 2)
+        else:
+            required = state_bytes * 3
         return replace(
             policy,
             selection_reason="explicit_strategy",
             estimated_local_state_bytes=state_bytes,
-            estimated_required_bytes=(
-                state_bytes * 4
-                if policy.strategy == "reversible_adjoint"
-                else state_bytes * 3
-            ),
+            estimated_required_bytes=required,
+            estimated_reversible_bytes=fused_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            estimated_compact_reversible_bytes=compact_reversible_required,
+            estimated_checkpoint_count=checkpoint_count,
         )
     budget = _checkpoint_memory_budget(policy, device=device)
-    reversible_required = state_bytes * 4
-    if reversible_required <= budget:
+    if fused_reversible_required <= budget:
         return replace(
             policy,
             strategy="reversible_adjoint",
             memory_budget_bytes=budget,
             selection_reason="forward_state_reuse_fits_budget",
             estimated_local_state_bytes=state_bytes,
-            estimated_required_bytes=reversible_required,
+            estimated_required_bytes=fused_reversible_required,
+            estimated_reversible_bytes=fused_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            estimated_compact_reversible_bytes=compact_reversible_required,
+        )
+    if compact_reversible_required and compact_reversible_required <= budget:
+        return replace(
+            policy,
+            strategy="reversible_adjoint",
+            memory_budget_bytes=budget,
+            selection_reason="compact_cpu_cx_cycles_reversible_fits_budget",
+            estimated_local_state_bytes=state_bytes,
+            estimated_required_bytes=compact_reversible_required,
+            estimated_reversible_bytes=compact_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            estimated_compact_reversible_bytes=compact_reversible_required,
+            low_memory_cpu_cx=True,
+            compact_cpu_cx_cycles=True,
+        )
+    if (
+        cpu_cx_workload
+        and low_memory_cpu_cx_available
+        and low_memory_reversible_required <= budget
+    ):
+        return replace(
+            policy,
+            strategy="reversible_adjoint",
+            memory_budget_bytes=budget,
+            selection_reason="low_memory_cpu_cx_reversible_fits_budget",
+            estimated_local_state_bytes=state_bytes,
+            estimated_required_bytes=low_memory_reversible_required,
+            estimated_reversible_bytes=low_memory_reversible_required,
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            estimated_compact_reversible_bytes=compact_reversible_required,
+            low_memory_cpu_cx=True,
+        )
+    # An interval sweep retains its block-boundary checkpoints plus one adjoint
+    # and one rematerialized ket. The initial state is itself a checkpoint.
+    checkpoint_capacity = budget // state_bytes - 2
+    if instruction_count > 1 and checkpoint_capacity >= 2:
+        interval = ceil(instruction_count / checkpoint_capacity)
+        checkpoint_count = (instruction_count - 1) // interval + 1
+        required = state_bytes * (checkpoint_count + 2)
+        return replace(
+            policy,
+            strategy="interval",
+            interval=interval,
+            memory_budget_bytes=budget,
+            selection_reason="budgeted_block_checkpoints",
+            estimated_local_state_bytes=state_bytes,
+            estimated_required_bytes=required,
+            estimated_reversible_bytes=(
+                low_memory_reversible_required
+                if cpu_cx_workload and low_memory_cpu_cx_available
+                else fused_reversible_required
+            ),
+            estimated_fused_reversible_bytes=fused_reversible_required,
+            estimated_compact_reversible_bytes=compact_reversible_required,
+            estimated_checkpoint_count=checkpoint_count,
         )
     return replace(
         policy,
         strategy="full_rematerialization",
         memory_budget_bytes=budget,
-        selection_reason="reversible_working_set_exceeds_budget",
+        selection_reason="checkpoint_working_set_exceeds_budget",
         estimated_local_state_bytes=state_bytes,
-        estimated_required_bytes=reversible_required,
+        estimated_required_bytes=state_bytes * 3,
+        estimated_reversible_bytes=(
+            low_memory_reversible_required
+            if cpu_cx_workload and low_memory_cpu_cx_available
+            else fused_reversible_required
+        ),
+        estimated_fused_reversible_bytes=fused_reversible_required,
+        estimated_compact_reversible_bytes=compact_reversible_required,
+        estimated_checkpoint_count=1,
     )
 
 

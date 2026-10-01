@@ -360,21 +360,17 @@ class _ReversibleAdjointSweep:
         if self.policy.strategy == "interval":
             assert self.initial is not None
             state = self.initial
+            interval = self.policy.interval
+            instruction_count = len(self.bound.instructions)
+            checkpoint_indices = set(range(interval, instruction_count, interval))
             with torch.no_grad():
-                for index in range(len(self.bound.instructions)):
-                    state = _apply_one_gate(
-                        state,
-                        instruction=self.bound.instructions[index],
-                        plan=self.plan,
-                        dtype=self.dtype,
-                        process_group=self.process_group,
-                        evidence=self.evidence,
-                        workspace=self.exchange_workspace,
-                    )
-                    if (index + 1) % self.policy.interval == 0:
+                for index in range(max(checkpoint_indices, default=0)):
+                    state = self._replay_gate(state, index)
+                    if index + 1 in checkpoint_indices:
                         self.checkpoints[index + 1] = replace(
                             state, amplitudes=state.amplitudes.detach().clone()
                         )
+        self.evidence.checkpoint_count = len(self.checkpoints)
 
     def _state_before(self, stop: int) -> Any:
         """Replay forward from the nearest checkpoint at or before `stop`."""
@@ -387,16 +383,22 @@ class _ReversibleAdjointSweep:
         state = replace(checkpoint, amplitudes=checkpoint.amplitudes.detach())
         with torch.no_grad():
             for index in range(start, stop):
-                state = _apply_one_gate(
-                    state,
-                    instruction=self.bound.instructions[index],
-                    plan=self.plan,
-                    dtype=self.dtype,
-                    process_group=self.process_group,
-                    evidence=self.evidence,
-                    workspace=self.exchange_workspace,
-                )
+                state = self._replay_gate(state, index)
         return state
+
+    def _replay_gate(self, state: Any, index: int) -> Any:
+        """Advance the replay by one gate, counting the rematerialized work."""
+
+        self.evidence.rematerialized_gate_count += 1
+        return _apply_one_gate(
+            state,
+            instruction=self.bound.instructions[index],
+            plan=self.plan,
+            dtype=self.dtype,
+            process_group=self.process_group,
+            evidence=self.evidence,
+            workspace=self.exchange_workspace,
+        )
 
     def _prepare_adjoint(self) -> None:
         """Take the final state, seed the adjoint, and allocate the work buffers."""

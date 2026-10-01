@@ -10,19 +10,61 @@ protected_paths = [
     "contracts/**",
     ".github/**",
     "pyproject.toml",
-    "requirements*.txt",
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
+    # FlagQuantum IR is the single source of truth. It is a flat module today,
+    # and `flagquantum/core/ir/**` stays reserved for the package split so the
+    # protection survives that refactor. A pattern ending in `/**` does not match
+    # a same-named file, so both forms are required.
+    "flagquantum/core/ir.py",
     "flagquantum/core/ir/**",
     "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
     "docs/architecture/decisions/**",
+    # `tools/**` implements the machine-checked rules: architecture boundaries,
+    # dependency policy, capability maturity, public API snapshots, interop
+    # contracts, evidence provenance, and the release gates. Changing a checker
+    # changes what the repository enforces, so it belongs to Integration rather
+    # than to the team whose code the checker happens to inspect. This is
+    # deliberately coarse: narrowing a rule later is safe, widening a rule that
+    # was already bypassed is not.
+    "tools/**",
+    # Release, deployment, and repository-level configuration. No development
+    # team owns these; a change here is coordinated by Integration.
+    "ci/**",
+    "docker/**",
+    ".coveragerc",
+    ".dockerignore",
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    ".pre-commit-config.yaml",
+    "ARCHITECTURE.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "MANIFEST.in",
+    "README.md",
+    "capability-maturity.toml",
+    "compose.dev.yaml",
+    "conftest.py",
+    "dependency-policy.toml",
+    "environment.yml",
+    "pytest.ini",
+    "setup.py",
+    # Released version metadata, in the same class as `pyproject.toml`: a change
+    # is a release decision rather than a development-team change.
+    "flagquantum/version.py",
 ]
 shared_paths = [
     "tests/**",
     "benchmarks/**",
     "examples/**",
     "docs/**",
+    # Published or generated content rather than a domain implementation:
+    # figures, sealed evidence, and workshop material. Any team may add to them.
+    "assets/**",
+    "artifacts/**",
+    "workshops/**",
 ]
 
 [teams.integration]
@@ -36,9 +78,17 @@ worktree = "FlagQuantum-vNext-core"
 owns = [
     "flagquantum/core/**",
     "flagquantum/circuit.py",
+    "flagquantum/experimental/**",
     "flagquantum/noise/**",
     "flagquantum/ops/**",
     "flagquantum/observables/**",
+    "flagquantum/qec/**",
+    # Top-level package modules owned by core: the backend-neutral exception
+    # vocabulary, the stable operator face over `core/operator_schema.py`, and
+    # the parameter-shift utilities that operate on `core/ir.py` programs.
+    "flagquantum/errors.py",
+    "flagquantum/gradients.py",
+    "flagquantum/operators.py",
 ]
 
 [teams.compiler]
@@ -56,6 +106,10 @@ branch = "refactor/vnext-team-runtime"
 worktree = "FlagQuantum-vNext-runtime"
 owns = [
     "flagquantum/runtime/**",
+    # Top-level faces over runtime types. A change to either is normally driven
+    # by the runtime type it re-exports, so the runtime team owns the file.
+    "flagquantum/dynamic.py",
+    "flagquantum/training.py",
 ]
 
 [teams.simulation]
@@ -63,6 +117,8 @@ branch = "refactor/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
+    "flagquantum/kernels/**",
+    "flagquantum/lindblad/**",
     "flagquantum/runtime/executors/**",
 ]
 
@@ -72,6 +128,7 @@ worktree = "FlagQuantum-vNext-platform"
 owns = [
     "flagquantum/compute/**",
     "flagquantum/devices/**",
+    "flagquantum/twin/**",
 ]
 
 [teams.remote]
@@ -96,6 +153,24 @@ branch = "refactor/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
     "flagquantum/services/**",
+]
+
+[teams.algorithms]
+branch = "refactor/vnext-team-algorithms"
+worktree = "FlagQuantum-vNext-algorithms"
+owns = [
+    "flagquantum/algorithms/**",
+    # `models.py` composes `algorithms.Hamiltonian` into the small trainable
+    # models used by product acceptance and tutorials.
+    "flagquantum/models.py",
+]
+
+[teams.verification]
+branch = "refactor/vnext-team-verification"
+worktree = "FlagQuantum-vNext-verification"
+owns = [
+    "flagquantum/benchmarking/**",
+    "flagquantum/testing/**",
 ]
 
 [teams.docs]

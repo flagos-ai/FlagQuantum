@@ -24,6 +24,19 @@ class RunnerSpec:
 
 
 _RUNNERS: dict[str, RunnerSpec] = {
+    "batched_statevector_corpus": RunnerSpec(
+        name="batched_statevector_corpus",
+        module="flagquantum.benchmarking.batched_statevector_corpus",
+        attribute="main",
+        category="interop",
+        summary="Compare independent-parameter CPU statevector batch throughput.",
+        hardware="CPU; Qiskit, Cirq, and PennyLane optional dependencies required",
+        example=(
+            "flagquantum-benchmark run batched_statevector_corpus "
+            "--n-wires 10 14 18 --batch-sizes 1 8 32 --threads 1 "
+            "--json-output benchmarks/results/comparison/batched.json"
+        ),
+    ),
     "environment_probe": RunnerSpec(
         name="environment_probe",
         module="flagquantum.benchmarking.environment_probe",
@@ -140,6 +153,18 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--n-wires 10 14 18 22 --layers 1 --threads 1 --warmup 1 "
             "--iterations 5 --json-output "
             "benchmarks/results/comparison/differentiable-corpus.json"
+        ),
+    ),
+    "cpu_performance_gate": RunnerSpec(
+        name="cpu_performance_gate",
+        module="flagquantum.benchmarking.cpu_performance_gate",
+        attribute="main",
+        category="statevector",
+        summary="Gate CPU corpus regressions on a matching measurement profile.",
+        hardware="No execution; compares two CPU corpus artifacts",
+        example=(
+            "flagquantum-benchmark run cpu_performance_gate BASELINE.json "
+            "CURRENT.json --json-output gate.json"
         ),
     ),
     "statevector_weak_scaling": RunnerSpec(
