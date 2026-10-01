@@ -11,6 +11,7 @@ tests/unit/test_mps_environment_channels_triton.py
 tests/unit/test_mps_environment_triton.py
 tests/unit/test_mps_observable_adjoint_triton.py
 tests/unit/test_mps_wire_probabilities_triton.py
+tests/unit/test_mps_wire_probability_catalog_dispatch.py
 tests/unit/test_mps_observable_adjoint_catalog_dispatch.py
 tests/unit/test_mps_one_site_catalog_dispatch.py
 tests/unit/test_mps_one_site_triton.py

@@ -734,14 +734,9 @@ class MPSState(MPSPlanningMixin):
         return sample_mps_indices(self, shots, generator=generator)
 
     def _wire_probabilities(self, wire: int) -> torch.Tensor:
-        self.move_orthogonality_center(int(wire))
-        tensor = self.tensors[int(wire)]
-        probs = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
-        probs = torch.clamp(probs, min=0)
-        norm = probs.sum(dim=-1, keepdim=True)
-        if bool(torch.any(~torch.isfinite(probs))) or bool(torch.any(norm <= 1e-12)):
-            raise RuntimeError("MPS measurement probabilities are not finite")
-        return probs / torch.clamp(norm, min=1e-12)
+        from .wire_probability_dispatch import _mps_wire_probabilities
+
+        return _mps_wire_probabilities(self, int(wire))
 
     def _normalize(self) -> None:
         norm_squared = self._expectation_product_ops({})
