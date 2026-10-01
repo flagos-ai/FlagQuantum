@@ -334,8 +334,40 @@ def test_performance_claim_code_version_fails_closed_when_history_is_unavailable
     assert "names no commit" not in errors[0]
 
 
-def test_performance_claim_code_version_fails_closed_in_a_shallow_clone(tmp_path):
-    """A shallow clone cannot tell a missing pin from one it never fetched."""
+def test_performance_claim_code_version_must_be_reachable_from_a_ref(tmp_path):
+    """A commit only a deleted branch pointed at is not a pin a reader obtains.
+
+    The producing checkout holds that commit, so resolution alone passes while a
+    clone that fetches this repository's refs never receives it. Recording
+    evidence at the head of the branch that records it produces exactly this pin,
+    which is why a claim is held to published history rather than to the object
+    database it happened to be written in.
+    """
+
+    _git(tmp_path, "init")
+    _commit_in(tmp_path, "recorded.txt")
+    branch = _git(tmp_path, "rev-parse", "--abbrev-ref", "HEAD")
+    _git(tmp_path, "checkout", "-q", "-b", "evidence")
+    orphan = _commit_in(tmp_path, "swept.txt")
+    _git(tmp_path, "checkout", "-q", branch)
+    _git(tmp_path, "branch", "-D", "evidence")
+    _git(tmp_path, "reflog", "expire", "--expire=now", "--all")
+
+    assert revision_resolves(orphan, tmp_path) is True
+    assert code_version_errors(
+        orphan,
+        ORIGIN_REPOSITORY_HISTORY,
+        label="claim",
+        root=tmp_path,
+    ) == (
+        f"claim code_version {orphan} resolves here but no ref reaches it, so a "
+        "clone that fetches this repository does not obtain it; re-record the "
+        "claim at a revision published history reaches",
+    )
+
+
+def _shallow_clone(tmp_path: Path) -> Path:
+    """Clone a two-commit repository at depth one, so only its tip resolves."""
 
     origin = tmp_path / "origin"
     origin.mkdir()
@@ -350,6 +382,13 @@ def test_performance_claim_code_version_fails_closed_in_a_shallow_clone(tmp_path
         capture_output=True,
         text=True,
     )
+    return shallow
+
+
+def test_performance_claim_code_version_fails_closed_in_a_shallow_clone(tmp_path):
+    """A shallow clone cannot tell a missing pin from one it never fetched."""
+
+    shallow = _shallow_clone(tmp_path)
     errors = code_version_errors(
         FABRICATED_REVISION,
         ORIGIN_REPOSITORY_HISTORY,
@@ -358,6 +397,28 @@ def test_performance_claim_code_version_fails_closed_in_a_shallow_clone(tmp_path
     )
     assert len(errors) == 1
     assert "shallow clone" in errors[0]
+
+
+def test_shallow_clone_refs_are_not_read_as_unpublished_history(tmp_path):
+    """A fetched tip is not evidence that every other pin went unpublished.
+
+    The tip of a shallow clone resolves, and asking whether a published ref
+    reaches a revision would then answer from the refs that were never fetched
+    and report a valid pin as orphaned. The checkout says it cannot answer.
+    """
+
+    shallow = _shallow_clone(tmp_path)
+    tip = _git(shallow, "rev-parse", "HEAD")
+    assert revision_resolves(tip, shallow) is True
+    errors = code_version_errors(
+        tip,
+        ORIGIN_REPOSITORY_HISTORY,
+        label="claim",
+        root=shallow,
+    )
+    assert len(errors) == 1
+    assert "could not be checked" in errors[0]
+    assert "no ref reaches it" not in errors[0]
 
 
 def test_performance_claim_code_version_origin_is_case_sensitive_and_validated():

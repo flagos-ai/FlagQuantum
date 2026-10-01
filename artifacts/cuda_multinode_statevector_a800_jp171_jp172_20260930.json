@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T16:19:46.021536+00:00",
+    "captured_at": "2026-10-01T23:04:37.283693+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
@@ -11,7 +11,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "dd874e0459e0795ac9c4d5729d84f51400e0575b",
+      "source_revision": "591401fac230213aa73a3b253a89aa2ef919e510",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -30,7 +30,7 @@
           "ProfilerActivity.CUDA"
         ],
         "profiled_workload": "sharded_statevector_forward",
-        "profiler_event_count": 95
+        "profiler_event_count": 96
       },
       "network": {
         "backend": "nccl",
@@ -38,7 +38,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "383520d43b43d9e7e299de0f67d4b8f2a380eea5c93d8c0b6fa15666cf361060",
+        "debug_log_sha256": "3232c1dac6a10e9c65a86e87f59ccd7ba2f87e88fe2070acbc5445c8adc9548a",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -58,19 +58,19 @@
         "training_loss_decrease": 0.008632771508185422
       },
       "performance": {
-        "maximum_seconds": 0.0032800473272800446,
+        "maximum_seconds": 0.003207152709364891,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_statevector_forward",
-        "median_seconds": 0.003188498318195343,
-        "minimum_seconds": 0.003114713355898857,
+        "median_seconds": 0.003187054768204689,
+        "minimum_seconds": 0.002975454553961754,
         "n_wires": 5,
         "seconds": [
-          0.003188498318195343,
-          0.003114713355898857,
-          0.003157423809170723,
-          0.003198450431227684,
-          0.0032800473272800446
+          0.002975454553961754,
+          0.003025006502866745,
+          0.003187054768204689,
+          0.003207152709364891,
+          0.003196079283952713
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -1029,6 +1029,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "22294adc4900ef3a979b1198f9f9b8f907b7cdad9a2cf863317f15a971f96a2f",
+  "evidence_sha256": "6a23691f95b17e5c8a0b2917abeb104c0d159f01cb4ba945e3abf46bd63dca68",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }
