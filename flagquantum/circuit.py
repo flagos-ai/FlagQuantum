@@ -139,6 +139,7 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     statevector_apply_count: int
     batched_rx_ry_rz_regions: int
     batched_rotation_sequence_regions: int
+    native_cpu_one_qubit_layer_regions: int
     statevector_batch_chunk_size: int
     statevector_batch_chunk_count: int
     statevector_batch_chunk_budget_bytes: int

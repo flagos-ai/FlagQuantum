@@ -35,6 +35,7 @@ STABILITY_THRESHOLD = 0.20
 
 EngineName = Literal[
     "flagquantum_native_batch",
+    "flagquantum_native_fixed_layer_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
@@ -46,6 +47,7 @@ EngineName = Literal[
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_batch",
+    "flagquantum_native_fixed_layer_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
@@ -57,6 +59,9 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
 
 _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native_batch": "FlagQuantum native batch (budgeted)",
+    "flagquantum_native_fixed_layer_rollback": (
+        "FlagQuantum native batch (fixed-layer rollback)"
+    ),
     "flagquantum_native_layout_retention": (
         "FlagQuantum native batch (legacy layout retention)"
     ),
@@ -163,6 +168,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_batch
+    if engine == "flagquantum_native_fixed_layer_rollback":
+
+        def native_fixed_layer_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_NATIVE_FIXED_ONE_QUBIT_LAYER="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_fixed_layer_rollback
     if engine == "flagquantum_native_layout_retention":
 
         def native_layout_retention() -> torch.Tensor:
@@ -232,6 +250,7 @@ def _engine_callable(
 def _engine_versions(engine: EngineName) -> dict[str, str]:
     packages = {
         "flagquantum_native_batch": ("flagquantum",),
+        "flagquantum_native_fixed_layer_rollback": ("flagquantum",),
         "flagquantum_native_layout_retention": ("flagquantum",),
         "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
@@ -244,6 +263,8 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
 
 
 def _execution_strategy(engine: EngineName) -> str:
+    if engine == "flagquantum_native_fixed_layer_rollback":
+        return "native_parameter_batch_fixed_layer_rollback"
     return (
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
