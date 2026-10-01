@@ -77,6 +77,14 @@ class MPSPlanningMixin(ABC):
     @torch.no_grad()
     def bond_profile(self) -> MPSBondProfile:
         total_error = float(sum(self.truncation_errors))
+        # `max` over a sequence holding `nan` answers with whichever element it
+        # reached first, so a measured bond recorded earlier could hide a later
+        # unmeasured one and report a finite maximum. "The largest recorded
+        # error" over a list where one entry was never measured is itself
+        # unmeasured, so any non-finite entry makes the maximum non-finite.
+        max_error = max(self.truncation_errors, default=0.0)
+        if any(not math.isfinite(error) for error in self.truncation_errors):
+            max_error = float("nan")
         norms = self.state_norm().detach().cpu()
         truncation_by_bond = self.truncation_error_by_bond()
         bond_dims = self.bond_dims
@@ -102,7 +110,7 @@ class MPSPlanningMixin(ABC):
             mixed_canonical_residual=mixed_residual,
             truncation_steps=len(self.truncation_errors),
             truncation_error=total_error,
-            max_truncation_error=max(self.truncation_errors, default=0.0),
+            max_truncation_error=max_error,
             truncation_by_bond=tuple(sorted(truncation_by_bond.items())),
             truncation_records=tuple(self.truncation_records),
             error_budget_satisfied=None,
