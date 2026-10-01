@@ -1,4 +1,5 @@
 {
+  "benchmark": "mps_observable_adjoint_dispatch",
   "benchmark_evidence_class": "local_non_release",
   "claim_evidence_type": "development_smoke",
   "distribution_semantics": "single_device_fast_path",

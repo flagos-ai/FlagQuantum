@@ -364,6 +364,7 @@ def merge_runs(
         payloads, key=lambda item: (item["host_label"], item["compiler_lane"])
     )
     return {
+        "benchmark": "mps_observable_adjoint_dispatch",
         "schema": EVIDENCE_SCHEMA,
         "semantic_id": SEMANTIC_ID,
         "implementation_id": IMPLEMENTATION_ID,
@@ -390,6 +391,7 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
     """Validate a checked-in aggregate without importing accelerator providers."""
 
     expected = {
+        "benchmark": "mps_observable_adjoint_dispatch",
         "schema": EVIDENCE_SCHEMA,
         "semantic_id": SEMANTIC_ID,
         "implementation_id": IMPLEMENTATION_ID,
