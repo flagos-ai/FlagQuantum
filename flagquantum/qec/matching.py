@@ -191,8 +191,7 @@ class MinimumWeightMatchingDecoder:
             )
         adjacency = _detector_adjacency(self.graph)
         trees = tuple(
-            _search(adjacency, defect, self.graph.num_detectors)
-            for defect in defects
+            _search(adjacency, defect, self.graph.num_detectors) for defect in defects
         )
         pairing = _pairing(
             _pair_weights(trees, defects), _boundary_weights(self.graph, trees)
@@ -289,9 +288,7 @@ def _toggle(selected: set[int], edge_index: int) -> None:
         selected.add(edge_index)
 
 
-def _defects(
-    detection_events: Iterable[int], *, num_detectors: int
-) -> tuple[int, ...]:
+def _defects(detection_events: Iterable[int], *, num_detectors: int) -> tuple[int, ...]:
     """Normalize a syndrome's defective detectors into ascending order."""
 
     events: list[int] = []
@@ -368,9 +365,7 @@ def _pair_weights(
 ) -> tuple[tuple[float, ...], ...]:
     """Return the cheapest chain weight between every two defective detectors."""
 
-    return tuple(
-        tuple(tree.distances[defect] for defect in defects) for tree in trees
-    )
+    return tuple(tuple(tree.distances[defect] for defect in defects) for tree in trees)
 
 
 def _boundary_weights(

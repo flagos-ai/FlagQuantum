@@ -47,9 +47,9 @@ def test_edge_weight_is_the_negative_log_likelihood_ratio() -> None:
     edge = DecodingGraphEdge(detectors=(0, 1), probability=0.25)
     assert edge.weight == pytest.approx(math.log(3.0))
     assert edge.weight == pytest.approx(1.0986122886681098)
-    assert DecodingGraphEdge(
-        detectors=(0, 1), probability=0.5
-    ).weight == pytest.approx(0.0)
+    assert DecodingGraphEdge(detectors=(0, 1), probability=0.5).weight == pytest.approx(
+        0.0
+    )
 
 
 def test_edge_rejects_a_probability_above_one_half() -> None:
@@ -201,9 +201,7 @@ def test_graph_refuses_an_edge_outside_its_observables() -> None:
             num_detectors=2,
             num_observables=1,
             edges=(
-                DecodingGraphEdge(
-                    detectors=(0, 1), probability=0.1, observables=(1,)
-                ),
+                DecodingGraphEdge(detectors=(0, 1), probability=0.1, observables=(1,)),
             ),
         )
 
@@ -262,8 +260,10 @@ def test_repetition_graph_matches_its_model_matrices() -> None:
 
     flips = model.observables_flips_matrix().tolist()
     boundary = graph.boundary_node
-    edges = {edge.detectors + edge.observables + (edge.probability,): edge
-             for edge in graph.edges}
+    edges = {
+        edge.detectors + edge.observables + (edge.probability,): edge
+        for edge in graph.edges
+    }
     assert len(edges) == model.num_errors
     for column, error in enumerate(model.errors):
         expected = error.detectors

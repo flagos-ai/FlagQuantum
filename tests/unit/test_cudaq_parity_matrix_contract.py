@@ -366,9 +366,9 @@ def test_contract_rejects_a_measured_probe_with_no_payload(contract: dict) -> No
 def test_contract_rejects_a_measured_probe_pointing_at_a_missing_payload(
     contract: dict,
 ) -> None:
-    _probe(contract, "benchmarks/cudaq_backend_compare.py")["payload"] = (
-        "benchmarks/results/comparison/not_recorded.json"
-    )
+    _probe(contract, "benchmarks/cudaq_backend_compare.py")[
+        "payload"
+    ] = "benchmarks/results/comparison/not_recorded.json"
     errors = probe_problems(contract)
     assert any("the measured status rests on nothing" in error for error in errors)
 

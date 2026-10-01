@@ -163,9 +163,7 @@ def test_single_detector_leaves_through_the_cheapest_boundary_edge() -> None:
     )
     decoder = _decoder(model)
     result = decoder.decode((0,))
-    assert result.error_edges == (
-        DecodingGraphEdge(detectors=(0, 6), probability=0.2),
-    )
+    assert result.error_edges == (DecodingGraphEdge(detectors=(0, 6), probability=0.2),)
     assert result.observables == ()
     assert result.weight == pytest.approx(math.log(0.8 / 0.2))
 
@@ -229,9 +227,7 @@ def test_correction_explains_the_syndrome() -> None:
     decoder = MinimumWeightMatchingDecoder(graph=graph)
     sample = model.dem_sampling(shots=120, seed=11)
     for shot in range(sample.detectors.shape[0]):
-        syndrome = {
-            int(index) for index in sample.detectors[shot].nonzero().flatten()
-        }
+        syndrome = {int(index) for index in sample.detectors[shot].nonzero().flatten()}
         result = decoder.decode(syndrome)
         assert _odd_degree(graph, result.error_edges) == syndrome
         assert result.weight == pytest.approx(
@@ -257,9 +253,7 @@ def test_correction_has_least_weight_against_brute_force() -> None:
     sample = model.dem_sampling(shots=400, seed=5)
     checked = 0
     for shot in range(sample.detectors.shape[0]):
-        syndrome = {
-            int(index) for index in sample.detectors[shot].nonzero().flatten()
-        }
+        syndrome = {int(index) for index in sample.detectors[shot].nonzero().flatten()}
         if not syndrome or len(syndrome) > 4:
             continue
         result = decoder.decode(syndrome)
@@ -286,9 +280,7 @@ def test_correction_has_least_weight_on_the_rotated_surface_code() -> None:
     sample = model.dem_sampling(shots=200, seed=13)
     checked = 0
     for shot in range(sample.detectors.shape[0]):
-        syndrome = {
-            int(index) for index in sample.detectors[shot].nonzero().flatten()
-        }
+        syndrome = {int(index) for index in sample.detectors[shot].nonzero().flatten()}
         if not syndrome or len(syndrome) > 4:
             continue
         result = decoder.decode(syndrome)
@@ -383,9 +375,7 @@ def test_prediction_is_the_exclusive_or_of_the_selected_labels() -> None:
 
     sample = model.dem_sampling(shots=30, seed=17)
     for shot in range(sample.detectors.shape[0]):
-        syndrome = {
-            int(index) for index in sample.detectors[shot].nonzero().flatten()
-        }
+        syndrome = {int(index) for index in sample.detectors[shot].nonzero().flatten()}
         result = decoder.decode(syndrome)
         selected = [
             columns[edge.detectors + edge.observables + (edge.probability,)]
