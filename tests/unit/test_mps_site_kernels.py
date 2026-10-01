@@ -8,10 +8,62 @@ from flagquantum.simulation.mps.site_kernels import (
     environment_transfer,
     environment_transfer_channels,
     reset_site_kernel_stats,
+    site_kernel_cache_events,
     site_kernel_stats,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    ("route", "kind"),
+    (
+        ("identity", "transfer_i"),
+        ("channels", "transfer_observable_channels"),
+    ),
+)
+def test_catalog_routes_report_actual_triton_compiler(
+    monkeypatch: pytest.MonkeyPatch,
+    route: str,
+    kind: str,
+) -> None:
+    monkeypatch.setattr(
+        site_kernels,
+        "triton_compiler_provenance",
+        lambda: ("flagtree", "0.7.0", "flagtree", "resolved"),
+    )
+    reset_site_kernel_stats(clear_cache=True)
+    tensor = torch.ones(1, 1, 2, 1, dtype=torch.complex64)
+    if route == "identity":
+        environment = torch.ones(1, 1, 1, dtype=torch.complex64)
+        monkeypatch.setattr(
+            site_kernels,
+            "_try_apply_cataloged_mps_environment",
+            lambda *args, **kwargs: environment,
+        )
+        environment_transfer(environment, tensor, z=False, compiled=False)
+    else:
+        channels = torch.ones(2, 1, 1, 1, dtype=torch.complex64)
+        monkeypatch.setattr(
+            site_kernels,
+            "_try_apply_cataloged_mps_environment_channels",
+            lambda *args, **kwargs: channels,
+        )
+        environment_transfer_channels(channels, tensor, compiled=False)
+
+    (record,) = site_kernel_cache_events()
+    event = dict(record)
+    assert isinstance(event.pop("time_ns"), int)
+    assert event == {
+        "event": "catalog_route",
+        "kind": kind,
+        "provider": "triton",
+        "compiler_distribution": "flagtree",
+        "compiler_version": "0.7.0",
+        "compiler_identity_source": "python_package_metadata",
+        "compiler_identity_status": "resolved",
+        "integration_path": "flagtree",
+    }
 
 
 def test_rank_local_ry_bucket_matches_eager_values_and_gradients():

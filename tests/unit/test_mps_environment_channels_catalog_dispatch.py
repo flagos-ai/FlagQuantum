@@ -14,6 +14,7 @@ from flagquantum.simulation.mps.environment_dispatch import (
 from flagquantum.simulation.mps.site_kernels import (
     environment_transfer_channels,
     reset_site_kernel_stats,
+    site_kernel_cache_events,
     site_kernel_stats,
 )
 
@@ -169,3 +170,15 @@ def test_mps_environment_channels_product_path_uses_catalog(
     torch.testing.assert_close(actual, expected, rtol=2e-4, atol=1e-4)
     assert site_kernel_stats()["triton_environment_channels_calls"] == 1
     assert catalog_routes == ["FQKI-TRITON-MPS-005-A"]
+    (route_event,) = site_kernel_cache_events()
+    distribution = route_event["compiler_distribution"]
+    assert distribution in {"triton", "flagtree"}
+    assert route_event["compiler_version"]
+    assert route_event["compiler_identity_status"] == "resolved"
+    assert (
+        route_event["integration_path"]
+        == {
+            "triton": "direct",
+            "flagtree": "flagtree",
+        }[distribution]
+    )

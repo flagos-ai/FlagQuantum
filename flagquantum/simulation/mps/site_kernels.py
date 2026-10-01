@@ -12,6 +12,7 @@ from typing import Any
 import torch
 from torch.profiler import record_function
 
+from ...kernels.provenance import triton_compiler_provenance
 from .environment_dispatch import (
     _try_apply_cataloged_mps_environment,
     _try_apply_cataloged_mps_environment_channels,
@@ -142,6 +143,22 @@ def _log_event(
     _EVENTS.append(item)
     if len(_EVENTS) > _MAX_EVENTS:
         del _EVENTS[: len(_EVENTS) - _MAX_EVENTS]
+
+
+def _log_triton_catalog_route(*, kind: str) -> None:
+    distribution, version, integration_path, identity_status = (
+        triton_compiler_provenance()
+    )
+    _log_event(
+        "catalog_route",
+        kind=kind,
+        provider="triton",
+        compiler_distribution=distribution,
+        compiler_version=version,
+        compiler_identity_source="python_package_metadata",
+        compiler_identity_status=identity_status,
+        integration_path=integration_path,
+    )
 
 
 def _tensor_bytes(tensor: torch.Tensor) -> int:
@@ -385,7 +402,7 @@ def apply_ry_bucket(
             output_norm = torch.linalg.vector_norm(cataloged, dim=(-3, -2, -1))
             if bool(torch.allclose(input_norm, output_norm, rtol=2e-5, atol=2e-6)):
                 _STATS.triton_one_site_bucket_calls += 1
-                _log_event("catalog_route", kind="ry", provider="triton")
+                _log_triton_catalog_route(kind="ry")
                 return cataloged
     real_tensors = torch.view_as_real(tensors)
     real_matrices = torch.view_as_real(matrices)
@@ -507,11 +524,7 @@ def environment_transfer(
     )
     if cataloged is not None:
         _STATS.triton_environment_transfer_calls += 1
-        _log_event(
-            "catalog_route",
-            kind="transfer_z" if z else "transfer_i",
-            provider="triton",
-        )
+        _log_triton_catalog_route(kind="transfer_z" if z else "transfer_i")
         return cataloged
     signs = tensor.real.new_tensor((1.0, -1.0) if z else (1.0, 1.0))
     with record_function("flagquantum::mps::environment_transfer"):
@@ -533,11 +546,7 @@ def environment_transfer_channels(
     cataloged = _try_apply_cataloged_mps_environment_channels(channels, tensor)
     if cataloged is not None:
         _STATS.triton_environment_channels_calls += 1
-        _log_event(
-            "catalog_route",
-            kind="transfer_observable_channels",
-            provider="triton",
-        )
+        _log_triton_catalog_route(kind="transfer_observable_channels")
         return cataloged
     with record_function("flagquantum::mps::environment_transfer_channels"):
         return _run(
