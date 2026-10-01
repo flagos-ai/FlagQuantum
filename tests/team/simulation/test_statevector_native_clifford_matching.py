@@ -9,9 +9,13 @@ from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.native_cpu import native_cpu_clifford_matching_available
 from flagquantum.simulation.statevector.clifford_matching import (
+    _encode_clifford_phase_mapping,
     fuse_native_disjoint_clifford_matchings,
 )
-from flagquantum.simulation.statevector.operations import _compile_statevector_program
+from flagquantum.simulation.statevector.operations import (
+    _compile_statevector_program,
+    _cx_sequence_permutation_index,
+)
 from flagquantum.simulation.statevector.program import (
     _StatevectorCliffordMatchingStep,
     _StatevectorGateStep,
@@ -76,6 +80,59 @@ def test_native_clifford_matching_does_not_bypass_autograd(
     assert (
         circuit._last_statevector_runtime["native_cpu_clifford_matching_regions"] == 0
     )
+
+
+def test_native_clifford_phase_map_has_independent_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_clifford_matching_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(4513)
+    inputs = (
+        torch.randn((2, 256), generator=generator)
+        + 1j * torch.randn((2, 256), generator=generator)
+    ).to(torch.complex128)
+    circuit = _matching_circuit(inputs)
+    monkeypatch.setenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1")
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=0, rtol=0)
+    assert (
+        circuit._last_statevector_runtime["native_cpu_clifford_matching_regions"] == 1
+    )
+
+
+def test_clifford_phase_map_encodes_sign_and_keeps_wide_mapping_compact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    step = _StatevectorCliffordMatchingStep(
+        controls=(0, 4), targets=(1, 5), cz_edges=((2, 3), (6, 7))
+    )
+    mapping = _cx_sequence_permutation_index(
+        step.controls,
+        step.targets,
+        8,
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+    )
+    monkeypatch.setenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "1")
+
+    encoded, remaining_edges = _encode_clifford_phase_mapping(mapping, step, 8)
+
+    assert remaining_edges is None
+    assert torch.any(encoded < 0)
+    torch.testing.assert_close(
+        torch.where(encoded < 0, -encoded - 1, encoded), mapping, atol=0, rtol=0
+    )
+
+    compact = torch.arange(22, dtype=torch.int64)
+    wide_encoded, wide_edges = _encode_clifford_phase_mapping(compact, step, 22)
+    assert wide_encoded is compact
+    assert wide_edges == step.cz_edges
 
 
 def test_mixed_disjoint_matching_compiles_to_one_step() -> None:

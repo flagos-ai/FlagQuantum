@@ -16,6 +16,90 @@ from .program import (
     _StatevectorPreCXStep,
 )
 
+_CLIFFORD_PHASE_MAP_CACHE_BYTES = 128 * 1024 * 1024
+_CLIFFORD_PHASE_MAP_CACHE: dict[
+    tuple[
+        int,
+        tuple[int, ...],
+        tuple[int, ...],
+        tuple[tuple[int, int], ...],
+        str,
+        torch.dtype,
+    ],
+    torch.Tensor,
+] = {}
+
+
+def _clifford_phase_map_cache_bytes() -> int:
+    return sum(
+        int(mapping.numel()) * int(mapping.element_size())
+        for mapping in _CLIFFORD_PHASE_MAP_CACHE.values()
+    )
+
+
+def _store_clifford_phase_map(
+    key: tuple[
+        int,
+        tuple[int, ...],
+        tuple[int, ...],
+        tuple[tuple[int, int], ...],
+        str,
+        torch.dtype,
+    ],
+    mapping: torch.Tensor,
+) -> torch.Tensor:
+    _CLIFFORD_PHASE_MAP_CACHE[key] = mapping
+    while (
+        len(_CLIFFORD_PHASE_MAP_CACHE) > 1
+        and _clifford_phase_map_cache_bytes() > _CLIFFORD_PHASE_MAP_CACHE_BYTES
+    ):
+        oldest = next(iter(_CLIFFORD_PHASE_MAP_CACHE))
+        del _CLIFFORD_PHASE_MAP_CACHE[oldest]
+    return mapping
+
+
+def _encode_clifford_phase_mapping(
+    cx_mapping: torch.Tensor,
+    step: _StatevectorCliffordMatchingStep,
+    n_wires: int,
+) -> tuple[torch.Tensor, tuple[tuple[int, int], ...] | None]:
+    """Encode each destination's CZ sign into a cached full CX mapping."""
+
+    enabled = (
+        bool(step.cz_edges)
+        and cx_mapping.numel() == 1 << n_wires
+        and os.getenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
+    if not enabled:
+        return cx_mapping, step.cz_edges
+    key = (
+        n_wires,
+        step.controls,
+        step.targets,
+        step.cz_edges,
+        str(cx_mapping.device),
+        cx_mapping.dtype,
+    )
+    cached = _CLIFFORD_PHASE_MAP_CACHE.get(key)
+    if cached is not None:
+        return cached, None
+
+    destinations = torch.arange(
+        cx_mapping.numel(), dtype=torch.int64, device=cx_mapping.device
+    )
+    negative = torch.zeros(
+        cx_mapping.numel(), dtype=torch.bool, device=cx_mapping.device
+    )
+    for left, right in step.cz_edges:
+        left_mask = 1 << (n_wires - left - 1)
+        right_mask = 1 << (n_wires - right - 1)
+        negative.logical_xor_(
+            ((destinations & left_mask) != 0) & ((destinations & right_mask) != 0)
+        )
+    signed = torch.where(negative, -cx_mapping - 1, cx_mapping).contiguous()
+    return _store_clifford_phase_map(key, signed), None
+
 
 def native_clifford_matching_compile_enabled(
     instructions: Sequence[Instruction],

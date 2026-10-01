@@ -31,6 +31,7 @@ from .batching import (
     _rotation_region_angles,
     _statevector_batch_input,
 )
+from .clifford_matching import _encode_clifford_phase_mapping as _encode_phase_mapping
 from .clifford_matching import native_clifford_matching_compile_enabled
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
@@ -744,10 +745,13 @@ def _execute_statevector_program(
                     dtype=output.dtype,
                 )
             )
+            cx_mapping, cz_edges = _encode_phase_mapping(
+                cx_mapping, step, circuit.n_wires
+            )
             native_output = fused_clifford_matching_out(
                 output,
                 cx_mapping,
-                step.cz_edges,
+                cz_edges,
                 circuit.n_wires,
             )
             if native_output is not None:
