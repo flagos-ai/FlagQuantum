@@ -201,6 +201,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_unsupported_input_uses_fallback",
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_validates_input",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_wire_probability_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-NUM-001-A",
