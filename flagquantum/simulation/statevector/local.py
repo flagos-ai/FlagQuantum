@@ -35,6 +35,7 @@ from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
     native_fixed_layer_compile_enabled,
+    native_parameterized_layer_compile_enabled,
 )
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
@@ -745,20 +746,27 @@ def _execute_statevector_program(
                 output,
                 n_wires=circuit.n_wires,
                 owns_state=owns_output,
+                parameter_bindings=parameter_bindings,
             )
             if native_output is not None:
                 output = native_output
                 owns_output = True
-                circuit._last_statevector_runtime[
-                    "native_cpu_one_qubit_layer_regions"
-                ] += 1
+                if step.native_parameterized:
+                    circuit._last_statevector_runtime[
+                        "native_cpu_parameterized_one_qubit_layer_regions"
+                    ] += 1
+                else:
+                    circuit._last_statevector_runtime[
+                        "native_cpu_one_qubit_layer_regions"
+                    ] += 1
                 continue
             fallback_steps = (
                 tuple(
                     _StatevectorDisjointDenseStep(step.regions[start : start + 4])
                     for start in range(0, len(step.regions), 4)
                 )
-                if step.native_preferred and len(step.regions) > 4
+                if (step.native_preferred or step.native_parameterized)
+                and len(step.regions) > 4
                 else (step,)
             )
             for fallback_step in fallback_steps:
@@ -933,6 +941,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             output,
             batch_size=batch_size,
         )
+        enable_cpu_native_parameterized_one_qubit_layer = (
+            native_parameterized_layer_compile_enabled(
+                circuit._instructions,
+                parameter_bindings,
+                output,
+                batch_size=batch_size,
+            )
+        )
         max_cpu_two_wire_regions = (
             2 if enable_cpu_disjoint_single_wire and batch_size >= 2 else 1
         )
@@ -957,6 +973,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_disjoint_single_wire,
             "cpu_native_fixed_one_qubit_layer",
             enable_cpu_native_fixed_one_qubit_layer,
+            "cpu_native_parameterized_one_qubit_layer",
+            enable_cpu_native_parameterized_one_qubit_layer,
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
             "cpu_controlled_phase_graph",
@@ -977,6 +995,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_disjoint_single_wire=enable_cpu_disjoint_single_wire,
                 enable_cpu_native_fixed_one_qubit_layer=(
                     enable_cpu_native_fixed_one_qubit_layer
+                ),
+                enable_cpu_native_parameterized_one_qubit_layer=(
+                    enable_cpu_native_parameterized_one_qubit_layer
                 ),
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition

@@ -64,6 +64,7 @@ _StatevectorDenseRegion: TypeAlias = _StatevectorGateStep | _StatevectorFusedGat
 class _StatevectorDisjointDenseStep:
     regions: tuple[_StatevectorDenseRegion, ...]
     native_preferred: bool = False
+    native_parameterized: bool = False
 
 
 @dataclass(frozen=True)

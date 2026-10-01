@@ -92,6 +92,70 @@ def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
     assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
 
 
+def _parameterized_rotation_batch_circuit(
+    inputs: torch.Tensor, angles: torch.Tensor
+) -> Circuit:
+    circuit = Circuit(6, bsz=inputs.shape[0], dtype=inputs.dtype, inputs=inputs)
+    for wire in range(6):
+        circuit.ry(wire, angles + 0.03 * wire)
+    return circuit
+
+
+def test_native_parameterized_batch_layer_has_independent_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = torch.Generator().manual_seed(2239)
+    inputs = (
+        torch.randn((3, 64), generator=generator)
+        + 1j * torch.randn((3, 64), generator=generator)
+    ).to(torch.complex128)
+    original = inputs.clone()
+    angles = torch.linspace(-0.2, 0.3, 3, dtype=torch.float64)
+    circuit = _parameterized_rotation_batch_circuit(inputs, angles)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    assert (
+        circuit._last_statevector_runtime[
+            "native_cpu_parameterized_one_qubit_layer_regions"
+        ]
+        == 0
+    )
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            == 1
+        )
+
+
+def test_native_parameterized_batch_layer_does_not_bypass_autograd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inputs = torch.randn((3, 64), dtype=torch.complex128, requires_grad=True)
+    angles = torch.linspace(-0.2, 0.3, 3, dtype=torch.float64, requires_grad=True)
+    circuit = _parameterized_rotation_batch_circuit(inputs, angles)
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "1")
+
+    output = circuit.state(refresh=True)
+    output.real.sum().backward()
+
+    assert inputs.grad is not None
+    assert angles.grad is not None
+    assert (
+        circuit._last_statevector_runtime[
+            "native_cpu_parameterized_one_qubit_layer_regions"
+        ]
+        == 0
+    )
+
+
 def test_single_qubit_fusion_preserves_wire_order_and_reordering_evidence() -> None:
     layout = ((), ())
     program = tuple(
@@ -1413,6 +1477,7 @@ def test_cpu_unfused_single_wire_layer_matches_sequential_execution(monkeypatch,
     for wire in range(6):
         circuit.ry(wire, theta=angles[wire])
 
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "0")
     monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "0")
     expected = circuit.state(refresh=True)
     monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
@@ -1807,6 +1872,7 @@ def test_batched_program_cache_key_distinguishes_batch_dependent_plans(
 def test_batched_two_wire_grouping_rolls_back_with_environment_switch(
     monkeypatch,
 ) -> None:
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "0")
     for batch in (2, 4):
         monkeypatch.setenv("FQ_CPU_DISJOINT_SINGLE_WIRE_FUSION", "1")
         fused_circuit, _, _ = _two_disjoint_dense_two_wire_circuit(

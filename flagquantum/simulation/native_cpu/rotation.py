@@ -87,7 +87,7 @@ def fused_rotation_block_forward_(
     rzz_first_wires: torch.Tensor | None = None,
     rzz_second_wires: torch.Tensor | None = None,
 ) -> bool:
-    """Apply two to eleven disjoint one-qubit matrices to a state in place.
+    """Apply two to eleven shared or batch-specific one-qubit matrices in place.
 
     ``False`` is the stable fallback signal. The caller retains the existing
     PyTorch path when the extension is disabled, unavailable, or unsupported.
@@ -104,10 +104,11 @@ def fused_rotation_block_forward_(
         or matrices.dtype != state.dtype
         or wires.dtype != torch.int64
         or state.ndim != 2
-        or matrices.ndim != 3
-        or not 2 <= matrices.shape[0] <= 11
-        or matrices.shape[1:] != (2, 2)
-        or wires.shape != (matrices.shape[0],)
+        or matrices.ndim not in {3, 4}
+        or (matrices.ndim == 4 and matrices.shape[0] != state.shape[0])
+        or not 2 <= matrices.shape[-3] <= 11
+        or matrices.shape[-2:] != (2, 2)
+        or wires.shape != (matrices.shape[-3],)
         or (torch.is_grad_enabled() and matrices.requires_grad)
         or not all(item.is_contiguous() for item in (state, matrices, wires))
         or (
