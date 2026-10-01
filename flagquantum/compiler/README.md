@@ -39,6 +39,14 @@ measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
 
+Routing strategies are one boundary with several implementations, so a new or
+replaced strategy is accepted only when the shared conformance suite in
+[test_routing_conformance.py](../../tests/team/compiler/test_routing_conformance.py)
+passes over it. That suite also runs an independent router and a replacement
+router through the compiler, the topology legalizer, and the dynamic-circuit
+runtime, which is how the boundary is shown to be replaceable rather than
+merely defined.
+
 [Implementation details](IMPLEMENTATION.md) document stage ownership and
 migration constraints. [Testing policy](../../docs/development/TESTING.md)
 defines the additional checks for each change.
