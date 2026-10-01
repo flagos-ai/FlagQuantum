@@ -150,7 +150,8 @@ at::Tensor& fused_clifford_matching_out_cpu(
     const at::Tensor& cx_mapping,
     const at::Tensor& cz_edges,
     at::Tensor& output,
-    int64_t n_wires) {
+    int64_t n_wires,
+    bool phase_encoded) {
   TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
   TORCH_CHECK(cx_mapping.device().is_cpu(), "CX mapping must be on CPU");
   TORCH_CHECK(cz_edges.device().is_cpu(), "CZ edges must be on CPU");
@@ -187,6 +188,9 @@ at::Tensor& fused_clifford_matching_out_cpu(
   TORCH_CHECK(
       !compact_mapping || cx_mapping.scalar_type() == at::kLong,
       "compact CX images must be int64");
+  TORCH_CHECK(
+      !phase_encoded || (!compact_mapping && cz_edges.size(0) == 0),
+      "phase-encoded mappings must be full and have no CZ edges");
   const int64_t batch = state.size(0);
   const int64_t chunk_count = (n_wires + 7) / 8;
   const LinearLookup lookup =
@@ -212,6 +216,20 @@ at::Tensor& fused_clifford_matching_out_cpu(
       state.scalar_type(), "fused_clifford_matching_out_cpu", [&] {
         const scalar_t* state_data = state.const_data_ptr<scalar_t>();
         scalar_t* output_data = output.data_ptr<scalar_t>();
+        const auto apply_signed = [&](const auto* index) {
+          at::parallel_for(
+              int64_t{0}, batch * width, int64_t{4096},
+              [&](int64_t begin, int64_t end) {
+                for (int64_t item = begin; item < end; ++item) {
+                  const int64_t destination = item & (width - 1);
+                  const int64_t encoded = static_cast<int64_t>(index[destination]);
+                  const bool negative = encoded < 0;
+                  const int64_t source = negative ? -encoded - 1 : encoded;
+                  const scalar_t value = state_data[item - destination + source];
+                  output_data[item] = negative ? -value : value;
+                }
+              });
+        };
         const auto apply = [&](const auto& source_at) {
           at::parallel_for(
               int64_t{0}, batch * width, int64_t{4096},
@@ -232,7 +250,11 @@ at::Tensor& fused_clifford_matching_out_cpu(
               }
             });
         };
-        if (compact_mapping) {
+        if (phase_encoded && cx_mapping.scalar_type() == at::kInt) {
+          apply_signed(cx_mapping.const_data_ptr<int32_t>());
+        } else if (phase_encoded) {
+          apply_signed(cx_mapping.const_data_ptr<int64_t>());
+        } else if (compact_mapping) {
           apply([&](uint64_t destination) {
             return apply_linear_lookup(
                 destination,
@@ -557,7 +579,8 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
       "Tensor(a!) output) -> Tensor(a!)");
   library.def(
       "fused_clifford_matching_out(Tensor state, Tensor cx_mapping, "
-      "Tensor cz_edges, Tensor(a!) output, int n_wires) -> Tensor(a!)");
+      "Tensor cz_edges, Tensor(a!) output, int n_wires, bool phase_encoded) "
+      "-> Tensor(a!)");
   library.def(
       "fused_cx_adjoint_gather(Tensor ket, Tensor adjoint, Tensor index) "
       "-> (Tensor, Tensor)");

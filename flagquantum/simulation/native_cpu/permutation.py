@@ -68,12 +68,15 @@ def native_cpu_clifford_matching_available() -> bool:
 def fused_clifford_matching_out(
     state: torch.Tensor,
     cx_mapping: torch.Tensor,
-    cz_edges: Sequence[tuple[int, int]],
+    cz_edges: Sequence[tuple[int, int]] | None,
     n_wires: int,
 ) -> torch.Tensor | None:
     """Apply one disjoint CX/CZ matching in a single native CPU pass."""
 
-    normalized_cz_edges = tuple((int(left), int(right)) for left, right in cz_edges)
+    phase_encoded = cz_edges is None
+    normalized_cz_edges = tuple(
+        (int(left), int(right)) for left, right in (cz_edges or ())
+    )
     occupied = tuple(wire for edge in normalized_cz_edges for wire in edge)
     if (
         not native_cpu_clifford_matching_available()
@@ -96,7 +99,7 @@ def fused_clifford_matching_out(
     output = torch.empty_like(state)
     with torch.no_grad():
         torch.ops.flagquantum_native.fused_clifford_matching_out(
-            state, cx_mapping, edge_tensor, output, n_wires
+            state, cx_mapping, edge_tensor, output, n_wires, phase_encoded
         )
     return output
 

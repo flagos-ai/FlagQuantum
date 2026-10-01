@@ -218,6 +218,12 @@ The disjoint mixed-entangler follow-up is documented in
 It fuses each pairwise-disjoint CX/CZ matching into one native CPU traversal,
 records 1.311x and 1.199x rollback speedups, and prominently retains the measured
 PennyLane Lightning lead and the exact reproduction command.
+The focused phase-loop follow-up is documented in
+[`BATCHED_STATEVECTOR_CLIFFORD_PHASE_MAP_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_CLIFFORD_PHASE_MAP_CPU_ARM64_20261001_SCORECARD.md).
+It encodes CZ signs in the cached CX gather map below 22 qubits and records a
+1.112x Random Clifford improvement. Its CZ-free local-brickwork control is
+explicitly classified as not applicable, while the compact wide-state fallback
+and measured PennyLane Lightning comparison remain visible.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a
