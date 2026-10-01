@@ -244,12 +244,19 @@ training paths, read:
 
 These documents are binding design standards.
 
-## Multi-Team Worktrees
+## Branches and Path Ownership
 
-Concurrent development sessions must use the branch and linked worktree assigned
-in `team-ownership.toml`. Never run two writing sessions in the same worktree,
-switch another team's worktree to a different branch, or commit unrelated
-changes left by another session.
+Ordinary work is a short-lived branch cut from `main` and merged by pull request;
+`docs/development/INTEGRATION_WORKFLOW.md` declares that flow from measured
+evidence. The linked-worktree layout in `team-ownership.toml` is an optional mode
+for a coordinated multi-team round. Its `branch` and `worktree` values, and
+`refactor/flagquantum-vnext-architecture`, are reserved names for that mode rather
+than current instructions: no branch with that prefix exists in this repository,
+so do not cut one for ordinary work.
+
+Never run two writing sessions in the same worktree, switch another team's
+worktree to a different branch, or commit unrelated changes left by another
+session.
 
 Before editing, identify the responsible team and run
 `python tools/check_team_scope.py --team <team> --files <paths...>`. A team may
@@ -257,28 +264,22 @@ change its most-specific owned paths and shared test/documentation paths.
 Protected integration surfaces, including Stable Core contracts, public API,
 architecture policy, CI, dependency manifests, and ADRs, require a separate
 integration change before team implementations proceed. Do not create a private
-duplicate contract to bypass this rule.
+duplicate contract to bypass this rule. `team-ownership.toml` owns the roster and
+the path rules; this section does not maintain a second copy of them.
 
-Cross-team work follows contract first, then implementation: the integration
-branch lands the versioned contract, contract fake, and conformance test; team
-branches synchronize that baseline and implement independently; the integration
-branch then runs replacement and cross-implementation tests. Follow
-`docs/development/MULTI_TEAM_DEVELOPMENT.md`.
-
-`refactor/flagquantum-vnext-architecture` is the reserved name of the only
-authoritative integration branch. The name is not live: no branch with that prefix
-exists in this repository, so do not cut it, a team branch, or a `FlagQuantum-vNext*`
-worktree for ordinary work — ordinary work is a short-lived branch off `main` merged by
-pull request. The paragraphs below describe the migration layout that applies if the
-multi-team round is ever staffed, and `team-ownership.toml` marks the same values as
-reserved. Team branches must deliver committed, clean work with a handoff record,
-must obtain other teams' changes only by merging the integration branch, and
-must never merge each other directly. The integration worktree merges one team
-at a time with a non-fast-forward merge and runs required checks before the next
-merge. Abort conflicted merges and return them to the owning team; revert a
-shared failed merge instead of rewriting integration history. Releases,
-benchmarks, and capability claims must name a verified integration commit or
-tag, never an unintegrated team branch.
+Follow `docs/development/MULTI_TEAM_DEVELOPMENT.md` when the optional multi-team
+mode is genuinely staffed. That mode is contract first, then implementation: the
+integration branch lands the versioned contract, contract fake, and conformance
+test; team branches synchronize that baseline and implement independently; the
+integration branch then runs replacement and cross-implementation tests. In that
+mode team branches must deliver committed, clean work with a handoff record, must
+obtain other teams' changes only by merging the integration branch, and must never
+merge each other directly. The integration worktree merges one team at a time with
+a non-fast-forward merge and runs required checks before the next merge. Abort
+conflicted merges and return them to the owning team; revert a shared failed merge
+instead of rewriting integration history. Releases, benchmarks, and capability
+claims must name a verified integration commit or tag, never an unintegrated team
+branch.
 
 ## Architecture North Star
 
