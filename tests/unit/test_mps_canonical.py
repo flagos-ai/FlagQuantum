@@ -49,6 +49,36 @@ def test_left_and_right_canonical_steps_preserve_two_site_state():
     )
 
 
+@pytest.mark.parametrize("direction", ["left", "right"])
+def test_canonical_transfer_bmm_lowering_preserves_values_and_gradients(direction):
+    generator = torch.Generator().manual_seed(51)
+    left = torch.randn((2, 3, 4), dtype=torch.complex128, generator=generator)
+    right = torch.randn((2, 4, 2, 5), dtype=torch.complex128, generator=generator)
+    if direction == "left":
+        actual_left = left.clone().requires_grad_()
+        actual_right = right.clone().requires_grad_()
+        expected_left = left.clone().requires_grad_()
+        expected_right = right.clone().requires_grad_()
+        actual = absorb_left_canonical_transfer(actual_left, actual_right)
+        expected = torch.einsum("bij,bjsk->bisk", expected_left, expected_right)
+    else:
+        previous = right.permute(0, 3, 2, 1).contiguous()
+        transfer = left.transpose(-2, -1).contiguous()
+        actual_left = previous.clone().requires_grad_()
+        actual_right = transfer.clone().requires_grad_()
+        expected_left = previous.clone().requires_grad_()
+        expected_right = transfer.clone().requires_grad_()
+        actual = absorb_right_canonical_transfer(actual_left, actual_right)
+        expected = torch.einsum("blpa,bac->blpc", expected_left, expected_right)
+
+    torch.testing.assert_close(actual, expected)
+    gradient = torch.randn(actual.shape, dtype=actual.dtype, generator=generator)
+    actual.backward(gradient)
+    expected.backward(gradient)
+    torch.testing.assert_close(actual_left.grad, expected_left.grad)
+    torch.testing.assert_close(actual_right.grad, expected_right.grad)
+
+
 def test_canonical_residual_and_center_norms_are_local_numerics():
     center = torch.tensor([[[[1.0], [0.0]]], [[[0.0], [2.0]]]], dtype=torch.complex128)
     canonical = torch.eye(2, dtype=torch.complex128).reshape(1, 1, 2, 2)

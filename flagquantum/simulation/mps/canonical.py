@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from .canonical_transfer_dispatch import (
+    absorb_left_canonical_transfer,
+    absorb_right_canonical_transfer,
+)
+
 if TYPE_CHECKING:
     from .state import MPSState
 
@@ -47,10 +52,8 @@ def sweep_center_right(state: MPSState, target_site: int) -> None:
             physical_dim,
             new_right_dim,
         )
-        state.tensors[wire + 1] = torch.einsum(
-            "bij,bjsk->bisk",
-            r,
-            state.tensors[wire + 1],
+        state.tensors[wire + 1] = absorb_left_canonical_transfer(
+            r, state.tensors[wire + 1]
         )
     state.orthogonality_center = int(target_site)
     state._canonical_center_valid = True
@@ -76,10 +79,8 @@ def sweep_center_left(state: MPSState, target_site: int) -> None:
             physical_dim,
             right_dim,
         )
-        state.tensors[wire - 1] = torch.einsum(
-            "blpa,bac->blpc",
-            state.tensors[wire - 1],
-            transfer,
+        state.tensors[wire - 1] = absorb_right_canonical_transfer(
+            state.tensors[wire - 1], transfer
         )
     state.orthogonality_center = int(target_site)
     state._canonical_center_valid = True

@@ -6,6 +6,11 @@ from collections.abc import Mapping
 
 import torch
 
+from .canonical_transfer_dispatch import (
+    absorb_left_canonical_transfer,
+    absorb_right_canonical_transfer,
+)
+
 
 def deterministic_mps_qr(matrix: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """QR with a non-negative real diagonal convention for stable gauges."""
@@ -29,15 +34,6 @@ def factor_left_canonical_site(
     return q.reshape(bsz, left_dim, physical_dim, q.shape[-1]), transfer
 
 
-def absorb_left_canonical_transfer(
-    transfer: torch.Tensor,
-    right: torch.Tensor,
-) -> torch.Tensor:
-    """Absorb a right-going canonicalization transfer into the next site."""
-
-    return torch.einsum("bij,bjsk->bisk", transfer, right)
-
-
 def factor_right_canonical_site(
     tensor: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -49,15 +45,6 @@ def factor_right_canonical_site(
     right = q.transpose(-2, -1)
     transfer = r.transpose(-2, -1)
     return transfer, right.reshape(bsz, right.shape[1], physical_dim, right_dim)
-
-
-def absorb_right_canonical_transfer(
-    left: torch.Tensor,
-    transfer: torch.Tensor,
-) -> torch.Tensor:
-    """Absorb a left-going canonicalization transfer into the previous site."""
-
-    return torch.einsum("blpa,bac->blpc", left, transfer)
 
 
 def local_mixed_canonical_residual(
