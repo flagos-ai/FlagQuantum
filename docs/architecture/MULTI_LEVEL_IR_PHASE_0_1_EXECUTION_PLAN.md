@@ -8,6 +8,12 @@ verification, performance baselines.
 Explicitly unchanged: Stable Core, `CircuitIR` schema 1.0, `fq.plan`, `fq.run`,
 deployment contracts.
 
+> The `tests/fixtures/internal_ir/` corpus, the `tests/internal_ir/` suite,
+> and the private `flagquantum/_compiler/` tree named below are
+> private-worktree artifacts. They are not published in this repository, so
+> the paths are not runnable here. The recorded measurements and approval
+> status are unchanged.
+
 Progress: P0-001/P0-002 factual inventories are complete. P0-003 has a 35-opcode
 baseline corpus, metadata inventory, drift tests, and an in-progress evidence
 manifest. The API owner approved IR-001–006 architecture scope. Typed metadata

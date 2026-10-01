@@ -13,6 +13,12 @@
 > Phase 1 integration commit: `6bcb2453ba35aec792649768385caac00bdd885b`
 >
 > Integration completed: 2026-09-03 (Asia/Shanghai)
+>
+> The `tests/fixtures/internal_ir/` corpus, the `tests/internal_ir/` suite,
+> and the private `flagquantum/_compiler/` tree named below are
+> private-worktree artifacts. They are not published in this repository, so
+> the paths are not runnable here. The recorded measurements and approval
+> status are unchanged.
 
 ## 1. Round Conclusion
 
