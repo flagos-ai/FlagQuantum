@@ -17,6 +17,12 @@ Unlike the shortest-path strategies, this planner moves the layout before an
 operation rather than immediately before it, which is what makes it effective on
 devices of 20 or more wires.
 
+The planner uses only the wires the program owns, so it plans on the coupling
+subgraph those wires induce rather than on the whole device. A padding wire of a
+wider device is not an ancilla this planner may swap on, and a program the
+circuit's own wires cannot connect is refused rather than costed against a route
+the plan cannot express.
+
 The planner can start from a caller-supplied initial layout, and
 ``plan_sabre_layout`` searches for one using the layout pass of the same paper:
 route the program, route the reversed program from the resulting layout, and
@@ -105,6 +111,26 @@ def _validated_layout(
     return placement
 
 
+def _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:
+    """Return the coupling subgraph induced by the wires the program owns.
+
+    The planner emits SWAPs only on those wires, so the graph it plans on has to be
+    the same graph. A padding wire of a wider device is not an ancilla this planner
+    can swap on, and scoring candidates against device distances that only such a
+    wire realizes would cost the plan against a route it cannot emit.
+    """
+
+    if coupling.n_wires == n_wires:
+        return coupling
+    # ``routing`` imports this module, so the value type is imported here.
+    from .routing import CouplingMap as _CouplingMap
+
+    return _CouplingMap(
+        n_wires,
+        tuple(edge for edge in coupling.edges if edge[1] < n_wires),
+    )
+
+
 def _shifted_distance(
     wire_pair: tuple[int, ...],
     left: int,
@@ -136,7 +162,9 @@ def plan_sabre_swaps(
     """Plan a SABRE persistent layout for one program on one coupling map.
 
     Only the wires owned by the program are used, and inserted SWAPs always join
-    two wires of the program, so no physical ancilla is required.
+    two wires of the program, so no physical ancilla is required. Planning happens
+    on the coupling subgraph those wires induce, so a wider device is supported
+    exactly as far as its wires inside the circuit connect the program.
 
     Args:
         program: Circuit to place.
@@ -146,8 +174,10 @@ def plan_sabre_swaps(
 
     Raises:
         ValueError: If the coupling map has fewer wires than the program, if
-            ``initial_layout`` is not a permutation of the circuit wires, or if
-            the front layer cannot be unblocked within the stalled-SWAP limit.
+            ``initial_layout`` is not a permutation of the circuit wires, if a
+            two-wire operation is connected on the device only through wires the
+            circuit does not own, or if the front layer cannot be unblocked within
+            the stalled-SWAP limit.
     """
 
     n_wires = program.n_wires
@@ -170,11 +200,12 @@ def plan_sabre_swaps(
     # ``CouplingMap.distance_matrix`` marks a disconnected pair with a negative
     # sentinel. A cost function needs such a pair to be maximally expensive
     # rather than maximally cheap, so a local infinite-distance copy is used.
+    planning = _planning_coupling(coupling, n_wires)
     distances = tuple(
         tuple(math.inf if hop < 0 else float(hop) for hop in row)
-        for row in coupling.distance_matrix()
+        for row in planning.distance_matrix()
     )
-    neighbours = tuple(coupling.neighbors(wire) for wire in range(coupling.n_wires))
+    neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))
     wires = tuple(instruction.wires for instruction in instructions)
     # A channel occupies its wires but must not be pulled onto a coupling edge,
     # so it never blocks the front layer.
@@ -187,13 +218,23 @@ def plan_sabre_swaps(
     # coupling path between them can never be legalized. Connectivity is a
     # property of the physical wires, so the initial layout is applied first.
     for index, wire_pair in enumerate(wires):
-        if blocks[index] and math.isinf(
-            distances[placement[wire_pair[0]]][placement[wire_pair[1]]]
-        ):
+        if not blocks[index]:
+            continue
+        left = placement[wire_pair[0]]
+        right = placement[wire_pair[1]]
+        if not math.isinf(distances[left][right]):
+            continue
+        if planning is not coupling and coupling.distance(left, right) >= 0:
             raise ValueError(
-                f"no coupling path between wires {wire_pair[0]} and "
-                f"{wire_pair[1]} of two-wire instruction {index}"
+                f"the device connects wires {wire_pair[0]} and {wire_pair[1]} of "
+                f"two-wire instruction {index} only through physical ancilla wires "
+                "outside the circuit IR, which this planner does not route through; "
+                "provide an explicit layout/lowering step"
             )
+        raise ValueError(
+            f"no coupling path between wires {wire_pair[0]} and "
+            f"{wire_pair[1]} of two-wire instruction {index}"
+        )
 
     # One edge per (instruction, wire) pair, so an instruction whose two wires
     # share a predecessor still reaches zero pending predecessors.
@@ -551,6 +592,10 @@ def plan_sabre_layout(
     adopt that layout as the next candidate. A candidate replaces the current best
     only when it lowers the inserted-SWAP count of a fully restored route, so the
     returned layout never costs more than the identity layout.
+
+    Candidates are searched on the coupling subgraph the program's own wires
+    induce, so a device wider than the program is searched exactly as far as those
+    wires connect it.
 
     Raises:
         ValueError: If the coupling map has fewer wires than the program, if
