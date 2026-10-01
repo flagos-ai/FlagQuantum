@@ -27,11 +27,26 @@ jobs:
           python tools/ci_tier.py pr-runtime
           python tools/ci_tier.py pr-distributed
 
+      # `build` only. `twine` was installed here and never invoked: the publish
+      # action below uploads the artifacts itself. This job is the one holding
+      # `id-token: write`, so a tool that is not used is a supply-chain surface
+      # that does not need to be present.
       - name: Install build tools
-        run: python -m pip install build twine
+        run: python -m pip install build
 
       - name: Build package
         run: python -m build
+
+      # `ci.yml`'s `package` job verifies the artifacts it builds, but it builds
+      # them with `--no-isolation` on a runner whose torch came from the CPU
+      # index, and it never hands them here. The release is a second, separate
+      # build, and it was the only artifact nobody inspected -- so a wheel that
+      # lost the compiled `_C` module, or that carried tests and caches, would
+      # have been uploaded and described as verified by a job that verified a
+      # different file. Verifying here is what makes the claim about the file
+      # PyPI actually receives.
+      - name: Verify the artifact this job publishes
+        run: python tools/verify_distribution_artifacts.py dist
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
