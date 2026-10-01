@@ -117,6 +117,7 @@ def initial_runtime_metrics(
             for step in program
         ),
         "native_cpu_one_qubit_layer_regions": 0,
+        "native_cpu_parameterized_one_qubit_layer_regions": 0,
         "fused_gate_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
         )

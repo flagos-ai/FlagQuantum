@@ -208,6 +208,11 @@ The native static-Clifford layer follow-up is documented in
 It compares the optimized path with its explicit rollback and PennyLane
 Lightning in the same run, including exact timing, peak RSS, correctness,
 applicability boundaries, and the full reproduction command.
+The next
+[`BATCHED_STATEVECTOR_NATIVE_PARAMETERIZED_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_NATIVE_PARAMETERIZED_CPU_ARM64_20261001_SCORECARD.md)
+measures the native batch-specific RX/RY/RZ layer against its exact rollback and
+PennyLane Lightning. It records a 1.132x Random Clifford and 1.146x local-
+brickwork improvement, while preserving autograd fallback and the public API.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a

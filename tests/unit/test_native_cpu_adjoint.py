@@ -582,6 +582,55 @@ def test_native_fixed_clifford_block_matches_sequential_pytorch(
     torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("wire_count", (2, 6, 11))
+def test_native_batch_specific_rotation_block_matches_sequential_pytorch(
+    dtype: torch.dtype, wire_count: int
+) -> None:
+    if not native_cpu_rotation_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(2203 + wire_count)
+    batch_size = 3
+    state = (
+        torch.randn((batch_size, 1 << wire_count), generator=generator)
+        + 1j * torch.randn((batch_size, 1 << wire_count), generator=generator)
+    ).to(dtype)
+    angles = torch.randn(
+        (batch_size, wire_count), generator=generator, dtype=real_dtype
+    )
+    matrices = torch.stack(
+        tuple(
+            torch.stack(
+                tuple(
+                    _rotation_matrix(
+                        ("rx", "ry", "rz")[gate % 3], angles[row, gate], dtype
+                    )
+                    for gate in range(wire_count)
+                )
+            )
+            for row in range(batch_size)
+        )
+    ).contiguous()
+    expected_rows: list[torch.Tensor] = []
+    for row in range(batch_size):
+        expected = state[row : row + 1].clone()
+        for wire in range(wire_count):
+            expected = _apply_matrix(expected, matrices[row, wire], (wire,), wire_count)
+        expected_rows.append(expected)
+    expected = torch.cat(expected_rows)
+
+    assert fused_rotation_block_forward_(
+        state,
+        matrices,
+        torch.arange(wire_count, dtype=torch.int64),
+        n_wires=wire_count,
+    )
+
+    tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(state, expected, atol=tolerance, rtol=tolerance)
+
+
 def test_forward_rotation_tile_width_has_explicit_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -220,10 +220,16 @@ at::Tensor fused_rotation_block_forward_cpu(
   TORCH_CHECK(matrices.is_contiguous(), "matrices must be contiguous");
   TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
   TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(matrices.dim() == 3, "matrices must have shape [gates, 2, 2]");
   TORCH_CHECK(
-      matrices.size(1) == 2 && matrices.size(2) == 2,
+      matrices.dim() == 3 || matrices.dim() == 4,
+      "matrices must have shape [gates, 2, 2] or [batch, gates, 2, 2]");
+  const bool batched_matrices = matrices.dim() == 4;
+  TORCH_CHECK(
+      matrices.size(-2) == 2 && matrices.size(-1) == 2,
       "every rotation matrix must be 2 by 2");
+  TORCH_CHECK(
+      !batched_matrices || matrices.size(0) == state.size(0),
+      "batched matrix rows must match the state batch");
   TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
   TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
   TORCH_CHECK(
@@ -235,7 +241,7 @@ at::Tensor fused_rotation_block_forward_cpu(
       "only complex64 and complex128 are supported");
   TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
-  const int64_t gate_count = matrices.size(0);
+  const int64_t gate_count = matrices.size(batched_matrices ? 1 : 0);
   TORCH_CHECK(
       gate_count >= 2 && gate_count <= 11,
       "a fused rotation block must contain between two and eleven wires");
@@ -313,40 +319,51 @@ at::Tensor fused_rotation_block_forward_cpu(
     using real_t = typename scalar_t::value_type;
     scalar_t* state_data = state.data_ptr<scalar_t>();
     const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
-    std::array<uint8_t, 11> rotation_kinds{};
-    for (int64_t gate = 0; gate < gate_count; ++gate) {
-      const scalar_t* matrix = matrix_data + gate * 4;
-      const bool diagonal = matrix[1] == scalar_t{} && matrix[2] == scalar_t{};
-      const bool rx = matrix[0].imag() == real_t{} &&
-                      matrix[3].imag() == real_t{} &&
-                      matrix[1].real() == real_t{} &&
-                      matrix[2].real() == real_t{} &&
-                      matrix[0].real() == matrix[3].real() &&
-                      matrix[1].imag() == matrix[2].imag();
-      const bool ry = matrix[0].imag() == real_t{} &&
-                      matrix[1].imag() == real_t{} &&
-                      matrix[2].imag() == real_t{} &&
-                      matrix[3].imag() == real_t{} &&
-                      matrix[0].real() == matrix[3].real() &&
-                      matrix[1].real() == -matrix[2].real();
-      const bool hadamard = matrix[0].imag() == real_t{} &&
-                            matrix[1].imag() == real_t{} &&
-                            matrix[2].imag() == real_t{} &&
-                            matrix[3].imag() == real_t{} &&
-                            matrix[0].real() != real_t{} &&
-                            matrix[0].real() == matrix[1].real() &&
-                            matrix[0].real() == matrix[2].real() &&
-                            matrix[0].real() == -matrix[3].real();
-      const bool bit_flip = matrix[0] == scalar_t{} &&
-                            matrix[3] == scalar_t{} &&
-                            matrix[1] == scalar_t{real_t{1}, real_t{0}} &&
-                            matrix[2] == scalar_t{real_t{1}, real_t{0}};
-      rotation_kinds[gate] = specialized_rotations
-          ? (diagonal ? 1
-                      : (rx ? 2
-                            : (ry ? 3
-                                  : (hadamard ? 4 : (bit_flip ? 5 : 0)))))
-          : 0;
+    const int64_t matrix_rows = batched_matrices ? state.size(0) : 1;
+    std::array<uint8_t, 11> shared_rotation_kinds{};
+    std::vector<uint8_t> batch_rotation_kinds(
+        batched_matrices ? matrix_rows * gate_count : 0);
+    for (int64_t matrix_row = 0; matrix_row < matrix_rows; ++matrix_row) {
+      for (int64_t gate = 0; gate < gate_count; ++gate) {
+        const scalar_t* matrix =
+            matrix_data + (matrix_row * gate_count + gate) * 4;
+        const bool diagonal = matrix[1] == scalar_t{} && matrix[2] == scalar_t{};
+        const bool rx = matrix[0].imag() == real_t{} &&
+                        matrix[3].imag() == real_t{} &&
+                        matrix[1].real() == real_t{} &&
+                        matrix[2].real() == real_t{} &&
+                        matrix[0].real() == matrix[3].real() &&
+                        matrix[1].imag() == matrix[2].imag();
+        const bool ry = matrix[0].imag() == real_t{} &&
+                        matrix[1].imag() == real_t{} &&
+                        matrix[2].imag() == real_t{} &&
+                        matrix[3].imag() == real_t{} &&
+                        matrix[0].real() == matrix[3].real() &&
+                        matrix[1].real() == -matrix[2].real();
+        const bool hadamard = matrix[0].imag() == real_t{} &&
+                              matrix[1].imag() == real_t{} &&
+                              matrix[2].imag() == real_t{} &&
+                              matrix[3].imag() == real_t{} &&
+                              matrix[0].real() != real_t{} &&
+                              matrix[0].real() == matrix[1].real() &&
+                              matrix[0].real() == matrix[2].real() &&
+                              matrix[0].real() == -matrix[3].real();
+        const bool bit_flip = matrix[0] == scalar_t{} &&
+                              matrix[3] == scalar_t{} &&
+                              matrix[1] == scalar_t{real_t{1}, real_t{0}} &&
+                              matrix[2] == scalar_t{real_t{1}, real_t{0}};
+        const uint8_t rotation_kind = specialized_rotations
+            ? (diagonal ? 1
+                        : (rx ? 2
+                              : (ry ? 3
+                                    : (hadamard ? 4 : (bit_flip ? 5 : 0)))))
+            : 0;
+        if (batched_matrices) {
+          batch_rotation_kinds[matrix_row * gate_count + gate] = rotation_kind;
+        } else {
+          shared_rotation_kinds[gate] = rotation_kind;
+        }
+      }
     }
     std::vector<scalar_t> rzz_phases;
     if (fuse_rzz) {
@@ -388,9 +405,14 @@ at::Tensor fused_rotation_block_forward_cpu(
           }
         }
         for (int64_t gate = 0; gate < gate_count; ++gate) {
-          const scalar_t* matrix = matrix_data + gate * 4;
+          const int64_t matrix_row = batched_matrices ? row : 0;
+          const scalar_t* matrix =
+              matrix_data + (matrix_row * gate_count + gate) * 4;
+          const uint8_t rotation_kind = batched_matrices
+              ? batch_rotation_kinds[matrix_row * gate_count + gate]
+              : shared_rotation_kinds[gate];
           const int64_t local_mask = int64_t{1} << gate;
-          if (rotation_kinds[gate] == 1) {
+          if (rotation_kind == 1) {
             for (int64_t block = 0; block < local_size;
                  block += 2 * local_mask) {
               for (int64_t offset = 0; offset < local_mask; ++offset) {
@@ -402,7 +424,7 @@ at::Tensor fused_rotation_block_forward_cpu(
                 values[one] = matrix[3] * one_value;
               }
             }
-          } else if (rotation_kinds[gate] == 2) {
+          } else if (rotation_kind == 2) {
             const real_t cosine = matrix[0].real();
             const real_t sine = matrix[1].imag();
             for (int64_t block = 0; block < local_size;
@@ -420,7 +442,7 @@ at::Tensor fused_rotation_block_forward_cpu(
                     cosine * one_value.imag() + sine * zero_value.real());
               }
             }
-          } else if (rotation_kinds[gate] == 3) {
+          } else if (rotation_kind == 3) {
             const real_t cosine = matrix[0].real();
             const real_t upper_sine = matrix[1].real();
             const real_t lower_sine = matrix[2].real();
@@ -439,7 +461,7 @@ at::Tensor fused_rotation_block_forward_cpu(
                     lower_sine * zero_value.imag() + cosine * one_value.imag());
               }
             }
-          } else if (rotation_kinds[gate] == 4) {
+          } else if (rotation_kind == 4) {
             const real_t scale = matrix[0].real();
             for (int64_t block = 0; block < local_size;
                  block += 2 * local_mask) {
@@ -456,7 +478,7 @@ at::Tensor fused_rotation_block_forward_cpu(
                     (zero_value.imag() - one_value.imag()) * scale);
               }
             }
-          } else if (rotation_kinds[gate] == 5) {
+          } else if (rotation_kind == 5) {
             for (int64_t block = 0; block < local_size;
                  block += 2 * local_mask) {
               for (int64_t offset = 0; offset < local_mask; ++offset) {
