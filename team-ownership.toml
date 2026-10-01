@@ -74,6 +74,20 @@ shared_paths = [
     "workshops/**",
 ]
 
+# `owns` lists describe this repository and nothing else. A pattern that matches no
+# tracked path here is a rule that can never fire, so it is removed rather than kept
+# as a reservation. The five removed patterns (`flagquantum/ops`, `flagquantum/_compiler`,
+# `flagquantum/compilation`, `flagquantum/devices`, `flagquantum/encoding`) named
+# directories of the v0.2.0 migration that never landed in this tree, as did the three
+# documentation paths that left the `docs` team with nothing to own.
+# `tests/unit/test_team_scope_policy.py` asserts both this and the same property for
+# `protected_paths`.
+#
+# Every `branch` and `worktree` value below is a reserved name from that migration,
+# not a live instruction: no branch with the `refactor/` prefix exists in this
+# repository, so do not cut one for ordinary work. A `branch` value is read only by the
+# uniqueness check in `tools/check_team_scope.py`, and the same layout is documented as
+# optional in `AGENTS.md` and `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
 [teams.integration]
 branch = "refactor/flagquantum-vnext-architecture"
 worktree = "FlagQuantum-vNext"
@@ -87,7 +101,6 @@ owns = [
     "flagquantum/circuit.py",
     "flagquantum/experimental/**",
     "flagquantum/noise/**",
-    "flagquantum/ops/**",
     "flagquantum/observables/**",
     "flagquantum/qec/**",
     # Top-level package modules owned by core: the backend-neutral exception
@@ -103,8 +116,6 @@ branch = "refactor/vnext-team-compiler"
 worktree = "FlagQuantum-vNext-compiler"
 owns = [
     "flagquantum/compiler/**",
-    "flagquantum/_compiler/**",
-    "flagquantum/compilation/**",
     "flagquantum/drawer/**",
 ]
 
@@ -134,7 +145,6 @@ branch = "refactor/vnext-team-platform-providers"
 worktree = "FlagQuantum-vNext-platform"
 owns = [
     "flagquantum/compute/**",
-    "flagquantum/devices/**",
     "flagquantum/twin/**",
 ]
 
@@ -152,7 +162,6 @@ branch = "refactor/vnext-team-ecosystem"
 worktree = "FlagQuantum-vNext-ecosystem"
 owns = [
     "flagquantum/ecosystem/**",
-    "flagquantum/encoding/**",
 ]
 
 [teams.services]
@@ -178,13 +187,4 @@ worktree = "FlagQuantum-vNext-verification"
 owns = [
     "flagquantum/benchmarking/**",
     "flagquantum/testing/**",
-]
-
-[teams.docs]
-branch = "docs/vnext-team-docs"
-worktree = "FlagQuantum-vNext-docs"
-owns = [
-    "docs/roadmap/VNEXT_EXPERIENCE.md",
-    "docs/development/DOCUMENTATION_STRATEGY.md",
-    "docs/site/**",
 ]

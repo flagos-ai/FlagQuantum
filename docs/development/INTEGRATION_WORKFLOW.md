@@ -53,28 +53,28 @@ Head-branch prefixes across the 271 merged pull requests:
 | **Total** | **271** |
 
 The prefixes are per-change descriptions, not per-team branches. `refactor/` appears 18
-times and `dev/` 4 times; neither is a team identity, and no prefix reproduces the 12
+times and `dev/` 4 times; neither is a team identity, and no prefix reproduces the 11
 team names in `team-ownership.toml`.
 
 ### The declared flow
 
 | Document | What it declares | Line |
 | --- | --- | --- |
-| `AGENTS.md` | Sessions "must use the branch and linked worktree assigned in `team-ownership.toml`"; `refactor/flagquantum-vnext-architecture` "is the only authoritative integration branch" | `247-274` |
+| `AGENTS.md` | Sessions "must use the branch and linked worktree assigned in `team-ownership.toml`"; `refactor/flagquantum-vnext-architecture` is "the reserved name of the only authoritative integration branch", and the migration layout is optional | `244-287` |
 | `docs/development/MULTI_TEAM_DEVELOPMENT.md` | 304 lines: linked worktrees, cross-team merges only through Integration, `git merge --no-ff` one team at a time, handoff records | full document |
-| `team-ownership.toml` | 12 teams, each with a `branch` and a `worktree` | `70-178` |
-| `.github/workflows/ci.yml` | `push` triggers on `main`, `develop`, and `refactor/flagquantum-vnext-architecture` | `5` |
+| `team-ownership.toml` | 11 teams, each with a `branch` and a `worktree`, all marked reserved | `77-190` |
+| `.github/workflows/ci.yml` | `push` triggered on `main`, `develop`, and `refactor/flagquantum-vnext-architecture` (corrected to `main` only by the change that edited this line) | `5` |
 | `.github/workflows/ci.yml` | `pull_request` triggers on `main` only | `7` |
 
 ### The two sets do not intersect
 
 | Declared | Actual | Evidence |
 | --- | --- | --- |
-| 12 team branches | remote has **9** branches total: `main` plus 8 short-lived ones | `git ls-remote --heads origin` |
+| 11 team branches | remote has **4** branches total: `main` plus 3 short-lived ones | `git ls-remote --heads origin` |
 | `refactor/flagquantum-vnext-architecture` is the integration branch | the branch **does not exist** on the remote | `git ls-remote --exit-code --heads origin refactor/flagquantum-vnext-architecture` fails |
-| `refactor/vnext-team-core`, `-compiler`, `-runtime`, and the other 9 | none exist | same, per branch |
+| `refactor/vnext-team-core`, `-compiler`, `-runtime`, and the other 8 | none exist | same, per branch |
 | `develop` is a CI push branch | `develop` **does not exist** | `git ls-remote --exit-code --heads origin develop` fails |
-| 12 `worktree` names | no directory matching `FlagQuantum-vNext*` exists beside the checkout | `ls -d ../FlagQuantum-vNext*` |
+| 11 `worktree` names | no directory matching `FlagQuantum-vNext*` exists beside the checkout | `ls -d ../FlagQuantum-vNext*` |
 | team branches deliver merged work | **exactly one** merged pull request ever came from a `vnext-team-*` branch: **#15**, `refactor/flagquantum-vnext-architecture` into `main`, 2026-09-11, "refactor: establish FlagQuantum v0.2.0 architecture" | GitHub API over all 271 merged pull requests |
 | team branches are long-lived integration lines | the head branches of squash merges are abandoned; `feat/team-scope-changed-path-gate`, for example, still exists on the remote although its work landed as `4f4adbd` (#282) | `git ls-remote --heads origin` |
 
@@ -111,8 +111,10 @@ request, since it routes work through an integration branch that CI does not wat
 
 `tools/check_team_scope.py:64-76` requires every team to declare a unique `branch` and a
 unique `worktree`, and `ci.yml:76` runs that validation on every pull request. So the
-repository has a machine-checked invariant over 24 values that no process consumes. The
-only reader of either field is the uniqueness check itself.
+repository has a machine-checked invariant over 22 values that no process consumes. The
+only reader of either field is the uniqueness check itself. The two fields are kept as a
+reserved record of the migration layout, now labelled as reserved in both
+`team-ownership.toml` and `AGENTS.md`, rather than removed.
 
 ### Branch protection does not supply the missing control
 
@@ -144,7 +146,7 @@ that describe a process that is not running. Consequence: the machine-checked in
 matches the enforced reality, and the removal of the uniqueness check is a subtraction
 rather than a new rule.
 
-**Candidate B — Adopt the declared workflow.** Create the integration branch and the 12
+**Candidate B — Adopt the declared workflow.** Create the integration branch and the 11
 team branches, change `ci.yml` to watch the integration branch, and route all pull
 requests at it. Consequence: it must be staffed as a real process — one Integration
 owner merging one team at a time with `--no-ff` and per-team handoff records — and the
@@ -154,7 +156,7 @@ owner merging one team at a time with `--no-ff` and per-team handoff records —
 workflow as an explicitly optional mode for a coordinated multi-team round.** This is
 Candidate A with `team-ownership.toml` retaining the `branch`/`worktree` fields marked
 as reserved, no longer required to be live. Consequence: the documents stop presenting
-an optional mode as mandatory, at the cost of keeping 24 values nothing reads.
+an optional mode as mandatory, at the cost of keeping 22 values nothing reads.
 
 **Candidate D — Keep all four declarations and change nothing.** Consequence: an agent
 following `AGENTS.md` creates a team branch and worktree and delivers a handoff record
@@ -165,6 +167,30 @@ that a pull request's base is `main` and that its head branch follows the observ
 prefix convention, then correct the prose once the check exists. Consequence: the
 defect that produced six unverified pull requests is closed by construction, but it adds
 a new rule before the subtraction review that Candidate A performs.
+
+### Decision recorded
+
+Candidate C was chosen, with the `ci.yml:5` trim from Candidate A applied at the same
+time:
+
+- `team-ownership.toml` keeps `branch` and `worktree`, and the file now marks them as
+  reserved names rather than current instructions. `AGENTS.md` and
+  `docs/development/MULTI_TEAM_DEVELOPMENT.md` say the same.
+- `ci.yml:5` no longer lists `develop` or `refactor/flagquantum-vnext-architecture`.
+  Neither has ever existed, so both entries described events that can never fire.
+- Candidate A's remaining subtraction — deleting the two fields and the uniqueness check
+  — is **not** applied. Candidate B stays open. The two unstaffed branches above remain
+  the record of why.
+
+One part of the stale declaration was corrected on its own terms. Of the eleven `owns`
+lists, five named directories that do not exist in this repository
+(`flagquantum/ops`, `flagquantum/_compiler`, `flagquantum/compilation`,
+`flagquantum/devices`, `flagquantum/encoding`) and the `docs` team named three more
+(`docs/site`, `docs/roadmap/VNEXT_EXPERIENCE.md`,
+`docs/development/DOCUMENTATION_STRATEGY.md`). A rule that matches no tracked path
+assigns nothing, and the `docs` team, holding only those three, held nothing at all, so
+it was removed. `tests/unit/test_team_scope_policy.py` now asserts the property for
+`owns` as it already did for `protected_paths`.
 
 ## Prohibited Practices
 

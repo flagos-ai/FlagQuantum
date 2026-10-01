@@ -1,14 +1,19 @@
 # FlagQuantum Development Across Multiple Sessions
 
 > **This document does not describe how changes reach `main` today.** It is the
-> v0.2.0 migration workflow. Of 271 merged pull requests, one used the integration
-> branch named below (#15, 2026-09-11); the other 270 were per-change branches cut
-> from `main` and squash merged. The integration branch, the twelve team branches,
-> and the `FlagQuantum-vNext*` worktrees do not exist in this repository.
+> v0.2.0 migration workflow, and it is optional. Of 271 merged pull requests, one used
+> the integration branch named below (#15, 2026-09-11); the other 270 were per-change
+> branches cut from `main` and squash merged. The integration branch, the eleven team
+> branches, and the `FlagQuantum-vNext*` worktrees do not exist in this repository.
+>
+> Ordinary work is therefore a short-lived branch off `main` merged by pull request.
+> Do not cut a team branch or a `FlagQuantum-vNext*` worktree because this document
+> describes one: `team-ownership.toml` marks those names as reserved, and `AGENTS.md`
+> states the reservation where an agent will read it first.
 >
 > See [Integration workflow](INTEGRATION_WORKFLOW.md) for the workflow actually in
-> use, the measurements behind that statement, and the open decision about which
-> of the two documents to correct.
+> use, the measurements behind that statement, and the decision recorded about which
+> of the two documents to follow.
 
 ## Goal
 
@@ -23,8 +28,9 @@ second roster.
 
 ## Workspace Model
 
-Read branch names and suggested worktree names from `team-ownership.toml`.
-The integration branch is `refactor/flagquantum-vnext-architecture`.
+Read branch names and suggested worktree names from `team-ownership.toml`. The
+integration branch is `refactor/flagquantum-vnext-architecture`; every value there is a
+reserved name for this optional mode, not a branch that exists today.
 Worktree names are local layout conventions, not required absolute paths;
 resolve the actual checkout with `git worktree list` before operating on it.
 
@@ -121,7 +127,8 @@ in one large change.
 
 ### Sole Authoritative Version
 
-`refactor/flagquantum-vnext-architecture` is the only integration branch. Team
+`refactor/flagquantum-vnext-architecture` is the reserved name of the only integration
+branch in this mode. Team
 branches are temporary development lines, not product versions for release,
 acceptance, or performance claims. A unified version must record:
 

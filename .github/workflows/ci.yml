@@ -2,7 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, refactor/flagquantum-vnext-architecture]
+    # `develop` and the `refactor/flagquantum-vnext-architecture` integration branch
+    # were listed here as well. Neither has ever existed in this repository or in the
+    # private integration checkout, so those two entries could never fire. A `push`
+    # trigger that cannot run is worse than an absent one: it reads as coverage.
+    branches: [main]
   pull_request:
     branches: [main]
 
