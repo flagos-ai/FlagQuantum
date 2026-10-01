@@ -964,6 +964,25 @@ limitations = "A synchronous local reference for one fixed three-data-qubit repe
 focused_tests = "tests/qec/test_repetition_memory.py"
 development_artifact = "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
 
+[capabilities.detector_error_model]
+title = "Detector error model and stim text interchange"
+summary = "Build the exact Pauli-noise detector error model of a memory circuit, sample it, and exchange it with stim as text in both directions."
+category = "simulation_and_training"
+user_goals = ["Build the detector error model a memory circuit defines under phenomenological noise", "Read a stim detector error model and sample its detection events", "Emit stim text for an external decoder or matcher"]
+public_apis = ["flagquantum.qec.DetectorErrorModel", "flagquantum.qec.DemError", "flagquantum.qec.DemSample"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "flagquantum/qec/IMPLEMENTATION.md"
+documentation = "flagquantum/qec/IMPLEMENTATION.md"
+level = "development_evidence"
+owner = "QEC maintainers"
+limitations = "An exact construction for Pauli noise over the reference Clifford gate set, and a text reader for the stim detector error model format. Construction does not sample: a mechanism's signature comes from one forced execution whose two shots must agree, and a non-Pauli channel is refused with a stated reason rather than approximated. The model is built on the memory circuit without in-circuit feedback, because it describes the noise-to-detection mapping a decoder inverts, so the frozen profile's compiled-feedback path is unmodelled. Detector rates are cross-checked against rates sampled from the circuit simulator, but the cross-check shares the injection helper with construction, so it is not an independent re-derivation of the signatures. The text reader accepts everything stim 1.16.0 wrote in a 240-model developer-time sweep except a repeat block, a # comment, a declaration that skips an index, and a malformed line; str(detector_error_model.flattened()) is a complete route around the repeat refusal. The printed text is lossy in the last digit because stim prints 17 significant digits, so a round-trip comparison must compare against a re-read of the text rather than against the in-memory model. CodeCheck requires every CNOT to control a data wire, so an X-type stabilizer is not representable and a code family needing one requires that record to grow first. dem_sampling reports a DEM-sampled rate and is labelled as one wherever it is reported; no decoder, no threshold, no logical-suppression, no real-time or hardware-feedback, and no performance claim follows from a detector error model or from any rate it reports. DemSample carries tensors and is deliberately unhashable. Construction is additionally covered by tests/qec/test_dem_records.py, test_dem_rates.py, test_dem_signatures.py, test_dem_sampling.py, test_dem_cross_check.py, test_dem_from_memory_circuit.py, and test_dem_public_surface.py."
+focused_tests = "tests/qec/test_dem_stim_text.py"
+integration_tests = "tests/qec/test_dem_stim_interop.py"
+development_artifact = "flagquantum/qec/IMPLEMENTATION.md"
+
 [capabilities.extension_sdk]
 title = "Extension SDK"
 summary = "Build and qualify optional extensions through the Ecosystem extension protocol."

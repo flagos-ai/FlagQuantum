@@ -145,40 +145,64 @@ check available — parsing the emitted text with the real `stim` package — wa
 run at developer time and is not a committed test, because `stim` is not a
 dependency of this repository.
 
-The stim interchange is partial: this reader accepts a subset of stim output, and
-which subset is fixed by what the text declares rather than by whether stim
-produced it. `to_stim_text()` emits valid stim text, verified against stim
-1.16.0. `from_stim_text()` reads the format `to_stim_text()` emits and
-hand-written text in that style, not arbitrary stim output: the declarations must
-be complete and consecutive from zero, `#` comments are not accepted, and the
-model shape comes from the declarations alone. `shift_detectors` is refused
-outright.
+The stim interchange is a text format, not a package dependency: nothing in
+`dem.py` imports `stim`, and the reader is exercised against real stim output by
+`tests/qec/test_dem_stim_interop.py`, which skips when the optional distribution
+is absent. `to_stim_text()` emits valid stim text, verified against stim 1.16.0.
+`from_stim_text()` reads the format `to_stim_text()` emits and hand-written text
+in that style.
 
-In the developer-time sweep -- 96 detector error models from repetition-code and
-rotated-surface-code memory circuits, distances three and five, one to three
-rounds, noisy and noise-free, with and without flattening the circuit first --
-`shift_detectors` accounted for 32 refusals and the undeclared observable index
-for the other 32. All 48 that carried an error were refused, and the 32 accepted
-carried none.
+Three constructs that stim emits and this reader used to refuse are now read, and
+each is read the way stim means it rather than the way it is convenient to mean
+it. A `shift_detectors` instruction offsets every detector index on the lines
+that follow it, in the declarations and in the error mechanisms alike, and
+successive instructions accumulate. A `^` separator partitions the groups a
+composite mechanism decomposes into; those groups are a decoder's business and
+the signature is the symmetric difference of the line's targets, so a repeated
+target cancels and the groups are not retained. An observable count that only the
+error targets state is inferred from them, because stim declares the observable
+exactly when no mechanism references it; a declared count still governs.
 
-A second sweep of 240 single-error circuits -- one `X_ERROR` on each data wire,
-the same two families, distances and rounds -- refused 170 of them: 160 by the
-`shift_detectors` rule and 10 because an error index fell outside the declared
-shape. The 70 that satisfied both conditions were all accepted, and 32 of those
-carried an error. So the conditions are two, and both are needed: of the 210 of
-those circuits whose errors avoided the observable, the 140 whose rounds repeat
-were refused anyway. Both sweeps were also checked for `repeat` blocks -- none of
-the 336 texts contained one, so no refusal above came from that rule.
+What remains refused is a `repeat` block, a `#` comment, a declaration that skips
+an index, and a malformed line. The `repeat` refusal is deliberate rather than
+pending: expanding a block means interpreting a nested instruction stream, and
+`str(model.flattened())` already states the same instructions without the block.
+`flatten_loops=True` is not a substitute for that call, because stim still emits a
+block for a long enough circuit.
 
-Where the rates were checked against stim rather than restated: the 32 accepted
-DEMs that carry an error match stim's own compiled sampler to within 0.36
-standard deviations over 20000 shots. On the edited route -- strip the observable
-instruction from a noisy circuit and the flattened text is accepted, errors and
-all -- the agreement is 2.61 standard deviations over the same shot count.
+The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
+models -- repetition-code and rotated-surface-code memory circuits, distances
+three, five and seven, rounds one, two, three, five and nine, noisy and
+noise-free, with and without decomposed errors. This reader parsed all 180 that
+carried no block, agreeing with a re-read of the same text on the detector and
+observable counts, on the error count, and on every `(probability, detectors,
+observables)` mechanism; the 60 refusals were all `repeat` blocks, all from
+`repetition_code:memory` at five rounds or more. Every one of the same 240 models
+parsed when `flattened()` supplied the text, so flattening is a complete route
+around the last refusal.
 
-Not covered by either sweep: decomposed or approximately-disjoint errors, gauge
-detectors, repeat blocks, colour codes, distances above five, and hand-written
-text.
+Agreement on the shape and on the mechanism list is agreement with stim's own
+reading of a text stim wrote, so the reader is also checked against the physics.
+On a rotated surface code at distance five, two rounds and two percent noise,
+this reader's marginal detector and observable rates agree with the flat text to
+within 1e-9, agree with stim's compiled sampler over 200000 shots to within
+0.0018 where a reading that kept only the first group of each decomposed
+mechanism would miss by 0.094, and agree with sampling the circuit the text was
+derived from over 100000 shots to within 0.0041 inside a budget of 0.008. The
+repetition code cannot supply that discrimination: at distance three, three rounds
+and one percent noise the two readings of `^` differ by at most 0.0024, so the
+test uses a circuit whose decompositions actually merge groups.
+
+The text is lossy in the last digit, because stim prints 17 significant digits.
+Over that sweep the largest relative difference between an in-memory probability
+and the printed one was 4.9e-16, so the printed value is the one this reader
+states. A round-trip assertion must compare against a re-read of the printed text
+rather than against the in-memory model, or it reports differences that the
+printing caused.
+
+Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
+above seven, `approximate_disjoint_errors`, and hand-written text outside the
+style `to_stim_text()` emits.
 
 `DemSample` carries tensors and defines content equality, and it is deliberately
 unhashable: it must not be used as a set member or a dict key.

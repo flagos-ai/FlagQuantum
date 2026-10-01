@@ -144,6 +144,9 @@ This catalog is generated from the machine-validated
 | Exercise a fixed-round QEC control workflow | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
 | Inspect syndrome and detection-event records | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
 | Prototype a decoder against a typed contract | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
+| Build the detector error model a memory circuit defines under phenomenological noise | Detector error model and stim text interchange | Development evidence | [Run example](../../flagquantum/qec/IMPLEMENTATION.md) |
+| Read a stim detector error model and sample its detection events | Detector error model and stim text interchange | Development evidence | [Run example](../../flagquantum/qec/IMPLEMENTATION.md) |
+| Emit stim text for an external decoder or matcher | Detector error model and stim text interchange | Development evidence | [Run example](../../flagquantum/qec/IMPLEMENTATION.md) |
 | Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Register custom framework behavior | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Install an external circuit compiler | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
@@ -443,6 +446,20 @@ Run a bounded three-data-qubit memory experiment with timed errors or circuit-lo
 - **Start:** [quick example](../../flagquantum/qec/README.md)
 - **Documentation:** [guide](../../flagquantum/qec/README.md)
 - **Known boundary:** A synchronous local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules, replaceable per-round trajectory decoding with physical-X or Pauli-frame-X actions, and a two-round temporal rule that rejects an isolated readout excursion. Confirmable data errors require a following round; terminal-round onsets remain unconfirmed. The circuit-location stochastic profile contains independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Feedback traces separate true and observed bits, actions, and frame evolution. Sweeps report finite-shot observations only, not logical suppression or thresholds. The temporal rule is not maximum-likelihood decoding and repeated readout faults may mimic data errors. Batched decoder feedback, general channels/codes, correlated or timing noise, hard-real-time/provider control, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The feedback records are private subinterfaces and the namespace is not exported from the stable package root.
+
+### Detector error model and stim text interchange
+
+Build the exact Pauli-noise detector error model of a memory circuit, sample it, and exchange it with stim as text in both directions.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.qec.DetectorErrorModel`, `flagquantum.qec.DemError`, `flagquantum.qec.DemSample`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../flagquantum/qec/IMPLEMENTATION.md)
+- **Documentation:** [guide](../../flagquantum/qec/IMPLEMENTATION.md)
+- **Known boundary:** An exact construction for Pauli noise over the reference Clifford gate set, and a text reader for the stim detector error model format. Construction does not sample: a mechanism's signature comes from one forced execution whose two shots must agree, and a non-Pauli channel is refused with a stated reason rather than approximated. The model is built on the memory circuit without in-circuit feedback, because it describes the noise-to-detection mapping a decoder inverts, so the frozen profile's compiled-feedback path is unmodelled. Detector rates are cross-checked against rates sampled from the circuit simulator, but the cross-check shares the injection helper with construction, so it is not an independent re-derivation of the signatures. The text reader accepts everything stim 1.16.0 wrote in a 240-model developer-time sweep except a repeat block, a # comment, a declaration that skips an index, and a malformed line; str(detector_error_model.flattened()) is a complete route around the repeat refusal. The printed text is lossy in the last digit because stim prints 17 significant digits, so a round-trip comparison must compare against a re-read of the text rather than against the in-memory model. CodeCheck requires every CNOT to control a data wire, so an X-type stabilizer is not representable and a code family needing one requires that record to grow first. dem_sampling reports a DEM-sampled rate and is labelled as one wherever it is reported; no decoder, no threshold, no logical-suppression, no real-time or hardware-feedback, and no performance claim follows from a detector error model or from any rate it reports. DemSample carries tensors and is deliberately unhashable. Construction is additionally covered by tests/qec/test_dem_records.py, test_dem_rates.py, test_dem_signatures.py, test_dem_sampling.py, test_dem_cross_check.py, test_dem_from_memory_circuit.py, and test_dem_public_surface.py.
 
 ### QUBO to Ising mapping
 

@@ -438,9 +438,9 @@ status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
 maturity_ref = "stabilizer_sampling"
-reason = "The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence."
-baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, and no noise, and the detector error model module it does have is not connected to it."
-evidence = ["flagquantum/simulation/stabilizer/engine.py", "tests/team/simulation/test_stabilizer_sampling.py", "examples/stabilizer_sampling.py"]
+reason = "Both halves of the row now exist in a narrower form. The representation half is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable, and Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. The execution half landed as an execution mode: `plan` and `run` reach the engine through `state_mode='stabilizer'` and report a plan, a result, and execution evidence, which `tests/integration/test_stabilizer_execution_mode.py` pins. What remains is narrower than the baseline in three ways: no expectation values over the representation, no noise, and no detector error model connected to it."
+baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values, detector error models, and noisy circuits over the same representation. FlagQuantum reaches its engine through `fq.run` with `state_mode='stabilizer'` and returns samples, but it offers no expectation values over the representation, refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it, and does not connect its detector error model module to the engine."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/runtime/executors/stabilizer/sampling.py", "tests/team/simulation/test_stabilizer_sampling.py", "tests/integration/test_stabilizer_execution_mode.py", "examples/stabilizer_sampling.py"]
 
 [[domains.capabilities]]
 id = "backend_photonics"
@@ -518,8 +518,9 @@ cudaq = "Detector error model construction and circuit-to-DEM conversion"
 status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "The outbound direction interoperates: an independent reader parses the emitted text, agrees on the detector, observable, and error counts, and reports the same mechanisms the model states, which `tests/qec/test_dem_stim_interop.py` pins. The inbound direction does not, and the three refusals are separate: a relative `shift_detectors` round index, a `^` decomposition separator, and an observable that only the error targets introduce. The module also still has no capability-maturity entry."
-evidence = ["flagquantum/qec/dem.py", "tests/qec/test_dem_stim_interop.py", "search:inbound text from an independent generator is refused"]
+maturity_ref = "detector_error_model"
+reason = "Both directions of the stim text interchange work. `from_memory_circuit` builds a model exactly for Pauli noise over the reference Clifford gate set; `to_stim_text` emits text stim 1.16.0 parses; `from_stim_text` reads everything stim wrote in a 240-model developer-time sweep except a `repeat` block, and `str(model.flattened())` is a complete route around that one refusal. The row stays partial because conversion is narrower than the baseline at the input end: `from_memory_circuit` accepts one circuit record and one noise record, so an arbitrary circuit carrying detector and observable annotations has no route to a model, and a non-Pauli channel is refused rather than decomposed. `flagquantum/qec/IMPLEMENTATION.md` records the sweeps and the arithmetic."
+evidence = ["flagquantum/qec/dem.py", "tests/qec/test_dem_stim_text.py", "tests/qec/test_dem_stim_interop.py", "flagquantum/qec/IMPLEMENTATION.md", "search:no route from an arbitrary annotated circuit to a detector error model"]
 
 [[domains.capabilities]]
 id = "unitary_mixture_degradation"
@@ -707,8 +708,8 @@ evidence = ["flagquantum/drawer", "search:no SVG string output, no trace view, a
 [[domains]]
 id = "quantum_error_correction"
 title = "Quantum error correction"
-cudaq_surface = ["cudaq-qec library", "circuit-to-DEM round trip", "Stim integration", "QEC MLIR dialect", "GPU decoders", "surface, Steane, and qLDPC codes", "lattice surgery and magic state distillation", "transport, rounds, objectives, neutral atoms", "for-stim-users migration"]
-evidence = ["flagquantum/qec", "flagquantum/qec/decoders.py", "search:one repetition-code profile only, and no surface, Steane, qLDPC, Reichardt, or Floquet code"]
+cudaq_surface = ["cudaq-qec library", "detector, detectors, and logical_observable annotations in a kernel", "dem, dem_from_kernel, and DEMResult", "extract_syndrome", "circuit-to-DEM round trip", "Stim integration", "the logical.* preview namespace", "QEC MLIR dialect", "GPU decoders", "surface, Steane, and qLDPC codes", "lattice surgery and magic state distillation", "transport, rounds, objectives, neutral atoms", "for-stim-users migration"]
+evidence = ["flagquantum/qec", "flagquantum/qec/decoders.py", "search:one repetition-code profile only, and no surface, Steane, qLDPC, Reichardt, or Floquet code", "search:no detector or logical_observable annotation on a general circuit and no dem_from_kernel"]
 
 [[domains.capabilities]]
 id = "qec_code_library"
@@ -735,8 +736,9 @@ status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
 maturity_ref = "stabilizer_sampling"
-reason = "The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here."
-baseline_gap = "No decoding and no sampling of error-corrected logical operations. A detector error model module exists and its text interoperates outbound, but the sampling engine refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled, and the two are not yet connected."
+reason = "Both halves now exist, and the row is partial because they are not connected to each other. Stim-backed sampling landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half landed with the text reader and its own capability entry. What the row still lacks is the join: the sampling engine refuses a circuit carrying a noise instruction rather than tracking a Pauli frame through it, so a noisy circuit is declined rather than sampled, and that refusal is what stands between a circuit and the detector error model a decoder would consume. Decoding itself stays with the decoder row rather than being implied here."
+baseline_gap = "No decoding and no sampling of error-corrected logical operations. Detection events from a noisy Clifford circuit, sampling both from the circuit and from a detector error model derived from it, and pymatching- or stim-driven logical-error-rate estimation all remain absent, so a circuit carrying a noise instruction is declined rather than sampled; the stabilizer sampling half and the detector error model half exist but are not connected."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/qec/dem.py", "tests/qec/test_dem_stim_interop.py", "tests/integration/test_stabilizer_execution_mode.py"]
 
 [[domains.capabilities]]
 id = "qec_dialect"
@@ -753,7 +755,7 @@ cudaq = "Lattice surgery, product rotation, and magic state distillation"
 status = "unsupported"
 priority = "later"
 dependency_class = "B_open_neutral"
-reason = "Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan."
+reason = "Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan. The baseline exposes this as the ~70-name `logical.*` preview namespace measured from a live CUDA-Q 0.16.0 install, which also carries the patch, gadget, protocol, and program records the operations compose; the semantic core (lattice surgery, product rotation, distillation) is what this row tracks, and the surrounding records are why the row is a layer rather than a function."
 
 [[domains.capabilities]]
 id = "qec_transport_and_objectives"
