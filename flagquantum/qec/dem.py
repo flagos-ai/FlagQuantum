@@ -899,12 +899,21 @@ def _forced_signature(
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Return the detectors and observables that ``source``'s forced error flips.
 
-    The source is lowered and executed twice, and both shots must agree: a
-    mechanism whose outcome depends on the trajectory is not a Pauli mechanism
-    in the reference gate set, so it is refused instead of contributing a
-    signature. The surviving shot is read through the layouts, never off the raw
-    register: a detector XORs the measurements its parity names, and an
+    The source is lowered and executed twice, and the two shots must agree on
+    the *flip set*: a mechanism whose signature depends on the trajectory is not
+    a Pauli mechanism in the reference gate set, so it is refused instead of
+    contributing a signature. The shot is read through the layouts, never off the
+    raw register: a detector XORs the measurements its parity names, and an
     observable XORs the terminal samples over the support of its Pauli.
+
+    The register bits themselves need not agree, and for a code with X-type
+    checks they do not: an X-type ancilla is prepared in ``|+>``, so its
+    round-zero outcome is random. What the model records is the flip a mechanism
+    causes relative to the noiseless outcome, and that is the parity the layouts
+    define — deterministic for the steady-state X-type detectors precisely
+    because the two rounds it compares were projected into the same eigenstate.
+    Requiring the raw bits to agree would refuse every code with an X-type check,
+    including the rotated surface code, for a randomness the model does not see.
 
     A syndrome measurement is read at ``round_index * len(checks) +
     position_in_checks``, where the position is the check's index in the code's
@@ -924,20 +933,15 @@ def _forced_signature(
     )
     classical: list[list[int]] = execution.classical_bits.tolist()
     samples: list[list[int]] = execution.samples.tolist()
-    if classical[0] != classical[1] or samples[0] != samples[1]:
-        raise ValueError(
-            "the forced error is not deterministic across trajectories, so it is "
-            "not a Pauli mechanism in the reference gate set"
-        )
-    classical_row = classical[0]
-    sample_row = samples[0]
     positions = {
         check.ancilla_wire: position
         for position, check in enumerate(circuit.code.checks)
     }
     checks = len(circuit.code.checks)
 
-    def measurement_bit(reference: MeasurementRef) -> int:
+    def measurement_bit(
+        classical_row: list[int], sample_row: list[int], reference: MeasurementRef
+    ) -> int:
         """Return the recorded bit one layout reference names.
 
         A syndrome reference is read at the position of the check that owns its
@@ -957,17 +961,34 @@ def _forced_signature(
             )
         return classical_row[reference.round_index * checks + position]
 
-    detectors = tuple(
-        detector.index
-        for detector in circuit.detectors.detectors
-        if sum(measurement_bit(reference) for reference in detector.parity) % 2 == 1
-    )
-    observables = tuple(
-        observable.index
-        for observable in circuit.observables.observables
-        if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
-    )
-    return detectors, observables
+    def flip_set(
+        classical_row: list[int], sample_row: list[int]
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        detectors = tuple(
+            detector.index
+            for detector in circuit.detectors.detectors
+            if sum(
+                measurement_bit(classical_row, sample_row, reference)
+                for reference in detector.parity
+            )
+            % 2
+            == 1
+        )
+        observables = tuple(
+            observable.index
+            for observable in circuit.observables.observables
+            if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
+        )
+        return detectors, observables
+
+    signature = flip_set(classical[0], samples[0])
+    if signature != flip_set(classical[1], samples[1]):
+        raise ValueError(
+            "the forced error's detector and observable flips are not "
+            "deterministic across trajectories, so it is not a Pauli mechanism "
+            "in the reference gate set"
+        )
+    return signature
 
 
 __all__ = ("DemError", "DemSample", "DetectorErrorModel")

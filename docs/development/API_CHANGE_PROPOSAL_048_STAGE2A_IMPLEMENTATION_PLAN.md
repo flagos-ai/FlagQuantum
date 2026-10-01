@@ -1279,6 +1279,21 @@ Injection anchors, both pinned by observation of `flagquantum/qec/circuit.py:205
 
 **Both shots must agree.** If `classical_bits[0] != classical_bits[1]` or `samples[0] != samples[1]`, raise `ValueError` stating that the mechanism is not deterministic and therefore not a Pauli mechanism in the reference gate set. This is the fail-closed guard from Design Decision 4.
 
+> **Superseded by W1-04c.** The two agreements above are now required of the
+> *detector and observable flip set*, not of the raw register. At the time this
+> stage was written every code record produced Z-type checks only, whose ancillas
+> are prepared in `|0>`; their recorded bits are therefore deterministic and the
+> two conditions coincided. W1-04a added X-type checks, whose ancilla is prepared
+> in `|+>` and whose round-zero outcome is a coin toss, so the register condition
+> refuses the rotated surface code — and every other code with an X-type check —
+> for a randomness the model never reads. What the model records is the flip a
+> mechanism causes, and the steady-state X-type detector that carries it is
+> deterministic precisely because the first round projected both compared rounds
+> into the same eigenstate. The fail-closed intent of Design Decision 4 is
+> unchanged: a mechanism whose flip set moves between the two shots is still
+> refused. See `flagquantum/qec/dem.py` `_forced_signature` and
+> `tests/qec/test_dem_signatures.py`.
+
 Detector bits come from the layout, never from the raw register: for each `Detector` in `circuit.detectors.detectors`, XOR the referenced measurements, where a `MeasurementRef` with `round_index is None` reads `samples[shot][wire]` and otherwise reads `classical_bits[shot][round_index * len(checks) + position_in_checks]`. **`position_in_checks` is the check's index in the `code.checks` tuple — never `CodeCheck.index`.** Observable bits come from `ObservableLayout`, XORing the terminal `samples` over `pauli.support`. A measurement flip in the final round consequently flips **two** detectors — its own round's and that check's terminal boundary — which is why a signature is a set of indices rather than a single one.
 
 - [ ] **Step 1: Write the failing test**
