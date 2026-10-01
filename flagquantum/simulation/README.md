@@ -17,6 +17,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Contraction, slicing, and pullbacks | [tensor_network/](tensor_network/README.md) |
 | Exact noisy evolution | [density_matrix.py](density_matrix.py) |
 | Continuous-time Lindblad evolution | [lindblad.py](lindblad.py) |
+| Clifford sampling beyond an amplitude store | [stabilizer/](stabilizer/README.md) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
 | Optional JAX kernels | [jax/](jax/README.md) |
 
@@ -27,6 +28,7 @@ python -m pytest tests/test_native_circuit.py -q
 python -m pytest tests/test_mps.py -q
 python -m pytest tests/test_tensor_network.py -q
 python -m pytest tests/test_noise.py -q
+python -m pytest tests/team/simulation/test_stabilizer_engine.py -q
 ```
 
 Choose the suite for the affected representation, then broaden by the
@@ -96,6 +98,37 @@ assert result.plan is restored
 
 Set `return_density_matrices=True` when the complete density trajectory is
 needed. Otherwise it is omitted from the returned result.
+
+## Clifford sampling beyond an amplitude store
+
+`flagquantum.simulation.stabilizer.sample_stabilizer` samples
+computational-basis outcomes from a Clifford circuit through Pauli stabilizer
+tracking, whose storage grows with the wire count squared instead of
+exponentially. A thousand-wire GHZ chain is a normal input for it and an
+unrepresentable one for every engine in this directory.
+
+```bash
+pip install 'flagquantum[stim]'
+python -m examples.stabilizer_sampling
+```
+
+```python
+import flagquantum as fq
+from flagquantum.simulation.stabilizer import sample_stabilizer
+
+samples = sample_stabilizer(fq.Circuit(2).h(0).cx(0, 1), shots=1000, seed=7)
+print(samples.shape)     # torch.Size([1000, 2])
+print(samples.dtype)     # torch.int64
+```
+
+The accepted gates are exactly the thirteen Clifford opcodes. A parameterized
+rotation, `t`, `ccx`, `cswap`, or a noise channel is refused with
+`CapabilityError` naming the gate set rather than being approximated, and a
+missing engine raises `StabilizerDependencyError` naming the extra instead of
+falling back to an amplitude path. Sampling is not differentiable and this
+engine is not an execution route: no planner or executor selects it, so it
+carries no plan, result, or scalability evidence. Read
+[stabilizer/README.md](stabilizer/README.md) before changing it.
 
 [Detailed source map](IMPLEMENTATION.md) locates shared gate primitives,
 rank-local kernels, specialized precision paths, and numerical migration rules.

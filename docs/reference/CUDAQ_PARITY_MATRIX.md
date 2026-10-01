@@ -53,17 +53,17 @@ No row in this document is a performance comparison or a scalability claim.
 | --- | --- | --- | --- | --- | --- |
 | language_and_programming_model | 0 | 3 | 8 | 0 | 11 |
 | compiler_and_ir | 0 | 6 | 7 | 0 | 13 |
-| simulation_backends | 4 | 4 | 5 | 0 | 13 |
+| simulation_backends | 4 | 5 | 4 | 0 | 13 |
 | noise_and_error_models | 0 | 4 | 1 | 0 | 5 |
 | operator_algebra_and_domain_libraries | 0 | 3 | 4 | 0 | 7 |
 | algorithm_layer | 1 | 3 | 2 | 0 | 6 |
-| quantum_error_correction | 0 | 2 | 5 | 0 | 7 |
+| quantum_error_correction | 0 | 3 | 4 | 0 | 7 |
 | logical_and_ftqc_layer | 0 | 0 | 5 | 0 | 5 |
 | hardware_and_cloud_targets | 2 | 1 | 3 | 0 | 6 |
 | realtime_control | 0 | 0 | 4 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 9 | 30 | 47 | 0 | 86 |
+| **Total** | 9 | 32 | 45 | 0 | 86 |
 
 ### Dependency class of every open gap
 
@@ -94,7 +94,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `backend_multi_gpu_statevector` (simulation_backends): Sharded statevector training exists at development_evidence level with one measured 32-qubit complex128 forward pass on one eight-accelerator node. Production capacity expansion is not established.
 - `backend_tensor_network_exact` (simulation_backends): A self-built PyTorch tensor-network path exists without a cuTensorNet-class contraction planner, so the exact regime is narrower than the CUDA-Q baseline.
 - `backend_density_matrix` (simulation_backends): An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence.
-- `backend_stim_stabilizer` (simulation_backends): Absent, and it is the largest single capability gap per unit of effort. Stim is Apache-2.0 licensed and independent of every NVIDIA component, so the whole stabilizer regime is reachable by integration rather than by research.
+- `backend_stim_stabilizer` (simulation_backends): The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence.
 - `backend_dynamics` (simulation_backends): FlagQuantum has a real Lindblad engine with RK4 integration, validation codes, and evidence fields, so this capability is not missing. Three walls separate it from the baseline: CPU-only hard rejection, a dense four-to-the-n Hamiltonian with a fixed step, and a static Hamiltonian. Batching and gradients are rejected.
 - `kraus_channel_algebra` (noise_and_error_models): The channel set is limited to bit flip, phase flip, amplitude damping, and depolarizing. General Kraus algebra is absent.
 - `detector_error_model` (noise_and_error_models): A DEM module exists in the QEC domain but has no capability-maturity entry, no round-trip conformance against an independent implementation, and no Stim interoperability.
@@ -107,7 +107,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `variational_algorithms` (algorithm_layer): VQE-class and several algorithm primitives exist as separate registered capabilities rather than a solver family, so the surface shape differs from the baseline.
 - `qec_code_library` (quantum_error_correction): Only a repetition-code memory experiment is registered. Surface, Steane, qLDPC, Reichardt, and Floquet codes are absent.
 - `qec_decoder_family` (quantum_error_correction): The existing decoder layer is basic. PyMatching and an LDPC belief-propagation implementation are Apache-2.0 licensed, so the plan is integration rather than reimplementation, with acceleration later through the FlagOS kernel path.
-- `qec_stim_integration` (quantum_error_correction): Absent. It shares its dependency and its implementation with the stabilizer backend, so both land together.
+- `qec_stim_integration` (quantum_error_correction): The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here.
 - `third_party_target_sdk` (hardware_and_cloud_targets): Absent, and it is the ecosystem entry point. Without it a provider can only be added by changing FlagQuantum.
 - `provider_roster_breadth` (hardware_and_cloud_targets): FlagQuantum has fewer providers. The architectural requirement is a registration point a third party can use, which is why third_party_target_sdk is the higher-priority row.
 - `simulator_plugin_admission` (engineering_ecosystem_and_abi): The decisive ecosystem gap. The extension protocol exists with an entry-point group, manifest, SDK version check, capability negotiation, and an ExecutionBackendExtension contract, and the runtime has a separate backend capability registry. The two never import each other, so an extension can be negotiated and discovered but cannot execute.
@@ -241,7 +241,7 @@ CUDA-Q surface: qpp-cpu, nvidia, nvidia option=mgpu, tensornet, tensornet-mps, f
 | `backend_asynchronous_multi_qpu` | nvidia option=mqpu asynchronous multi-QPU execution | unsupported | next | none | `cloud_deployment` | Absent. FlagQuantum has single-target remote execution but no asynchronous fan-out across several QPUs with independent result streams. |
 | `backend_trajectory_noise` | Trajectory noisy simulation available across backends | supported | now | none | `noisy_simulation` | FlagQuantum has a trajectory noise path. Batched trajectory execution is narrower than the CUDA-Q baseline. <br><br>Narrower scope at this status: No batched trajectory result is recorded in this checkout. |
 | `backend_density_matrix` | density-matrix-cpu backend | partial | now | none | none | An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence. |
-| `backend_stim_stabilizer` | stim stabilizer backend reaching thousands of qubits | unsupported | now | B_open_neutral | none | Absent, and it is the largest single capability gap per unit of effort. Stim is Apache-2.0 licensed and independent of every NVIDIA component, so the whole stabilizer regime is reachable by integration rather than by research. |
+| `backend_stim_stabilizer` | stim stabilizer backend reaching thousands of qubits | partial | now | B_open_neutral | `stabilizer_sampling` | The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence. <br><br>Narrower scope at this status: CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, no noise, and no detector error model. |
 | `backend_photonics` | orca-photonics photonic backend | unsupported | later | none | none | Absent. Photonic simulation is a distinct product line and is deferred with the qudit operations it depends on. |
 | `backend_dynamics` | dynamics backend for time-dependent evolution backed by cuDensityMat | partial | now | A_nvidia_proprietary | `continuous_time_lindblad` | FlagQuantum has a real Lindblad engine with RK4 integration, validation codes, and evidence fields, so this capability is not missing. Three walls separate it from the baseline: CPU-only hard rejection, a dense four-to-the-n Hamiltonian with a fixed step, and a static Hamiltonian. Batching and gradients are rejected. <br><br>Narrower scope at this status: The registered entry declares explicit time grids on small systems, so it does not by itself authorize a scale claim against the baseline. |
 | `backend_gpu_fabric` | Multi-GPU fabric with peer-to-peer memory access | unsupported | next | C_flagos_replacement | `flagos_transport_observability` | Absent as a FlagQuantum-owned transport. The replacement target is a FlagOS-family collective layer, not NCCL. |
@@ -253,7 +253,7 @@ Evidence:
 - domain default, negative search: no stabilizer simulator, no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport
 
 - `backend_density_matrix` override: `flagquantum/simulation/density_matrix.py`
-- `backend_stim_stabilizer` override: `search:CUDA-Q stabilizer backend and no Stim import anywhere under flagquantum/`
+- `backend_stim_stabilizer` override: `flagquantum/simulation/stabilizer/engine.py`, `tests/team/simulation/test_stabilizer_sampling.py`, `examples/stabilizer_sampling.py`
 
 #### Noise and error models
 
@@ -334,7 +334,7 @@ CUDA-Q surface: cudaq-qec library, circuit-to-DEM round trip, Stim integration, 
 | --- | --- | --- | --- | --- | --- | --- |
 | `qec_code_library` | cudaq-qec codes expressed as kernels, with numerical experiment APIs | partial | now | none | `repetition_code_memory` | Only a repetition-code memory experiment is registered. Surface, Steane, qLDPC, Reichardt, and Floquet codes are absent. |
 | `qec_decoder_family` | Minimum-weight perfect matching, belief propagation with ordered statistics decoding, and sliding-window decoders | partial | now | B_open_neutral | none | The existing decoder layer is basic. PyMatching and an LDPC belief-propagation implementation are Apache-2.0 licensed, so the plan is integration rather than reimplementation, with acceleration later through the FlagOS kernel path. |
-| `qec_stim_integration` | Stim sampling and detector error model interoperability | unsupported | now | B_open_neutral | `repetition_code_memory` | Absent. It shares its dependency and its implementation with the stabilizer backend, so both land together. |
+| `qec_stim_integration` | Stim sampling and detector error model interoperability | partial | now | B_open_neutral | `stabilizer_sampling` | The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here. <br><br>Narrower scope at this status: No detector error model, no decoding, and no sampling of error-corrected logical operations; the engine also refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled. |
 | `qec_dialect` | A QEC MLIR dialect | unsupported | later | B_open_neutral | `ir` | Absent, and deliberately sequenced after the internal levels stabilize. A second dialect before the first one exists would be a parallel scaffold. |
 | `qec_logical_operations` | Lattice surgery, product rotation, and magic state distillation | unsupported | later | B_open_neutral | none | Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan. |
 | `qec_transport_and_objectives` | Transport, rounds, objectives, ccz, and neutral-atom QEC models | unsupported | later | none | none | Absent. These are hardware-shaped QEC models that need the corresponding target to be meaningful. |

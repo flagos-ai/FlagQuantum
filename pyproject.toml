@@ -45,6 +45,16 @@ cotengra = [
     "cotengra>=0.8,<0.9",
 ]
 
+# Stabilizer sampling reaches wire counts no amplitude store can hold, so the
+# thousand-qubit Clifford regime needs a tableau engine. Stim is the reference
+# implementation of both that and the detector error model a fault-tolerance
+# workflow consumes; it is Apache-2.0 and pulls in no accelerator vendor
+# component. `flagquantum/simulation/stabilizer/README.md` records the need,
+# ownership boundary, licence review, replacement interface, and exit plan.
+stim = [
+    "stim>=1.16,<2",
+]
+
 cuda = [
     "triton>=3.1,<4",
 ]

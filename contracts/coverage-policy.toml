@@ -181,6 +181,12 @@ min = 84
 [packages."simulation.numerics"]
 min = 88
 
+# The Clifford sampling engine. Its floor also guards the `stim` extra on the
+# coverage job's install line: without it every test in the package skips and the
+# package measures as uncovered rather than as untested.
+[packages."simulation.stabilizer"]
+min = 95
+
 [packages."simulation.statevector"]
 min = 86
 

@@ -405,11 +405,13 @@ evidence = ["flagquantum/simulation/density_matrix.py"]
 [[domains.capabilities]]
 id = "backend_stim_stabilizer"
 cudaq = "stim stabilizer backend reaching thousands of qubits"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "Absent, and it is the largest single capability gap per unit of effort. Stim is Apache-2.0 licensed and independent of every NVIDIA component, so the whole stabilizer regime is reachable by integration rather than by research."
-evidence = ["search:CUDA-Q stabilizer backend and no Stim import anywhere under flagquantum/"]
+maturity_ref = "stabilizer_sampling"
+reason = "The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence."
+baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, no noise, and no detector error model."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "tests/team/simulation/test_stabilizer_sampling.py", "examples/stabilizer_sampling.py"]
 
 [[domains.capabilities]]
 id = "backend_photonics"
@@ -644,11 +646,12 @@ evidence = ["flagquantum/qec/decoders.py"]
 [[domains.capabilities]]
 id = "qec_stim_integration"
 cudaq = "Stim sampling and detector error model interoperability"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-maturity_ref = "repetition_code_memory"
-reason = "Absent. It shares its dependency and its implementation with the stabilizer backend, so both land together."
+maturity_ref = "stabilizer_sampling"
+reason = "The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here."
+baseline_gap = "No detector error model, no decoding, and no sampling of error-corrected logical operations; the engine also refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled."
 
 [[domains.capabilities]]
 id = "qec_dialect"

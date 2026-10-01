@@ -48,14 +48,14 @@ Three properties of that statement matter for how the programme is run.
 percentage would let a large number of shallow rows hide a small number of deep
 missing ones, which is exactly the failure mode that matters here. The programme
 is therefore governed by row status in a generated document rather than by a
-headline number. The current shape of the 86-row matrix, as of the baseline
+headline number. The current shape of the 86-row matrix, against the baseline
 captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
 | `supported` | 9 |
-| `partial` | 30 |
-| `unsupported` | 47 |
+| `partial` | 32 |
+| `unsupported` | 45 |
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -99,13 +99,17 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 14 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 12 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by
-integration rather than by research: a stabilizer backend, a detector error
-model, chemistry and algorithm domain libraries, a decoder family, Clifford+T and
+integration rather than by research: a detector error model, chemistry and
+algorithm domain libraries, a decoder family, Clifford+T and
 angle synthesis, QIR code generation, and an MLIR dialect stack. That is the
 cheapest capability per unit of effort available to the programme, and § 5
-governs it.
+governs it. The first of the family moved off `unsupported` without new research,
+which is the shape the remaining rows are expected to follow: the stabilizer
+backend landed by adopting the same permissively licensed engine CUDA-Q uses
+behind its own stabilizer target, while the execution route that would make it a
+planner-selectable backend is a separate change.
 
 ## 4. What must be owned
 
@@ -270,7 +274,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 47 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 45 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a
