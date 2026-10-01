@@ -175,9 +175,14 @@ MPS-007 fuses the complex magnitude, left/right bond reduction, and
 normalization needed to obtain the two physical-index probabilities at one MPS
 site. Its implementation supports contiguous CUDA `complex64` tensors without
 gradients and at most `2**12` left-by-right bond elements; the wrapper retains
-the exact PyTorch reduction for other inputs. The implementation is cataloged
-and compiler-compatible, but runtime sampling integration remains a separate
-reviewable change, so this PR does not alter the public sampling path.
+the exact PyTorch reduction for other inputs. Runtime dispatch is opt-in through
+`FQ_TRITON_MPS_WIRE_PROBABILITIES=1`; eligible calls from the public MPS
+sampling path authorize the exact MPS-007 catalog entry before importing
+Triton. Route and fallback counts are exposed through `site_kernel_stats()`,
+and catalog-route events include the active stock Triton or FlagTree compiler
+provenance. The switch remains an integration-validation route rather than a
+default performance selection: synchronized public-path measurements must show
+an end-to-end win before default dispatch is considered.
 
 ## Capability matching
 
