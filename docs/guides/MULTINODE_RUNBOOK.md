@@ -581,13 +581,29 @@ the probe warms up twice before it starts recording. The medians are therefore a
 property of the workload and the pair rather than of one scheduling accident,
 and the spread is reported alongside them so a reader can see how wide it is.
 
-This is an observation about the lane, not a recorded claim: the tier run's
+A third invocation, run after the claim artifact was published, measures the
+same three legs on the same pair at the merged revision with both hosts
+otherwise idle:
+
+| Measured leg | Recording run | Tier run | Post-merge run | Spread |
+| --- | --- | --- | --- | --- |
+| Sharded statevector forward | 3.167 ms | 3.242 ms | 3.247 ms | 2.5% |
+| Sharded MPS forward | 20.264 ms | 20.303 ms | 21.138 ms | 4.3% |
+| Sliced tensor-network amplitudes | 4.283 ms | 4.280 ms | 4.167 ms | 2.8% |
+
+Three invocations across two revisions put every leg within 4.3% of its smallest
+recorded median, and the MPS forward is the widest of the three. That span is
+the number to compare a future measurement against: a re-recording outside it is
+worth investigating rather than publishing.
+
+This is an observation about the lane, not a recorded claim. The tier runs'
 reports stay on the host, and the artifacts named above are the evidence. The
-tier run shared both hosts with an unrelated container holding a small GPU
-allocation, so the agreement above is an agreement under light external load
-rather than on an otherwise idle pair. That is worth knowing in both directions:
-these small workloads did not measure a change from an idle pair, and the pair
-was not reserved for this lane while it was measured.
+pre-merge tier run shared both hosts with an unrelated container holding a small
+GPU allocation and the post-merge run did not, so the table above also brackets
+what that external load was worth: these workloads did not measure a difference
+between a shared pair and an idle one, which is itself worth knowing before
+either state is treated as the baseline. A recording made before the two
+same-revision runs is superseded and is not part of the table.
 
 ### Publishing the measured leg
 
@@ -624,7 +640,9 @@ it, because it carries scalability blockers and
 Rebuild it with `python benchmarks/build_multinode_performance_claim.py`, and
 fail the build when it has drifted from the recorded evidence with the same
 command and `--check`. Rebuild it whenever an artifact it reads is re-recorded,
-because the digests it copies move with them.
+because the digests it copies move with them. The rebuild is byte-identical on
+the CUDA environment as well as on a development host, so the committed artifact
+is a property of the recorded evidence and not of the interpreter that wrote it.
 
 ## Evidence boundary
 
