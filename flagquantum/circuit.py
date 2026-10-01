@@ -142,6 +142,7 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     statevector_batch_chunk_size: int
     statevector_batch_chunk_count: int
     statevector_batch_chunk_budget_bytes: int
+    statevector_batch_assembly: str
 
 
 class Circuit:
@@ -212,6 +213,7 @@ class Circuit:
         self._state_cache: torch.Tensor | None = None
         self._last_statevector_runtime: _StatevectorExecutionStatistics = {}
         self._initial_state_workspace: torch.Tensor | None = None
+        self._initial_state_batch_window_workspace: torch.Tensor | None = None
         self._ir_cache: CircuitIR | None = None
         self._backend_programs: dict[tuple[Any, ...], Any] = {}
         self._statevector_constant_parameters: dict[
@@ -294,6 +296,7 @@ class Circuit:
 
         self._invalidate_execution_cache(instructions_changed=True)
         self._initial_state_workspace = None
+        self._initial_state_batch_window_workspace = None
         self._statevector_z_signs.clear()
         self.circuit_param = {
             **self.circuit_param,

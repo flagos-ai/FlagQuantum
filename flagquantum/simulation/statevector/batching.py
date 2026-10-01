@@ -29,21 +29,88 @@ def _cpu_statevector_batch_chunking_enabled() -> bool:
     return bool(_environment_flag("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", default=True))
 
 
-def _cpu_statevector_batch_chunk_size(state: torch.Tensor) -> int:
+def _cpu_statevector_batch_bounded_initial_state_enabled() -> bool:
+    """Whether wide zero-state batches materialize only one execution window."""
+
+    return bool(
+        _environment_flag(
+            "FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE", default=True
+        )
+    )
+
+
+def _cpu_statevector_batch_chunk_size_for(
+    *, batch_size: int, amplitudes: int, element_size: int, device_type: str
+) -> int:
     """Return the rows whose logical state fits the measured working-set budget."""
 
-    batch_size = int(state.shape[0])
     if (
-        state.device.type != "cpu"
+        device_type != "cpu"
         or batch_size <= 1
         or not _cpu_statevector_batch_chunking_enabled()
     ):
         return batch_size
-    row_bytes = int(state.shape[1]) * int(state.element_size())
+    row_bytes = int(amplitudes) * int(element_size)
     return min(
         batch_size,
         max(1, _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES // row_bytes),
     )
+
+
+def _cpu_statevector_batch_chunk_size(state: torch.Tensor) -> int:
+    """Return the rows whose logical state fits the measured working-set budget."""
+
+    return _cpu_statevector_batch_chunk_size_for(
+        batch_size=int(state.shape[0]),
+        amplitudes=int(state.shape[1]),
+        element_size=int(state.element_size()),
+        device_type=state.device.type,
+    )
+
+
+def _initial_state_batch_window(circuit: Circuit, batch_size: int) -> torch.Tensor:
+    """Return a cached zero-state window without materializing the full batch."""
+
+    workspace = circuit._initial_state_batch_window_workspace
+    expected_shape = (int(batch_size), 2**circuit.n_wires)
+    if workspace is None or tuple(workspace.shape) != expected_shape:
+        workspace = torch.zeros(
+            expected_shape,
+            dtype=circuit.dtype,
+            device=circuit.device,
+        )
+        workspace[:, 0] = 1
+        circuit._initial_state_batch_window_workspace = workspace
+    return workspace
+
+
+def _statevector_batch_input(
+    circuit: Circuit,
+) -> tuple[int, int, bool, torch.Tensor]:
+    """Resolve logical batch size and the smallest safe execution input."""
+
+    batch_size = (
+        int(circuit._inputs.shape[0])
+        if circuit._inputs is not None and circuit._inputs.ndim > 1
+        else int(circuit.bsz)
+    )
+    initial_window_size = _cpu_statevector_batch_chunk_size_for(
+        batch_size=batch_size,
+        amplitudes=2**circuit.n_wires,
+        element_size=torch.empty((), dtype=circuit.dtype).element_size(),
+        device_type=torch.device(circuit.device).type,
+    )
+    uses_bounded_zero_state = (
+        _cpu_statevector_batch_bounded_initial_state_enabled()
+        and circuit._inputs is None
+        and initial_window_size < batch_size
+    )
+    output = (
+        _initial_state_batch_window(circuit, initial_window_size)
+        if uses_bounded_zero_state
+        else circuit.initial_state()
+    )
+    return batch_size, initial_window_size, uses_bounded_zero_state, output
 
 
 def _initial_state(circuit: Circuit) -> torch.Tensor:

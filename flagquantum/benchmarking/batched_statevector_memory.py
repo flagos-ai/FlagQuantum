@@ -8,6 +8,7 @@ import gc
 import json
 import os
 import platform
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -137,6 +138,45 @@ def _probe_engine(
         return cast(dict[str, Any], json.loads(output.read_text(encoding="utf-8")))
 
 
+def _summarize_memory_probes(
+    probes: tuple[dict[str, Any], ...],
+) -> dict[str, Any]:
+    """Return robust medians while retaining every fresh-process observation."""
+
+    if not probes:
+        raise ValueError("at least one isolated memory probe is required")
+    engine = probes[0]["engine"]
+    output_shape = probes[0]["output_shape"]
+    if any(
+        probe["engine"] != engine or probe["output_shape"] != output_shape
+        for probe in probes
+    ):
+        raise RuntimeError("isolated memory probes disagree on engine or output shape")
+
+    def integer_median(name: str) -> int:
+        return int(statistics.median(int(probe[name]) for probe in probes))
+
+    return {
+        "engine": engine,
+        "peak_rss_bytes": integer_median("peak_rss_bytes"),
+        "pre_execution_peak_rss_bytes": integer_median("pre_execution_peak_rss_bytes"),
+        "execution_peak_rss_growth_bytes": integer_median(
+            "execution_peak_rss_growth_bytes"
+        ),
+        "cold_execution_seconds": statistics.median(
+            float(probe["cold_execution_seconds"]) for probe in probes
+        ),
+        "output_shape": output_shape,
+        "maximum_norm_error": max(
+            float(probe["maximum_norm_error"]) for probe in probes
+        ),
+        "measurement": "fresh_process_ru_maxrss",
+        "aggregation": "median",
+        "sample_count": len(probes),
+        "samples": probes,
+    }
+
+
 def run_benchmark(
     *,
     workloads: tuple[WorkloadName, ...],
@@ -147,11 +187,14 @@ def run_benchmark(
     warmup: int,
     iterations: int,
     seed: int = SEED,
+    memory_probes: int = 3,
 ) -> dict[str, Any]:
     """Measure timings/correctness together and RSS in isolated subprocesses."""
 
     if threads < 1:
         raise ValueError("threads must be positive")
+    if memory_probes < 1:
+        raise ValueError("memory_probes must be positive")
     if not workloads or not n_wires or not batch_sizes or not engines:
         raise ValueError(
             "workloads, widths, batch sizes, and engines must not be empty"
@@ -175,13 +218,20 @@ def run_benchmark(
                     seed=seed,
                 )
                 for engine in engines:
-                    case["engines"][engine]["isolated_memory"] = _probe_engine(
-                        workload=workload,
-                        n_wires=width,
-                        batch_size=batch_size,
-                        engine=engine,
-                        threads=threads,
-                        seed=seed,
+                    case["engines"][engine]["isolated_memory"] = (
+                        _summarize_memory_probes(
+                            tuple(
+                                _probe_engine(
+                                    workload=workload,
+                                    n_wires=width,
+                                    batch_size=batch_size,
+                                    engine=engine,
+                                    threads=threads,
+                                    seed=seed,
+                                )
+                                for _ in range(memory_probes)
+                            )
+                        )
                     )
                 cases.append(case)
 
@@ -194,7 +244,7 @@ def run_benchmark(
         artifact_class="measured_comparison_run",
         benchmark_evidence_class="comparison_non_release",
         claim_evidence_type="unknown",
-        distribution_semantics="one_fresh_process_per_engine_case",
+        distribution_semantics="median_of_fresh_processes_per_engine_case",
         scalability_claim_allowed=False,
         release_gate_allowed=False,
         non_release_evidence=True,
@@ -221,7 +271,7 @@ def run_benchmark(
             "memory_scope": "fresh_process_high_water_resident_set",
             "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
             "memory_probe_warmup": 0,
-            "memory_probe_iterations": 1,
+            "memory_probe_iterations": memory_probes,
             "process_baseline_included": True,
             "circuit_construction_in_peak_rss": True,
             "exact_statevector": True,
@@ -242,9 +292,11 @@ def render_markdown(payload: dict[str, Any], *, artifact_name: str) -> str:
         "# Cross-framework CPU batched statevector time and peak RSS",
         "",
         f"Generated from [`{artifact_name}`]({artifact_name}). Timings are warm",
-        "same-process medians. Each peak RSS value comes from one fresh process",
-        "running one complete cold task, so one engine cannot contaminate another's",
-        "high-water mark. The process baseline and circuit construction are included.",
+        "same-process medians. Each peak RSS sample comes from one fresh process",
+        "running one complete cold task, so one engine cannot",
+        "contaminate another's high-water mark. Each displayed value is the median",
+        "of those probes; raw observations remain in JSON. The process baseline and",
+        "circuit construction are included.",
         "",
         "| Workload | Qubits | Batch | Engine | Median time (ms) | vs FQ batch | Peak RSS (MiB) | Execution RSS growth (MiB) |",
         "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
@@ -292,6 +344,7 @@ def main() -> int:
     parser.add_argument("--threads", type=int, default=1)
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--iterations", type=int, default=7)
+    parser.add_argument("--memory-probes", type=int, default=3)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
@@ -331,6 +384,7 @@ def main() -> int:
         warmup=args.warmup,
         iterations=args.iterations,
         seed=args.seed,
+        memory_probes=args.memory_probes,
     )
     if args.json_output is not None:
         write_json_atomic(args.json_output, payload)

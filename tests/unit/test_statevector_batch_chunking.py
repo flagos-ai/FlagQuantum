@@ -50,11 +50,15 @@ def test_chunked_batch_matches_monolithic_execution(
         "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
         2 * (2**circuit.n_wires) * torch.empty((), dtype=circuit.dtype).element_size(),
     )
-    actual = circuit.state(refresh=True)
+    chunked = _circuit(theta)
+    actual = chunked.state(refresh=True)
 
     torch.testing.assert_close(actual, expected, rtol=0, atol=0)
-    assert circuit._last_statevector_runtime["statevector_batch_chunk_size"] == 2
-    assert circuit._last_statevector_runtime["statevector_batch_chunk_count"] == 3
+    assert chunked._last_statevector_runtime["statevector_batch_chunk_size"] == 2
+    assert chunked._last_statevector_runtime["statevector_batch_chunk_count"] == 3
+    assert chunked._initial_state_workspace is None
+    assert chunked._initial_state_batch_window_workspace is not None
+    assert chunked._initial_state_batch_window_workspace.shape == (2, 2**3)
 
 
 def test_chunk_length_does_not_legalize_invalid_full_batch_parameter(
@@ -98,6 +102,49 @@ def test_chunked_batch_preserves_parameter_gradients(
     torch.testing.assert_close(chunked_state, monolithic_state, rtol=0, atol=0)
     torch.testing.assert_close(
         chunked_theta.grad, monolithic_theta.grad, rtol=1e-12, atol=1e-12
+    )
+
+
+def test_chunked_inference_bounds_the_zero_state_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    theta = torch.tensor([0.1, -0.4, 0.7, 1.1, -0.9], dtype=torch.float64)
+    circuit = _circuit(theta)
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**circuit.n_wires) * torch.empty((), dtype=circuit.dtype).element_size(),
+    )
+    actual = circuit.state()
+
+    expected = _circuit(theta).state()
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+    assert (
+        circuit._last_statevector_runtime["statevector_batch_assembly"]
+        == "functional_cat"
+    )
+
+
+def test_chunked_bounded_initial_state_has_a_complete_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    theta = torch.tensor([0.1, -0.4, 0.7, 1.1, -0.9], dtype=torch.float64)
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**3) * torch.empty((), dtype=torch.complex128).element_size(),
+    )
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE", "0")
+    circuit = _circuit(theta)
+
+    result = circuit.state()
+
+    assert result.shape == (5, 2**3)
+    assert circuit._initial_state_workspace is not None
+    assert circuit._initial_state_batch_window_workspace is None
+    assert (
+        circuit._last_statevector_runtime["statevector_batch_assembly"]
+        == "functional_cat"
     )
 
 

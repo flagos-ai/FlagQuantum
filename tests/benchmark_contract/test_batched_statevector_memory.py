@@ -32,15 +32,21 @@ def test_small_isolated_memory_probe_records_time_rss_and_correctness() -> None:
         threads=1,
         warmup=0,
         iterations=3,
+        memory_probes=2,
     )
 
     assert payload["schema"] == SCHEMA
     assert payload["passed"] is True
-    assert payload["distribution_semantics"] == "one_fresh_process_per_engine_case"
+    assert (
+        payload["distribution_semantics"] == "median_of_fresh_processes_per_engine_case"
+    )
     case = payload["cases"][0]
     for result in case["engines"].values():
         memory = result["isolated_memory"]
         assert memory["measurement"] == "fresh_process_ru_maxrss"
+        assert memory["aggregation"] == "median"
+        assert memory["sample_count"] == 2
+        assert len(memory["samples"]) == 2
         assert memory["peak_rss_bytes"] > 0
         assert memory["peak_rss_bytes"] >= memory["pre_execution_peak_rss_bytes"]
         assert memory["cold_execution_seconds"] > 0
@@ -74,3 +80,33 @@ def test_checked_in_memory_artifact_is_complete_and_stable() -> None:
             assert result["batch_total"]["relative_median_absolute_deviation"] <= 0.20
             assert result["isolated_memory"]["peak_rss_bytes"] > 0
             assert result["isolated_memory"]["maximum_norm_error"] <= 1e-10
+
+
+def test_checked_in_preallocation_artifact_uses_robust_memory_samples() -> None:
+    path = (
+        REPOSITORY_ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "batched_statevector_memory_preallocation_cpu_arm64_20261001.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert len(payload["cases"]) == 5
+    for case in payload["cases"]:
+        assert set(case["engines"]) == {
+            "flagquantum_native_batch",
+            "flagquantum_native_functional_windows",
+        }
+        optimized = case["engines"]["flagquantum_native_batch"]
+        legacy = case["engines"]["flagquantum_native_functional_windows"]
+        assert optimized["isolated_memory"]["sample_count"] == 3
+        assert len(optimized["isolated_memory"]["samples"]) == 3
+        assert (
+            optimized["isolated_memory"]["peak_rss_bytes"]
+            < legacy["isolated_memory"]["peak_rss_bytes"]
+        )
+        assert optimized["batch_total"]["relative_median_absolute_deviation"] <= 0.20
+        assert legacy["batch_total"]["relative_median_absolute_deviation"] <= 0.20
