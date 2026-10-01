@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.compiler import Layout
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
@@ -18,6 +19,7 @@ pytestmark = pytest.mark.unit
 # Every entry whose docstrings carry examples. `fq.plan` and `planner.plan` are
 # different functions that document different things, so both are listed.
 ENTRIES = (
+    Layout,
     fq.Circuit,
     fq.Module,
     fq.Observable,
