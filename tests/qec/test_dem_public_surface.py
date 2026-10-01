@@ -25,6 +25,24 @@ def test_stage_one_names_are_still_published() -> None:
         assert name in qec.__all__
 
 
+def test_decoder_names_are_published() -> None:
+    """The decoding graph and the matcher are reachable from the package root.
+
+    They are separate public names rather than one decoder because a caller may
+    inspect or weight the graph a detector error model defines without decoding,
+    and because the matcher's result is not a repetition-code correction.
+    """
+
+    for name in (
+        "DecodingGraph",
+        "DecodingGraphEdge",
+        "MatchingDecodeResult",
+        "MinimumWeightMatchingDecoder",
+    ):
+        assert name in qec.__all__
+        assert hasattr(qec, name)
+
+
 def test_frozen_names_are_unchanged() -> None:
     for name in (
         "Decoder",

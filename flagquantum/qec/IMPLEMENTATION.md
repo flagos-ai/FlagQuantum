@@ -257,8 +257,10 @@ claim, no logical-suppression claim, and no real-time or hardware-feedback claim
 follows from a detector error model or from any rate it reports. A rate the model
 samples is a DEM-sampled rate, and it is labelled as one wherever it is reported.
 
-`README.md` is deliberately not updated for the detector error model: the Stage 5
-documentation sweep owns it.
+`README.md` carries only the decoder's `Decode a detection-event syndrome` entry,
+because that entry needs a model to decode and therefore names
+`DetectorErrorModel`. The detector error model's own README section is still the
+Stage 5 documentation sweep's.
 
 One representational boundary is explicit and enforced. A `CodeCheck` states one
 ancilla and one CNOT direction, and the direction is fixed by the check's type
@@ -305,3 +307,130 @@ the logical row fires exactly the Z-type round-zero detectors and flips the
 observable. Only the distance-three patch is executed through that simulator: it
 draws each shot from the full output distribution, so a 17-wire patch costs a
 `2**17`-way draw and a distance-five patch would need `2**49`.
+
+## A decoder over the detector error model
+
+`decoding_graph.py` and `matching.py` add the first decoder in this layer that
+reads a detector error model rather than a repetition-code syndrome history. The
+split is by responsibility: `decoding_graph.py` states what a model graphs to,
+and `matching.py` searches that graph.
+
+A `DecodingGraphEdge` connects exactly two nodes and carries a probability and a
+tuple of observable labels. A `DecodingGraph` states a detector count, an
+observable count, and a sorted tuple of edges, and its boundary node is one past
+the last detector. Edge weight is `log((1 - p) / p)`, the negative log-likelihood
+ratio, so the cheapest set of mechanisms is the most likely one; a probability of
+one half has weight zero and a probability above one half is refused, because its
+weight would be negative and Dijkstra's search assumes non-negative weights.
+`DecodingGraphEdge` refuses a probability of zero for the same reason the graph
+never receives one: its weight would be infinite.
+
+`from_detector_error_model` reads the mechanisms and nothing else. A mechanism of
+probability zero contributes no edge. A mechanism that flips no detector is the
+one case the model already refuses at construction, because `DemError` requires a
+non-empty signature. A mechanism that flips one detector becomes an edge to the
+boundary node, because a decoder that read only the syndrome would have no way to
+place a single defect otherwise. A mechanism that flips three or more detectors is
+a hyperedge: it is refused with a `CapabilityError` naming the detectors it flips
+rather than projected onto a pair, because the projection would drop a detector
+and the matcher would then return a correction that does not explain the syndrome.
+Two mechanisms that share a detector pair but disagree on their observable labels
+stay two edges. Merging them would either lose a logical flip or average two
+probabilities into a weight neither mechanism has, and the graph is an exact
+statement of the model rather than a summary of it.
+
+Nothing about a code, a distance, a round count, or a check layout enters the
+graph. Whatever the model states is what the graph holds, so the decoder inherits
+every scope limit of the model it consumes, including the modelled rotated-surface
+distance of three that the statevector amplitude ceiling imposes on construction.
+Measured on the two codes this layer models at three rounds and two percent noise:
+the repetition code at distance three gives 15 edges of which 6 reach the boundary
+and every weight is 3.8918, and the rotated surface code at distance three gives 45
+edges of which 20 reach the boundary, with six of the weights at 3.1991 and the
+other 39 at 3.8918. Every mechanism in both models flips one detector or two, so
+neither model reaches the hyperedge refusal.
+
+`MinimumWeightMatchingDecoder` decodes a syndrome exactly in two steps. The first
+searches the graph from each defective detector and yields the cheapest chain of
+mechanisms to every other detector and to the boundary; weights are non-negative,
+so that step is Dijkstra's search, and among chains of equal weight the search
+settles the smallest node and then the smallest edge, so a tree is a function of
+the graph and the source alone. The second chooses, among all the ways to pair the
+defective detectors and to route some of them to the boundary, the one of least
+total weight. That is a minimum-weight perfect matching on the metric closure of
+the defects, and the module enumerates it with a dynamic program over the sets of
+defects still to place.
+
+The boundary is a sink rather than a waypoint, and that is what makes a syndrome's
+parity irrelevant. A T-join exists for an even set of odd-degree vertices only,
+while a mechanism at the edge of the patch flips one detector, so a model can
+produce a syndrome with an odd defect count. A defective detector is therefore
+allowed to pair with the boundary instead of with another detector, and any number
+of them may do so, because each boundary mechanism is an independent explanation.
+Chains between two detectors never pass through the boundary, which costs nothing:
+going out to the boundary and back from two detectors costs the sum of their
+boundary distances either way, and the two edge sets differ only in edges they
+share, which cancel. Chains may pass through detectors that are themselves
+defective, because the correction is the symmetric difference of the paired
+chains, so an edge two chains share cancels rather than being counted twice.
+
+The prediction is the exclusive-or of the selected mechanisms' observable labels,
+which is the parity the model's own `observables_flips_matrix` states for those
+mechanisms. It is a decision about which of the cheapest explanations the decoder
+adopts, not an estimate of the probability that the observable flipped, and it is
+not calibrated.
+
+Correctness is checked against two references that share no code with the decoder.
+The first is brute force: on syndromes of at most four defects in the repetition
+code and in the rotated surface code, the selected mechanisms' total weight equals
+the least weight over every set of up to four mechanisms whose odd-degree detectors
+are the syndrome, and the maximum optimality gap over every such syndrome the two
+models sample is 0.0. The second is an exhaustive enumeration of the model itself: every set of
+mechanisms has a probability, a syndrome, and a logical flip, so the syndrome
+distribution and the logical-flip distribution follow without sampling, and the
+optimal decoder's failure rate is the mass of the less likely logical value in
+each syndrome. On the repetition code at distance three, three rounds and two
+percent noise the matcher fails at 0.009125123 while that optimum is 0.007714937
+and a decoder that always predicts no flip fails at 0.153733002, so the matcher
+beats the trivial decoder by about a factor of seventeen and the gap to optimal is
+the cost of the mechanisms a matcher cannot tell apart. Those three rates are
+pinned in the test to an absolute tolerance of 5e-6 rather than to their last
+digit, because the last digits of a probability built by repeated convolution
+depend on summation order and are not a property of the decoder.
+
+That gap is not a defect and does not close with a better search. Two mechanisms
+can share a detector pair and disagree on their logical label, and a decoder that
+reads only the syndrome cannot distinguish them, so the matcher's failure rate is
+at or above the optimum on every model and strictly above it once rounds exceed
+one. It is exactly optimal where no such pair exists: a single-round repetition
+model has one mechanism per detector pair, and at distances three, five and seven
+and two percent noise the matcher's failure rate equals the exhaustive optimum with
+a measured gap of 0.0 while falling by more than a factor of ten per two units of
+distance. That equality at one round is the only optimality claim made here. An
+exact scan over noise strengths 0.005, 0.01, 0.02 and 0.05 and one through four
+rounds shows the same ordering throughout: the matcher is never below the optimum,
+never above the trivial decoder, and at rounds two through four the gap grows with
+the round count, from 4.89e-05 at 0.005 and two rounds to 2.07e-03 at 0.02 and four
+rounds.
+
+Because the pairing is enumerated, the cost is in the enumeration, so the decoder
+accepts at most twenty defective detectors per syndrome by default and refuses a
+larger syndrome with a `CapabilityError`. The budget is a constructor argument
+rather than a silent truncation, and twenty is chosen because `2**20` states is
+far above what a distance-three patch reaches at noise below its threshold.
+Detectors that no chain of mechanisms connects are refused with a `CapabilityError`
+naming them, rather than answered partially.
+
+`MatchingDecodeResult` is deliberately not the repetition-code `DecodeResult`. A
+`Correction` carries a wire in `{0, 1, 2}` and an X basis only, and
+`PauliFrame.from_corrections` is enforced to agree with it, so neither record can
+express a surface-code correction over `distance**2` data wires in the Z basis.
+The result states the predicted observables, the mechanisms selected in graph
+order, and their total weight, and the decoder therefore does not implement the
+repetition-only `Decoder` protocol either. Nothing is built on top of this result
+yet: there is no logical-error-rate estimator, no threshold scan, and no
+connection to the memory-experiment result records. The implementation imports
+`heapq`, `math`, `dataclasses`, and `numbers` and nothing else, so no new
+dependency is introduced; `stim` and `pymatching` are not imported, and the
+cross-check against `pymatching` as an independent implementation remains future
+work rather than a build dependency.

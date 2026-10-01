@@ -17,7 +17,9 @@ from .decoders import (
     RepetitionTemporalDecoder,
     StreamingDecoder,
 )
+from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemSample, DetectorErrorModel
+from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
     RepetitionNoiseProfile,
@@ -43,6 +45,8 @@ __all__ = (
     "Correction",
     "DecodeResult",
     "Decoder",
+    "DecodingGraph",
+    "DecodingGraphEdge",
     "DemError",
     "DemSample",
     "DetectionEvent",
@@ -52,8 +56,10 @@ __all__ = (
     "ErrorEvent",
     "ErrorSchedule",
     "LogicalObservable",
+    "MatchingDecodeResult",
     "MeasurementRef",
     "MemoryCircuit",
+    "MinimumWeightMatchingDecoder",
     "NoiseSweepPoint",
     "ObservableLayout",
     "Pauli",
