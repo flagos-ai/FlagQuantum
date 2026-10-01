@@ -552,6 +552,15 @@ transport attributes per tier; the widths that crossed bytes are the ones
 placements crossed 576, 1344, 1344, 832 and 320 bytes at widths 2, 4, 4, 4 and
 2, each at round-off against the reference.
 
+A plan at more than two ranks holds one boundary per adjacent rank pair, so it
+carries several cuts at once and is named by the heaviest bond it has to carry;
+naming it by a lighter one would claim a rank-four bond was carried by a leg that
+crossed nothing of the sort, and the widths recorded are the ones the legs
+actually carried. At the recorded pair every placement has one boundary, so both
+heights of the profile are placed; a wider shape would reach only the heaviest
+height and would report the one crossed width, which the blocker's own rule
+declines to count as a sweep.
+
 `artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
 slice-sharded tensor-network workload. Five wires are contracted along a cut of
 two labels, which the workload declares rather than leaving to the automatic

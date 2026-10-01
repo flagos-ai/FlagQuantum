@@ -337,6 +337,12 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
         4,
         2,
     ]
+    # At two ranks a plan carries one boundary, so every height of the profile is
+    # placed by some leg and the blocked list carries nothing. The profile is
+    # recorded whole beside the widths that were placed, so a height the sweep
+    # did not reach would be visible here as a rank the widths do not cover.
+    profile_widths = set(cut_widths["exact_schmidt_ranks"])
+    assert set(cut_widths["widths"]) == profile_widths
 
     # The measured leg, and the two properties that make it a measurement: the
     # clock is synchronized across ranks, and the samples were taken after the
@@ -510,6 +516,47 @@ def test_every_retracted_blocker_needs_its_own_observation(
     )
     assert "host_staging_in_measured_region" in found
     assert "hidden_host_staging_not_audited" not in found
+
+
+def test_a_wider_shape_is_not_credited_with_a_cut_it_never_carried() -> None:
+    """The recorded sweep is honest about the shapes it cannot answer for.
+
+    A plan at two ranks carries one boundary, so every height of the profile is
+    placed and the blocker that says no cut ever moved is the one the sweep
+    retires. A wider shape carries several boundaries per plan and names each leg
+    by the heaviest of them, so a lighter height is never placed -- and what the
+    run then reports is the one width it did carry, which the blocker's own rule
+    refuses to count as a sweep. Naming the leg after a lighter boundary instead
+    would retract the blocker on a bond no leg crossed.
+    """
+
+    profile = (2, 4, 4, 4, 2)
+
+    def placed(world_size: int) -> dict[str, int]:
+        return {
+            str(
+                _MODULE._plan_width(plan, profile)
+            ): 128  # one width per plan at this shape
+            for plan in _MODULE._ownership_sweep_plans(world_size)
+        }
+
+    # The recorded pair places both heights and carries bytes at each of them, so
+    # the two crossed widths are what retires the blocker there.
+    assert placed(2) == {"2": 128, "4": 128}
+    assert _MODULE.cut_width_claim_blockers(placed(2)) == ()
+
+    # Every wider shape reaches only the heaviest height, because each of its
+    # plans holds more than one boundary at a time. One crossed width is not a
+    # sweep, so the blocker the pair retired stands again at those shapes.
+    for world_size in range(3, _MODULE.N_WIRES + 1):
+        assert placed(world_size) == {"4": 128}
+        assert _MODULE.cut_width_claim_blockers(placed(world_size)) == (
+            "inter_node_cut_width_not_swept",
+        )
+
+    # The profile is recorded whole beside the widths that were placed, so a
+    # reader can see which heights the sweep reached and which it did not.
+    assert sorted(set(profile)) == [2, 4]
 
 
 @pytest.mark.parametrize("route", ["infiniband", "socket"])

@@ -234,7 +234,8 @@ def _plan_width(plan: Sequence[Sequence[int]], ranks: Sequence[int]) -> int:
     A plan wider than a pair holds several boundaries at once, so the number
     that describes it is the widest one it has to carry: a plan whose heaviest
     bond is rank four has exercised a rank-four cut however light its other
-    boundaries are.
+    boundaries are. Naming it by a lighter one would claim a rank-four bond was
+    carried by a leg that crossed nothing of the sort.
     """
 
     cuts = [int(block[-1]) for block in plan[:-1]]
@@ -918,6 +919,12 @@ def _cut_width_observations(
                 "worst_error": worst,
             }
         )
+    # A plan at `world_size` ranks carries one boundary per adjacent rank pair,
+    # so it holds several cuts at once and the heaviest of them is what names the
+    # leg. A height that only ever appears at a lighter boundary is therefore not
+    # recorded as swept, because no leg carried it; the profile the reference
+    # holds is recorded whole in `exact_schmidt_ranks`, so what the sweep placed
+    # and what it did not are both readable from this record.
     return {
         "widths": sorted({int(plan["width"]) for plan in plans}),
         "exact_schmidt_ranks": list(ranks),
