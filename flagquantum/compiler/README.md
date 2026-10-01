@@ -27,7 +27,7 @@ Use `optimize(program)` for target-independent optimization and
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
-| Connectivity and routing | [routing.py](routing.py), [topology_legalization.py](topology_legalization.py) |
+| Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |

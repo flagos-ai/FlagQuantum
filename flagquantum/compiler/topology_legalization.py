@@ -134,11 +134,16 @@ def legalize_circuit_topology(
                 deterministic_coupling = CouplingMap(
                     coupling_map.n_wires, coupling_map.edges
                 )
-            elif strategy in {"restore_after_each_gate", "persistent_layout"}:
+            elif strategy in {
+                "restore_after_each_gate",
+                "persistent_layout",
+                "sabre",
+            }:
                 selected_strategy = strategy
             else:
                 raise ValueError(
-                    "strategy must be 'auto', 'restore_after_each_gate', or 'persistent_layout'"
+                    "strategy must be 'auto', 'restore_after_each_gate', "
+                    "'persistent_layout', or 'sabre'"
                 )
             routed = route_to_topology(
                 source,
