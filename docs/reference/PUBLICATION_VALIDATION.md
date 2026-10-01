@@ -1,6 +1,6 @@
 # Publication validation scope
 
-This pre-release supports executable workflows at different maturity levels.
+The 0.2.0 release supports executable workflows at different maturity levels.
 Implemented APIs, passing correctness checks, historical measurements, and
 research goals are distinct. The [capability catalog](../generated/CAPABILITIES.md)
 and [known limitations](KNOWN_LIMITATIONS.md) remain authoritative for each path;

@@ -9,9 +9,13 @@ on 2026-09-11 (affirmative reply to the concrete proposal). This additive change
 `wait` explicitly polls with a deadline, and `cancel` requests cancellation.
 These names describe operations independently of any provider implementation.
 Existing `run` behavior, signatures, and historical API baseline stay unchanged.
-Status: authorized implementation candidate, not a released feature.
+Status: authorized implementation candidate; `submit` and `restore_job` are not
+in the released 0.2.0 API.
 The two approved root additions bring the retained core from 31 to 33 exports;
-the candidate root budget is therefore 33 (previously 32). Historical exports
+the candidate root budget was therefore 33 (previously 32) at this approval. The
+later authorized `twin` root addition raised both to 34, which is what
+`contracts/public-api-v1-candidate.json` records today; read that file for the
+current budget. Historical exports
 and signatures remain frozen; authorization is read from this proposal's
 contract by both the snapshot validator and the candidate unit tests.
 
