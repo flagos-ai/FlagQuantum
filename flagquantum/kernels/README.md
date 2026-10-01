@@ -132,7 +132,9 @@ the channels reuse site-tensor loads. Its implementation supports contiguous
 CUDA `complex64` forward inputs without gradients, at most 32 channels, bond
 dimensions at most 16, and contraction work at most `2**23`. The wrapper keeps
 the exact PyTorch contraction as its explicit fallback outside that measured
-window. Runtime dispatch remains a separate reviewable change.
+window. The same `FQ_TRITON_MPS_ENVIRONMENT=1` rollout switch routes eligible
+multi-channel transfers through the exact MPS-005 catalog entry and reports
+them separately through `site_kernel_stats()`.
 
 ## Capability matching
 
