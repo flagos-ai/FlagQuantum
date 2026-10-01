@@ -5,10 +5,10 @@ from __future__ import annotations
 import importlib.util
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
-from importlib import metadata
 from typing import Any
 
 from ....kernels.catalog import KernelRequest, match_kernel_implementations
+from ....kernels.provenance import triton_compiler_provenance
 from .environment import mode
 
 
@@ -131,31 +131,6 @@ def triton_available() -> bool:
     """Return whether the optional Triton runtime is importable."""
 
     return importlib.util.find_spec("triton") is not None
-
-
-def triton_compiler_provenance() -> tuple[str | None, str | None, str, str]:
-    """Resolve who installed the ``triton`` module without importing it."""
-
-    module_owners = metadata.packages_distributions().get("triton", ())
-    owners = tuple(
-        sorted({owner.casefold().replace("_", "-") for owner in module_owners})
-    )
-    if not owners:
-        return None, None, "unknown", "missing"
-    if len(owners) != 1:
-        return None, None, "unknown", "ambiguous"
-
-    distribution = owners[0]
-    try:
-        version = metadata.version(distribution)
-    except metadata.PackageNotFoundError:
-        return distribution, None, "unknown", "missing_metadata"
-
-    if distribution == "triton":
-        return distribution, version, "direct", "resolved"
-    if distribution == "flagtree":
-        return distribution, version, "flagtree", "resolved"
-    return distribution, version, "unknown", "unsupported_distribution"
 
 
 def select_triton_kernel(

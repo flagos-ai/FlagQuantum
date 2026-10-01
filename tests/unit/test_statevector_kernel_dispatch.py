@@ -4,6 +4,7 @@ import importlib.util
 
 import pytest
 
+import flagquantum.kernels.provenance as kernel_provenance
 import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
 from flagquantum.kernels.catalog import KernelRequest
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
@@ -15,6 +16,13 @@ from flagquantum.runtime.executors.statevector.kernel_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def clear_triton_compiler_provenance_cache():
+    triton_compiler_provenance.cache_clear()
+    yield
+    triton_compiler_provenance.cache_clear()
 
 
 def _local_1q_request(**overrides):
@@ -269,12 +277,12 @@ def test_triton_compiler_provenance_resolves_module_owner(
     monkeypatch, owner, version, integration_path
 ):
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "packages_distributions",
         lambda: {"triton": [owner]},
     )
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "version",
         lambda distribution: version,
     )
@@ -289,7 +297,7 @@ def test_triton_compiler_provenance_resolves_module_owner(
 
 def test_triton_compiler_provenance_does_not_guess_without_metadata(monkeypatch):
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "packages_distributions",
         lambda: {},
     )
@@ -299,7 +307,7 @@ def test_triton_compiler_provenance_does_not_guess_without_metadata(monkeypatch)
 
 def test_triton_compiler_provenance_rejects_ambiguous_owners(monkeypatch):
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "packages_distributions",
         lambda: {"triton": ["triton", "flagtree"]},
     )
@@ -314,15 +322,15 @@ def test_triton_compiler_provenance_rejects_ambiguous_owners(monkeypatch):
 
 def test_triton_compiler_provenance_requires_owner_version_metadata(monkeypatch):
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "packages_distributions",
         lambda: {"triton": ["flagtree"]},
     )
 
     def missing_version(distribution):
-        raise kernel_dispatch.metadata.PackageNotFoundError(distribution)
+        raise kernel_provenance.metadata.PackageNotFoundError(distribution)
 
-    monkeypatch.setattr(kernel_dispatch.metadata, "version", missing_version)
+    monkeypatch.setattr(kernel_provenance.metadata, "version", missing_version)
 
     assert triton_compiler_provenance() == (
         "flagtree",
@@ -334,12 +342,12 @@ def test_triton_compiler_provenance_requires_owner_version_metadata(monkeypatch)
 
 def test_triton_compiler_provenance_reports_unknown_distribution(monkeypatch):
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "packages_distributions",
         lambda: {"triton": ["vendor_triton"]},
     )
     monkeypatch.setattr(
-        kernel_dispatch.metadata,
+        kernel_provenance.metadata,
         "version",
         lambda distribution: "1.2.3",
     )
