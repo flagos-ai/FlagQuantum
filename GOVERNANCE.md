@@ -19,13 +19,14 @@ decides, not how a change travels.
 
 ### The teams are not staffed
 
-`team-ownership.toml` defines 12 teams, and each owns a set of paths. They are a
+`team-ownership.toml` defines 11 teams, and each owns a set of paths. They are a
 classification mechanism: `tools/check_team_scope.py` resolves *which domain owns this
-path*, which is what makes a boundary checkable. They are **not** twelve working groups.
+path*, which is what makes a boundary checkable. They are **not** eleven working groups.
 
-Read the roster honestly: there is one maintainer. Five of the twelve team branches in
-that file have never existed, and the work of the last 271 pull requests was done by one
-person plus two one-off contributions.
+Read the roster honestly: there is one maintainer. No branch named in that file has ever
+existed, the work of the last 271 pull requests was done by one person plus two one-off
+contributions, and a team whose `owns` list matched nothing was removed rather than kept
+as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 
 ## Decision classes
 
@@ -127,7 +128,7 @@ above do.
    benefit — GitHub would surface the owning domain in the review UI without any rule
    change — and one obvious cost: a generated file needs a check that it is current, which
    is a new protected tool.
-4. **Should the 12 teams be staffed, or renamed?** A team name that maps to no person is
+4. **Should the 11 teams be staffed, or renamed?** A team name that maps to no person is
    a truthful description of a path-ownership domain. It is a misleading description of an
    organization, and today the file can be read either way.
 5. **What replaces the "one maintainer" state?** The honest answer is more contributors.

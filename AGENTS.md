@@ -265,8 +265,13 @@ branches synchronize that baseline and implement independently; the integration
 branch then runs replacement and cross-implementation tests. Follow
 `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
 
-`refactor/flagquantum-vnext-architecture` is the only authoritative integration
-branch. Team branches must deliver committed, clean work with a handoff record,
+`refactor/flagquantum-vnext-architecture` is the reserved name of the only
+authoritative integration branch. The name is not live: no branch with that prefix
+exists in this repository, so do not cut it, a team branch, or a `FlagQuantum-vNext*`
+worktree for ordinary work — ordinary work is a short-lived branch off `main` merged by
+pull request. The paragraphs below describe the migration layout that applies if the
+multi-team round is ever staffed, and `team-ownership.toml` marks the same values as
+reserved. Team branches must deliver committed, clean work with a handoff record,
 must obtain other teams' changes only by merging the integration branch, and
 must never merge each other directly. The integration worktree merges one team
 at a time with a non-fast-forward merge and runs required checks before the next
