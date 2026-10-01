@@ -48,14 +48,14 @@ Three properties of that statement matter for how the programme is run.
 percentage would let a large number of shallow rows hide a small number of deep
 missing ones, which is exactly the failure mode that matters here. The programme
 is therefore governed by row status in a generated document rather than by a
-headline number. The current shape of the 86-row matrix, against the baseline
+headline number. The current shape of the 95-row matrix, against the baseline
 captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
 | `supported` | 9 |
-| `partial` | 32 |
-| `unsupported` | 45 |
+| `partial` | 37 |
+| `unsupported` | 49 |
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -71,14 +71,14 @@ including the negative search when the absence was established by search.
 The programme's cost is dominated by a misconception worth stating plainly:
 replacing CUDA-Q is not the same as replacing CUDA. Each matrix row declares a
 `dependency_class`, and only one of the four classes is a replacement obligation.
-The distribution over the 86 rows is:
+The distribution over the 95 rows is:
 
 | Class | Rows | Meaning | Obligation |
 | --- | ---: | --- | --- |
 | `A_nvidia_proprietary` | 9 | The CUDA-Q implementation rests on an NVIDIA-proprietary component | FlagQuantum must supply its own component. Depending on the original is not an option. |
 | `B_open_neutral` | 16 | The CUDA-Q implementation uses a permissively licensed, vendor-neutral component | May be used directly. The work is integration, conformance, and ownership. |
 | `C_flagos_replacement` | 3 | FlagQuantum satisfies the capability through a FlagOS-family component | The replacement target is named; the gap is maturity and evidence. |
-| `none` | 58 | The capability is not dependency-bearing | The work is engineering, not replacement. |
+| `none` | 67 | The capability is not dependency-bearing | The work is engineering, not replacement. |
 
 The nine `A_nvidia_proprietary` rows are the whole of the CUDA replacement
 obligation:
@@ -274,7 +274,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 45 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 49 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

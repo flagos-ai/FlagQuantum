@@ -185,9 +185,28 @@ reason = "No qudit or photonic operation exists. Deferred as a distinct product 
 id = "pauli_tracking_sbe"
 cudaq = "Pauli tracking stabilizer-basis expansion for noisy simulation"
 status = "unsupported"
+priority = "next"
+dependency_class = "none"
+reason = "The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "search:the sampling engine declines a noise instruction instead of tracking its frame"]
+
+[[domains.capabilities]]
+id = "asynchronous_execution"
+cudaq = "run_async, sample_async, observe_async, and evolve_async with their result handles"
+status = "unsupported"
 priority = "later"
 dependency_class = "none"
-reason = "A noise technique, not a language capability. Deferred until the stabilizer backend and the detector error model land."
+reason = "Absent. Every FlagQuantum entry point returns a completed result, so there is no handle an outer loop could poll and no overlap between host work and a device run."
+evidence = ["search:no asynchronous entry point and no in-flight result handle"]
+
+[[domains.capabilities]]
+id = "global_seed_control"
+cudaq = "set_random_seed for a process-wide sampling and noise seed"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+reason = "Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session."
+evidence = ["flagquantum/runtime/options.py", "flagquantum/runtime/training_state.py", "search:no process-wide seed entry point"]
 
 [[domains]]
 id = "compiler_and_ir"
@@ -311,6 +330,16 @@ dependency_class = "none"
 maturity_ref = "extension_sdk"
 reason = "The extension protocol and lifecycle exist, but no discovery path reaches compilation, so an out-of-tree pass cannot run."
 
+[[domains.capabilities]]
+id = "foreign_circuit_import"
+cudaq = "from_qasm and from_qiskit bringing a foreign circuit into the framework"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "qiskit_interop"
+reason = "The Qiskit direction exists: an ecosystem adapter builds a FlagQuantum circuit from a provider object. OpenQASM import does not, and the OpenQASM surface FlagQuantum carries is an emitter, so a circuit that exists only as text cannot enter the framework."
+evidence = ["flagquantum/ecosystem/qiskit", "search:no OpenQASM text importer"]
+
 [[domains]]
 id = "simulation_backends"
 title = "Simulation backend matrix"
@@ -410,7 +439,7 @@ priority = "now"
 dependency_class = "B_open_neutral"
 maturity_ref = "stabilizer_sampling"
 reason = "The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence."
-baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, no noise, and no detector error model."
+baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, and no noise, and the detector error model module it does have is not connected to it."
 evidence = ["flagquantum/simulation/stabilizer/engine.py", "tests/team/simulation/test_stabilizer_sampling.py", "examples/stabilizer_sampling.py"]
 
 [[domains.capabilities]]
@@ -440,11 +469,21 @@ dependency_class = "C_flagos_replacement"
 maturity_ref = "flagos_transport_observability"
 reason = "Absent as a FlagQuantum-owned transport. The replacement target is a FlagOS-family collective layer, not NCCL."
 
+[[domains.capabilities]]
+id = "dynamics_schedule_and_integrators"
+cudaq = "dynamics Schedule with time-dependent coefficients and the selectable Runge-Kutta and stiff-solver integrator families"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "continuous_time_lindblad"
+reason = "The Lindblad engine integrates with one fixed-step RK4 over an explicitly declared time grid and a static Hamiltonian. There is no schedule object carrying time-dependent coefficients and no selectable integrator, so accuracy and stiffness cannot be traded per problem."
+evidence = ["flagquantum/lindblad", "flagquantum/simulation/lindblad.py", "search:no schedule object and no selectable integrator"]
+
 [[domains]]
 id = "noise_and_error_models"
 title = "Noise and error models"
 cudaq_surface = ["Kraus channels", "noise model callbacks", "trajectory simulation", "density matrix", "Pauli tracking", "detector error models", "unitary-mixture degradation"]
-evidence = ["flagquantum/noise", "flagquantum/qec/dem.py", "search:no general Kraus constructor, no per-operation callback model, and no unitary-mixture type"]
+evidence = ["flagquantum/noise/channels.py", "flagquantum/qec/dem.py", "search:no per-operation callback model and no unitary-mixture type"]
 
 [[domains.capabilities]]
 id = "kraus_channel_algebra"
@@ -453,7 +492,7 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
-reason = "The channel set is limited to bit flip, phase flip, amplitude damping, and depolarizing. General Kraus algebra is absent."
+reason = "A general Kraus constructor exists and is validated. `KrausChannel` accepts an arbitrary operator list, refuses a set that is not trace-preserving (completeness compared at `atol = rtol = 1e-6`) and a dimension that is not a positive power of two, serializes through the `flagquantum.kraus_channel.v1` schema, and reaches simulation through `NoiseModel.add` and `Circuit.noisy_density_matrix`. What is absent is the operator type the CUDA-Q surface builds a channel from: no matrix-valued operator participates in operator algebra, which is the gap `matrix_and_custom_operator` already records."
 
 [[domains.capabilities]]
 id = "noise_model_callback"
@@ -479,8 +518,8 @@ cudaq = "Detector error model construction and circuit-to-DEM conversion"
 status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "A DEM module exists in the QEC domain but has no capability-maturity entry, no round-trip conformance against an independent implementation, and no Stim interoperability."
-evidence = ["flagquantum/qec/dem.py"]
+reason = "The outbound direction interoperates: an independent reader parses the emitted text, agrees on the detector, observable, and error counts, and reports the same mechanisms the model states, which `tests/qec/test_dem_stim_interop.py` pins. The inbound direction does not, and the three refusals are separate: a relative `shift_detectors` round index, a `^` decomposition separator, and an observable that only the error targets introduce. The module also still has no capability-maturity entry."
+evidence = ["flagquantum/qec/dem.py", "tests/qec/test_dem_stim_interop.py", "search:inbound text from an independent generator is refused"]
 
 [[domains.capabilities]]
 id = "unitary_mixture_degradation"
@@ -491,15 +530,25 @@ dependency_class = "none"
 maturity_ref = "noisy_simulation"
 reason = "Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not."
 
+[[domains.capabilities]]
+id = "noise_trajectory_shot_allocation"
+cudaq = "The ptsbe trajectory engine: explicit Kraus trajectory specification, exhaustive, ordered, and probabilistic trajectory sampling strategies, and shot allocation across trajectories"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "FlagQuantum samples Kraus trajectories, but the trajectory choice belongs to the engine rather than to the caller: the MPS trajectory path draws them implicitly and exposes an ensemble size, so there is no trajectory enumeration, no ordered or probabilistic selection strategy, and no shot-allocation policy. Those strategies are the whole of this row."
+evidence = ["flagquantum/runtime/executors/mps/noisy.py", "flagquantum/runtime/planner/noise_selection.py", "search:no explicit trajectory selection strategy and no shot allocation policy"]
+
 [[domains]]
 id = "operator_algebra_and_domain_libraries"
 title = "Operator algebra and domain libraries"
-cudaq_surface = ["spin_op", "fermion_op", "boson_op", "super_op", "matrix_op", "operator arithmetics", "pauli_word and exp_pauli", "chemistry libraries"]
+cudaq_surface = ["SpinOperator", "FermionOperator", "BosonOperator", "SuperOperator", "MatrixOperator", "operator arithmetics", "pauli_word and exp_pauli", "chemistry libraries"]
 evidence = ["flagquantum/observables", "flagquantum/operators.py", "search:no fermionic, bosonic, or superoperator algebra and no chemistry driver"]
 
 [[domains.capabilities]]
 id = "spin_operator_algebra"
-cudaq = "spin_op and Pauli operator algebra"
+cudaq = "SpinOperator and Pauli operator algebra"
 status = "partial"
 priority = "now"
 dependency_class = "none"
@@ -508,7 +557,7 @@ reason = "Pauli observables exist. Operator arithmetics for products, sums, scal
 
 [[domains.capabilities]]
 id = "fermion_operator_algebra"
-cudaq = "fermion_op with Jordan-Wigner and related mappings"
+cudaq = "FermionOperator with Jordan-Wigner and related mappings"
 status = "unsupported"
 priority = "now"
 dependency_class = "none"
@@ -517,7 +566,7 @@ evidence = ["flagquantum/observables"]
 
 [[domains.capabilities]]
 id = "boson_operator_algebra"
-cudaq = "boson_op algebra"
+cudaq = "BosonOperator algebra"
 status = "unsupported"
 priority = "later"
 dependency_class = "none"
@@ -525,7 +574,7 @@ reason = "Absent, and it has no consumer until a bosonic or photonic workload ex
 
 [[domains.capabilities]]
 id = "super_operator_algebra"
-cudaq = "super_op for superoperator representations"
+cudaq = "SuperOperator for superoperator representations"
 status = "unsupported"
 priority = "now"
 dependency_class = "none"
@@ -534,7 +583,7 @@ reason = "Absent. The Lindblad engine applies a dense Hamiltonian and a collapse
 
 [[domains.capabilities]]
 id = "matrix_and_custom_operator"
-cudaq = "matrix_op and custom_op"
+cudaq = "MatrixOperator and custom_op"
 status = "partial"
 priority = "next"
 dependency_class = "none"
@@ -558,6 +607,15 @@ priority = "now"
 dependency_class = "B_open_neutral"
 reason = "Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral."
 evidence = ["flagquantum/algorithms"]
+
+[[domains.capabilities]]
+id = "rydberg_analog_hamiltonian"
+cudaq = "RydbergHamiltonian for analog neutral-atom evolution"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It is the observable-side input an analog neutral-atom target would need, so it follows that target rather than preceding it."
+evidence = ["search:no Rydberg or analog Hamiltonian model"]
 
 [[domains]]
 id = "algorithm_layer"
@@ -619,6 +677,33 @@ maturity_ref = "sharded_statevector_training"
 reason = "FlagQuantum advantage, not parity. Reverse-mode autograd through simulation, the Module and train lifecycle, and gradient preservation under sharding are capabilities the CUDA-Q baseline does not offer."
 baseline_gap = "The registered level covers the local training path. Gradient correctness under sharding is registered separately and is not asserted here."
 
+[[domains.capabilities]]
+id = "optimizer_library"
+cudaq = "cudaq.optimizers with Adam, COBYLA, GradientDescent, LBFGS, NelderMead, SGD, and SPSA"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+reason = "The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is the gap, because COBYLA, NelderMead, and SPSA have no implementation and the training entry point refuses an optimizer that is not a PyTorch one."
+evidence = ["flagquantum/runtime/training.py", "flagquantum/algorithms/optimization.py", "search:no gradient-free optimizer and no entry point that accepts one"]
+
+[[domains.capabilities]]
+id = "classical_data_encoding"
+cudaq = "amplitude_encode and angular_encode mapping classical features onto a state"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+reason = "Absent as a public entry point. Amplitude encoding needs a normalized state-preparation path and angular encoding needs a feature-map constructor; the only related surface is a single data-reuploading helper in the simulation domain, reachable only as a module attribute."
+evidence = ["flagquantum/simulation/statevector/small.py", "search:no amplitude or angular encoding entry point"]
+
+[[domains.capabilities]]
+id = "circuit_rendering_and_inspection"
+cudaq = "getSVGstring, display, display_trace, and add_to_bloch_sphere over a drawing surface that also returns text"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. The drawer renders a circuit to text or to a matplotlib figure and returns the text form, but there is no SVG string, no trace view, and no Bloch-sphere picture. `draw` itself is counted in the execution entry points row rather than here."
+evidence = ["flagquantum/drawer", "search:no SVG string output, no trace view, and no Bloch sphere"]
+
 [[domains]]
 id = "quantum_error_correction"
 title = "Quantum error correction"
@@ -651,7 +736,7 @@ priority = "now"
 dependency_class = "B_open_neutral"
 maturity_ref = "stabilizer_sampling"
 reason = "The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here."
-baseline_gap = "No detector error model, no decoding, and no sampling of error-corrected logical operations; the engine also refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled."
+baseline_gap = "No decoding and no sampling of error-corrected logical operations. A detector error model module exists and its text interoperates outbound, but the sampling engine refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled, and the two are not yet connected."
 
 [[domains.capabilities]]
 id = "qec_dialect"

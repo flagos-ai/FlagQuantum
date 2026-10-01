@@ -51,19 +51,19 @@ No row in this document is a performance comparison or a scalability claim.
 
 | Domain | supported | partial | unsupported | out_of_scope | Total |
 | --- | --- | --- | --- | --- | --- |
-| language_and_programming_model | 0 | 3 | 8 | 0 | 11 |
-| compiler_and_ir | 0 | 6 | 7 | 0 | 13 |
-| simulation_backends | 4 | 5 | 4 | 0 | 13 |
-| noise_and_error_models | 0 | 4 | 1 | 0 | 5 |
-| operator_algebra_and_domain_libraries | 0 | 3 | 4 | 0 | 7 |
-| algorithm_layer | 1 | 3 | 2 | 0 | 6 |
+| language_and_programming_model | 0 | 4 | 9 | 0 | 13 |
+| compiler_and_ir | 0 | 7 | 7 | 0 | 14 |
+| simulation_backends | 4 | 6 | 4 | 0 | 14 |
+| noise_and_error_models | 0 | 5 | 1 | 0 | 6 |
+| operator_algebra_and_domain_libraries | 0 | 3 | 5 | 0 | 8 |
+| algorithm_layer | 1 | 4 | 4 | 0 | 9 |
 | quantum_error_correction | 0 | 3 | 4 | 0 | 7 |
 | logical_and_ftqc_layer | 0 | 0 | 5 | 0 | 5 |
 | hardware_and_cloud_targets | 2 | 1 | 3 | 0 | 6 |
 | realtime_control | 0 | 0 | 4 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 9 | 32 | 45 | 0 | 86 |
+| **Total** | 9 | 37 | 49 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -74,7 +74,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 | A_nvidia_proprietary | 8 | 1 | 9 |
 | B_open_neutral | 16 | 0 | 16 |
 | C_flagos_replacement | 2 | 1 | 3 |
-| none | 51 | 7 | 58 |
+| none | 60 | 7 | 67 |
 
 ### Next work, by priority
 
@@ -96,8 +96,8 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `backend_density_matrix` (simulation_backends): An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence.
 - `backend_stim_stabilizer` (simulation_backends): The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence.
 - `backend_dynamics` (simulation_backends): FlagQuantum has a real Lindblad engine with RK4 integration, validation codes, and evidence fields, so this capability is not missing. Three walls separate it from the baseline: CPU-only hard rejection, a dense four-to-the-n Hamiltonian with a fixed step, and a static Hamiltonian. Batching and gradients are rejected.
-- `kraus_channel_algebra` (noise_and_error_models): The channel set is limited to bit flip, phase flip, amplitude damping, and depolarizing. General Kraus algebra is absent.
-- `detector_error_model` (noise_and_error_models): A DEM module exists in the QEC domain but has no capability-maturity entry, no round-trip conformance against an independent implementation, and no Stim interoperability.
+- `kraus_channel_algebra` (noise_and_error_models): A general Kraus constructor exists and is validated. `KrausChannel` accepts an arbitrary operator list, refuses a set that is not trace-preserving (completeness compared at `atol = rtol = 1e-6`) and a dimension that is not a positive power of two, serializes through the `flagquantum.kraus_channel.v1` schema, and reaches simulation through `NoiseModel.add` and `Circuit.noisy_density_matrix`. What is absent is the operator type the CUDA-Q surface builds a channel from: no matrix-valued operator participates in operator algebra, which is the gap `matrix_and_custom_operator` already records.
+- `detector_error_model` (noise_and_error_models): The outbound direction interoperates: an independent reader parses the emitted text, agrees on the detector, observable, and error counts, and reports the same mechanisms the model states, which `tests/qec/test_dem_stim_interop.py` pins. The inbound direction does not, and the three refusals are separate: a relative `shift_detectors` round index, a `^` decomposition separator, and an observable that only the error targets introduce. The module also still has no capability-maturity entry.
 - `spin_operator_algebra` (operator_algebra_and_domain_libraries): Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent.
 - `fermion_operator_algebra` (operator_algebra_and_domain_libraries): Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction.
 - `super_operator_algebra` (operator_algebra_and_domain_libraries): Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale.
@@ -114,9 +114,11 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `large_scale_statevector` (performance_and_scalability): The measured FlagQuantum point is a 32-qubit complex128 forward pass on one eight-accelerator node, which is a development-evidence result and is not comparable to the baseline scale. No row here is a performance claim.
 - `production_sharded_statevector` (performance_and_scalability): The registered level is below production, so the sharded path cannot support a capacity-expansion claim yet.
 
-**next** (26 open)
+**next** (33 open)
 
 - `runtime_qubit_allocation` (language_and_programming_model): Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented.
+- `pauli_tracking_sbe` (language_and_programming_model): The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state.
+- `global_seed_control` (language_and_programming_model): Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session.
 - `gate_decomposition_patterns` (compiler_and_ir): Native gate legalization exists but there is no rule library, so a target basis outside the legalization table cannot be reached.
 - `basis_conversion` (compiler_and_ir): Partial coverage follows from the legalization table; there is no general conversion between two arbitrary named bases.
 - `clifford_t_synthesis` (compiler_and_ir): Absent. The algorithms are published and vendor-neutral, and any implementation needs exact arithmetic that FlagQuantum does not currently carry.
@@ -125,15 +127,20 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `dead_code_elimination` (compiler_and_ir): Absent. Depends on the same pass infrastructure as commutation-aware rewriting.
 - `target_text_emitters` (compiler_and_ir): An OpenQASM emitter exists. The emitter set is narrower than the CUDA-Q roster.
 - `resource_estimation` (compiler_and_ir): Absent, and it cannot be made correct for loops and functions until ProgramIR exists, because a straight-line instruction list has no loop bound to estimate.
+- `foreign_circuit_import` (compiler_and_ir): The Qiskit direction exists: an ecosystem adapter builds a FlagQuantum circuit from a provider object. OpenQASM import does not, and the OpenQASM surface FlagQuantum carries is an emitter, so a circuit that exists only as text cannot enter the framework.
 - `backend_asynchronous_multi_qpu` (simulation_backends): Absent. FlagQuantum has single-target remote execution but no asynchronous fan-out across several QPUs with independent result streams.
 - `backend_gpu_fabric` (simulation_backends): Absent as a FlagQuantum-owned transport. The replacement target is a FlagOS-family collective layer, not NCCL.
+- `dynamics_schedule_and_integrators` (simulation_backends): The Lindblad engine integrates with one fixed-step RK4 over an explicitly declared time grid and a static Hamiltonian. There is no schedule object carrying time-dependent coefficients and no selectable integrator, so accuracy and stiffness cannot be traded per problem.
 - `noise_model_callback` (noise_and_error_models): Noise lowering and a noise registry exist, but there is no per-gate and per-qubit callback model matching the CUDA-Q surface.
 - `batched_trajectory` (noise_and_error_models): Trajectory simulation exists; batched execution across trajectories is narrower than the baseline.
 - `unitary_mixture_degradation` (noise_and_error_models): Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not.
+- `noise_trajectory_shot_allocation` (noise_and_error_models): FlagQuantum samples Kraus trajectories, but the trajectory choice belongs to the engine rather than to the caller: the MPS trajectory path draws them implicitly and exposes an ensemble size, so there is no trajectory enumeration, no ordered or probabilistic selection strategy, and no shot-allocation policy. Those strategies are the whole of this row.
 - `matrix_and_custom_operator` (operator_algebra_and_domain_libraries): A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra.
 - `exponential_pauli_operator` (operator_algebra_and_domain_libraries): Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent.
 - `state_and_unitary_access` (algorithm_layer): Circuit.state exists. A full unitary accessor is absent.
 - `algorithm_block_encoding_family` (algorithm_layer): The whole layer is absent. Qualtran is Apache-2.0 licensed and covers the same mathematics, so the plan is adaptation rather than research.
+- `optimizer_library` (algorithm_layer): The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is the gap, because COBYLA, NelderMead, and SPSA have no implementation and the training entry point refuses an optimizer that is not a PyTorch one.
+- `classical_data_encoding` (algorithm_layer): Absent as a public entry point. Amplitude encoding needs a normalized state-preparation path and angular encoding needs a feature-map constructor; the only related surface is a single data-reuploading helper in the simulation domain, reachable only as a module attribute.
 - `qec_stim_user_migration` (quantum_error_correction): Absent. It is documentation and conformance work that only becomes meaningful once Stim integration exists.
 - `logical_resource_estimation` (logical_and_ftqc_layer): Absent as a domain. Qualtran carries the same mathematics under an Apache-2.0 licence, so the planned route is adaptation into a FlagQuantum-owned report format aligned with capability-maturity.toml evidence.
 - `runtime_endpoint` (hardware_and_cloud_targets): Absent as a named contract. FlagQuantum has remote adapters and a deployment surface, but no provider-neutral endpoint object.
@@ -143,15 +150,17 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `realtime_host_api` (realtime_control): Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against.
 - `distribution_packaging` (engineering_ecosystem_and_abi): FlagQuantum ships a single package plus a development container. A metapackage that selects a FlagOS and accelerator generation has no equivalent and is needed for a domestic-accelerator install story.
 
-**later** (18 open)
+**later** (20 open)
 
 - `cpp_kernel_frontend` (language_and_programming_model): No C++ product surface exists. A domestic C++ front end would reuse the same LLVM/MLIR upstream as the Python path, so it is deferred rather than excluded.
 - `qudit_and_photonic_operations` (language_and_programming_model): No qudit or photonic operation exists. Deferred as a distinct product line rather than a parity gap for the qubit runtime.
-- `pauli_tracking_sbe` (language_and_programming_model): A noise technique, not a language capability. Deferred until the stabilizer backend and the detector error model land.
+- `asynchronous_execution` (language_and_programming_model): Absent. Every FlagQuantum entry point returns a completed result, so there is no handle an outer loop could poll and no overlap between host work and a device run.
 - `mlir_dialect_stack` (compiler_and_ir): FlagQuantum IR is a JSON instruction table. MLIR is Apache-2.0 licensed and vendor-neutral, so adopting it is a build decision rather than a dependency conflict. The internal levels come first.
 - `backend_fermioniq_mps` (simulation_backends): Absent. It is an MPS variant with a narrower applicability than the maintained MPS path, so it follows rather than leads.
 - `backend_photonics` (simulation_backends): Absent. Photonic simulation is a distinct product line and is deferred with the qudit operations it depends on.
 - `boson_operator_algebra` (operator_algebra_and_domain_libraries): Absent, and it has no consumer until a bosonic or photonic workload exists.
+- `rydberg_analog_hamiltonian` (operator_algebra_and_domain_libraries): Absent. It is the observable-side input an analog neutral-atom target would need, so it follows that target rather than preceding it.
+- `circuit_rendering_and_inspection` (algorithm_layer): Absent. The drawer renders a circuit to text or to a matplotlib figure and returns the text form, but there is no SVG string, no trace view, and no Bloch-sphere picture. `draw` itself is counted in the execution entry points row rather than here.
 - `qec_dialect` (quantum_error_correction): Absent, and deliberately sequenced after the internal levels stabilize. A second dialect before the first one exists would be a parallel scaffold.
 - `qec_logical_operations` (quantum_error_correction): Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan.
 - `qec_transport_and_objectives` (quantum_error_correction): Absent. These are hardware-shaped QEC models that need the corresponding target to be meaningful.
@@ -184,7 +193,9 @@ CUDA-Q surface: nvq++, @cudaq.kernel, kernel arguments, classical control flow, 
 | `dynamic_kernel_measurement_feedback` | Mid-circuit measurement and measurement-result-driven branching inside a kernel | partial | now | none | `dynamic_circuits` | FlagQuantum implements this through runtime/dynamic with a candidate-stable public namespace. The registered level is below production, and the surface is narrower than the CUDA-Q baseline. |
 | `custom_operation_registration` | register_operation for user-defined operations with backend capability negotiation | partial | now | none | none | Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation. |
 | `qudit_and_photonic_operations` | Qudit levels and photonic operations such as create, annihilate, and beam_splitter | unsupported | later | none | none | No qudit or photonic operation exists. Deferred as a distinct product line rather than a parity gap for the qubit runtime. |
-| `pauli_tracking_sbe` | Pauli tracking stabilizer-basis expansion for noisy simulation | unsupported | later | none | none | A noise technique, not a language capability. Deferred until the stabilizer backend and the detector error model land. |
+| `pauli_tracking_sbe` | Pauli tracking stabilizer-basis expansion for noisy simulation | unsupported | next | none | none | The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state. |
+| `asynchronous_execution` | run_async, sample_async, observe_async, and evolve_async with their result handles | unsupported | later | none | none | Absent. Every FlagQuantum entry point returns a completed result, so there is no handle an outer loop could poll and no overlap between host work and a device run. |
+| `global_seed_control` | set_random_seed for a process-wide sampling and noise seed | partial | next | none | none | Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session. |
 
 Evidence:
 
@@ -193,6 +204,9 @@ Evidence:
 - domain default, negative search: no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema
 
 - `custom_operation_registration` override: `flagquantum/circuit.py`, `flagquantum/operators.py`
+- `pauli_tracking_sbe` override: `flagquantum/simulation/stabilizer/engine.py`, `search:the sampling engine declines a noise instruction instead of tracking its frame`
+- `asynchronous_execution` override: `search:no asynchronous entry point and no in-flight result handle`
+- `global_seed_control` override: `flagquantum/runtime/options.py`, `flagquantum/runtime/training_state.py`, `search:no process-wide seed entry point`
 
 #### Compiler and intermediate representation
 
@@ -215,6 +229,7 @@ CUDA-Q surface: Quake, CC, and QEC MLIR dialects, pass manager and pass plugins,
 | `target_text_emitters` | OpenQASM and vendor JSON emitters | partial | next | none | `ir` | An OpenQASM emitter exists. The emitter set is narrower than the CUDA-Q roster. |
 | `resource_estimation` | estimate_resources reporting gate counts, depth, width, and qubit peak | unsupported | next | none | `ir` | Absent, and it cannot be made correct for loops and functions until ProgramIR exists, because a straight-line instruction list has no loop bound to estimate. |
 | `compiler_plugin_ecosystem` | Third-party compiler passes distributed out of tree | partial | now | none | `extension_sdk` | The extension protocol and lifecycle exist, but no discovery path reaches compilation, so an out-of-tree pass cannot run. |
+| `foreign_circuit_import` | from_qasm and from_qiskit bringing a foreign circuit into the framework | partial | next | none | `qiskit_interop` | The Qiskit direction exists: an ecosystem adapter builds a FlagQuantum circuit from a provider object. OpenQASM import does not, and the OpenQASM surface FlagQuantum carries is an emitter, so a circuit that exists only as text cannot enter the framework. |
 
 Evidence:
 
@@ -223,6 +238,7 @@ Evidence:
 
 - `pass_manager_and_pass_plugins` override: `flagquantum/ecosystem/extensions/sdk.py`, `flagquantum/compiler`
 - `qir_code_generation` override: `flagquantum/compiler`
+- `foreign_circuit_import` override: `flagquantum/ecosystem/qiskit`, `search:no OpenQASM text importer`
 
 #### Simulation backend matrix
 
@@ -241,10 +257,11 @@ CUDA-Q surface: qpp-cpu, nvidia, nvidia option=mgpu, tensornet, tensornet-mps, f
 | `backend_asynchronous_multi_qpu` | nvidia option=mqpu asynchronous multi-QPU execution | unsupported | next | none | `cloud_deployment` | Absent. FlagQuantum has single-target remote execution but no asynchronous fan-out across several QPUs with independent result streams. |
 | `backend_trajectory_noise` | Trajectory noisy simulation available across backends | supported | now | none | `noisy_simulation` | FlagQuantum has a trajectory noise path. Batched trajectory execution is narrower than the CUDA-Q baseline. <br><br>Narrower scope at this status: No batched trajectory result is recorded in this checkout. |
 | `backend_density_matrix` | density-matrix-cpu backend | partial | now | none | none | An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence. |
-| `backend_stim_stabilizer` | stim stabilizer backend reaching thousands of qubits | partial | now | B_open_neutral | `stabilizer_sampling` | The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence. <br><br>Narrower scope at this status: CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, no noise, and no detector error model. |
+| `backend_stim_stabilizer` | stim stabilizer backend reaching thousands of qubits | partial | now | B_open_neutral | `stabilizer_sampling` | The representation gap is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable. Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. What remains is the second half of the row: no planner or executor selects the engine, so `fq.run` cannot reach it and it produces no plan, result, or execution evidence. <br><br>Narrower scope at this status: CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values and detector error models over the same representation. FlagQuantum's engine is a simulation-domain entry point with no execution route, no expectation values, and no noise, and the detector error model module it does have is not connected to it. |
 | `backend_photonics` | orca-photonics photonic backend | unsupported | later | none | none | Absent. Photonic simulation is a distinct product line and is deferred with the qudit operations it depends on. |
 | `backend_dynamics` | dynamics backend for time-dependent evolution backed by cuDensityMat | partial | now | A_nvidia_proprietary | `continuous_time_lindblad` | FlagQuantum has a real Lindblad engine with RK4 integration, validation codes, and evidence fields, so this capability is not missing. Three walls separate it from the baseline: CPU-only hard rejection, a dense four-to-the-n Hamiltonian with a fixed step, and a static Hamiltonian. Batching and gradients are rejected. <br><br>Narrower scope at this status: The registered entry declares explicit time grids on small systems, so it does not by itself authorize a scale claim against the baseline. |
 | `backend_gpu_fabric` | Multi-GPU fabric with peer-to-peer memory access | unsupported | next | C_flagos_replacement | `flagos_transport_observability` | Absent as a FlagQuantum-owned transport. The replacement target is a FlagOS-family collective layer, not NCCL. |
+| `dynamics_schedule_and_integrators` | dynamics Schedule with time-dependent coefficients and the selectable Runge-Kutta and stiff-solver integrator families | partial | next | none | `continuous_time_lindblad` | The Lindblad engine integrates with one fixed-step RK4 over an explicitly declared time grid and a static Hamiltonian. There is no schedule object carrying time-dependent coefficients and no selectable integrator, so accuracy and stiffness cannot be traded per problem. |
 
 Evidence:
 
@@ -254,6 +271,7 @@ Evidence:
 
 - `backend_density_matrix` override: `flagquantum/simulation/density_matrix.py`
 - `backend_stim_stabilizer` override: `flagquantum/simulation/stabilizer/engine.py`, `tests/team/simulation/test_stabilizer_sampling.py`, `examples/stabilizer_sampling.py`
+- `dynamics_schedule_and_integrators` override: `flagquantum/lindblad`, `flagquantum/simulation/lindblad.py`, `search:no schedule object and no selectable integrator`
 
 #### Noise and error models
 
@@ -263,35 +281,38 @@ CUDA-Q surface: Kraus channels, noise model callbacks, trajectory simulation, de
 
 | Capability | CUDA-Q baseline | Status | Priority | Dependency class | FlagQuantum maturity | Reason |
 | --- | --- | --- | --- | --- | --- | --- |
-| `kraus_channel_algebra` | Kraus channels and general noise channels | partial | now | none | `noisy_simulation` | The channel set is limited to bit flip, phase flip, amplitude damping, and depolarizing. General Kraus algebra is absent. |
+| `kraus_channel_algebra` | Kraus channels and general noise channels | partial | now | none | `noisy_simulation` | A general Kraus constructor exists and is validated. `KrausChannel` accepts an arbitrary operator list, refuses a set that is not trace-preserving (completeness compared at `atol = rtol = 1e-6`) and a dimension that is not a positive power of two, serializes through the `flagquantum.kraus_channel.v1` schema, and reaches simulation through `NoiseModel.add` and `Circuit.noisy_density_matrix`. What is absent is the operator type the CUDA-Q surface builds a channel from: no matrix-valued operator participates in operator algebra, which is the gap `matrix_and_custom_operator` already records. |
 | `noise_model_callback` | Noise model callbacks injecting noise by operation type at runtime | partial | next | none | `noisy_simulation` | Noise lowering and a noise registry exist, but there is no per-gate and per-qubit callback model matching the CUDA-Q surface. |
 | `batched_trajectory` | Batched trajectory execution | partial | next | none | `noisy_simulation` | Trajectory simulation exists; batched execution across trajectories is narrower than the baseline. |
-| `detector_error_model` | Detector error model construction and circuit-to-DEM conversion | partial | now | B_open_neutral | none | A DEM module exists in the QEC domain but has no capability-maturity entry, no round-trip conformance against an independent implementation, and no Stim interoperability. |
+| `detector_error_model` | Detector error model construction and circuit-to-DEM conversion | partial | now | B_open_neutral | none | The outbound direction interoperates: an independent reader parses the emitted text, agrees on the detector, observable, and error counts, and reports the same mechanisms the model states, which `tests/qec/test_dem_stim_interop.py` pins. The inbound direction does not, and the three refusals are separate: a relative `shift_detectors` round index, a `^` decomposition separator, and an observable that only the error targets introduce. The module also still has no capability-maturity entry. |
 | `unitary_mixture_degradation` | Unitary-mixture noise models distinguished from general channels | unsupported | next | none | `noisy_simulation` | Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not. |
+| `noise_trajectory_shot_allocation` | The ptsbe trajectory engine: explicit Kraus trajectory specification, exhaustive, ordered, and probabilistic trajectory sampling strategies, and shot allocation across trajectories | partial | next | none | `noisy_simulation` | FlagQuantum samples Kraus trajectories, but the trajectory choice belongs to the engine rather than to the caller: the MPS trajectory path draws them implicitly and exposes an ensemble size, so there is no trajectory enumeration, no ordered or probabilistic selection strategy, and no shot-allocation policy. Those strategies are the whole of this row. |
 
 Evidence:
 
-- domain default: `flagquantum/noise`
+- domain default: `flagquantum/noise/channels.py`
 - domain default: `flagquantum/qec/dem.py`
-- domain default, negative search: no general Kraus constructor, no per-operation callback model, and no unitary-mixture type
+- domain default, negative search: no per-operation callback model and no unitary-mixture type
 
-- `detector_error_model` override: `flagquantum/qec/dem.py`
+- `detector_error_model` override: `flagquantum/qec/dem.py`, `tests/qec/test_dem_stim_interop.py`, `search:inbound text from an independent generator is refused`
+- `noise_trajectory_shot_allocation` override: `flagquantum/runtime/executors/mps/noisy.py`, `flagquantum/runtime/planner/noise_selection.py`, `search:no explicit trajectory selection strategy and no shot allocation policy`
 
 #### Operator algebra and domain libraries
 
 Domain id: `operator_algebra_and_domain_libraries`
 
-CUDA-Q surface: spin_op, fermion_op, boson_op, super_op, matrix_op, operator arithmetics, pauli_word and exp_pauli, chemistry libraries
+CUDA-Q surface: SpinOperator, FermionOperator, BosonOperator, SuperOperator, MatrixOperator, operator arithmetics, pauli_word and exp_pauli, chemistry libraries
 
 | Capability | CUDA-Q baseline | Status | Priority | Dependency class | FlagQuantum maturity | Reason |
 | --- | --- | --- | --- | --- | --- | --- |
-| `spin_operator_algebra` | spin_op and Pauli operator algebra | partial | now | none | `ir` | Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent. |
-| `fermion_operator_algebra` | fermion_op with Jordan-Wigner and related mappings | unsupported | now | none | none | Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction. |
-| `boson_operator_algebra` | boson_op algebra | unsupported | later | none | none | Absent, and it has no consumer until a bosonic or photonic workload exists. |
-| `super_operator_algebra` | super_op for superoperator representations | unsupported | now | none | `continuous_time_lindblad` | Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale. |
-| `matrix_and_custom_operator` | matrix_op and custom_op | partial | next | none | none | A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra. |
+| `spin_operator_algebra` | SpinOperator and Pauli operator algebra | partial | now | none | `ir` | Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent. |
+| `fermion_operator_algebra` | FermionOperator with Jordan-Wigner and related mappings | unsupported | now | none | none | Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction. |
+| `boson_operator_algebra` | BosonOperator algebra | unsupported | later | none | none | Absent, and it has no consumer until a bosonic or photonic workload exists. |
+| `super_operator_algebra` | SuperOperator for superoperator representations | unsupported | now | none | `continuous_time_lindblad` | Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale. |
+| `matrix_and_custom_operator` | MatrixOperator and custom_op | partial | next | none | none | A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra. |
 | `exponential_pauli_operator` | exp_pauli and pauli_word construction | partial | next | none | `ir` | Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent. |
 | `chemistry_domain_library` | PySCF driver, UCCSD, and hardware-efficient ansatz libraries | unsupported | now | B_open_neutral | none | Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral. |
+| `rydberg_analog_hamiltonian` | RydbergHamiltonian for analog neutral-atom evolution | unsupported | later | none | none | Absent. It is the observable-side input an analog neutral-atom target would need, so it follows that target rather than preceding it. |
 
 Evidence:
 
@@ -302,6 +323,7 @@ Evidence:
 - `fermion_operator_algebra` override: `flagquantum/observables`
 - `matrix_and_custom_operator` override: `flagquantum/operators.py`
 - `chemistry_domain_library` override: `flagquantum/algorithms`
+- `rydberg_analog_hamiltonian` override: `search:no Rydberg or analog Hamiltonian model`
 
 #### Algorithm layer
 
@@ -317,12 +339,19 @@ CUDA-Q surface: sample, observe, run, evolve, draw, translate, get_state and get
 | `error_mitigation` | Zero-noise extrapolation, probabilistic error cancellation, and Clifford data regression | unsupported | now | none | `noisy_simulation` | Absent. VQE-class optimization exists in the algorithms domain, but no error-mitigation technique does. |
 | `variational_algorithms` | VQE and QAOA solver libraries | partial | now | none | `algorithms_grover_search` | VQE-class and several algorithm primitives exist as separate registered capabilities rather than a solver family, so the surface shape differs from the baseline. |
 | `differentiable_training` | No equivalent; CUDA-Q has no reverse-mode differentiation through simulation | supported | now | none | `sharded_statevector_training` | FlagQuantum advantage, not parity. Reverse-mode autograd through simulation, the Module and train lifecycle, and gradient preservation under sharding are capabilities the CUDA-Q baseline does not offer. <br><br>Narrower scope at this status: The registered level covers the local training path. Gradient correctness under sharding is registered separately and is not asserted here. |
+| `optimizer_library` | cudaq.optimizers with Adam, COBYLA, GradientDescent, LBFGS, NelderMead, SGD, and SPSA | partial | next | none | none | The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is the gap, because COBYLA, NelderMead, and SPSA have no implementation and the training entry point refuses an optimizer that is not a PyTorch one. |
+| `classical_data_encoding` | amplitude_encode and angular_encode mapping classical features onto a state | unsupported | next | none | none | Absent as a public entry point. Amplitude encoding needs a normalized state-preparation path and angular encoding needs a feature-map constructor; the only related surface is a single data-reuploading helper in the simulation domain, reachable only as a module attribute. |
+| `circuit_rendering_and_inspection` | getSVGstring, display, display_trace, and add_to_bloch_sphere over a drawing surface that also returns text | unsupported | later | none | none | Absent. The drawer renders a circuit to text or to a matplotlib figure and returns the text form, but there is no SVG string, no trace view, and no Bloch-sphere picture. `draw` itself is counted in the execution entry points row rather than here. |
 
 Evidence:
 
 - domain default: `flagquantum/algorithms`
 - domain default: `flagquantum/circuit.py`
 - domain default, negative search: no block encoding, no qubitization, no quantum singular value transform, and no error mitigation
+
+- `optimizer_library` override: `flagquantum/runtime/training.py`, `flagquantum/algorithms/optimization.py`, `search:no gradient-free optimizer and no entry point that accepts one`
+- `classical_data_encoding` override: `flagquantum/simulation/statevector/small.py`, `search:no amplitude or angular encoding entry point`
+- `circuit_rendering_and_inspection` override: `flagquantum/drawer`, `search:no SVG string output, no trace view, and no Bloch sphere`
 
 #### Quantum error correction
 
@@ -334,7 +363,7 @@ CUDA-Q surface: cudaq-qec library, circuit-to-DEM round trip, Stim integration, 
 | --- | --- | --- | --- | --- | --- | --- |
 | `qec_code_library` | cudaq-qec codes expressed as kernels, with numerical experiment APIs | partial | now | none | `repetition_code_memory` | Only a repetition-code memory experiment is registered. Surface, Steane, qLDPC, Reichardt, and Floquet codes are absent. |
 | `qec_decoder_family` | Minimum-weight perfect matching, belief propagation with ordered statistics decoding, and sliding-window decoders | partial | now | B_open_neutral | none | The existing decoder layer is basic. PyMatching and an LDPC belief-propagation implementation are Apache-2.0 licensed, so the plan is integration rather than reimplementation, with acceleration later through the FlagOS kernel path. |
-| `qec_stim_integration` | Stim sampling and detector error model interoperability | partial | now | B_open_neutral | `stabilizer_sampling` | The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here. <br><br>Narrower scope at this status: No detector error model, no decoding, and no sampling of error-corrected logical operations; the engine also refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled. |
+| `qec_stim_integration` | Stim sampling and detector error model interoperability | partial | now | B_open_neutral | `stabilizer_sampling` | The sampling half landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half is still absent, so the row is partial rather than unsupported. Error models and decoding stay with the decoder row rather than being implied here. <br><br>Narrower scope at this status: No decoding and no sampling of error-corrected logical operations. A detector error model module exists and its text interoperates outbound, but the sampling engine refuses noise channels outright, so a circuit carrying a noise instruction is declined rather than sampled, and the two are not yet connected. |
 | `qec_dialect` | A QEC MLIR dialect | unsupported | later | B_open_neutral | `ir` | Absent, and deliberately sequenced after the internal levels stabilize. A second dialect before the first one exists would be a parallel scaffold. |
 | `qec_logical_operations` | Lattice surgery, product rotation, and magic state distillation | unsupported | later | B_open_neutral | none | Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan. |
 | `qec_transport_and_objectives` | Transport, rounds, objectives, ccz, and neutral-atom QEC models | unsupported | later | none | none | Absent. These are hardware-shaped QEC models that need the corresponding target to be meaningful. |
