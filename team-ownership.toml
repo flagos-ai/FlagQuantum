@@ -40,10 +40,17 @@ protected_paths = [
     ".gitignore",
     ".pre-commit-config.yaml",
     "ARCHITECTURE.md",
+    # Project-level statements about who may contribute, how decisions are made, and
+    # where a vulnerability is reported. They are the same class as `CONTRIBUTING.md`:
+    # changing one changes the terms the project offers its contributors, so they are
+    # coordinated by Integration rather than owned by a development team.
+    "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
+    "GOVERNANCE.md",
     "LICENSE",
     "MANIFEST.in",
     "README.md",
+    "SECURITY.md",
     "capability-maturity.toml",
     "compose.dev.yaml",
     "conftest.py",
