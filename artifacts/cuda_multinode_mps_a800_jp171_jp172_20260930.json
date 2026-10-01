@@ -1,9 +1,8 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T10:54:49.300808+00:00",
+    "captured_at": "2026-10-01T16:20:47.724335+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
-      "inter_node_cut_width_not_swept",
       "toy_circuit_parameters_only",
       "two_node_pair_only_no_wider_topology",
       "validation_only_tiny_full_mps_gather"
@@ -12,10 +11,134 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "53a1d5c80ae8fde6c45210ca5a165c3b52727017",
+      "source_revision": "dd874e0459e0795ac9c4d5729d84f51400e0575b",
       "torch": "2.13.0+cu130"
     },
     "observations": {
+      "cut_widths": {
+        "exact_schmidt_ranks": [
+          2,
+          4,
+          4,
+          4,
+          2
+        ],
+        "inter_node_bytes_by_width": {
+          "2": 896,
+          "4": 3520
+        },
+        "plans": [
+          {
+            "cut_positions": [
+              0
+            ],
+            "inter_node_bytes": 576,
+            "inter_node_messages": 4,
+            "plan": [
+              [
+                0
+              ],
+              [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            "width": 2,
+            "worst_error": 4.996003610813204e-16
+          },
+          {
+            "cut_positions": [
+              1
+            ],
+            "inter_node_bytes": 1344,
+            "inter_node_messages": 6,
+            "plan": [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            "width": 4,
+            "worst_error": 4.996003610813204e-16
+          },
+          {
+            "cut_positions": [
+              2
+            ],
+            "inter_node_bytes": 1344,
+            "inter_node_messages": 6,
+            "plan": [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ],
+            "width": 4,
+            "worst_error": 4.440892098500626e-16
+          },
+          {
+            "cut_positions": [
+              3
+            ],
+            "inter_node_bytes": 832,
+            "inter_node_messages": 6,
+            "plan": [
+              [
+                0,
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5
+              ]
+            ],
+            "width": 4,
+            "worst_error": 4.996003610813204e-16
+          },
+          {
+            "cut_positions": [
+              4
+            ],
+            "inter_node_bytes": 320,
+            "inter_node_messages": 6,
+            "plan": [
+              [
+                0,
+                1,
+                2,
+                3,
+                4
+              ],
+              [
+                5
+              ]
+            ],
+            "width": 2,
+            "worst_error": 4.996003610813204e-16
+          }
+        ],
+        "widths": [
+          2,
+          4
+        ]
+      },
       "host_staging": {
         "host_transfer_events": [
           {
@@ -49,7 +172,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "06face5cd6bd4709e2b512867c743331b4df61ef0922761db592d46543089d4f",
+        "debug_log_sha256": "40878aa07b54589806b1d2c2379410b4c8e5762046ef45584918f68d01aa2844",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -73,19 +196,19 @@
       },
       "performance": {
         "max_bond": 64,
-        "maximum_seconds": 0.021361403167247772,
+        "maximum_seconds": 0.02335982769727707,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_mps_forward",
-        "median_seconds": 0.020264338701963425,
-        "minimum_seconds": 0.019401343539357185,
+        "median_seconds": 0.021579071879386902,
+        "minimum_seconds": 0.021094685420393944,
         "n_wires": 6,
         "seconds": [
-          0.02043759636580944,
-          0.019401343539357185,
-          0.020175335928797722,
-          0.020264338701963425,
-          0.021361403167247772
+          0.021579071879386902,
+          0.021094685420393944,
+          0.021103471517562866,
+          0.02335982769727707,
+          0.021917466074228287
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -131,7 +254,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.0005153100937604904,
+            "layer_halo_wait_seconds": 0.0003905966877937317,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -410,12 +533,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.0003991294652223587,
+            "diagnostics_seconds": 0.0005654934793710709,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03793565556406975,
+            "end_to_end_seconds": 0.047316666692495346,
             "forward_peak_memory_bytes": 17077760,
-            "forward_seconds": 0.023344481363892555,
+            "forward_seconds": 0.022608919069170952,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -439,7 +562,7 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.00044177472591400146,
+            "optimizer_seconds": 0.0006795264780521393,
             "optimizer_stage": "sgd",
             "owned_bond_work": 1,
             "owned_site_work": 2,
@@ -452,7 +575,7 @@
             "reverse_autograd_grad_invocations": 3,
             "reverse_peak_memory_bytes": 17072640,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.013741601258516312,
+            "reverse_seconds": 0.02344885841012001,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -460,7 +583,7 @@
             "svd_activity": 1,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 384,
-            "training_compute_seconds": 0.037535326555371284,
+            "training_compute_seconds": 0.04674971476197243,
             "truncated_splits": 0,
             "two_site_splits": 1,
             "useful_work_completed": true
@@ -555,7 +678,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.0002410896122455597,
+            "layer_halo_wait_seconds": 0.0002549663186073303,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -834,12 +957,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.00030122697353363037,
+            "diagnostics_seconds": 0.00044649839401245117,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.038035739213228226,
+            "end_to_end_seconds": 0.04733721539378166,
             "forward_peak_memory_bytes": 17077248,
-            "forward_seconds": 0.020841974765062332,
+            "forward_seconds": 0.023219775408506393,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -863,7 +986,7 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.0002628229558467865,
+            "optimizer_seconds": 0.00038055144250392914,
             "optimizer_stage": "sgd",
             "owned_bond_work": 2,
             "owned_site_work": 1,
@@ -876,7 +999,7 @@
             "reverse_autograd_grad_invocations": 3,
             "reverse_peak_memory_bytes": 17067520,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.01662409119307995,
+            "reverse_seconds": 0.023281078785657883,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -884,7 +1007,7 @@
             "svd_activity": 0,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 192,
-            "training_compute_seconds": 0.03773360885679722,
+            "training_compute_seconds": 0.04688955470919609,
             "truncated_splits": 0,
             "two_site_splits": 0,
             "useful_work_completed": true
@@ -943,8 +1066,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-mps51-ckpt/rank-0-step-3.pt",
-          "/nfs/fq-multinode-mps51-ckpt/rank-0-step-4.pt"
+          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-3.pt",
+          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-4.pt"
         ],
         "checkpoint_integrity": "sha256_atomic_file_and_metadata",
         "checkpoint_steps": 2,
@@ -954,8 +1077,8 @@
           0.8991430340529726
         ],
         "interrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-mps51-ckpt/rank-0-step-1.pt",
-          "/nfs/fq-multinode-mps51-ckpt/rank-0-step-2.pt"
+          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-1.pt",
+          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-2.pt"
         ],
         "learning_rate": 0.05,
         "optimizer": "sgd",
@@ -967,8 +1090,8 @@
         "resumed_start_step": 2,
         "resumed_steps": 4,
         "uninterrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-mps51-ckpt/uninterrupted/rank-0-step-3.pt",
-          "/nfs/fq-multinode-mps51-ckpt/uninterrupted/rank-0-step-4.pt"
+          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-3.pt",
+          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-4.pt"
         ],
         "uninterrupted_leg_losses": [
           0.9077758055611574,
@@ -1011,6 +1134,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "9122e5f7be4c2ee3c3bbadda63754850dec029bde80e4bb7934cd72f6fe1d5d9",
+  "evidence_sha256": "5552f8b764bb259fc385ea0694e581610ac4789d0dcf8921fc535e65474e0c95",
   "schema": "flagquantum.cuda_multinode_mps_artifact.v1"
 }

@@ -522,16 +522,44 @@ are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
 exchanging anything for it. The artifact is checked against that arithmetic. Its
 route was read from the NCCL debug log as RoCE, and it carries five
-synchronized forward samples taken after two warmups. It carries five blockers,
-including `inter_node_cut_width_not_swept` and
-`host_staging_in_measured_region`, and reports both claim flags false. The cut
-stays unswept because the site plan derives ownership from the world size
-alone, so a two-host pair holds exactly one boundary and this lane cannot move
-it; the staging blocker is the audit's finding that host transfers sit inside
-the measured region. Unlike the statevector
-artifact it belongs to a capability that also claims single-host and multi-GPU
-support, so it is the multi-node leg of a broader entry rather than an entry of
-its own.
+synchronized forward samples taken after two warmups. It carries four blockers
+-- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
+`validation_only_tiny_full_mps_gather` and
+`host_staging_in_measured_region` -- and reports both claim flags false. The
+staging blocker is the audit's finding that host transfers sit inside the
+measured region. Unlike the statevector artifact it belongs to a capability
+that also claims single-host and multi-GPU support, so it is the multi-node leg
+of a broader entry rather than an entry of its own.
+
+The cut width was swept rather than declared, and the sweep is a leg of its own
+rather than part of the declared workload. The declared circuit could not carry
+it: its Schmidt profile is flat at rank two across all five cuts, so moving the
+owned site boundary along it exchanges the same bond wherever it lands and any
+two numbers from it would be the same number. The sweep therefore binds its own
+circuit, which rotates each adjacent pair in turn and so has a profile the cuts
+can tell apart -- ranks `2, 4, 4, 4, 2`, read from the singular values of the
+exact statevector rather than from the run. The probe then re-runs the same
+`execute_torch_distributed_mps_reverse` the training loop uses, under every site
+plan the launched shape can hold with a boundary moved: at two ranks that is the
+five positions of the single boundary, and at a wider shape it walks each rank
+boundary across its neighbours in turn. Each leg is compared with the exact
+complex128 expectation and gradient and raises on disagreement, so a leg that
+cut the wrong circuit fails the run rather than being recorded as a narrow
+width. What each leg reports is its own inter-node layer halo, the counter the
+transport attributes per tier; the widths that crossed bytes are the ones
+`cut_width_claim_blockers` counts, so a placement that exchanged nothing leaves
+`inter_node_cut_width_not_swept` standing. In the recorded run the five
+placements crossed 576, 1344, 1344, 832 and 320 bytes at widths 2, 4, 4, 4 and
+2, each at round-off against the reference.
+
+A plan at more than two ranks holds one boundary per adjacent rank pair, so it
+carries several cuts at once and is named by the heaviest bond it has to carry;
+naming it by a lighter one would claim a rank-four bond was carried by a leg that
+crossed nothing of the sort, and the widths recorded are the ones the legs
+actually carried. At the recorded pair every placement has one boundary, so both
+heights of the profile are placed; a wider shape would reach only the heaviest
+height and would report the one crossed width, which the blocker's own rule
+declines to count as a sweep.
 
 `artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
 slice-sharded tensor-network workload. Five wires are contracted along a cut of
@@ -570,40 +598,52 @@ cut explicitly.
 
 ### Repeatability of the measured leg
 
-The three artifacts were produced by two independent invocations of the lane on
-the same pair: the recording run and a `multinode-scheduled` tier run, both at
-the same source revision, over RoCE, with the same `--measure` flag and the same
-revision of the probes. Their medians agree to within a few percent per workload
--- 3.167 against 3.242 ms for the statevector forward, 20.264 against 20.303 ms
-for the MPS forward, and 4.283 against 4.280 ms for the sliced amplitudes --
-while the slowest of the five samples is in every case the first, which is why
-the probe warms up twice before it starts recording. The medians are therefore a
-property of the workload and the pair rather than of one scheduling accident,
-and the spread is reported alongside them so a reader can see how wide it is.
+The artifacts as first recorded were produced by two independent invocations of
+the lane on the same pair: the recording run and a `multinode-scheduled` tier
+run, both at the same source revision, over RoCE, with the same `--measure` flag
+and the same revision of the probes. Their medians agree to within a few percent
+per workload -- 3.167 against 3.242 ms for the statevector forward, 20.264
+against 20.303 ms for the MPS forward, and 4.283 against 4.280 ms for the sliced
+amplitudes -- while the slowest of the five samples is in every case the first,
+which is why the probe warms up twice before it starts recording. The medians
+are therefore a property of the workload and the pair rather than of one
+scheduling accident, and the spread is reported alongside them so a reader can
+see how wide it is.
 
 A third invocation, run after the claim artifact was published, measures the
 same three legs on the same pair at the merged revision with both hosts
-otherwise idle:
+otherwise idle. The artifacts currently checked in were then re-recorded by a
+fourth invocation -- the `multinode-scheduled` tier run that added the MPS
+cut-width sweep -- and that column is the one the checked-in digests describe:
 
-| Measured leg | Recording run | Tier run | Post-merge run | Spread |
-| --- | --- | --- | --- | --- |
-| Sharded statevector forward | 3.167 ms | 3.242 ms | 3.247 ms | 2.5% |
-| Sharded MPS forward | 20.264 ms | 20.303 ms | 21.138 ms | 4.3% |
-| Sliced tensor-network amplitudes | 4.283 ms | 4.280 ms | 4.167 ms | 2.8% |
+| Measured leg | Recording run | Tier run | Post-merge run | Sweep run | Spread |
+| --- | --- | --- | --- | --- | --- |
+| Sharded statevector forward | 3.167 ms | 3.242 ms | 3.247 ms | 3.188 ms | 2.5% |
+| Sharded MPS forward | 20.264 ms | 20.303 ms | 21.138 ms | 21.579 ms | 6.5% |
+| Sliced tensor-network amplitudes | 4.283 ms | 4.280 ms | 4.167 ms | 4.199 ms | 2.8% |
 
-Three invocations across two revisions put every leg within 4.3% of its smallest
-recorded median, and the MPS forward is the widest of the three. That span is
-the number to compare a future measurement against: a re-recording outside it is
-worth investigating rather than publishing.
+Four invocations across three revisions put every leg within 6.5% of its
+smallest recorded median, and the MPS forward is again the widest. The MPS
+spread widened from 4.3% to 6.5% when the sweep leg was added, which is expected
+rather than incidental: that lane now runs five further reverse passes before it
+times anything. It is still the number to compare a future measurement against:
+a re-recording outside it is worth investigating rather than publishing.
 
 This is an observation about the lane, not a recorded claim. The tier runs'
 reports stay on the host, and the artifacts named above are the evidence. The
-pre-merge tier run shared both hosts with an unrelated container holding a small
-GPU allocation and the post-merge run did not, so the table above also brackets
-what that external load was worth: these workloads did not measure a difference
-between a shared pair and an idle one, which is itself worth knowing before
-either state is treated as the baseline. A recording made before the two
-same-revision runs is superseded and is not part of the table.
+first tier run shared both hosts with an unrelated container holding a small GPU
+allocation and the post-merge run did not, so the table also brackets what that
+external load was worth: these workloads did not measure a difference between a
+shared pair and an idle one, which is itself worth knowing before either state
+is treated as the baseline. Every recording earlier than the one the artifacts
+currently carry is superseded.
+
+A re-recording is not free of consequences: all three artifacts share one
+`source_revision`, the claim artifact's `commit` is that revision, and the
+capability matrix pins the claim's `artifact_sha256` and `code_version` to it.
+Re-record one lane and the other two are re-recorded with it, or the claim
+builder refuses the mixed set.
+
 
 ### Publishing the measured leg
 

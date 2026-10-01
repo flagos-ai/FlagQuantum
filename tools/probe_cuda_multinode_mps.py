@@ -16,6 +16,11 @@ The reference is the complex128 statevector path rather than a single-device
 MPS, because agreeing with another MPS run would not show that site sharding
 preserved the state.
 
+The owned-site boundary is then swept: the same reverse is re-run under every
+site plan this shape can hold, and each leg's inter-node layer halo is what says
+the cut it placed was carried across the hosts. A cut that never moved is not
+evidence about a cut, so the probe measures the widths instead of declaring one.
+
 It makes no scale claim: the scope, the claim flags and the blockers in the
 artifact say exactly how narrow the shape is.
 """
@@ -41,13 +46,13 @@ import torch.distributed as dist
 import flagquantum as fq
 from flagquantum.experimental.distributed import train_distributed_mps
 from flagquantum.runtime.audit.claim_boundary import (
-    BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT,
     BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_TWO_NODE_PAIR_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_MPS_GATHER,
     ClaimBoundaryError,
     claim_blockers,
     configured_infiniband_state,
+    cut_width_claim_blockers,
     gather_claim_blockers,
     measured_performance,
     measurement_claim_blockers,
@@ -64,6 +69,10 @@ from flagquantum.runtime.executors.mps.forward import (
 )
 from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
+)
+from flagquantum.runtime.executors.mps.state import (
+    initial_mps_ownership,
+    validate_mps_ownership,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +119,127 @@ MEASUREMENT_ITERATIONS = 5
 #: The owned-site boundary at two ranks: rank 0 owns wires 0..2 and rank 1 owns
 #: wires 3..5, so this pair is the one adjacent gate that has to be exchanged.
 BOUNDARY_PAIR = (N_WIRES // 2 - 1, N_WIRES // 2)
+
+#: The parameters the cut sweep binds. It takes no gradient of its own; it is
+#: bound because a circuit with no trainable parameter cannot be reversed, and
+#: the leg that measures a cut exchange is a reverse.
+SWEEP_VALUES = (0.37, 0.29, 0.31)
+
+
+def _bind_sweep(circuit: fq.Circuit, parameters: Sequence[torch.Tensor]) -> None:
+    """Bind the sweep's three parameters on every adjacent pair in turn.
+
+    Each pair in the wire is rotated, so the circuit's Schmidt profile is not
+    flat and the cuts can tell each other apart. Every gate is a two-site
+    rotation on adjacent wires, which is all the executor's compiled site
+    kernels accept: the sweep then measures the partitioning rather than a gate
+    set the declared circuit does not use.
+    """
+
+    circuit.h(0).ry(0, parameters[0])
+    for left in range(N_WIRES - 1):
+        circuit.rxx(left, left + 1, parameters[0])
+    for left in range(1, N_WIRES - 1):
+        circuit.ryy(left, left + 1, parameters[1])
+    for left in range(N_WIRES - 1):
+        circuit.ryy(left, left + 1, parameters[2])
+
+
+def _cut_sweep_circuit(
+    *,
+    device: torch.device | None = None,
+    dtype: torch.dtype = COMPLEX_DTYPE,
+    real_dtype: torch.dtype = REAL_DTYPE,
+) -> tuple[fq.Circuit, tuple[torch.Tensor, ...]]:
+    """The circuit the cut sweep partitions, and the parameters it binds.
+
+    The declared circuit cannot answer the question the sweep asks. Its Schmidt
+    profile is flat at two across all five cuts -- a rank-two state at every
+    position -- so moving the ownership boundary along it exchanges the same
+    bond wherever it lands and any pair of numbers would be the same number.
+    This circuit is not flat, so a boundary that moved has something to show.
+    """
+
+    parameters: list[torch.Tensor] = []
+    for value in SWEEP_VALUES:
+        tensor = torch.empty((), dtype=real_dtype, device=device)
+        # Allocation followed by an explicit copy, so an accidental narrowing to
+        # float32 is an observable mismatch rather than a silent test of FP32.
+        tensor.copy_(torch.tensor(value, dtype=real_dtype))
+        parameters.append(tensor.requires_grad_())
+    circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
+    _bind_sweep(circuit, parameters)
+    return circuit, tuple(parameters)
+
+
+def _exact_schmidt_ranks() -> tuple[int, ...]:
+    """The exact Schmidt rank of the sweep circuit at each of the five cuts.
+
+    The bond dimension a site boundary carries is a property of the state, so
+    this is what predicts it rather than the run being trusted for it. Rank is
+    read from the singular values of the statevector split at each cut, which
+    also fixes the wire order the sweep's widths are numbered in: cut `k` is the
+    bond between wire `k` and wire `k + 1`.
+    """
+
+    circuit, _ = _cut_sweep_circuit(device=torch.device("cpu"))
+    flat = circuit.state(refresh=True)[0].detach().cpu().reshape(-1)
+    ranks: list[int] = []
+    for cut in range(N_WIRES - 1):
+        matrix = flat.reshape(2 ** (cut + 1), 2 ** (N_WIRES - cut - 1))
+        singular_values = torch.linalg.svdvals(matrix)
+        ranks.append(int(torch.count_nonzero(singular_values > NUMERICAL_TOLERANCE)))
+    return tuple(ranks)
+
+
+def _ownership_sweep_plans(
+    world_size: int,
+) -> tuple[tuple[tuple[int, ...], ...], ...]:
+    """Every site plan this shape can hold with one owned boundary moved.
+
+    A plan is an ordered, contiguous, complete partition of the wires, so moving
+    the boundary between two neighbouring ranks is the whole of what a
+    re-partition can do. The declared plan puts the boundaries at the balanced
+    positions; this walks each of them across the placements that leave both of
+    its neighbours non-empty and holds the rest still. At two ranks that is one
+    boundary over five positions, and a wider shape has more boundaries, each
+    walked in turn -- so the same sweep answers for a shape wider than a pair
+    without pretending the two are the same experiment.
+    """
+
+    base = initial_mps_ownership(N_WIRES, world_size)
+    plans: list[tuple[tuple[int, ...], ...]] = []
+    for index in range(world_size - 1):
+        start = base[index][0]
+        stop = base[index + 1][-1]
+        for position in range(start, stop):
+            blocks: list[tuple[int, ...]] = []
+            for rank, block in enumerate(base):
+                if rank == index:
+                    blocks.append(tuple(range(start, position + 1)))
+                elif rank == index + 1:
+                    blocks.append(tuple(range(position + 1, stop + 1)))
+                else:
+                    blocks.append(tuple(block))
+            plan = tuple(blocks)
+            validate_mps_ownership(plan, N_WIRES, world_size)
+            if plan not in plans:
+                plans.append(plan)
+    return tuple(plans)
+
+
+def _plan_width(plan: Sequence[Sequence[int]], ranks: Sequence[int]) -> int:
+    """The widest bond a plan cuts, named by the exact rank of the state there.
+
+    A plan wider than a pair holds several boundaries at once, so the number
+    that describes it is the widest one it has to carry: a plan whose heaviest
+    bond is rank four has exercised a rank-four cut however light its other
+    boundaries are. Naming it by a lighter one would claim a rank-four bond was
+    carried by a leg that crossed nothing of the sort.
+    """
+
+    cuts = [int(block[-1]) for block in plan[:-1]]
+    return max(ranks[cut] for cut in cuts)
 
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:
@@ -246,6 +376,27 @@ def _reference_statevector() -> torch.Tensor:
     """The exact single-device statevector the distributed forward must match."""
 
     return _forward_circuit().state(refresh=True)[0].detach().cpu()
+
+
+def _sweep_reference_expectation() -> tuple[float, tuple[float, ...]]:
+    """The sweep circuit's expectation and gradient on one CPU device.
+
+    Every sweep leg is a reverse, so the differential that says a leg cut the
+    circuit it claims to have cut is the same one the declared leg uses: the
+    exact complex128 statevector rather than a second MPS, because two MPS runs
+    agreeing would say nothing about whether the sharding preserved the state.
+    """
+
+    circuit, parameters = _cut_sweep_circuit(device=torch.device("cpu"))
+    state = circuit.state(refresh=True)
+    expectation = _z_parity_expectation(
+        state.abs().square().reshape(-1), OBSERVABLE_WIRES
+    )
+    expectation.backward()
+    return (
+        float(expectation.detach()),
+        tuple(float(parameter.grad.detach()) for parameter in parameters),
+    )
 
 
 def _performance_observations(*, device: torch.device) -> dict[str, Any]:
@@ -669,19 +820,129 @@ def _training_observations(
     return observations, metrics, resumed_summary
 
 
+def _cut_width_observations(
+    *,
+    device: torch.device,
+    world_size: int,
+) -> dict[str, Any]:
+    """Partition one circuit at every site boundary the shape can hold.
+
+    The blocker this feeds stands while a cut has never moved, so retracting it
+    needs the cut to move and to carry an exchange wherever it landed. Only the
+    reverse takes a plan, so each leg here is the reverse the training engine
+    runs -- same call, same site kernels, no optimizer -- handed one plan from
+    the family above; what it reports at that plan's boundary is the layer halo
+    the inter-node transport actually carried.
+
+    A leg that disagrees with the exact reference is a defect rather than a
+    narrow sweep, and it raises: recording it as a width that did not count
+    would quietly turn a wrong answer into a shorter list. A leg that crossed
+    nothing is recorded with the nothing it crossed, and the blocker's own rule
+    is what stops that from counting as a swept width.
+    """
+
+    ranks = _exact_schmidt_ranks()
+    reference_value, reference_gradients = _sweep_reference_expectation()
+    inter_node_bytes_by_width: dict[str, int] = {}
+    plans: list[dict[str, Any]] = []
+    for plan in _ownership_sweep_plans(world_size):
+        width = _plan_width(plan, ranks)
+        circuit, parameters = _cut_sweep_circuit(device=device)
+        reverse = execute_torch_distributed_mps_reverse(
+            circuit,
+            observable=dict.fromkeys(OBSERVABLE_WIRES, "z"),
+            device=device,
+            max_bond=MAX_BOND,
+            site_ownership=plan,
+            compile_site_kernels=True,
+        )
+        reverse.backward()
+        _synchronize(device)
+        summary = reverse.summary()
+        _require_two_node_placement(
+            summary, leg=f"cut_width_{width}", expected_world_size=world_size
+        )
+        if summary["gradient_accuracy"] != "exact" or summary["discarded_weight"] != 0:
+            raise RuntimeError(
+                f"the width-{width} leg truncated the sweep circuit: "
+                f"accuracy={summary['gradient_accuracy']} "
+                f"discarded_weight={summary['discarded_weight']}"
+            )
+        if summary["full_mps_reconstruction"] or summary["replicated_autograd"]:
+            raise RuntimeError(
+                f"the width-{width} leg did not run as a sharded reverse"
+            )
+        if summary["scalability_claim_allowed"] is not False:
+            raise RuntimeError(f"the width-{width} leg allowed a scalability claim")
+        errors = [abs(float(reverse.value.detach()) - reference_value)]
+        errors.extend(
+            abs(float(parameter.grad.detach()) - expected)
+            for parameter, expected in zip(parameters, reference_gradients, strict=True)
+        )
+        worst = max(errors)
+        if not _collective_verdict(device, accepted=worst <= NUMERICAL_TOLERANCE):
+            raise RuntimeError(
+                f"the width-{width} leg disagreed with the exact reference: "
+                f"{worst:.3e}"
+            )
+        crossed = _workload_total(device, summary["layer_halo_inter_node_bytes"])
+        same_node = _workload_total(device, summary["layer_halo_intra_node_bytes"])
+        payload = _workload_total(device, summary["layer_halo_payload_bytes"])
+        messages = _workload_total(device, summary["layer_halo_message_count"])
+        collectives = _workload_total(device, summary["gradient_collective_count"])
+        # The two tiers are a partition of the halo rather than two independent
+        # counters, so a leg that reported a payload it did not attribute to
+        # either tier is refused instead of being recorded as an exchange.
+        if crossed + same_node != payload:
+            raise RuntimeError(
+                f"the width-{width} leg attributed {crossed + same_node} of its "
+                f"{payload} halo bytes to a tier"
+            )
+        # The halo is attributed to the rank that received it, so a rank inside
+        # one host can honestly report none of it. What has to have happened is
+        # the owner-sharded parameter reduction, because that is the gradient
+        # the comparison above held to the reference.
+        if collectives < 1:
+            raise RuntimeError(
+                f"the width-{width} leg reduced no gradients across {world_size} ranks"
+            )
+        inter_node_bytes_by_width[str(width)] = (
+            inter_node_bytes_by_width.get(str(width), 0) + crossed
+        )
+        plans.append(
+            {
+                "plan": [list(block) for block in plan],
+                "cut_positions": [int(block[-1]) for block in plan[:-1]],
+                "width": width,
+                "inter_node_bytes": crossed,
+                "inter_node_messages": messages,
+                "worst_error": worst,
+            }
+        )
+    # A plan at `world_size` ranks carries one boundary per adjacent rank pair,
+    # so it holds several cuts at once and the heaviest of them is what names the
+    # leg. A height that only ever appears at a lighter boundary is therefore not
+    # recorded as swept, because no leg carried it; the profile the reference
+    # holds is recorded whole in `exact_schmidt_ranks`, so what the sweep placed
+    # and what it did not are both readable from this record.
+    return {
+        "widths": sorted({int(plan["width"]) for plan in plans}),
+        "exact_schmidt_ranks": list(ranks),
+        "inter_node_bytes_by_width": inter_node_bytes_by_width,
+        "plans": plans,
+    }
+
+
 def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """Every blocker this run's own observations can retract.
 
-    The declared part of the boundary -- the pair of hosts, the fixed circuit,
-    and the one site boundary this lane can hold -- is not decided here, because
-    nothing inside the run can retract it. What is decided here is only what the
-    run observed. The cut is declared because the site plan derives ownership
-    from the world size alone, so a two-host pair holds exactly one boundary and
-    this lane cannot move it: a partition that put the boundary elsewhere would
-    be a different plan, and a wider shape would be a different lane. The
-    tensor-network probe sweeps the same boundary because its cut is a declared
-    list of labels it can shorten; this one has nothing to shorten, and saying
-    so is narrower than dropping the blocker.
+    The declared part of the boundary -- the pair of hosts and the fixed
+    circuit -- is not decided here, because nothing inside the run can retract
+    it. What is decided here is only what the run observed, and the cut width is
+    one of those: only the reverse accepts a plan, so the sweep above moves the
+    site boundary and the widths the run crossed are the ones this reads. A
+    sweep that never moved the cut leaves the blocker standing, which is what
+    makes it a retraction rather than a relabelling.
 
     Called once while the artifact is assembled and again after the route has
     been read, because that observation arrives after the process group is gone
@@ -693,7 +954,6 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
         [
             BLOCKER_TWO_NODE_PAIR_ONLY,
             BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
-            BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT,
         ],
         gather_claim_blockers(
             production_materialization=bool(
@@ -704,6 +964,9 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
         transport_claim_blockers(observations),
         measurement_claim_blockers(observations),
         staging_claim_blockers(observations),
+        cut_width_claim_blockers(
+            observations["cut_widths"]["inter_node_bytes_by_width"]
+        ),
     )
 
 
@@ -712,6 +975,7 @@ def _artifact(
     rank_records: list[dict[str, Any]],
     metrics: dict[str, float],
     training: dict[str, Any],
+    cut_widths: dict[str, Any],
     network: dict[str, Any],
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
@@ -725,6 +989,7 @@ def _artifact(
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
+        "cut_widths": cut_widths,
         "network": network,
         "performance": performance,
         "host_staging": host_staging,
@@ -757,9 +1022,10 @@ def _artifact(
             "execution": "forward_backward_optimizer_and_checkpoint_resume",
         },
         "observations": observations,
-        # The declared blockers, and why the cut is one of them, are explained
-        # where the list is derived. The route arrives after this call and is
-        # applied by `probe`.
+        # The declared blockers, and why the pair and the circuit are among them,
+        # are explained where the list is derived, as is the cut width, which is
+        # retracted by the sweep rather than declared. The route arrives after
+        # this call and is applied by `probe`.
         "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
@@ -1188,6 +1454,10 @@ def probe(
             }
         )
 
+        # The cut sweep is last of the execution legs, so nothing it leaves on
+        # the device can reach the measured region or the staging audit.
+        cut_widths = _cut_width_observations(device=device, world_size=world_size)
+
         if measure:
             # Both legs contain collectives, so every rank runs both of them and
             # in this order. A rank that skipped one would reach the next
@@ -1220,6 +1490,7 @@ def probe(
                 rank_records=[item for item in rank_records if item is not None],
                 metrics=metrics,
                 training=training,
+                cut_widths=cut_widths,
                 network={},
                 performance=performance,
                 host_staging=host_staging,
