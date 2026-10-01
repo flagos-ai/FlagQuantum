@@ -24,6 +24,7 @@ from .batching import (
     _cpu_statevector_batch_chunk_size,
     _gate_parameters,
     _rotation_region_angles,
+    _statevector_batch_input,
 )
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
@@ -998,7 +999,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
             circuit._state_cache = output
             return output
-        output = circuit.initial_state()
+        batch_size, initial_window_size, uses_bounded_zero_state, output = (
+            _statevector_batch_input(circuit)
+        )
         enable_triton_loop = (
             _triton_single_qubit_loop_enabled()
             and output.is_cuda
@@ -1016,12 +1019,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and not _cpu_single_wire_elementwise_enabled()
         )
         max_cpu_two_wire_regions = (
-            2 if enable_cpu_disjoint_single_wire and output.shape[0] >= 2 else 1
+            2 if enable_cpu_disjoint_single_wire and batch_size >= 2 else 1
         )
         max_cpu_dense_wires = (
             _cpu_disjoint_dense_max_wires(
                 circuit.n_wires,
-                output.shape[0],
+                batch_size,
                 output.dtype,
             )
             if enable_cpu_disjoint_single_wire
@@ -1066,8 +1069,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         circuit._last_statevector_runtime = _initial_runtime_metrics(
             program, enable_triton_loop=enable_triton_loop
         )
-        batch_size = int(output.shape[0])
-        batch_chunk_size = _cpu_statevector_batch_chunk_size(output)
+        batch_chunk_size = (
+            initial_window_size
+            if uses_bounded_zero_state
+            else _cpu_statevector_batch_chunk_size(output)
+        )
         batch_chunk_count = (batch_size + batch_chunk_size - 1) // batch_chunk_size
         circuit._last_statevector_runtime["statevector_batch_chunk_size"] = (
             batch_chunk_size
@@ -1079,6 +1085,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
         )
         if batch_chunk_count == 1:
+            circuit._last_statevector_runtime["statevector_batch_assembly"] = (
+                "single_window"
+            )
             output = _execute_statevector_program(
                 circuit,
                 program,
@@ -1094,10 +1103,17 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                         _execute_statevector_program(
                             circuit,
                             program,
-                            output[start:stop],
+                            (
+                                output[: stop - start]
+                                if uses_bounded_zero_state
+                                else output[start:stop]
+                            ),
                             parameter_bindings,
                         )
                     )
+            circuit._last_statevector_runtime["statevector_batch_assembly"] = (
+                "functional_cat"
+            )
             output = torch.cat(chunks, dim=0)
     circuit._state_cache = output
     return output

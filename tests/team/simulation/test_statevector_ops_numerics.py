@@ -549,6 +549,22 @@ def test_cpu_single_qubit_direct_kernel_does_not_dispatch_bmm(monkeypatch):
     assert result.shape == state.shape
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_single_qubit_preallocated_output_is_bitwise_rollback_safe(
+    monkeypatch, dtype
+):
+    generator = torch.Generator().manual_seed(1731)
+    state = torch.randn((3, 32), dtype=dtype, generator=generator)
+    matrix = torch.randn((3, 2, 2), dtype=dtype, generator=generator)
+
+    monkeypatch.setenv("FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT", "0")
+    functional = _apply_matrix(state, matrix, (2,), 5)
+    monkeypatch.setenv("FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT", "1")
+    preallocated = _apply_matrix(state, matrix, (2,), 5)
+
+    assert torch.equal(preallocated, functional)
+
+
 def test_cpu_single_qubit_direct_kernel_preserves_state_and_matrix_gradients():
     generator = torch.Generator().manual_seed(1733)
     state = torch.randn(

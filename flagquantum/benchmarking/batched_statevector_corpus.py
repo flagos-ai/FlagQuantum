@@ -10,7 +10,8 @@ import os
 import platform
 import statistics
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from importlib import import_module, metadata
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -34,6 +35,7 @@ STABILITY_THRESHOLD = 0.20
 
 EngineName = Literal[
     "flagquantum_native_batch",
+    "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
     "qiskit_aer_bridge",
@@ -43,6 +45,7 @@ EngineName = Literal[
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_batch",
+    "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
     "qiskit_aer_bridge",
@@ -52,12 +55,29 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
 
 _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native_batch": "FlagQuantum native batch (budgeted)",
+    "flagquantum_native_functional_windows": (
+        "FlagQuantum native batch (legacy functional windows)"
+    ),
     "flagquantum_native_monolithic_batch": "FlagQuantum native monolithic batch",
     "flagquantum_native_serial": "FlagQuantum serial",
     "qiskit_aer_bridge": "Qiskit Aer bridge",
     "cirq_simulator_bridge": "Cirq bridge",
     "pennylane_lightning_bridge": "PennyLane Lightning bridge",
 }
+
+
+@contextmanager
+def _temporary_environment(**values: str) -> Iterator[None]:
+    previous = {name: os.environ.get(name) for name in values}
+    os.environ.update(values)
+    try:
+        yield
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 def _timing(samples: Sequence[float]) -> dict[str, Any]:
@@ -129,29 +149,30 @@ def _engine_callable(
     if engine == "flagquantum_native_batch":
 
         def native_batch() -> torch.Tensor:
-            previous = os.environ.get("FQ_CPU_STATEVECTOR_BATCH_CHUNKING")
-            os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = "1"
-            try:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+            ):
                 return cast(torch.Tensor, batched.state(refresh=True))
-            finally:
-                if previous is None:
-                    os.environ.pop("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", None)
-                else:
-                    os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = previous
 
         return native_batch
+    if engine == "flagquantum_native_functional_windows":
+
+        def native_functional_windows() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="0",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_functional_windows
     if engine == "flagquantum_native_monolithic_batch":
 
         def native_monolithic_batch() -> torch.Tensor:
-            previous = os.environ.get("FQ_CPU_STATEVECTOR_BATCH_CHUNKING")
-            os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = "0"
-            try:
+            with _temporary_environment(FQ_CPU_STATEVECTOR_BATCH_CHUNKING="0"):
                 return cast(torch.Tensor, batched.state(refresh=True))
-            finally:
-                if previous is None:
-                    os.environ.pop("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", None)
-                else:
-                    os.environ["FQ_CPU_STATEVECTOR_BATCH_CHUNKING"] = previous
 
         return native_monolithic_batch
     if engine == "flagquantum_native_serial":
@@ -193,6 +214,7 @@ def _engine_callable(
 def _engine_versions(engine: EngineName) -> dict[str, str]:
     packages = {
         "flagquantum_native_batch": ("flagquantum",),
+        "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
         "flagquantum_native_serial": ("flagquantum",),
         "qiskit_aer_bridge": ("qiskit", "qiskit-aer"),
@@ -207,12 +229,16 @@ def _execution_strategy(engine: EngineName) -> str:
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
         else (
-            "native_monolithic_parameter_batch"
-            if engine == "flagquantum_native_monolithic_batch"
+            "native_parameter_batch_functional_windows"
+            if engine == "flagquantum_native_functional_windows"
             else (
-                "repeated_single_item_native"
-                if engine == "flagquantum_native_serial"
-                else "repeated_single_item_bridge"
+                "native_monolithic_parameter_batch"
+                if engine == "flagquantum_native_monolithic_batch"
+                else (
+                    "repeated_single_item_native"
+                    if engine == "flagquantum_native_serial"
+                    else "repeated_single_item_bridge"
+                )
             )
         )
     )

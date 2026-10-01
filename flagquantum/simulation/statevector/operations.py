@@ -40,6 +40,7 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
+from .single_qubit_cpu import apply_single_qubit_matrix_cpu
 from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
@@ -637,7 +638,7 @@ def _apply_matrix(
     wires = tuple(wires)
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
-            return _apply_single_qubit_matrix_cpu(
+            return apply_single_qubit_matrix_cpu(
                 state, matrix, wire=wires[0], n_wires=n_wires
             )
         if (
@@ -651,37 +652,6 @@ def _apply_matrix(
         ):
             return preferred
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
-
-
-def _apply_single_qubit_matrix_cpu(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    *,
-    wire: int,
-    n_wires: int,
-) -> torch.Tensor:
-    """Apply one CPU gate by visiting contiguous amplitude pairs directly."""
-
-    if not 0 <= int(wire) < int(n_wires):
-        raise ValueError("wire is outside the statevector")
-    bsz = state.shape[0]
-    stride = 1 << (int(n_wires) - int(wire) - 1)
-    paired = state.reshape(bsz, -1, 2, stride)
-    zero = paired[:, :, 0, :]
-    one = paired[:, :, 1, :]
-    matrix = matrix.to(device=state.device, dtype=state.dtype)
-    if matrix.ndim == 2:
-        matrix = matrix.unsqueeze(0).expand(bsz, -1, -1)
-    elif matrix.ndim == 3 and matrix.shape[0] == 1 and bsz != 1:
-        matrix = matrix.expand(bsz, -1, -1)
-    if matrix.shape != (bsz, 2, 2):
-        raise ValueError("single-qubit matrix must have shape [2, 2] or [batch, 2, 2]")
-    coefficient_shape = (bsz, 1, 1)
-    out_zero = zero * matrix[:, 0, 0].reshape(coefficient_shape)
-    out_zero = out_zero + one * matrix[:, 0, 1].reshape(coefficient_shape)
-    out_one = zero * matrix[:, 1, 0].reshape(coefficient_shape)
-    out_one = out_one + one * matrix[:, 1, 1].reshape(coefficient_shape)
-    return torch.stack((out_zero, out_one), dim=2).reshape(state.shape)
 
 
 def _apply_matrix_layout(

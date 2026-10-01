@@ -183,16 +183,22 @@ flagquantum-benchmark run batched_statevector_memory \
     random_clifford_statevector local_brickwork_statevector \
     dense_nonlocal_statevector \
   --n-wires 18 --batch-sizes 32 \
-  --engines flagquantum_native_batch flagquantum_native_monolithic_batch \
+  --engines flagquantum_native_batch flagquantum_native_functional_windows \
+    flagquantum_native_monolithic_batch \
     flagquantum_native_serial qiskit_aer_bridge cirq_simulator_bridge \
     pennylane_lightning_bridge \
-  --threads 1 --warmup 2 --iterations 11 \
+  --threads 1 --warmup 2 --iterations 11 --memory-probes 3 \
   --json-output benchmarks/results/comparison/batched-memory.json \
   --markdown-output benchmarks/results/comparison/BATCHED_MEMORY.md
 ```
 
 The checked Apple-arm64 result and interpretation are in
 [`BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001_SCORECARD.md).
+The follow-up
+[`BATCHED_STATEVECTOR_MEMORY_PREALLOCATION_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_MEMORY_PREALLOCATION_CPU_ARM64_20261001_SCORECARD.md)
+measures bounded zero-state allocation and inference-only one-qubit output
+preallocation against the exact legacy window path. Its RSS values are medians
+of three fresh processes, with every raw observation retained in JSON.
 
 FlagQuantum executes all bindings through its native parameter-batch path. The
 current Qiskit Aer, Cirq, and PennyLane bridges accept one statevector request at
