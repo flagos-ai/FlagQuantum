@@ -9,7 +9,7 @@ from threading import Lock
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from .sabre import plan_sabre_swaps
+from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
 # Dense distance-matrix entry for a physical wire pair with no coupling path.
 # A coupling map is a graph, so most pairs of a production device are far
@@ -425,7 +425,8 @@ def estimate_routing_cost(
     if strategy not in {"restore_after_each_gate", "persistent_layout"}:
         raise ValueError(
             "routing cost estimate supports 'restore_after_each_gate' or "
-            "'persistent_layout'; 'sabre' plans SWAPs instead of estimating them"
+            "'persistent_layout'; 'sabre' and 'sabre_layout' plan SWAPs instead "
+            "of estimating them"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -573,6 +574,7 @@ def _routing_metadata(
     routed_gate_count: int,
     inserted_swap_count: int,
     skipped_channel_count: int,
+    initial_layout: tuple[int, ...],
     pre_restore_layout: tuple[int, ...],
     path_cache_before: dict[str, int],
     path_cache_after: dict[str, int],
@@ -583,7 +585,7 @@ def _routing_metadata(
         "strategy": strategy,
         "coupling_n_wires": coupling.n_wires,
         "coupling_edges": coupling.edges,
-        "initial_logical_to_physical": identity_layout,
+        "initial_logical_to_physical": initial_layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
         "final_logical_to_physical": identity_layout,
         "mapping_restored": True,
@@ -752,6 +754,7 @@ def _route_persistent_layout(
         routed_gate_count=routed_gate_count,
         inserted_swap_count=2 * len(routing_swaps),
         skipped_channel_count=skipped_channel_count,
+        initial_layout=tuple(range(ir.n_wires)),
         pre_restore_layout=pre_restore_layout,
         path_cache_before=path_cache_before,
         path_cache_after=coupling.path_cache_info(),
@@ -763,6 +766,7 @@ def _route_sabre(
     ir: CircuitIR,
     coupling: CouplingMap,
     *,
+    strategy: str,
     path_cache_before: dict[str, int],
 ) -> CircuitIR:
     """Materialize one SABRE persistent layout, then restore the output layout.
@@ -772,10 +776,20 @@ def _route_sabre(
     reachable, and every operation keeps its planned physical wires, so a source
     order that disagrees with the plan would replay a different layout than the
     one the plan was costed against.
+
+    The ``sabre`` strategy starts from the identity layout, so replaying its
+    forward SWAPs in reverse restores the output layout. ``sabre_layout`` first
+    searches for a shorter initial layout; replaying its forward SWAPs in reverse
+    would only return that initial layout, so it routes every logical wire home
+    with an explicit restore instead.
     """
 
-    strategy = "sabre"
-    plan = plan_sabre_swaps(ir, coupling)
+    initial_layout = (
+        plan_sabre_layout(ir, coupling)
+        if strategy == "sabre_layout"
+        else tuple(range(ir.n_wires))
+    )
+    plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
     topology_gate_count = 0
     # Counted against the source wires, exactly as the shortest-path strategies
@@ -831,9 +845,8 @@ def _route_sabre(
         )
     if swap_index != len(plan.swaps):
         raise RuntimeError("SABRE routing plan did not place every inserted SWAP")
-    for restore_index in range(len(plan.swaps) - 1, -1, -1):
-        anchor_index = plan.swap_anchors[restore_index]
-        swap_left, swap_right = plan.swaps[restore_index]
+    restore = plan_restore_swaps(plan, coupling)
+    for swap_left, swap_right, anchor_index in restore:
         routed.append(
             _swap_instruction(
                 swap_left,
@@ -851,8 +864,9 @@ def _route_sabre(
         strategy=strategy,
         topology_gate_count=topology_gate_count,
         routed_gate_count=routed_gate_count,
-        inserted_swap_count=2 * len(plan.swaps),
+        inserted_swap_count=len(plan.swaps) + len(restore),
         skipped_channel_count=skipped_channel_count,
+        initial_layout=initial_layout,
         pre_restore_layout=plan.final_logical_to_physical,
         path_cache_before=path_cache_before,
         path_cache_after=coupling.path_cache_info(),
@@ -868,10 +882,15 @@ def route_to_topology(
 ) -> CircuitIR:
     """Insert SWAP gates so two-qubit operations respect hardware topology."""
 
-    if strategy not in {"restore_after_each_gate", "persistent_layout", "sabre"}:
+    if strategy not in {
+        "restore_after_each_gate",
+        "persistent_layout",
+        "sabre",
+        "sabre_layout",
+    }:
         raise ValueError(
             "routing strategy must be 'restore_after_each_gate', "
-            "'persistent_layout', or 'sabre'"
+            "'persistent_layout', 'sabre', or 'sabre_layout'"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -888,10 +907,11 @@ def route_to_topology(
             coupling,
             path_cache_before=path_cache_before,
         )
-    if strategy == "sabre":
+    if strategy in {"sabre", "sabre_layout"}:
         return _route_sabre(
             ir,
             coupling,
+            strategy=strategy,
             path_cache_before=path_cache_before,
         )
 
@@ -993,6 +1013,7 @@ def route_to_topology(
         routed_gate_count=routed_gate_count,
         inserted_swap_count=inserted_swap_count,
         skipped_channel_count=skipped_channel_count,
+        initial_layout=tuple(range(ir.n_wires)),
         pre_restore_layout=tuple(range(ir.n_wires)),
         path_cache_before=path_cache_before,
         path_cache_after=coupling.path_cache_info(),

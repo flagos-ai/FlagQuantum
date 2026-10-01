@@ -38,6 +38,36 @@ def _random_two_wire_program(seed: int, n_wires: int, gate_count: int) -> Circui
     return CircuitIR(n_wires, tuple(instructions))
 
 
+def _replayed_output_layout(
+    routed: CircuitIR,
+    initial_layout: tuple[int, ...],
+) -> tuple[int, ...]:
+    """Replay the routed SWAPs and return the logical-to-physical layout.
+
+    Counting the SWAPs is not enough to show the output layout was restored: the
+    numbered SWAPs alone must transform ``initial_layout`` into the reported final
+    layout, which is what a backend executing the routed circuit will see.
+    """
+
+    logical_to_physical = list(initial_layout)
+    physical_to_logical = [0] * routed.n_wires
+    for logical, physical in enumerate(logical_to_physical):
+        physical_to_logical[physical] = logical
+    for instruction in routed:
+        if instruction.metadata.get("routing_phase") is None:
+            continue
+        left, right = instruction.wires
+        left_logical = physical_to_logical[left]
+        right_logical = physical_to_logical[right]
+        physical_to_logical[left], physical_to_logical[right] = (
+            right_logical,
+            left_logical,
+        )
+        logical_to_physical[left_logical] = right
+        logical_to_physical[right_logical] = left
+    return tuple(logical_to_physical)
+
+
 def test_sabre_random_circuits_match_original_state() -> None:
     for seed in range(8):
         circuit = _random_circuit(seed)
@@ -160,7 +190,7 @@ def test_sabre_uses_fewer_swaps_than_the_shortest_path_strategies() -> None:
 
     routing = sabre.metadata["routing"]
     assert routing["strategy"] == "sabre"
-    assert routing["inserted_swap_count"] == 34
+    assert routing["inserted_swap_count"] == 30
     assert (
         routing["inserted_swap_count"]
         < persistent.metadata["routing"]["inserted_swap_count"]
@@ -196,10 +226,18 @@ def test_sabre_plan_is_reproducible_and_places_every_instruction_once() -> None:
         for instruction in first
         if instruction.metadata.get("routing_phase") == "final_restore"
     ]
-    assert len(forward) == len(restore) == 26
-    assert [instruction.wires for instruction in restore] == [
-        instruction.wires for instruction in reversed(forward)
-    ]
+    assert len(forward) == 26
+    # The restore is not required to be the forward SWAPs in reverse: a restore
+    # that walks the final layout home along coupling edges can be shorter. What
+    # matters is that the restore is legal, that replaying it reaches the identity
+    # layout, and that the reported count matches the emitted instructions.
+    assert first.metadata["routing"]["inserted_swap_count"] == len(forward) + len(
+        restore
+    )
+    assert all(coupling.has_edge(*instruction.wires) for instruction in restore)
+    assert _replayed_output_layout(
+        first, first.metadata["routing"]["initial_logical_to_physical"]
+    ) == (0, 1, 2, 3, 4, 5, 6, 7, 8)
 
 
 def test_sabre_reports_a_moved_layout_and_a_restored_output_layout() -> None:
@@ -239,7 +277,7 @@ def test_sabre_uses_a_bounded_number_of_swaps_on_a_larger_device() -> None:
 
     routed = route_to_topology(program, coupling, strategy="sabre")
 
-    assert routed.metadata["routing"]["inserted_swap_count"] == 116
+    assert routed.metadata["routing"]["inserted_swap_count"] == 92
     assert all(
         len(instruction.wires) != 2
         or instruction.metadata.get("is_channel")

@@ -77,6 +77,36 @@ def test_sabre_strategy_legalizes_topology_and_preserves_state() -> None:
     torch.testing.assert_close(_state(result.program), _state(source))
 
 
+def test_sabre_layout_strategy_legalizes_topology_and_preserves_state() -> None:
+    source = CircuitIR(
+        4,
+        (
+            Instruction("h", (3,)),
+            Instruction("cx", (0, 3)),
+            Instruction("cx", (1, 2)),
+            Instruction("ry", (1,), params={"theta": 0.23}),
+        ),
+        dtype="complex128",
+    )
+    coupling = CouplingMap.line(4)
+    result = legalize_circuit_topology(
+        source,
+        coupling_map=coupling,
+        snapshot=_snapshot(),
+        strategy="sabre_layout",
+    )
+
+    assert result.strategy == "sabre_layout"
+    # A moved initial layout must still satisfy the legalization postcondition
+    # that the routed program restores the logical output layout.
+    assert result.final_logical_to_physical == (0, 1, 2, 3)
+    assert all(
+        len(item.wires) != 2 or coupling.has_edge(*item.wires)
+        for item in result.program.instructions
+    )
+    torch.testing.assert_close(_state(result.program), _state(source))
+
+
 def test_nonlocal_gate_routes_to_edges_and_preserves_state() -> None:
     source = CircuitIR(
         4,
