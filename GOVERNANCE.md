@@ -5,8 +5,8 @@ defined. Every statement about the current state below is measured; the measurem
 given so they can be re-run.
 
 For the workflow a change follows to reach `main`, see
-`docs/development/INTEGRATION_WORKFLOW.md`. This document covers who decides, not how
-a change travels.
+[Integration workflow](docs/development/INTEGRATION_WORKFLOW.md). This document covers who
+decides, not how a change travels.
 
 ## Roles
 
