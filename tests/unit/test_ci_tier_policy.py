@@ -64,10 +64,17 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
     # the seven tests that did carry it need a launcher rather than a second
     # node and were renamed to `distributed_launch`. Selecting an empty marker
     # reports success having executed nothing, so the tier drives the two-node
-    # lane directly instead.
+    # lane directly instead, once per sharded workload.
     assert CI_TIERS["multinode-scheduled"].command_lines() == (
         "python tools/multinode_launch_plan.py --run --staging "
-        "/nfs/fq-multinode-tier --report-directory hardware-run",
+        "/nfs/fq-multinode-tier --checkpoint-directory "
+        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run",
+        "python tools/multinode_launch_plan.py --run --probe mps --staging "
+        "/nfs/fq-multinode-tier --checkpoint-directory "
+        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps",
+        "python tools/multinode_launch_plan.py --run --probe tn --staging "
+        "/nfs/fq-multinode-tier --checkpoint-directory "
+        "/nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn",
     )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import hashlib
 import os
 import socket
 from collections.abc import Mapping
@@ -95,11 +96,41 @@ def _normalized_active_backend() -> str:
     return str(dist.get_backend()).strip().lower()
 
 
-def _resolve_local_world_size(world_size: int) -> int:
+def resolve_local_world_size(world_size: int, *, subgroup: bool = False) -> int:
+    """How many ranks of `world_size` share one host.
+
+    One definition, because every distributed result reports `local_world_size`
+    and derives `node_count` and the intra-node/inter-node communication split
+    from it: a component that read the environment differently could report a
+    two-node run as a single node while the ranks still exchanged across the
+    network.
+
+    `LOCAL_WORLD_SIZE` and `NPROC_PER_NODE` describe the world torchrun was
+    given, so a caller running a subgroup `process_group` passes `subgroup=True`
+    and gets a single-host placement instead of a topology the environment
+    cannot describe.
+    """
+    world_size = max(1, int(world_size))
+    if subgroup:
+        return world_size
     raw = os.environ.get("LOCAL_WORLD_SIZE") or os.environ.get("NPROC_PER_NODE")
     if raw is None:
-        return max(1, int(world_size))
-    return max(1, min(int(world_size), int(raw)))
+        return world_size
+    return max(1, min(world_size, int(raw)))
+
+
+def resolve_node_count(world_size: int, local_world_size: int) -> int:
+    """How many hosts `world_size` ranks span at this placement."""
+
+    return max(
+        1,
+        (max(1, int(world_size)) + max(1, int(local_world_size)) - 1)
+        // max(1, int(local_world_size)),
+    )
+
+
+def _resolve_local_world_size(world_size: int) -> int:
+    return resolve_local_world_size(world_size)
 
 
 def _resolve_node_rank(rank: int, local_world_size: int) -> int:
@@ -110,11 +141,7 @@ def _resolve_node_rank(rank: int, local_world_size: int) -> int:
 
 
 def _node_count(world_size: int, local_world_size: int) -> int:
-    return max(
-        1,
-        (max(1, int(world_size)) + max(1, int(local_world_size)) - 1)
-        // max(1, int(local_world_size)),
-    )
+    return resolve_node_count(world_size, local_world_size)
 
 
 def _rank_node(rank: int, local_world_size: int) -> int:
@@ -130,9 +157,23 @@ def _communication_tier(src_rank: int, dst_rank: int, *, local_world_size: int) 
     )
 
 
+def _hostname_sha256(hostname: str) -> str:
+    """Identify a host without naming it, so placement evidence is publishable."""
+
+    return hashlib.sha256(hostname.encode("utf-8")).hexdigest() if hostname else ""
+
+
 def _rank_placement_summary(
     context: TorchDistributedContext | None, *, world_size: int | None = None
 ) -> dict[str, Any]:
+    """The placement a distributed result reports, in publishable form.
+
+    This summary is recorded in result evidence, and result evidence is checked
+    in, so it identifies a host by digest rather than by name: two ranks on one
+    host and two ranks on two hosts stay distinguishable, and no result summary
+    has to be rewritten before it can be shared.
+    """
+
     resolved_world_size = int(
         world_size if world_size is not None else (context.world_size if context else 1)
     )
@@ -149,7 +190,7 @@ def _rank_placement_summary(
         "local_world_size": local_world_size,
         "node_rank": context.node_rank if context else 0,
         "node_count": node_count,
-        "hostname": context.hostname if context else "",
+        "hostname_sha256": _hostname_sha256(context.hostname if context else ""),
         "device": str(context.device) if context else "cpu",
         "distributed_identity": (
             context.identity.to_dict()

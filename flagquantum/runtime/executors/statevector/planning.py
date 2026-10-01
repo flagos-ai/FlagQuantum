@@ -620,6 +620,29 @@ def _validate_distributed_statevector_plan(
         expected_start = shard.amplitude_end
     if expected_start != plan.total_amplitudes:
         errors.append("shards do not cover the full statevector")
+    # A rank with an empty share is not sharding: the plan would have to report
+    # a rank that owns nothing while `world_size` and the communication plan
+    # still count it. `_balanced_shards` produces exactly that whenever
+    # world_size exceeds the amplitude count, and every consumer -- the
+    # multi-device executor and the single-process simulator alike -- would
+    # otherwise slice a state the rank cannot address.
+    empty_shards = [shard.rank for shard in plan.shards if shard.local_amplitudes < 1]
+    if empty_shards:
+        errors.append(
+            "world_size exceeds the amplitude count; ranks "
+            f"{empty_shards} would own an empty share of {plan.total_amplitudes}"
+        )
+    if plan.distribution == "qubit_address_sharded":
+        # The rank address must fit inside the wire budget: the executor splits
+        # each global index into rank bits and a local offset, so a plan whose
+        # rank address is wider than `n_wires` names global indices no shard
+        # covers. `sharded_wires` is truncated to the wire count when that
+        # happens, which is exactly why the width has to be checked here.
+        if plan.rank_address_bits > plan.n_wires:
+            errors.append(
+                "qubit address sharding needs at least "
+                f"{plan.rank_address_bits} wires, plan has {plan.n_wires}"
+            )
     if tuple(segment.index for segment in plan.execution_segments) != tuple(
         range(len(plan.execution_segments))
     ):

@@ -18,6 +18,7 @@ from ....simulation.native_cpu import (
     native_cpu_cx_adjoint_inplace_available,
     use_compact_cpu_cx_adjoint_cycles,
 )
+from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout
 from .forward_executor import execute_torch_distributed_statevector
@@ -60,7 +61,11 @@ def _longest_cx_run(ir: CircuitIR) -> int:
 
 
 def _communication_aware_wire_layout(
-    ir: CircuitIR, *, observable_wires: tuple[int, ...], world_size: int
+    ir: CircuitIR,
+    *,
+    observable_wires: tuple[int, ...],
+    world_size: int,
+    local_world_size: int,
 ) -> tuple[CircuitIR, tuple[int, ...], tuple[int, ...]]:
     """Use the shared alignment-aware layout for differentiable execution."""
 
@@ -70,6 +75,7 @@ def _communication_aware_wire_layout(
     remapped, permutation = communication_aware_wire_layout(
         ir,
         world_size=world_size,
+        local_world_size=local_world_size,
         preferred_local_wires=observable_wires,
         optimization_target="training_step",
     )
@@ -544,14 +550,9 @@ def execute_torch_distributed_statevector_reverse(
     requested_policy = checkpoint_policy or StatevectorCheckpointPolicy()
     world_size = dist.get_world_size(process_group) if dist.is_initialized() else 1
     rank = dist.get_rank(process_group) if dist.is_initialized() else 0
-    if process_group is not None:
-        local_world_size = world_size
-    else:
-        local_world_size = int(
-            os.environ.get("LOCAL_WORLD_SIZE")
-            or os.environ.get("NPROC_PER_NODE")
-            or world_size
-        )
+    local_world_size = resolve_local_world_size(
+        world_size, subgroup=process_group is not None
+    )
     (
         execution_ir,
         _,
@@ -560,6 +561,7 @@ def execute_torch_distributed_statevector_reverse(
         ir,
         observable_wires=selected_observable_wires,
         world_size=world_size,
+        local_world_size=local_world_size,
     )
     if _persistent_wire_layout_enabled() and world_size > 1:
         execution_ir = schedule_statevector_dependency_dag(

@@ -31,7 +31,8 @@
     ],
     "distributed": [
       "train_distributed_mps",
-      "train_distributed_statevector"
+      "train_distributed_statevector",
+      "train_distributed_tensor_network"
     ],
     "dynamic": [
       "assess_dynamic_backend",
@@ -59,9 +60,14 @@
       "proposal": "docs/development/CUDAQ_EXPORT_CONTRACT.md",
       "namespace": "interop",
       "discoverable_feature_exports": 1
+    },
+    {
+      "proposal": "docs/development/TENSOR_NETWORK_DISTRIBUTED_CONTRACT.md",
+      "namespace": "distributed",
+      "discoverable_feature_exports": 1
     }
   ],
-  "current_total_discoverable_feature_exports": 18,
+  "current_total_discoverable_feature_exports": 19,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,

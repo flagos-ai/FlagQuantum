@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -13,6 +12,7 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from ...distributed.context import resolve_node_count
 from .canonicalization import MPSCanonicalizationMetrics
 from .errors import MPSReverseContractError
 from .metadata_transport import _collective_device
@@ -191,6 +191,7 @@ class TorchDistributedMPSGradientResult:
     gradient_policy: str
     gradient_tolerance: float
     world_size: int
+    local_world_size: int
     rank: int
     _backward: Any
     objective_scan_pairs: int = 0
@@ -272,6 +273,8 @@ class TorchDistributedMPSGradientResult:
         return {
             "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
             "world_size": self.world_size,
+            "local_world_size": self.local_world_size,
+            "node_count": resolve_node_count(self.world_size, self.local_world_size),
             "rank": self.rank,
             "distribution_semantics": "sharded_across_ranks",
             "mps_backward_execution": self._backward_status,
@@ -327,6 +330,7 @@ class TorchDistributedMPSGradientResult:
             "statevector_fallback": False,
             "full_mps_reconstruction": False,
             "jax_required": False,
+            "scalability_claim_allowed": False,
             "blockers": (),
         }
 
@@ -352,6 +356,7 @@ class TorchDistributedMPSForwardResult:
     error_budget_policy: str
     truncation_gradient_policy: str
     backend: str
+    local_world_size: int
     layer_lifecycle_records: tuple[dict[str, Any], ...] = ()
     factorization_records: tuple[dict[str, Any], ...] = ()
     layer_cache_empty_at_return: bool = True
@@ -361,10 +366,8 @@ class TorchDistributedMPSForwardResult:
         return self.shard_state.full_state()
 
     def summary(self) -> dict[str, Any]:
-        local_world_size = min(
-            self.shard_state.world_size,
-            int(os.environ.get("LOCAL_WORLD_SIZE", self.shard_state.world_size)),
-        )
+        local_world_size = self.local_world_size
+        world_size = self.shard_state.world_size
         truncation_error = sum(
             float(record["discarded_weight"]) for record in self.truncation_records
         )
@@ -373,32 +376,21 @@ class TorchDistributedMPSForwardResult:
             "executor": "pytorch_native_rank_owned_mps_forward_v1",
             "state_mode": "distributed_mps",
             "distribution_semantics": (
-                "sharded_across_ranks"
-                if self.shard_state.world_size > 1
-                else "single_device_fast_path"
+                "sharded_across_ranks" if world_size > 1 else "single_device_fast_path"
             ),
             "backend": self.backend,
             "claim_evidence_type": (
                 "accelerator_semantics"
                 if self.backend in {"nccl", "flagos"}
-                else (
-                    "local_semantics"
-                    if self.shard_state.world_size == 1
-                    else "development_semantics"
-                )
+                else ("local_semantics" if world_size == 1 else "development_semantics")
             ),
-            "world_size": self.shard_state.world_size,
+            "world_size": world_size,
             "local_world_size": local_world_size,
-            "node_count": (self.shard_state.world_size + local_world_size - 1)
-            // local_world_size,
+            "node_count": resolve_node_count(world_size, local_world_size),
             "rank": self.shard_state.rank,
             "rank_placement": {
                 "rank": self.shard_state.rank,
-                "local_rank": int(
-                    os.environ.get(
-                        "LOCAL_RANK", self.shard_state.rank % local_world_size
-                    )
-                ),
+                "local_rank": self.shard_state.rank % local_world_size,
                 "node_rank": self.shard_state.rank // local_world_size,
             },
             "rank_ownership": self.shard_state.summary(),
@@ -470,8 +462,11 @@ class TorchDistributedMPSForwardResult:
             ),
             "scalability_claim_allowed": False,
             "blockers": (
-                "mps_sharded_backward_pending",
-                "mps_sharded_optimizer_pending",
+                # The backward and the optimizer paths exist as their own
+                # results; this one is the forward pass, so what it cannot
+                # support is stated as the scope it has rather than as work
+                # that is still missing.
+                "forward_only_result_excludes_backward_and_optimizer",
                 "accelerator_capacity_acceptance_pending",
             ),
         }

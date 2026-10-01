@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -18,6 +19,7 @@ from ....simulation.mps.rank_local import (
     tensor_nbytes,
 )
 from ....simulation.mps.state import MPSState
+from ...distributed.context import resolve_local_world_size
 from .canonicalization import canonicalize_rank_owned_mps
 from .compiled_layers import (
     _PreparedMPSOutput,
@@ -47,10 +49,6 @@ from .state import (
     RankOwnedMPSState,
     _owner,
     initial_mps_ownership,
-)
-from .transport import (
-    _recv_tensor_p2p,
-    _send_tensor_p2p,
 )
 
 _prepare_compiled_layer = prepare_compiled_mps_layer
@@ -91,6 +89,7 @@ def execute_torch_distributed_mps_forward(
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     backend = str(dist.get_backend())
+    local_world_size = resolve_local_world_size(world_size)
     resolved_device = torch.device(device or "cpu")
     resolved_dtype = dtype or getattr(torch, ir.dtype)
     bsz = int(ir.metadata.get("batch_size", 1))
@@ -339,6 +338,7 @@ def execute_torch_distributed_mps_forward(
         error_budget_policy=error_budget_policy,
         truncation_gradient_policy=truncation_gradient_policy,
         backend=backend,
+        local_world_size=local_world_size,
         layer_lifecycle_records=tuple(layer_lifecycle_records),
         factorization_records=tuple(factorization_records),
         layer_cache_empty_at_return=True,
@@ -349,22 +349,59 @@ def execute_torch_distributed_mps_forward(
 def gather_mps_for_validation(
     result: TorchDistributedMPSForwardResult, *, destination_rank: int = 0
 ) -> MPSState | None:
-    """Explicit test-only rank gather; never called by the production executor."""
+    """Explicit test-only rank gather; never called by the production executor.
+
+    The sites are exchanged in one all-gather rather than in a chain of
+    point-to-point transfers. A rank that had finished sending its own sites
+    would otherwise be free to join the next collective while the destination
+    was still receiving, and two phases would then drive one communicator at
+    once; an all-gather posts every rank's contribution before any of them
+    returns, so there is no such window. Every rank materializes the whole
+    state, which is acceptable here and nowhere else: this is validation, the
+    production executor never calls it, and that executor reports
+    `full_mps_reconstruction_count` so a real reconstruction cannot pass
+    unnoticed.
+    """
 
     state = result.shard_state
-    tensors: dict[int, torch.Tensor] = {}
-    reference = next(iter(state.local_tensors.values()))
-    for wire in range(state.n_wires):
-        owner = state.owner(wire)
-        if owner == destination_rank:
-            if state.rank == destination_rank:
-                tensors[wire] = state.local_tensors[wire]
-        elif state.rank == owner:
-            _send_tensor_p2p(state.local_tensors[wire], dst=destination_rank)
-        elif state.rank == destination_rank:
-            tensors[wire] = _recv_tensor_p2p(src=owner, reference=reference)
+    owned = tuple(sorted(state.local_tensors))
+    if not owned:
+        raise RuntimeError(f"rank {state.rank} owns no MPS site to gather")
+    tables = all_gather_json(
+        [
+            (wire, tuple(int(dim) for dim in state.local_tensors[wire].shape))
+            for wire in owned
+        ]
+    )
+    width = max(
+        (sum(int(math.prod(shape)) for _, shape in table) for table in tables),
+        default=0,
+    )
+    reference = state.local_tensors[owned[0]]
+    flat = torch.cat([state.local_tensors[wire].reshape(-1) for wire in owned])
+    if flat.dtype != reference.dtype:
+        raise RuntimeError(
+            "the owned MPS sites do not share one dtype: "
+            f"{[str(state.local_tensors[wire].dtype) for wire in owned]}"
+        )
+    padded = flat.new_zeros(width)
+    padded[: flat.numel()] = flat
+    buffers = [torch.empty_like(padded) for _ in range(dist.get_world_size())]
+    dist.all_gather(buffers, padded)
     if state.rank != destination_rank:
         return None
+    tensors: dict[int, torch.Tensor] = {}
+    for table, buffer in zip(tables, buffers, strict=True):
+        offset = 0
+        for wire, shape in table:
+            count = int(math.prod(shape))
+            tensors[wire] = buffer[offset : offset + count].reshape(shape)
+            offset += count
+    if sorted(tensors) != list(range(state.n_wires)):
+        raise RuntimeError(
+            "the gathered MPS is missing sites: "
+            f"present={sorted(tensors)} expected={list(range(state.n_wires))}"
+        )
     return MPSState(
         [tensors[wire] for wire in range(state.n_wires)],
         config=state.config,

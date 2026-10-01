@@ -24,6 +24,25 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added the experimental
+  `flagquantum.experimental.distributed.train_distributed_tensor_network`
+  workflow, which slices one logical tensor-network contraction across ranks and
+  keeps gradient, optimizer, and checkpoint semantics on a declared cut.
+  Distributed summaries report rank ownership, memory and communication, and
+  keep `scalability_claim_allowed` and `release_gate_allowed` false with their
+  blockers attached. The automatic slicer now excludes labels carried only by
+  state-copy nodes, which would otherwise yield ranks whose partial is exactly
+  zero while the run reported sharded execution. See the
+  [two-node runbook](../guides/MULTINODE_RUNBOOK.md).
+
+- Promoted two-node statevector, MPS, and tensor-network training to
+  `production_supported` on recorded two-host A800 evidence. Each entry names
+  its artifact, its integration tests, and its runbook, and each recorded run
+  reports `scalability_claim_allowed` and `release_gate_allowed` false with six
+  blockers attached. The recorded shape is two hosts at one device per host;
+  wider topologies run on the lane but are not recorded and no wider claim is
+  made.
+
 - Added `TwinRegionRelease.assess_support(...)` to distinguish exact released
   circuits from unseen circuits that only fit a regional release's frozen
   mapping, topology, operation, instruction-count, and depth envelope. Only an

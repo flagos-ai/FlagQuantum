@@ -60,7 +60,7 @@ def _backend_family(payload: Mapping[str, Any]) -> str:
         "jax_sharded_tensor_network",
         "tensor_network",
         "tn",
-    }:
+    } or value.startswith("distributed_tensor_network"):
         return "tensor_network"
     return "unknown"
 

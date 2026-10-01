@@ -22,6 +22,7 @@ import torch.distributed as dist
 from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import ensure_circuit_ir
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
+from ...distributed.context import resolve_local_world_size, resolve_node_count
 from .reverse import (
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
@@ -240,6 +241,17 @@ def _raise_control_plane_timeout(
     control_group = dist.new_group(
         backend="gloo", timeout=timedelta(seconds=timeout_seconds)
     )
+    if not isinstance(control_group, dist.ProcessGroup):
+        # `new_group` returns the not-a-member sentinel on a rank that was left
+        # out of the group. Every rank calls it here, so this cannot happen --
+        # but entering a barrier on the sentinel would hang instead of raising,
+        # and a fault-injection path must not be the thing that hangs a run.
+        raise DistributedTrainingError(
+            "collective_timeout",
+            rank=rank,
+            phase="collective",
+            operation="control_group_not_joined",
+        )
     try:
         if rank == 0:
             time.sleep(timeout_seconds * 1.5)
@@ -856,9 +868,8 @@ class _ShardedTrainingSweep:
             )
             for index, owner in enumerate(self.owners)
         )
-        local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE") or self.world_size)
-        local_world_size = min(self.world_size, max(1, local_world_size))
-        node_count = (self.world_size + local_world_size - 1) // local_world_size
+        local_world_size = resolve_local_world_size(self.world_size)
+        node_count = resolve_node_count(self.world_size, local_world_size)
         return ShardedTrainingResult(
             losses=tuple(self.losses),
             completed_steps=self.steps,

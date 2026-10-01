@@ -106,18 +106,38 @@ category = "distributed_execution"
 user_goals = ["Train one statevector workload across multiple ranks", "Plan distributed statevector ownership", "Inspect communication and sharding semantics"]
 public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_statevector"]
 runtime_modes = ["distributed_statevector"]
-hardware = ["multi_gpu", "multi_node"]
+hardware = ["cpu", "multi_gpu"]
 gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "examples/distributed_statevector_topologies/run.sh"
 documentation = "examples/distributed_statevector_topologies/README.md"
 level = "production_supported"
 owner = "PyTorch distributed maintainers"
-limitations = "Multi-node release certification remains dependent on promoted audited hardware evidence."
+limitations = "Target hardware is one host: the required two-GPU gate covers forward, backward, and training on two local devices with NCCL. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts."
 focused_tests = "tests/unit/test_statevector_training.py"
 integration_tests = "tests/distributed/statevector_training_runtime.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
+
+[capabilities.two_node_statevector_training]
+title = "Two-node statevector training"
+summary = "Shard one logical statevector workload across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one statevector workload across two nodes", "Resume a multi-node statevector run from its checkpoint", "Inspect inter-node statevector communication and rank placement"]
+public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TESTING.md"
+level = "production_supported"
+owner = "PyTorch distributed maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host and one five-wire complex128 circuit. Inter-node shard exchange, the exact adjoint gradient, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. Congestion behaviour and capacity were not measured, RDMA was not used or tested, topologies wider than one device per host run on the lane but are not recorded, and the tiny full state is gathered for validation only."
+focused_tests = "tests/unit/test_statevector_forward.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_statevector_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.flagos_statevector_reference]
 title = "FlagOS local statevector CUDA reference"
@@ -198,14 +218,14 @@ category = "distributed_execution"
 user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
 public_apis = ["flagquantum.simulation.mps.run_mps", "flagquantum.experimental.distributed.train_distributed_mps"]
 runtime_modes = ["mps", "distributed_mps"]
-hardware = ["cpu", "single_gpu", "multi_gpu", "multi_node"]
+hardware = ["cpu", "single_gpu", "multi_gpu"]
 gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
 documentation = "examples/distributed_mps/README.md"
 level = "development_evidence"
 owner = "MPS maintainers"
-limitations = "Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
+limitations = "Single-node and multi-GPU execution plus matched checkpoint/restart have recorded evidence. A run spanning more than one host is the separate two-node capability, whose evidence does not extend back to arbitrary host counts. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
 focused_tests = "tests/unit/test_mps_training.py"
 development_artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
 
@@ -276,6 +296,26 @@ format = "string"
 label = "Topology fingerprint"
 selector = "topology_fingerprint"
 format = "string"
+
+[capabilities.two_node_mps_training]
+title = "Two-node MPS training"
+summary = "Shard one logical matrix product state by site across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one MPS workload across two nodes", "Resume a multi-node MPS run from its checkpoint", "Inspect inter-node site-boundary communication and rank placement"]
+public_apis = ["plan", "flagquantum.experimental.distributed.train_distributed_mps"]
+runtime_modes = ["distributed_mps"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TESTING.md"
+level = "production_supported"
+owner = "MPS maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, a bond limit that truncates nothing, and a cut width that was not swept. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The tiny full MPS is gathered for validation only; congestion, capacity and production performance were not measured; RDMA was not used or tested; topologies wider than one device per host run on the lane but are not recorded, so this evidence does not establish behaviour as the cut widens or as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take."
+focused_tests = "tests/unit/test_mps_reverse_contracts.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_mps_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.double_single_fp32]
 title = "Double-Single FP32 numerical primitives"
@@ -444,8 +484,28 @@ quick_start = "examples/vqe_switch_sv_mps_tn.py"
 documentation = "docs/reference/KNOWN_LIMITATIONS.md"
 level = "experimental"
 owner = "tensor-network maintainers"
-limitations = "General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector."
+limitations = "General reverse contraction and production distributed transport are not certified. Noise channel instructions are unsupported in this mode and fail closed instead of falling back to statevector. Execution spanning more than one host is the separate two-node capability, whose evidence covers one declared cut on one recorded pair and does not extend back to arbitrary host counts, automatic slicing, or wider cuts."
 focused_tests = "tests/test_tensor_network.py"
+
+[capabilities.two_node_tensor_network_training]
+title = "Two-node tensor-network training"
+summary = "Slice one logical tensor-network contraction across two hosts and keep gradient, optimizer, and checkpoint semantics that a single host would produce."
+category = "distributed_execution"
+user_goals = ["Train one tensor-network workload across two nodes", "Resume a multi-node tensor-network run from its checkpoint", "Inspect inter-node slice-boundary communication and rank placement"]
+public_apis = ["flagquantum.simulation.tensor_network.run_tensor_network", "flagquantum.experimental.distributed.train_distributed_tensor_network"]
+runtime_modes = ["distributed_tensor_network"]
+hardware = ["multi_node", "nvidia_a800_sxm4_80gb"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
+documentation = "docs/development/TENSOR_NETWORK_DISTRIBUTED_CONTRACT.md"
+level = "production_supported"
+owner = "tensor-network maintainers"
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one five-wire complex128 circuit with toy parameters, and a cut of exactly two labels declared by the workload. Slice-boundary reduction, the exact slice-gradient sum, an owner-sharded optimizer step, and a checkpoint generation resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with six blockers attached. The cut is declared rather than chosen by the automatic slicer, which selects by peak memory and would here pick a label carried only by state-copy nodes whose partial is zero on every rank but one; slicing such a label would report sharded execution while one rank did the arithmetic. Cut width was not swept, slice count is fixed at the world size, congestion and capacity were not measured, RDMA was not used or tested, the sliced full state is gathered for validation only, and topologies wider than one device per host run on the lane but are not recorded, so this evidence does not establish behaviour as the cut widens or as nodes are added."
+focused_tests = "tests/test_tensor_network.py"
+integration_tests = "tests/team/runtime/test_cuda_multinode_tn_probe.py"
+hardware_evidence = "artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json"
+operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 
 [capabilities.noisy_simulation]
 title = "Exact and trajectory-based noisy simulation"

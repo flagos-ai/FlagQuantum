@@ -30,6 +30,7 @@ from ....simulation.statevector.operations import (
     _apply_matrix,
     _instruction_matrix,
 )
+from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import StatevectorExchangeWorkspace, _storage_global_indices
@@ -275,15 +276,20 @@ class _ReversibleAdjointSweep:
             value.detach().to(self.device) for value in self.saved_parameters
         )
         self.bound = _bind_parameters(self.ir, self.slots, self.base_parameters)
+        self.local_world_size = resolve_local_world_size(
+            self.world_size, subgroup=self.process_group is not None
+        )
         self.plan = plan_distributed_statevector(
             self.bound,
             world_size=self.world_size,
-            local_world_size=self.world_size,
+            local_world_size=self.local_world_size,
             bsz=1,
             complex_bytes=torch.empty((), dtype=self.dtype).element_size(),
         )
         self.exchange_workspace = (
-            StatevectorExchangeWorkspace()
+            StatevectorExchangeWorkspace(
+                local_world_size=self.local_world_size, rank=self.rank
+            )
             if _reverse_exchange_workspace_enabled()
             else None
         )
@@ -354,22 +360,12 @@ class _ReversibleAdjointSweep:
         if self.policy.strategy == "interval":
             assert self.initial is not None
             state = self.initial
+            interval = self.policy.interval
             instruction_count = len(self.bound.instructions)
-            checkpoint_indices = set(
-                range(self.policy.interval, instruction_count, self.policy.interval)
-            )
+            checkpoint_indices = set(range(interval, instruction_count, interval))
             with torch.no_grad():
                 for index in range(max(checkpoint_indices, default=0)):
-                    self.evidence.rematerialized_gate_count += 1
-                    state = _apply_one_gate(
-                        state,
-                        instruction=self.bound.instructions[index],
-                        plan=self.plan,
-                        dtype=self.dtype,
-                        process_group=self.process_group,
-                        evidence=self.evidence,
-                        workspace=self.exchange_workspace,
-                    )
+                    state = self._replay_gate(state, index)
                     if index + 1 in checkpoint_indices:
                         self.checkpoints[index + 1] = replace(
                             state, amplitudes=state.amplitudes.detach().clone()
@@ -387,17 +383,22 @@ class _ReversibleAdjointSweep:
         state = replace(checkpoint, amplitudes=checkpoint.amplitudes.detach())
         with torch.no_grad():
             for index in range(start, stop):
-                self.evidence.rematerialized_gate_count += 1
-                state = _apply_one_gate(
-                    state,
-                    instruction=self.bound.instructions[index],
-                    plan=self.plan,
-                    dtype=self.dtype,
-                    process_group=self.process_group,
-                    evidence=self.evidence,
-                    workspace=self.exchange_workspace,
-                )
+                state = self._replay_gate(state, index)
         return state
+
+    def _replay_gate(self, state: Any, index: int) -> Any:
+        """Advance the replay by one gate, counting the rematerialized work."""
+
+        self.evidence.rematerialized_gate_count += 1
+        return _apply_one_gate(
+            state,
+            instruction=self.bound.instructions[index],
+            plan=self.plan,
+            dtype=self.dtype,
+            process_group=self.process_group,
+            evidence=self.evidence,
+            workspace=self.exchange_workspace,
+        )
 
     def _prepare_adjoint(self) -> None:
         """Take the final state, seed the adjoint, and allocate the work buffers."""

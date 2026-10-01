@@ -18,6 +18,7 @@ from torch.profiler import record_function
 
 from ....compute import get_platform_runtime
 from ....core.ir import Instruction
+from ...distributed.context import resolve_local_world_size
 from .records import MPSReverseContractError
 from .state import RankOwnedMPSState
 from .transport import (
@@ -50,7 +51,16 @@ def begin_reverse_layer_halo_prefetch(
     state: RankOwnedMPSState,
     global_shapes: Mapping[int, Sequence[int]],
 ) -> tuple[ReverseLayerHaloPrefetch | None, frozenset[int]]:
-    """Launch disjoint layer-boundary halo sends before rank-local compute."""
+    """Launch disjoint layer-boundary halo sends before rank-local compute.
+
+    The result describes the *layer*, not this rank: a rank that owns neither
+    wire of a cut still receives a prefetch object (with no transfers) for as
+    long as the layer cuts anything. The caller follows a non-``None`` prefetch
+    with a full-group split-metadata collective, so returning ``None`` merely
+    because this rank has nothing to send would leave that collective short of
+    participants. Only a layer with no cut wire at all returns ``None``, which
+    every rank decides identically.
+    """
     boundary = tuple(
         (index, left_wire, state.owner(left_wire), state.owner(left_wire + 1))
         for index, _, left_wire in layer
@@ -79,21 +89,23 @@ def begin_reverse_layer_halo_prefetch(
             peers.append(right_owner)
             received[index] = value.reshape(shape)
             operations.append(dist.P2POp(dist.irecv, value, right_owner))
-    if not operations:
+    if not boundary:
         return None, indices
     device = next(iter(state.local_tensors.values())).device
     stream = None
-    if device.type == "cuda":
-        stream = _LAYER_HALO_STREAMS.get(device.index)
-        if stream is None:
-            stream = get_platform_runtime(device.type).stream(device)
-            _LAYER_HALO_STREAMS[device.index] = stream
-        stream.wait_stream(torch.cuda.current_stream(device))
-        with torch.cuda.stream(stream):
+    requests: tuple[Any, ...] = ()
+    if operations:
+        if device.type == "cuda":
+            stream = _LAYER_HALO_STREAMS.get(device.index)
+            if stream is None:
+                stream = get_platform_runtime(device.type).stream(device)
+                _LAYER_HALO_STREAMS[device.index] = stream
+            stream.wait_stream(torch.cuda.current_stream(device))
+            with torch.cuda.stream(stream):
+                requests = tuple(dist.batch_isend_irecv(operations))
+        else:
             requests = tuple(dist.batch_isend_irecv(operations))
-    else:
-        requests = tuple(dist.batch_isend_irecv(operations))
-    local_world_size = max(1, int(os.environ.get("LOCAL_WORLD_SIZE", state.world_size)))
+    local_world_size = resolve_local_world_size(state.world_size)
     payload_bytes = sum(value.numel() * value.element_size() for value in buffers)
     intra_node_payload_bytes = sum(
         value.numel() * value.element_size()

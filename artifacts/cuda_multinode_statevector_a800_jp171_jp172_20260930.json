@@ -1,0 +1,998 @@
+{
+  "evidence": {
+    "captured_at": "2026-10-01T08:03:21.014766+00:00",
+    "claim_blockers": [
+      "validation_only_tiny_full_state_gather",
+      "hidden_host_staging_not_audited",
+      "rdma_not_tested",
+      "production_performance_not_measured",
+      "two_node_pair_only_no_wider_topology",
+      "toy_circuit_parameters_only"
+    ],
+    "environment": {
+      "cuda_runtime": "13.0",
+      "nccl": "2.29.7",
+      "python": "3.12.13",
+      "source_revision": "6cabf22f10c26df4195392ad4031a9339e4a9f31",
+      "torch": "2.13.0+cu130"
+    },
+    "observations": {
+      "network": {
+        "backend": "nccl",
+        "configured_interface": "ens22f0",
+        "configured_interface_observed": true,
+        "debug_log_scope": "rank",
+        "debug_log_sha256": "cae64a15cf3c40673eec752b828ed800b282a35f5db1c23bd6defc05168a17ae",
+        "evidence_level": "observed_debug_log",
+        "ib_disabled": true,
+        "route": "socket",
+        "socket_transport_observed": true
+      },
+      "numerical_metrics": {
+        "expectation_value_error": 3.3306690738754696e-16,
+        "first_leg_initial_expectation_error": 3.3306690738754696e-16,
+        "gradient_max_abs_error": 8.326672684688674e-17,
+        "resume_prefix_max_abs_error": 0.0,
+        "resume_trajectory_max_abs_error": 0.0,
+        "statevector_infidelity": 0.0,
+        "statevector_max_abs_error": 0.0,
+        "statevector_norm_error": 0.0,
+        "training_loss_decrease": 0.008632771508185422
+      },
+      "production_full_state_materialization": false,
+      "rank_records": [
+        {
+          "amplitude_basis_order": "canonical_logical",
+          "backend": "nccl",
+          "backward": {
+            "analytic_rotation_derivative_count": 2,
+            "async_gradient_collective_count": 1,
+            "backend": "nccl",
+            "backward_checkpoint_count": 2,
+            "backward_communication_bytes": 24,
+            "backward_communication_count": 2,
+            "backward_distribution_semantics": "sharded_across_ranks",
+            "backward_error": null,
+            "backward_exchange_chunk_amplitudes": 4194304,
+            "backward_exchange_chunk_bytes": 67108864,
+            "backward_exchange_pipeline_prefetch_count": 0,
+            "backward_exchange_workspace_allocation_count": 0,
+            "backward_exchange_workspace_reserved_bytes": 0,
+            "backward_exchange_workspace_reuse_count": 0,
+            "backward_inter_node_communication_bytes": 0,
+            "backward_inter_node_communication_count": 0,
+            "backward_intra_node_communication_bytes": 0,
+            "backward_intra_node_communication_count": 0,
+            "backward_rematerialized_gate_count": 6,
+            "backward_status": "completed",
+            "backward_uses_full_state_replay": false,
+            "blockers": [
+              "sharded_optimizer_update_pending"
+            ],
+            "checkpoint_policy": {
+              "compact_cpu_cx_cycles": false,
+              "estimated_checkpoint_count": 2,
+              "estimated_compact_reversible_bytes": 0,
+              "estimated_fused_reversible_bytes": 1024,
+              "estimated_local_state_bytes": 256,
+              "estimated_required_bytes": 1024,
+              "estimated_reversible_bytes": 1024,
+              "interval": 2,
+              "low_memory_cpu_cx": false,
+              "memory_budget_bytes": null,
+              "selection_reason": "explicit_strategy",
+              "strategy": "interval",
+              "version": "statevector_checkpoint_v5"
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "executor": "pytorch_native_sharded_statevector_reverse_v1",
+            "forward_distribution_semantics": "sharded_across_ranks",
+            "full_state_materialization": false,
+            "fused_parameter_adjoint_count": 0,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 1,
+            "gradient_distribution": "replicated_after_all_reduce",
+            "gradient_method": "statevector_adjoint",
+            "gradient_reduction": "all_reduce_sum",
+            "kernel_dispatch": {
+              "decisions": [
+                {
+                  "count": 2,
+                  "device_runtime": {
+                    "device_type": "cuda",
+                    "provider": "pytorch"
+                  },
+                  "feature": "local_adjoint_vjp",
+                  "kernel_compiler": null,
+                  "kernel_route": {
+                    "catalog_mismatches": [
+                      "dtype"
+                    ],
+                    "fallback": false,
+                    "implementation": "pytorch_eager",
+                    "implementation_id": null,
+                    "integration_path": "pytorch",
+                    "semantic_id": "gradient.vjp.adjoint_1q.local"
+                  },
+                  "reason": "disabled_by_policy",
+                  "selected": "pytorch"
+                },
+                {
+                  "count": 1,
+                  "feature": "vjp_adjoint",
+                  "reason": "disabled_by_policy",
+                  "selected": "pytorch"
+                }
+              ],
+              "pytorch_fallback_count": 3,
+              "triton_execution_count": 0
+            },
+            "layout_optimization_target": "training_step",
+            "local_state_bytes": 256,
+            "local_world_size": 1,
+            "logical_to_physical_wires": [
+              0,
+              1,
+              4,
+              2,
+              3
+            ],
+            "node_count": 2,
+            "observable_profile": "sum_of_single_wire_pauli_z_terms",
+            "observable_terms": [
+              [
+                1.0,
+                [
+                  4
+                ]
+              ]
+            ],
+            "observable_wires": [
+              4
+            ],
+            "optimizer_update_ready": false,
+            "overlapped_gradient_collective_count": 0,
+            "parameter_gradient_ready": true,
+            "parameter_ownership": [
+              {
+                "distribution": "replicated_after_all_reduce",
+                "occurrence_count": 2,
+                "owner_rank": null,
+                "parameter": "parameter:0",
+                "participating_ranks": [
+                  0,
+                  1
+                ],
+                "reduction": "all_reduce_sum",
+                "reduction_count": 2
+              },
+              {
+                "distribution": "replicated_after_all_reduce",
+                "occurrence_count": 1,
+                "owner_rank": null,
+                "parameter": "parameter:1",
+                "participating_ranks": [
+                  0,
+                  1
+                ],
+                "reduction": "all_reduce_sum",
+                "reduction_count": 1
+              }
+            ],
+            "peak_backward_scratch_bytes": 768,
+            "persistent_inplace_local_enabled": false,
+            "persistent_layout_buffer_allocation_count": 0,
+            "persistent_layout_buffer_reserved_bytes": 0,
+            "persistent_layout_enabled": false,
+            "persistent_layout_swap_bytes": 0,
+            "persistent_layout_swap_count": 0,
+            "rank_ownership": {
+              "full_state_owned": false,
+              "local_amplitudes": 16,
+              "rank": 0,
+              "total_amplitudes": 32
+            },
+            "release_gate_allowed": false,
+            "saved_forward_state_reused": false,
+            "scalability_claim_allowed": false,
+            "world_size": 2
+          },
+          "blockers": [
+            "forward_only_no_sharded_backward_or_optimizer"
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication_bytes": 384,
+          "communication_count": 2,
+          "communication_primitive": "torch.distributed.collective",
+          "cross_shard_fusion_enabled": true,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
+          "distributed_gate_count": 3,
+          "distributed_identity": {
+            "blockers": [
+              "distributed_identity_is_not_collective_conformance_evidence"
+            ],
+            "communication_claim_allowed": false,
+            "flagcx_route_status": "not_applicable",
+            "flagcx_route_verified": false,
+            "host_staging_observed": null,
+            "inner_backend": "nccl",
+            "inner_backend_verified": true,
+            "logical_device": "cuda:0",
+            "outer_backend": "nccl",
+            "platform_identity": {},
+            "process_group_initialized": true,
+            "provider": "pytorch",
+            "provider_version": null,
+            "rank": 0,
+            "schema": "flagquantum_distributed_identity_v1",
+            "world_size": 2
+          },
+          "distribution_semantics": "sharded_across_ranks",
+          "exchange_pipeline_enabled": true,
+          "exchange_pipeline_prefetch_count": 0,
+          "exchange_pipelined_gate_count": 0,
+          "exchange_subgroup_pipelined_gate_count": 0,
+          "exchange_workspace_allocation_count": 1,
+          "exchange_workspace_reserved_bytes": 512,
+          "exchange_workspace_reuse_count": 1,
+          "executed_distributed_segment_count": 3,
+          "executor": "pytorch_native_distributed_statevector_v1",
+          "full_state_materialization": false,
+          "fused_cross_shard_gate_count": 0,
+          "fused_cross_shard_regions": 0,
+          "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+          "inter_node_communication_bytes": 384,
+          "inter_node_communication_count": 2,
+          "intra_node_communication_bytes": 0,
+          "intra_node_communication_count": 0,
+          "kernel_dispatch": {
+            "decisions": [
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "control_subspace_pack",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.transport.control_subspace_pack"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "control_subspace_unpack",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.transport.control_subspace_unpack"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              },
+              {
+                "count": 2,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "local_1q",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": false,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.apply.matrix_1q.local"
+                },
+                "reason": "disabled_by_policy",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "local_cx",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.apply.cnot.local"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              }
+            ],
+            "pytorch_fallback_count": 5,
+            "triton_execution_count": 0
+          },
+          "local_diagonal_gate_count": 1,
+          "local_gate_count": 4,
+          "local_state_bytes": 256,
+          "local_world_size": 1,
+          "logical_to_physical_wires": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "node_count": 2,
+          "owned_global_basis_indices": "0 + k*2, 0 <= k < 16",
+          "peak_scratch_bytes": 1536,
+          "rank": 0,
+          "rank_ownership": {
+            "amplitude_end": 16,
+            "amplitude_start": 0,
+            "compact_global_indices": true,
+            "device": "cuda:0",
+            "dtype": "torch.complex128",
+            "global_index_count": 16,
+            "local_amplitudes": 16,
+            "rank": 0,
+            "shape": [
+              1,
+              16
+            ]
+          },
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "scratch_accounting": "peak_live_amplitude_tensors_including_output_buffer",
+          "training": {
+            "blockers": [
+              "release_capacity_and_multinode_acceptance_pending"
+            ],
+            "checkpoint_files": [
+              "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
+              "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+            ],
+            "communication_bytes": 96,
+            "communication_events": 12,
+            "completed_steps": 2,
+            "distribution_semantics": "sharded_across_ranks",
+            "executor": "pytorch_native_sharded_statevector_training_v1",
+            "gradient_ownership_semantics": "reduced_across_ranks",
+            "local_world_size": 1,
+            "losses": [
+              0.9077758055611574,
+              0.899143034052972
+            ],
+            "node_count": 2,
+            "optimizer": "sgd",
+            "optimizer_ownership": [
+              {
+                "gradient_reduction": "all_reduce_sum",
+                "optimizer_state_local": true,
+                "owner_rank": 0,
+                "parameter": "parameter:0",
+                "update_route": "owner_step_then_broadcast"
+              },
+              {
+                "gradient_reduction": "all_reduce_sum",
+                "optimizer_state_local": false,
+                "owner_rank": 1,
+                "parameter": "parameter:1",
+                "update_route": "owner_step_then_broadcast"
+              }
+            ],
+            "optimizer_state_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_semantics": "sharded_across_ranks",
+            "parameter_ownership_semantics": "sharded_across_ranks",
+            "peak_memory_bytes": 17056256,
+            "progress_event_count": 21,
+            "rank": 0,
+            "release_gate_allowed": false,
+            "scalability_claim_allowed": false,
+            "start_step": 0,
+            "world_size": 2
+          },
+          "wire_layout": "canonical",
+          "world_size": 2
+        },
+        {
+          "amplitude_basis_order": "canonical_logical",
+          "backend": "nccl",
+          "backward": {
+            "analytic_rotation_derivative_count": 2,
+            "async_gradient_collective_count": 1,
+            "backend": "nccl",
+            "backward_checkpoint_count": 2,
+            "backward_communication_bytes": 24,
+            "backward_communication_count": 2,
+            "backward_distribution_semantics": "sharded_across_ranks",
+            "backward_error": null,
+            "backward_exchange_chunk_amplitudes": 4194304,
+            "backward_exchange_chunk_bytes": 67108864,
+            "backward_exchange_pipeline_prefetch_count": 0,
+            "backward_exchange_workspace_allocation_count": 0,
+            "backward_exchange_workspace_reserved_bytes": 0,
+            "backward_exchange_workspace_reuse_count": 0,
+            "backward_inter_node_communication_bytes": 0,
+            "backward_inter_node_communication_count": 0,
+            "backward_intra_node_communication_bytes": 0,
+            "backward_intra_node_communication_count": 0,
+            "backward_rematerialized_gate_count": 6,
+            "backward_status": "completed",
+            "backward_uses_full_state_replay": false,
+            "blockers": [
+              "sharded_optimizer_update_pending"
+            ],
+            "checkpoint_policy": {
+              "compact_cpu_cx_cycles": false,
+              "estimated_checkpoint_count": 2,
+              "estimated_compact_reversible_bytes": 0,
+              "estimated_fused_reversible_bytes": 1024,
+              "estimated_local_state_bytes": 256,
+              "estimated_required_bytes": 1024,
+              "estimated_reversible_bytes": 1024,
+              "interval": 2,
+              "low_memory_cpu_cx": false,
+              "memory_budget_bytes": null,
+              "selection_reason": "explicit_strategy",
+              "strategy": "interval",
+              "version": "statevector_checkpoint_v5"
+            },
+            "distribution_semantics": "sharded_across_ranks",
+            "executor": "pytorch_native_sharded_statevector_reverse_v1",
+            "forward_distribution_semantics": "sharded_across_ranks",
+            "full_state_materialization": false,
+            "fused_parameter_adjoint_count": 0,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 1,
+            "gradient_distribution": "replicated_after_all_reduce",
+            "gradient_method": "statevector_adjoint",
+            "gradient_reduction": "all_reduce_sum",
+            "kernel_dispatch": {
+              "decisions": [
+                {
+                  "count": 2,
+                  "device_runtime": {
+                    "device_type": "cuda",
+                    "provider": "pytorch"
+                  },
+                  "feature": "local_adjoint_vjp",
+                  "kernel_compiler": null,
+                  "kernel_route": {
+                    "catalog_mismatches": [
+                      "dtype"
+                    ],
+                    "fallback": false,
+                    "implementation": "pytorch_eager",
+                    "implementation_id": null,
+                    "integration_path": "pytorch",
+                    "semantic_id": "gradient.vjp.adjoint_1q.local"
+                  },
+                  "reason": "disabled_by_policy",
+                  "selected": "pytorch"
+                },
+                {
+                  "count": 1,
+                  "feature": "vjp_adjoint",
+                  "reason": "disabled_by_policy",
+                  "selected": "pytorch"
+                }
+              ],
+              "pytorch_fallback_count": 3,
+              "triton_execution_count": 0
+            },
+            "layout_optimization_target": "training_step",
+            "local_state_bytes": 256,
+            "local_world_size": 1,
+            "logical_to_physical_wires": [
+              0,
+              1,
+              4,
+              2,
+              3
+            ],
+            "node_count": 2,
+            "observable_profile": "sum_of_single_wire_pauli_z_terms",
+            "observable_terms": [
+              [
+                1.0,
+                [
+                  4
+                ]
+              ]
+            ],
+            "observable_wires": [
+              4
+            ],
+            "optimizer_update_ready": false,
+            "overlapped_gradient_collective_count": 0,
+            "parameter_gradient_ready": true,
+            "parameter_ownership": [
+              {
+                "distribution": "replicated_after_all_reduce",
+                "occurrence_count": 2,
+                "owner_rank": null,
+                "parameter": "parameter:0",
+                "participating_ranks": [
+                  0,
+                  1
+                ],
+                "reduction": "all_reduce_sum",
+                "reduction_count": 2
+              },
+              {
+                "distribution": "replicated_after_all_reduce",
+                "occurrence_count": 1,
+                "owner_rank": null,
+                "parameter": "parameter:1",
+                "participating_ranks": [
+                  0,
+                  1
+                ],
+                "reduction": "all_reduce_sum",
+                "reduction_count": 1
+              }
+            ],
+            "peak_backward_scratch_bytes": 768,
+            "persistent_inplace_local_enabled": false,
+            "persistent_layout_buffer_allocation_count": 0,
+            "persistent_layout_buffer_reserved_bytes": 0,
+            "persistent_layout_enabled": false,
+            "persistent_layout_swap_bytes": 0,
+            "persistent_layout_swap_count": 0,
+            "rank_ownership": {
+              "full_state_owned": false,
+              "local_amplitudes": 16,
+              "rank": 1,
+              "total_amplitudes": 32
+            },
+            "release_gate_allowed": false,
+            "saved_forward_state_reused": false,
+            "scalability_claim_allowed": false,
+            "world_size": 2
+          },
+          "blockers": [
+            "forward_only_no_sharded_backward_or_optimizer"
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication_bytes": 384,
+          "communication_count": 2,
+          "communication_primitive": "torch.distributed.collective",
+          "cross_shard_fusion_enabled": true,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+          "distributed_gate_count": 3,
+          "distributed_identity": {
+            "blockers": [
+              "distributed_identity_is_not_collective_conformance_evidence"
+            ],
+            "communication_claim_allowed": false,
+            "flagcx_route_status": "not_applicable",
+            "flagcx_route_verified": false,
+            "host_staging_observed": null,
+            "inner_backend": "nccl",
+            "inner_backend_verified": true,
+            "logical_device": "cuda:0",
+            "outer_backend": "nccl",
+            "platform_identity": {},
+            "process_group_initialized": true,
+            "provider": "pytorch",
+            "provider_version": null,
+            "rank": 1,
+            "schema": "flagquantum_distributed_identity_v1",
+            "world_size": 2
+          },
+          "distribution_semantics": "sharded_across_ranks",
+          "exchange_pipeline_enabled": true,
+          "exchange_pipeline_prefetch_count": 0,
+          "exchange_pipelined_gate_count": 0,
+          "exchange_subgroup_pipelined_gate_count": 0,
+          "exchange_workspace_allocation_count": 1,
+          "exchange_workspace_reserved_bytes": 512,
+          "exchange_workspace_reuse_count": 1,
+          "executed_distributed_segment_count": 3,
+          "executor": "pytorch_native_distributed_statevector_v1",
+          "full_state_materialization": false,
+          "fused_cross_shard_gate_count": 0,
+          "fused_cross_shard_regions": 0,
+          "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+          "inter_node_communication_bytes": 384,
+          "inter_node_communication_count": 2,
+          "intra_node_communication_bytes": 0,
+          "intra_node_communication_count": 0,
+          "kernel_dispatch": {
+            "decisions": [
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "control_subspace_pack",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.transport.control_subspace_pack"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "control_subspace_unpack",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.transport.control_subspace_unpack"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              },
+              {
+                "count": 2,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "local_1q",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": false,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.apply.matrix_1q.local"
+                },
+                "reason": "disabled_by_policy",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "device_runtime": {
+                  "device_type": "cuda",
+                  "provider": "pytorch"
+                },
+                "feature": "local_cx",
+                "kernel_compiler": null,
+                "kernel_route": {
+                  "catalog_mismatches": [
+                    "dtype"
+                  ],
+                  "fallback": true,
+                  "implementation": "pytorch_eager",
+                  "implementation_id": null,
+                  "integration_path": "pytorch",
+                  "semantic_id": "statevector.apply.cnot.local"
+                },
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              }
+            ],
+            "pytorch_fallback_count": 5,
+            "triton_execution_count": 0
+          },
+          "local_diagonal_gate_count": 1,
+          "local_gate_count": 4,
+          "local_state_bytes": 256,
+          "local_world_size": 1,
+          "logical_to_physical_wires": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "node_count": 2,
+          "owned_global_basis_indices": "1 + k*2, 0 <= k < 16",
+          "peak_scratch_bytes": 1536,
+          "rank": 1,
+          "rank_ownership": {
+            "amplitude_end": 32,
+            "amplitude_start": 16,
+            "compact_global_indices": true,
+            "device": "cuda:0",
+            "dtype": "torch.complex128",
+            "global_index_count": 16,
+            "local_amplitudes": 16,
+            "rank": 1,
+            "shape": [
+              1,
+              16
+            ]
+          },
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "scratch_accounting": "peak_live_amplitude_tensors_including_output_buffer",
+          "training": {
+            "blockers": [
+              "release_capacity_and_multinode_acceptance_pending"
+            ],
+            "checkpoint_files": [
+              "/nfs/fq-multinode-sv21-ckpt/rank-1.pt",
+              "/nfs/fq-multinode-sv21-ckpt/rank-1.pt"
+            ],
+            "communication_bytes": 96,
+            "communication_events": 12,
+            "completed_steps": 2,
+            "distribution_semantics": "sharded_across_ranks",
+            "executor": "pytorch_native_sharded_statevector_training_v1",
+            "gradient_ownership_semantics": "reduced_across_ranks",
+            "local_world_size": 1,
+            "losses": [
+              0.9077758055611574,
+              0.899143034052972
+            ],
+            "node_count": 2,
+            "optimizer": "sgd",
+            "optimizer_ownership": [
+              {
+                "gradient_reduction": "all_reduce_sum",
+                "optimizer_state_local": false,
+                "owner_rank": 0,
+                "parameter": "parameter:0",
+                "update_route": "owner_step_then_broadcast"
+              },
+              {
+                "gradient_reduction": "all_reduce_sum",
+                "optimizer_state_local": true,
+                "owner_rank": 1,
+                "parameter": "parameter:1",
+                "update_route": "owner_step_then_broadcast"
+              }
+            ],
+            "optimizer_state_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_semantics": "sharded_across_ranks",
+            "parameter_ownership_semantics": "sharded_across_ranks",
+            "peak_memory_bytes": 17056256,
+            "progress_event_count": 21,
+            "rank": 1,
+            "release_gate_allowed": false,
+            "scalability_claim_allowed": false,
+            "start_step": 0,
+            "world_size": 2
+          },
+          "wire_layout": "canonical",
+          "world_size": 2
+        }
+      ],
+      "training": {
+        "checkpoint_files": [
+          "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
+          "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+        ],
+        "checkpoint_steps": 2,
+        "first_leg_losses": [
+          0.9077758055611574,
+          0.899143034052972
+        ],
+        "first_leg_summary": {
+          "blockers": [
+            "release_capacity_and_multinode_acceptance_pending"
+          ],
+          "checkpoint_files": [
+            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
+            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+          ],
+          "communication_bytes": 96,
+          "communication_events": 12,
+          "completed_steps": 2,
+          "distribution_semantics": "sharded_across_ranks",
+          "executor": "pytorch_native_sharded_statevector_training_v1",
+          "gradient_ownership_semantics": "reduced_across_ranks",
+          "local_world_size": 1,
+          "losses": [
+            0.9077758055611574,
+            0.899143034052972
+          ],
+          "node_count": 2,
+          "optimizer": "sgd",
+          "optimizer_ownership": [
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": true,
+              "owner_rank": 0,
+              "parameter": "parameter:0",
+              "update_route": "owner_step_then_broadcast"
+            },
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": false,
+              "owner_rank": 1,
+              "parameter": "parameter:1",
+              "update_route": "owner_step_then_broadcast"
+            }
+          ],
+          "optimizer_state_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_semantics": "sharded_across_ranks",
+          "parameter_ownership_semantics": "sharded_across_ranks",
+          "peak_memory_bytes": 17056256,
+          "progress_event_count": 21,
+          "rank": 0,
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "start_step": 0,
+          "world_size": 2
+        },
+        "learning_rate": 0.05,
+        "optimizer": "sgd",
+        "resumed_leg_losses": [
+          0.8897849593717055,
+          0.87965638670307
+        ],
+        "resumed_leg_summary": {
+          "blockers": [
+            "release_capacity_and_multinode_acceptance_pending"
+          ],
+          "checkpoint_files": [
+            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
+            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+          ],
+          "communication_bytes": 96,
+          "communication_events": 12,
+          "completed_steps": 4,
+          "distribution_semantics": "sharded_across_ranks",
+          "executor": "pytorch_native_sharded_statevector_training_v1",
+          "gradient_ownership_semantics": "reduced_across_ranks",
+          "local_world_size": 1,
+          "losses": [
+            0.8897849593717055,
+            0.87965638670307
+          ],
+          "node_count": 2,
+          "optimizer": "sgd",
+          "optimizer_ownership": [
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": true,
+              "owner_rank": 0,
+              "parameter": "parameter:0",
+              "update_route": "owner_step_then_broadcast"
+            },
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": false,
+              "owner_rank": 1,
+              "parameter": "parameter:1",
+              "update_route": "owner_step_then_broadcast"
+            }
+          ],
+          "optimizer_state_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_semantics": "sharded_across_ranks",
+          "parameter_ownership_semantics": "sharded_across_ranks",
+          "peak_memory_bytes": 17060352,
+          "progress_event_count": 21,
+          "rank": 0,
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "start_step": 2,
+          "world_size": 2
+        },
+        "resumed_start_step": 2,
+        "resumed_steps": 4,
+        "uninterrupted_leg_losses": [
+          0.9077758055611574,
+          0.899143034052972,
+          0.8897849593717055,
+          0.87965638670307
+        ],
+        "uninterrupted_leg_summary": {
+          "blockers": [
+            "release_capacity_and_multinode_acceptance_pending"
+          ],
+          "checkpoint_files": [
+            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt"
+          ],
+          "communication_bytes": 192,
+          "communication_events": 24,
+          "completed_steps": 4,
+          "distribution_semantics": "sharded_across_ranks",
+          "executor": "pytorch_native_sharded_statevector_training_v1",
+          "gradient_ownership_semantics": "reduced_across_ranks",
+          "local_world_size": 1,
+          "losses": [
+            0.9077758055611574,
+            0.899143034052972,
+            0.8897849593717055,
+            0.87965638670307
+          ],
+          "node_count": 2,
+          "optimizer": "sgd",
+          "optimizer_ownership": [
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": true,
+              "owner_rank": 0,
+              "parameter": "parameter:0",
+              "update_route": "owner_step_then_broadcast"
+            },
+            {
+              "gradient_reduction": "all_reduce_sum",
+              "optimizer_state_local": false,
+              "owner_rank": 1,
+              "parameter": "parameter:1",
+              "update_route": "owner_step_then_broadcast"
+            }
+          ],
+          "optimizer_state_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_ownership_semantics": "sharded_across_ranks",
+          "optimizer_update_semantics": "sharded_across_ranks",
+          "parameter_ownership_semantics": "sharded_across_ranks",
+          "peak_memory_bytes": 17058304,
+          "progress_event_count": 41,
+          "rank": 0,
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "start_step": 0,
+          "world_size": 2
+        },
+        "uninterrupted_start_step": 0
+      },
+      "validation_full_state_materialization": true
+    },
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
+    "scope": {
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "execution": "forward_backward_optimizer_and_checkpoint_resume",
+      "local_world_size": 1,
+      "n_wires": 5,
+      "node_count": 2,
+      "world_size": 2
+    },
+    "status": "passed"
+  },
+  "evidence_sha256": "12469c9a031dd13a6bc5563be6c593d07d90104ce62e85bf3d834c8676bf664e",
+  "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
+}

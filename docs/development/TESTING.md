@@ -58,7 +58,7 @@ for `benchmarks/results/scalability/`.
 | Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
 | Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
 | Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
-| Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | One workload partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
+| Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Three workloads (statevector, MPS, tensor network), each partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
 | Release candidate or promoted benchmark claim | `python tools/ci_tier.py release` | Full non-performance-benchmark pytest plus benchmark root audit and scalability release scan. | Claims outside the audited payload. |
 
 Equivalent direct marker commands are available when a focused local run is
@@ -331,13 +331,37 @@ second node:
   and `tools/probe_cuda_multinode_statevector.py` on both.
   The probe retains one statevector shard per rank during execution, materializes
   the tiny five-wire state only for validation, and records the selected NCCL
-  route from a rank-zero debug log. Its output is correctness and communication
-  evidence only; it is not a scalability or release claim.
+  route from a rank-zero debug log. It covers the whole training path on that
+  shard: forward, the adjoint gradient, an owner-sharded optimizer step, and a
+  checkpoint that a restarted run resumes from. Its output is correctness and
+  communication evidence only; it is not a scalability or release claim.
+- **Real two-node MPS transport.** The same pair, the same launcher, and
+  `tools/probe_cuda_multinode_mps.py`: one logical six-wire matrix product state
+  split by site, three owned sites per rank, with the middle adjacent gate
+  straddling the ownership boundary. It covers the same training path against an
+  exact complex128 statevector reference, and its reverse runs the compiled site
+  buckets so the layer-boundary halo is prefetched across the host boundary
+  rather than reconstructed locally. The training legs run eagerly by design,
+  because a checkpointed step is not a compiled-kernel step.
+- **Real two-node tensor-network transport.** The same pair and launcher again,
+  with `tools/probe_cuda_multinode_tn.py`: one five-wire contraction cut on the
+  two labels its entangling gate contracts, four slices, two owned per rank. The
+  cut is declared rather than chosen by the memory-driven automatic slicer,
+  because the cheapest cut on this circuit is carried by a state-copy node whose
+  value is zero on every branch but one -- a partition that would report
+  `sharded_across_ranks` while a single rank did the arithmetic. The probe
+  records four amplitudes, one single-amplitude projection through the other
+  output path, the expectation with its gradient, and the training path with
+  checkpoint resume, each against the exact complex128 statevector. It also reads
+  the committed checkpoint generation back and requires one integrity-checked
+  file per rank whose payload agrees with its sidecar.
 
-`tools/multinode_launch_plan.py --run` drives that pair, and the `multinode` job
-in `.github/workflows/scheduled-hardware.yml` is one call to it. It runs manual
-dispatch only, on the runner label that only the launch host carries, because
-SSH reaches the peer from there and not the other way round.
+`tools/multinode_launch_plan.py --run` drives that pair, one workload per
+invocation selected by `--probe` (`statevector`, the default, `mps`, or `tn`),
+and the `multinode` job in `.github/workflows/scheduled-hardware.yml` is one
+call to it per workload.
+It runs manual dispatch only, on the runner label that only the launch host
+carries, because SSH reaches the peer from there and not the other way round.
 
 It stages the tree onto a filesystem both nodes mount, so the two ranks cannot
 disagree about which revision they are evidence about, and it runs them through
@@ -350,11 +374,26 @@ rendezvous port is chosen rather than assumed: the hosts are shared, and a
 preflight against the fixed 29500 refused a real launch because a neighbour
 already held it.
 
+The checkpoint directory is a third shared path, and the lane empties it along
+with the output directory before the ranks start. A checkpoint left by an
+earlier run would be resumed from rather than overwritten, and a stale rank
+record in the output directory would be published as this run's evidence if this
+run failed before writing its own. Both are named `fq-multinode*`, because the
+lane removes them and only a directory with that name is treated as its own.
+
 ```bash
 python tools/ci_tier.py multinode-scheduled
 # what that tier runs, on the launch host:
-python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --report-directory hardware-run
+python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run
+python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps
+python tools/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn
 ```
+
+The tier passes no `--source-revision`, because the launch host stages from a
+git checkout and the probe reads the revision from it. A host that stages from a
+copied tree instead -- one without `.git`, which is what a rebuild host usually
+has -- must export `FLAGQUANTUM_SOURCE_REVISION` for the tier, or every probe
+fails closed on a revision it cannot resolve.
 
 No test carries `distributed_multinode`. The seven that did need a launcher
 rather than a second node and were renamed to `distributed_launch`; the marker

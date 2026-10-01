@@ -1,5 +1,18 @@
 #!/usr/bin/env python
-"""Verify one CUDA statevector shard per node without making a scale claim."""
+"""Verify CUDA statevector shards across two hosts, forward, backward and resume.
+
+The pair of hosts this runs on is the whole point and the whole limit. Each host
+runs as many ranks as the caller asked for, one device each, and the artifact
+records the shape it got. What it establishes is that a single logical
+statevector workload is partitioned across that shape, that the partitioned
+gradient agrees with a single-device reference, and that an owner-sharded
+optimizer step survives a checkpoint and a restart -- because a forward-only
+probe cannot support a training claim and a training claim that stops at the
+first optimizer step is not a training path either.
+
+It makes no scale claim: the scope, the claim flags and the blockers in the
+artifact say exactly how narrow the shape is.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +21,7 @@ import hashlib
 import json
 import os
 import platform
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,13 +34,59 @@ import flagquantum as fq
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
+from flagquantum.runtime.executors.statevector.reverse import (
+    StatevectorCheckpointPolicy,
+    execute_torch_distributed_statevector_reverse,
+)
+from flagquantum.runtime.executors.statevector.training import (
+    train_distributed_statevector,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
+
+#: The forward scope. Five wires leaves `5 - log2(world_size)` wires per shard,
+#: so the circuit crosses the shard boundary at every shape this probe accepts
+#: and the exchange is exercised.
+N_WIRES = 5
+REAL_DTYPE = torch.float64
+COMPLEX_DTYPE = torch.complex128
+
+#: Numerical tolerance for every comparison against a single-device reference.
+#: Complex128 with an exact adjoint should agree to round-off, so this is
+#: round-off rather than a modelling allowance.
+NUMERICAL_TOLERANCE = 1e-10
+#: The same, for the multi-step training trajectory: two runs of four steps
+#: accumulate more round-off than a single expectation does.
+TRAINING_TOLERANCE = 1e-9
+
+TRAINING_OPTIMIZER = "sgd"
+TRAINING_LR = 0.05
+#: The first leg stops here and the second leg resumes to `RESUMED_STEPS`.
+#: `train_distributed_statevector` refuses a run shorter than two steps, because
+#: a single step cannot show that the second one continued from the first.
+CHECKPOINT_STEPS = 2
+RESUMED_STEPS = 4
+
+#: The parameters the trainable circuit binds. Fixed so that the reference and
+#: the distributed run are the same function of the same numbers.
+TRAINABLE_VALUES = (0.23, -0.37)
 
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _synchronize(device: torch.device) -> None:
+    """Wait for the device's work, so a reported failure is the one that happened.
+
+    Every real run is on an accelerator -- the probe refuses to start without
+    CUDA -- and this stays device-guarded so that the training legs can be
+    exercised on a CPU-only checkout.
+    """
+
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
 
 
 def _git_revision() -> str:
@@ -45,9 +105,9 @@ def _git_revision() -> str:
         return "unavailable"
 
 
-def _circuit() -> fq.Circuit:
+def _forward_circuit() -> fq.Circuit:
     return (
-        fq.Circuit(5, dtype=torch.complex128)
+        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
         .h(0)
         .ry(4, 0.31)
         .cx(4, 1)
@@ -55,6 +115,64 @@ def _circuit() -> fq.Circuit:
         .cx(0, 4)
         .rz(4, 0.19)
         .cx(3, 2)
+    )
+
+
+def _trainable_circuit(
+    *,
+    device: torch.device,
+    dtype: torch.dtype = COMPLEX_DTYPE,
+    real_dtype: torch.dtype = REAL_DTYPE,
+) -> tuple[fq.Circuit, tuple[torch.Tensor, ...]]:
+    """The circuit the training legs differentiate.
+
+    One parameter is bound twice and one gate spans the shard boundary, so a
+    gradient that is wrong in its reduction or in its shard ownership cannot
+    agree with the reference by accident.
+    """
+
+    parameters: list[torch.Tensor] = []
+    for value in TRAINABLE_VALUES:
+        tensor = torch.empty((), dtype=real_dtype, device=device)
+        # Allocation followed by an explicit copy, so an accidental narrowing to
+        # float32 is an observable mismatch rather than a silent test of FP32.
+        tensor.copy_(torch.tensor(value, dtype=real_dtype))
+        parameters.append(tensor.requires_grad_())
+    theta, phi = parameters
+    circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
+    circuit.h(0).ry(N_WIRES - 1, theta).rxx(0, N_WIRES - 1, phi).rz(1, theta)
+    return circuit, tuple(parameters)
+
+
+def _observable_wire() -> int:
+    # The last logical wire is the least-significant basis bit, which is what
+    # `_reference_expectation` below assumes.
+    return N_WIRES - 1
+
+
+def _reference_expectation() -> tuple[float, tuple[float, ...]]:
+    """The same expectation and gradient on one CPU device, for the differential."""
+
+    parameters: list[torch.Tensor] = []
+    for value in TRAINABLE_VALUES:
+        tensor = torch.empty((), dtype=REAL_DTYPE)
+        tensor.copy_(torch.tensor(value, dtype=REAL_DTYPE))
+        parameters.append(tensor.requires_grad_())
+    theta, phi = parameters
+    circuit = (
+        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
+        .h(0)
+        .ry(N_WIRES - 1, theta)
+        .rxx(0, N_WIRES - 1, phi)
+        .rz(1, theta)
+    )
+    state = circuit.state(refresh=True)
+    probabilities = state.abs().square().reshape(-1)
+    expectation = probabilities[::2].sum() - probabilities[1::2].sum()
+    expectation.backward()
+    return (
+        float(expectation.detach()),
+        tuple(float(parameter.grad.detach()) for parameter in parameters),
     )
 
 
@@ -82,7 +200,9 @@ def _validation_state(result: Any) -> torch.Tensor:
     return canonical
 
 
-def _network_observation(path: Path | None) -> dict[str, Any]:
+def _network_observation(
+    path: Path | None, *, local_world_size: int = 1
+) -> dict[str, Any]:
     configured_interface = os.environ.get("NCCL_SOCKET_IFNAME")
     ib_disabled = os.environ.get("NCCL_IB_DISABLE") == "1"
     observation: dict[str, Any] = {
@@ -91,6 +211,11 @@ def _network_observation(path: Path | None) -> dict[str, Any]:
         "ib_disabled": ib_disabled,
         "route": "socket" if ib_disabled else "nccl_auto",
         "evidence_level": "configured_only",
+        # The launcher gives one `torchrun` per node one debug log, so above one
+        # rank per node the file holds every local rank's view rather than one
+        # rank's. Recorded rather than assumed: the route check reads the same
+        # either way, but how much of the traffic it covers does not.
+        "debug_log_scope": "node" if local_world_size > 1 else "rank",
     }
     if path is None:
         return observation
@@ -112,14 +237,148 @@ def _network_observation(path: Path | None) -> dict[str, Any]:
     return observation
 
 
+def _prepare_checkpoint_directory(
+    directory: Path, *, rank: int, device: torch.device
+) -> None:
+    """Start from a directory holding no checkpoints, or not at all.
+
+    The resumed leg reads what the first leg wrote, so a checkpoint left by an
+    earlier run would be restored instead and the artifact would describe a
+    trajectory this run never computed. The caller empties the directory; this
+    is the second opinion, because the two must not disagree.
+
+    Rank 0 decides and both ranks act on the same answer. A rank that raised on
+    its own would leave its peer waiting in the next collective, which reports
+    as a hang rather than as the reason the run was refused.
+    """
+
+    verdict = torch.ones((), dtype=torch.int32, device=device)
+    if rank == 0:
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            existing = sorted(directory.glob("rank-*.pt"))
+            if existing:
+                verdict.zero_()
+        except OSError:
+            verdict.zero_()
+    dist.broadcast(verdict, src=0)
+    if int(verdict.item()) == 0:
+        raise RuntimeError(
+            f"{directory} could not be used as an empty checkpoint directory; "
+            "this probe resumes from what its own first leg wrote"
+        )
+    dist.barrier()
+
+
+def _training_observations(
+    *,
+    device: torch.device,
+    checkpoint_directory: Path,
+) -> tuple[dict[str, Any], dict[str, float], dict[str, Any]]:
+    """Run the legs that make the training claim, and describe them.
+
+    The resumed run and the uninterrupted run are the same computation over the
+    same steps. Comparing their losses is what shows the checkpoint restored the
+    parameters, the optimizer state and the step counter rather than merely
+    reloading a file.
+
+    Each leg gets its own circuit, because a training step writes through to the
+    tensors the circuit binds: three legs sharing one circuit would run the
+    second and third legs from wherever the first left the parameters, and the
+    comparison would then be between two different computations.
+    """
+
+    interrupted, _ = _trainable_circuit(device=device)
+    first = train_distributed_statevector(
+        interrupted,
+        steps=CHECKPOINT_STEPS,
+        observable_wire=_observable_wire(),
+        optimizer=TRAINING_OPTIMIZER,
+        lr=TRAINING_LR,
+        checkpoint_dir=checkpoint_directory,
+        checkpoint_interval=1,
+    )
+    _synchronize(device)
+
+    uninterrupted, _ = _trainable_circuit(device=device)
+    fresh = train_distributed_statevector(
+        uninterrupted,
+        steps=RESUMED_STEPS,
+        observable_wire=_observable_wire(),
+        optimizer=TRAINING_OPTIMIZER,
+        lr=TRAINING_LR,
+        checkpoint_dir=checkpoint_directory / "uninterrupted",
+        checkpoint_interval=1,
+    )
+    _synchronize(device)
+
+    resuming, _ = _trainable_circuit(device=device)
+    resumed = train_distributed_statevector(
+        resuming,
+        steps=RESUMED_STEPS,
+        observable_wire=_observable_wire(),
+        optimizer=TRAINING_OPTIMIZER,
+        lr=TRAINING_LR,
+        checkpoint_dir=checkpoint_directory,
+        checkpoint_interval=1,
+        resume=True,
+    )
+    _synchronize(device)
+
+    first_summary = first.summary()
+    resumed_summary = resumed.summary()
+    fresh_summary = fresh.summary()
+    expectation = _reference_expectation()[0]
+    metrics = {
+        "first_leg_initial_expectation_error": abs(first.losses[0] - expectation),
+        "resume_prefix_max_abs_error": max(
+            (
+                abs(actual - expected)
+                for actual, expected in zip(
+                    first.losses, fresh.losses[:CHECKPOINT_STEPS], strict=True
+                )
+            ),
+            default=0.0,
+        ),
+        "resume_trajectory_max_abs_error": max(
+            (
+                abs(actual - expected)
+                for actual, expected in zip(
+                    resumed.losses, fresh.losses[CHECKPOINT_STEPS:], strict=True
+                )
+            ),
+            default=0.0,
+        ),
+    }
+    observations = {
+        "optimizer": TRAINING_OPTIMIZER,
+        "learning_rate": TRAINING_LR,
+        "checkpoint_steps": CHECKPOINT_STEPS,
+        "resumed_steps": RESUMED_STEPS,
+        "first_leg_losses": list(first.losses),
+        "resumed_leg_losses": list(resumed.losses),
+        "uninterrupted_leg_losses": list(fresh.losses),
+        "resumed_start_step": resumed.start_step,
+        "uninterrupted_start_step": fresh.start_step,
+        "checkpoint_files": list(resumed.checkpoint_files),
+        "first_leg_summary": first_summary,
+        "resumed_leg_summary": resumed_summary,
+        "uninterrupted_leg_summary": fresh_summary,
+    }
+    return observations, metrics, first_summary
+
+
 def _artifact(
     *,
     rank_records: list[dict[str, Any]],
     metrics: dict[str, float],
     network: dict[str, Any],
+    training: dict[str, Any],
+    world_size: int,
+    local_world_size: int,
 ) -> dict[str, Any]:
     evidence = {
-        "schema": "flagquantum.cuda_multinode_statevector_probe.v1",
+        "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
         "status": "passed",
         "environment": {
             "source_revision": _git_revision(),
@@ -130,15 +389,16 @@ def _artifact(
         },
         "scope": {
             "dtype": "complex128",
-            "n_wires": 5,
-            "world_size": 2,
-            "local_world_size": 1,
-            "node_count": 2,
+            "n_wires": N_WIRES,
+            "world_size": world_size,
+            "local_world_size": local_world_size,
+            "node_count": world_size // local_world_size,
             "distribution_semantics": "sharded_across_ranks",
-            "execution": "forward_statevector",
+            "execution": "forward_backward_optimizer_and_checkpoint_resume",
         },
         "observations": {
             "numerical_metrics": metrics,
+            "training": training,
             "rank_records": rank_records,
             "network": network,
             "validation_full_state_materialization": True,
@@ -148,9 +408,9 @@ def _artifact(
             "validation_only_tiny_full_state_gather",
             "hidden_host_staging_not_audited",
             "rdma_not_tested",
-            "distributed_gradient_not_tested",
-            "checkpoint_restart_not_tested",
             "production_performance_not_measured",
+            "two_node_pair_only_no_wider_topology",
+            "toy_circuit_parameters_only",
         ],
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
@@ -164,13 +424,84 @@ def _artifact(
     }
 
 
-def probe(*, network_log: Path | None) -> dict[str, Any] | None:
+def _declared_shape() -> tuple[int, int]:
+    """The 2xN shape this probe was launched in, refused unless it is one.
+
+    The lane is a pair of hosts; how many ranks each host runs is the caller's
+    choice, and the artifact records whichever answer it got. Anything else --
+    one host standing in for a pair, ranks placed unevenly across the two, or a
+    world size the planner cannot shard -- is refused here, before the process
+    group is built, because a shape mismatch found after it reports as a
+    collective that never completes rather than as the shape that was refused.
+    """
+
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", "1"))
+    if world_size < 1 or local_world_size < 1:
+        raise RuntimeError(
+            "probe needs a positive WORLD_SIZE and LOCAL_WORLD_SIZE, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    if world_size % local_world_size:
+        raise RuntimeError(
+            f"probe needs ranks placed evenly across the nodes, received "
+            f"world_size={world_size} local_world_size={local_world_size}"
+        )
+    node_count = world_size // local_world_size
+    if node_count != 2:
+        raise RuntimeError(
+            f"probe requires exactly two nodes, received {node_count} "
+            f"(world_size={world_size} local_world_size={local_world_size})"
+        )
+    # The statevector planner shards amplitudes by rank address bits, so ranks
+    # own unequal amplitude counts at any other world size and the executor
+    # refuses that distribution rather than running it.
+    if world_size & (world_size - 1):
+        raise RuntimeError(
+            f"probe requires a power-of-two world size, received {world_size}"
+        )
+    return world_size, local_world_size
+
+
+def _require_declared_placement(
+    summary: dict[str, Any],
+    *,
+    leg: str,
+    world_size: int,
+    local_world_size: int,
+) -> None:
+    """One leg has to have resolved the shape the launch declared.
+
+    A leg that ran at a different width, or with its ranks split differently
+    across the two hosts, is not the workload this probe set out to measure,
+    whatever it computed.
+    """
+
+    if summary["world_size"] != world_size:
+        raise RuntimeError(
+            f"the {leg} leg ran at {summary['world_size']} ranks where "
+            f"{world_size} were launched"
+        )
+    if summary["local_world_size"] != local_world_size:
+        raise RuntimeError(
+            f"the {leg} leg resolved {summary['local_world_size']} ranks per "
+            f"node where {local_world_size} were launched"
+        )
+    if summary["node_count"] != 2:
+        raise RuntimeError(
+            f"the {leg} leg resolved {summary['node_count']} nodes rather than "
+            f"the two hosts this probe requires "
+            f"(world_size={summary['world_size']} "
+            f"local_world_size={summary['local_world_size']})"
+        )
+
+
+def probe(
+    *, network_log: Path | None, checkpoint_directory: Path
+) -> dict[str, Any] | None:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
-    if int(os.environ.get("WORLD_SIZE", "1")) != 2:
-        raise RuntimeError("probe requires exactly two torchrun ranks")
-    if int(os.environ.get("LOCAL_WORLD_SIZE", "1")) != 1:
-        raise RuntimeError("probe requires exactly one rank per node")
+    world_size, local_world_size = _declared_shape()
 
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
@@ -179,15 +510,20 @@ def probe(*, network_log: Path | None) -> dict[str, Any] | None:
     rank = dist.get_rank()
     payload: dict[str, Any] | None = None
     try:
-        circuit = _circuit()
+        _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
+        circuit = _forward_circuit()
         result = execute_torch_distributed_statevector(
             circuit,
             device=device,
-            dtype=torch.complex128,
-            local_world_size=1,
+            dtype=COMPLEX_DTYPE,
+            # Pinned to the launched shape rather than left to the environment:
+            # the summary then reports `local_world_size_source == "caller"`, so
+            # the recorded placement is the one this probe asked for rather than
+            # whatever a stray variable happened to say.
+            local_world_size=local_world_size,
         )
-        torch.cuda.synchronize(device)
-        if result.shard_state.amplitudes.dtype != torch.complex128:
+        _synchronize(device)
+        if result.shard_state.amplitudes.dtype != COMPLEX_DTYPE:
             raise RuntimeError("distributed shard lost complex128 precision")
         if result.shard_state.amplitudes.device.type != "cuda":
             raise RuntimeError("distributed shard left CUDA")
@@ -195,19 +531,94 @@ def probe(*, network_log: Path | None) -> dict[str, Any] | None:
             raise RuntimeError("workload did not exercise inter-node communication")
 
         candidate = _validation_state(result)
-        reference = _circuit().state()[0].to(device=device)
-        max_abs_error = float(torch.max(torch.abs(candidate - reference)).item())
-        norm_error = float(torch.abs(torch.linalg.vector_norm(candidate) - 1).item())
-        infidelity = float(
-            1 - torch.abs(torch.vdot(reference, candidate)).square().item()
-        )
+        reference = _forward_circuit().state()[0].to(device=device)
         metrics = {
-            "statevector_max_abs_error": max_abs_error,
-            "statevector_norm_error": norm_error,
-            "statevector_infidelity": max(0.0, infidelity),
+            "statevector_max_abs_error": float(
+                torch.max(torch.abs(candidate - reference)).item()
+            ),
+            "statevector_norm_error": float(
+                torch.abs(torch.linalg.vector_norm(candidate) - 1).item()
+            ),
+            "statevector_infidelity": max(
+                0.0,
+                float(1 - torch.abs(torch.vdot(reference, candidate)).square().item()),
+            ),
         }
-        if max_abs_error > 1e-10 or norm_error > 1e-10 or infidelity > 1e-10:
+        if any(value > NUMERICAL_TOLERANCE for value in metrics.values()):
             raise RuntimeError(f"distributed numerical validation failed: {metrics}")
+
+        trainable, parameters = _trainable_circuit(device=device)
+        gradient_probe = execute_torch_distributed_statevector_reverse(
+            trainable,
+            observable_wire=_observable_wire(),
+            checkpoint_policy=StatevectorCheckpointPolicy(
+                strategy="interval", interval=2
+            ),
+            device=device,
+        )
+        gradient_probe.backward()
+        _synchronize(device)
+        reference_expectation, reference_gradients = _reference_expectation()
+        actual_gradients = tuple(
+            float(parameter.grad.detach()) for parameter in parameters
+        )
+        _require_declared_placement(
+            gradient_probe.summary(),
+            leg="backward",
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+        metrics.update(
+            {
+                "expectation_value_error": abs(
+                    float(gradient_probe.value.detach()) - reference_expectation
+                ),
+                "gradient_max_abs_error": max(
+                    abs(actual - expected)
+                    for actual, expected in zip(
+                        actual_gradients, reference_gradients, strict=True
+                    )
+                ),
+            }
+        )
+        if any(value > NUMERICAL_TOLERANCE for value in metrics.values()):
+            raise RuntimeError(f"distributed gradient validation failed: {metrics}")
+
+        training, training_metrics, training_summary = _training_observations(
+            device=device, checkpoint_directory=checkpoint_directory
+        )
+        metrics.update(training_metrics)
+        if any(value > TRAINING_TOLERANCE for value in training_metrics.values()):
+            raise RuntimeError(
+                f"distributed training validation failed: {training_metrics}"
+            )
+        _require_declared_placement(
+            training_summary,
+            leg="training",
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+        if float(training_summary["losses"][-1]) == float(
+            training_summary["losses"][0]
+        ):
+            # A frozen expectation would make every comparison below agree for
+            # the wrong reason. Whether it moved towards or away from the
+            # minimum is recorded rather than asserted: SGD on this observable
+            # takes a legitimate step in either direction at this learning rate,
+            # and the claim under test is that the checkpoint reproduces the
+            # trajectory, not that the learning rate was well chosen.
+            raise RuntimeError(
+                "the optimizer step did not change the expectation: "
+                f"{training_summary['losses']}"
+            )
+        metrics["training_loss_decrease"] = float(
+            training_summary["losses"][0] - training_summary["losses"][-1]
+        )
+        if int(training["resumed_start_step"]) != CHECKPOINT_STEPS:
+            raise RuntimeError(
+                "the resumed leg did not continue from the checkpoint: "
+                f"start_step={training['resumed_start_step']}"
+            )
 
         properties = torch.cuda.get_device_properties(device)
         record = result.summary()
@@ -222,22 +633,29 @@ def probe(*, network_log: Path | None) -> dict[str, Any] | None:
                     f"{rank} + k*{result.plan.world_size}, "
                     f"0 <= k < {result.shard_state.shard.local_amplitudes}"
                 ),
+                "backward": gradient_probe.summary(),
+                "training": training_summary,
             }
         )
-        rank_records: list[dict[str, Any] | None] = [None, None]
+        # One slot per rank: `all_gather_object` fills exactly the list it is
+        # given, so a fixed-length list would truncate a wider shape.
+        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
         dist.all_gather_object(rank_records, record)
         if rank == 0:
             payload = _artifact(
                 rank_records=[item for item in rank_records if item is not None],
                 metrics=metrics,
                 network={},
+                training=training,
+                world_size=world_size,
+                local_world_size=local_world_size,
             )
         dist.barrier()
     finally:
         dist.destroy_process_group()
 
     if rank == 0 and payload is not None:
-        network = _network_observation(network_log)
+        network = _network_observation(network_log, local_world_size=local_world_size)
         evidence = payload["evidence"]
         evidence["observations"]["network"] = network
         payload["evidence_sha256"] = _canonical_sha256(evidence)
@@ -248,12 +666,31 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     parser.add_argument(
+        "--checkpoint-directory",
+        type=Path,
+        required=True,
+        help=(
+            "shared, empty directory the training legs write rank-local "
+            "checkpoints into and resume from"
+        ),
+    )
+    parser.add_argument(
         "--network-log",
         type=Path,
         help="rank-zero NCCL debug log used to verify the selected network route",
     )
     args = parser.parse_args()
-    payload = probe(network_log=args.network_log)
+    if not shutil.which("git") and not os.environ.get("FLAGQUANTUM_SOURCE_REVISION"):
+        # The artifact has to name a revision; a checkout without git can still
+        # be pinned by the caller, and otherwise it cannot say what it measured.
+        raise SystemExit(
+            "FLAGQUANTUM_SOURCE_REVISION is required when the staged tree "
+            "carries no git checkout"
+        )
+    payload = probe(
+        network_log=args.network_log,
+        checkpoint_directory=args.checkpoint_directory,
+    )
     if payload is None:
         return 0
     encoded = json.dumps(payload, indent=2, sort_keys=True) + "\n"

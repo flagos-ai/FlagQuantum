@@ -57,6 +57,7 @@ class SlicedTNExplicitReverseResult:
     nonfinite_parameter_gradient_count: int
     saved_tape_bytes: int
     rematerialized_operation_count: int
+    peak_slice_tensor_bytes: int = 0
     reduction_method: str = "kahan_compensated"
     execution_semantics: str = "single_device_sliced_reverse"
     scalability_claim_allowed: bool = False
@@ -71,6 +72,7 @@ class SlicedTNExplicitReverseResult:
                 self.nonfinite_parameter_gradient_count
             ),
             "saved_tape_bytes": self.saved_tape_bytes,
+            "peak_slice_tensor_bytes": self.peak_slice_tensor_bytes,
             "rematerialized_operation_count": (self.rematerialized_operation_count),
             "reduction_method": self.reduction_method,
             "execution_semantics": self.execution_semantics,
@@ -376,11 +378,22 @@ def execute_sliced_tn_explicit_reverse(
         )
     )
     template_labels = tuple(node.labels for node in template_subnodes)
+    peak_slice_tensor_bytes = 0
     for assignment_batch in assignment_batches:
         assignments = dict(assignment_batch[0])
         subnodes = sliced_batch(assignment_batch)
         if tuple(node.labels for node in subnodes) != template_labels:
             raise RuntimeError("TN slice assignments changed the contraction topology")
+        # The slice tensors this batch materializes are the rank-local resident
+        # memory of one contraction, so their peak is the measured local
+        # footprint rather than an extrapolation from the whole-plan estimate.
+        peak_slice_tensor_bytes = max(
+            peak_slice_tensor_bytes,
+            sum(
+                int(node.tensor.numel()) * int(node.tensor.element_size())
+                for node in subnodes
+            ),
+        )
         detached_inputs = {
             f"input:{index}": node.tensor.detach()
             for index, node in enumerate(subnodes)
@@ -520,5 +533,6 @@ def execute_sliced_tn_explicit_reverse(
         nonfinite_cotangent_count=nonfinite_cotangents,
         nonfinite_parameter_gradient_count=nonfinite_parameters,
         saved_tape_bytes=saved_tape_bytes,
+        peak_slice_tensor_bytes=peak_slice_tensor_bytes,
         rematerialized_operation_count=rematerialized_operations,
     )

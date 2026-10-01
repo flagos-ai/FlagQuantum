@@ -34,5 +34,5 @@ studies.
 - [Service and protocol integration](SERVICE_INTEGRATION.md)
 - [QPU digital twins](QPU_DIGITAL_TWIN.md): construct, validate, persist, and
   interpret calibration-conditioned QPU models.
-- [Two-node DGX A100 runbook](MULTINODE_A100_RUNBOOK.md)
+- [Two-node distributed runbook](MULTINODE_RUNBOOK.md)
 - [Experimental artifact inspection](EXPERIMENTAL_ARTIFACTS.md)

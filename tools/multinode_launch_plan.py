@@ -22,7 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
-import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -36,12 +36,37 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 TOOL = "tools/multinode_launch_plan.py"
-PROBE = "tools/probe_cuda_multinode_statevector.py"
 WATCHDOG = "tools/run_multinode_watchdog.py"
 
-# Two ranks, one per node. The probe refuses anything else.
+# One two-node workload per probe. Each owns its own circuit, its own evidence
+# schema and its own capability entry; they share the plan, the preflight and
+# the watchdog, because those are properties of the pair rather than of what is
+# run on it.
+PROBES = {
+    "statevector": "tools/probe_cuda_multinode_statevector.py",
+    "mps": "tools/probe_cuda_multinode_mps.py",
+    "tn": "tools/probe_cuda_multinode_tn.py",
+}
+DEFAULT_PROBE = "statevector"
+# The lane the runbook and the launch-plan tests describe.
+PROBE = PROBES[DEFAULT_PROBE]
+
+# Two nodes. `LOCAL_WORLD_SIZE` is the default number of ranks each node runs;
+# `--local-world-size` overrides it, so the same lane covers a 2x1 pair and a
+# 2xN one. One rank per node is what the recorded evidence was taken on, and a
+# default that changes the shape of an existing lane would invalidate it, so it
+# stays the default. The probes accept any power-of-two value.
 NODE_COUNT = 2
 LOCAL_WORLD_SIZE = 1
+
+# The two widths the probe workloads are built on, as the launcher has to know
+# them to refuse a shape before a launch: the MPS probe's circuit has six wires
+# and the tensor-network probe's has a fixed four-way slice count. Each probe
+# carries the same number and enforces it again before it builds a process
+# group; `tests/unit/test_multinode_launch_plan.py` reads both and fails if they
+# drift apart.
+MPS_WIRES = 6
+TN_SLICE_COUNT = 4
 # `--master-port 0` picks a port that is free at plan time. The hosts are
 # shared, and 29500 is the default every other rank-2 job on them reaches for:
 # a preflight against the fixed port refused a launch because a neighbour
@@ -55,14 +80,16 @@ DEFAULT_MASTER_PORT = AUTO_MASTER_PORT
 STAGING_PREFIX = "fq-multinode"
 
 # The route the recorded two-node artifact was taken on
-# (`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260907.json`): the
+# (`artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json`): the
 # management interface with InfiniBand disabled, so the NCCL debug log can be
 # checked for both the socket transport and this interface name. The hosts do
 # carry RoCE devices; using them is a separate change with its own evidence.
 DEFAULT_INTERFACE = "ens22f0"
 
-# Passed to `pkill -f`. Long enough to name the launcher and nothing else.
-LAUNCHER_PATTERN = "probe_cuda_multinode_statevector"
+# Passed to `pkill -f`. Long enough to name a two-node probe launcher and
+# nothing else: it is the stem both probes share, and `cleanup` runs on a node
+# this lane gives one probe at a time, so it cannot reach an unrelated process.
+LAUNCHER_PATTERN = "probe_cuda_multinode"
 
 SSH_OPTIONS = (
     "-o",
@@ -91,14 +118,15 @@ STAGING_EXCLUDES = (
 DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
 UNITLESS_FORMAT = "--format=csv,noheader,nounits"
 
+
 # `ssh host a b c` is joined into one string and re-split by the peer's login
-# shell, so a token carrying whitespace arrives as several arguments and a
-# token carrying a metacharacter is interpreted rather than passed.
-_UNSAFE_REMOTE_TOKEN = re.compile(r"[\s'\"`$&|;<>()*?\\\[\]{}~#!\x00-\x1f]")
-
-
+# shell, so a token carrying whitespace would arrive as several arguments and a
+# token carrying a metacharacter would be interpreted rather than passed. Every
+# token is therefore quoted into exactly one shell word, which is what lets a
+# `-c` program or a path with a space in it reach the peer intact. A NUL byte is
+# the one thing quoting cannot carry, because it cannot be an argument at all.
 class RemoteTokenError(ValueError):
-    """A token that cannot survive the trip to the peer as one argument."""
+    """An argument that could not reach the peer even after quoting."""
 
 
 class StagingError(ValueError):
@@ -106,12 +134,23 @@ class StagingError(ValueError):
 
 
 def remote_safe(token: str) -> str:
-    if not token or _UNSAFE_REMOTE_TOKEN.search(token):
+    """One shell word the peer's login shell reads back as exactly `token`."""
+    if "\x00" in token:
         raise RemoteTokenError(
-            f"{token!r} would not reach the peer as a single argument; the "
-            "peer's login shell re-splits the command"
+            f"{token!r} contains a NUL byte, which cannot be passed to the "
+            "peer as an argument at all"
         )
-    return token
+    return shlex.quote(token)
+
+
+def peer_command(remote: Sequence[str]) -> str:
+    """The single argument `ssh` forwards, which the peer re-splits exactly once.
+
+    Reading it back with `shlex.split` reproduces `remote` exactly; that
+    round-trip is what the tests assert, because it is the property the peer
+    depends on and the property a hand-built command string loses.
+    """
+    return " ".join(remote_safe(item) for item in remote)
 
 
 def checked_staging(staging: str | Path) -> Path:
@@ -143,6 +182,47 @@ def checked_output(staging: str | Path, output_directory: str | Path) -> Path:
     return output
 
 
+def clear_lane_directory(directory: Path) -> None:
+    """Empty a directory this lane owns, so the run starts from nothing.
+
+    The lane publishes whatever the output directory holds and the probe
+    resumes from the first checkpoint it finds, so a run that failed before
+    writing would otherwise be reported as the previous run's evidence and a
+    resumed leg could restore a checkpoint it did not write. It is created
+    rather than left absent because the ranks are told to write into it.
+    """
+
+    if directory.exists():
+        shutil.rmtree(directory)
+
+
+def checked_lane_directory(
+    staging: str | Path, directory: str | Path, *, purpose: str
+) -> Path:
+    """Refuse a directory this lane is not allowed to empty.
+
+    Staging is copied into with `--delete` and the output and checkpoint
+    directories are emptied before the runs that write them, so all three have
+    to be names this lane owns. The name is what makes the removal safe, and
+    nothing about the contents can substitute for it.
+
+    The output case is not merely tidiness: the lane copies whatever is in the
+    output directory into the report, so a `node-0.json` left by an earlier run
+    would be published as this run's evidence if this one failed before writing
+    its own. The checkpoint case is the same hazard one step further in: the
+    probe resumes from the checkpoints its own first leg wrote, and a file left
+    behind would be restored instead.
+    """
+    path = checked_output(staging, directory)
+    if not path.name.startswith(STAGING_PREFIX):
+        raise StagingError(
+            f"{path} is this lane's {purpose} directory, which it empties, and "
+            f"only a directory named {STAGING_PREFIX}* is treated as this "
+            "lane's own"
+        )
+    return path
+
+
 @dataclass(frozen=True)
 class Check:
     """One preflight finding. `detail` is the evidence either way."""
@@ -153,7 +233,7 @@ class Check:
 
 
 def ssh_argv(peer_host: str, remote: Sequence[str]) -> list[str]:
-    return ["ssh", *SSH_OPTIONS, peer_host, *(remote_safe(item) for item in remote)]
+    return ["ssh", *SSH_OPTIONS, peer_host, peer_command(remote)]
 
 
 def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
@@ -170,6 +250,11 @@ def shared_environment(*, staging: str, interface: str) -> dict[str, str]:
         "NCCL_SOCKET_IFNAME": interface,
         "NCCL_IB_DISABLE": "1",
         "NCCL_DEBUG": "INFO",
+        # Every rank reads the one staged tree over the shared filesystem, and
+        # they all start together. A rank that compiled a module would write its
+        # `__pycache__` entry next to everyone else's, so the ranks are told not
+        # to: `stage` compiles the tree once, before any of them starts.
+        "PYTHONDONTWRITEBYTECODE": "1",
     }
 
 
@@ -181,17 +266,22 @@ def rank_environment(
     output_directory: str,
     source_revision: str | None = None,
 ) -> dict[str, str]:
-    """One rank's environment. Only the debug log differs between ranks.
+    """One node's environment for every rank that node runs.
 
-    `NCCL_DEBUG_FILE` has to be per rank -- two ranks writing one file would
-    interleave -- and that is why it is here rather than in a workflow `env:`
-    block: a value that depends on the node is not something one block can
-    express, and a rank that quietly lacked it would fail after NCCL init
-    rather than before.
+    `NCCL_DEBUG_FILE` is scoped to the node, not to the rank. One `torchrun`
+    per node starts all of its ranks from one environment, so a per-rank value
+    is not something this plan can express: at `--local-world-size 1` the node's
+    log is exactly one rank's log, and above that the node's ranks share it.
+    The probe reports which of the two it read, so the difference is recorded
+    rather than assumed.
+
+    It lives here rather than in a workflow `env:` block because a value that
+    depends on the node is not something one block can express, and a node that
+    quietly lacked it would fail after NCCL init rather than before.
     """
     environment = {
         **shared_environment(staging=staging, interface=interface),
-        "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-rank-{node_rank}.log"),
+        "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     }
     if source_revision is not None:
         # The probe records the revision it is evidence about. The staged copy
@@ -215,10 +305,13 @@ def rank_command(
     python: str,
     staging: str,
     output_directory: str,
+    checkpoint_directory: str,
     master_address: str,
     master_port: int,
     interface: str,
+    probe: str = PROBE,
     source_revision: str | None = None,
+    local_world_size: int = LOCAL_WORLD_SIZE,
 ) -> list[str]:
     return [
         *_env_prefix(
@@ -236,7 +329,7 @@ def rank_command(
         "--nnodes",
         str(NODE_COUNT),
         "--nproc-per-node",
-        str(LOCAL_WORLD_SIZE),
+        str(local_world_size),
         "--node-rank",
         str(node_rank),
         "--master-addr",
@@ -244,15 +337,23 @@ def rank_command(
         "--master-port",
         str(master_port),
         # Absolute, so the peer does not depend on where ssh leaves it.
-        str(Path(staging) / PROBE),
+        str(Path(staging) / probe),
         "--output",
-        str(Path(output_directory) / f"rank-{node_rank}.json"),
-        # The probe writes its artifact on rank 0 only, because the artifact
-        # carries both ranks' records. Rank 1 keeps the flag so that the file
-        # NCCL is told to write and the file the probe would read stay the same
-        # path on both nodes.
+        # One slot per node, and only the node holding world rank 0 fills it:
+        # the artifact carries every rank's record, so a file per rank would be
+        # the same evidence written several times over, once per process.
+        str(Path(output_directory) / f"node-{node_rank}.json"),
+        # Both ranks write their owner-sharded checkpoint here and both read it
+        # back on the resume leg, so it has to be a filesystem both nodes mount
+        # -- the same one the staged tree came from.
+        "--checkpoint-directory",
+        str(Path(checkpoint_directory)),
+        # The probe writes its artifact on the world's rank 0 only, because the
+        # artifact carries every rank's record. Rank 0 of the peer node keeps
+        # the flag so that the file NCCL is told to write and the file the probe
+        # would read stay the same path on both nodes.
         "--network-log",
-        str(Path(output_directory) / f"nccl-rank-{node_rank}.log"),
+        str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     ]
 
 
@@ -288,40 +389,49 @@ def build_plan(
     launch_address: str,
     staging: str,
     output_directory: str,
+    checkpoint_directory: str,
     python: str,
     master_port: int = DEFAULT_MASTER_PORT,
     interface: str = DEFAULT_INTERFACE,
+    probe: str = PROBE,
     source_revision: str | None = None,
+    local_world_size: int = LOCAL_WORLD_SIZE,
 ) -> dict[str, Any]:
-    """Write the watchdog's config: two ranks, one node each."""
+    """Write the watchdog's config: two nodes, `local_world_size` ranks each."""
     ranks = {
         node_rank: rank_command(
             node_rank=node_rank,
             python=python,
             staging=staging,
             output_directory=output_directory,
+            checkpoint_directory=checkpoint_directory,
             master_address=launch_address,
             master_port=master_port,
             interface=interface,
+            probe=probe,
             source_revision=source_revision,
+            local_world_size=local_world_size,
         )
         for node_rank in range(NODE_COUNT)
     }
     return {
         "schema": "flagquantum.multinode_launch_plan.v1",
         "node_count": NODE_COUNT,
-        "local_world_size": LOCAL_WORLD_SIZE,
+        "local_world_size": local_world_size,
+        "world_size": NODE_COUNT * local_world_size,
         "launch_address": launch_address,
         "peer_host": peer_host,
         "master_port": master_port,
         "interface": interface,
+        "probe": probe,
         "staging_directory": staging,
         "output_directory": output_directory,
+        "checkpoint_directory": checkpoint_directory,
         "jobs": [
             {
                 "name": "rank-0-launch-host",
                 "command": ranks[0],
-                "cwd": staging,
+                "cwd": rank_working_directory(staging),
                 "cleanup_command": cleanup_command(
                     node_rank=0, python=python, staging=staging
                 ),
@@ -331,7 +441,11 @@ def build_plan(
                 # ssh does not forward the launch host's environment, so the
                 # peer's rank carries its own copy of the same values.
                 "command": ssh_argv(peer_host, ranks[1]),
-                "cwd": staging,
+                # The peer's own directory is not something `ssh` can be given,
+                # so this `cwd` applies to the local ssh client only. The peer's
+                # rank resolves the staged tree through `PYTHONPATH`, which is
+                # what `import_check` measures on the far side.
+                "cwd": rank_working_directory(staging),
                 "cleanup_command": cleanup_command(
                     node_rank=1, python=python, staging=staging, peer_host=peer_host
                 ),
@@ -340,13 +454,16 @@ def build_plan(
     }
 
 
-def _run(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+def _run(
+    argv: Sequence[str], timeout: float, *, cwd: str | Path | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(item) for item in argv],
         check=False,
         capture_output=True,
         text=True,
         timeout=timeout,
+        cwd=cwd,
     )
 
 
@@ -573,7 +690,18 @@ def staging_check(
 
 
 def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, Any]:
-    """Copy the tree both ranks will run onto the filesystem they share."""
+    """Copy the tree both ranks will run onto the filesystem they share.
+
+    The copy arrives without `__pycache__`, and every rank of both nodes starts
+    at once, so an uncompiled tree has all of them compiling the same modules
+    and writing the same `.pyc` files. Those writes are atomic renames, and on
+    the shared filesystem the loser waits on an inode the winner holds while it
+    is still paging its own libraries in. This lane met exactly that as a
+    `job_timeout` with no rank past process-group creation and no NCCL debug log
+    on the launch host. Compiling here, once and before any rank starts, is what
+    keeps the lane's startup a read. `PYTHONDONTWRITEBYTECODE` then keeps a rank
+    that finds a stale entry from writing one back.
+    """
     destination = checked_staging(staging)
     destination.mkdir(parents=True, exist_ok=True)
     command = ["rsync", "-a", "--delete"]
@@ -586,6 +714,12 @@ def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, 
             f"staging failed with exit {completed.returncode}: "
             f"{_first_line(completed.stderr)}"
         )
+    compiled = _run([python, "-m", "compileall", "-q", str(destination)], 900.0)
+    if compiled.returncode != 0:
+        raise RuntimeError(
+            f"precompiling the staged tree failed with exit "
+            f"{compiled.returncode}: {_first_line(compiled.stderr)}"
+        )
     return {
         "schema": "flagquantum.multinode_staging.v1",
         "source": str(Path(source).resolve()),
@@ -593,6 +727,7 @@ def stage(*, source: str | Path, staging: str | Path, python: str) -> dict[str, 
         "excluded": list(STAGING_EXCLUDES),
         "python": python,
         "files": sum(1 for _ in destination.rglob("*.py")),
+        "bytecode_files": sum(1 for _ in destination.rglob("*.pyc")),
     }
 
 
@@ -618,6 +753,19 @@ def output_check(*, output_directory: str | Path) -> Check:
 IMPORT_PROBE = ("-c", "import flagquantum, sys; sys.stdout.write(flagquantum.__file__)")
 
 
+def rank_working_directory(staging: str | Path) -> str:
+    """The directory a rank runs from, on the node that starts it.
+
+    Named once because two places need the same answer: the plan gives both
+    ranks this `cwd`, and the import check has to run the probe from it. `''`
+    -- the working directory -- precedes `PYTHONPATH` on `sys.path`, so a check
+    that inherited the operator's own directory answers a different question
+    from the one the rank will answer, and answers it about a checkout the rank
+    never runs.
+    """
+    return str(staging)
+
+
 def import_check(
     *,
     node: str,
@@ -625,7 +773,7 @@ def import_check(
     python: str,
     peer_host: str | None = None,
     timeout: float = 120.0,
-    run: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]] = _run,
+    run: Callable[..., subprocess.CompletedProcess[str]] = _run,
 ) -> Check:
     """Each rank has to import the staged tree, and not some other copy.
 
@@ -639,19 +787,28 @@ def import_check(
     here, because the finder it installs is appended to `sys.meta_path` behind
     the default path finder. That is a property of how setuptools wrote the
     install, not a promise, so the lane asks both nodes instead of trusting it.
+
+    Each side is asked from the directory its rank will run from: the launch
+    host's rank is started by the watchdog with this `cwd`, and the peer's is
+    started by the peer's login shell, which `ssh` does not give a directory
+    either.
     """
     remote: list[str] = [
         python,
         *IMPORT_PROBE,
     ]
     environment = _env_prefix({"PYTHONPATH": staging})
-    command = (
-        [*environment, *remote]
-        if peer_host is None
-        else ssh_argv(peer_host, [*environment, *remote])
-    )
+    if peer_host is None:
+        command = [*environment, *remote]
+        working_directory: str | Path | None = rank_working_directory(staging)
+    else:
+        command = ssh_argv(peer_host, [*environment, *remote])
+        # Not this tool's own directory, and not a path only this node has: the
+        # peer's shell decides this one, so the check reproduces what the ranks
+        # get rather than what the operator happens to have.
+        working_directory = None
     try:
-        completed = run(command, timeout)
+        completed = run(command, timeout, cwd=working_directory)
     except (OSError, subprocess.TimeoutExpired) as error:
         return Check(
             f"{node}_imports_the_staged_tree", False, f"{type(error).__name__}: {error}"
@@ -697,10 +854,38 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--report-directory", default="hardware-run")
+    parser.add_argument(
+        "--checkpoint-directory",
+        default=None,
+        help=(
+            "shared, empty directory the training legs checkpoint into and "
+            "resume from; defaults to <staging>-checkpoints, and is emptied "
+            "before the run because the probe resumes from its own first leg"
+        ),
+    )
     parser.add_argument("--python", default=sys.executable)
+    parser.add_argument(
+        "--probe",
+        choices=sorted(PROBES),
+        default=DEFAULT_PROBE,
+        help="which two-node workload to run on the pair",
+    )
     parser.add_argument("--master-port", type=int, default=DEFAULT_MASTER_PORT)
     parser.add_argument("--interface", default=DEFAULT_INTERFACE)
     parser.add_argument("--source-revision", default=None)
+    parser.add_argument(
+        "--local-world-size",
+        type=int,
+        default=LOCAL_WORLD_SIZE,
+        help=(
+            "ranks each of the two nodes runs. One is the shape the recorded "
+            "evidence was taken on, and it stays the default. What a wider "
+            "value may be is the probe's business: a power of two for the "
+            "statevector workload, at most three for the MPS one, and one or "
+            "two for the tensor-network one. A width the probe would refuse is "
+            "refused here, before a rank is started"
+        ),
+    )
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--preflight-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--run-timeout-seconds", type=float, default=900.0)
@@ -712,7 +897,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--run",
         action="store_true",
-        help="preflight, stage, plan and supervise the two ranks as one unit",
+        help="preflight, stage, plan and supervise the two nodes as one unit",
     )
     parser.add_argument("--cleanup", action="store_true")
     parser.add_argument("--node-rank", type=int, default=0)
@@ -739,6 +924,50 @@ def _write(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
 
 
+def checked_local_world_size(value: int, *, probe: str) -> int:
+    """How many ranks one node runs, refused unless that probe can serve it.
+
+    Every probe shards over the whole world size and reports the placement it
+    resolved, so a node count and a per-node width are enough to describe the
+    shape. What each probe can serve differs, and the launcher refuses a shape
+    its probe would have refused anyway -- before a rank is started, which is
+    the earliest point the answer is knowable.
+
+    The two widths the probes are built on are mirrored here rather than
+    imported: the probes import torch and this tool installs nothing, which
+    `test_the_lane_runs_before_anything_is_installed` pins. They are pinned
+    against the probes' own constants instead.
+    """
+
+    size = int(value)
+    if size < 1:
+        raise SystemExit(
+            f"--local-world-size must be at least one, received {value}; a node "
+            "runs at least one rank"
+        )
+    world_size = size * NODE_COUNT
+    if probe == "statevector" and world_size & (world_size - 1):
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the statevector executor refuses: it shards by rank address "
+            "bits, so the world size has to be a power of two"
+        )
+    if probe == "mps" and world_size > MPS_WIRES:
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the rank-owned MPS executor refuses: every rank owns at "
+            f"least one site and the workload has {MPS_WIRES}"
+        )
+    if probe == "tn" and TN_SLICE_COUNT % world_size:
+        raise SystemExit(
+            f"--local-world-size {value} gives a world size of {world_size}, "
+            "which the tensor-network executor refuses: the workload has a "
+            f"fixed {TN_SLICE_COUNT}-way slice count, so the world size has to "
+            "divide it"
+        )
+    return size
+
+
 def _report_checks(checks: Sequence[Check]) -> None:
     for check in checks:
         print(f"{'ok  ' if check.ok else 'FAIL'} {check.name}: {check.detail}")
@@ -755,8 +984,15 @@ def _governed_run(args: argparse.Namespace) -> int:
     report = Path(args.report_directory)
     report.mkdir(parents=True, exist_ok=True)
     staging = checked_staging(args.staging)
-    output_directory = checked_output(
-        staging, args.output_directory or f"{staging}-out"
+    output_directory = checked_lane_directory(
+        staging,
+        args.output_directory or f"{staging}-out",
+        purpose="output",
+    )
+    checkpoint_directory = checked_lane_directory(
+        staging,
+        args.checkpoint_directory or f"{staging}-checkpoints",
+        purpose="checkpoint",
     )
     peer_address = _peer_address(args.peer_host, args.preflight_timeout_seconds)
     # The address the checks pass against is the one the plan must use, so it
@@ -783,8 +1019,12 @@ def _governed_run(args: argparse.Namespace) -> int:
 
     # Both of these happen after staging, which copies with `--delete` and
     # would remove a directory created before it.
+    for directory in (output_directory, checkpoint_directory):
+        clear_lane_directory(directory)
+
     after_staging = [
         output_check(output_directory=output_directory),
+        output_check(output_directory=checkpoint_directory),
         staging_check(peer_host=args.peer_host, staging=str(staging)),
         import_check(node="launch_host", staging=str(staging), python=args.python),
         import_check(
@@ -803,10 +1043,15 @@ def _governed_run(args: argparse.Namespace) -> int:
         launch_address=launch_address,
         staging=str(staging),
         output_directory=str(output_directory),
+        checkpoint_directory=str(checkpoint_directory),
         python=args.python,
         master_port=master_port,
         interface=args.interface,
+        probe=PROBES[args.probe],
         source_revision=args.source_revision,
+        local_world_size=checked_local_world_size(
+            args.local_world_size, probe=args.probe
+        ),
     )
     _write(report / "plan.json", plan)
     _write(report / "preflight.json", [check.__dict__ for check in checks])
@@ -894,10 +1139,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         launch_address=args.launch_address,
         staging=args.staging,
         output_directory=args.output_directory,
+        checkpoint_directory=(
+            args.checkpoint_directory or f"{args.staging}-checkpoints"
+        ),
         python=args.python,
         master_port=args.master_port,
         interface=args.interface,
+        probe=PROBES[args.probe],
         source_revision=args.source_revision,
+        local_world_size=checked_local_world_size(
+            args.local_world_size, probe=args.probe
+        ),
     )
     encoded = json.dumps(plan, indent=2, sort_keys=True) + "\n"
     if args.output is not None:

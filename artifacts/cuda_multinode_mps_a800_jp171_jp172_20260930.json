@@ -1,0 +1,968 @@
+{
+  "evidence": {
+    "captured_at": "2026-10-01T08:04:25.836696+00:00",
+    "claim_blockers": [
+      "validation_only_tiny_full_mps_gather",
+      "inter_node_cut_width_not_swept",
+      "rdma_not_tested",
+      "production_performance_not_measured",
+      "two_node_pair_only_no_wider_topology",
+      "toy_circuit_parameters_only"
+    ],
+    "environment": {
+      "cuda_runtime": "13.0",
+      "nccl": "2.29.7",
+      "python": "3.12.13",
+      "source_revision": "6cabf22f10c26df4195392ad4031a9339e4a9f31",
+      "torch": "2.13.0+cu130"
+    },
+    "observations": {
+      "network": {
+        "backend": "nccl",
+        "configured_interface": "ens22f0",
+        "configured_interface_observed": true,
+        "debug_log_scope": "rank",
+        "debug_log_sha256": "d3d0d2c8b8373064b53e96de9c49ec1fef55a717f10460442fbcf9d15754ae61",
+        "evidence_level": "observed_debug_log",
+        "ib_disabled": true,
+        "route": "socket",
+        "socket_transport_observed": true
+      },
+      "numerical_metrics": {
+        "expectation_value_error": 3.3306690738754696e-16,
+        "first_leg_initial_expectation_error": 3.3306690738754696e-16,
+        "forward_boundary_bytes": 192.0,
+        "forward_boundary_messages": 4.0,
+        "gradient_max_abs_error": 1.1102230246251565e-16,
+        "resume_prefix_max_abs_error": 0.0,
+        "resume_trajectory_max_abs_error": 0.0,
+        "statevector_infidelity": 0.0,
+        "statevector_max_abs_error": 1.1188630228279524e-16,
+        "statevector_norm_error": 2.220446049250313e-16,
+        "training_final_loss": 0.8796563867030699,
+        "training_loss_decrease": 0.028119418858087553
+      },
+      "production_full_mps_materialization": false,
+      "rank_records": [
+        {
+          "backend": "nccl",
+          "backward": {
+            "backward_error": null,
+            "blockers": [],
+            "canonicalization_policy": "dirty",
+            "canonicalization_pullback": "explicit_owner_local_qr_vjp",
+            "checkpoint_policy": {
+              "max_saved_bytes": 268435456,
+              "max_saved_factorization_bytes": null,
+              "rematerialization_interval": 1,
+              "save_two_site_factorizations": false,
+              "version": "mps_reverse_checkpoint_v3"
+            },
+            "dirty_bonds": [
+              3
+            ],
+            "discarded_weight": 0.0,
+            "distribution_semantics": "sharded_across_ranks",
+            "dynamic_metadata_broadcasts": 1,
+            "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
+            "full_mps_reconstruction": false,
+            "fused_reverse_segments": 0,
+            "gradient_accuracy": "exact",
+            "gradient_bucket_cache_hit": false,
+            "gradient_bucket_count": 1,
+            "gradient_bucket_fill_ratio": 6.103515625e-07,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 1,
+            "gradient_owner_ranks": [],
+            "gradient_policy": "exact",
+            "gradient_tolerance": 0.0,
+            "initial_mps_canonical": true,
+            "jax_required": false,
+            "last_completed_record": 5,
+            "layer_halo_inter_node_bytes": 32,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_message_count": 1,
+            "layer_halo_payload_bytes": 32,
+            "layer_halo_wait_seconds": 0.0005093049257993698,
+            "local_world_size": 1,
+            "mps_backward_execution": "completed",
+            "node_count": 2,
+            "objective_execution": "single_observable_scan",
+            "objective_scan_forward_messages": 0,
+            "objective_scan_pairs": 0,
+            "objective_scan_reverse_messages": 0,
+            "parameter_ownership": [
+              {
+                "occurrence_count": 2,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "parameter_index": 0,
+                "reduction": "all_reduce_sum"
+              },
+              {
+                "occurrence_count": 1,
+                "owner_ranks": [
+                  0
+                ],
+                "parameter_index": 1,
+                "reduction": "all_reduce_sum"
+              }
+            ],
+            "planned_canonicalization_bonds": [
+              3,
+              4
+            ],
+            "qr_factorization_count": 3,
+            "rank": 0,
+            "replicated_autograd": false,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "reverse_segment_cache_hit": false,
+            "reverse_tape_identity": "415475a14f32c69963678f176a1a5aecad60a210ae3fa8ad1b437026638b0c8b",
+            "reverse_tape_records": 6,
+            "reverse_tape_segments": 6,
+            "saved_tensor_bytes": 384,
+            "scalability_claim_allowed": false,
+            "shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+            "singular_value_degeneracy_policy": "fail_closed_at_truncation_boundary",
+            "statevector_fallback": false,
+            "static_qr_metadata_records": 1,
+            "svd_factorization_count": 0,
+            "truncation_pullback": "explicit_owner_local_svd_vjp",
+            "watchdog_diagnostics": {
+              "bond": null,
+              "communication_peer": null,
+              "last_completed_record": 5,
+              "operation_id": null,
+              "rank": 0,
+              "reverse_sequence": null,
+              "tape_cursor": 6
+            },
+            "world_size": 2
+          },
+          "blockers": [
+            "forward_only_result_excludes_backward_and_optimizer",
+            "accelerator_capacity_acceptance_pending"
+          ],
+          "bond_dimensions": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "boundary_bytes": 96,
+          "boundary_gate_count": 1,
+          "boundary_messages": 2,
+          "canonicalization_bytes_by_rank": [
+            104,
+            104
+          ],
+          "canonicalization_messages_by_rank": [
+            4,
+            4
+          ],
+          "canonicalization_temporary_bytes_by_rank": [
+            320,
+            320
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication": {
+            "backward_gradient_collective_bytes": 16,
+            "backward_gradient_collective_count": 1,
+            "backward_layer_halo_inter_node_bytes": 32,
+            "backward_layer_halo_intra_node_bytes": 0,
+            "backward_shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+            "forward_boundary_bytes": 96,
+            "forward_boundary_messages": 2,
+            "forward_communication_bytes": 360,
+            "forward_communication_messages": 8,
+            "forward_local_tensor_bytes_by_rank": [
+              320,
+              320
+            ],
+            "training_communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+            "training_last_step_boundary_bytes": 192,
+            "training_last_step_boundary_exchanges": 1,
+            "training_last_step_gradient_collective_count": 2,
+            "training_last_step_layer_halo_inter_node_bytes": 0,
+            "training_optimizer_ownership_semantics": "sharded_across_ranks",
+            "training_site_kernel_execution": "eager",
+            "training_site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager"
+          },
+          "communication_bytes": 360,
+          "communication_messages": 8,
+          "communication_primitive": "torch.distributed_point_to_point",
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
+          "distribution_semantics": "sharded_across_ranks",
+          "error_budget_policy": "enforce",
+          "error_budget_satisfied": null,
+          "executor": "pytorch_native_rank_owned_mps_forward_v1",
+          "factorization_workspace": {
+            "decision_count": 0,
+            "policy": "workspace_aware_microbatch_v1",
+            "records": []
+          },
+          "forward_tensor_lifetime": {
+            "gate_matrix_materialization": "per_instruction_last_use",
+            "layer_cache_empty_at_return": true,
+            "layer_drain_count": 0,
+            "layer_records": [],
+            "policy": "layer_local_destructive_consumption_v1"
+          },
+          "full_mps_reconstruction_count": 0,
+          "full_state_materialization": false,
+          "global_error_budget": null,
+          "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+          "jax_imported": false,
+          "jax_required": false,
+          "local_gate_count": 3,
+          "local_tensor_bytes_by_rank": [
+            320,
+            320
+          ],
+          "local_world_size": 1,
+          "mixed_canonical_residual": 4.440892098500626e-16,
+          "node_count": 2,
+          "orthogonality_center": 5,
+          "owned_sites": [
+            0,
+            1,
+            2
+          ],
+          "partition_history": [
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ]
+          ],
+          "rank": 0,
+          "rank_ownership": {
+            "local_tensor_bytes": 320,
+            "local_tensor_count": 3,
+            "local_tensor_wires": [
+              0,
+              1,
+              2
+            ],
+            "ownership": [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ],
+            "rank": 0,
+            "world_size": 2
+          },
+          "rank_placement": {
+            "local_rank": 0,
+            "node_rank": 0,
+            "rank": 0
+          },
+          "rebalance_bytes": 160,
+          "rebalance_count": 2,
+          "rebalance_messages": 2,
+          "scalability_claim_allowed": false,
+          "state_mode": "distributed_mps",
+          "state_norms": [
+            1.0000000000000004
+          ],
+          "training_step": {
+            "allocated_memory_bytes": 17061888,
+            "bond_updates": [
+              {
+                "bond": 2,
+                "communication_peer": 1,
+                "communication_sequence": 2,
+                "compute_owner": 0,
+                "discarded_weight": 0.0,
+                "forward_transport": "batched_isend_irecv",
+                "input_shapes": [
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "kept_rank": 2,
+                "operation_id": "323ecc925fce7ad9",
+                "original_rank": 2,
+                "output_shapes": [
+                  [
+                    1,
+                    1,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "payload_bytes": 192,
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "boundary_bytes": 192,
+            "boundary_exchanges": 1,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "communication_buffer_bytes": 192,
+            "diagnostics_seconds": 0.00044669583439826965,
+            "discarded_weight": 0.0,
+            "dynamic_metadata_broadcasts": 0,
+            "end_to_end_seconds": 0.04054718650877476,
+            "forward_peak_memory_bytes": 17077760,
+            "forward_seconds": 0.023089637979865074,
+            "fused_reverse_segments": 0,
+            "gradient_bucket_cache_hit": true,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 2,
+            "largest_realized_bond": 2,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "lbfgs_history_length": 0,
+            "learning_rate": 0.05,
+            "loss": 0.8796563867030699,
+            "objective_evaluations": 1,
+            "objective_execution": "single_observable_scan",
+            "objective_scan_forward_messages": 0,
+            "objective_scan_pairs": 0,
+            "objective_scan_reverse_messages": 0,
+            "optimizer_collective_bytes": 16,
+            "optimizer_collective_count": 1,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.0012486837804317474,
+            "optimizer_stage": "sgd",
+            "owned_bond_work": 1,
+            "owned_site_work": 2,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "peak_memory_bytes": 17077760,
+            "qr_activity": 0,
+            "qr_factorization_count": 3,
+            "reserved_memory_bytes": 37748736,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_peak_memory_bytes": 17072640,
+            "reverse_python_dispatches": 6,
+            "reverse_seconds": 0.015750383958220482,
+            "reverse_segment_cache_hit": true,
+            "reverse_tape_segments": 6,
+            "static_qr_metadata_records": 1,
+            "step": 3,
+            "svd_activity": 1,
+            "svd_factorization_count": 0,
+            "tape_memory_bytes": 384,
+            "training_compute_seconds": 0.04009929485619068,
+            "truncated_splits": 0,
+            "two_site_splits": 1,
+            "useful_work_completed": true
+          },
+          "truncation_error": 0.0,
+          "truncation_gradient_metadata": {
+            "exact": false,
+            "policy": "unsupported",
+            "status": "unsupported"
+          },
+          "truncation_records": [
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 1,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 4,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            }
+          ],
+          "truncation_semantics": "exact",
+          "world_size": 2
+        },
+        {
+          "backend": "nccl",
+          "backward": {
+            "backward_error": null,
+            "blockers": [],
+            "canonicalization_policy": "dirty",
+            "canonicalization_pullback": "explicit_owner_local_qr_vjp",
+            "checkpoint_policy": {
+              "max_saved_bytes": 268435456,
+              "max_saved_factorization_bytes": null,
+              "rematerialization_interval": 1,
+              "save_two_site_factorizations": false,
+              "version": "mps_reverse_checkpoint_v3"
+            },
+            "dirty_bonds": [
+              3
+            ],
+            "discarded_weight": 0.0,
+            "distribution_semantics": "sharded_across_ranks",
+            "dynamic_metadata_broadcasts": 1,
+            "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
+            "full_mps_reconstruction": false,
+            "fused_reverse_segments": 0,
+            "gradient_accuracy": "exact",
+            "gradient_bucket_cache_hit": false,
+            "gradient_bucket_count": 1,
+            "gradient_bucket_fill_ratio": 6.103515625e-07,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 1,
+            "gradient_owner_ranks": [],
+            "gradient_policy": "exact",
+            "gradient_tolerance": 0.0,
+            "initial_mps_canonical": true,
+            "jax_required": false,
+            "last_completed_record": 5,
+            "layer_halo_inter_node_bytes": 32,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_message_count": 1,
+            "layer_halo_payload_bytes": 32,
+            "layer_halo_wait_seconds": 0.00024729594588279724,
+            "local_world_size": 1,
+            "mps_backward_execution": "completed",
+            "node_count": 2,
+            "objective_execution": "single_observable_scan",
+            "objective_scan_forward_messages": 0,
+            "objective_scan_pairs": 0,
+            "objective_scan_reverse_messages": 0,
+            "parameter_ownership": [
+              {
+                "occurrence_count": 2,
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "parameter_index": 0,
+                "reduction": "all_reduce_sum"
+              },
+              {
+                "occurrence_count": 1,
+                "owner_ranks": [
+                  0
+                ],
+                "parameter_index": 1,
+                "reduction": "all_reduce_sum"
+              }
+            ],
+            "planned_canonicalization_bonds": [
+              3,
+              4
+            ],
+            "qr_factorization_count": 3,
+            "rank": 1,
+            "replicated_autograd": false,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_python_dispatches": 6,
+            "reverse_segment_cache_hit": false,
+            "reverse_tape_identity": "415475a14f32c69963678f176a1a5aecad60a210ae3fa8ad1b437026638b0c8b",
+            "reverse_tape_records": 6,
+            "reverse_tape_segments": 6,
+            "saved_tensor_bytes": 192,
+            "scalability_claim_allowed": false,
+            "shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+            "singular_value_degeneracy_policy": "fail_closed_at_truncation_boundary",
+            "statevector_fallback": false,
+            "static_qr_metadata_records": 1,
+            "svd_factorization_count": 0,
+            "truncation_pullback": "explicit_owner_local_svd_vjp",
+            "watchdog_diagnostics": {
+              "bond": null,
+              "communication_peer": null,
+              "last_completed_record": 5,
+              "operation_id": null,
+              "rank": 1,
+              "reverse_sequence": null,
+              "tape_cursor": 6
+            },
+            "world_size": 2
+          },
+          "blockers": [
+            "forward_only_result_excludes_backward_and_optimizer",
+            "accelerator_capacity_acceptance_pending"
+          ],
+          "bond_dimensions": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "boundary_bytes": 96,
+          "boundary_gate_count": 1,
+          "boundary_messages": 2,
+          "canonicalization_bytes_by_rank": [
+            104,
+            104
+          ],
+          "canonicalization_messages_by_rank": [
+            4,
+            4
+          ],
+          "canonicalization_temporary_bytes_by_rank": [
+            320,
+            320
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication": {
+            "backward_gradient_collective_bytes": 16,
+            "backward_gradient_collective_count": 1,
+            "backward_layer_halo_inter_node_bytes": 32,
+            "backward_layer_halo_intra_node_bytes": 0,
+            "backward_shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
+            "forward_boundary_bytes": 96,
+            "forward_boundary_messages": 2,
+            "forward_communication_bytes": 360,
+            "forward_communication_messages": 8,
+            "forward_local_tensor_bytes_by_rank": [
+              320,
+              320
+            ],
+            "training_communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+            "training_last_step_boundary_bytes": 192,
+            "training_last_step_boundary_exchanges": 1,
+            "training_last_step_gradient_collective_count": 2,
+            "training_last_step_layer_halo_inter_node_bytes": 0,
+            "training_optimizer_ownership_semantics": "sharded_across_ranks",
+            "training_site_kernel_execution": "eager",
+            "training_site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager"
+          },
+          "communication_bytes": 360,
+          "communication_messages": 8,
+          "communication_primitive": "torch.distributed_point_to_point",
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+          "distribution_semantics": "sharded_across_ranks",
+          "error_budget_policy": "enforce",
+          "error_budget_satisfied": null,
+          "executor": "pytorch_native_rank_owned_mps_forward_v1",
+          "factorization_workspace": {
+            "decision_count": 0,
+            "policy": "workspace_aware_microbatch_v1",
+            "records": []
+          },
+          "forward_tensor_lifetime": {
+            "gate_matrix_materialization": "per_instruction_last_use",
+            "layer_cache_empty_at_return": true,
+            "layer_drain_count": 0,
+            "layer_records": [],
+            "policy": "layer_local_destructive_consumption_v1"
+          },
+          "full_mps_reconstruction_count": 0,
+          "full_state_materialization": false,
+          "global_error_budget": null,
+          "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+          "jax_imported": false,
+          "jax_required": false,
+          "local_gate_count": 6,
+          "local_tensor_bytes_by_rank": [
+            320,
+            320
+          ],
+          "local_world_size": 1,
+          "mixed_canonical_residual": 4.440892098500626e-16,
+          "node_count": 2,
+          "orthogonality_center": 5,
+          "owned_sites": [
+            3,
+            4,
+            5
+          ],
+          "partition_history": [
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ]
+          ],
+          "rank": 1,
+          "rank_ownership": {
+            "local_tensor_bytes": 320,
+            "local_tensor_count": 3,
+            "local_tensor_wires": [
+              3,
+              4,
+              5
+            ],
+            "ownership": [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
+            ],
+            "rank": 1,
+            "world_size": 2
+          },
+          "rank_placement": {
+            "local_rank": 0,
+            "node_rank": 1,
+            "rank": 1
+          },
+          "rebalance_bytes": 160,
+          "rebalance_count": 2,
+          "rebalance_messages": 2,
+          "scalability_claim_allowed": false,
+          "state_mode": "distributed_mps",
+          "state_norms": [
+            1.0000000000000004
+          ],
+          "training_step": {
+            "allocated_memory_bytes": 17061376,
+            "bond_updates": [
+              {
+                "bond": 2,
+                "communication_peer": 1,
+                "communication_sequence": 2,
+                "compute_owner": 0,
+                "discarded_weight": 0.0,
+                "forward_transport": "batched_isend_irecv",
+                "input_shapes": [
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    2,
+                    1
+                  ]
+                ],
+                "kept_rank": 2,
+                "operation_id": "323ecc925fce7ad9",
+                "original_rank": 2,
+                "output_shapes": [
+                  [
+                    1,
+                    1,
+                    2,
+                    2
+                  ],
+                  [
+                    1,
+                    2,
+                    2,
+                    1
+                  ]
+                ],
+                "owner_ranks": [
+                  0,
+                  1
+                ],
+                "payload_bytes": 192,
+                "reverse_transport": "batched_isend_irecv"
+              }
+            ],
+            "boundary_bytes": 192,
+            "boundary_exchanges": 1,
+            "boundary_forward_exchanges": 1,
+            "boundary_reverse_exchanges": 1,
+            "communication_buffer_bytes": 192,
+            "diagnostics_seconds": 0.0007273107767105103,
+            "discarded_weight": 0.0,
+            "dynamic_metadata_broadcasts": 0,
+            "end_to_end_seconds": 0.04077093303203583,
+            "forward_peak_memory_bytes": 17077248,
+            "forward_seconds": 0.020458532497286797,
+            "fused_reverse_segments": 0,
+            "gradient_bucket_cache_hit": true,
+            "gradient_bucket_count": 2,
+            "gradient_bucket_fill_ratio": 3.0517578125e-07,
+            "gradient_collective_bytes": 16,
+            "gradient_collective_count": 2,
+            "largest_realized_bond": 1,
+            "layer_halo_inter_node_bytes": 0,
+            "layer_halo_intra_node_bytes": 0,
+            "layer_halo_message_count": 0,
+            "layer_halo_payload_bytes": 0,
+            "layer_halo_wait_seconds": 0.0,
+            "lbfgs_history_length": 0,
+            "learning_rate": 0.05,
+            "loss": 0.8796563867030699,
+            "objective_evaluations": 1,
+            "objective_execution": "single_observable_scan",
+            "objective_scan_forward_messages": 0,
+            "objective_scan_pairs": 0,
+            "objective_scan_reverse_messages": 0,
+            "optimizer_collective_bytes": 16,
+            "optimizer_collective_count": 1,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.000585559755563736,
+            "optimizer_stage": "sgd",
+            "owned_bond_work": 2,
+            "owned_site_work": 1,
+            "parameter_gradients": [],
+            "parameter_values": [],
+            "peak_memory_bytes": 17077248,
+            "qr_activity": 2,
+            "qr_factorization_count": 3,
+            "reserved_memory_bytes": 37748736,
+            "reverse_autograd_grad_invocations": 3,
+            "reverse_peak_memory_bytes": 17067520,
+            "reverse_python_dispatches": 6,
+            "reverse_seconds": 0.018988676369190216,
+            "reverse_segment_cache_hit": true,
+            "reverse_tape_segments": 6,
+            "static_qr_metadata_records": 1,
+            "step": 3,
+            "svd_activity": 0,
+            "svd_factorization_count": 0,
+            "tape_memory_bytes": 192,
+            "training_compute_seconds": 0.04004175588488579,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          },
+          "truncation_error": 0.0,
+          "truncation_gradient_metadata": {
+            "exact": false,
+            "policy": "unsupported",
+            "status": "unsupported"
+          },
+          "truncation_records": [
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 1,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 4,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            }
+          ],
+          "truncation_semantics": "exact",
+          "world_size": 2
+        }
+      ],
+      "training": {
+        "checkpoint_files": [
+          "/nfs/fq-multinode-mps21-ckpt/rank-0-step-3.pt",
+          "/nfs/fq-multinode-mps21-ckpt/rank-0-step-4.pt"
+        ],
+        "checkpoint_integrity": "sha256_atomic_file_and_metadata",
+        "checkpoint_steps": 2,
+        "checkpoint_storage_semantics": "shared_filesystem_verified",
+        "first_leg_losses": [
+          0.9077758055611574,
+          0.8991430340529726
+        ],
+        "interrupted_leg_checkpoint_files": [
+          "/nfs/fq-multinode-mps21-ckpt/rank-0-step-1.pt",
+          "/nfs/fq-multinode-mps21-ckpt/rank-0-step-2.pt"
+        ],
+        "learning_rate": 0.05,
+        "optimizer": "sgd",
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "resumed_leg_losses": [
+          0.8897849593717054,
+          0.8796563867030699
+        ],
+        "resumed_start_step": 2,
+        "resumed_steps": 4,
+        "uninterrupted_leg_checkpoint_files": [
+          "/nfs/fq-multinode-mps21-ckpt/uninterrupted/rank-0-step-3.pt",
+          "/nfs/fq-multinode-mps21-ckpt/uninterrupted/rank-0-step-4.pt"
+        ],
+        "uninterrupted_leg_losses": [
+          0.9077758055611574,
+          0.8991430340529726,
+          0.8897849593717054,
+          0.8796563867030699
+        ],
+        "uninterrupted_start_step": 0
+      },
+      "validation_full_mps_materialization": true
+    },
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum.cuda_multinode_mps_probe.v1",
+    "scope": {
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "execution": "forward_backward_optimizer_and_checkpoint_resume",
+      "local_world_size": 1,
+      "max_bond": 64,
+      "n_wires": 6,
+      "node_count": 2,
+      "observable_wires": [
+        2,
+        5
+      ],
+      "site_ownership": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "world_size": 2
+    },
+    "status": "passed"
+  },
+  "evidence_sha256": "085dfe1b10d33de95a3471fd66174e36a45949dbeb3b886311a74eda23ba2403",
+  "schema": "flagquantum.cuda_multinode_mps_artifact.v1"
+}

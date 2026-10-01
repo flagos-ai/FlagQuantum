@@ -331,13 +331,18 @@ def test_cpu_cx_segment_gather_is_single_process_only(monkeypatch):
     assert sweep._cx_segment(0, instruction, touched=False) is None
 
 
-def test_exchange_workspace_classifies_torchrun_peer_tiers(monkeypatch):
+def test_exchange_workspace_classifies_peers_by_its_placement_not_the_environment(
+    monkeypatch,
+):
     import flagquantum.runtime.executors.statevector.forward as forward
 
+    # LOCAL_WORLD_SIZE describes the world torchrun was handed. A workspace
+    # carrying an explicit placement must not re-derive one from it, or a
+    # two-node run reports its cross-network exchanges as intra-node.
     monkeypatch.setenv("LOCAL_WORLD_SIZE", "8")
     monkeypatch.setattr(forward.dist, "is_initialized", lambda: True)
     monkeypatch.setattr(forward.dist, "get_rank", lambda: 9)
-    workspace = StatevectorExchangeWorkspace()
+    workspace = StatevectorExchangeWorkspace(local_world_size=8, rank=9)
 
     workspace.record_peer_exchange(10, 64)
     workspace.record_peer_exchange(1, 128)
@@ -346,6 +351,48 @@ def test_exchange_workspace_classifies_torchrun_peer_tiers(monkeypatch):
     assert workspace.intra_node_bytes == 64
     assert workspace.inter_node_message_count == 1
     assert workspace.inter_node_bytes == 128
+
+
+def test_exchange_workspace_defaults_to_one_rank_per_host():
+    # A bare workspace stands for one rank on one host, so every other global
+    # rank is a network hop rather than silently assumed local.
+    workspace = StatevectorExchangeWorkspace()
+
+    workspace.record_peer_exchange(1, 64)
+
+    assert workspace.intra_node_message_count == 0
+    assert workspace.inter_node_message_count == 1
+    assert workspace.inter_node_bytes == 64
+
+
+@pytest.mark.parametrize("world_size", [3, 5, 6, 12])
+def test_a_world_size_the_executor_cannot_shard_is_refused_not_silently_run(
+    monkeypatch, world_size: int
+):
+    """The planner describes an arbitrary shard count; this executor does not run it.
+
+    `contiguous_amplitude_range` leaves `sharded_wires` empty, so every gate
+    resolves to a rank-local kernel and no exchange is issued. Each rank would
+    return its own contiguous slice of a gate nobody applied -- wrong
+    amplitudes reported as a successful distributed run, and `indexed_all_to_all`
+    has no transport here. Refusing is the only honest outcome.
+    """
+    import flagquantum.runtime.executors.statevector.forward_sweep as sweep_module
+
+    monkeypatch.setattr(sweep_module.dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(
+        sweep_module.dist, "get_world_size", lambda group=None: world_size
+    )
+    monkeypatch.setattr(sweep_module.dist, "get_rank", lambda group=None: 0)
+    monkeypatch.setattr(sweep_module.dist, "get_backend", lambda group=None: "gloo")
+    circuit = fq.Circuit(4).h(0).cx(0, 3).ry(2, 0.3)
+
+    with pytest.raises(NotImplementedError) as error:
+        _ShardedForwardSweep(circuit, device=torch.device("cpu"))
+
+    message = str(error.value)
+    assert f"power-of-two world_size (received {world_size})" in message
+    assert "contiguous_amplitude_range" in message
 
 
 def test_single_rank_uses_same_executor_contract_without_distributed_claim():
@@ -639,7 +686,6 @@ def test_communication_aware_layout_penalizes_full_shard_subgroup_alignment():
 
 
 def test_multi_node_rank_bit_order_puts_low_activity_wire_on_node_bit(monkeypatch):
-    monkeypatch.setenv("LOCAL_WORLD_SIZE", "8")
     circuit = fq.Circuit(28)
     for wire in range(28):
         circuit.ry(wire, torch.tensor(0.1 + wire * 0.001, requires_grad=True))
@@ -647,7 +693,10 @@ def test_multi_node_rank_bit_order_puts_low_activity_wire_on_node_bit(monkeypatc
         circuit.cx(wire, wire + 1)
 
     _, mapping = communication_aware_wire_layout(
-        circuit.to_ir(), world_size=16, preferred_local_wires=(14,)
+        circuit.to_ir(),
+        world_size=16,
+        local_world_size=8,
+        preferred_local_wires=(14,),
     )
 
     assert mapping[27] == 24
@@ -655,10 +704,45 @@ def test_multi_node_rank_bit_order_puts_low_activity_wire_on_node_bit(monkeypatc
 
     monkeypatch.setenv("FQ_STATEVECTOR_TOPOLOGY_AWARE_RANK_BITS", "0")
     _, canonical_rank_bits = communication_aware_wire_layout(
-        circuit.to_ir(), world_size=16, preferred_local_wires=(14,)
+        circuit.to_ir(),
+        world_size=16,
+        local_world_size=8,
+        preferred_local_wires=(14,),
     )
     assert canonical_rank_bits[24] == 24
     assert canonical_rank_bits[27] == 27
+
+
+def test_the_layout_placement_comes_from_the_caller_not_the_environment(monkeypatch):
+    # `LOCAL_WORLD_SIZE` describes the world torchrun was handed, which for a
+    # subgroup run is not the placement the ranks are actually in. A caller that
+    # states the placement gets that one, and an unlaunched process gets the
+    # placement-free single-node answer rather than whatever is exported around
+    # it.
+    circuit = fq.Circuit(28)
+    for wire in range(28):
+        circuit.ry(wire, torch.tensor(0.1 + wire * 0.001, requires_grad=True))
+    for wire in range(27):
+        circuit.cx(wire, wire + 1)
+    ir = circuit.to_ir()
+    monkeypatch.setenv("LOCAL_WORLD_SIZE", "1")
+
+    _, stated = communication_aware_wire_layout(
+        ir, world_size=16, local_world_size=8, preferred_local_wires=(14,)
+    )
+    _, from_environment = communication_aware_wire_layout(
+        ir, world_size=16, preferred_local_wires=(14,)
+    )
+
+    assert stated[27] == 24
+    assert from_environment != stated
+
+
+def test_a_placement_that_is_not_a_rank_count_is_refused():
+    with pytest.raises(ValueError, match="positive rank count"):
+        communication_aware_wire_layout(
+            fq.Circuit(4).to_ir(), world_size=4, local_world_size=0
+        )
 
 
 def test_single_rank_communication_aware_result_declares_basis_order():

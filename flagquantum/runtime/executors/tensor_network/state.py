@@ -15,6 +15,17 @@ from ...distributed.context import TorchDistributedContext, _rank_placement_summ
 from .sliced_tasks import DistributedTNSliceTask
 
 
+def _sliced_labels(tasks: Sequence[DistributedTNSliceTask]) -> tuple[int, ...]:
+    """The internal labels the task plan actually split the contraction over.
+
+    Recording them turns "the workload was sliced" into a fact a reader can
+    check against the plan, rather than something only the caller that passed
+    the labels knows.
+    """
+
+    return tuple(sorted({label for task in tasks for label, _ in task.assignments}))
+
+
 def _tasks_by_rank(
     tasks: Sequence[DistributedTNSliceTask],
 ) -> dict[int, int]:
@@ -22,6 +33,121 @@ def _tasks_by_rank(
     for task in tasks:
         counts[task.owner_rank] = counts.get(task.owner_rank, 0) + 1
     return counts
+
+
+def _communication_tiers(
+    *,
+    reduction_tensor_bytes: int,
+    rank_placement: Mapping[str, Any],
+    model: str,
+    collective: str | None,
+) -> dict[str, Any]:
+    """Report which reduction crossed a node boundary and how much of it did.
+
+    Slice parallelism reduces one sparse output per rank, so the reduction
+    payload is the whole inter-rank contribution. A single-rank-per-node
+    placement crosses a node boundary on every leg, a single-node placement on
+    none, and a mixed placement cannot be attributed without the collective
+    algorithm, so it reports no attributed bytes rather than a guess.
+    """
+
+    node_count = int(rank_placement.get("node_count", 1) or 1)
+    local_world_size = int(rank_placement.get("local_world_size", 1) or 1)
+    size = int(reduction_tensor_bytes) if collective is not None else 0
+    pure_inter_node = node_count > 1 and local_world_size == 1
+    pure_intra_node = node_count == 1
+    return {
+        "model": model,
+        "collective": collective,
+        "reduction_tensor_bytes": int(reduction_tensor_bytes),
+        "inter_node_collective_bytes": size if pure_inter_node else 0,
+        "intra_node_collective_bytes": size if pure_intra_node else 0,
+        "unattributed_collective_bytes": (
+            0 if (pure_inter_node or pure_intra_node) else size
+        ),
+        "inter_node_collective_possible": bool(node_count > 1),
+        "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
+    }
+
+
+def _collective_for_semantics(distribution_semantics: str) -> tuple[str, str | None]:
+    """Name the reduction that ran and how it reduced, per execution semantics."""
+
+    if distribution_semantics == "sharded_across_ranks":
+        return "collective_topology_dependent", "all_reduce_sum"
+    if (
+        distribution_semantics
+        == "local_simulated_slice_parallel_sparse_output_reduction"
+    ):
+        return "local_simulated_all_reduce", "local_simulated_all_reduce"
+    return "single_device", None
+
+
+def _claim_evidence_type(*, backend: str | None, initialized: bool) -> str:
+    """Classify what a run may be cited for, from what actually executed.
+
+    The values come from the audit vocabulary, so a reader -- or the distributed
+    evidence contract -- can tell an accelerator-backed run from a simulated
+    one. Only a real process group on `nccl` or `flagos` executed on the
+    accelerators, and only that run is runtime evidence for them; a `gloo`
+    group, a single process, and the local slice simulator are all development
+    executions, whichever topology they declare.
+    """
+
+    if initialized and str(backend) in {"nccl", "flagos"}:
+        return "production_runtime"
+    return "development_smoke"
+
+
+def _context_claim_evidence_type(context: TorchDistributedContext | None) -> str:
+    """The classification for a context a caller may or may not have built."""
+
+    return _claim_evidence_type(
+        backend=None if context is None else str(context.backend),
+        initialized=bool(context is not None and context.initialized),
+    )
+
+
+def _distributed_output_evidence(
+    *,
+    world_size: int,
+    rank_partial_bytes: Mapping[int, int],
+    rank_placement: Mapping[str, Any],
+    distribution_semantics: str,
+    claim_evidence_type: str,
+    scalability_blockers: Sequence[str],
+    reduction_tensor_bytes: int,
+) -> dict[str, Any]:
+    """Placement, memory, communication, semantics, and blockers every output reports.
+
+    The five distributed tensor-network entry points answer different questions
+    but place their work identically, so they must answer "where did this run,
+    what did it communicate, and what may be claimed from it" identically too.
+    """
+
+    model, collective = _collective_for_semantics(distribution_semantics)
+    return {
+        "world_size": world_size,
+        "local_world_size": rank_placement["local_world_size"],
+        "node_count": rank_placement["node_count"],
+        "rank_placement": dict(rank_placement),
+        "distribution_semantics": distribution_semantics,
+        "claim_evidence_type": claim_evidence_type,
+        "scalability_claim_allowed": False,
+        "scalability_blockers": tuple(scalability_blockers),
+        "communication_tiers": _communication_tiers(
+            reduction_tensor_bytes=reduction_tensor_bytes,
+            rank_placement=rank_placement,
+            model=model,
+            collective=collective,
+        ),
+        "rank_partial_bytes_by_rank": {
+            rank: int(rank_partial_bytes.get(rank, 0)) for rank in range(world_size)
+        },
+        "local_memory_bytes_by_rank": tuple(
+            int(rank_partial_bytes.get(rank, 0)) for rank in range(world_size)
+        ),
+    }
 
 
 class DistributedTensorNetworkState:
@@ -38,6 +164,7 @@ class DistributedTensorNetworkState:
         backend_policy: DistributedBackendPolicy | None = None,
         local_simulation: bool = False,
         rank_partial_bytes: Mapping[int, int] | None = None,
+        rank_placement: Mapping[str, Any] | None = None,
     ) -> None:
         self.local_state = local_state
         self.world_size = int(world_size)
@@ -50,6 +177,7 @@ class DistributedTensorNetworkState:
         self.rank_partial_bytes = {
             int(rank): int(value) for rank, value in (rank_partial_bytes or {}).items()
         }
+        self.rank_placement = dict(rank_placement) if rank_placement else None
 
     @property
     def n_wires(self) -> int:
@@ -88,8 +216,10 @@ class DistributedTensorNetworkState:
         has_slice_parallel_state = (
             initialized or self.local_simulation
         ) and self._state_cache is not None
-        rank_placement = _rank_placement_summary(
-            self.context, world_size=self.world_size
+        rank_placement = (
+            dict(self.rank_placement)
+            if self.rank_placement is not None
+            else _rank_placement_summary(self.context, world_size=self.world_size)
         )
         reduction_tensor_bytes = (
             _tensor_nbytes(self._state_cache) if self._state_cache is not None else 0
@@ -117,6 +247,22 @@ class DistributedTensorNetworkState:
                     if has_slice_parallel_state
                     else "replicated_single_rank"
                 ),
+                # The slices are contracted on rank owners, but the returned
+                # state is the reduced full state that every rank materializes,
+                # so the forward work and this object's distribution differ and
+                # both are reported.
+                "forward_distribution_semantics": (
+                    "sharded_across_ranks"
+                    if has_slice_parallel_state
+                    else "single_device"
+                ),
+                "state_distribution_semantics": (
+                    "replicated_full_state_after_all_reduce"
+                    if has_slice_parallel_state
+                    else "replicated_single_rank"
+                ),
+                "full_state_materialized": self._state_cache is not None,
+                "claim_evidence_type": _context_claim_evidence_type(self.context),
                 "scalability_claim_allowed": False,
                 "scalability_blockers": tuple(
                     blocker
@@ -132,22 +278,18 @@ class DistributedTensorNetworkState:
                 ),
                 "rank": self.context.rank if self.context else 0,
                 "rank_placement": rank_placement,
-                "communication_tiers": {
-                    "model": (
+                "communication_tiers": _communication_tiers(
+                    reduction_tensor_bytes=reduction_tensor_bytes,
+                    rank_placement=rank_placement,
+                    model=(
                         "local_simulated_all_reduce"
                         if self.local_simulation
                         else "collective_topology_dependent"
                     ),
-                    "collective": (
-                        "all_reduce_sum" if has_slice_parallel_state else None
-                    ),
-                    "reduction_tensor_bytes": reduction_tensor_bytes,
-                    "inter_node_collective_possible": bool(
-                        rank_placement["node_count"] > 1 and self.world_size > 1
-                    ),
-                    "note": "Exact intra-node/inter-node bytes depend on torch.distributed/NCCL collective algorithm.",
-                },
+                    collective=("all_reduce_sum" if has_slice_parallel_state else None),
+                ),
                 "slice_tasks": len(self.tasks),
+                "slice_labels": _sliced_labels(self.tasks),
                 "tasks_by_rank": {
                     rank: sum(1 for task in self.tasks if task.owner_rank == rank)
                     for rank in range(self.world_size)
@@ -156,13 +298,9 @@ class DistributedTensorNetworkState:
                     rank: self.rank_partial_bytes.get(rank, 0)
                     for rank in range(self.world_size)
                 },
-                "local_memory_bytes_by_rank": (
-                    tuple(
-                        self.rank_partial_bytes.get(rank, 0)
-                        for rank in range(self.world_size)
-                    )
-                    if self.rank_partial_bytes
-                    else None
+                "local_memory_bytes_by_rank": tuple(
+                    self.rank_partial_bytes.get(rank, 0)
+                    for rank in range(self.world_size)
                 ),
             }
         )
@@ -179,19 +317,30 @@ class DistributedTensorNetworkAmplitude:
     rank_partial_bytes: Mapping[int, int]
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
+    rank_placement: Mapping[str, Any]
+    claim_evidence_type: str
+    scalability_blockers: Sequence[str] = ()
 
     def summary(self) -> dict[str, Any]:
+        reduction_tensor_bytes = _tensor_nbytes(self.value)
         return {
             "state_mode": "distributed_tensor_network_amplitude",
             "output_target": "single_amplitude",
-            "world_size": self.world_size,
             "slice_tasks": len(self.tasks),
+            "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),
-            "rank_partial_bytes_by_rank": dict(self.rank_partial_bytes),
-            "reduction_payload_bytes": _tensor_nbytes(self.value),
-            "distribution_semantics": self.distribution_semantics,
+            "reduction_payload_bytes": reduction_tensor_bytes,
             "full_state_materialized": False,
             "working_set_preflight": dict(self.working_set_preflight),
+            **_distributed_output_evidence(
+                world_size=self.world_size,
+                rank_partial_bytes=self.rank_partial_bytes,
+                rank_placement=self.rank_placement,
+                distribution_semantics=self.distribution_semantics,
+                claim_evidence_type=self.claim_evidence_type,
+                scalability_blockers=self.scalability_blockers,
+                reduction_tensor_bytes=reduction_tensor_bytes,
+            ),
         }
 
 
@@ -206,20 +355,31 @@ class DistributedTensorNetworkExpectation:
     observable_wires: tuple[int, ...]
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
+    rank_placement: Mapping[str, Any]
+    claim_evidence_type: str
+    scalability_blockers: Sequence[str] = ()
 
     def summary(self) -> dict[str, Any]:
+        reduction_tensor_bytes = _tensor_nbytes(self.value)
         return {
             "state_mode": "distributed_tensor_network_expectation",
             "output_target": "local_observables",
             "observable_wires": self.observable_wires,
-            "world_size": self.world_size,
             "slice_tasks": len(self.tasks),
+            "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),
-            "rank_partial_bytes_by_rank": dict(self.rank_partial_bytes),
-            "reduction_payload_bytes": _tensor_nbytes(self.value),
-            "distribution_semantics": self.distribution_semantics,
+            "reduction_payload_bytes": reduction_tensor_bytes,
             "full_state_materialized": False,
             "working_set_preflight": dict(self.working_set_preflight),
+            **_distributed_output_evidence(
+                world_size=self.world_size,
+                rank_partial_bytes=self.rank_partial_bytes,
+                rank_placement=self.rank_placement,
+                distribution_semantics=self.distribution_semantics,
+                claim_evidence_type=self.claim_evidence_type,
+                scalability_blockers=self.scalability_blockers,
+                reduction_tensor_bytes=reduction_tensor_bytes,
+            ),
         }
 
 
@@ -234,21 +394,32 @@ class DistributedTensorNetworkAmplitudes:
     target_count: int
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
+    rank_placement: Mapping[str, Any]
+    claim_evidence_type: str
+    scalability_blockers: Sequence[str] = ()
 
     def summary(self) -> dict[str, Any]:
+        reduction_tensor_bytes = _tensor_nbytes(self.values)
         return {
             "state_mode": "distributed_tensor_network_amplitudes",
             "output_target": "few_amplitudes",
             "target_count": self.target_count,
-            "world_size": self.world_size,
             "slice_tasks": len(self.tasks),
+            "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),
-            "rank_partial_bytes_by_rank": dict(self.rank_partial_bytes),
-            "reduction_payload_bytes": _tensor_nbytes(self.values),
-            "distribution_semantics": self.distribution_semantics,
+            "reduction_payload_bytes": reduction_tensor_bytes,
             "shared_contraction": True,
             "full_state_materialized": False,
             "working_set_preflight": dict(self.working_set_preflight),
+            **_distributed_output_evidence(
+                world_size=self.world_size,
+                rank_partial_bytes=self.rank_partial_bytes,
+                rank_placement=self.rank_placement,
+                distribution_semantics=self.distribution_semantics,
+                claim_evidence_type=self.claim_evidence_type,
+                scalability_blockers=self.scalability_blockers,
+                reduction_tensor_bytes=reduction_tensor_bytes,
+            ),
         }
 
 
@@ -263,21 +434,32 @@ class DistributedTensorNetworkExpectations:
     observable_count: int
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
+    rank_placement: Mapping[str, Any]
+    claim_evidence_type: str
+    scalability_blockers: Sequence[str] = ()
 
     def summary(self) -> dict[str, Any]:
+        reduction_tensor_bytes = _tensor_nbytes(self.values)
         return {
             "state_mode": "distributed_tensor_network_expectations",
             "output_target": "local_observables",
             "observable_count": self.observable_count,
-            "world_size": self.world_size,
             "slice_tasks": len(self.tasks),
+            "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),
-            "rank_partial_bytes_by_rank": dict(self.rank_partial_bytes),
-            "reduction_payload_bytes": _tensor_nbytes(self.values),
-            "distribution_semantics": self.distribution_semantics,
+            "reduction_payload_bytes": reduction_tensor_bytes,
             "shared_contraction": True,
             "full_state_materialized": False,
             "working_set_preflight": dict(self.working_set_preflight),
+            **_distributed_output_evidence(
+                world_size=self.world_size,
+                rank_partial_bytes=self.rank_partial_bytes,
+                rank_placement=self.rank_placement,
+                distribution_semantics=self.distribution_semantics,
+                claim_evidence_type=self.claim_evidence_type,
+                scalability_blockers=self.scalability_blockers,
+                reduction_tensor_bytes=reduction_tensor_bytes,
+            ),
         }
 
 
