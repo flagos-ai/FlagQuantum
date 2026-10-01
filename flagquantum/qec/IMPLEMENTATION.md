@@ -154,12 +154,29 @@ transcribes the memory circuit gate for gate into a `stim.Circuit` with the same
 phenomenological noise model and lets stim build a detector error model from it
 with stim's own error-analysis pass. Nothing is shared with the FlagQuantum side
 except the circuit's gate sequence and the noise model, which is the input the
-comparison is about. On the distance-2 and distance-3 configurations the two
-models declare the same shape, the same mechanism count, and detector marginals
-that agree within the sampling error of the stim side; the tolerance is four
-standard errors, while a transcription that applies the data flip after the
-round's gates instead of before it deviates by 0.038 and a terminal detector
-that omits the data readout deviates by 0.107.
+comparison is about. On the eight configurations distance two and three at one
+through four rounds, the two models declare the same shape and the same mechanism
+count. Detector marginals agree within the sampling error of the stim side, at
+four hundred thousand shots and a tolerance of four standard errors of the
+largest measured rate: the worst correct deviation over the sweep is 0.001031 at
+distance three with four rounds, while a transcription that applies the data flip
+after the round's gates instead of before it deviates by 0.038 and a terminal
+detector that omits the data readout deviates by 0.107. The marginals are also
+compared across four noise strengths and two seeds.
+
+Marginals alone would not separate a model that keeps every marginal and drops
+every correlation, so the same suite compares every detector pair rate. Because
+the mechanisms fire independently, a pair's exact rate follows from the product
+of `1 - 2p` over the mechanisms flipping exactly one of the two, and the
+arithmetic asserts on its own diagonal against `detector_rates()`. The worst pair
+deviation over the sweep is 0.000374 against a four-standard-error tolerance of
+0.000672, and the tolerance is bounded above by the standard error of a
+half-rate so that it cannot silently degrade into an assertion that accepts any
+divergence. A model holding one mechanism per detector, carrying that detector's
+exact marginal, lands between 0.29 and 0.65 of the marginal tolerance — it
+reproduces the marginals by construction — while its pair rates miss by 10.7 to
+23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
+to 0.1794.
 
 Construction is a forced execution, so it is bounded by the statevector amplitude
 ceiling rather than by the detector error model's own cost. A rotated surface

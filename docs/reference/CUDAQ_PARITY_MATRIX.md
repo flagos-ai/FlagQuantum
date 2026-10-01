@@ -295,7 +295,7 @@ Evidence:
 - domain default, negative search: no per-operation callback model and no unitary-mixture type
 
 - `kraus_channel_algebra` override: `flagquantum/noise/channels.py`, `tests/unit/test_kraus_channel_surface.py`
-- `detector_error_model` override: `flagquantum/qec/dem.py`, `tests/qec/test_dem_stim_text.py`, `tests/qec/test_dem_stim_interop.py`, `flagquantum/qec/IMPLEMENTATION.md`, `search:no route from an arbitrary annotated circuit to a detector error model`
+- `detector_error_model` override: `flagquantum/qec/dem.py`, `tests/qec/test_dem_stim_text.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_stim_reference_rates.py`, `flagquantum/qec/IMPLEMENTATION.md`, `search:no route from an arbitrary annotated circuit to a detector error model`
 - `noise_trajectory_shot_allocation` override: `flagquantum/runtime/executors/mps/noisy.py`, `flagquantum/runtime/planner/noise_selection.py`, `search:no explicit trajectory selection strategy and no shot allocation policy`
 
 #### Operator algebra and domain libraries
