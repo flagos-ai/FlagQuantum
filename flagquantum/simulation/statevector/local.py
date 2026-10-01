@@ -12,12 +12,19 @@ from typing import TYPE_CHECKING, Any, cast
 
 import torch
 
-from ...core.ir import CircuitIR, Instruction
+from ...core.ir import CircuitIR
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
+from ..gate_matrix import _parameter_batch_window
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
+from .batching import (
+    _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
+    _cpu_statevector_batch_chunk_size,
+    _gate_parameters,
+    _rotation_region_angles,
+)
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
@@ -46,7 +53,6 @@ from .operations import (
     _diagonal_region,
     _environment_flag,
     _fused_gate_matrix,
-    _gate_parameter_tensor,
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
     _StatevectorDenseRegion,
@@ -160,71 +166,6 @@ def _cpu_disjoint_dense_max_wires(
         ):
             return _CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES
     return _CPU_DISJOINT_DENSE_MAX_WIRES
-
-
-def _initial_state(circuit: Circuit) -> torch.Tensor:
-    """Resolve or create a Circuit's local statevector input."""
-
-    if circuit._inputs is not None:
-        resolved = circuit._inputs.to(device=circuit.device, dtype=circuit.dtype)
-        return resolved.reshape(1, -1) if resolved.ndim == 1 else resolved
-    workspace = circuit._initial_state_workspace
-    if workspace is None:
-        workspace = torch.zeros(
-            circuit.bsz,
-            2**circuit.n_wires,
-            dtype=circuit.dtype,
-            device=circuit.device,
-        )
-        workspace[:, 0] = 1
-        circuit._initial_state_workspace = workspace
-    return workspace
-
-
-def _gate_parameters(
-    circuit: Circuit,
-    instruction: Instruction,
-    state: torch.Tensor,
-    parameter_bindings: tuple[torch.Tensor, ...] | None,
-) -> torch.Tensor | None:
-    cacheable = parameter_bindings is None and all(
-        isinstance(value, Number) for value in instruction.params.values()
-    )
-    if not cacheable:
-        return _gate_parameter_tensor(
-            instruction,
-            state,
-            parameter_bindings=parameter_bindings,
-        )
-    key = (id(instruction), str(state.device), state.dtype, int(state.shape[0]))
-    cached = circuit._statevector_constant_parameters.get(key)
-    if cached is None:
-        cached = _gate_parameter_tensor(instruction, state, parameter_bindings=None)
-        if cached is not None:
-            circuit._statevector_constant_parameters[key] = cached
-    return cached
-
-
-def _rotation_region_angles(
-    circuit: Circuit,
-    steps: Sequence[_StatevectorFusedGateStep],
-    state: torch.Tensor,
-    parameter_bindings: tuple[torch.Tensor, ...] | None,
-) -> torch.Tensor | None:
-    """Collect batched angles, or decline fusion when a parameter is unavailable."""
-    regions: list[torch.Tensor] = []
-    for step in steps:
-        parameters = tuple(
-            _gate_parameters(circuit, instruction, state, parameter_bindings)
-            for instruction in step.instructions
-        )
-        angles: list[torch.Tensor] = []
-        for parameter in parameters:
-            if parameter is None:
-                return None
-            angles.append(parameter[:, 0])
-        regions.append(torch.stack(angles, dim=-1))
-    return torch.stack(regions, dim=0) if regions else None
 
 
 def _cx_sequence_masks(
@@ -870,6 +811,115 @@ def _apply_cross_wire_diagonal_step(
     )
 
 
+def _execute_statevector_program(
+    circuit: Circuit,
+    program: Sequence[_StatevectorProgramStep],
+    output: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> torch.Tensor:
+    """Execute a compiled program for one full batch or bounded batch window."""
+
+    batched_rx_ry_rz_matrices, batched_rotation_matrices = (
+        _prepare_batched_rotation_matrices(
+            circuit,
+            program,
+            output,
+            parameter_bindings,
+        )
+    )
+    circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = len(
+        batched_rx_ry_rz_matrices
+    )
+    circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
+        batched_rotation_matrices
+    )
+    for step in program:
+        if isinstance(step, _StatevectorControlledPhaseGraphStep):
+            factors, wires = _controlled_phase_graph_factors(circuit, step, output)
+            output = _apply_controlled_phase_graph_cpu(
+                output, factors, wires, circuit.n_wires
+            )
+            continue
+        if isinstance(step, _StatevectorCZGraphStep):
+            signs, wires = _cz_graph_signs(circuit, step, output.device)
+            output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
+            continue
+        if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
+            output = _apply_diagonal_matrix(
+                output,
+                _controlled_phase_decomposition_matrix(circuit, step, output),
+                (step.control, step.target),
+                circuit.n_wires,
+            )
+            continue
+        if isinstance(step, _StatevectorDisjointDenseStep):
+            output = _apply_disjoint_dense_step(
+                circuit,
+                step,
+                output,
+                parameter_bindings,
+                batched_rx_ry_rz_matrices,
+                batched_rotation_matrices,
+            )
+            continue
+        if isinstance(step, _StatevectorCrossWireDiagonalStep):
+            output = _apply_cross_wire_diagonal_step(
+                circuit,
+                step,
+                output,
+                parameter_bindings,
+            )
+            continue
+        if isinstance(step, _StatevectorCXSequenceStep):
+            output = _apply_cx_sequence(circuit, step, output)
+            continue
+        if isinstance(step, _StatevectorRXRZLoopStep):
+            output = _apply_rx_rz_loop(
+                output,
+                step,
+                circuit.n_wires,
+                parameter_bindings,
+            )
+            continue
+        if isinstance(step, _StatevectorFusedGateStep):
+            output = _apply_fused_gate_step(
+                circuit,
+                step,
+                output,
+                parameter_bindings,
+                batched_rx_ry_rz_matrices,
+                batched_rotation_matrices,
+            )
+            continue
+        instruction = step.instruction
+        name = canonical_opcode(instruction.name)
+        if name in {"x", "cx", "swap"}:
+            output = _apply_fixed_permutation(
+                output, name, instruction.wires, circuit.n_wires
+            )
+        elif name == "y":
+            output = _apply_single_qubit_fixed(
+                output, name, instruction.wires[0], circuit.n_wires
+            )
+        else:
+            matrix = _gate_matrix(
+                instruction,
+                bsz=output.shape[0],
+                device=output.device,
+                dtype=output.dtype,
+                parameter_bindings=parameter_bindings,
+            )
+            output = _apply_gate_matrix(
+                output,
+                matrix,
+                instruction.wires,
+                circuit.n_wires,
+                uses_diagonal_kernel=_diagonal_region((instruction,)),
+                layout=step.layout,
+            )
+    return output
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -1016,104 +1066,39 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         circuit._last_statevector_runtime = _initial_runtime_metrics(
             program, enable_triton_loop=enable_triton_loop
         )
-        batched_rx_ry_rz_matrices, batched_rotation_matrices = (
-            _prepare_batched_rotation_matrices(
+        batch_size = int(output.shape[0])
+        batch_chunk_size = _cpu_statevector_batch_chunk_size(output)
+        batch_chunk_count = (batch_size + batch_chunk_size - 1) // batch_chunk_size
+        circuit._last_statevector_runtime["statevector_batch_chunk_size"] = (
+            batch_chunk_size
+        )
+        circuit._last_statevector_runtime["statevector_batch_chunk_count"] = (
+            batch_chunk_count
+        )
+        circuit._last_statevector_runtime["statevector_batch_chunk_budget_bytes"] = (
+            _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
+        )
+        if batch_chunk_count == 1:
+            output = _execute_statevector_program(
                 circuit,
                 program,
                 output,
                 parameter_bindings,
             )
-        )
-        circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = len(
-            batched_rx_ry_rz_matrices
-        )
-        circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
-            batched_rotation_matrices
-        )
-        for step in program:
-            if isinstance(step, _StatevectorControlledPhaseGraphStep):
-                factors, wires = _controlled_phase_graph_factors(circuit, step, output)
-                output = _apply_controlled_phase_graph_cpu(
-                    output, factors, wires, circuit.n_wires
-                )
-                continue
-            if isinstance(step, _StatevectorCZGraphStep):
-                signs, wires = _cz_graph_signs(circuit, step, output.device)
-                output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
-                continue
-            if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
-                output = _apply_diagonal_matrix(
-                    output,
-                    _controlled_phase_decomposition_matrix(circuit, step, output),
-                    (step.control, step.target),
-                    circuit.n_wires,
-                )
-                continue
-            if isinstance(step, _StatevectorDisjointDenseStep):
-                output = _apply_disjoint_dense_step(
-                    circuit,
-                    step,
-                    output,
-                    parameter_bindings,
-                    batched_rx_ry_rz_matrices,
-                    batched_rotation_matrices,
-                )
-                continue
-            if isinstance(step, _StatevectorCrossWireDiagonalStep):
-                output = _apply_cross_wire_diagonal_step(
-                    circuit,
-                    step,
-                    output,
-                    parameter_bindings,
-                )
-                continue
-            if isinstance(step, _StatevectorCXSequenceStep):
-                output = _apply_cx_sequence(circuit, step, output)
-                continue
-            if isinstance(step, _StatevectorRXRZLoopStep):
-                output = _apply_rx_rz_loop(
-                    output,
-                    step,
-                    circuit.n_wires,
-                    parameter_bindings,
-                )
-                continue
-            if isinstance(step, _StatevectorFusedGateStep):
-                output = _apply_fused_gate_step(
-                    circuit,
-                    step,
-                    output,
-                    parameter_bindings,
-                    batched_rx_ry_rz_matrices,
-                    batched_rotation_matrices,
-                )
-                continue
-            instruction = step.instruction
-            name = canonical_opcode(instruction.name)
-            if name in {"x", "cx", "swap"}:
-                output = _apply_fixed_permutation(
-                    output, name, instruction.wires, circuit.n_wires
-                )
-            elif name == "y":
-                output = _apply_single_qubit_fixed(
-                    output, name, instruction.wires[0], circuit.n_wires
-                )
-            else:
-                matrix = _gate_matrix(
-                    instruction,
-                    bsz=output.shape[0],
-                    device=output.device,
-                    dtype=output.dtype,
-                    parameter_bindings=parameter_bindings,
-                )
-                output = _apply_gate_matrix(
-                    output,
-                    matrix,
-                    instruction.wires,
-                    circuit.n_wires,
-                    uses_diagonal_kernel=_diagonal_region((instruction,)),
-                    layout=step.layout,
-                )
+        else:
+            chunks = []
+            for start in range(0, batch_size, batch_chunk_size):
+                stop = min(start + batch_chunk_size, batch_size)
+                with _parameter_batch_window(start, stop, batch_size):
+                    chunks.append(
+                        _execute_statevector_program(
+                            circuit,
+                            program,
+                            output[start:stop],
+                            parameter_bindings,
+                        )
+                    )
+            output = torch.cat(chunks, dim=0)
     circuit._state_cache = output
     return output
 

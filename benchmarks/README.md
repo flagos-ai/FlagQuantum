@@ -179,6 +179,14 @@ See the [Apple arm64 scorecard](results/comparison/BATCHED_STATEVECTOR_CPU_ARM64
 for the checked-in result, its important 18-qubit batching limitation, exact
 times, ratios, and the focused stability rerun.
 
+The follow-up
+[wide-batch windowing scorecard](results/comparison/BATCHED_STATEVECTOR_CHUNKING_CPU_ARM64_20261001_SCORECARD.md)
+measures the automatic 64 MiB CPU statevector windows against the same native
+batch with windowing disabled, FlagQuantum scalar execution, Qiskit Aer, Cirq,
+and PennyLane Lightning. It records exact task times, `1.05x`-`1.27x`
+monolithic-batch speedups, remaining limitations, and the complete reproduction
+command.
+
 The [CPU phase-1 scorecard](results/comparison/CPU_PHASE1_SCORECARD_CPU_ARM64_20260930.md)
 summarizes the maintained Apple arm64 corpus: FlagQuantum wins all 20 recorded
 workload/width cases against each of Qiskit Aer, Cirq Simulator, and PennyLane
