@@ -19,6 +19,12 @@ wires connect it, and a program that the device connects only through a padding
 wire is refused rather than costed against a route the plan cannot emit. Routing
 through a physical ancilla remains the unsupported case it is for the
 shortest-path strategies.
+The beam search Qiskit ships as `LookaheadSwap` was ported and measured against
+these strategies before being rejected as a fifth one. It is a faithful
+replacement at search depth and width one, but no objective of it beats
+`sabre_layout`, and the objective Qiskit documents fails closed on programs where
+one operation stays stranded. `benchmarks/compiler_lookahead_swap.py` holds that
+measurement, so the search does not need to be rebuilt to re-test the decision.
 `layout.py` owns the logical-to-physical `Layout` value and the two
 transformations over it: applying a layout to a program by relabelling its wires,
 and removing the trailing restore SWAPs a routed program ends with. A routing

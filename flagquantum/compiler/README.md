@@ -48,6 +48,16 @@ router through the compiler, the topology legalizer, and the dynamic-circuit
 runtime, which is how the boundary is shown to be replaceable rather than
 merely defined.
 
+The reference lookahead SWAP search Qiskit ships was measured against these
+strategies before being rejected as a fifth one. It passes the boundary above:
+at search depth and width one it reproduces the shipped planner's plan, and every
+program it compiles is legal on the device and numerically equal to its source.
+It is rejected on cost. No objective of it beats `sabre_layout`, and the objective
+Qiskit documents fails closed on programs where one operation stays stranded
+behind the front layer, so it cannot be routed at all on part of the workload.
+[benchmarks/compiler_lookahead_swap.py](../../benchmarks/compiler_lookahead_swap.py)
+holds the measurement and the commands that reproduce it.
+
 A placement is a tuple of physical wires, one per logical wire: the argument
 `route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a
