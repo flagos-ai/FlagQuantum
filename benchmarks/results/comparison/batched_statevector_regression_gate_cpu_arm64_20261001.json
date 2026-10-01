@@ -1,0 +1,95 @@
+{
+  "artifact_class": "generated_comparison_report",
+  "benchmark": "cpu_performance_regression_gate",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "case": "local_brickwork_statevector/18/32/complex128/671e4e97dfc252ff7d05b080b92dbaf347aee3c612f32f50127a0e88f50569eb",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "batch_total": {
+          "baseline_median_seconds": 1.0613487499940675,
+          "current_median_seconds": 0.8807083330029855,
+          "current_over_baseline": 0.8298010743480013,
+          "current_sample_count": 11,
+          "passed": true
+        },
+        "peak_rss": {
+          "baseline_bytes": 937902080,
+          "current_bytes": 958169088,
+          "current_over_baseline": 1.0216088741374794,
+          "current_probe_count": 3,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    },
+    {
+      "case": "random_clifford_statevector/18/32/complex128/b17e49ab4bed1cc75e171ea83ca405308088caec7d85f6ba458ea9c6881b9c67",
+      "correctness_passed": true,
+      "failures": [],
+      "metrics": {
+        "batch_total": {
+          "baseline_median_seconds": 1.049385499994969,
+          "current_median_seconds": 0.9298240000061924,
+          "current_over_baseline": 0.8860652258018147,
+          "current_sample_count": 11,
+          "passed": true
+        },
+        "peak_rss": {
+          "baseline_bytes": 987660288,
+          "current_bytes": 987627520,
+          "current_over_baseline": 0.9999668226004446,
+          "current_probe_count": 3,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "stability_passed": true
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "distribution_semantics": "timing_single_process_memory_median_of_fresh_processes",
+  "failures": [],
+  "missing_cases": [],
+  "non_release_evidence": true,
+  "passed": true,
+  "policy": {
+    "case_matrix_must_not_shrink": true,
+    "correctness_required": true,
+    "max_memory_growth": 1.1,
+    "max_slowdown": 1.2,
+    "minimum_memory_probes": 3,
+    "minimum_samples": 5,
+    "stability_required": true
+  },
+  "profile": {
+    "device": "cpu",
+    "exact_statevector": true,
+    "machine": "arm64",
+    "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+    "memory_scope": "fresh_process_high_water_resident_set",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python_family": "3.12",
+    "schema": "flagquantum.batched_statevector_memory.v1",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "timing_scope": "complete_N_statevector_user_task",
+    "torch_family": "2.13",
+    "torch_threads": 1
+  },
+  "release_gate_allowed": false,
+  "runner": "cpu_performance_gate",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.cpu_performance_regression_gate.v1",
+  "unexpected_cases": [],
+  "verdict": "pass"
+}

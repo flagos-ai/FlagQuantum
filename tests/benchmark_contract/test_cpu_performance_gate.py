@@ -64,6 +64,63 @@ def _payload(*, schema: str = "flagquantum.simulator_workload_corpus.v1") -> dic
     }
 
 
+def _batched_payload() -> dict:
+    return {
+        "schema": "flagquantum.batched_statevector_memory.v1",
+        "platform": "testOS-arm64",
+        "python": "3.12.7",
+        "environment": {
+            "machine": "arm64",
+            "device": "cpu",
+            "torch": "2.13.1",
+            "torch_threads": 1,
+            "thread_environment": {
+                "OMP_NUM_THREADS": "1",
+                "MKL_NUM_THREADS": "1",
+                "OPENBLAS_NUM_THREADS": "1",
+            },
+        },
+        "methodology": {
+            "timing_scope": "complete_N_statevector_user_task",
+            "memory_scope": "fresh_process_high_water_resident_set",
+            "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+            "exact_statevector": True,
+        },
+        "cases": [
+            {
+                "workload": {
+                    "name": "random_clifford_statevector",
+                    "n_wires": 18,
+                    "batch_size": 32,
+                    "dtype": "complex128",
+                    "scalar_ir_content_hash": "batch123",
+                },
+                "correctness": {
+                    "passed": True,
+                    "absolute_tolerance": 1e-10,
+                    "engines": {
+                        "flagquantum_native_batch": {"passed": True},
+                        "flagquantum_native_layout_retention": {"passed": True},
+                    },
+                },
+                "stability": {
+                    "passed": True,
+                    "engines": {"flagquantum_native_batch": True},
+                },
+                "engines": {
+                    "flagquantum_native_batch": {
+                        "batch_total": {"median_seconds": 1.0, "sample_count": 11},
+                        "isolated_memory": {
+                            "peak_rss_bytes": 1_000_000_000,
+                            "sample_count": 3,
+                        },
+                    }
+                },
+            }
+        ],
+    }
+
+
 def test_runner_is_registered() -> None:
     assert "cpu_performance_gate" in runners.names()
     assert callable(runners.resolve("cpu_performance_gate"))
@@ -88,6 +145,82 @@ def test_gate_accepts_supported_corpora_within_tolerance(schema: str) -> None:
     assert report["verdict"] == "pass"
     assert report["passed"] is True
     assert report["cases"][0]["passed"] is True
+
+
+def test_gate_accepts_batched_time_and_peak_rss_within_tolerance() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    native = current["cases"][0]["engines"]["flagquantum_native_batch"]
+    native["batch_total"]["median_seconds"] = 1.19
+    native["isolated_memory"]["peak_rss_bytes"] = 1_090_000_000
+
+    report = evaluate(baseline, current)
+
+    assert report["verdict"] == "pass"
+    metrics = report["cases"][0]["metrics"]
+    assert metrics["batch_total"]["current_over_baseline"] == 1.19
+    assert metrics["peak_rss"]["current_over_baseline"] == 1.09
+    assert report["policy"]["minimum_memory_probes"] == 3
+    assert (
+        report["distribution_semantics"]
+        == "timing_single_process_memory_median_of_fresh_processes"
+    )
+
+
+def test_batched_gate_fails_closed_on_memory_growth_and_probe_count() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    memory = current["cases"][0]["engines"]["flagquantum_native_batch"][
+        "isolated_memory"
+    ]
+    memory["peak_rss_bytes"] = 1_110_000_000
+    memory["sample_count"] = 2
+
+    report = evaluate(baseline, current)
+
+    assert report["verdict"] == "fail"
+    failures = "\n".join(report["failures"])
+    assert "peak_rss has 2 probes; requires 3" in failures
+    assert "peak_rss growth 1.110 exceeds 1.100" in failures
+
+
+def test_batched_gate_rejects_self_referenced_correctness() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    current["cases"][0]["correctness"]["engines"] = {
+        "flagquantum_native_batch": {"passed": True}
+    }
+
+    report = evaluate(baseline, current)
+
+    assert report["verdict"] == "fail"
+    assert "independent correctness comparison missing" in report["failures"][0]
+
+
+def test_batched_gate_rejects_failed_reference_or_looser_tolerance() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    current["cases"][0]["correctness"]["absolute_tolerance"] = 1e-8
+    current["cases"][0]["correctness"]["engines"][
+        "flagquantum_native_layout_retention"
+    ]["passed"] = False
+
+    report = evaluate(baseline, current)
+
+    failures = "\n".join(report["failures"])
+    assert "correctness engine failed" in failures
+    assert "absolute tolerance changed from 1e-10 to 1e-08" in failures
+
+
+def test_batched_gate_treats_memory_method_changes_as_incomparable() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    current["methodology"]["memory_scope"] = "allocator_only"
+
+    report = evaluate(baseline, current)
+
+    assert report["verdict"] == "incomparable"
+    assert "memory_scope" in report["profile_differences"]
 
 
 def test_gate_fails_closed_on_regression_correctness_stability_and_samples() -> None:
@@ -181,6 +314,12 @@ def test_gate_rejects_missing_profile_and_invalid_timings() -> None:
             "cpu_phase1_adjoint_cpu_arm64_20260930.json",
             "cpu_phase1_adjoint_gate_cpu_arm64_20260930.json",
             8,
+        ),
+        (
+            "batched_statevector_layout_lifetime_cpu_arm64_20261001.json",
+            "batched_statevector_regression_current_cpu_arm64_20261001.json",
+            "batched_statevector_regression_gate_cpu_arm64_20261001.json",
+            2,
         ),
     ],
 )
