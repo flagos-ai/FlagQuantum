@@ -18,6 +18,11 @@ from ...core.runtime_config import runtime_config
 from ..gate_matrix import _parameter_batch_window
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
+from ..native_cpu.permutation import (
+    compact_cx_permutation_images,
+    fused_clifford_matching_out,
+    use_compact_cpu_cx_mapping,
+)
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .batching import (
     _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
@@ -26,6 +31,7 @@ from .batching import (
     _rotation_region_angles,
     _statevector_batch_input,
 )
+from .clifford_matching import native_clifford_matching_compile_enabled
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
@@ -57,6 +63,7 @@ from .operations import (
     _cpu_cx_sequence_gather_enabled,
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
+    _cx_sequence_permutation_index,
     _diagonal_region,
     _environment_flag,
     _fused_gate_matrix,
@@ -81,6 +88,7 @@ from .product_state import (
     product_state_execution_is_beneficial,
 )
 from .program import (
+    _StatevectorCliffordMatchingStep,
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
     _StatevectorCZGraphStep,
@@ -722,6 +730,42 @@ def _execute_statevector_program(
     )
     owns_output = False
     for step in program:
+        if isinstance(step, _StatevectorCliffordMatchingStep):
+            cx_mapping = (
+                compact_cx_permutation_images(
+                    step.controls, step.targets, circuit.n_wires
+                )
+                if use_compact_cpu_cx_mapping(circuit.n_wires)
+                else _cx_sequence_permutation_index(
+                    step.controls,
+                    step.targets,
+                    circuit.n_wires,
+                    device=output.device,
+                    dtype=output.dtype,
+                )
+            )
+            native_output = fused_clifford_matching_out(
+                output,
+                cx_mapping,
+                step.cz_edges,
+                circuit.n_wires,
+            )
+            if native_output is not None:
+                output = native_output
+                owns_output = True
+                circuit._last_statevector_runtime[
+                    "native_cpu_clifford_matching_regions"
+                ] += 1
+                continue
+            for control, target in zip(step.controls, step.targets, strict=True):
+                output = _apply_cx_permutation(
+                    output, (control, target), circuit.n_wires
+                )
+            if step.cz_edges:
+                signs, wires = _cz_graph_signs_cpu(step.cz_edges, device=output.device)
+                output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
+            owns_output = True
+            continue
         if isinstance(step, _StatevectorControlledPhaseGraphStep):
             factors, wires = _controlled_phase_graph_factors(circuit, step, output)
             output = _apply_controlled_phase_graph_cpu(
@@ -949,6 +993,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 batch_size=batch_size,
             )
         )
+        enable_cpu_native_clifford_matching = native_clifford_matching_compile_enabled(
+            circuit._instructions,
+            parameter_bindings,
+            output,
+            batch_size=batch_size,
+        )
         max_cpu_two_wire_regions = (
             2 if enable_cpu_disjoint_single_wire and batch_size >= 2 else 1
         )
@@ -975,6 +1025,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_native_fixed_one_qubit_layer,
             "cpu_native_parameterized_one_qubit_layer",
             enable_cpu_native_parameterized_one_qubit_layer,
+            "cpu_native_clifford_matching",
+            enable_cpu_native_clifford_matching,
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
             "cpu_controlled_phase_graph",
@@ -998,6 +1050,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 ),
                 enable_cpu_native_parameterized_one_qubit_layer=(
                     enable_cpu_native_parameterized_one_qubit_layer
+                ),
+                enable_cpu_native_clifford_matching=(
+                    enable_cpu_native_clifford_matching
                 ),
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition

@@ -57,6 +57,15 @@ class _StatevectorCZGraphStep:
     edges: tuple[tuple[int, int], ...]
 
 
+@dataclass(frozen=True)
+class _StatevectorCliffordMatchingStep:
+    """One native pass over a disjoint matching of exact CX and CZ gates."""
+
+    controls: tuple[int, ...]
+    targets: tuple[int, ...]
+    cz_edges: tuple[tuple[int, int], ...]
+
+
 _StatevectorDenseRegion: TypeAlias = _StatevectorGateStep | _StatevectorFusedGateStep
 
 
@@ -81,6 +90,7 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorControlledPhaseGraphStep
     | _StatevectorCrossWireDiagonalStep
     | _StatevectorCZGraphStep
+    | _StatevectorCliffordMatchingStep
     | _StatevectorDisjointDenseStep
 )
 _StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep

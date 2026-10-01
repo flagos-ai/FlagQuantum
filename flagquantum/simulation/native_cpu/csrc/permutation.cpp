@@ -145,6 +145,115 @@ at::Tensor& fused_compact_cx_gather_out_cpu(
   return output;
 }
 
+at::Tensor& fused_clifford_matching_out_cpu(
+    const at::Tensor& state,
+    const at::Tensor& cx_mapping,
+    const at::Tensor& cz_edges,
+    at::Tensor& output,
+    int64_t n_wires) {
+  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  TORCH_CHECK(cx_mapping.device().is_cpu(), "CX mapping must be on CPU");
+  TORCH_CHECK(cz_edges.device().is_cpu(), "CZ edges must be on CPU");
+  TORCH_CHECK(output.device().is_cpu(), "output must be on CPU");
+  TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
+  TORCH_CHECK(cx_mapping.is_contiguous(), "CX mapping must be contiguous");
+  TORCH_CHECK(cz_edges.is_contiguous(), "CZ edges must be contiguous");
+  TORCH_CHECK(output.is_contiguous(), "output must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(output.sizes() == state.sizes(), "output shape must match state");
+  TORCH_CHECK(output.scalar_type() == state.scalar_type(), "output dtype must match state");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(cx_mapping.dim() == 1, "CX mapping must be one-dimensional");
+  TORCH_CHECK(
+      cx_mapping.scalar_type() == at::kInt ||
+          cx_mapping.scalar_type() == at::kLong,
+      "CX mapping must be int32 or int64");
+  TORCH_CHECK(
+      cz_edges.dim() == 2 && cz_edges.size(1) == 2,
+      "CZ edges must have shape [edges, 2]");
+  TORCH_CHECK(cz_edges.scalar_type() == at::kLong, "CZ edges must be int64");
+  TORCH_CHECK(!state.is_alias_of(output), "state and output must not alias");
+
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "wire count must be in [2, 62]");
+  const int64_t width = state.size(1);
+  TORCH_CHECK(width == (int64_t{1} << n_wires), "wire count must match state width");
+  const bool compact_mapping = cx_mapping.numel() == n_wires;
+  TORCH_CHECK(
+      compact_mapping || cx_mapping.numel() == width,
+      "CX mapping must contain one image per wire or one index per amplitude");
+  TORCH_CHECK(
+      !compact_mapping || cx_mapping.scalar_type() == at::kLong,
+      "compact CX images must be int64");
+  const int64_t batch = state.size(0);
+  const int64_t chunk_count = (n_wires + 7) / 8;
+  const LinearLookup lookup =
+      compact_mapping ? build_linear_lookup(cx_mapping) : LinearLookup{};
+  const int64_t shift_mode =
+      compact_mapping ? linear_shift_mode(cx_mapping) : int64_t{0};
+  const uint64_t state_mask = (uint64_t{1} << n_wires) - 1;
+  const int64_t* edge_data = cz_edges.const_data_ptr<int64_t>();
+  std::vector<std::pair<uint64_t, uint64_t>> phase_masks;
+  phase_masks.reserve(static_cast<size_t>(cz_edges.size(0)));
+  for (int64_t edge = 0; edge < cz_edges.size(0); ++edge) {
+    const int64_t left = edge_data[edge * 2];
+    const int64_t right = edge_data[edge * 2 + 1];
+    TORCH_CHECK(left >= 0 && left < n_wires, "CZ wire is out of range");
+    TORCH_CHECK(right >= 0 && right < n_wires, "CZ wire is out of range");
+    TORCH_CHECK(left != right, "CZ wires must differ");
+    phase_masks.emplace_back(
+        uint64_t{1} << (n_wires - left - 1),
+        uint64_t{1} << (n_wires - right - 1));
+  }
+
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_clifford_matching_out_cpu", [&] {
+        const scalar_t* state_data = state.const_data_ptr<scalar_t>();
+        scalar_t* output_data = output.data_ptr<scalar_t>();
+        const auto apply = [&](const auto& source_at) {
+          at::parallel_for(
+              int64_t{0}, batch * width, int64_t{4096},
+              [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / width;
+                const uint64_t destination =
+                    static_cast<uint64_t>(item - row * width);
+                const int64_t source = source_at(destination);
+                bool negative = false;
+                for (const auto& masks : phase_masks) {
+                  negative ^= (destination & masks.first) != 0 &&
+                              (destination & masks.second) != 0;
+                }
+                const scalar_t value =
+                    state_data[row * width + source];
+                output_data[item] = negative ? -value : value;
+              }
+            });
+        };
+        if (compact_mapping) {
+          apply([&](uint64_t destination) {
+            return apply_linear_lookup(
+                destination,
+                lookup,
+                chunk_count,
+                shift_mode,
+                state_mask);
+          });
+        } else if (cx_mapping.scalar_type() == at::kInt) {
+          const int32_t* index = cx_mapping.const_data_ptr<int32_t>();
+          apply([&](uint64_t destination) {
+            return static_cast<int64_t>(index[destination]);
+          });
+        } else {
+          const int64_t* index = cx_mapping.const_data_ptr<int64_t>();
+          apply([&](uint64_t destination) { return index[destination]; });
+        }
+      });
+  return output;
+}
+
 std::tuple<at::Tensor, at::Tensor> fused_cx_adjoint_gather_cpu(
     const at::Tensor& ket,
     const at::Tensor& adjoint,
@@ -447,6 +556,9 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
       "fused_compact_cx_gather_out(Tensor state, Tensor images, "
       "Tensor(a!) output) -> Tensor(a!)");
   library.def(
+      "fused_clifford_matching_out(Tensor state, Tensor cx_mapping, "
+      "Tensor cz_edges, Tensor(a!) output, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_cx_adjoint_gather(Tensor ket, Tensor adjoint, Tensor index) "
       "-> (Tensor, Tensor)");
   library.def(
@@ -463,6 +575,7 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_cx_gather_out", fused_cx_gather_out_cpu);
   library.impl("fused_compact_cx_gather_out", fused_compact_cx_gather_out_cpu);
+  library.impl("fused_clifford_matching_out", fused_clifford_matching_out_cpu);
   library.impl("fused_cx_adjoint_gather", fused_cx_adjoint_gather_cpu);
   library.impl(
       "fused_compact_cx_adjoint_gather",
