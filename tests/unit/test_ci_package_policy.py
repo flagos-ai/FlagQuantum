@@ -5,6 +5,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools.artifact_manifest import main as manifest_main
 from tools.verify_distribution_artifacts import (
@@ -31,6 +32,16 @@ DIST_INFO = "flagquantum-0.2.0.dist-info"
 NATIVE_EXTENSION = (
     "flagquantum/simulation/native_cpu/_C.cpython-312-x86_64-linux-gnu.so"
 )
+
+RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "cd.yml"
+
+# `python -m build` writes to `dist` unless `--outdir` says otherwise.
+_BUILD_OUTPUT = re.compile(r"\bpython\s+-m\s+build\b(?:[^\n]*?--outdir[=\s]+(\S+))?")
+# The verifier takes exactly one directory, which is the directory it inspects.
+_ARTIFACT_VERIFICATION = re.compile(
+    r"\btools/verify_distribution_artifacts\.py\s+(\S+)"
+)
+_PUBLISH_ACTION = "pypa/gh-action-pypi-publish"
 
 
 def _fake_wheel(tmp_path: Path, *, native_extension: str | None) -> Path:
@@ -180,3 +191,64 @@ def test_artifact_manifest_records_checksum(tmp_path):
     assert "flagquantum_artifact_manifest_v1" in text
     assert "sample.whl" in text
     assert "sha256" in text
+
+
+def _publishing_job() -> dict[str, object]:
+    """The one job that uploads to PyPI."""
+
+    document = yaml.safe_load(RELEASE_WORKFLOW.read_text(encoding="utf-8"))
+    jobs = document["jobs"]
+    publishing = [
+        job
+        for job in jobs.values()
+        if any(
+            isinstance(step, dict)
+            and str(step.get("uses", "")).startswith(_PUBLISH_ACTION)
+            for step in job["steps"]
+        )
+    ]
+    assert len(publishing) == 1, "exactly one job may publish to PyPI"
+    return publishing[0]
+
+
+def test_the_release_verifies_the_artifact_it_publishes() -> None:
+    """The published file must be the file this workflow inspected.
+
+    `ci.yml`'s `package` job verifies the artifacts it builds and stops there,
+    and `python -m build` in the release job is a second, independent build. So
+    the file users receive was the only one no gate had opened: a build that
+    dropped the compiled `_C` module, or that swept in tests and caches, would
+    have been uploaded successfully and then described, elsewhere, as verified.
+    The release must therefore run the same verifier over the directory it built.
+    """
+
+    steps = _publishing_job()["steps"]
+    commands = [str(step.get("run", "")) for step in steps]
+
+    built = [
+        match.group(1) or "dist"
+        for command in commands
+        for match in [_BUILD_OUTPUT.search(command)]
+        if match
+    ]
+    assert built, "the release builds the distributions it publishes"
+
+    verified = [
+        match.group(1)
+        for command in commands
+        for match in [_ARTIFACT_VERIFICATION.search(command)]
+        if match
+    ]
+    assert sorted(verified) == sorted(built)
+
+    publication = next(
+        index
+        for index, step in enumerate(steps)
+        if str(step.get("uses", "")).startswith(_PUBLISH_ACTION)
+    )
+    verification = next(
+        index
+        for index, command in enumerate(commands)
+        if _ARTIFACT_VERIFICATION.search(command)
+    )
+    assert verification < publication
