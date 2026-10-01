@@ -31,6 +31,10 @@ Be constructive, not rude.
 Be open to feedback, not defensive.
 That’s it. Let’s build something great together.
 
+What this standard means in review, and how a report is handled, are stated in
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Report a security vulnerability privately
+through [SECURITY.md](SECURITY.md) rather than the issue tracker.
+
 ---
 
 ## What should I know before I get started?
