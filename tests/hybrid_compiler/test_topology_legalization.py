@@ -50,6 +50,33 @@ def _state(program: CircuitIR) -> torch.Tensor:
     )
 
 
+def test_sabre_strategy_legalizes_topology_and_preserves_state() -> None:
+    source = CircuitIR(
+        4,
+        (
+            Instruction("h", (3,)),
+            Instruction("cx", (0, 3)),
+            Instruction("ry", (1,), params={"theta": 0.23}),
+        ),
+        dtype="complex128",
+    )
+    coupling = CouplingMap.line(4)
+    result = legalize_circuit_topology(
+        source,
+        coupling_map=coupling,
+        snapshot=_snapshot(),
+        strategy="sabre",
+    )
+
+    assert result.strategy == "sabre"
+    assert result.final_logical_to_physical == (0, 1, 2, 3)
+    assert all(
+        len(item.wires) != 2 or coupling.has_edge(*item.wires)
+        for item in result.program.instructions
+    )
+    torch.testing.assert_close(_state(result.program), _state(source))
+
+
 def test_nonlocal_gate_routes_to_edges_and_preserves_state() -> None:
     source = CircuitIR(
         4,

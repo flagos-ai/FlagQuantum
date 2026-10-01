@@ -9,6 +9,7 @@ from threading import Lock
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .sabre import plan_sabre_swaps
 
 # Dense distance-matrix entry for a physical wire pair with no coupling path.
 # A coupling map is a graph, so most pairs of a production device are far
@@ -423,7 +424,8 @@ def estimate_routing_cost(
 
     if strategy not in {"restore_after_each_gate", "persistent_layout"}:
         raise ValueError(
-            "routing strategy must be 'restore_after_each_gate' or 'persistent_layout'"
+            "routing cost estimate supports 'restore_after_each_gate' or "
+            "'persistent_layout'; 'sabre' plans SWAPs instead of estimating them"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -757,6 +759,107 @@ def _route_persistent_layout(
     return replace(ir, instructions=tuple(routed), metadata=metadata)
 
 
+def _route_sabre(
+    ir: CircuitIR,
+    coupling: CouplingMap,
+    *,
+    path_cache_before: dict[str, int],
+) -> CircuitIR:
+    """Materialize one SABRE persistent layout, then restore the output layout.
+
+    Instructions are emitted in the order the planner placed them, not in source
+    order. The planner introduces a SWAP when a two-wire operation becomes
+    reachable, and every operation keeps its planned physical wires, so a source
+    order that disagrees with the plan would replay a different layout than the
+    one the plan was costed against.
+    """
+
+    strategy = "sabre"
+    plan = plan_sabre_swaps(ir, coupling)
+    routed: list[Instruction] = []
+    topology_gate_count = 0
+    # Counted against the source wires, exactly as the shortest-path strategies
+    # do, so the number describes the work the topology forces rather than the
+    # work this layout happened to arrange for free.
+    routed_gate_count = 0
+    skipped_channel_count = 0
+    swap_index = 0
+    placed_so_far = 0
+    for source_index in plan.sequence:
+        while (
+            swap_index < len(plan.swaps)
+            and plan.swap_placements[swap_index] == placed_so_far
+        ):
+            anchor_index = plan.swap_anchors[swap_index]
+            swap_left, swap_right = plan.swaps[swap_index]
+            routed.append(
+                _swap_instruction(
+                    swap_left,
+                    swap_right,
+                    ir.instructions[anchor_index],
+                    strategy=strategy,
+                    phase="forward",
+                    source_instruction_index=anchor_index,
+                )
+            )
+            swap_index += 1
+        placed_so_far += 1
+        instruction = ir.instructions[source_index]
+        placed_wires = plan.placements[source_index]
+        if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
+            if instruction.metadata.get("is_channel"):
+                skipped_channel_count += 1
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    placed_wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
+        topology_gate_count += 1
+        if not coupling.has_edge(*instruction.wires):
+            routed_gate_count += 1
+        routed.append(
+            _remap_instruction(
+                instruction,
+                placed_wires,
+                strategy=strategy,
+                source_instruction_index=source_index,
+            )
+        )
+    if swap_index != len(plan.swaps):
+        raise RuntimeError("SABRE routing plan did not place every inserted SWAP")
+    for restore_index in range(len(plan.swaps) - 1, -1, -1):
+        anchor_index = plan.swap_anchors[restore_index]
+        swap_left, swap_right = plan.swaps[restore_index]
+        routed.append(
+            _swap_instruction(
+                swap_left,
+                swap_right,
+                ir.instructions[anchor_index],
+                strategy=strategy,
+                phase="final_restore",
+                source_instruction_index=anchor_index,
+            )
+        )
+    metadata = dict(ir.metadata)
+    metadata["routing"] = _routing_metadata(
+        ir=ir,
+        coupling=coupling,
+        strategy=strategy,
+        topology_gate_count=topology_gate_count,
+        routed_gate_count=routed_gate_count,
+        inserted_swap_count=2 * len(plan.swaps),
+        skipped_channel_count=skipped_channel_count,
+        pre_restore_layout=plan.final_logical_to_physical,
+        path_cache_before=path_cache_before,
+        path_cache_after=coupling.path_cache_info(),
+    )
+    return replace(ir, instructions=tuple(routed), metadata=metadata)
+
+
 def route_to_topology(
     circuit_or_ir: Any,
     coupling_map: CouplingMap | Iterable[tuple[int, int]],
@@ -765,9 +868,10 @@ def route_to_topology(
 ) -> CircuitIR:
     """Insert SWAP gates so two-qubit operations respect hardware topology."""
 
-    if strategy not in {"restore_after_each_gate", "persistent_layout"}:
+    if strategy not in {"restore_after_each_gate", "persistent_layout", "sabre"}:
         raise ValueError(
-            "routing strategy must be 'restore_after_each_gate' or 'persistent_layout'"
+            "routing strategy must be 'restore_after_each_gate', "
+            "'persistent_layout', or 'sabre'"
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -780,6 +884,12 @@ def route_to_topology(
     path_cache_before = coupling.path_cache_info()
     if strategy == "persistent_layout":
         return _route_persistent_layout(
+            ir,
+            coupling,
+            path_cache_before=path_cache_before,
+        )
+    if strategy == "sabre":
+        return _route_sabre(
             ir,
             coupling,
             path_cache_before=path_cache_before,
@@ -896,10 +1006,11 @@ def record_post_routing_optimization(ir: CircuitIR) -> CircuitIR:
     routing = ir.metadata.get("routing")
     if not isinstance(routing, dict):
         return ir
+    # ``routing_phase`` is the marker every strategy stamps on an inserted SWAP,
+    # so the count does not depend on a list of strategy names.
     retained_swap_count = sum(
         instruction.name == "swap"
-        and instruction.metadata.get("routing_strategy")
-        in {"restore_after_each_gate", "persistent_layout"}
+        and instruction.metadata.get("routing_phase") is not None
         for instruction in ir
     )
     metadata = dict(ir.metadata)
