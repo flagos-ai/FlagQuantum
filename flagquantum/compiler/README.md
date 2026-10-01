@@ -48,9 +48,11 @@ router through the compiler, the topology legalizer, and the dynamic-circuit
 runtime, which is how the boundary is shown to be replaceable rather than
 merely defined.
 
-A placement is a tuple of physical wires, one per logical wire, and not a
-[layout.py](layout.py) `Layout`, because a device wider than the program leaves
-slots idle and `Layout` covers exactly the program's wires. Routing on a plain
+A placement is a tuple of physical wires, one per logical wire: the argument
+`route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
+`Layout` carries the same assignment as a value, and since a routed program on a
+device wider than the program leaves slots idle, `Layout` takes a
+`physical_slot_count` and reports `None` for an idle slot. Routing on a plain
 `CouplingMap` may only use wires the program owns and so refuses `initial_layout`
 outright; a non-identity placement therefore requires a `DirectedCouplingMap`,
 where the idle slots are a workspace that the inverse routing SWAPs clean.
