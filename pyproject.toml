@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "flagquantum"
 dynamic = ["version"]
-description = "A distributed quantum computing framework built on PyTorch"
+description = "A PyTorch-first framework for differentiable quantum computing and quantum AI."
 authors = [
     {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
 ]
