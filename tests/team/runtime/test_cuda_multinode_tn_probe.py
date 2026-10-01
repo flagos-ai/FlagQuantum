@@ -539,16 +539,25 @@ def test_the_route_measurement_and_staging_are_each_derived(
     # is a finding that keeps the blocker rather than one that hides it.
     for staging in (
         {"profiled": False, "profiler_error": "RuntimeError: no profiler"},
-        {
+        {"profiled": True},
+    ):
+        assert "hidden_host_staging_not_audited" in blockers(host_staging=staging)
+
+    # An audit that ran and found a transfer reports the finding under its own
+    # name. Reporting "nobody looked" there would be false, and dropping the
+    # blocker altogether would retract a limitation the audit just confirmed.
+    found = blockers(
+        host_staging={
             "profiled": True,
             "profiled_workload": _MODULE.MEASUREMENT,
             "host_transfer_observed": True,
             "host_transfer_events": [
                 {"name": "memcpy_DtoH", "direction": "device_to_host"}
             ],
-        },
-    ):
-        assert "hidden_host_staging_not_audited" in blockers(host_staging=staging)
+        }
+    )
+    assert "host_staging_in_measured_region" in found
+    assert "hidden_host_staging_not_audited" not in found
 
 
 def test_the_sweep_widths_are_prefixes_of_the_declared_cut() -> None:

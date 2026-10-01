@@ -530,7 +530,10 @@ def _artifact(
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
-    observations = {
+    # One dict, put into the evidence and then read back by the derivation, so
+    # the blockers cannot be decided from a different set of observations than
+    # the artifact publishes.
+    observations: dict[str, Any] = {
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,

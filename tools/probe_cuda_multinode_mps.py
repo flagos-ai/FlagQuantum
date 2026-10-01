@@ -680,7 +680,10 @@ def _artifact(
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
-    observations = {
+    # One dict, put into the evidence and then read back by the derivation, so
+    # the blockers cannot be decided from a different set of observations than
+    # the artifact publishes.
+    observations: dict[str, Any] = {
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
@@ -899,11 +902,11 @@ def probe(
                 f"{forward_summary['full_mps_reconstruction_count']}"
             )
 
-        gathered = gather_mps_for_validation(forward)
+        gathered_state = gather_mps_for_validation(forward)
         accepted = True
         statevector_metrics: dict[str, float] = {}
         if rank == 0:
-            materialized = gathered.to_statevector()[0].detach().cpu()
+            materialized = gathered_state.to_statevector()[0].detach().cpu()
             reference = _reference_statevector()
             statevector_metrics = {
                 "statevector_max_abs_error": float(
@@ -1168,11 +1171,11 @@ def probe(
         )
         # One slot per rank: `all_gather_object` fills exactly the list it is
         # given, so a fixed-length list would truncate a wider shape.
-        gathered: list[dict[str, Any] | None] = [None] * dist.get_world_size()
-        dist.all_gather_object(gathered, record)
+        rank_records: list[dict[str, Any] | None] = [None] * dist.get_world_size()
+        dist.all_gather_object(rank_records, record)
         if rank == 0:
             payload = _artifact(
-                rank_records=[item for item in gathered if item is not None],
+                rank_records=[item for item in rank_records if item is not None],
                 metrics=metrics,
                 training=training,
                 network={},

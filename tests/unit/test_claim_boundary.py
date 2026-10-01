@@ -16,6 +16,7 @@ import pytest
 
 from flagquantum.runtime.audit.claim_boundary import (
     BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED,
+    BLOCKER_HOST_STAGING_IN_MEASURED_REGION,
     BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT,
     BLOCKER_PRODUCTION_PERFORMANCE_NOT_MEASURED,
     BLOCKER_RDMA_NOT_TESTED,
@@ -229,23 +230,31 @@ def test_the_staging_blocker_clears_only_for_an_audit_that_found_nothing() -> No
     }
     assert staging_claim_blockers(clear) == ()
 
-    for keeping in (
+    # A profiler that never ran, and one that ran without recording a verdict,
+    # both leave the audit incomplete: neither has shown anything about staging.
+    for unlooked in (
         {},
         {"host_staging": {"profiled": False}},
         {"host_staging": {"profiled": True}},
-        # A transfer inside the profiled region is the finding, not a reason to
-        # clear the blocker that names the staging.
+    ):
+        assert staging_claim_blockers(unlooked) == (
+            BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED,
+        )
+
+    # A transfer inside the profiled region is a finding. Reporting "nobody
+    # looked" there would be false, and dropping the blocker entirely would
+    # retract a limitation the audit just confirmed.
+    found = staging_claim_blockers(
         {
             "host_staging": {
                 "profiled": True,
                 "host_transfer_observed": True,
                 "host_transfer_events": [{"direction": "device_to_host"}],
             }
-        },
-    ):
-        assert staging_claim_blockers(keeping) == (
-            BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED,
-        )
+        }
+    )
+    assert found == (BLOCKER_HOST_STAGING_IN_MEASURED_REGION,)
+    assert BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED not in found
 
 
 def test_a_width_or_a_slice_count_counts_only_once_it_crossed_the_hosts() -> None:

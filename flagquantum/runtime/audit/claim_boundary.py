@@ -64,6 +64,11 @@ MINIMUM_MEASURED_ITERATIONS = 3
 BLOCKER_RDMA_NOT_TESTED = "rdma_not_tested"
 BLOCKER_PRODUCTION_PERFORMANCE_NOT_MEASURED = "production_performance_not_measured"
 BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED = "hidden_host_staging_not_audited"
+#: Staging that an audit found is a different statement from staging nobody
+#: looked for, and a reader has to be able to tell them apart: the first is a
+#: property of the workload, the second of the evidence. Both keep a blocker, so
+#: neither reading retracts a limitation the earlier artifact claimed.
+BLOCKER_HOST_STAGING_IN_MEASURED_REGION = "host_staging_in_measured_region"
 BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER = (
     "validation_only_tiny_full_state_gather"
 )
@@ -368,18 +373,25 @@ def slice_count_claim_blockers(
 
 
 def staging_claim_blockers(observations: Mapping[str, Any]) -> tuple[str, ...]:
-    """The blocker names staging that was never looked for, not staging found.
+    """Which host-staging blocker the audit supports, if either.
 
-    It clears only for an audit that ran and saw no explicit host transfer
-    inside the profiled region. A profiler that was unavailable has not shown
-    anything, and a transfer that was seen is a finding that keeps the blocker
-    in place rather than one that hides it.
+    A profiler that was unavailable has shown nothing, so the blocker keeps the
+    name it had when nobody had looked. An audit that ran and saw an explicit
+    host transfer inside the profiled region reports that transfer under its own
+    name, because "nobody looked" would then be false: the audit looked, and
+    what it found is a property of the workload. Only an audit that ran and saw
+    no host transfer clears the group.
     """
 
     staging = _mapping(observations.get("host_staging"))
+    observed = staging.get("host_transfer_observed")
     if staging.get("profiled") is not True:
         return (BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED,)
-    if staging.get("host_transfer_observed") is not False:
+    if observed is True:
+        return (BLOCKER_HOST_STAGING_IN_MEASURED_REGION,)
+    if observed is not False:
+        # A profiler that ran and recorded no verdict is an incomplete audit,
+        # which is not the same as an audit that saw nothing.
         return (BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED,)
     return ()
 
@@ -392,6 +404,7 @@ def claim_blockers(*groups: Sequence[str]) -> list[str]:
 
 __all__ = (
     "BLOCKER_HIDDEN_HOST_STAGING_NOT_AUDITED",
+    "BLOCKER_HOST_STAGING_IN_MEASURED_REGION",
     "BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT",
     "BLOCKER_PRODUCTION_PERFORMANCE_NOT_MEASURED",
     "BLOCKER_RDMA_NOT_TESTED",

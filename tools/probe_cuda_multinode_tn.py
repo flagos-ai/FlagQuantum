@@ -1011,6 +1011,36 @@ def _training_observations(
     return observations, metrics, resumed_summary
 
 
+def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
+    """Every blocker this run's own observations can retract.
+
+    The declared part of the boundary -- the pair of hosts and the toy circuit
+    -- is not decided here, because nothing inside the run can retract it. What
+    is decided here is only what the run observed.
+
+    Called once while the artifact is assembled and again after the route has
+    been read, because that observation arrives after the process group is gone
+    and the group is what writes the log it is read from. Deriving the list in
+    one place and applying it twice keeps the two passes from disagreeing.
+    """
+
+    cut_widths = observations["cut_widths"]
+    return claim_blockers(
+        [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
+        gather_claim_blockers(
+            production_materialization=bool(
+                observations["production_full_state_materialization"]
+            ),
+            blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+        ),
+        transport_claim_blockers(observations),
+        measurement_claim_blockers(observations),
+        staging_claim_blockers(observations),
+        cut_width_claim_blockers(cut_widths["inter_node_bytes_by_width"]),
+        slice_count_claim_blockers(cut_widths["inter_node_bytes_by_slice_count"]),
+    )
+
+
 def _artifact(
     *,
     rank_records: list[dict[str, Any]],
@@ -1024,10 +1054,25 @@ def _artifact(
     host_staging: dict[str, Any],
     cut_widths: dict[str, Any],
 ) -> dict[str, Any]:
-    observations = {
+    # One dict, put into the evidence and then read back by the derivation, so
+    # the blockers cannot be decided from a different set of observations than
+    # the artifact publishes.
+    observations: dict[str, Any] = {
+        "numerical_metrics": metrics,
+        "training": training,
+        "rank_records": rank_records,
+        "production_full_state_materialization": False,
+        "reference": "exact_complex128_statevector_single_device",
+        # The executor all-reduces the slice partials of the expectation and
+        # returns the reduced value, so `distributed_expectation` is a
+        # distributed result. It does not reduce parameter gradients on this
+        # path, so the global gradient the probe compares is the sum of the
+        # per-rank contributions it gathered itself.
+        "gradient_reduction": "probe_summed_rank_partials",
         "network": network,
         "performance": performance,
         "host_staging": host_staging,
+        "cut_widths": cut_widths,
     }
     evidence = {
         "schema": "flagquantum.cuda_multinode_tn_probe.v1",
@@ -1057,40 +1102,13 @@ def _artifact(
             "distribution_semantics": "sharded_across_ranks",
             "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
         },
-        "observations": {
-            "numerical_metrics": metrics,
-            "training": training,
-            "rank_records": rank_records,
-            "production_full_state_materialization": False,
-            "reference": "exact_complex128_statevector_single_device",
-            # The executor all-reduces the slice partials of the expectation and
-            # returns the reduced value, so `distributed_expectation` is a
-            # distributed result. It does not reduce parameter gradients on this
-            # path, so the global gradient the probe compares is the sum of the
-            # per-rank contributions it gathered itself.
-            "gradient_reduction": "probe_summed_rank_partials",
-            "network": network,
-            "performance": performance,
-            "host_staging": host_staging,
-            "cut_widths": cut_widths,
-        },
+        "observations": observations,
         # Both topology blockers are decided by what this run observed rather
-        # than by what the probe intended: the pair is fixed by the lane, the cut
-        # width and the slice count are whatever the sweep above managed to move,
-        # and the route, the measurement and the staging audit say for themselves
-        # whether they happened.
-        "claim_blockers": claim_blockers(
-            [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
-            gather_claim_blockers(
-                production_materialization=False,
-                blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
-            ),
-            transport_claim_blockers(observations),
-            measurement_claim_blockers(observations),
-            staging_claim_blockers(observations),
-            cut_width_claim_blockers(cut_widths["inter_node_bytes_by_width"]),
-            slice_count_claim_blockers(cut_widths["inter_node_bytes_by_slice_count"]),
-        ),
+        # than by what the probe intended: the cut width and the slice count are
+        # whatever the sweep above managed to move, and the route, the
+        # measurement and the staging audit say for themselves whether they
+        # happened. The route arrives after this call and is applied by `probe`.
+        "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -1482,7 +1500,8 @@ def probe(
                 local_world_size=local_world_size,
                 # The route is read from the debug log after the group is gone,
                 # so the artifact is assembled with an empty report and the
-                # observation is written into it by the rank that read the log.
+                # observation is written into it, together with the blockers it
+                # decides, by the rank that reads the log.
                 network={},
                 performance=performance,
                 host_staging=host_staging,
@@ -1493,9 +1512,14 @@ def probe(
         dist.destroy_process_group()
 
     if rank == 0 and payload is not None:
-        network = _network_observation(network_log, local_world_size=local_world_size)
         evidence = payload["evidence"]
-        evidence["observations"]["network"] = network
+        evidence["observations"]["network"] = _network_observation(
+            network_log, local_world_size=local_world_size
+        )
+        # The route is one of the observations the blockers are derived from, and
+        # it only exists once the group that wrote the log has exited, so the
+        # list is derived again rather than left as it was assembled without it.
+        evidence["claim_blockers"] = _derived_claim_blockers(evidence["observations"])
         # One digest per artifact, over the evidence and nothing else. Recording
         # it inside `evidence` too would put two disagreeing digests in one file
         # and leave a reader no way to tell which one was authoritative.
