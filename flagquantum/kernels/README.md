@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The initial catalog describes the code that already exists. It contains 20
-semantics and 22 Triton implementation entry points; no planned kernel appears
+The initial catalog describes the code that already exists. It contains 21
+semantics and 23 Triton implementation entry points; no planned kernel appears
 as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -85,6 +85,7 @@ as an empty machine record.
 | FQK-MPS-002 | `mps.contract.two_site_gate_projected` | `fused_mps_range_projection` |
 | FQK-MPS-003 | `mps.contract.one_site_gate` | `fused_mps_one_site` |
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
+| FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -125,6 +126,13 @@ before importing Triton and selects it only for contiguous CUDA `complex64`
 forward inputs without gradients, bond dimensions at most 32, and contraction
 work at most `2**22`. Other inputs remain on the existing PyTorch eager or
 compiled path, and route counts are exposed through `site_kernel_stats()`.
+
+MPS-005 groups as many as eight observable channels in each Triton program so
+the channels reuse site-tensor loads. Its implementation supports contiguous
+CUDA `complex64` forward inputs without gradients, at most 32 channels, bond
+dimensions at most 16, and contraction work at most `2**23`. The wrapper keeps
+the exact PyTorch contraction as its explicit fallback outside that measured
+window. Runtime dispatch remains a separate reviewable change.
 
 ## Capability matching
 
@@ -226,7 +234,7 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 20 semantics and 22 implementations are implemented and
+The current 21 semantics and 23 implementations are implemented and
 experimental. The rest of the 100/800 portfolio is planned or candidate work,
 not shipped capability.
 
