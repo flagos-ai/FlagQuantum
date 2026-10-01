@@ -565,6 +565,20 @@ def test_cpu_single_qubit_preallocated_output_is_bitwise_rollback_safe(
     assert torch.equal(preallocated, functional)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_matrix_layout_early_release_is_bitwise_rollback_safe(monkeypatch, dtype):
+    generator = torch.Generator().manual_seed(1732)
+    state = torch.randn((3, 64), dtype=dtype, generator=generator)
+    matrix = torch.randn((3, 16, 16), dtype=dtype, generator=generator)
+
+    monkeypatch.setenv("FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT", "0")
+    retained = _apply_matrix_layout(state, matrix, (3, 1, 5, 0), 6)
+    monkeypatch.setenv("FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT", "1")
+    released = _apply_matrix_layout(state, matrix, (3, 1, 5, 0), 6)
+
+    assert torch.equal(released, retained)
+
+
 def test_cpu_single_qubit_direct_kernel_preserves_state_and_matrix_gradients():
     generator = torch.Generator().manual_seed(1733)
     state = torch.randn(
