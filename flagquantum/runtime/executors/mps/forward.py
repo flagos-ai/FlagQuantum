@@ -298,17 +298,35 @@ def execute_torch_distributed_mps_forward(
     truncation_error = sum(
         float(record["discarded_weight"]) for record in truncation_records
     )
+    # `nan` compares false against every bound, so the plain
+    # `truncation_error > global_error_budget` reading let a total that was
+    # never measured pass the policy that exists to stop the run on overspend.
+    # A non-finite total is a violation, not a comfortable margin, so the
+    # negated comparison fails closed on it -- the polarity
+    # `TorchDistributedMPSForwardResult.summary` already reports
+    # `error_budget_satisfied` with.
     if (
         global_error_budget is not None
-        and truncation_error > global_error_budget
+        and not truncation_error <= global_error_budget
         and error_budget_policy == "enforce"
     ):
+        # The refused run states which boundary it failed, and `nan > budget` is
+        # not a true statement about the value that was read, so the non-finite
+        # case says what it is instead of asserting the inequality.
+        detail = (
+            f"{truncation_error} > {global_error_budget}"
+            if math.isfinite(truncation_error)
+            else f"{truncation_error} is not a finite truncation error"
+        )
         raise RuntimeError(
             "distributed MPS truncation error exceeded global_error_budget: "
-            f"{truncation_error} > {global_error_budget}"
+            f"{detail}"
         )
+    # The same reading applies to the exact-gradient policy: `nan > 0` is false,
+    # so an unmeasured weight used to satisfy a policy that cannot describe a
+    # truncated forward. Only a measured zero is compatible with it.
     if truncation_gradient_policy == "exact" and any(
-        float(record["discarded_weight"]) > 0 for record in truncation_records
+        not float(record["discarded_weight"]) <= 0 for record in truncation_records
     ):
         raise RuntimeError(
             "exact truncation-gradient policy cannot describe a truncated forward"

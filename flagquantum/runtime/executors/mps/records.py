@@ -371,7 +371,13 @@ class TorchDistributedMPSForwardResult:
         truncation_error = sum(
             float(record["discarded_weight"]) for record in self.truncation_records
         )
-        approximate = truncation_error > 0.0
+        # "exact" is a measurement, not a default. `nan > 0.0` is false, so a
+        # total that was never measured used to be reported as an exact state,
+        # which is the one claim the evidence cannot support. Only a total
+        # measured at zero qualifies, and this now agrees with the
+        # `error_budget_satisfied` report below, which already read `nan` as
+        # unsatisfied.
+        approximate = not (truncation_error == 0.0)
         return {
             "executor": "pytorch_native_rank_owned_mps_forward_v1",
             "state_mode": "distributed_mps",
