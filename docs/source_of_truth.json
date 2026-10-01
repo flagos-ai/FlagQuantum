@@ -8,7 +8,8 @@
     "benchmark_evidence": "benchmarks/results/",
     "support_policy": "pyproject.toml",
     "release_changes": "docs/reference/RELEASE_NOTES.md",
-    "cudaq_parity": "contracts/cudaq-parity-matrix.toml"
+    "cudaq_parity": "contracts/cudaq-parity-matrix.toml",
+    "qec_cudaq_alignment": "contracts/qec-cudaq-alignment-checklist.toml"
   },
   "externally_validated_authorities": {
     "benchmark_evidence": "python benchmarks/audit_results.py --input benchmarks/results"

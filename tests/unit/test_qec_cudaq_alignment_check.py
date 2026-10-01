@@ -1,0 +1,504 @@
+#!/usr/bin/env python3
+"""Mutation test for the QEC <-> CUDA-Q alignment checklist checker.
+
+A checker that only ever prints OK proves nothing. This test damages one section
+of the checklist at a time, runs the checker, and requires the run to fail for
+the reason the damage was supposed to cause. It also plants a fake module in a
+throwaway copy of the repository to prove the symbol index really reads the tree
+rather than pattern-matching the checklist against itself.
+
+Mutating a file and running a tool is a subprocess-shaped proof, so it does not
+live in a checker: it lives here, where the default lane runs it and where a
+failure names the mutation. The unit marker is honest -- no network, no device,
+no accelerator, no cluster -- but the test is not cheap, because the checker is
+only meaningful when it is reading a real repository. One copy of this tree is
+made per module and reused by both tests.
+
+Mutations are addressed structurally -- by row id and key name -- rather than by
+quoting a long literal, so editing the prose of a row cannot silently turn a
+mutation into a no-op. Every mutation is applied to a temporary copy; the
+checklist and the repository are never modified in place.
+
+Run directly for the mutation-by-mutation log:
+
+    python -m pytest tests/unit/test_qec_cudaq_alignment_check.py -q -s
+"""
+
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass
+from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[2]
+CHECKER = ROOT / "tools/check_qec_cudaq_alignment.py"
+CHECKLIST = ROOT / "contracts/qec-cudaq-alignment-checklist.toml"
+REPO_SOURCE = ROOT
+
+# Copied into the throwaway tree so the checklist can claim a name the real tree
+# lacks and then gain it, which is the only way to show that absence is measured
+# rather than assumed.
+PLANTED_MODULE = "flagquantum/qec/planted.py"
+PLANTED_SYMBOL = "flagquantum.qec.PlantedSymbol"
+
+# Ignored when copying the repository: none of these can change the answer, and
+# the history alone is larger than everything the checker reads.
+_SKIP = shutil.ignore_patterns(
+    ".git", "__pycache__", ".venv", "*.egg-info", ".pytest_cache"
+)
+
+
+# --------------------------------------------------------------------------
+# structural editing of the checklist
+# --------------------------------------------------------------------------
+
+
+def block_span(lines: list[str], row_id: str) -> tuple[int, int]:
+    """Line span of one `[[...]]` block, from its header to the next header."""
+
+    marker = f'id = "{row_id}"'
+    try:
+        anchor = next(i for i, line in enumerate(lines) if line.strip() == marker)
+    except StopIteration:
+        raise KeyError(f"no row with id {row_id!r}") from None
+    start = anchor
+    while start > 0 and not lines[start].startswith("[["):
+        start -= 1
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("[["):
+            end = i
+            break
+    return start, end
+
+
+def set_key(text: str, row_id: str, key: str, value: str | None) -> str:
+    """Set (or with value None, rename away) a key inside one row block."""
+
+    lines = text.splitlines(keepends=True)
+    start, end = block_span(lines, row_id)
+    for i in range(start, end):
+        stripped = lines[i].lstrip()
+        if stripped.startswith(f"{key} = ") or stripped.startswith(f"{key} =["):
+            if value is None:
+                # Rename rather than delete: the checker must notice a missing
+                # key, not a syntactically broken file.
+                indent = lines[i][: len(lines[i]) - len(stripped)]
+                lines[i] = f"{indent}{key}_renamed{stripped[len(key):]}"
+            else:
+                indent = lines[i][: len(lines[i]) - len(stripped)]
+                lines[i] = f"{indent}{value}\n"
+            return "".join(lines)
+    raise KeyError(f"row {row_id!r} has no {key!r} key")
+
+
+def set_header_key(text: str, key: str, value: str) -> str:
+    """Replace a top-level header key, which lives before the first block."""
+
+    lines = text.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if line.startswith(f"{key} = "):
+            lines[i] = f"{value}\n"
+            return "".join(lines)
+    raise KeyError(f"the header has no {key!r} key")
+
+
+def append_to_list(text: str, row_id: str, key: str, item: str) -> str:
+    """Append one entry to a single-line or multi-line list inside a row."""
+
+    lines = text.splitlines(keepends=True)
+    start, end = block_span(lines, row_id)
+    for i in range(start, end):
+        stripped = lines[i].lstrip()
+        if stripped.startswith(f"{key} = ["):
+            indent = lines[i][: len(lines[i]) - len(stripped)]
+            if stripped.rstrip().endswith("]"):
+                body = stripped.rstrip()[:-1].rstrip()
+                sep = "" if body.endswith("[") else ", "
+                lines[i] = f"{indent}{body}{sep}{item}]\n"
+            else:
+                lines.insert(i + 1, f'{indent}    "{item}",\n')
+            return "".join(lines)
+    raise KeyError(f"row {row_id!r} has no {key!r} list")
+
+
+def sub_in_key(text: str, row_id: str, key: str, old: str, new: str) -> str:
+    """Replace a substring inside one key's value, refusing a no-op.
+
+    The value may span several lines, so the whole block is searched rather than
+    only the line the key starts on.
+    """
+
+    lines = text.splitlines(keepends=True)
+    start, end = block_span(lines, row_id)
+    key_at = None
+    for i in range(start, end):
+        if lines[i].lstrip().startswith(f"{key} ="):
+            key_at = i
+            break
+    if key_at is None:
+        raise KeyError(f"row {row_id!r} has no {key!r} key")
+    # The value runs to the end of the block, or to the next top-level key.
+    stop = end
+    for i in range(key_at + 1, end):
+        if lines[i] and not lines[i][0].isspace() and "=" in lines[i]:
+            stop = i
+            break
+    value = "".join(lines[key_at:stop])
+    if old not in value:
+        raise KeyError(f"row {row_id!r} has no {key!r} containing {old!r}")
+    lines[key_at:stop] = [value.replace(old, new, 1)]
+    return "".join(lines)
+
+
+# --------------------------------------------------------------------------
+# the mutations
+# --------------------------------------------------------------------------
+
+# (name, expected failure substring, mutation function)
+MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
+    (
+        "delete a symbol a row depends on",
+        "does not resolve",
+        lambda t: sub_in_key(
+            t,
+            "qec_dem_text_interchange",
+            "symbols_present",
+            "to_stim_text",
+            "to_stim_text_typo",
+        ),
+    ),
+    (
+        "claim a gap the tree has already filled",
+        "exists as a definition somewhere",
+        lambda t: append_to_list(
+            t, "qec_dem_construction", "symbols_absent", "DetectorErrorModel"
+        ),
+    ),
+    (
+        "point evidence at a file that does not exist",
+        "evidence path",
+        lambda t: sub_in_key(
+            t, "qec_code_record", "evidence", "codes.py", "codes_missing.py"
+        ),
+    ),
+    (
+        "claim a maturity entry that is not registered",
+        "maturity_ref",
+        lambda t: set_key(
+            t, "qec_code_record", "maturity_ref", 'maturity_ref = "not_a_capability"'
+        ),
+    ),
+    (
+        "drop the maturity_ref from a supported row",
+        "maturity_ref",
+        lambda t: set_key(t, "qec_code_record", "maturity_ref", None),
+    ),
+    (
+        "point a row at a capability its matrix row does not name",
+        "is not one the parity matrix row",
+        lambda t: set_key(
+            t,
+            "qec_decoder_family",
+            "maturity_ref",
+            'maturity_ref = "detector_error_model"',
+        ),
+    ),
+    (
+        "point the migration row at the sampling half of Stim integration",
+        "is not one the parity matrix row",
+        lambda t: set_key(
+            t,
+            "qec_stim_user_migration",
+            "maturity_ref",
+            'maturity_ref = "stabilizer_sampling"',
+        ),
+    ),
+    (
+        "claim a component version the parity contract does not record",
+        "is not the component version the parity contract records",
+        lambda t: set_header_key(
+            t, "baseline_component_version", 'baseline_component_version = "0.7.0"'
+        ),
+    ),
+    (
+        "quote a component release index the parity contract does not record",
+        "does not name the release index the parity contract records",
+        lambda t: set_header_key(
+            t,
+            "baseline_component_source",
+            'baseline_component_source = "https://pypi.org/pypi/stim/json"',
+        ),
+    ),
+    (
+        "invent a parity matrix row",
+        "is not a capability of the quantum_error_correction domain",
+        lambda t: set_key(
+            t, "qec_dialect", "domain_row", 'domain_row = "qec_dialect_typo"'
+        ),
+    ),
+    (
+        "quote a CUDA-Q surface item nobody recorded",
+        "is not a recorded CUDA-Q surface item",
+        lambda t: set_key(
+            t,
+            "qec_dialect",
+            "domain_items",
+            'domain_items = ["an invented QEC dialect"]',
+        ),
+    ),
+    (
+        "override the matrix priority without stating why",
+        "floor_override_reason",
+        lambda t: sub_in_key(
+            t,
+            "qec_dem_chunking",
+            "floor_override_reason",
+            "floor_override_reason = ",
+            "floor_override_reason_x = ",
+        ),
+    ),
+    (
+        "drop the floor_override_reason where no matrix row backs the floor",
+        "floor_override_reason",
+        lambda t: sub_in_key(
+            t,
+            "qec_dem_matrices_and_rates",
+            "floor_override_reason",
+            "floor_override_reason = ",
+            "floor_override_reason_x = ",
+        ),
+    ),
+    (
+        "drop the fail-closed statement from a row",
+        "fail_closed is empty",
+        lambda t: set_key(t, "qec_dialect", "fail_closed", 'fail_closed = ""'),
+    ),
+    (
+        "drop the next_action from a partial row",
+        "next_action is empty",
+        lambda t: set_key(t, "qec_dem_merge", "next_action", 'next_action = ""'),
+    ),
+    (
+        "leave a partial row with nothing present",
+        "must name the symbols_present entry",
+        lambda t: set_key(t, "qec_dem_matrices_and_rates", "symbols_present", None),
+    ),
+    (
+        "leave a gap row with no proof at all",
+        "must prove the gap",
+        lambda t: set_key(
+            set_key(t, "qec_dem_chunking", "symbols_absent", None),
+            "qec_dem_chunking",
+            "negative_search",
+            None,
+        ),
+    ),
+    (
+        "claim a gap whose proof path now exists",
+        "now exists",
+        lambda t: append_to_list(
+            t, "qec_dem_chunking", "negative_search", "flagquantum/qec/dem.py"
+        ),
+    ),
+    (
+        "claim a status the parity matrix contradicts",
+        "while parity matrix row",
+        lambda t: set_key(t, "qec_dialect", "status", 'status = "aligned"'),
+    ),
+    (
+        "mark a diff row absent while still naming a symbol",
+        "verdict `absent`",
+        lambda t: set_key(
+            t, "dem_measurement_to_detector_map", "verdict", 'verdict = "absent"'
+        ),
+    ),
+    (
+        "leave a diff row without a note",
+        "note is empty",
+        lambda t: set_key(t, "dem_detector_matrix", "note", 'note = ""'),
+    ),
+    (
+        "leave a diff row without a CUDA-Q symbol",
+        "cudaq_symbol is empty",
+        lambda t: set_key(t, "dem_error_ids", "cudaq_symbol", 'cudaq_symbol = ""'),
+    ),
+    (
+        "mark a row unverified without saying so in the row",
+        "does not say UNVERIFIED",
+        lambda t: sub_in_key(
+            t, "dem_to_stim_text", "note", "UNVERIFIED", "unconfirmed"
+        ),
+    ),
+    (
+        "hide a row from the reading document",
+        "is not mentioned",
+        lambda t: set_key(
+            t, "dem_canonicalize", "id", 'id = "dem_canonicalize_renamed"'
+        ),
+    ),
+    (
+        "name an absent verdict for a symbol the tree has",
+        "verdict `absent` but",
+        lambda t: set_key(
+            t,
+            "dem_canonicalize",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel"',
+        ),
+    ),
+]
+
+
+def run(checker: Path, checklist: Path, repo_root: Path) -> tuple[int, str]:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(checker),
+            "--checklist",
+            str(checklist),
+            "--repo-root",
+            str(repo_root),
+            "--quiet",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode, result.stdout + result.stderr
+
+
+@dataclass
+class Sandbox:
+    """A throwaway repository copy and the checklist the checker is pointed at.
+
+    The checklist is rewritten before every run, so a test reads as a list of
+    damages and the repository copy stays pristine.
+    """
+
+    repo_root: Path
+    checklist: Path
+
+    def check(self, checklist_text: str) -> tuple[int, str]:
+        self.checklist.write_text(checklist_text, encoding="utf-8")
+        return run(CHECKER, self.checklist, self.repo_root)
+
+    def settle(self, name: str, expected: str, checklist_text: str) -> None:
+        """Require the checker to reject one damaged checklist for one reason."""
+
+        code, output = self.check(checklist_text)
+        assert code != 0, f"{name}: the checker accepted a damaged checklist"
+        assert expected in output, (
+            f"{name}: the checker failed for the wrong reason; wanted {expected!r}, "
+            f"it said:\n{output}"
+        )
+
+
+@pytest.fixture(scope="module")
+def sandbox() -> Iterator[Sandbox]:
+    """One copy of this repository, because the checker has to read a real tree."""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        repo_root = tmp_path / "fq"
+        shutil.copytree(REPO_SOURCE, repo_root, symlinks=True, ignore=_SKIP)
+        yield Sandbox(repo_root=repo_root, checklist=tmp_path / "checklist.toml")
+
+
+@pytest.fixture(scope="module")
+def baseline() -> str:
+    return CHECKLIST.read_text(encoding="utf-8")
+
+
+def test_the_committed_checklist_passes_and_the_index_reads_the_tree(
+    sandbox: Sandbox, baseline: str
+) -> None:
+    """The baseline passes, and it passes for a measurable reason.
+
+    A checker could satisfy the baseline by agreeing with the checklist rather
+    than by reading the repository, so three controls separate the two: a
+    definition that exists only in the tree must be seen, a name the tree lacks
+    must be rejected, and the planted claim must pass again once the definition
+    is removed.
+    """
+
+    code, output = sandbox.check(baseline)
+    assert code == 0, f"the committed checklist should pass, but it said:\n{output}"
+
+    # A definition that exists only in the source tree, not in the checklist.
+    planted = sandbox.repo_root / PLANTED_MODULE
+    planted.write_text("class PlantedSymbol:\n    pass\n", encoding="utf-8")
+    sandbox.settle(
+        "planted symbol",
+        f"{PLANTED_SYMBOL.rpartition('.')[2]!r} exists as a definition somewhere",
+        append_to_list(
+            baseline, "qec_dem_construction", "symbols_absent", "PlantedSymbol"
+        ),
+    )
+
+    # A positive claim for a name nothing in the tree defines.
+    sandbox.settle(
+        "resolves nowhere",
+        "does not resolve",
+        append_to_list(
+            baseline,
+            "qec_code_record",
+            "symbols_present",
+            "flagquantum.qec.NotInTheTree",
+        ),
+    )
+
+    # With the module gone, the same claim must fail again. An index that read
+    # the checklist instead of the tree could not make that distinction.
+    planted.unlink()
+    code, output = sandbox.check(
+        append_to_list(
+            baseline, "qec_dem_construction", "symbols_absent", "PlantedSymbol"
+        )
+    )
+    assert code == 0, (
+        "the planted claim still failed after the module was removed, so the "
+        f"earlier pass was not caused by reading the tree:\n{output}"
+    )
+
+
+def test_every_mutation_is_caught_for_its_own_reason(
+    sandbox: Sandbox, baseline: str
+) -> None:
+    """Each damage must be caught, and caught for the reason it was designed for.
+
+    A mutation that is caught for the wrong reason is a mutation that would keep
+    passing if the check it targets were deleted, so the expected substring is
+    part of the assertion rather than a note.
+    """
+
+    failures: list[str] = []
+    caught = 0
+    for name, expected, mutate in MUTATIONS:
+        try:
+            damaged = mutate(baseline)
+        except KeyError as error:
+            failures.append(f"{name}: could not be applied ({error})")
+            continue
+        if damaged == baseline:
+            failures.append(f"{name}: the mutation was a no-op, so it proves nothing")
+            continue
+        try:
+            sandbox.settle(name, expected, damaged)
+        except AssertionError as error:
+            failures.append(str(error))
+            continue
+        caught += 1
+
+    assert not failures, (
+        f"{len(failures)} of {len(MUTATIONS)} mutations did not behave as required:\n  - "
+        + "\n  - ".join(failures)
+    )
+    assert caught == len(MUTATIONS)

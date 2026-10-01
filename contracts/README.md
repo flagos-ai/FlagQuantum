@@ -25,6 +25,7 @@ must validate the resulting behavior directly.
 | `*-interop-contract.toml` | Version lanes and semantic mappings for external frameworks. |
 | `interop-capability-gap-matrix.toml` | Evidence-linked comparison of adapter coverage and prioritized gaps. |
 | `cudaq-parity-matrix.toml` | CUDA-Q product capability baseline with a per-row FlagQuantum verdict, dependency class, and priority. |
+| `qec-cudaq-alignment-checklist.toml` | Symbol-level CUDA-Q QEC alignment, one row per upstream surface item, with the evidence for each claim. |
 | `split-real-imag-statevector-*-contract.toml` | Statevector representation, precision, device, and training acceptance boundaries. |
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
@@ -69,3 +70,14 @@ line, so `cudaq-parity-matrix.toml` also records that line, the component versio
 its QEC rows were read at, and the limit that follows from the two lines being
 disjoint: the core pin does not reach the QEC component, and a QEC row must not
 be read as a statement about the pinned core versions.
+
+`qec-cudaq-alignment-checklist.toml` zooms into that one QEC domain. It is not a
+fourth opinion about the CUDA-Q surface: `cudaq-parity-matrix.toml` owns the
+capability inventory, the priority, and the join to `capability-maturity.toml`,
+and the checklist owns the symbol-level diff and the upstream attribution *within*
+those rows. A checklist row naming a matrix row must agree with that row's status,
+priority, and maturity entries, so the two cannot drift apart silently. Read it
+through `docs/development/QEC_CUDAQ_ALIGNMENT.md`, which explains the rows and
+must mention every one of them. It is checked by
+`python tools/check_qec_cudaq_alignment.py`, run in CI's `quality` job, and the
+check is itself mutation-tested by `tests/unit/test_qec_cudaq_alignment_check.py`.

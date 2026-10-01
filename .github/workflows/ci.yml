@@ -112,6 +112,8 @@ jobs:
         run: python tools/check_interop_capability_gap_matrix.py
       - name: Verify CUDA-Q parity matrix and its generated scoreboard
         run: python tools/parity_matrix.py --check
+      - name: Verify the CUDA-Q QEC alignment checklist against this checkout
+        run: python tools/check_qec_cudaq_alignment.py
       - name: Verify Double-Single FP32 numerical contract
         run: python tools/check_double_single_contract.py
       - name: Verify split real/imag statevector P0 contract
