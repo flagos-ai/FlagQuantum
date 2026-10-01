@@ -333,7 +333,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "socket_transport_observed": False,
             "roce_transport_observed": True,
             "gpu_direct_observed": True,
-            "configured_infiniband_disabled": False,
+            "configured_transport": "infiniband",
         },
         "performance": {
             "measured": True,
@@ -416,3 +416,57 @@ def test_every_retracted_blocker_needs_its_own_observation(
     )
     assert "host_staging_in_measured_region" in found
     assert "hidden_host_staging_not_audited" not in found
+
+
+@pytest.mark.parametrize("route", ["infiniband", "socket"])
+def test_the_route_is_applied_to_the_blockers_after_the_log_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, route: str
+) -> None:
+    """A run that used the fabric must not record it as untested.
+
+    The route is the one observation that arrives after the artifact is
+    assembled, because it is read from a log the process group is still writing
+    while it exists. `_apply_network_observation` is the seam that runs the
+    derivation a second time for it; this fails if the second pass is dropped,
+    and it fails if the second pass forgets to re-digest the evidence it
+    changed.
+    """
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+    monkeypatch.setenv("NCCL_SOCKET_IFNAME", "ens22f0")
+    log = tmp_path / "nccl.log"
+    if route == "infiniband":
+        log.write_text(
+            "NET/IB : Using [0]mlx5_101:1/RoCE [RO]; OOB ens22f0:10.1.15.172<0>\n"
+            "via NET/IB/0/GDRDMA\n"
+        )
+        monkeypatch.setenv("NCCL_IB_DISABLE", "0")
+    else:
+        log.write_text("NET/Socket : Using [0]ens22f0:10.1.15.172<0>\n")
+        monkeypatch.setenv("NCCL_IB_DISABLE", "1")
+
+    payload = _MODULE._artifact(**_artifact_kwargs(network={}))
+    assert "rdma_not_tested" in payload["evidence"]["claim_blockers"]
+
+    _MODULE._apply_network_observation(payload, network_log=log, local_world_size=1)
+    evidence = payload["evidence"]
+
+    assert evidence["observations"]["network"]["route"] == route
+    assert ("rdma_not_tested" in evidence["claim_blockers"]) == (route == "socket")
+    # The digest covers the evidence, and the evidence changed.
+    encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
+
+
+@pytest.mark.parametrize("payload", [None])
+def test_an_absent_artifact_has_no_route_to_record(payload: None) -> None:
+    """Only rank zero writes the artifact, and it does so through the same seam."""
+
+    assert (
+        _MODULE._apply_network_observation(
+            payload, network_log=None, local_world_size=1
+        )
+        is None
+    )

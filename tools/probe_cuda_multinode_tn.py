@@ -1158,6 +1158,36 @@ def _declared_shape() -> tuple[int, int]:
     return world_size, local_world_size
 
 
+def _apply_network_observation(
+    payload: dict[str, Any] | None,
+    *,
+    network_log: Path | None,
+    local_world_size: int,
+) -> dict[str, Any] | None:
+    """Read the route out of the debug log and settle the blockers again.
+
+    The route is the one observation that cannot be taken while the process
+    group exists, because the group is what writes the log it is read from. It
+    still decides `rdma_not_tested`, so the blockers are derived a second time
+    here rather than left as they were assembled without it: a probe that
+    derived them once, before the log was read, would report an untested fabric
+    on a run that used one.
+
+    The digest is recomputed because it covers the evidence, and the evidence
+    just changed.
+    """
+
+    if payload is None:
+        return None
+    evidence = payload["evidence"]
+    evidence["observations"]["network"] = _network_observation(
+        network_log, local_world_size=local_world_size
+    )
+    evidence["claim_blockers"] = _derived_claim_blockers(evidence["observations"])
+    payload["evidence_sha256"] = _canonical_sha256(evidence)
+    return payload
+
+
 def probe(
     *,
     network_log: Path | None,
@@ -1511,19 +1541,12 @@ def probe(
     finally:
         dist.destroy_process_group()
 
-    if rank == 0 and payload is not None:
-        evidence = payload["evidence"]
-        evidence["observations"]["network"] = _network_observation(
-            network_log, local_world_size=local_world_size
+    if rank == 0:
+        # The route is read after the group is gone, because the debug log is
+        # still being written while it exists.
+        payload = _apply_network_observation(
+            payload, network_log=network_log, local_world_size=local_world_size
         )
-        # The route is one of the observations the blockers are derived from, and
-        # it only exists once the group that wrote the log has exited, so the
-        # list is derived again rather than left as it was assembled without it.
-        evidence["claim_blockers"] = _derived_claim_blockers(evidence["observations"])
-        # One digest per artifact, over the evidence and nothing else. Recording
-        # it inside `evidence` too would put two disagreeing digests in one file
-        # and leave a reader no way to tell which one was authoritative.
-        payload["evidence_sha256"] = _canonical_sha256(evidence)
     return payload
 
 

@@ -669,6 +669,44 @@ def _training_observations(
     return observations, metrics, resumed_summary
 
 
+def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
+    """Every blocker this run's own observations can retract.
+
+    The declared part of the boundary -- the pair of hosts, the fixed circuit,
+    and the one site boundary this lane can hold -- is not decided here, because
+    nothing inside the run can retract it. What is decided here is only what the
+    run observed. The cut is declared because the site plan derives ownership
+    from the world size alone, so a two-host pair holds exactly one boundary and
+    this lane cannot move it: a partition that put the boundary elsewhere would
+    be a different plan, and a wider shape would be a different lane. The
+    tensor-network probe sweeps the same boundary because its cut is a declared
+    list of labels it can shorten; this one has nothing to shorten, and saying
+    so is narrower than dropping the blocker.
+
+    Called once while the artifact is assembled and again after the route has
+    been read, because that observation arrives after the process group is gone
+    and the group is what writes the log it is read from. Deriving the list in
+    one place and applying it twice keeps the two passes from disagreeing.
+    """
+
+    return claim_blockers(
+        [
+            BLOCKER_TWO_NODE_PAIR_ONLY,
+            BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
+            BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT,
+        ],
+        gather_claim_blockers(
+            production_materialization=bool(
+                observations["production_full_mps_materialization"]
+            ),
+            blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_MPS_GATHER,
+        ),
+        transport_claim_blockers(observations),
+        measurement_claim_blockers(observations),
+        staging_claim_blockers(observations),
+    )
+
+
 def _artifact(
     *,
     rank_records: list[dict[str, Any]],
@@ -719,36 +757,10 @@ def _artifact(
             "execution": "forward_backward_optimizer_and_checkpoint_resume",
         },
         "observations": observations,
-        # Two kinds of boundary, kept apart because only one of them can move.
-        # What this run declares -- a pair of hosts, one fixed circuit, and one
-        # inter-node site boundary -- cannot be retracted by anything inside it,
-        # so it is stated. What the run observed is derived from the
-        # observations above, so a later run that records the missing
-        # observation drops its blocker without anyone editing a literal here.
-        #
-        # The cut is declared because the site plan derives ownership from the
-        # world size alone, so a two-host pair holds exactly one boundary and
-        # this lane cannot move it: a partition that put the boundary elsewhere
-        # would be a different plan, and a wider shape would be a different
-        # lane. The tensor-network probe sweeps the same boundary because its
-        # cut is a declared list of labels it can shorten; this one has nothing
-        # to shorten, and saying so is narrower than dropping the blocker.
-        "claim_blockers": claim_blockers(
-            [
-                BLOCKER_TWO_NODE_PAIR_ONLY,
-                BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
-                BLOCKER_INTER_NODE_CUT_WIDTH_NOT_SWEPT,
-            ],
-            gather_claim_blockers(
-                production_materialization=observations[
-                    "production_full_mps_materialization"
-                ],
-                blocker=BLOCKER_VALIDATION_ONLY_TINY_FULL_MPS_GATHER,
-            ),
-            transport_claim_blockers(observations),
-            measurement_claim_blockers(observations),
-            staging_claim_blockers(observations),
-        ),
+        # The declared blockers, and why the cut is one of them, are explained
+        # where the list is derived. The route arrives after this call and is
+        # applied by `probe`.
+        "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -819,6 +831,36 @@ def _declared_shape() -> tuple[int, int]:
             f"(world_size={world_size} local_world_size={local_world_size})"
         )
     return world_size, local_world_size
+
+
+def _apply_network_observation(
+    payload: dict[str, Any] | None,
+    *,
+    network_log: Path | None,
+    local_world_size: int,
+) -> dict[str, Any] | None:
+    """Read the route out of the debug log and settle the blockers again.
+
+    The route is the one observation that cannot be taken while the process
+    group exists, because the group is what writes the log it is read from. It
+    still decides `rdma_not_tested`, so the blockers are derived a second time
+    here rather than left as they were assembled without it: a probe that
+    derived them once, before the log was read, would report an untested fabric
+    on a run that used one.
+
+    The digest is recomputed because it covers the evidence, and the evidence
+    just changed.
+    """
+
+    if payload is None:
+        return None
+    evidence = payload["evidence"]
+    evidence["observations"]["network"] = _network_observation(
+        network_log, local_world_size=local_world_size
+    )
+    evidence["claim_blockers"] = _derived_claim_blockers(evidence["observations"])
+    payload["evidence_sha256"] = _canonical_sha256(evidence)
+    return payload
 
 
 def probe(
@@ -1188,14 +1230,12 @@ def probe(
     finally:
         dist.destroy_process_group()
 
-    if rank == 0 and payload is not None:
+    if rank == 0:
         # The route is read after the group is gone, because the debug log is
         # still being written while it exists.
-        evidence = payload["evidence"]
-        evidence["observations"]["network"] = _network_observation(
-            network_log, local_world_size=local_world_size
+        payload = _apply_network_observation(
+            payload, network_log=network_log, local_world_size=local_world_size
         )
-        payload["evidence_sha256"] = _canonical_sha256(evidence)
     return payload
 
 
