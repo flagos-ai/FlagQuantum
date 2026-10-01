@@ -159,6 +159,14 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "variational_algorithms",
     ),
     _semantic(
+        "FQK-MPS-004",
+        "mps.environment.transfer_identity_z",
+        "mps",
+        "Transfer an MPS environment through identity or Pauli-Z at one site.",
+        "observable_estimation",
+        "many_body_simulation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",
