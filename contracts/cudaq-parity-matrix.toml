@@ -717,8 +717,8 @@ cudaq = "cudaq-qec codes expressed as kernels, with numerical experiment APIs"
 status = "partial"
 priority = "now"
 dependency_class = "none"
-maturity_ref = "repetition_code_memory"
-reason = "Only a repetition-code memory experiment is registered. Surface, Steane, qLDPC, Reichardt, and Floquet codes are absent."
+maturity_ref = "stabilizer_code_memory_circuit"
+reason = "The repetition code and the rotated surface code are declared as code records and both produce a memory-experiment source with detector and observable layouts, so a distance-d rotated patch is expressible. Both are declared rather than constructed: an arbitrary parity-check matrix, a code with a mixed X-and-Z stabilizer, Steane, qLDPC, Reichardt and Floquet codes are absent, and nothing here decodes."
 
 [[domains.capabilities]]
 id = "qec_decoder_family"

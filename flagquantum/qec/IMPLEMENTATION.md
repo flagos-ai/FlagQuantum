@@ -66,17 +66,24 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wir
 indices; a `StabilizerCode` is a value that declares its distance, wire layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout.
+layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
+implement it.
 
 Detector semantics are fixed. A detector is a measurement parity that is
-deterministic in the noiseless circuit. A `rounds`-round memory experiment
-declares one detector per check per round, comparing that round against its
-predecessor, where the first round is compared against the known all-zero prior
-state, plus one detector per check comparing the final syndrome round against the
-terminal data readout. That grammar is `len(checks) * (rounds + 1)` detectors, and
-for a distance-`d` repetition code, whose `len(checks)` is `d - 1`, it equals
-`(d - 1) * (rounds + 1)`. Logical failure is the parity of a declared logical
-observable.
+deterministic in the noiseless circuit. Which parity that is depends on the
+check's type, because both the initial state and the terminal data readout are in
+the Z basis. A Z-type check is deterministic in round zero and again at the
+terminal readout, so it declares one detector per round comparing that round
+against its predecessor -- where the first round is compared against the known
+all-zero prior state -- plus one detector comparing the final syndrome round
+against the terminal data readout. An X-type check is deterministic in neither
+place and declares only a detector for every round after the first, comparing two
+consecutive syndrome rounds. The count is therefore
+`nz * (rounds + 1) + nx * (rounds - 1)`, which reduces to the earlier
+`len(checks) * (rounds + 1)` exactly when every check is Z-type; for a
+distance-`d` repetition code, whose `len(checks)` is `d - 1` and which has no
+X-type check, it equals `(d - 1) * (rounds + 1)`. Logical failure is the parity of
+a declared logical observable.
 
 The detector count is validated against the code's declared checks and the
 configured round count, and every reference is validated against the code's
@@ -215,11 +222,48 @@ samples is a DEM-sampled rate, and it is labelled as one wherever it is reported
 `README.md` is deliberately not updated for the detector error model: the Stage 5
 documentation sweep owns it.
 
-One representational boundary is explicit and enforced. `CodeCheck` requires every
-CNOT to control a data wire and target the check's ancilla, so it describes only
-Z-type checks measured with a Z-basis ancilla; an X-type stabilizer is rejected by
-validation with "check stabilizer must be Z-type". An X-type check couples the
-ancilla the other way and is not representable here, even though the `Pauli`
-record and the check's `stabilizer` field are basis-agnostic. This matches the
-repetition code, which detects bit flips; a code family needing X-type checks
-requires this record to grow before it can be described.
+One representational boundary is explicit and enforced. A `CodeCheck` states one
+ancilla and one CNOT direction, and the direction is fixed by the check's type
+rather than left to the caller: a Z-type check controls from each data wire in
+the stabilizer's support into an ancilla prepared in `|0>`, and an X-type check
+controls from an ancilla prepared in `|+>` into each data wire. Both gadgets
+leave the ancilla's Z-basis readout equal to the check's eigenvalue, which is
+what makes the two symmetric. A mixed X-and-Z stabilizer is still refused, since
+it needs a second ancilla and a second gadget that this record does not describe.
+
+`RotatedSurfaceCode` is the first code here that needs both check types. Data
+qubits occupy wires `0..distance**2 - 1`, indexed so lattice site `(i, j)` is wire
+`j * distance + i`, and ancillas follow them in lattice order. An X-type ancilla
+sits on an interior column at odd lattice parity, a Z-type ancilla on an interior
+row at even lattice parity, and each check's support is the up to four data
+qubits diagonally adjacent to it, so the checks that would fall outside the patch
+are truncated to weight two. The declared logical observable is `Z` on the data
+row `j == 0`.
+
+The X-type checks change what a memory experiment has to declare. Both the
+initial state and the terminal data readout are in the Z basis, so a Z-type check
+is deterministic in round zero and again at the terminal readout and gets
+`rounds + 1` detectors, while an X-type check is deterministic only against the
+round before it and gets `rounds - 1`. The X-type checks are still measured every
+round, because a Z error is precisely what the Z-basis readout cannot see: it
+commutes with every Z stabilizer and anticommutes with the X stabilizers over
+that data qubit, so it is reported as a change in an X-type check between two
+consecutive rounds. An X error is reported in the complementary way, by the
+round-zero and terminal detectors of the Z-type checks. `build_memory_circuit`
+refuses a code whose declared logical observable is not Z-type, because under a
+Z-basis readout such a code would be measured under premises that do not hold
+for it.
+
+That layout is checked against `stim`'s generated `surface_code:rotated_memory_z`
+at 28 (`distance`, `rounds`) points: distances two through eight and rounds one
+through four, agreeing on the detector count and the observable count at every
+one. `test_surface_code.py` checks the same record against its own algebra
+instead: the checks pairwise commute, they generate a group of rank
+`distance**2 - 1`, and the declared logical observable is independent of that
+group. Executing the distance-three patch through the dynamic hybrid simulator
+shows the complementary syndromes directly -- a Z error fires exactly the X-type
+detectors adjacent to the data qubit and no Z-type detector, and an X error on
+the logical row fires exactly the Z-type round-zero detectors and flips the
+observable. Only the distance-three patch is executed through that simulator: it
+draws each shot from the full output distribution, so a 17-wire patch costs a
+`2**17`-way draw and a distance-five patch would need `2**49`.

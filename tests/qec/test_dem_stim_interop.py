@@ -67,6 +67,8 @@ from typing import TYPE_CHECKING
 import pytest
 import torch
 
+from flagquantum.qec.circuit import build_memory_circuit
+from flagquantum.qec.codes import RotatedSurfaceCode
 from flagquantum.qec.dem import DemError, DetectorErrorModel
 
 if TYPE_CHECKING:
@@ -391,3 +393,49 @@ def test_the_parsed_model_predicts_the_circuit_it_came_from() -> None:
             torch.float64
         ).mean(dim=0)
         assert float(difference.abs().max()) < 0.008
+
+
+@pytest.mark.parametrize("rounds", (1, 2, 3, 4))
+@pytest.mark.parametrize("distance", (2, 3, 4, 5, 6, 7, 8))
+def test_the_surface_code_declares_the_detector_shape_stim_declares(
+    distance: int, rounds: int
+) -> None:
+    """The generated rotated surface code pins the declared shape for the same code.
+
+    Stim's ``surface_code:rotated_memory_z`` is a second, independent statement
+    of how many detectors and observables a distance ``d`` patch of ``r`` rounds
+    must declare. This module builds the same experiment from the code's checks,
+    so comparing the two at 28 (distance, rounds) points checks the layout rule
+    the checks imply rather than a number transcribed from Stim.
+
+    The count has to follow the two check classes. Both the initial state and the
+    terminal readout are in the Z basis, so each Z-type check is deterministic in
+    round zero and at the terminal readout and gets ``rounds + 1`` detectors,
+    while each X-type check is deterministic only against the round before it and
+    gets ``rounds - 1``. Reading every check as Z-type instead — the rule this
+    record used before X-type checks were expressible — would report
+    ``(nx + nz) * (rounds + 1)``, which at ``d=3, rounds=2`` is 24 against Stim's
+    16, so the assertion separates the two rules rather than merely agreeing with
+    one of them.
+
+    The comparison is on the declared shape. Which detector a particular error
+    mechanism flips is a separate question, and answering it needs a
+    mechanism-level correspondence between the two circuits rather than a count.
+    """
+
+    code = RotatedSurfaceCode(distance=distance)
+    x_checks = sum(1 for check in code.checks if check.stabilizer.x_wires)
+    z_checks = len(code.checks) - x_checks
+    memory = build_memory_circuit(code, rounds=rounds)
+
+    circuit = stim.Circuit.generated(
+        "surface_code:rotated_memory_z", distance=distance, rounds=rounds
+    )
+    theirs = circuit.detector_error_model(decompose_errors=False)
+
+    assert len(memory.detectors.detectors) == theirs.num_detectors
+    assert len(memory.observables.observables) == theirs.num_observables
+    assert len(memory.detectors.detectors) == (
+        z_checks * (rounds + 1) + x_checks * (rounds - 1)
+    )
+    assert len(memory.detectors.detectors) < (x_checks + z_checks) * (rounds + 1)

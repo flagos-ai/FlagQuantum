@@ -179,8 +179,36 @@ def test_check_rejects_an_identity_stabilizer_with_cnots() -> None:
         )
 
 
-def test_check_rejects_an_x_type_stabilizer() -> None:
-    with pytest.raises(ValueError, match="Z-type"):
+def test_check_accepts_an_x_type_stabilizer_with_the_mirrored_direction() -> None:
+    """An X-type check is expressed by reversing the CNOT direction.
+
+    The gadget is the mirror of the Z-type one: the ancilla is prepared in
+    ``|+>`` and controls into the stabilizer's support. Before this direction was
+    expressible the record refused every X-type stabilizer, and the old refusal
+    is kept below as a premise so the reason the guard existed stays visible.
+    """
+
+    check = CodeCheck(
+        index=0,
+        stabilizer=Pauli(x_wires=(0, 1)),
+        ancilla_wire=2,
+        cnot_wires=((2, 0), (2, 1)),
+    )
+
+    assert check.stabilizer == Pauli(x_wires=(0, 1))
+    assert tuple(control for control, _ in check.cnot_wires) == (2, 2)
+    assert tuple(target for _, target in check.cnot_wires) == (0, 1)
+
+
+def test_check_still_rejects_an_x_type_stabilizer_measured_the_z_type_way() -> None:
+    """The old refusal survives as a direction check rather than as a type check.
+
+    An X-type stabilizer whose CNOTs point the Z-type way is still refused,
+    because measuring it that way would collapse the ancilla instead of
+    collecting the check's eigenvalue.
+    """
+
+    with pytest.raises(ValueError, match="target data wires"):
         CodeCheck(
             index=0,
             stabilizer=Pauli(x_wires=(0, 1)),
@@ -189,10 +217,75 @@ def test_check_rejects_an_x_type_stabilizer() -> None:
         )
 
 
+def test_check_rejects_a_mixed_x_and_z_stabilizer() -> None:
+    """A mixed stabilizer needs a second ancilla and a second gadget.
+
+    ``CodeCheck`` describes one ancilla and one CNOT direction, so it refuses a
+    mixed operator instead of guessing which half the CNOTs belong to.
+    """
+
+    with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(x_wires=(0,), z_wires=(1,)),
+            ancilla_wire=2,
+            cnot_wires=((2, 0), (1, 2)),
+        )
+
+
+def test_check_rejects_an_x_type_stabilizer_with_cnots_on_the_wrong_wires() -> None:
+    with pytest.raises(ValueError, match="support"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(x_wires=(0, 1)),
+            ancilla_wire=2,
+            cnot_wires=((2, 0), (2, 3)),
+        )
+
+
+def test_check_rejects_an_x_type_stabilizer_whose_cnots_stay_on_the_data() -> None:
+    """The X gadget's ancilla must be the control of every CNOT.
+
+    Writing the X-type check as CNOTs among the data wires keeps the targets
+    equal to the support, so only the direction guard distinguishes it from the
+    gadget that actually measures the stabilizer.
+    """
+
+    with pytest.raises(ValueError, match="controlled by the declared ancilla"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(x_wires=(0, 1)),
+            ancilla_wire=2,
+            cnot_wires=((0, 1), (1, 0)),
+        )
+
+
+def test_check_rejects_a_z_type_check_that_controls_from_its_ancilla() -> None:
+    """A Z-type check must not treat its ancilla as a data wire.
+
+    The support here happens to contain the ancilla wire, which is what leaves
+    the direction guard as the only guard that rejects the record.
+    """
+
+    with pytest.raises(ValueError, match="control data wires, not the ancilla"):
+        CodeCheck(
+            index=0,
+            stabilizer=Pauli(z_wires=(0, 1, 2)),
+            ancilla_wire=2,
+            cnot_wires=((0, 2), (1, 2), (2, 2)),
+        )
+
+
 def test_public_namespace_publishes_the_code_records() -> None:
     import flagquantum.qec as qec
 
-    expected = ("CodeCheck", "Pauli", "RepetitionCode", "StabilizerCode")
+    expected = (
+        "CodeCheck",
+        "Pauli",
+        "RepetitionCode",
+        "RotatedSurfaceCode",
+        "StabilizerCode",
+    )
     missing = [name for name in expected if not hasattr(qec, name)]
     assert not missing, f"flagquantum.qec is missing {missing}"
     for name in expected:

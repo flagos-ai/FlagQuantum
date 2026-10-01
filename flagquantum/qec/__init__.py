@@ -9,7 +9,7 @@ from .circuit import (
     ObservableLayout,
     build_memory_circuit,
 )
-from .codes import CodeCheck, RepetitionCode, StabilizerCode
+from .codes import CodeCheck, RepetitionCode, RotatedSurfaceCode, StabilizerCode
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -66,6 +66,7 @@ __all__ = (
     "RepetitionTemporalDecoder",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
+    "RotatedSurfaceCode",
     "StabilizerCode",
     "SyndromeRound",
     "StreamingDecoder",

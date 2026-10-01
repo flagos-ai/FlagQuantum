@@ -300,6 +300,13 @@ review, judged minor, and deliberately not fixed in Stage 1.
   and target the check's ancilla, so only a Z-basis ancilla measurement is
   reachable, and a stabilizer with an X component is rejected by validation. A
   code family needing X-type checks requires this record to grow first.
+
+  **Closed by W1-04a.** `CodeCheck` now fixes the CNOT direction per check type
+  instead of accepting only the Z-type one, and refuses a mixed X-and-Z
+  stabilizer. `RotatedSurfaceCode` is the code family the constraint named. The
+  detector grammar in this section is therefore superseded for codes that declare
+  both check types: see the W1-04a row in `cudaq-parity-pr-plan.md`. The rest of
+  the constraint list below still holds.
 - A detector's parity is validated for wire and round *membership* only. Nothing
   checks that a detector names the same check across rounds, that a terminal
   detector's data wires are the support of the check it belongs to, or that the
