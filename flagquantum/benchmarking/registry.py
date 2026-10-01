@@ -24,6 +24,19 @@ class RunnerSpec:
 
 
 _RUNNERS: dict[str, RunnerSpec] = {
+    "batched_statevector_memory": RunnerSpec(
+        name="batched_statevector_memory",
+        module="flagquantum.benchmarking.batched_statevector_memory",
+        attribute="main",
+        category="interop",
+        summary="Compare CPU batch time and fresh-process peak RSS.",
+        hardware="Unix CPU; Qiskit, Cirq, and PennyLane optional dependencies required",
+        example=(
+            "flagquantum-benchmark run batched_statevector_memory "
+            "--n-wires 18 --batch-sizes 32 --threads 1 "
+            "--json-output benchmarks/results/comparison/batched-memory.json"
+        ),
+    ),
     "batched_statevector_corpus": RunnerSpec(
         name="batched_statevector_corpus",
         module="flagquantum.benchmarking.batched_statevector_corpus",

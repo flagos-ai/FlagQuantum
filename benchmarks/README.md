@@ -166,6 +166,28 @@ flagquantum-benchmark run batched_statevector_corpus \
   --markdown-output benchmarks/results/comparison/batched-statevectors.md
 ```
 
+To measure the same task's real process-memory high-water mark without one
+framework contaminating another, use the isolated RSS runner. It keeps warm
+timing/correctness in the normal corpus and launches one fresh process per
+engine/workload for memory:
+
+```bash
+flagquantum-benchmark run batched_statevector_memory \
+  --workloads hardware_efficient_statevector truncated_qft_statevector \
+    random_clifford_statevector local_brickwork_statevector \
+    dense_nonlocal_statevector \
+  --n-wires 18 --batch-sizes 32 \
+  --engines flagquantum_native_batch flagquantum_native_monolithic_batch \
+    flagquantum_native_serial qiskit_aer_bridge cirq_simulator_bridge \
+    pennylane_lightning_bridge \
+  --threads 1 --warmup 2 --iterations 11 \
+  --json-output benchmarks/results/comparison/batched-memory.json \
+  --markdown-output benchmarks/results/comparison/BATCHED_MEMORY.md
+```
+
+The checked Apple-arm64 result and interpretation are in
+[`BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001_SCORECARD.md).
+
 FlagQuantum executes all bindings through its native parameter-batch path. The
 current Qiskit Aer, Cirq, and PennyLane bridges accept one statevector request at
 a time, so this runner repeats the public bridge call for each binding. It
