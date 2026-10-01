@@ -138,12 +138,13 @@ def legalize_circuit_topology(
                 "restore_after_each_gate",
                 "persistent_layout",
                 "sabre",
+                "sabre_layout",
             }:
                 selected_strategy = strategy
             else:
                 raise ValueError(
                     "strategy must be 'auto', 'restore_after_each_gate', "
-                    "'persistent_layout', or 'sabre'"
+                    "'persistent_layout', 'sabre', or 'sabre_layout'"
                 )
             routed = route_to_topology(
                 source,
