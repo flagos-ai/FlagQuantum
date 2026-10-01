@@ -112,6 +112,16 @@ Provider selection belongs in dispatch policy outside this catalog. The catalog
 describes capabilities and evidence; it does not choose a backend at import
 time.
 
+FlagTree also provides a Triton-compatible compiler substitution. Shared source
+that runs unchanged under that substitution remains one `triton` implementation
+record; it is not duplicated under `kernels/flagtree/` or counted twice in the
+inventory. A `flagtree` implementation record is reserved for FlagTree-owned
+source, required FlagTree extensions such as TLE, or a materially distinct
+support matrix. The real-device compatibility lane in
+[`tests/gpu/flagtree/`](../../tests/gpu/flagtree/) verifies distribution
+ownership, active CUDA backend identity, dispatch provenance, and all current
+shared Triton kernel families under FlagTree.
+
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
 `torch.bmm`: A800 measurements show that the experimental NUM-001 Triton
@@ -263,6 +273,13 @@ policy.
 Catalog validation is intentionally CPU-only and dependency-light. It checks
 identity, references, naming, and metadata without importing an accelerator
 provider.
+
+FlagTree wheel validation must use the pinned container lane documented in
+[`tests/gpu/flagtree/`](../../tests/gpu/flagtree/). The A800 hosts currently
+provide GLIBC 2.35, while the published NVIDIA FlagTree wheels require GLIBC
+2.38 or newer. A host import failure at that boundary is an environment
+incompatibility, not kernel evidence and not authorization to relabel stock
+Triton as FlagTree.
 
 The evidence catalog enforces these minimums:
 
