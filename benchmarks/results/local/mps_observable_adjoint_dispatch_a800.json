@@ -1,7 +1,11 @@
 {
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
   "evidence_scope": "development_hardware_evidence",
   "execution_semantics": "single_device_fast_path",
   "implementation_id": "FQKI-TRITON-MPS-006-A",
+  "non_release_evidence": true,
   "release_gate_allowed": false,
   "required_compiler_lanes": [
     "stock_triton",
@@ -1553,6 +1557,9 @@
       "semantic_id": "mps.gradient.hermitian_observable_adjoint.local",
       "source_revision": "f1e0dbcdb57c5889a7c2ae6a17456b44139667ff"
     }
+  ],
+  "scalability_blockers": [
+    "single-device kernel benchmark is not distributed scalability evidence"
   ],
   "scalability_claim_allowed": false,
   "schema": "flagquantum.kernel_benchmark.mps_observable_adjoint.v1",

@@ -370,9 +370,16 @@ def merge_runs(
         "source_revision": next(iter(revisions)),
         "runner": RUNNER,
         "execution_semantics": "single_device_fast_path",
+        "distribution_semantics": "single_device_fast_path",
         "evidence_scope": "development_hardware_evidence",
+        "claim_evidence_type": "development_smoke",
+        "benchmark_evidence_class": "local_non_release",
+        "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "scalability_blockers": [
+            "single-device kernel benchmark is not distributed scalability evidence"
+        ],
         "required_hosts": sorted(required_hosts),
         "required_compiler_lanes": list(COMPILER_LANES),
         "runs": ordered,
@@ -388,9 +395,16 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
         "implementation_id": IMPLEMENTATION_ID,
         "runner": RUNNER,
         "execution_semantics": "single_device_fast_path",
+        "distribution_semantics": "single_device_fast_path",
         "evidence_scope": "development_hardware_evidence",
+        "claim_evidence_type": "development_smoke",
+        "benchmark_evidence_class": "local_non_release",
+        "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "scalability_blockers": [
+            "single-device kernel benchmark is not distributed scalability evidence"
+        ],
         "required_compiler_lanes": list(COMPILER_LANES),
     }
     for field, value in expected.items():
