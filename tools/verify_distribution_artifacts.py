@@ -6,7 +6,7 @@ import argparse
 import email
 import tarfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 FORBIDDEN_PARTS = {
     "__pycache__",
@@ -29,6 +29,19 @@ FORBIDDEN_SUFFIXES = {
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
 ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/",)
+# `setup.py` declares the `flagquantum.simulation.native_cpu._C` extension
+# unconditionally, and `ci.yml` installs the built wheel and asserts
+# `native_cpu_adjoint_available()`. The required member list named the package
+# resources a wheel must carry but not this module, so a wheel that lost it was
+# reported as verified and the loss surfaced as an import error in the next
+# step instead of as a verdict about the artifact.
+#
+# The member name carries the interpreter and platform tags, so it cannot be
+# listed as a fixed suffix the way the JSON and TOML resources are. The sdist
+# ships the `csrc` sources instead and builds the module from them, where a
+# missing source fails the build itself.
+NATIVE_EXTENSION_DIRECTORY = "flagquantum/simulation/native_cpu/"
+NATIVE_EXTENSION_SUFFIXES = (".so", ".pyd")
 REQUIRED_MEMBER_SUFFIXES = (
     "flagquantum/simulation/numerics/double-single-contract.toml",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",
@@ -38,6 +51,22 @@ REQUIRED_MEMBER_SUFFIXES = (
     "flagquantum/runtime/profiles/split_real_imag_statevector_p4_device_double_single.json",
     "flagquantum/runtime/profiles/statevector_local_p0.json",
 )
+
+
+def _is_native_extension(member: str) -> bool:
+    """Whether `member` is the compiled `_C` module `setup.py` builds.
+
+    The extension's filename is `_C.<tag>.so` on Linux and macOS and
+    `_C.<tag>.pyd` on Windows, so the directory and the module name are checked
+    and the platform tag between them is accepted as it comes.
+    """
+
+    path = PurePosixPath(member)
+    return (
+        path.parent.as_posix() + "/" == NATIVE_EXTENSION_DIRECTORY
+        and path.suffix in NATIVE_EXTENSION_SUFFIXES
+        and (path.stem == "_C" or path.name.startswith("_C."))
+    )
 
 
 def _members(path: Path) -> tuple[str, ...]:
@@ -64,6 +93,10 @@ def _missing_required_members(members: tuple[str, ...]) -> tuple[str, ...]:
         for suffix in REQUIRED_MEMBER_SUFFIXES
         if not any(member.endswith(suffix) for member in members)
     )
+
+
+def _missing_native_extension(members: tuple[str, ...]) -> bool:
+    return not any(_is_native_extension(member) for member in members)
 
 
 def _wheel_metadata(path: Path) -> tuple[str, ...]:
@@ -93,6 +126,11 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
     if path.suffix == ".whl":
         invalid_roots = [name for name in members if not _allowed_wheel_member(name)]
         errors.extend(f"unexpected wheel member: {name}" for name in invalid_roots)
+        if _missing_native_extension(members):
+            errors.append(
+                "compiled native extension is missing: "
+                "flagquantum.simulation.native_cpu._C"
+            )
         core_requirements = tuple(
             requirement
             for requirement in _wheel_metadata(path)
