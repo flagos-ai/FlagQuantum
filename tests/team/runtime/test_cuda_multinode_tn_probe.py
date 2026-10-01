@@ -224,6 +224,62 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # not perform on this path.
     assert observations["gradient_reduction"] == "probe_summed_rank_partials"
 
+    # The route is what the debug log recorded, on the interface the planner was
+    # told to use, and it is the fabric rather than the socket fallback. A
+    # socket route here would mean the pair that produced this artifact never
+    # exercised the transport the run is evidence about.
+    network = observations["network"]
+    assert network["evidence_level"] == "observed_debug_log"
+    assert network["route"] == "infiniband"
+    assert network["configured_transport"] == "infiniband"
+    assert network["configured_interface"] == "ens22f0"
+    assert network["configured_interface_observed"] is True
+    assert network["infiniband_transport_observed"] is True
+    assert network["roce_transport_observed"] is True
+    assert network["gpu_direct_observed"] is True
+    assert network["socket_transport_observed"] is False
+    assert network["backend"] == "nccl"
+
+    # The cut sweep moved, and the exchange moved with it, which is the whole
+    # difference between a swept cut and a cut that happens to be declared. Each
+    # width is listed with the bytes its ranks exchanged and the ranks that
+    # participated, so a width nobody exercised cannot hide in the summary.
+    cut = observations["cut_widths"]
+    assert cut["widths"] == [1, 2]
+    assert cut["unexercised_widths"] == []
+    assert set(cut["inter_node_bytes_by_width"]) == {"1", "2"}
+    assert all(bytes_ > 0 for bytes_ in cut["inter_node_bytes_by_width"].values())
+    assert sorted(cut["inter_node_bytes_by_slice_count"]) == ["2", "4"]
+    assert all(bytes_ > 0 for bytes_ in cut["inter_node_bytes_by_slice_count"].values())
+    assert all(ranks == [0, 1] for ranks in cut["ranks_by_width"].values())
+
+    # The measured leg, and the two properties that make it a measurement: the
+    # clock is synchronized across ranks, and the samples were taken after the
+    # warmup rather than as the warmup. The summary is recomputed from the
+    # samples so a hand-edited median cannot disagree with them.
+    performance = observations["performance"]
+    assert performance["measurement"] == "sharded_tensor_network_amplitudes"
+    assert performance["measured"] is True
+    assert performance["synchronized"] is True
+    assert performance["warmup_iterations"] >= 1
+    assert performance["measured_iterations"] >= 3
+    samples = performance["seconds"]
+    assert len(samples) == performance["measured_iterations"]
+    assert performance["minimum_seconds"] == min(samples)
+    assert performance["maximum_seconds"] == max(samples)
+    assert performance["minimum_seconds"] <= performance["median_seconds"]
+    assert performance["median_seconds"] <= performance["maximum_seconds"]
+
+    # The staging audit ran, and it found transfers inside the region it
+    # profiled. That is a finding about the workload, so it keeps a blocker --
+    # but not the one that says nobody looked.
+    staging = observations["host_staging"]
+    assert staging["profiled"] is True
+    assert staging["profiled_workload"] == performance["measurement"]
+    assert staging["host_transfer_observed"] is True
+    assert staging["host_transfer_events"]
+    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+
     ranks = observations["rank_records"]
     assert len(ranks) == 2
     placement = [item["rank_placement"] for item in ranks]
@@ -389,7 +445,16 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         assert shard["local_world_size"] == 1
         assert shard["node_count"] == 2
 
-    assert "production_performance_not_measured" in evidence["claim_blockers"]
+    # The boundary is exactly these blockers. The fabric, the measured workload,
+    # the audited staging path and the swept cut are each retired by the
+    # observation that justifies them, so a reader cannot find one here and
+    # cannot find one silently missing either.
+    assert sorted(evidence["claim_blockers"]) == [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
     # The blockers this probe exists to remove must be gone: an artifact that
     # still carried them would not support the training claim it makes.
     for resolved in (

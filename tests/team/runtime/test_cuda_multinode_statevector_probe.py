@@ -113,11 +113,21 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # comparison agree for the wrong reason.
     assert abs(metrics["training_loss_decrease"]) > 0
 
+    # The route is what the debug log recorded, on the interface the planner was
+    # told to use, and it is the fabric rather than the socket fallback. A
+    # socket route here would mean the pair that produced this artifact never
+    # exercised the transport the run is evidence about.
     network = observations["network"]
-    assert network["route"] == "socket"
+    assert network["evidence_level"] == "observed_debug_log"
+    assert network["route"] == "infiniband"
+    assert network["configured_transport"] == "infiniband"
     assert network["configured_interface"] == "ens22f0"
-    assert network["socket_transport_observed"] is True
     assert network["configured_interface_observed"] is True
+    assert network["infiniband_transport_observed"] is True
+    assert network["roce_transport_observed"] is True
+    assert network["gpu_direct_observed"] is True
+    assert network["socket_transport_observed"] is False
+    assert network["backend"] == "nccl"
 
     ranks = observations["rank_records"]
     assert {item["rank"] for item in ranks} == {0, 1}
@@ -153,7 +163,44 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2
 
-    assert "production_performance_not_measured" in evidence["claim_blockers"]
+    # The boundary is exactly these blockers. Each of the three the pair used
+    # to carry -- an untested fabric, an unmeasured workload, an unaudited
+    # staging path -- is now retired by the observation that justifies it, so a
+    # reader cannot find it here and cannot find it silently missing either.
+    assert sorted(evidence["claim_blockers"]) == [
+        "host_staging_in_measured_region",
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
+
+    # The measured leg, and the two properties that make it a measurement: the
+    # clock is synchronized across ranks, and the samples were taken after the
+    # warmup rather than as the warmup. The medians are recomputed from the
+    # samples so a hand-edited summary cannot disagree with the raw numbers it
+    # summarizes.
+    performance = observations["performance"]
+    assert performance["measurement"] == _MODULE.MEASUREMENT
+    assert performance["measured"] is True
+    assert performance["synchronized"] is True
+    assert performance["warmup_iterations"] >= 1
+    assert performance["measured_iterations"] >= 3
+    samples = performance["seconds"]
+    assert len(samples) == performance["measured_iterations"]
+    assert performance["minimum_seconds"] == min(samples)
+    assert performance["maximum_seconds"] == max(samples)
+    assert performance["minimum_seconds"] <= performance["median_seconds"]
+    assert performance["median_seconds"] <= performance["maximum_seconds"]
+
+    # The staging audit ran, and it found transfers inside the region it
+    # profiled. That is a finding about the workload, so it keeps a blocker --
+    # but not the one that says nobody looked.
+    staging = observations["host_staging"]
+    assert staging["profiled"] is True
+    assert staging["profiled_workload"] == _MODULE.MEASUREMENT
+    assert staging["host_transfer_observed"] is True
+    assert staging["host_transfer_events"]
+    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
     # The two blockers this probe exists to remove must be gone: a forward-only
     # artifact that still carried them would not support a training claim.
     assert "distributed_gradient_not_tested" not in evidence["claim_blockers"]

@@ -1,32 +1,50 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T08:03:21.014766+00:00",
+    "captured_at": "2026-10-01T09:46:05.508779+00:00",
     "claim_blockers": [
-      "validation_only_tiny_full_state_gather",
-      "hidden_host_staging_not_audited",
-      "rdma_not_tested",
-      "production_performance_not_measured",
+      "host_staging_in_measured_region",
+      "toy_circuit_parameters_only",
       "two_node_pair_only_no_wider_topology",
-      "toy_circuit_parameters_only"
+      "validation_only_tiny_full_state_gather"
     ],
     "environment": {
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "6cabf22f10c26df4195392ad4031a9339e4a9f31",
+      "source_revision": "30b763cb14bf4c26393a898176b180a915120e54",
       "torch": "2.13.0+cu130"
     },
     "observations": {
+      "host_staging": {
+        "host_transfer_events": [
+          {
+            "count": 10,
+            "direction": "host_to_device",
+            "name": "Memcpy HtoD (Pageable -> Device)"
+          }
+        ],
+        "host_transfer_observed": true,
+        "profiled": true,
+        "profiled_activities": [
+          "ProfilerActivity.CPU",
+          "ProfilerActivity.CUDA"
+        ],
+        "profiled_workload": "sharded_statevector_forward",
+        "profiler_event_count": 95
+      },
       "network": {
         "backend": "nccl",
         "configured_interface": "ens22f0",
         "configured_interface_observed": true,
+        "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "cae64a15cf3c40673eec752b828ed800b282a35f5db1c23bd6defc05168a17ae",
+        "debug_log_sha256": "43567e30c13e9df0b3a107c7763150f05dbac4babb1dfbbc8d84ffe555f642eb",
         "evidence_level": "observed_debug_log",
-        "ib_disabled": true,
-        "route": "socket",
-        "socket_transport_observed": true
+        "gpu_direct_observed": true,
+        "infiniband_transport_observed": true,
+        "roce_transport_observed": true,
+        "route": "infiniband",
+        "socket_transport_observed": false
       },
       "numerical_metrics": {
         "expectation_value_error": 3.3306690738754696e-16,
@@ -38,6 +56,24 @@
         "statevector_max_abs_error": 0.0,
         "statevector_norm_error": 0.0,
         "training_loss_decrease": 0.008632771508185422
+      },
+      "performance": {
+        "maximum_seconds": 0.004092872142791748,
+        "measured": true,
+        "measured_iterations": 5,
+        "measurement": "sharded_statevector_forward",
+        "median_seconds": 0.0032047107815742493,
+        "minimum_seconds": 0.003176433965563774,
+        "n_wires": 5,
+        "seconds": [
+          0.004092872142791748,
+          0.003176433965563774,
+          0.0032047107815742493,
+          0.003187788650393486,
+          0.0032156314700841904
+        ],
+        "synchronized": true,
+        "warmup_iterations": 2
       },
       "production_full_state_materialization": false,
       "rank_records": [
@@ -373,8 +409,8 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
-              "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+              "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
+              "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
@@ -752,8 +788,8 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-sv21-ckpt/rank-1.pt",
-              "/nfs/fq-multinode-sv21-ckpt/rank-1.pt"
+              "/nfs/fq-multinode-sv51-ckpt/rank-1.pt",
+              "/nfs/fq-multinode-sv51-ckpt/rank-1.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
@@ -802,8 +838,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
-          "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+          "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
+          "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
         ],
         "checkpoint_steps": 2,
         "first_leg_losses": [
@@ -815,8 +851,8 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
-            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
+            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
@@ -870,8 +906,8 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt",
-            "/nfs/fq-multinode-sv21-ckpt/rank-0.pt"
+            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt",
+            "/nfs/fq-multinode-sv51-ckpt/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
@@ -927,10 +963,10 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-sv21-ckpt/uninterrupted/rank-0.pt"
+            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt",
+            "/nfs/fq-multinode-sv51-ckpt/uninterrupted/rank-0.pt"
           ],
           "communication_bytes": 192,
           "communication_events": 24,
@@ -993,6 +1029,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "12469c9a031dd13a6bc5563be6c593d07d90104ce62e85bf3d834c8676bf664e",
+  "evidence_sha256": "093c054cf135377d5dd989cdf845418ebca400996676eb936c4891d66c408ce1",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }
