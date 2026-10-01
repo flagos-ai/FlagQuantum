@@ -108,7 +108,6 @@ _CPU_DISJOINT_DENSE_LARGE_STATE_MAX_WIRES = 8
 
 def _cpu_controlled_phase_decomposition_fusion_enabled() -> bool:
     """Whether CPU execution may replace an exact QFT phase decomposition."""
-
     return _environment_flag(
         "FQ_CPU_CONTROLLED_PHASE_DECOMPOSITION_FUSION", default=True
     )
@@ -116,19 +115,16 @@ def _cpu_controlled_phase_decomposition_fusion_enabled() -> bool:
 
 def _cpu_controlled_phase_graph_fusion_enabled() -> bool:
     """Whether consecutive static CPU controlled phases may share one pass."""
-
     return _environment_flag("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", default=True)
 
 
 def _cpu_product_state_execution_enabled() -> bool:
     """Whether eligible CPU circuits may keep product components separate."""
-
     return _environment_flag("FQ_CPU_PRODUCT_STATE_EXECUTION", default=True)
 
 
 def _cpu_adaptive_dense_fusion_width_enabled() -> bool:
-    """Whether unbatched complex128 states use measured fusion widths."""
-
+    """Whether measured complex128 state shapes use adaptive fusion widths."""
     return _environment_flag("FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH", default=True)
 
 
@@ -169,8 +165,12 @@ def _cpu_disjoint_dense_max_wires(
 ) -> int:
     """Choose the measured dense-fusion width for this CPU state shape."""
 
+    adaptive = _cpu_adaptive_dense_fusion_width_enabled()
+    batched_medium = batch_size > 1 and n_wires in {18, 19}
+    if dtype == torch.complex128 and adaptive and batched_medium:
+        return _CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES
     if batch_size == 1 and dtype == torch.complex128:
-        if not _cpu_adaptive_dense_fusion_width_enabled():
+        if not adaptive:
             if n_wires >= _CPU_DISJOINT_DENSE_EIGHT_WIRE_STATE_WIRES:
                 return _CPU_DISJOINT_DENSE_MEDIUM_STATE_MAX_WIRES
             return _CPU_DISJOINT_DENSE_MAX_WIRES

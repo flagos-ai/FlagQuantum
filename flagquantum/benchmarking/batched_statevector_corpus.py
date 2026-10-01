@@ -40,6 +40,7 @@ EngineName = Literal[
     "flagquantum_native_parameterized_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
@@ -56,6 +57,7 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_parameterized_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
@@ -81,6 +83,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_native_clifford_phase_map_rollback": (
         "FlagQuantum native batch (Clifford phase-map rollback)"
+    ),
+    "flagquantum_native_dense_width_rollback": (
+        "FlagQuantum native batch (4-wire dense rollback)"
     ),
     "flagquantum_native_layout_retention": (
         "FlagQuantum native batch (legacy layout retention)"
@@ -253,6 +258,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_clifford_phase_map_rollback
+    if engine == "flagquantum_native_dense_width_rollback":
+
+        def native_dense_width_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_dense_width_rollback
     if engine == "flagquantum_native_layout_retention":
 
         def native_layout_retention() -> torch.Tensor:
@@ -327,6 +345,7 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
         "flagquantum_native_parameterized_layer_rollback": ("flagquantum",),
         "flagquantum_native_clifford_matching_rollback": ("flagquantum",),
         "flagquantum_native_clifford_phase_map_rollback": ("flagquantum",),
+        "flagquantum_native_dense_width_rollback": ("flagquantum",),
         "flagquantum_native_layout_retention": ("flagquantum",),
         "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
@@ -349,6 +368,8 @@ def _execution_strategy(engine: EngineName) -> str:
         return "native_parameter_batch_clifford_matching_rollback"
     if engine == "flagquantum_native_clifford_phase_map_rollback":
         return "native_parameter_batch_clifford_phase_map_rollback"
+    if engine == "flagquantum_native_dense_width_rollback":
+        return "native_parameter_batch_four_wire_dense_rollback"
     return (
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"

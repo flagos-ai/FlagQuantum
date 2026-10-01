@@ -140,3 +140,42 @@ def test_checked_in_layout_lifetime_artifact_is_correct_stable_and_lower_rss() -
         )
         assert optimized["batch_total"]["relative_median_absolute_deviation"] <= 0.20
         assert retained["batch_total"]["relative_median_absolute_deviation"] <= 0.20
+
+
+def test_checked_in_dense_width_artifact_records_speed_memory_and_framework() -> None:
+    path = (
+        REPOSITORY_ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "batched_statevector_dense_width_cpu_arm64_20261002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["hostname"] == "redacted"
+    assert len(payload["cases"]) == 1
+    engines = payload["cases"][0]["engines"]
+    assert set(engines) == {
+        "flagquantum_native_batch",
+        "flagquantum_native_dense_width_rollback",
+        "pennylane_lightning_bridge",
+    }
+    optimized = engines["flagquantum_native_batch"]
+    rollback = engines["flagquantum_native_dense_width_rollback"]
+    lightning = engines["pennylane_lightning_bridge"]
+    assert optimized["batch_total"]["sample_count"] == 11
+    assert optimized["isolated_memory"]["sample_count"] == 3
+    assert (
+        optimized["batch_total"]["median_seconds"]
+        < rollback["batch_total"]["median_seconds"]
+    )
+    assert (
+        optimized["batch_total"]["median_seconds"]
+        < lightning["batch_total"]["median_seconds"]
+    )
+    assert (
+        optimized["isolated_memory"]["peak_rss_bytes"]
+        < rollback["isolated_memory"]["peak_rss_bytes"]
+    )
