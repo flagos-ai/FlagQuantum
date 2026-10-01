@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T02:17:03.047984+00:00",
+    "captured_at": "2026-10-01T08:03:21.014766+00:00",
     "claim_blockers": [
       "validation_only_tiny_full_state_gather",
       "hidden_host_staging_not_audited",
@@ -13,7 +13,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "35e20c056bfbe99c0daa6c1c96794343256bb8b8",
+      "source_revision": "6cabf22f10c26df4195392ad4031a9339e4a9f31",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -22,7 +22,7 @@
         "configured_interface": "ens22f0",
         "configured_interface_observed": true,
         "debug_log_scope": "rank",
-        "debug_log_sha256": "839e5d3ec9e92dc3d9e6e190c550c4c6c5e41df45698240dabb1891f2ca78fad",
+        "debug_log_sha256": "cae64a15cf3c40673eec752b828ed800b282a35f5db1c23bd6defc05168a17ae",
         "evidence_level": "observed_debug_log",
         "ib_disabled": true,
         "route": "socket",
@@ -993,6 +993,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "ca491b16808a0679dbe19112155655a2c014c8401ecf4ea6be19245d9e196aa0",
+  "evidence_sha256": "12469c9a031dd13a6bc5563be6c593d07d90104ce62e85bf3d834c8676bf664e",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }
