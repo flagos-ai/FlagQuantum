@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from ...core.operator_schema import canonical_opcode
 from .operations import _diagonal_region
 from .program import (
+    _StatevectorCliffordMatchingStep,
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
     _StatevectorCrossWireDiagonalStep,
@@ -76,6 +77,11 @@ def initial_runtime_metrics(
     cz_graph_regions = tuple(
         step for step in metric_steps if isinstance(step, _StatevectorCZGraphStep)
     )
+    clifford_matching_regions = tuple(
+        step
+        for step in metric_steps
+        if isinstance(step, _StatevectorCliffordMatchingStep)
+    )
     return {
         "triton_single_qubit_loop_enabled": enable_triton_loop,
         "triton_single_qubit_loop_regions": len(loop_steps),
@@ -93,7 +99,8 @@ def initial_runtime_metrics(
         + sum(len(step.instructions) for step in diagonal_fused_regions)
         + 5 * len(controlled_phase_regions)
         + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
-        + sum(len(step.edges) for step in cz_graph_regions),
+        + sum(len(step.edges) for step in cz_graph_regions)
+        + sum(len(step.cz_edges) for step in clifford_matching_regions),
         "diagonal_fused_regions": len(diagonal_fused_regions)
         + len(controlled_phase_regions)
         + len(controlled_phase_graph_regions)
@@ -107,7 +114,8 @@ def initial_runtime_metrics(
             len(step.controls)
             for step in metric_steps
             if isinstance(step, _StatevectorCXSequenceStep)
-        ),
+        )
+        + sum(len(step.controls) for step in clifford_matching_regions),
         "triton_cx_sequence_regions": sum(
             isinstance(step, _StatevectorCXSequenceStep) for step in metric_steps
         ),
@@ -118,12 +126,14 @@ def initial_runtime_metrics(
         ),
         "native_cpu_one_qubit_layer_regions": 0,
         "native_cpu_parameterized_one_qubit_layer_regions": 0,
+        "native_cpu_clifford_matching_regions": 0,
         "fused_gate_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) for step in metric_steps
         )
         + len(controlled_phase_regions)
         + len(controlled_phase_graph_regions)
-        + len(cz_graph_regions),
+        + len(cz_graph_regions)
+        + len(clifford_matching_regions),
         "fused_gate_count": sum(
             len(step.instructions)
             for step in metric_steps
@@ -131,7 +141,11 @@ def initial_runtime_metrics(
         )
         + 5 * len(controlled_phase_regions)
         + 5 * sum(len(step.edges) for step in controlled_phase_graph_regions)
-        + sum(len(step.edges) for step in cz_graph_regions),
+        + sum(len(step.edges) for step in cz_graph_regions)
+        + sum(
+            len(step.controls) + len(step.cz_edges)
+            for step in clifford_matching_regions
+        ),
         "dependency_reordered_single_qubit_regions": sum(
             isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
             for step in metric_steps

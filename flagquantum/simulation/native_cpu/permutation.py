@@ -59,6 +59,48 @@ def native_cpu_cx_gather_available() -> bool:
     )
 
 
+def native_cpu_clifford_matching_available() -> bool:
+    """Return whether the fused inference-only Clifford kernel is loadable."""
+
+    return _load_extension()
+
+
+def fused_clifford_matching_out(
+    state: torch.Tensor,
+    cx_mapping: torch.Tensor,
+    cz_edges: Sequence[tuple[int, int]],
+    n_wires: int,
+) -> torch.Tensor | None:
+    """Apply one disjoint CX/CZ matching in a single native CPU pass."""
+
+    normalized_cz_edges = tuple((int(left), int(right)) for left, right in cz_edges)
+    occupied = tuple(wire for edge in normalized_cz_edges for wire in edge)
+    if (
+        not native_cpu_clifford_matching_available()
+        or state.requires_grad
+        or state.device.type != "cpu"
+        or cx_mapping.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or cx_mapping.dtype not in {torch.int32, torch.int64}
+        or state.ndim != 2
+        or state.shape[1] != 1 << n_wires
+        or cx_mapping.ndim != 1
+        or cx_mapping.numel() not in {n_wires, state.shape[1]}
+        or len(set(occupied)) != len(occupied)
+        or any(not 0 <= wire < n_wires for wire in occupied)
+        or not state.is_contiguous()
+        or not cx_mapping.is_contiguous()
+    ):
+        return None
+    edge_tensor = torch.tensor(normalized_cz_edges, dtype=torch.int64).reshape(-1, 2)
+    output = torch.empty_like(state)
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_clifford_matching_out(
+            state, cx_mapping, edge_tensor, output, n_wires
+        )
+    return output
+
+
 def native_cpu_cx_adjoint_inplace_available() -> bool:
     """Return whether the zero-state-scratch adjoint CX path is available."""
 

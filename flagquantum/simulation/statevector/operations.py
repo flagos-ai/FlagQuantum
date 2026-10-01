@@ -19,7 +19,10 @@ from ..gate_matrix import (
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
 from . import controlled_phase, cz_graph, two_qubit_cpu
-from .clifford_matching import _reorder_disjoint_clifford_matchings
+from .clifford_matching import (
+    _reorder_disjoint_clifford_matchings,
+    fuse_native_disjoint_clifford_matchings,
+)
 from .diagonal_cpu import (
     _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
 )
@@ -241,6 +244,7 @@ def _compile_statevector_program(
     enable_cpu_controlled_phase_decomposition: bool = False,
     enable_cpu_controlled_phase_graph: bool = False,
     enable_cpu_disjoint_clifford_matching: bool = False,
+    enable_cpu_native_clifford_matching: bool = False,
     enable_cpu_native_fixed_one_qubit_layer: bool = False,
     enable_cpu_native_parameterized_one_qubit_layer: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
@@ -259,6 +263,8 @@ def _compile_statevector_program(
         optimized = fuse_native_fixed_one_qubit_layers(optimized)
     if enable_cpu_native_parameterized_one_qubit_layer:
         optimized = fuse_native_parameterized_one_qubit_layers(optimized)
+    if enable_cpu_native_clifford_matching:
+        optimized = fuse_native_disjoint_clifford_matchings(optimized)
     if enable_cpu_controlled_phase_graph:
         optimized = controlled_phase._fuse_controlled_phase_graphs(optimized)
     if enable_cpu_cz_graph:

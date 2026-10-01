@@ -213,6 +213,11 @@ The next
 measures the native batch-specific RX/RY/RZ layer against its exact rollback and
 PennyLane Lightning. It records a 1.132x Random Clifford and 1.146x local-
 brickwork improvement, while preserving autograd fallback and the public API.
+The disjoint mixed-entangler follow-up is documented in
+[`BATCHED_STATEVECTOR_NATIVE_CLIFFORD_MATCHING_CPU_ARM64_20261001_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_NATIVE_CLIFFORD_MATCHING_CPU_ARM64_20261001_SCORECARD.md).
+It fuses each pairwise-disjoint CX/CZ matching into one native CPU traversal,
+records 1.311x and 1.199x rollback speedups, and prominently retains the measured
+PennyLane Lightning lead and the exact reproduction command.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a

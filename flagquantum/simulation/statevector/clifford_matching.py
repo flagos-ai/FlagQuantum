@@ -2,10 +2,105 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
+import torch
+
+from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from .program import _StatevectorGateStep, _StatevectorPreCXStep
+from ..native_cpu.permutation import native_cpu_clifford_matching_available
+from .program import (
+    _StatevectorCliffordMatchingStep,
+    _StatevectorGateStep,
+    _StatevectorPreCXStep,
+)
+
+
+def native_clifford_matching_compile_enabled(
+    instructions: Sequence[Instruction],
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    state: torch.Tensor,
+    *,
+    batch_size: int,
+) -> bool:
+    """Whether native disjoint CX/CZ matchings are safe and enabled."""
+
+    requires_grad = bool(
+        state.requires_grad
+        or (
+            parameter_bindings is not None
+            and any(value.requires_grad for value in parameter_bindings)
+        )
+        or any(
+            isinstance(value, torch.Tensor) and value.requires_grad
+            for instruction in instructions
+            for value in instruction.params.values()
+        )
+        or any(
+            instruction.matrix is not None and instruction.matrix.requires_grad
+            for instruction in instructions
+        )
+    )
+    return bool(
+        state.device.type == "cpu"
+        and batch_size >= 2
+        and not requires_grad
+        and native_cpu_clifford_matching_available()
+        and os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
+
+
+def fuse_native_disjoint_clifford_matchings(
+    program: Sequence[_StatevectorPreCXStep],
+) -> list[_StatevectorPreCXStep]:
+    """Compile each disjoint matching containing CX into one native step."""
+
+    optimized: list[_StatevectorPreCXStep] = []
+    index = 0
+    while index < len(program):
+        step = program[index]
+        if not _is_exact_cx_or_cz(step):
+            optimized.append(step)
+            index += 1
+            continue
+
+        matching: list[_StatevectorGateStep] = []
+        occupied_wires: set[int] = set()
+        cursor = index
+        while cursor < len(program):
+            candidate = program[cursor]
+            if not _is_exact_cx_or_cz(candidate):
+                break
+            assert isinstance(candidate, _StatevectorGateStep)
+            wires = set(map(int, candidate.instruction.wires))
+            if not occupied_wires.isdisjoint(wires):
+                break
+            matching.append(candidate)
+            occupied_wires.update(wires)
+            cursor += 1
+
+        cx_steps = tuple(
+            item for item in matching if canonical_opcode(item.instruction.name) == "cx"
+        )
+        cz_edges = tuple(
+            (int(item.instruction.wires[0]), int(item.instruction.wires[1]))
+            for item in matching
+            if canonical_opcode(item.instruction.name) == "cz"
+        )
+        if len(matching) >= 2 and cx_steps:
+            optimized.append(
+                _StatevectorCliffordMatchingStep(
+                    controls=tuple(int(item.instruction.wires[0]) for item in cx_steps),
+                    targets=tuple(int(item.instruction.wires[1]) for item in cx_steps),
+                    cz_edges=cz_edges,
+                )
+            )
+        else:
+            optimized.extend(matching)
+        index = cursor
+    return optimized
 
 
 def _reorder_disjoint_clifford_matchings(
