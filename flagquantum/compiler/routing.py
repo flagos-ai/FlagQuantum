@@ -10,6 +10,30 @@ from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 
+# Dense distance-matrix entry for a physical wire pair with no coupling path.
+# A coupling map is a graph, so most pairs of a production device are far
+# apart but still reachable; this value is reserved for genuine disconnection.
+UNREACHABLE_DISTANCE = -1
+
+
+def _breadth_first_distances(
+    adjacency: tuple[tuple[int, ...], ...],
+    source: int,
+) -> tuple[int, ...]:
+    """Return undirected hop counts from one wire to every wire."""
+
+    distances = [UNREACHABLE_DISTANCE] * len(adjacency)
+    distances[source] = 0
+    queue: deque[int] = deque((source,))
+    while queue:
+        wire = queue.popleft()
+        level = distances[wire] + 1
+        for neighbor in adjacency[wire]:
+            if distances[neighbor] == UNREACHABLE_DISTANCE:
+                distances[neighbor] = level
+                queue.append(neighbor)
+    return tuple(distances)
+
 
 @dataclass(frozen=True)
 class CouplingMap:
@@ -49,6 +73,30 @@ class CouplingMap:
         hash=False,
     )
     _path_cache_evictions: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_rows: OrderedDict[int, tuple[int, ...]] = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_hits: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_misses: int = field(
+        init=False,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _distance_evictions: int = field(
         init=False,
         repr=False,
         compare=False,
@@ -100,6 +148,10 @@ class CouplingMap:
         object.__setattr__(self, "_path_cache_hits", 0)
         object.__setattr__(self, "_path_cache_misses", 0)
         object.__setattr__(self, "_path_cache_evictions", 0)
+        object.__setattr__(self, "_distance_rows", OrderedDict())
+        object.__setattr__(self, "_distance_hits", 0)
+        object.__setattr__(self, "_distance_misses", 0)
+        object.__setattr__(self, "_distance_evictions", 0)
 
     @classmethod
     def line(
@@ -235,6 +287,67 @@ class CouplingMap:
                         "_path_cache_evictions",
                         self._path_cache_evictions + 1,
                     )
+
+    def distance(self, left: int, right: int) -> int:
+        """Return the undirected hop count between two physical wires.
+
+        Raises:
+            ValueError: If either wire is outside the device or the two wires
+                are not connected by any coupling path.
+        """
+
+        left = self._validate_wire(left)
+        right = self._validate_wire(right)
+        distance = self._distance_row(left)[right]
+        if distance == UNREACHABLE_DISTANCE:
+            raise ValueError(f"No coupling path between wires {left} and {right}.")
+        return distance
+
+    def distance_matrix(self) -> tuple[tuple[int, ...], ...]:
+        """Return the dense hop-count matrix over every ordered wire pair.
+
+        Row and column indices are physical wire indices, so entry
+        ``matrix[left][right]`` is the undirected distance used by
+        :meth:`distance`. Entries equal to :data:`UNREACHABLE_DISTANCE` mean
+        the pair has no coupling path. The matrix is symmetric with a zero
+        diagonal, and building it costs one breadth-first search per wire.
+        """
+
+        return tuple(self._distance_row(source) for source in range(self.n_wires))
+
+    def distance_cache_info(self) -> dict[str, int]:
+        """Return bounded-cache diagnostics for the distance index."""
+
+        with self._path_cache_lock:
+            return {
+                "capacity": self.path_cache_capacity,
+                "size": len(self._distance_rows),
+                "hits": self._distance_hits,
+                "misses": self._distance_misses,
+                "evictions": self._distance_evictions,
+            }
+
+    def _distance_row(self, source: int) -> tuple[int, ...]:
+        """Return the cached all-wire distance row rooted at one wire."""
+
+        with self._path_cache_lock:
+            cached = self._distance_rows.get(source)
+            if cached is not None:
+                self._distance_rows.move_to_end(source)
+                object.__setattr__(self, "_distance_hits", self._distance_hits + 1)
+                return cached
+            object.__setattr__(self, "_distance_misses", self._distance_misses + 1)
+        row = _breadth_first_distances(self._adjacency, source)
+        if self.path_cache_capacity:
+            with self._path_cache_lock:
+                self._distance_rows[source] = row
+                self._distance_rows.move_to_end(source)
+                while len(self._distance_rows) > self.path_cache_capacity:
+                    self._distance_rows.popitem(last=False)
+                    object.__setattr__(
+                        self, "_distance_evictions", self._distance_evictions + 1
+                    )
+        return row
 
     def path_cache_info(self) -> dict[str, int]:
         """Return bounded-cache diagnostics for compiler observability."""
