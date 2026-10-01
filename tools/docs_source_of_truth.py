@@ -17,15 +17,28 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 try:
     from tools.check_capability_maturity import (
+        CODE_VERSION_ORIGIN_FIELD,
         aggregate_claim_value,
         claim_values,
         maturity_errors,
     )
 except (ImportError, ModuleNotFoundError):  # direct execution beside an older install
     from check_capability_maturity import (  # type: ignore[no-redef]
+        CODE_VERSION_ORIGIN_FIELD,
         aggregate_claim_value,
         claim_values,
         maturity_errors,
+    )
+
+try:
+    from tools.evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
+    )
+except (ImportError, ModuleNotFoundError):  # direct execution beside an older install
+    from evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
     )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -191,6 +204,26 @@ def performance_claims(
     return result
 
 
+def code_version_label(claim: dict[str, object]) -> str:
+    """Render a claim's recorded revision and, when needed, where it came from.
+
+    A reader who cannot obtain the revision has not been handed traceable
+    evidence, so a pin this repository does not contain says so rather than
+    presenting the revision as something to check out.
+    """
+
+    revision = claim["code_version"]
+    if (
+        claim.get(CODE_VERSION_ORIGIN_FIELD, ORIGIN_REPOSITORY_HISTORY)
+        == ORIGIN_PRODUCING_HOST_HISTORY
+    ):
+        return (
+            f"code `{revision}` (produced on a host whose history this repository "
+            "does not contain)"
+        )
+    return f"code `{revision}`"
+
+
 def render_performance_claims(data: dict[str, object], link_prefix: str) -> str:
     rows = [
         "| Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |",
@@ -201,7 +234,7 @@ def render_performance_claims(data: dict[str, object], link_prefix: str) -> str:
         evidence = (
             f"[raw JSON]({link_prefix}{artifact})<br>"
             f"SHA-256 `{claim['artifact_sha256']}`<br>"
-            f"code `{claim['code_version']}`"
+            f"{code_version_label(claim)}"
         )
         scope = f"`{claim['maturity']}`<br>{claim['scope']}".replace("|", "\\|")
         environment = (

@@ -14,6 +14,25 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
+try:
+    from tools.evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
+        SUPPORTED_REVISION_ORIGINS,
+        ProvenanceUnavailableError,
+        is_full_revision,
+        revision_resolves,
+    )
+except ModuleNotFoundError:  # direct script execution
+    from evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
+        SUPPORTED_REVISION_ORIGINS,
+        ProvenanceUnavailableError,
+        is_full_revision,
+        revision_resolves,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX = ROOT / "capability-maturity.toml"
 EXPECTED_LEVELS = (
@@ -61,6 +80,11 @@ CLAIM_VALUE_FORMATS = (
     "boolean",
 )
 CLAIM_AGGREGATES = ("single", "max", "min", "count", "unique")
+
+#: Why a claim's ``code_version`` may not resolve in this repository. The values
+#: and their meaning come from ``tools/evidence_provenance.py``, which records
+#: the same disclosure for the checked-in evidence artifacts under ``artifacts/``.
+CODE_VERSION_ORIGIN_FIELD = "code_version_origin"
 
 
 def claim_values(payload: Any, selector: str) -> list[Any]:
@@ -141,6 +165,68 @@ def validate_claim_measurements(
         except (KeyError, TypeError, ValueError) as error:
             errors.append(f"{prefix} cannot resolve {selector!r}: {error}")
     return errors
+
+
+def code_version_errors(
+    code_version: Any,
+    origin: Any,
+    *,
+    label: str,
+    root: Path = ROOT,
+) -> tuple[str, ...]:
+    """Return why a claim's recorded code version is not traceable evidence.
+
+    A claim states the revision its artifact was produced from, and the artifact
+    states the same revision, so comparing the two only proves the transcription
+    is faithful. Both are values written at check-in time: a pin that names no
+    commit in this repository passed that comparison exactly like a revision a
+    reader can check out, and the documentation then rendered it as ``code
+    <revision>``.
+
+    Resolution has the three outcomes ``tools/evidence_provenance.py`` keeps
+    apart, and this function keeps them apart the same way. A pin that resolves
+    is traceable, a pin that names no commit here must disclose that with
+    ``code_version_origin = "producing_host_history"``, and a checkout that
+    cannot answer is reported as unchecked rather than as a bad pin.
+
+    Presence in the object database is the test, matching every other evidence
+    record in this repository. Reachability from a published ref is not required,
+    so a checkout still resolves a pin whose pull request branch was deleted.
+
+    Args:
+        code_version: The claim's recorded revision.
+        origin: The claim's ``code_version_origin``, or the default when absent.
+        label: Claim name used to prefix the diagnostics.
+        root: Repository to resolve the revision against.
+
+    Returns:
+        One diagnostic per reason the pin is not traceable, and an empty tuple
+        when it resolves or the claim discloses why it cannot.
+    """
+
+    if origin not in SUPPORTED_REVISION_ORIGINS:
+        supported = ", ".join(repr(value) for value in SUPPORTED_REVISION_ORIGINS)
+        return (
+            f"{label} {CODE_VERSION_ORIGIN_FIELD} {origin!r} is not supported; use "
+            f"one of {supported}",
+        )
+    if not is_full_revision(code_version):
+        return (
+            f"{label} requires a full hexadecimal code_version, not {code_version!r}",
+        )
+    if origin == ORIGIN_PRODUCING_HOST_HISTORY:
+        return ()
+    try:
+        resolvable = revision_resolves(code_version, root)
+    except ProvenanceUnavailableError as error:
+        return (f"{label} code_version could not be checked: {error}",)
+    if resolvable:
+        return ()
+    return (
+        f"{label} code_version {code_version} names no commit in this repository; "
+        f'record {CODE_VERSION_ORIGIN_FIELD} as "{ORIGIN_PRODUCING_HOST_HISTORY}" if '
+        "the pin comes from the producing host's history",
+    )
 
 
 def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
@@ -257,6 +343,14 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
                 errors.append(
                     f"{name}/{claim_id}: code_version does not match artifact commit"
                 )
+            errors.extend(
+                code_version_errors(
+                    claim.get("code_version"),
+                    claim.get(CODE_VERSION_ORIGIN_FIELD, ORIGIN_REPOSITORY_HISTORY),
+                    label=f"{name}/{claim_id}",
+                    root=root,
+                )
+            )
             checks = claim.get("evidence_checks")
             if not isinstance(checks, dict) or not checks:
                 errors.append(f"{name}/{claim_id}: missing evidence_checks")

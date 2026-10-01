@@ -7,6 +7,7 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
+from tools.evidence_provenance import ProvenanceUnavailableError, revision_resolves
 
 pytestmark = pytest.mark.unit
 
@@ -18,8 +19,30 @@ assert SPEC and SPEC.loader
 DOCS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(DOCS)
 
+#: A full 40-character revision. It is shaped like a commit and names none.
+FABRICATED_REVISION = "0" * 40
+
+
+def _require_repository_history() -> None:
+    """Skip where a claim's pinned revision cannot be resolved.
+
+    Performance claims pin the revision each artifact was produced from, and
+    resolving a pin needs the commits themselves. A depth-1 clone cannot tell a
+    revision it never fetched from one the repository never contained, so it
+    cannot judge the pin at all. The `quality` job fetches full history and runs
+    both validations there, so skipping here removes no coverage: it moves the
+    verdict to the one lane that can reach it.
+    """
+
+    try:
+        revision_resolves(FABRICATED_REVISION, ROOT)
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the generated claims need full history: {error}")
+
 
 def test_generated_documentation_and_claims_are_current():
+    _require_repository_history()
+
     assert DOCS.validate() == []
 
 
@@ -74,6 +97,8 @@ def test_generated_capability_catalog_supports_goal_based_discovery():
 
 
 def test_readme_and_known_limitations_are_generated_from_capability_matrix():
+    _require_repository_history()
+
     expected = DOCS.generated()
     for relative in ("README.md", "docs/reference/KNOWN_LIMITATIONS.md"):
         path = ROOT / relative
