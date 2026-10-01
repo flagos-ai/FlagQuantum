@@ -3,7 +3,9 @@
 This package transforms a Core-owned `CircuitIR` without executing it.
 `pipeline.py` owns the stable optimization, layer scheduling, and topology-aware
 compilation entry points. `routing.py` owns coupling maps and SWAP
-routing. `openqasm.py` and `qcis.py` own their target-format emission.
+routing, including the bounded all-pairs hop-count index that
+`CouplingMap.distance` and `CouplingMap.distance_matrix` expose.
+`openqasm.py` and `qcis.py` own their target-format emission.
 `noise.py` owns the deterministic `CircuitIR + NoiseModel` to channel-bearing
 `CircuitIR` transformation. `operator_lowering.py` owns the
 internal backend/operator capability registry used before lowering or
