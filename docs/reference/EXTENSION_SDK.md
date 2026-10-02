@@ -59,3 +59,41 @@ determinism, isolated errors, and cleanup. The conformance submodule remains an
 equivalent explicit import path. Reference extensions are in
 `examples/extensions/reference_extensions.py` and
 `examples/extensions/reference_compiler_extension.py`.
+
+## Backend execution admission
+
+An execution backend that has been discovered and negotiated is still only a
+declaration. `flagquantum.ecosystem.extensions.admission` is the single crossing
+that turns a negotiated `ExecutionBackendExtension` into a backend `fq.run` can
+select by name. It validates the extension's `backend_capabilities` declaration,
+negotiates capabilities, records the result through the existing runtime
+capability registry, and keeps one live execution route for it. No second
+registry, entry-point group, or manifest format is created, and the namespace
+above is not exported from `flagquantum.ecosystem.extensions`.
+
+The declaration is a mapping of exactly the capability fields the backend owns.
+`name`, `executor`, and `accelerators` are host-owned: a backend that declares
+them is rejected rather than silently overridden. An unknown key, a missing
+required key, a non-backend manifest kind, a built-in backend name, and a refused
+negotiation all fail closed before registration.
+
+`fq.run` reaches an admitted backend through the ordinary planning path. A
+requested backend that is unregistered, registered without an execution route, or
+lacking a required mode, gradient, or distribution capability fails at planning
+time with a `CapabilityError` naming the blocker. There is no execution-time
+substitution and no silent CPU path. The built-in `pytorch` route acquires no
+lookup, negotiation, or version check.
+
+The admitted route is called as
+`execute(program, *, options)` where `program` is FlagQuantum IR and `options`
+carries the plan facts (backend, device, mode, dtype, batch size, world size,
+target, gradient and approximation permissions, runtime config, and distribution
+semantics). The returned object is normalized by the same result adapter as any
+other output, and an admitted result is never relabelled as a built-in engine
+path. Withdrawing an admitted backend unregisters it; a later request for it
+fails closed.
+
+See [`API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md`](../development/API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md)
+and [`contracts/backend-execution-admission-v1-candidate.json`](../../contracts/backend-execution-admission-v1-candidate.json).
+`examples/extensions/reference_backend_extension.py` is a complete reference
+implementation that imports only the extension namespace.

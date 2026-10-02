@@ -9,7 +9,9 @@ from flagquantum.qec.dem import DemError, DetectorErrorModel
 pytestmark = pytest.mark.unit
 
 
-def _model(*errors: DemError, detectors: int = 3, observables: int = 1):
+def _model(
+    *errors: DemError, detectors: int = 3, observables: int = 1
+) -> DetectorErrorModel:
     return DetectorErrorModel(
         num_detectors=detectors, num_observables=observables, errors=errors
     )
@@ -76,9 +78,117 @@ def test_parses_coordinate_declarations() -> None:
     assert model.num_errors == 2
 
 
-def test_rejects_an_unsupported_instruction() -> None:
-    with pytest.raises(ValueError, match=r"shift_detectors is not supported"):
-        DetectorErrorModel.from_stim_text("shift_detectors 1\n")
+def test_applies_a_shift_detectors_line_to_the_lines_after_it() -> None:
+    """Stim reaches an absolute index by adding the shifts accumulated so far.
+
+    The shift reaches both kinds of line: the declaration and the error
+    mechanism below both name a detector relative to it, and the declaration
+    set stays consecutive from zero either way.
+    """
+
+    text = (
+        "detector D0\n"
+        "detector D1\n"
+        "shift_detectors 1\n"
+        "detector D1\n"
+        "error(0.1) D0\n"
+    )
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.num_detectors == 3
+    assert model.errors == (DemError(probability=0.1, detectors=(1,), observables=()),)
+
+
+def test_shift_detectors_accumulates_rather_than_replacing() -> None:
+    """A second shift adds to the first, which is how a repeated block unrolls."""
+
+    text = (
+        "detector D0\n"
+        "shift_detectors 1\n"
+        "detector D0\n"
+        "shift_detectors 1\n"
+        "detector D0\n"
+    )
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.num_detectors == 3
+
+
+def test_shift_detectors_discards_its_coordinates() -> None:
+    """Coordinates carry geometry the model does not hold, as on a detector."""
+
+    text = "detector(1, 0) D0\nshift_detectors(0, 1) 0\ndetector(1, 0) D1\n"
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.num_detectors == 2
+
+
+def test_a_shift_detectors_line_shifts_detectors_and_not_observables() -> None:
+    """The format has no observable shift, so an L target stays absolute.
+
+    The shift moves the error's detector target from zero to one. A reader that
+    moved the observable target too would name ``L1``, which the single
+    declaration does not cover, so the model would be refused instead.
+    """
+
+    text = (
+        "logical_observable L0\n"
+        "detector D0\n"
+        "detector D1\n"
+        "detector D2\n"
+        "detector D3\n"
+        "shift_detectors 1\n"
+        "detector D3\n"
+        "error(0.1) D0 L0\n"
+    )
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.num_detectors == 5
+    assert model.num_observables == 1
+    assert model.errors == (
+        DemError(probability=0.1, detectors=(1,), observables=(0,)),
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "refusal"),
+    [
+        ("shift_detectors\n", r"exactly one detector-index shift"),
+        ("shift_detectors(0, 1)\n", r"exactly one detector-index shift"),
+        ("shift_detectors(0, 1 2\n", r"coordinates must close in parentheses"),
+        ("shift_detectors abc\n", r"non-negative integer shift"),
+        ("shift_detectors -1\n", r"non-negative integer shift"),
+    ],
+)
+def test_rejects_a_malformed_shift_detectors_line(text: str, refusal: str) -> None:
+    """Each guard has its own refusal, so none may fall through to another."""
+
+    with pytest.raises(ValueError, match=refusal):
+        DetectorErrorModel.from_stim_text(text + "detector D0\n")
+
+
+def test_infers_the_observable_count_when_no_declaration_states_it() -> None:
+    """Stim declares the observable exactly when no error references it.
+
+    This is the shape rule that differs between the two indices: a detector
+    index outside the declared shape is still a fault, because Stim always
+    declares every detector it emits.
+    """
+
+    text = "detector D0\nerror(0.1) D0 L0\n"
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.num_detectors == 1
+    assert model.num_observables == 1
+
+    wider = DetectorErrorModel.from_stim_text("detector D0\nerror(0.1) D0 L3\n")
+    assert wider.num_observables == 4
+
+    assert DetectorErrorModel.from_stim_text("detector D0\n").num_observables == 0
+
+
+def test_a_declared_observable_still_governs_the_shape() -> None:
+    """Inference is the fallback, not a widening of a declared shape."""
+
+    with pytest.raises(ValueError, match="outside the model shape"):
+        DetectorErrorModel.from_stim_text(
+            "logical_observable L0\ndetector D0\nerror(0.1) D0 L1\n"
+        )
 
 
 def test_rejects_a_repeat_block() -> None:
@@ -239,3 +349,70 @@ def test_from_text_orders_errors_that_tie_on_detectors_and_probability() -> None
         DemError(probability=0.25, detectors=(1,), observables=(0,)),
         DemError(probability=0.25, detectors=(1,), observables=(1,)),
     )
+
+
+def test_a_decomposition_separator_partitions_without_changing_the_signature() -> None:
+    """A shot flips the symmetric difference of the line's targets.
+
+    ``stim`` marks how a composite mechanism decomposes with ``^``. The groups
+    are a decoder's business, so the signature is the same however the line
+    groups them, and this reader states that signature.
+    """
+
+    declarations = "detector D0\ndetector D1\ndetector D2\n"
+    expected = DemError(probability=0.1, detectors=(0, 1, 2), observables=())
+
+    for line in ("error(0.1) D0 ^ D1 ^ D2", "error(0.1) D0 D1 ^ D2"):
+        model = DetectorErrorModel.from_stim_text(declarations + line + "\n")
+        assert model.errors == (expected,)
+
+
+def test_a_repeated_target_cancels_within_one_group_as_well() -> None:
+    """The separator is not the only thing that cancels: a repeat does too.
+
+    ``stim`` reports no detector flip at all for ``error(0.1) D0 D0``, which is
+    the same rule as for a target that appears on both sides of a separator.
+    """
+
+    declarations = "detector D0\ndetector D1\n"
+
+    model = DetectorErrorModel.from_stim_text(declarations + "error(0.1) D0 D1 D1\n")
+    assert model.errors == (DemError(probability=0.1, detectors=(0,), observables=()),)
+
+
+def test_a_cancelling_decomposition_line_is_refused() -> None:
+    """A mechanism that flips nothing cannot be stated, so it is not silently dropped."""
+
+    declarations = "detector D0\ndetector D1\n"
+    with pytest.raises(ValueError, match="must flip at least one"):
+        DetectorErrorModel.from_stim_text(declarations + "error(0.1) D0 ^ D0\n")
+
+
+def test_a_separator_can_move_a_detector_flip_onto_an_observable_alone() -> None:
+    """Groups may cancel the detectors while leaving the observable."""
+
+    text = "detector D0\n" "logical_observable L0\n" "error(0.1) D0 L0 ^ D0\n"
+    model = DetectorErrorModel.from_stim_text(text)
+    assert model.errors == (DemError(probability=0.1, detectors=(), observables=(0,)),)
+    assert model.detector_rates().tolist() == [0.0]
+    assert model.observable_rates().tolist() == pytest.approx([0.1])
+
+
+@pytest.mark.parametrize(
+    ("targets", "refusal"),
+    [
+        ("^ D0", r"between two groups of targets"),
+        ("D0 ^", r"between two groups of targets"),
+        ("D0 ^ ^ D1", r"between two groups of targets"),
+        ("^", r"between two groups of targets"),
+        ("D0^D1", r"separated by spacing"),
+        ("D0 ^D1", r"separated by spacing"),
+    ],
+)
+def test_rejects_a_malformed_separator(targets: str, refusal: str) -> None:
+    """The independent reader refuses each of these too, so the shapes agree."""
+
+    with pytest.raises(ValueError, match=refusal):
+        DetectorErrorModel.from_stim_text(
+            f"detector D0\ndetector D1\nerror(0.1) {targets}\n"
+        )

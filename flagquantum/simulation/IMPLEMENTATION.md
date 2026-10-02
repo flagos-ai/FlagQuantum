@@ -45,6 +45,16 @@ collectives, communication, and backward evidence.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
+`stabilizer/engine.py` owns Clifford stabilizer sampling: it translates validated
+Circuit IR into the engine's circuit form and samples measurement outcomes for a
+requested wire list, refusing every non-Clifford opcode, every noise channel, and
+every already-lowered measurement node rather than approximating any of them. It
+is the only module in the repository that imports `stim`, which is the single
+seam a replacement Clifford kernel replaces. Runtime owns device selection, shot
+policy, seed streams, result assembly, and the execution route, which does not
+exist yet. `stabilizer/README.md` records the dependency's need, ownership
+boundary, licence review, replacement interface, and exit plan.
+
 `statevector/noisy.py` owns batched gate application, Pauli fast-path matrix
 construction, Kraus sampling, amplitude-damping evolution, normalization, and
 Z-expectation numerics for the statevector trajectory backend, including the
@@ -158,6 +168,16 @@ For batched noisy-statevector numerics, start in `statevector/noisy.py` and run:
 
 ```bash
 python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.py -q
+```
+
+For Clifford stabilizer sampling, start in `stabilizer/engine.py`. The gate map
+and the refusal messages are the whole of it, so a gate added to
+`flagquantum/core/operator_schema.py` is either classified as Clifford there or
+explicitly excluded, and
+`tests/team/simulation/test_stabilizer_engine.py` fails until it is. Run:
+
+```bash
+python -m pytest tests/team/simulation/ -q
 ```
 
 For the local noiseless MPS loop, start in `mps/local.py`; for one lowered noisy

@@ -1,0 +1,1065 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Purpose: the machine-readable CUDA-Q parity matrix. One row per capability that
+# CUDA-Q offers, with FlagQuantum's status, the flagquantum dependency class that
+# capability sits on, and the next concrete gap.
+#
+# This contract does NOT restate FlagQuantum maturity. When a capability has an
+# entry in `capability-maturity.toml`, its `level`, `owner`, `limitations`,
+# `hardware`, and evidence paths live there and are read from there. This file
+# records only what that registry cannot: the CUDA-Q baseline, the dependency
+# class, the comparison verdict, and the priority.
+schema = "flagquantum_cudaq_parity_matrix_v1"
+maturity = "experimental"
+source_of_truth = "capability-maturity.toml"
+cudaq_versions = ["0.15.1", "0.16.0.post1"]
+related_contracts = [
+    "contracts/cudaq-export-contract.toml",
+    "contracts/interop-capability-gap-matrix.toml",
+]
+related_contract_rule = "These contracts also describe CUDA-Q and answer different questions: the export contract owns the adapter surface, and the gap matrix owns that adapter's per-format coverage. This matrix owns the product capability comparison and deliberately does not restate either. What is shared is the version pin, so tools/parity_matrix.py fails when the three disagree about which CUDA-Q they describe."
+python_minimum = "3.11"
+status_values = ["supported", "partial", "unsupported", "out_of_scope"]
+priority_values = ["now", "next", "later", "excluded"]
+dependency_classes = [
+    "A_nvidia_proprietary",
+    "B_open_neutral",
+    "C_flagos_replacement",
+    "none",
+]
+domain_order = [
+    "language_and_programming_model",
+    "compiler_and_ir",
+    "simulation_backends",
+    "noise_and_error_models",
+    "operator_algebra_and_domain_libraries",
+    "algorithm_layer",
+    "quantum_error_correction",
+    "logical_and_ftqc_layer",
+    "hardware_and_cloud_targets",
+    "realtime_control",
+    "engineering_ecosystem_and_abi",
+    "performance_and_scalability",
+]
+
+[baseline]
+instrument = "docs/development/CUDAQ_PARITY_BASELINE.md"
+capture_method = "documented_capability_survey_with_probes"
+scope = "CUDA-Q capabilities observable from the public Python API, the documented backend roster, and the shipped repository tree of the pinned versions."
+probe_rule = "A probe is a runnable repository script whose JSON payload can be landed as evidence. `runnable` means the probe starts and emits its schema. `measured` means a payload from a named machine is landed under benchmarks/results with the source revision, container image, environment, and methodology recorded next to it, and that benchmarks/audit_results.py accepts it. Every probe must declare a versioned schema identifier and a source identity."
+
+[[baseline.probes]]
+path = "benchmarks/cudaq_gradient_capability_probe.py"
+status = "measured"
+measures = "Which gradient strategies the installed CUDA-Q exposes through cudaq.gradients, by runtime public-symbol inspection."
+first_capture = "CUDA-Q 0.16.0.post1 exported ParameterShift, CentralDifference, ForwardDifference, and gradient, and exposed no adjoint, reverse, or backprop symbol. On 2026-09-30 the same survey ran three times on each of jp-a800-172 and jp-a800-171, against cuda-quantum-cu12 and cuda-quantum-cu13 respectively, and returned a byte-identical capability record on both hosts, so the statement is a property of the release rather than of one installed wheel."
+payload = "benchmarks/results/comparison/cudaq_gradient_capability_a800_20260930.json"
+report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
+
+[[baseline.probes]]
+path = "benchmarks/cudaq_backend_compare.py"
+status = "measured"
+measures = "Wall-clock and precision comparison of one FlagQuantum JAX kernel against one CUDA-Q target on a matched circuit, observable, dtype, gradient method, warmup, and iteration count."
+first_capture = "On 2026-09-30 on jp-a800-172 and jp-a800-171, one A800-SXM4-80GB per host and CUDA-Q 0.16.0.post1 on both, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured on both hosts: the largest loss deviation was 1.2e-05 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance, and every FlagQuantum timing agreed across hosts to within 10 percent. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.4x at 8 wires to 89x at 22 wires, and that conclusion was insensitive to the warmup count. The FlagQuantum fused value-and-gradient program was faster per call, but its 18-wire ratio moved monotonically from 13.6x to 16.3x between one and five warmups, so an earlier 7.9x reading of the same configuration is withdrawn as under-warmed rather than reproduced."
+payload = "benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json"
+report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
+
+[baseline.surface_ownership]
+default_owner = "cudaq-qec"
+owners = ["cudaq-qec", "cudaq-core", "cudaq-logical-preview"]
+rule = "A domain `cudaq_surface` list is an inventory of the surface a QEC user meets, and an inventory is not an attribution: three components of one product appear in those lists. Most items belong to cudaq-qec, which is the component this domain compares against. The entries below are the items whose owner is a different component, or whose owner is worth stating, and each records what that ownership means for the row it feeds. An attributed item must appear verbatim in exactly one domain surface list, so the table cannot drift from the inventory it explains, and an item owned by another component must state its consequence, so a reader cannot follow the inventory to the wrong owner. Only contested or non-obvious items are listed; the absence of an entry is not a claim about ownership."
+
+[[baseline.surface_ownership.items]]
+item = "detector, detectors, and logical_observable annotations in a kernel"
+owner = "cudaq-core"
+consequence = "These annotations are CUDA-Q core kernel syntax rather than a cudaq-qec API, and core's dem_from_kernel is what reads them back. The row the annotations feed therefore belongs to the core capability set, and whether FlagQuantum grows a kernel annotation surface is a language-level decision rather than a QEC library one."
+
+[[baseline.surface_ownership.items]]
+item = "dem, dem_from_kernel, and DEMResult"
+owner = "cudaq-core"
+consequence = "One surface item, two owners, so it must be read as two. dem_from_kernel and DEMResult are CUDA-Q core: both are documented on the core Python API page and neither appears in the cudaq-qec Python API, which exposes no dem_from_kernel and no DEMResult anchor at all. cudaq-qec's own construction entries are dem_from_stim_text, dem_from_memory_circuit with its x_ and z_ variants, and dem_from_css_matrices, and cudaq-qec consumes the core record rather than declaring it. Construction is only a cudaq-qec row when it is read against those entries; the core record is a dependency of the row, not its baseline."
+
+[[baseline.surface_ownership.items]]
+item = "extract_syndrome"
+owner = "cudaq-logical-preview"
+consequence = "extract_syndrome belongs to the CUDA-Q Logical preview layer, not to cudaq-qec: it appears in that layer's Stim emission material as the encoded operation a fabric call expands into, it is absent from the cudaq-qec Python API, and it is absent from the core Python API page. cudaq-qec's own extraction route is sample_memory_circuit with its x_ and z_ variants, feeding decoder_context_from_memory_circuit. Aligning to the preview layer would not deliver the detector error model this domain is built around, because that layer states of itself that it does not simulate, sample, or decode and emits no detector error models. Either the surface item is misattributed here, or the preview layer is a second target with a different deliverable."
+
+[[baseline.surface_ownership.items]]
+item = "the logical.* preview namespace"
+owner = "cudaq-logical-preview"
+consequence = "The namespace is preview-layer scope, not a cudaq-qec surface. The semantic core inside it -- lattice surgery, product rotation, distillation -- is what the qec_logical_operations row tracks through the Qualtran adaptation, while the namespace's patch, gadget, protocol, and program records are that layer's own shape and not a FlagQuantum target."
+
+[[baseline.surface_ownership.items]]
+item = "for-stim-users migration"
+owner = "cudaq-logical-preview"
+consequence = "cudaq-qec ships no for-Stim-users page. The only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. It is therefore not a cudaq-qec counterpart, and the qec_stim_user_migration document has to be written against cudaq-qec's own surface -- dem_from_stim_text, dem_sampling, the decoder framework, and decoding from Stim DEM text -- rather than translated from that page."
+
+[[baseline.surface_ownership.items]]
+item = "Stim integration"
+owner = "cudaq-qec"
+consequence = "Stim appears on both sides of the product split, so the item needs its cudaq-qec half named. Reading Stim detector error model text, and decoding from Stim DEM text, are cudaq-qec's: dem_from_stim_text and the decoder framework's Stim entry point are in the cudaq-qec Python API. Emitting Stim from a verified gadget is the preview layer's and is not a cudaq-qec capability. A row that reads only the second half would compare this repository against a component that does not decode."
+
+[baseline.version_provenance]
+rule = "The top-level cudaq_versions pin describes CUDA-Q core, which is the product both the export contract and this matrix describe. The QEC component ships on its own release line, so a quantum_error_correction row is only as strong as the component version it was read at, and this table records that version separately rather than implying that the pin reaches it. The tool fails closed in both directions: a pin that overlaps the component release line needs a mapping entry, and a mapping entry across two lines that do not overlap is refused as a correspondence nothing supports."
+pinned_component = "CUDA-Q core"
+component = "cudaq-qec, also shipped as libs/qec inside NVIDIA/cudaqx"
+component_release_line = ["0.1.0", "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.4.0.post1", "0.5.0", "0.5.0.post1", "0.6.0", "0.7.0", "0.8.0"]
+component_version_recorded = "0.8.0"
+component_source = "https://pypi.org/pypi/cudaq-qec/json"
+provenance_limit = "No cudaq-qec release maps to either pinned CUDA-Q version: the component's release line runs from 0.1.0 to 0.8.0 while the pin is 0.15.1 and 0.16.0.post1, and the two lines are disjoint. Every quantum_error_correction row therefore records the component surface as it stands at 0.8.0. That the same surface exists at the pinned CUDA-Q baseline is not established by this contract, so a QEC row must not be read as a statement about CUDA-Q 0.15.1 or 0.16.0.post1, and a row that needs to be is a new capture rather than a new reading."
+
+[baseline.limitations]
+items = [
+    "A capability absent from this matrix is not evidence that CUDA-Q lacks it; it is evidence that the survey did not record it.",
+    "The pinned versions are the ones the repository already targets in contracts/cudaq-export-contract.toml. A CUDA-Q release outside that range requires a new capture.",
+    "No row in this file is a performance comparison. Measured numbers belong in benchmarks/results and require an audited payload.",
+    "A `runnable` probe is not a recorded measurement. CUDA-Q is not installable from the pinned public index as a binary wheel: the PyPI `cudaq` release is an sdist whose build hook resolves a platform binary distribution at install time. No CI lane in this repository runs either probe, so a payload is only ever captured by hand on a machine that reaches a working CUDA-Q index.",
+    "A landed payload describes only the machines, revision, and workload it names. It is not scalability evidence and it does not generalise to other widths, observables, targets, or CUDA-Q releases.",
+    "A gradient-path ratio is not a simulation-throughput ratio. The two sides do not execute the same schedule, so a value-and-gradient comparison measures host call structure as well as arithmetic.",
+    "The recorded protocol has not been shown to reach steady state for the gradient configurations. A gradient ratio is only meaningful together with the warmup count that produced it, and a settled protocol needs a per-configuration convergence check rather than a fixed warmup count.",
+]
+
+[policy]
+status_rules = [
+    "supported: FlagQuantum has an equivalent capability and that capability has a registry entry in capability-maturity.toml. The parity status asserts presence, not production readiness; maturity is read from the registry and published next to every row.",
+    "partial: an equivalent implementation exists but covers less than the CUDA-Q baseline, or a registry entry covers only part of the row.",
+    "unsupported: the capability is absent and no accepted decision places it outside the parity scope.",
+    "out_of_scope: the capability is absent by explicit decision, and `reason` names the decision.",
+]
+maturity_ref_rule = "`maturity_ref` names the capability-maturity.toml entry that establishes the FlagQuantum side of the row, or the entry the row's implementation would extend. It is required for a `supported` row and optional elsewhere. It is traceability, not a maturity claim: the generated document prints the registered level beside it, and no parity status may be inferred from that level."
+maturity_refs_rule = "`maturity_refs` is the plural form, for a row whose implementation genuinely spans more than one registry entry, and a row names its entries through one form or the other and never both. It is not a way to strengthen a weak row: the entries must each cover a distinct part of the row's scope, and a row that needs two entries because one capability was split across two registry entries should say so in `reason` instead. Where a row's parts meet is what the row is about, so splitting the row to avoid the plural form would leave the meeting point in neither row."
+evidence_rule = "Every row carries evidence. An item is either a repository-relative path that must exist, or a `search:` token recording the negative search that established absence. A claim without evidence is a plan, not parity."
+dependency_class_rule = "A_nvidia_proprietary is the replacement battlefield: the CUDA-Q implementation depends on an NVIDIA-proprietary component and FlagQuantum must not. B_open_neutral marks a dependency FlagQuantum may use directly under a permissive licence. C_flagos_replacement marks a dependency FlagQuantum satisfies through a FlagOS-family component. none means the capability is not dependency-bearing."
+scalability_rule = "No row in this matrix may assert scalability. Scalability claims are read from capability-maturity.toml and require an audited benchmark payload naming a verified integration commit."
+baseline_gap_rule = "`baseline_gap` records a narrower scope at the same parity status, such as a smaller measured scale or an unverified accelerator. It is prose for a human reader and is not a machine-checked claim; scale claims still require an audited benchmark payload."
+update_rule = "Refreshing this matrix is a generated-diff change: tools/parity_matrix.py renders docs/reference/CUDAQ_PARITY_MATRIX.md from this contract, and hand-editing that document is a defect. Run tools/parity_matrix.py --check in CI."
+
+[[domains]]
+id = "language_and_programming_model"
+title = "Language and programming model"
+cudaq_surface = ["nvq++", "@cudaq.kernel", "kernel arguments", "classical control flow", "cudaq.control", "cudaq.adjoint", "register_operation", "qudit and photonic operations"]
+evidence = ["flagquantum/circuit.py", "flagquantum/operators.py", "search:no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema"]
+
+[[domains.capabilities]]
+id = "cpp_kernel_frontend"
+cudaq = "C++ front end nvq++ compiling Clang AST into the Quake dialect"
+status = "unsupported"
+priority = "later"
+dependency_class = "B_open_neutral"
+reason = "No C++ product surface exists. A domestic C++ front end would reuse the same LLVM/MLIR upstream as the Python path, so it is deferred rather than excluded."
+
+[[domains.capabilities]]
+id = "python_ast_kernel"
+cudaq = "@cudaq.kernel decorator compiling a Python function body through an AST bridge"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+reason = "FlagQuantum builds circuits through an explicit builder API. There is no AST layer, so a user cannot write a Python function body as a kernel."
+
+[[domains.capabilities]]
+id = "kernel_first_class_functions"
+cudaq = "Kernels are typed callables with parameters, composition, and nested calls"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "The public CircuitIR schema 1.0 has no function or call construct. The internal levels designed in MULTI_LEVEL_IR_ARCHITECTURE.md 5.2 do, and are the planned home."
+
+[[domains.capabilities]]
+id = "classical_control_flow"
+cudaq = "if, for, and while over classical values inside a kernel"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "CircuitIR 1.0 expresses a straight-line instruction list. Classical values with def-use, blocks, branches, and bounded loops are designed but not implemented."
+
+[[domains.capabilities]]
+id = "runtime_qubit_allocation"
+cudaq = "Qubit allocation and release at kernel runtime with qubit lifetime"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented."
+
+[[domains.capabilities]]
+id = "control_adjoint_modifiers"
+cudaq = "cudaq.control and cudaq.adjoint applied to arbitrary operations"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+reason = "Only the named gates ccx and cswap provide multi-controlled forms, and no adjoint modifier exists. A unitary passed through Circuit.any is not a modifier."
+
+[[domains.capabilities]]
+id = "type_system_qubit_register_view"
+cudaq = "qubit, qvector, and qview types with linearity rules"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "CircuitIR 1.0 addresses wires by integer index and has no type system. The designed QuantumIR type system and its reference-versus-value linearity rules are not implemented."
+
+[[domains.capabilities]]
+id = "dynamic_kernel_measurement_feedback"
+cudaq = "Mid-circuit measurement and measurement-result-driven branching inside a kernel"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "dynamic_circuits"
+reason = "FlagQuantum implements this through runtime/dynamic with a candidate-stable public namespace. The registered level is below production, and the surface is narrower than the CUDA-Q baseline."
+
+[[domains.capabilities]]
+id = "custom_operation_registration"
+cudaq = "register_operation for user-defined operations with backend capability negotiation"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+reason = "Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation."
+evidence = ["flagquantum/circuit.py", "flagquantum/operators.py"]
+
+[[domains.capabilities]]
+id = "qudit_and_photonic_operations"
+cudaq = "Qudit levels and photonic operations such as create, annihilate, and beam_splitter"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "No qudit or photonic operation exists. Deferred as a distinct product line rather than a parity gap for the qubit runtime."
+
+[[domains.capabilities]]
+id = "pauli_tracking_sbe"
+cudaq = "Pauli tracking stabilizer-basis expansion for noisy simulation"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+reason = "The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "search:the sampling engine declines a noise instruction instead of tracking its frame"]
+
+[[domains.capabilities]]
+id = "asynchronous_execution"
+cudaq = "run_async, sample_async, observe_async, and evolve_async with their result handles"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. Every FlagQuantum entry point returns a completed result, so there is no handle an outer loop could poll and no overlap between host work and a device run."
+evidence = ["search:no asynchronous entry point and no in-flight result handle"]
+
+[[domains.capabilities]]
+id = "global_seed_control"
+cudaq = "set_random_seed for a process-wide sampling and noise seed"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+reason = "Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session."
+evidence = ["flagquantum/runtime/options.py", "flagquantum/runtime/training_state.py", "search:no process-wide seed entry point"]
+
+[[domains]]
+id = "compiler_and_ir"
+title = "Compiler and intermediate representation"
+cudaq_surface = ["Quake, CC, and QEC MLIR dialects", "pass manager and pass plugins", "decomposition", "basis conversion", "Clifford+T and angle synthesis", "routing", "QIR code generation", "resource estimation"]
+evidence = ["flagquantum/compiler", "search:no MLIR dialect, no LLVM dependency, and no pass manager consuming the CompilerPassExtension protocol"]
+
+[[domains.capabilities]]
+id = "mlir_dialect_stack"
+cudaq = "Quake, CC, and QEC dialects on MLIR with a full pass pipeline"
+status = "unsupported"
+priority = "later"
+dependency_class = "B_open_neutral"
+reason = "FlagQuantum IR is a JSON instruction table. MLIR is Apache-2.0 licensed and vendor-neutral, so adopting it is a build decision rather than a dependency conflict. The internal levels come first."
+maturity_ref = "ir"
+
+[[domains.capabilities]]
+id = "pass_manager_and_pass_plugins"
+cudaq = "A pass manager with an out-of-tree pass plugin interface"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "interop_adapter_contract"
+reason = "The pass and analysis contracts and the CompilerPassExtension protocol are designed, and the ecosystem SDK exposes the extension kind, but no pass manager consumes the protocol and compilation paths remain fixed pipelines."
+evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/compiler"]
+
+[[domains.capabilities]]
+id = "gate_decomposition_patterns"
+cudaq = "Decomposition and DecompositionPatterns libraries expanding operations into a target basis"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Native gate legalization exists but there is no rule library, so a target basis outside the legalization table cannot be reached."
+
+[[domains.capabilities]]
+id = "basis_conversion"
+cudaq = "BasisConversion rewriting a circuit between named gate sets"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Partial coverage follows from the legalization table; there is no general conversion between two arbitrary named bases."
+
+[[domains.capabilities]]
+id = "clifford_t_synthesis"
+cudaq = "Clifford+T synthesis from a rotation angle"
+status = "unsupported"
+priority = "next"
+dependency_class = "B_open_neutral"
+reason = "Absent. The algorithms are published and vendor-neutral, and any implementation needs exact arithmetic that FlagQuantum does not currently carry."
+
+[[domains.capabilities]]
+id = "angle_synthesis"
+cudaq = "Angle synthesis for a target rotation accuracy"
+status = "unsupported"
+priority = "next"
+dependency_class = "B_open_neutral"
+reason = "Absent, and it shares the exact-arithmetic requirement with Clifford+T synthesis."
+
+[[domains.capabilities]]
+id = "topology_aware_routing"
+cudaq = "CableRoughIn and topology-aware qubit routing"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Routing, topology legalization, and directional topology modules exist as a skeleton, but there is no published-quality router comparable to a SABRE-class algorithm."
+
+[[domains.capabilities]]
+id = "commutation_aware_rewrite"
+cudaq = "CommutationAwareRewrite pass"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Absent. Needs the pass manager and an analysis-invalidation contract before a rewrite pass can be correct."
+
+[[domains.capabilities]]
+id = "dead_code_elimination"
+cudaq = "DeadQuantumElimination and general dead code elimination"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Absent. Depends on the same pass infrastructure as commutation-aware rewriting."
+
+[[domains.capabilities]]
+id = "qir_code_generation"
+cudaq = "QIR and Profile-QIR code generation to LLVM"
+status = "unsupported"
+priority = "now"
+dependency_class = "B_open_neutral"
+reason = "FlagQuantum emits OpenQASM and QCIS text only. QIR is an open specification with no NVIDIA dependency, so this is the highest-value compiler gap after the internal levels."
+evidence = ["flagquantum/compiler"]
+
+[[domains.capabilities]]
+id = "target_text_emitters"
+cudaq = "OpenQASM and vendor JSON emitters"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "An OpenQASM emitter exists. The emitter set is narrower than the CUDA-Q roster."
+
+[[domains.capabilities]]
+id = "resource_estimation"
+cudaq = "estimate_resources reporting gate counts, depth, width, and qubit peak"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Absent, and it cannot be made correct for loops and functions until ProgramIR exists, because a straight-line instruction list has no loop bound to estimate."
+
+[[domains.capabilities]]
+id = "compiler_plugin_ecosystem"
+cudaq = "Third-party compiler passes distributed out of tree"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "extension_sdk"
+reason = "The extension protocol and lifecycle exist, but no discovery path reaches compilation, so an out-of-tree pass cannot run."
+
+[[domains.capabilities]]
+id = "foreign_circuit_import"
+cudaq = "from_qasm and from_qiskit bringing a foreign circuit into the framework"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "qiskit_interop"
+reason = "The Qiskit direction exists: an ecosystem adapter builds a FlagQuantum circuit from a provider object. OpenQASM import does not, and the OpenQASM surface FlagQuantum carries is an emitter, so a circuit that exists only as text cannot enter the framework."
+evidence = ["flagquantum/ecosystem/qiskit", "search:no OpenQASM text importer"]
+
+[[domains]]
+id = "simulation_backends"
+title = "Simulation backend matrix"
+cudaq_surface = ["qpp-cpu", "nvidia", "nvidia option=mgpu", "tensornet", "tensornet-mps", "fermioniq", "nvidia option=mqpu", "trajectory noisy simulation", "density-matrix-cpu", "stim", "orca-photonics", "dynamics", "multi-GPU fabric"]
+evidence = ["flagquantum/simulation", "flagquantum/runtime/backend_registry.py", "search:no stabilizer simulator, no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport"]
+
+[[domains.capabilities]]
+id = "backend_cpu_statevector"
+cudaq = "qpp-cpu CPU statevector backend"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "local_statevector"
+reason = "FlagQuantum has a PyTorch CPU statevector path at release-certified level."
+baseline_gap = "The registered level is release-certified for the FlagQuantum surface, while the CUDA-Q backend is described at a larger qubit ceiling. No measured comparison exists in this checkout."
+
+[[domains.capabilities]]
+id = "backend_gpu_statevector"
+cudaq = "nvidia GPU statevector backend backed by cuStateVec"
+status = "supported"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "local_statevector"
+reason = "A PyTorch GPU statevector path exists and is usable."
+baseline_gap = "The registered level covers a CPU or one-accelerator path. Throughput on a domestic accelerator is unestablished because the numeric core is not yet a FlagQuantum-owned kernel."
+
+[[domains.capabilities]]
+id = "backend_multi_gpu_statevector"
+cudaq = "nvidia option=mgpu multi-GPU and multi-node statevector"
+status = "partial"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "sharded_statevector_training"
+reason = "Sharded statevector training exists at development_evidence level with one measured 32-qubit complex128 forward pass on one eight-accelerator node. Production capacity expansion is not established."
+baseline_gap = "Multi-node placement has no measured evidence in this checkout; the one measured run used a single node."
+
+[[domains.capabilities]]
+id = "backend_tensor_network_exact"
+cudaq = "tensornet exact tensor-network contraction backed by cuTensorNet"
+status = "partial"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "tensor_network_training"
+reason = "A self-built PyTorch tensor-network path exists without a cuTensorNet-class contraction planner, so the exact regime is narrower than the CUDA-Q baseline."
+baseline_gap = "The FlagQuantum contraction planner is self-built and has no cuTensorNet-class backing, so the exact regime reached at a given bond dimension is narrower."
+
+[[domains.capabilities]]
+id = "backend_tensor_network_mps"
+cudaq = "tensornet-mps approximate matrix product state backend"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "local_mps_tebd"
+reason = "FlagQuantum has a maintained MPS path with measured development evidence at large bond dimension and high qubit count. This is the strongest parity row in the matrix."
+
+[[domains.capabilities]]
+id = "backend_fermioniq_mps"
+cudaq = "fermioniq MPS variant backend"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It is an MPS variant with a narrower applicability than the maintained MPS path, so it follows rather than leads."
+
+[[domains.capabilities]]
+id = "backend_asynchronous_multi_qpu"
+cudaq = "nvidia option=mqpu asynchronous multi-QPU execution"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "cloud_deployment"
+reason = "Absent. FlagQuantum has single-target remote execution but no asynchronous fan-out across several QPUs with independent result streams."
+
+[[domains.capabilities]]
+id = "backend_trajectory_noise"
+cudaq = "Trajectory noisy simulation available across backends"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "FlagQuantum has a trajectory noise path. Batched trajectory execution is narrower than the CUDA-Q baseline."
+baseline_gap = "No batched trajectory result is recorded in this checkout."
+
+[[domains.capabilities]]
+id = "backend_density_matrix"
+cudaq = "density-matrix-cpu backend"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+reason = "An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence."
+evidence = ["flagquantum/simulation/density_matrix.py"]
+
+[[domains.capabilities]]
+id = "backend_stim_stabilizer"
+cudaq = "stim stabilizer backend reaching thousands of qubits"
+status = "partial"
+priority = "now"
+dependency_class = "B_open_neutral"
+maturity_ref = "stabilizer_sampling"
+reason = "Both halves of the row now exist in a narrower form. The representation half is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable, and Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. The execution half landed as an execution mode: `plan` and `run` reach the engine through `state_mode='stabilizer'` and report a plan, a result, and execution evidence, which `tests/integration/test_stabilizer_execution_mode.py` pins. What remains is narrower than the baseline in three ways: no expectation values over the representation, no noise, and no detector error model connected to it."
+baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values, detector error models, and noisy circuits over the same representation. FlagQuantum reaches its engine through `fq.run` with `state_mode='stabilizer'` and returns samples, but it offers no expectation values over the representation, refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it, and does not connect its detector error model module to the engine."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/runtime/executors/stabilizer/sampling.py", "tests/team/simulation/test_stabilizer_sampling.py", "tests/integration/test_stabilizer_execution_mode.py", "examples/stabilizer_sampling.py"]
+
+[[domains.capabilities]]
+id = "backend_photonics"
+cudaq = "orca-photonics photonic backend"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. Photonic simulation is a distinct product line and is deferred with the qudit operations it depends on."
+
+[[domains.capabilities]]
+id = "backend_dynamics"
+cudaq = "dynamics backend for time-dependent evolution backed by cuDensityMat"
+status = "partial"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "continuous_time_lindblad"
+reason = "FlagQuantum has a real Lindblad engine with RK4 integration, validation codes, and evidence fields, so this capability is not missing. Three walls separate it from the baseline: CPU-only hard rejection, a dense four-to-the-n Hamiltonian with a fixed step, and a static Hamiltonian. Batching and gradients are rejected."
+baseline_gap = "The registered entry declares explicit time grids on small systems, so it does not by itself authorize a scale claim against the baseline."
+
+[[domains.capabilities]]
+id = "backend_gpu_fabric"
+cudaq = "Multi-GPU fabric with peer-to-peer memory access"
+status = "unsupported"
+priority = "next"
+dependency_class = "C_flagos_replacement"
+maturity_ref = "flagos_transport_observability"
+reason = "Absent as a FlagQuantum-owned transport. The replacement target is a FlagOS-family collective layer, not NCCL."
+
+[[domains.capabilities]]
+id = "dynamics_schedule_and_integrators"
+cudaq = "dynamics Schedule with time-dependent coefficients and the selectable Runge-Kutta and stiff-solver integrator families"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "continuous_time_lindblad"
+reason = "The Lindblad engine integrates with one fixed-step RK4 over an explicitly declared time grid and a static Hamiltonian. There is no schedule object carrying time-dependent coefficients and no selectable integrator, so accuracy and stiffness cannot be traded per problem."
+evidence = ["flagquantum/lindblad", "flagquantum/simulation/lindblad.py", "search:no schedule object and no selectable integrator"]
+
+[[domains]]
+id = "noise_and_error_models"
+title = "Noise and error models"
+cudaq_surface = ["Kraus channels", "noise model callbacks", "trajectory simulation", "density matrix", "Pauli tracking", "detector error models", "unitary-mixture degradation"]
+evidence = ["flagquantum/noise/channels.py", "flagquantum/qec/dem.py", "search:no per-operation callback model and no unitary-mixture type"]
+
+[[domains.capabilities]]
+id = "kraus_channel_algebra"
+cudaq = "Kraus channels and general noise channels"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+evidence = ["flagquantum/noise/channels.py", "tests/unit/test_kraus_channel_surface.py"]
+reason = "A general Kraus constructor exists and is validated. `KrausChannel` accepts an arbitrary operator list, refuses a set that is not trace-preserving (completeness compared at `atol = rtol = 1e-6`) and a dimension that is not a positive power of two, serializes through the `flagquantum.kraus_channel.v1` schema, and reaches simulation through `NoiseModel.add` and `Circuit.noisy_density_matrix`. What is absent is the operator type the CUDA-Q surface builds a channel from: no matrix-valued operator participates in operator algebra, which is the gap `matrix_and_custom_operator` already records."
+
+[[domains.capabilities]]
+id = "noise_model_callback"
+cudaq = "Noise model callbacks injecting noise by operation type at runtime"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "Per-gate (`NoiseModel.add(gate_names, channel)`) and per-qubit (`wires=`) static injection both exist, and lowering now refuses a rule that cannot apply. The callback form is absent, and `NoiseRule` carries a `KrausChannel` fixed at construction. A callback cannot be added to `NoiseRule` as it stands: `NoiseModel.identity` is a SHA-256 digest of `to_dict()`, and checkpoint resume and execution-plan identity both bind to it, so a channel chosen by an arbitrary callable would make identity unreproducible. Any such rule must be registered under a declared name and parameterization before it can participate in a model identity."
+
+[[domains.capabilities]]
+id = "batched_trajectory"
+cudaq = "Batched trajectory execution"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "Trajectory simulation exists; batched execution across trajectories is narrower than the baseline."
+
+[[domains.capabilities]]
+id = "detector_error_model"
+cudaq = "Detector error model construction and circuit-to-DEM conversion"
+status = "partial"
+priority = "now"
+dependency_class = "B_open_neutral"
+maturity_ref = "detector_error_model"
+reason = "Both directions of the stim text interchange work. `from_memory_circuit` builds a model exactly for Pauli noise over the reference Clifford gate set; `to_stim_text` emits text stim 1.16.0 parses; `from_stim_text` reads everything stim wrote in a 240-model developer-time sweep except a `repeat` block, and `str(model.flattened())` is a complete route around that one refusal. The row stays partial because conversion is narrower than the baseline at the input end: `from_memory_circuit` accepts one circuit record and one noise record, so an arbitrary circuit carrying detector and observable annotations has no route to a model, and a non-Pauli channel is refused rather than decomposed. `flagquantum/qec/IMPLEMENTATION.md` records the sweeps and the arithmetic."
+evidence = ["flagquantum/qec/dem.py", "tests/qec/test_dem_stim_text.py", "tests/qec/test_dem_stim_interop.py", "tests/qec/test_dem_stim_reference_rates.py", "flagquantum/qec/IMPLEMENTATION.md", "search:no route from an arbitrary annotated circuit to a detector error model"]
+
+[[domains.capabilities]]
+id = "unitary_mixture_degradation"
+cudaq = "Unitary-mixture noise models distinguished from general channels"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not."
+
+[[domains.capabilities]]
+id = "noise_trajectory_shot_allocation"
+cudaq = "The ptsbe trajectory engine: explicit Kraus trajectory specification, exhaustive, ordered, and probabilistic trajectory sampling strategies, and shot allocation across trajectories"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "FlagQuantum samples Kraus trajectories, but the trajectory choice belongs to the engine rather than to the caller: the MPS trajectory path draws them implicitly and exposes an ensemble size, so there is no trajectory enumeration, no ordered or probabilistic selection strategy, and no shot-allocation policy. Those strategies are the whole of this row."
+evidence = ["flagquantum/runtime/executors/mps/noisy.py", "flagquantum/runtime/planner/noise_selection.py", "search:no explicit trajectory selection strategy and no shot allocation policy"]
+
+[[domains]]
+id = "operator_algebra_and_domain_libraries"
+title = "Operator algebra and domain libraries"
+cudaq_surface = ["SpinOperator", "FermionOperator", "BosonOperator", "SuperOperator", "MatrixOperator", "operator arithmetics", "pauli_word and exp_pauli", "chemistry libraries"]
+evidence = ["flagquantum/observables", "flagquantum/operators.py", "search:no fermionic, bosonic, or superoperator algebra and no chemistry driver"]
+
+[[domains.capabilities]]
+id = "spin_operator_algebra"
+cudaq = "SpinOperator and Pauli operator algebra"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent."
+
+[[domains.capabilities]]
+id = "fermion_operator_algebra"
+cudaq = "FermionOperator with Jordan-Wigner and related mappings"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+reason = "Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction."
+evidence = ["flagquantum/observables"]
+
+[[domains.capabilities]]
+id = "boson_operator_algebra"
+cudaq = "BosonOperator algebra"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent, and it has no consumer until a bosonic or photonic workload exists."
+
+[[domains.capabilities]]
+id = "super_operator_algebra"
+cudaq = "SuperOperator for superoperator representations"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "continuous_time_lindblad"
+reason = "Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale."
+
+[[domains.capabilities]]
+id = "matrix_and_custom_operator"
+cudaq = "MatrixOperator and custom_op"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+reason = "A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra."
+evidence = ["flagquantum/operators.py"]
+
+[[domains.capabilities]]
+id = "exponential_pauli_operator"
+cudaq = "exp_pauli and pauli_word construction"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent."
+
+[[domains.capabilities]]
+id = "chemistry_domain_library"
+cudaq = "PySCF driver, UCCSD, and hardware-efficient ansatz libraries"
+status = "unsupported"
+priority = "now"
+dependency_class = "B_open_neutral"
+reason = "Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral."
+evidence = ["flagquantum/algorithms"]
+
+[[domains.capabilities]]
+id = "rydberg_analog_hamiltonian"
+cudaq = "RydbergHamiltonian for analog neutral-atom evolution"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It is the observable-side input an analog neutral-atom target would need, so it follows that target rather than preceding it."
+evidence = ["search:no Rydberg or analog Hamiltonian model"]
+
+[[domains]]
+id = "algorithm_layer"
+title = "Algorithm layer"
+cudaq_surface = ["sample, observe, run, evolve, draw, translate", "get_state and get_unitary", "estimate_resources", "dem_from_kernel", "CUDA-Q Algorithms", "CUDA-QX solvers", "error mitigation"]
+evidence = ["flagquantum/algorithms", "flagquantum/circuit.py", "search:no block encoding, no qubitization, no quantum singular value transform, and no error mitigation"]
+
+[[domains.capabilities]]
+id = "execution_entry_points"
+cudaq = "sample, observe, run, evolve, draw, and translate"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "Run, counts, expectation, compile, and plan exist. evolve and translate have no equivalent, and draw exists in a narrower form."
+
+[[domains.capabilities]]
+id = "state_and_unitary_access"
+cudaq = "get_state and get_unitary"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "local_statevector"
+reason = "Circuit.state exists. A full unitary accessor is absent."
+
+[[domains.capabilities]]
+id = "algorithm_block_encoding_family"
+cudaq = "CUDA-Q Algorithms: block encoding, qubitization, QSVT, Trotter, double factorization, fermion-qubit transforms"
+status = "unsupported"
+priority = "next"
+dependency_class = "B_open_neutral"
+reason = "The whole layer is absent. Qualtran is Apache-2.0 licensed and covers the same mathematics, so the plan is adaptation rather than research."
+
+[[domains.capabilities]]
+id = "error_mitigation"
+cudaq = "Zero-noise extrapolation, probabilistic error cancellation, and Clifford data regression"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "Absent. VQE-class optimization exists in the algorithms domain, but no error-mitigation technique does."
+
+[[domains.capabilities]]
+id = "variational_algorithms"
+cudaq = "VQE and QAOA solver libraries"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "algorithms_grover_search"
+reason = "VQE-class and several algorithm primitives exist as separate registered capabilities rather than a solver family, so the surface shape differs from the baseline."
+
+[[domains.capabilities]]
+id = "differentiable_training"
+cudaq = "No equivalent; CUDA-Q has no reverse-mode differentiation through simulation"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "sharded_statevector_training"
+reason = "FlagQuantum advantage, not parity. Reverse-mode autograd through simulation, the Module and train lifecycle, and gradient preservation under sharding are capabilities the CUDA-Q baseline does not offer."
+baseline_gap = "The registered level covers the local training path. Gradient correctness under sharding is registered separately and is not asserted here."
+
+[[domains.capabilities]]
+id = "optimizer_library"
+cudaq = "cudaq.optimizers with Adam, COBYLA, GradientDescent, LBFGS, NelderMead, SGD, and SPSA"
+status = "partial"
+priority = "next"
+dependency_class = "none"
+reason = "The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is the gap, because COBYLA, NelderMead, and SPSA have no implementation and the training entry point refuses an optimizer that is not a PyTorch one."
+evidence = ["flagquantum/runtime/training.py", "flagquantum/algorithms/optimization.py", "search:no gradient-free optimizer and no entry point that accepts one"]
+
+[[domains.capabilities]]
+id = "classical_data_encoding"
+cudaq = "amplitude_encode and angular_encode mapping classical features onto a state"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+reason = "Absent as a public entry point. Amplitude encoding needs a normalized state-preparation path and angular encoding needs a feature-map constructor; the only related surface is a single data-reuploading helper in the simulation domain, reachable only as a module attribute."
+evidence = ["flagquantum/simulation/statevector/small.py", "search:no amplitude or angular encoding entry point"]
+
+[[domains.capabilities]]
+id = "circuit_rendering_and_inspection"
+cudaq = "getSVGstring, display, display_trace, and add_to_bloch_sphere over a drawing surface that also returns text"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. The drawer renders a circuit to text or to a matplotlib figure and returns the text form, but there is no SVG string, no trace view, and no Bloch-sphere picture. `draw` itself is counted in the execution entry points row rather than here."
+evidence = ["flagquantum/drawer", "search:no SVG string output, no trace view, and no Bloch sphere"]
+
+[[domains]]
+id = "quantum_error_correction"
+title = "Quantum error correction"
+cudaq_surface = ["cudaq-qec library", "detector, detectors, and logical_observable annotations in a kernel", "dem, dem_from_kernel, and DEMResult", "extract_syndrome", "circuit-to-DEM round trip", "Stim integration", "the logical.* preview namespace", "QEC MLIR dialect", "GPU decoders", "surface, Steane, and qLDPC codes", "lattice surgery and magic state distillation", "transport, rounds, objectives, neutral atoms", "for-stim-users migration"]
+evidence = ["flagquantum/qec", "flagquantum/qec/decoders.py", "search:one repetition-code profile only, and no surface, Steane, qLDPC, Reichardt, or Floquet code", "search:no detector or logical_observable annotation on a general circuit and no dem_from_kernel"]
+
+[[domains.capabilities]]
+id = "qec_code_library"
+cudaq = "cudaq-qec codes expressed as kernels, with numerical experiment APIs"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "stabilizer_code_memory_circuit"
+reason = "The repetition code and the rotated surface code are declared as code records and both produce a memory-experiment source with detector and observable layouts, so a distance-d rotated patch is expressible. Both are declared rather than constructed: an arbitrary parity-check matrix, a code with a mixed X-and-Z stabilizer, Steane, qLDPC, Reichardt and Floquet codes are absent. The code records themselves still expose no decode entry point, because decoding belongs to the decoder row and reads a detector error model rather than a code."
+evidence = ["flagquantum/qec/codes.py", "flagquantum/qec/circuit.py", "tests/qec/test_codes.py", "tests/qec/test_surface_code.py"]
+
+[[domains.capabilities]]
+id = "qec_decoder_family"
+cudaq = "Minimum-weight perfect matching, belief propagation with ordered statistics decoding, and sliding-window decoders"
+status = "partial"
+priority = "now"
+dependency_class = "B_open_neutral"
+maturity_ref = "detector_error_matching_decoder"
+reason = "Matching is now self-implemented rather than absent: the detector error model becomes a weighted decoding graph whose edge weight is log((1 - p) / p), and a syndrome is decoded exactly by enumerating the ways to pair its defective detectors and to route any of them to the graph's boundary. The row stays partial on scope, not on correctness. Matching needs a graphlike model and refuses a hyperedge rather than projecting it onto a pair, so a code whose mechanisms flip three or more detectors is outside this row's matching half. The pairing is enumerated, so a syndrome is bounded by a defect budget instead of decoded at scale. Belief propagation with ordered statistics decoding is absent, so the LDPC codes the baseline serves with it are not served here; the sliding-window decoder for a long-lived experiment is absent; and there is no decoder registry or plugin protocol, so a decoder is constructed directly rather than requested by name. The baseline's GPU decoders are deliberately not chased, because the CUDA-Q qLDPC decoder is a closed-source shared library, so only its interface position is a target and an Apache-2.0 implementation is the route if that scope is ever reached. The remaining work inside this row is a bit-for-bit cross-check against PyMatching as an independent implementation, which is a cross-check and never the authority for this row."
+evidence = ["flagquantum/qec/decoders.py", "flagquantum/qec/decoding_graph.py", "flagquantum/qec/matching.py", "tests/qec/test_matching_decoder.py"]
+
+[[domains.capabilities]]
+id = "qec_stim_integration"
+cudaq = "Stim sampling and detector error model interoperability"
+status = "partial"
+priority = "now"
+dependency_class = "B_open_neutral"
+maturity_refs = ["stabilizer_sampling", "detector_error_model"]
+reason = "Both halves now exist, and the row is partial because they are not connected to each other. Stim-backed sampling landed with the stabilizer engine, which is the dependency this row shares with the stabilizer backend; the detector error model half landed with the text reader and its own capability entry. What the row still lacks is the join: the sampling engine refuses a circuit carrying a noise instruction rather than tracking a Pauli frame through it, so a noisy circuit is declined rather than sampled, and that refusal is what stands between a circuit and the detector error model a decoder would consume. Decoding itself stays with the decoder row rather than being implied here. The row names two registry entries because one capability genuinely spans two: the sampling half is `stabilizer_sampling` and the interchange half is `detector_error_model`, and the join the row is about is what would make them one entry. Splitting the row into two rows would not: each half is complete on its own, and the missing thing belongs to neither. The row is also read only against cudaq-qec, which is where the detector error models live; where the two components divide this surface is recorded in `baseline.surface_ownership`."
+baseline_gap = "No sampling of error-corrected logical operations and no join between the two halves. Detection events from a noisy Clifford circuit, sampling both from the circuit and from a detector error model derived from it, and pymatching- or stim-driven logical-error-rate estimation all remain absent, so a circuit carrying a noise instruction is declined rather than sampled. A detector error model can now be decoded, but only by reading its mechanisms directly: the decoder is not reachable from the stim sampling path, and the stabilizer sampling half and the detector error model half still feed nothing that consumes both."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/qec/dem.py", "tests/qec/test_dem_stim_interop.py", "tests/integration/test_stabilizer_execution_mode.py"]
+
+[[domains.capabilities]]
+id = "qec_dialect"
+cudaq = "A QEC MLIR dialect"
+status = "unsupported"
+priority = "later"
+dependency_class = "B_open_neutral"
+maturity_ref = "ir"
+reason = "Absent, and deliberately sequenced after the internal levels stabilize. A second dialect before the first one exists would be a parallel scaffold."
+
+[[domains.capabilities]]
+id = "qec_logical_operations"
+cudaq = "Lattice surgery, product rotation, and magic state distillation"
+status = "unsupported"
+priority = "later"
+dependency_class = "B_open_neutral"
+reason = "Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan. The baseline exposes this as the ~70-name `logical.*` preview namespace measured from a live CUDA-Q 0.16.0 install, which also carries the patch, gadget, protocol, and program records the operations compose; the semantic core (lattice surgery, product rotation, distillation) is what this row tracks, and the surrounding records are why the row is a layer rather than a function."
+
+[[domains.capabilities]]
+id = "qec_transport_and_objectives"
+cudaq = "Transport, rounds, objectives, ccz, and neutral-atom QEC models"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. These are hardware-shaped QEC models that need the corresponding target to be meaningful."
+
+[[domains.capabilities]]
+id = "qec_stim_user_migration"
+cudaq = "A documented migration path for Stim users"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "detector_error_model"
+reason = "Absent, and its upstream counterpart is not where the surface list implies. cudaq-qec publishes no for-Stim-users page: the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. So the document cannot be translated from that page, and reading the row's name as pointing at it would aim a `next`-priority capability at a component that produces no detector error model. The counterpart is cudaq-qec's own Stim surface: reading Stim detector error model text through dem_from_stim_text, sampling a model through dem_sampling, and decoding from a Stim DEM through the decoder framework. The document is conformance work rather than a new implementation, so it is still sequenced after the Stim integration row's halves are joined; until then a migration guide would describe a route that stops at the join."
+evidence = ["search:no for-Stim-users page in cudaq-qec, and no Stim-text writer anywhere in the CUDA-Q stack; the only such page is in the logical preview layer, which emits no detector error model and does no sampling or decoding"]
+
+[[domains]]
+id = "logical_and_ftqc_layer"
+title = "Logical and fault-tolerant layer"
+cudaq_surface = ["preview/logical", "logical resource estimation", "Gidney-Ekera adder", "carbon code", "Fermi-Hubbard", "distillation factories", "gadget verification", "physical placement, schedule, and routing", "Stim output", "device and constraint modeling"]
+evidence = ["search:no logical resource estimator, no Clifford+T area or time model, no physical placement, and no distillation factory"]
+
+[[domains.capabilities]]
+id = "logical_resource_estimation"
+cudaq = "Clifford+T and surface-code area and time estimation for a logical algorithm"
+status = "unsupported"
+priority = "next"
+dependency_class = "B_open_neutral"
+reason = "Absent as a domain. Qualtran carries the same mathematics under an Apache-2.0 licence, so the planned route is adaptation into a FlagQuantum-owned report format aligned with capability-maturity.toml evidence."
+
+[[domains.capabilities]]
+id = "arithmetic_bloqs"
+cudaq = "Gidney-Ekera adder and related arithmetic constructions"
+status = "unsupported"
+priority = "later"
+dependency_class = "B_open_neutral"
+reason = "Absent, and it is reachable through the same Qualtran adaptation as logical resource estimation."
+
+[[domains.capabilities]]
+id = "physical_placement_and_scheduling"
+cudaq = "Physical qubit placement, schedule, and routing for a logical architecture"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It also depends on a physical target model, so it follows the compiler routing work."
+
+[[domains.capabilities]]
+id = "ftqc_device_modeling"
+cudaq = "Device and constraint modeling for a fault-tolerant architecture"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It is a modeling surface with no consumer until logical resource estimation exists."
+
+[[domains.capabilities]]
+id = "logical_gadget_verification"
+cudaq = "Gadget verification and distillation factory validation"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent, and it depends on both the logical layer and the QEC decoders."
+
+[[domains]]
+id = "hardware_and_cloud_targets"
+title = "Hardware and cloud targets"
+cudaq_surface = ["IonQ", "Quantinuum", "IQM", "neutral atom", "photonic", "quantum control systems", "Amazon Braket", "Scaleway QaaS", "qBraid", "emulate", "_experimental.CustomTarget", "RuntimeEndpoint"]
+evidence = ["flagquantum/remote", "flagquantum/deployment", "flagquantum/ecosystem/extensions/sdk.py", "search:no third-party target registration point and no provider-neutral endpoint object"]
+
+[[domains.capabilities]]
+id = "third_party_target_sdk"
+cudaq = "_experimental.CustomTarget letting a third party define and register a target"
+status = "unsupported"
+priority = "now"
+dependency_class = "none"
+reason = "Absent, and it is the ecosystem entry point. Without it a provider can only be added by changing FlagQuantum."
+evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/remote/qpu"]
+
+[[domains.capabilities]]
+id = "runtime_endpoint"
+cudaq = "RuntimeEndpoint for a remote execution service"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "cloud_deployment"
+reason = "Absent as a named contract. FlagQuantum has remote adapters and a deployment surface, but no provider-neutral endpoint object."
+
+[[domains.capabilities]]
+id = "local_emulation"
+cudaq = "emulate local noisy emulation of a target"
+status = "unsupported"
+priority = "next"
+dependency_class = "none"
+maturity_ref = "noisy_simulation"
+reason = "Absent as a target-directed entry point. The noisy simulation it would build on exists."
+
+[[domains.capabilities]]
+id = "provider_roster_breadth"
+cudaq = "IonQ, Quantinuum, IQM, neutral-atom, photonic, and control-system providers plus Braket, Scaleway, and qBraid"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "cloud_deployment"
+reason = "FlagQuantum has fewer providers. The architectural requirement is a registration point a third party can use, which is why third_party_target_sdk is the higher-priority row."
+
+[[domains.capabilities]]
+id = "domestic_accelerator_path"
+cudaq = "No equivalent; the CUDA-Q accelerator path is NVIDIA-only"
+status = "supported"
+priority = "now"
+dependency_class = "C_flagos_replacement"
+maturity_ref = "flagos_statevector_reference"
+reason = "FlagQuantum advantage, not parity. A domestic-accelerator and FlagOS path exists and is registered with its own maturity levels."
+baseline_gap = "The registered FlagOS reference level is development evidence. This row asserts that a domestic-accelerator path exists, not that it reaches parity performance."
+
+[[domains.capabilities]]
+id = "existing_remote_providers"
+cudaq = "Comparable provider coverage for the providers FlagQuantum already supports"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "cloud_deployment"
+reason = "FlagQuantum reaches its supported providers through registered adapters. This row asserts only that the adapters exist, not that coverage matches the baseline."
+baseline_gap = "The registered deployment level is development evidence. This row asserts that adapters exist, not that coverage matches the vendor roster."
+
+[[domains]]
+id = "realtime_control"
+title = "Realtime control"
+cudaq_surface = ["FPGA-to-GPU microsecond feedback", "NVQLink network layer", "Holoscan sensor bridge", "RoCE and Ethernet transport", "device call channels", "host API", "messaging protocol"]
+evidence = ["search:no FPGA, remote-direct-memory-access, device-call, or realtime messaging module anywhere under flagquantum/"]
+
+[[domains.capabilities]]
+id = "realtime_feedback_loop"
+cudaq = "Microsecond-scale FPGA-to-GPU feedback loop"
+status = "unsupported"
+priority = "next"
+dependency_class = "A_nvidia_proprietary"
+reason = "Absent. This is the one capability that cannot be closed by software alone: it needs an FPGA and a remote-direct-memory-access capable network interface, so it requires a hardware partner."
+evidence = ["search:CUDA-Q realtime control surface and no FPGA, RDMA, or device-call module under flagquantum/"]
+
+[[domains.capabilities]]
+id = "realtime_transport"
+cudaq = "RoCE and Ethernet realtime transport with a device call channel"
+status = "unsupported"
+priority = "next"
+dependency_class = "A_nvidia_proprietary"
+reason = "Absent. The software side can define a vendor-neutral messaging protocol and device-call abstraction before hardware exists, and that is the part worth doing first."
+
+[[domains.capabilities]]
+id = "realtime_host_api"
+cudaq = "Host API and messaging protocol for realtime control"
+status = "unsupported"
+priority = "next"
+dependency_class = "B_open_neutral"
+reason = "Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against."
+
+[[domains.capabilities]]
+id = "realtime_sensor_bridge"
+cudaq = "Holoscan sensor bridge integration"
+status = "unsupported"
+priority = "later"
+dependency_class = "A_nvidia_proprietary"
+reason = "Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition."
+
+[[domains]]
+id = "engineering_ecosystem_and_abi"
+title = "Engineering, ecosystem, and ABI"
+cudaq_surface = ["NVQIR simulator plugin ABI", "pass plugin ABI", "C++ API and find_package", "pip metapackage", "conda, Docker, and devcontainer packaging", "three test suites", "vendor certification"]
+evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/runtime/backend_registry.py", "pyproject.toml", "docs/reference/EXTENSION_SDK.md", "search:one development container image under docker/ and no metapackage selecting a FlagOS or accelerator generation"]
+
+[[domains.capabilities]]
+id = "simulator_plugin_admission"
+cudaq = "NVQIR CircuitSimulator subclass with a registration macro"
+status = "partial"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "extension_sdk"
+reason = "The decisive ecosystem gap. The extension protocol exists with an entry-point group, manifest, SDK version check, capability negotiation, and an ExecutionBackendExtension contract, and the runtime has a separate backend capability registry. The two never import each other, so an extension can be negotiated and discovered but cannot execute."
+evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/runtime/backend_registry.py"]
+
+[[domains.capabilities]]
+id = "stable_c_abi"
+cudaq = "A stable C ABI a third-party simulator or pass can compile against"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent by decision rather than by omission. A stable C ABI requires a real performance backend as its justification, so it is sequenced after the Python admission path proves the boundary by replacement."
+
+[[domains.capabilities]]
+id = "cpp_api_surface"
+cudaq = "A C++ API with find_package support"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+reason = "Absent. It is not a product goal for the Python-first FlagQuantum surface, and it is listed here so the gap is recorded rather than implied."
+
+[[domains.capabilities]]
+id = "distribution_packaging"
+cudaq = "A pip metapackage selecting a CUDA generation, plus conda and container images"
+status = "partial"
+priority = "next"
+dependency_class = "C_flagos_replacement"
+reason = "FlagQuantum ships a single package plus a development container. A metapackage that selects a FlagOS and accelerator generation has no equivalent and is needed for a domestic-accelerator install story."
+
+[[domains.capabilities]]
+id = "vendor_certification"
+cudaq = "A vendor certification process for a backend"
+status = "unsupported"
+priority = "later"
+dependency_class = "none"
+maturity_ref = "interop_adapter_contract"
+reason = "Absent. FlagQuantum evidence governance is stronger than the baseline in maturity levels and benchmark auditing, but there is no certification path by which a vendor attests to a backend."
+
+[[domains.capabilities]]
+id = "evidence_governance"
+cudaq = "Three test suites without a maturity registry or benchmark audit"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "ir"
+reason = "FlagQuantum advantage, not parity. The maturity registry with required-evidence sets per level, the fail-closed benchmark audit, and the tiered test policy have no CUDA-Q equivalent."
+
+[[domains]]
+id = "performance_and_scalability"
+title = "Performance and scalability"
+cudaq_surface = ["40-qubit spin chain on 1024 GPUs", "production multi-GPU and multi-node statevector", "exact tensor networks above one thousand qubits"]
+evidence = ["capability-maturity.toml", "search:no audited benchmark payload in this checkout that names a verified integration commit for a multi-node capacity claim"]
+
+[[domains.capabilities]]
+id = "large_scale_statevector"
+cudaq = "40-qubit spin chain across 1024 GPUs"
+status = "partial"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "sharded_statevector_training"
+reason = "The measured FlagQuantum point is a 32-qubit complex128 forward pass on one eight-accelerator node, which is a development-evidence result and is not comparable to the baseline scale. No row here is a performance claim."
+baseline_gap = "The only measured point used a single node, so nothing here speaks to multi-node behaviour."
+
+[[domains.capabilities]]
+id = "production_sharded_statevector"
+cudaq = "Multi-GPU and multi-node statevector at production level"
+status = "partial"
+priority = "now"
+dependency_class = "A_nvidia_proprietary"
+maturity_ref = "flagos_statevector_capacity_expansion"
+reason = "The registered level is below production, so the sharded path cannot support a capacity-expansion claim yet."
+baseline_gap = "The registered capacity-expansion level is development evidence, so no capacity-expansion claim is currently supported."
+
+[[domains.capabilities]]
+id = "large_bond_dimension_mps"
+cudaq = "tensornet-mps approximate simulation at several hundred qubits"
+status = "supported"
+priority = "now"
+dependency_class = "none"
+maturity_ref = "sharded_mps_training"
+reason = "FlagQuantum has measured MPS evidence at a bond dimension and qubit count that compare favourably with the baseline description. The evidence and its limits are read from capability-maturity.toml."
+baseline_gap = "The registered level is development evidence measured on sixteen accelerators, not a production capacity claim."

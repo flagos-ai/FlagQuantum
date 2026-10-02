@@ -83,6 +83,36 @@ def policy_errors(policy: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(errors)
 
 
+def _worktree_paths(root: Path = ROOT) -> list[str]:
+    skip = {".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
+    return [
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and not skip.intersection(path.parts)
+    ]
+
+
+def protected_path_errors(
+    policy: Mapping[str, Any], root: Path = ROOT
+) -> tuple[str, ...]:
+    """Report protected entries that match no path in the worktree.
+
+    A ``dir/**`` entry whose directory does not exist protects nothing and fails
+    silently, so an unprotected contract looks protected. Reviewers cannot see
+    that by reading the policy, which is why the check is mechanical.
+    """
+
+    paths = _worktree_paths(root)
+    errors: list[str] = []
+    for pattern in policy["policy"]["protected_paths"]:
+        if not any(fnmatch.fnmatchcase(path, pattern) for path in paths):
+            errors.append(
+                f"protected_paths entry {pattern!r} matches no file; "
+                "it protects nothing"
+            )
+    return tuple(errors)
+
+
 def scope_errors(
     team: str, paths: Iterable[str], policy: Mapping[str, Any]
 ) -> tuple[str, ...]:
@@ -231,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     errors = list(policy_errors(policy))
     try:
         if args.validate:
+            errors.extend(protected_path_errors(policy))
             if args.team or args.require_classified:
                 errors.append(
                     "--validate cannot be combined with --team or --require-classified"

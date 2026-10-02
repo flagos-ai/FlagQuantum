@@ -710,6 +710,7 @@ def test_the_declared_probe_predicate_separates_omission_from_core() -> None:
     assert _placed("a-package-no-extra-declares") is False
     assert _placed("matplotlib") is True  # declared by `viz`
     assert _placed("cotengra") is True  # declared by `cotengra`
+    assert _placed("stim") is True  # declared by `stim`
     assert _placed("torch") is True  # core
     assert _placed("torch.distributed") is True  # core, read at its top level
     assert _placed("flagquantum") is True  # the project itself
@@ -818,7 +819,7 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
 
     coverage = by_name["coverage"]
     assert coverage.extras == frozenset(
-        {"dev", "jax", "viz", "braket", "cirq", "pennylane", "cotengra"}
+        {"dev", "jax", "viz", "braket", "cirq", "pennylane", "cotengra", "stim"}
     )
     assert coverage.expressions == (
         "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton",

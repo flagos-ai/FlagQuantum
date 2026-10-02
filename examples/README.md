@@ -23,6 +23,10 @@ These examples do not use that alias:
   [`extensions/reference_compiler_extension.py`](extensions/reference_compiler_extension.py)
   — they import the extension and ecosystem APIs, and the second also imports
   `CircuitIR` from the root rather than through the alias.
+- [`extensions/reference_backend_extension.py`](extensions/reference_backend_extension.py)
+  — a third-party execution backend that imports only
+  `flagquantum.ecosystem.extensions`, so it demonstrates the published extension
+  surface rather than the root alias.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.

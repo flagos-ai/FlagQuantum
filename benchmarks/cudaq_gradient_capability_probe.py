@@ -66,6 +66,19 @@ def main() -> None:
     payload = {
         "schema": "flagquantum.external.cudaq_gradient_capability.v1",
         "benchmark": "cudaq_gradient_capability_probe",
+        # Symbol inspection is never release evidence and never a capacity
+        # statement: it records which strategies one installed release exposes.
+        # These fields are what makes this payload landable under
+        # benchmarks/results without failing the benchmark contract test.
+        "benchmark_evidence_class": "comparison_non_release",
+        "non_release_evidence": True,
+        "release_gate_allowed": False,
+        "scalability_claim_allowed": False,
+        "distribution_semantics": "single_device_fast_path",
+        "scalability_blockers": [
+            "One process inspected the public Python symbols of one installed "
+            "CUDA-Q. No workload ran and nothing was distributed.",
+        ],
         "comparison_class": "explicitly_unsupported_or_requires_matched_run",
         "world_size": 1,
         "rank_placement": [

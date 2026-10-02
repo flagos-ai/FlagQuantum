@@ -72,9 +72,28 @@ def test_execution_mode_is_representation_not_distribution_topology() -> None:
     candidate = _load(CANDIDATE)
     modes = set(candidate["contract"]["allowed_values"]["mode"])
 
-    assert modes == {"auto", "statevector", "mps", "tensor_network", "density_matrix"}
+    assert modes == {
+        "auto",
+        "statevector",
+        "mps",
+        "tensor_network",
+        "density_matrix",
+        "stabilizer",
+    }
     assert not any("distributed" in mode for mode in modes)
     assert "tn" not in modes
+
+
+def test_execution_mode_vocabulary_matches_the_implementation() -> None:
+    """The candidate and the option object name the same representations."""
+
+    from flagquantum.runtime.options import _MODES
+
+    candidate = _load(CANDIDATE)
+
+    assert set(candidate["contract"]["allowed_values"]["mode"]) == set(_MODES)
+    for mode in _MODES:
+        ExecutionOptions(mode=mode)
 
 
 def test_execution_options_defaults_fail_closed() -> None:

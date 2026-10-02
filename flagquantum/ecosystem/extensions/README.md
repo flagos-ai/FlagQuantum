@@ -13,6 +13,12 @@ Installed extensions register zero-argument factories in the
 kind-specific, so importing FlagQuantum never loads third-party packages. See
 `docs/guides/COMPILER_PLUGINS.md` for the circuit-compiler path.
 
+An execution backend crosses from this package into the Runtime capability
+registry through `admission.py`, which is the single crossing and the only place
+an extension becomes an executable backend. See
+`examples/extensions/reference_backend_extension.py` for the shortest working
+backend and `docs/reference/EXTENSION_SDK.md` for the boundary.
+
 Start with `sdk.py` for the protocol, `conformance.py` for executable checks,
 and `examples/extensions/reference_extensions.py` or
 `examples/extensions/reference_compiler_extension.py` for the shortest working

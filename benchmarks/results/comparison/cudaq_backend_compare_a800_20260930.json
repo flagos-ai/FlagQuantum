@@ -1,0 +1,1399 @@
+{
+  "schema": "flagquantum.benchmark.cudaq_backend_compare_artifact.v1",
+  "benchmark": "cudaq_backend_compare",
+  "artifact_class": "cross_framework_comparison",
+  "comparison_class": "cross_framework_measured_comparison_on_two_named_hosts",
+  "benchmark_evidence_class": "comparison_non_release",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "claim_evidence_type": "unknown",
+  "distribution_semantics": "single_device_fast_path",
+  "world_size": 1,
+  "claim_evidence_type_note": "flagquantum.runtime.audit.vocabulary.CLAIM_EVIDENCE_TYPES is a closed set with no cross-framework comparison member, so this payload declares 'unknown' rather than inventing a term. comparison_class carries the real meaning. The benchmark audit accepts the payload without promoting it.",
+  "scalability_blockers": [
+    "One GPU was used and one logical workload ran on it. No workload was partitioned across ranks, so no capacity-expansion statement follows from this artifact.",
+    "The two sides do not execute the same schedule. The CUDA-Q side issues one host-side call per gradient evaluation while the FlagQuantum side calls one fused compiled program, so a gradient-path ratio measures call structure as well as numeric throughput."
+  ],
+  "runner": "benchmarks/cudaq_backend_compare.py",
+  "runner_sha256": "3e09085739fcce2b4deef73563cd080687004e48b7bf518c6c30acb9159d7d7b",
+  "source_revision": "6cfc4c3",
+  "source_revision_full": "6cfc4c3708227a4bb2c6e35c9f71e502239a2e63",
+  "source_revision_note": "The runtime images carry no git binary, so each probe recorded source_identity.commit as null. The link from payload to source is the recorded runner_sha256, which was read back with sha256sum inside each container and matches this revision's file byte for byte.",
+  "hosts": [
+    "jp-a800-172",
+    "jp-a800-171"
+  ],
+  "capture_count": 2,
+  "hosts_agree_on_capability": true,
+  "cross_host_spread": {
+    "note": "Same probe, same revision, same CUDA-Q release, two different hosts and two different base images. This is the reproducibility check: a conclusion that does not survive it is a measurement of one machine.",
+    "flagquantum_avg_seconds": {
+      "backend_compare_gpu": {
+        "min_seconds": 0.001927986741065979,
+        "max_seconds": 0.00199684277176857,
+        "spread_percent": 3.4
+      },
+      "backend_compare_qppcpu": {
+        "min_seconds": 0.001435813307762146,
+        "max_seconds": 0.001591077260673046,
+        "spread_percent": 9.8
+      },
+      "fwd_nvidia_w08_n02": {
+        "min_seconds": 0.0019542738795280457,
+        "max_seconds": 0.001957407221198082,
+        "spread_percent": 0.2
+      },
+      "fwd_nvidia_w14_n02": {
+        "min_seconds": 0.004482218250632286,
+        "max_seconds": 0.004641709104180336,
+        "spread_percent": 3.4
+      },
+      "fwd_nvidia_w18_n02": {
+        "min_seconds": 0.03816974647343159,
+        "max_seconds": 0.03927923254668712,
+        "spread_percent": 2.8
+      },
+      "fwd_nvidia_w22_n02": {
+        "min_seconds": 0.3554514952003956,
+        "max_seconds": 0.3562294375151396,
+        "spread_percent": 0.2
+      },
+      "fwd_nvidia_w08_zsum": {
+        "min_seconds": 0.0018048740923404694,
+        "max_seconds": 0.0018353112041950225,
+        "spread_percent": 1.7
+      },
+      "fwd_nvidia_w18_zsum": {
+        "min_seconds": 0.03262724503874779,
+        "max_seconds": 0.03495389260351658,
+        "spread_percent": 6.7
+      },
+      "fwd_nvidia_w22_zsum": {
+        "min_seconds": 0.28414095677435397,
+        "max_seconds": 0.29461962804198266,
+        "spread_percent": 3.6
+      },
+      "fwd_nvidia_w14_n02_nojit": {
+        "min_seconds": 1.8018115397542716,
+        "max_seconds": 1.9882572885602712,
+        "spread_percent": 9.4
+      },
+      "grad_nvidia_w14_n02": {
+        "min_seconds": 0.00464714914560318,
+        "max_seconds": 0.004789604991674423,
+        "spread_percent": 3.0
+      },
+      "grad_nvidia_w18_n02": {
+        "min_seconds": 0.03708748519420624,
+        "max_seconds": 0.03708748519420624,
+        "spread_percent": 0.0
+      }
+    },
+    "cudaq_avg_seconds": {
+      "backend_compare_gpu": {
+        "min_seconds": 0.1343477824702859,
+        "max_seconds": 0.13472555708140135,
+        "spread_percent": 0.3
+      },
+      "backend_compare_qppcpu": {
+        "min_seconds": 0.1561858093366027,
+        "max_seconds": 0.1668828774243593,
+        "spread_percent": 6.4
+      },
+      "fwd_nvidia_w08_n02": {
+        "min_seconds": 0.0014536648988723755,
+        "max_seconds": 0.0015094015747308732,
+        "spread_percent": 3.7
+      },
+      "fwd_nvidia_w14_n02": {
+        "min_seconds": 0.0020578112453222275,
+        "max_seconds": 0.0030455712229013445,
+        "spread_percent": 32.4
+      },
+      "fwd_nvidia_w18_n02": {
+        "min_seconds": 0.0024988796561956407,
+        "max_seconds": 0.0026093222200870513,
+        "spread_percent": 4.2
+      },
+      "fwd_nvidia_w22_n02": {
+        "min_seconds": 0.003968117013573647,
+        "max_seconds": 0.004006170108914376,
+        "spread_percent": 0.9
+      },
+      "fwd_nvidia_w08_zsum": {
+        "min_seconds": 0.0013498984277248382,
+        "max_seconds": 0.0013983704149723053,
+        "spread_percent": 3.5
+      },
+      "fwd_nvidia_w18_zsum": {
+        "min_seconds": 0.0022422585636377333,
+        "max_seconds": 0.002242504060268402,
+        "spread_percent": 0.0
+      },
+      "fwd_nvidia_w22_zsum": {
+        "min_seconds": 0.003083256632089615,
+        "max_seconds": 0.0031642850488424303,
+        "spread_percent": 2.6
+      },
+      "fwd_nvidia_w14_n02_nojit": {
+        "min_seconds": 0.0020086463540792466,
+        "max_seconds": 0.0020504046231508257,
+        "spread_percent": 2.0
+      },
+      "grad_nvidia_w14_n02": {
+        "min_seconds": 0.3365292988717556,
+        "max_seconds": 0.3609723038971424,
+        "spread_percent": 6.8
+      },
+      "grad_nvidia_w18_n02": {
+        "min_seconds": 0.5329425003379583,
+        "max_seconds": 0.5329425003379583,
+        "spread_percent": 0.0
+      }
+    }
+  },
+  "methodology": {
+    "flagquantum_backend": "jax",
+    "flagquantum_interface": "torch",
+    "flagquantum_mode": "statevector",
+    "flagquantum_jit": "on except where a case disables it",
+    "cudaq_versions": [
+      "0.16.0.post1"
+    ],
+    "cudaq_targets": [
+      "nvidia",
+      "qpp-cpu"
+    ],
+    "cudaq_gradient_method": "parameter-shift",
+    "warmup_iterations": 2,
+    "timed_iterations": 10,
+    "loss_atol": 0.0001,
+    "grad_atol": 0.0001,
+    "timing": "Wall clock around the whole value-and-gradient call, after warmup, averaged over the timed iterations. Host-side structure is part of what is measured on both sides.",
+    "precision_alignment": "Every case is reported only when both sides agree on the loss and, where a gradient ran, on the gradient. A case that failed the tolerance would be recorded as a failure rather than dropped."
+  },
+  "captures": [
+    {
+      "host": "jp-a800-172",
+      "host_fqdn": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+      "container_image_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+      "base_image": "tovx/flagquantum:0.2.0-dev",
+      "capture_note": "The CUDA-Q runtime was installed into the existing FlagQuantum development image with pip from the Tsinghua mirror, because the public PyPI index measured 0.01 MB/s from this host.",
+      "environment": {
+        "cuda_available": true,
+        "cuda_device_count": 8,
+        "cudaq": "0.16.0.post1",
+        "cudaq_installed": true,
+        "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.39",
+        "python": "3.12.13",
+        "torch": "2.13.0+cu130"
+      },
+      "gpu": {
+        "model": "NVIDIA A800-SXM4-80GB",
+        "count_present": 8,
+        "count_used": 1,
+        "compute_capability": "8.0"
+      },
+      "correctness_passed": true,
+      "max_loss_abs_error": 8.58306884765625e-06,
+      "max_grad_abs_error": 1.8406659364700317e-05,
+      "cases": [
+        {
+          "case": "backend_compare_gpu",
+          "label": "value and gradient, ising, 8 wires, CUDA-Q nvidia target",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 10,
+          "warmup": 2,
+          "flagquantum_avg_seconds": 0.00199684277176857,
+          "cudaq_avg_seconds": 0.1343477824702859,
+          "flagquantum_loss": 3.353567361831665,
+          "cudaq_loss": 3.3535642623901367,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 2.25752592086792e-06,
+            "loss_abs_error": 3.0994415283203125e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.014863235812695441,
+            "speedup_flagquantum_over_cudaq": 67.28010055158039,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 67.28010055158039
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --device cuda --n-wires 8 --layers 2 --batch-size 1 --observable ising --mode statevector --iters 10 --warmup 2 --cudaq-target nvidia --cudaq-gradient-method parameter-shift --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/bc_gpu.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "3784ef3b1939eb802ff7898950671aedb390a562b0955ad779577fe80cdae32f"
+          }
+        },
+        {
+          "case": "backend_compare_qppcpu",
+          "label": "value and gradient, ising, 6 wires, CUDA-Q qpp-cpu target",
+          "flagquantum_backend": "jax",
+          "n_wires": 6,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "qpp-cpu",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 10,
+          "warmup": 2,
+          "flagquantum_avg_seconds": 0.001435813307762146,
+          "cudaq_avg_seconds": 0.1668828774243593,
+          "flagquantum_loss": 2.5753777027130127,
+          "cudaq_loss": 2.5753846168518066,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 1.773238182067871e-06,
+            "loss_abs_error": 6.9141387939453125e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.008603718547536054,
+            "speedup_flagquantum_over_cudaq": 116.2288136780557,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 116.2288136780557
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --device cuda --n-wires 6 --layers 2 --batch-size 1 --observable ising --mode statevector --iters 10 --warmup 2 --cudaq-target qpp-cpu --cudaq-gradient-method parameter-shift --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/bc_qpp.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "95677fef055e6bf2999b9a13f21ff65c655277c451a63f717fef643be69ace4e"
+          }
+        },
+        {
+          "case": "fwd_nvidia_w08_n02",
+          "label": "forward only, ising, 8 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.0019542738795280457,
+          "cudaq_avg_seconds": 0.0014536648988723755,
+          "flagquantum_loss": 3.353567361831665,
+          "cudaq_loss": 3.3535642623901367,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 3.0994415283203125e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 1.3443771539396723,
+            "speedup_flagquantum_over_cudaq": 0.7438388826152829,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.7438388826152829
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 8 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w08_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "5f9f51054d5cb98ab43c5e840810dd98ac3c8127f25a2fad0ae2675692c70a85"
+          },
+          "isolates": "the width series baseline"
+        },
+        {
+          "case": "fwd_nvidia_w14_n02",
+          "label": "forward only, ising, 14 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.004641709104180336,
+          "cudaq_avg_seconds": 0.0020578112453222275,
+          "flagquantum_loss": 5.092758655548096,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 1.430511474609375e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 2.255653483637904,
+            "speedup_flagquantum_over_cudaq": 0.4433305058839118,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.4433305058839118
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w14_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ee52ded1b00ce40f3dc81a761049d5ef9792da56bb2f27a259374156695e7863"
+          },
+          "isolates": "the width series, 6 wires wider"
+        },
+        {
+          "case": "fwd_nvidia_w18_n02",
+          "label": "forward only, ising, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03927923254668712,
+          "cudaq_avg_seconds": 0.0024988796561956407,
+          "flagquantum_loss": 5.850549697875977,
+          "cudaq_loss": 5.8505425453186035,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 7.152557373046875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 15.718737174597214,
+            "speedup_flagquantum_over_cudaq": 0.06361834216657576,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.06361834216657576
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w18_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "a5d2d63b1f3934d6e5044ce26d009cfcae02b8545a6eef968363c0dc04f9de6e"
+          },
+          "isolates": "the width series, 4 wires wider again"
+        },
+        {
+          "case": "fwd_nvidia_w22_n02",
+          "label": "forward only, ising, 22 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 22,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.3554514952003956,
+          "cudaq_avg_seconds": 0.003968117013573647,
+          "flagquantum_loss": 6.365238666534424,
+          "cudaq_loss": 6.365242004394531,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 3.337860107421875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 89.57686831928363,
+            "speedup_flagquantum_over_cudaq": 0.011163596347615618,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.011163596347615618
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 22 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w22_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ddaa56b133822f82489395309dadae9a591d7d4022d4121f13ecd71d120ed7ff"
+          },
+          "isolates": "the width series, 4 wires wider again"
+        },
+        {
+          "case": "fwd_nvidia_w08_zsum",
+          "label": "forward only, z_sum, 8 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.0018048740923404694,
+          "cudaq_avg_seconds": 0.0013498984277248382,
+          "flagquantum_loss": 5.8759355545043945,
+          "cudaq_loss": 5.875932693481445,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 2.86102294921875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 1.3370443696141359,
+            "speedup_flagquantum_over_cudaq": 0.7479183359401864,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.7479183359401864
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 8 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w08_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "79c3fc2d1fcebd164f5ed7a31f78fa21dbef02a0f8ce11951a7a880f3c22caf6"
+          },
+          "isolates": "observable cost at the narrow end"
+        },
+        {
+          "case": "fwd_nvidia_w18_zsum",
+          "label": "forward only, z_sum, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03495389260351658,
+          "cudaq_avg_seconds": 0.002242504060268402,
+          "flagquantum_loss": 10.099752426147461,
+          "cudaq_loss": 10.099743843078613,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 8.58306884765625e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 15.586991891257934,
+            "speedup_flagquantum_over_cudaq": 0.06415606083434588,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.06415606083434588
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w18_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "4fb7f4c49cc5c8efd3303f5e896c9f09265b7c2972fcee905fd7c03ed742f68b"
+          },
+          "isolates": "observable cost once the gap is already large"
+        },
+        {
+          "case": "fwd_nvidia_w22_zsum",
+          "label": "forward only, z_sum, 22 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 22,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.28414095677435397,
+          "cudaq_avg_seconds": 0.0031642850488424303,
+          "flagquantum_loss": 11.20241641998291,
+          "cudaq_loss": 11.202420234680176,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 3.814697265625e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 89.79625804517813,
+            "speedup_flagquantum_over_cudaq": 0.0111363215101556,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.0111363215101556
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 22 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w22_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "b3b771b42b75a6cd5d1bc181e79cfacd09c8a467d9994c3a93663f37a5b19d48"
+          },
+          "isolates": "observable cost at the wide end, where the gap is largest"
+        },
+        {
+          "case": "fwd_nvidia_w14_n02_nojit",
+          "label": "forward only, ising, 14 wires, FlagQuantum JIT disabled",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": false,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 1.8018115397542716,
+          "cudaq_avg_seconds": 0.0020086463540792466,
+          "flagquantum_loss": 5.092758655548096,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 1.430511474609375e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 897.0277600609356,
+            "speedup_flagquantum_over_cudaq": 0.0011147927015459024,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.0011147927015459024
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --no-jax-jit --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/fwd_nvidia_w14_n02_nojit.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ee52ded1b00ce40f3dc81a761049d5ef9792da56bb2f27a259374156695e7863"
+          },
+          "isolates": "FlagQuantum compilation overhead, with the JIT disabled"
+        },
+        {
+          "case": "grad_nvidia_w14_n02",
+          "label": "value and gradient, ising, 14 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.00464714914560318,
+          "cudaq_avg_seconds": 0.3365292988717556,
+          "flagquantum_loss": 5.092758655548096,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 5.140900611877441e-06,
+            "loss_abs_error": 1.430511474609375e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.013809047714963187,
+            "speedup_flagquantum_over_cudaq": 72.41628971391137,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 72.41628971391137
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/grad_nvidia_w14_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "1775914be58e8f65aa1e2afea494b9c5c5029c05ee97a1c10bc8c81cf5646534"
+          },
+          "isolates": "the gradient path while simulation is still cheap"
+        },
+        {
+          "case": "grad_nvidia_w18_n02",
+          "label": "value and gradient, ising, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03708748519420624,
+          "cudaq_avg_seconds": 0.5329425003379583,
+          "flagquantum_loss": 5.850549697875977,
+          "cudaq_loss": 5.8505425453186035,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 1.8406659364700317e-05,
+            "loss_abs_error": 7.152557373046875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.06959003113973404,
+            "speedup_flagquantum_over_cudaq": 14.369874299841014,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 14.369874299841014
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/grad_nvidia_w18_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "2d4432013c8bb28207b136d5c327bb8649772f7f53a5bbb2d66868bb741eac10"
+          },
+          "isolates": "the gradient path once simulation starts to dominate"
+        }
+      ]
+    },
+    {
+      "host": "jp-a800-171",
+      "host_fqdn": "bm-baai-dx-zone1-lc-a800-80g-15-171",
+      "container_image_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+      "base_image": "python:3.12-slim-bookworm",
+      "capture_note": "This host holds no FlagQuantum image, so the runtime was assembled from a bare python:3.12-slim-bookworm base: torch, jax[cuda13], and CUDA-Q from the Tsinghua mirror. It independently reproduced the sibling host's numbers from a different base image, which is what makes the result a cross-host one.",
+      "environment": {
+        "cuda_available": true,
+        "cuda_device_count": 8,
+        "cudaq": "0.16.0.post1",
+        "cudaq_installed": true,
+        "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.36",
+        "python": "3.12.14",
+        "torch": "2.14.0+cu130"
+      },
+      "gpu": {
+        "model": "NVIDIA A800-SXM4-80GB",
+        "count_present": 8,
+        "count_used": 1,
+        "compute_capability": "8.0"
+      },
+      "correctness_passed": true,
+      "max_loss_abs_error": 1.239776611328125e-05,
+      "max_grad_abs_error": 1.8406659364700317e-05,
+      "cases": [
+        {
+          "case": "backend_compare_gpu",
+          "label": "value and gradient, ising, 8 wires, CUDA-Q nvidia target",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 10,
+          "warmup": 2,
+          "flagquantum_avg_seconds": 0.001927986741065979,
+          "cudaq_avg_seconds": 0.13472555708140135,
+          "flagquantum_loss": 3.353564977645874,
+          "cudaq_loss": 3.3535642623901367,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 2.3264437913894653e-06,
+            "loss_abs_error": 7.152557373046875e-07,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.014310475182530416,
+            "speedup_flagquantum_over_cudaq": 69.8788815357267,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 69.8788815357267
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --device cuda --n-wires 8 --layers 2 --batch-size 1 --observable ising --mode statevector --iters 10 --warmup 2 --cudaq-target nvidia --cudaq-gradient-method parameter-shift --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/backend_compare_gpu.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "3784ef3b1939eb802ff7898950671aedb390a562b0955ad779577fe80cdae32f"
+          }
+        },
+        {
+          "case": "backend_compare_qppcpu",
+          "label": "value and gradient, ising, 6 wires, CUDA-Q qpp-cpu target",
+          "flagquantum_backend": "jax",
+          "n_wires": 6,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "qpp-cpu",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 10,
+          "warmup": 2,
+          "flagquantum_avg_seconds": 0.001591077260673046,
+          "cudaq_avg_seconds": 0.1561858093366027,
+          "flagquantum_loss": 2.5753777027130127,
+          "cudaq_loss": 2.5753846168518066,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 2.512708306312561e-06,
+            "loss_abs_error": 6.9141387939453125e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.010187079526822105,
+            "speedup_flagquantum_over_cudaq": 98.16356075036488,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 98.16356075036488
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --device cuda --n-wires 6 --layers 2 --batch-size 1 --observable ising --mode statevector --iters 10 --warmup 2 --cudaq-target qpp-cpu --cudaq-gradient-method parameter-shift --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/backend_compare_qppcpu.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "95677fef055e6bf2999b9a13f21ff65c655277c451a63f717fef643be69ace4e"
+          }
+        },
+        {
+          "case": "fwd_nvidia_w08_n02",
+          "label": "forward only, ising, 8 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.001957407221198082,
+          "cudaq_avg_seconds": 0.0015094015747308732,
+          "flagquantum_loss": 3.353567361831665,
+          "cudaq_loss": 3.3535642623901367,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 3.0994415283203125e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 1.2968101093621083,
+            "speedup_flagquantum_over_cudaq": 0.7711229213750447,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.7711229213750447
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 8 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w08_n02.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "5f9f51054d5cb98ab43c5e840810dd98ac3c8127f25a2fad0ae2675692c70a85"
+          },
+          "isolates": "the width series baseline"
+        },
+        {
+          "case": "fwd_nvidia_w14_n02",
+          "label": "forward only, ising, 14 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.004482218250632286,
+          "cudaq_avg_seconds": 0.0030455712229013445,
+          "flagquantum_loss": 5.0927629470825195,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 2.86102294921875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 1.4717167725147893,
+            "speedup_flagquantum_over_cudaq": 0.6794785645415012,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.6794785645415012
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w14_n02.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ee52ded1b00ce40f3dc81a761049d5ef9792da56bb2f27a259374156695e7863"
+          },
+          "isolates": "the width series, 6 wires wider"
+        },
+        {
+          "case": "fwd_nvidia_w18_n02",
+          "label": "forward only, ising, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03816974647343159,
+          "cudaq_avg_seconds": 0.0026093222200870513,
+          "flagquantum_loss": 5.850549697875977,
+          "cudaq_loss": 5.8505425453186035,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 7.152557373046875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 14.62822267774893,
+            "speedup_flagquantum_over_cudaq": 0.06836100475289493,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.06836100475289493
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w18_n02.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "a5d2d63b1f3934d6e5044ce26d009cfcae02b8545a6eef968363c0dc04f9de6e"
+          },
+          "isolates": "the width series, 4 wires wider again"
+        },
+        {
+          "case": "fwd_nvidia_w22_n02",
+          "label": "forward only, ising, 22 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 22,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.3562294375151396,
+          "cudaq_avg_seconds": 0.004006170108914376,
+          "flagquantum_loss": 6.365238666534424,
+          "cudaq_loss": 6.365242004394531,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 3.337860107421875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 88.92019755288761,
+            "speedup_flagquantum_over_cudaq": 0.011246038892403762,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.011246038892403762
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 22 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w22_n02.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ddaa56b133822f82489395309dadae9a591d7d4022d4121f13ecd71d120ed7ff"
+          },
+          "isolates": "the width series, 4 wires wider again"
+        },
+        {
+          "case": "fwd_nvidia_w08_zsum",
+          "label": "forward only, z_sum, 8 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 8,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.0018353112041950225,
+          "cudaq_avg_seconds": 0.0013983704149723053,
+          "flagquantum_loss": 5.8759355545043945,
+          "cudaq_loss": 5.875932693481445,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 2.86102294921875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 1.3124642687977426,
+            "speedup_flagquantum_over_cudaq": 0.7619255043918496,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.7619255043918496
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 8 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w08_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "79c3fc2d1fcebd164f5ed7a31f78fa21dbef02a0f8ce11951a7a880f3c22caf6"
+          },
+          "isolates": "observable cost at the narrow end"
+        },
+        {
+          "case": "fwd_nvidia_w18_zsum",
+          "label": "forward only, z_sum, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03262724503874779,
+          "cudaq_avg_seconds": 0.0022422585636377333,
+          "flagquantum_loss": 10.099752426147461,
+          "cudaq_loss": 10.099743843078613,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 8.58306884765625e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 14.551062739978972,
+            "speedup_flagquantum_over_cudaq": 0.06872350273444323,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.06872350273444323
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w18_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "4fb7f4c49cc5c8efd3303f5e896c9f09265b7c2972fcee905fd7c03ed742f68b"
+          },
+          "isolates": "observable cost once the gap is already large"
+        },
+        {
+          "case": "fwd_nvidia_w22_zsum",
+          "label": "forward only, z_sum, 22 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 22,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "z_sum",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.29461962804198266,
+          "cudaq_avg_seconds": 0.003083256632089615,
+          "flagquantum_loss": 11.202432632446289,
+          "cudaq_loss": 11.202420234680176,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 1.239776611328125e-05,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 95.55468882339196,
+            "speedup_flagquantum_over_cudaq": 0.010465211203274812,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.010465211203274812
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 22 --layers 2 --device cuda --forward-only --observable z_sum --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w22_zsum.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "b3b771b42b75a6cd5d1bc181e79cfacd09c8a467d9994c3a93663f37a5b19d48"
+          },
+          "isolates": "observable cost at the wide end, where the gap is largest"
+        },
+        {
+          "case": "fwd_nvidia_w14_n02_nojit",
+          "label": "forward only, ising, 14 wires, FlagQuantum JIT disabled",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": true,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": false,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 1.9882572885602712,
+          "cudaq_avg_seconds": 0.0020504046231508257,
+          "flagquantum_loss": 5.092758655548096,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": null,
+            "grad_max_abs_error": null,
+            "loss_abs_error": 1.430511474609375e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 969.6902094889673,
+            "speedup_flagquantum_over_cudaq": 0.0010312571893728887,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 0.0010312571893728887
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --forward-only --observable ising --cudaq-target nvidia --no-jax-jit --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/fwd_nvidia_w14_n02_nojit.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "ee52ded1b00ce40f3dc81a761049d5ef9792da56bb2f27a259374156695e7863"
+          },
+          "isolates": "FlagQuantum compilation overhead, with the JIT disabled"
+        },
+        {
+          "case": "grad_nvidia_w14_n02",
+          "label": "value and gradient, ising, 14 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 14,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.004789604991674423,
+          "cudaq_avg_seconds": 0.3609723038971424,
+          "flagquantum_loss": 5.0927629470825195,
+          "cudaq_loss": 5.09276008605957,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 3.4570693969726562e-06,
+            "loss_abs_error": 2.86102294921875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.0132686218304416,
+            "speedup_flagquantum_over_cudaq": 75.36577745442598,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 75.36577745442598
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 14 --layers 2 --device cuda --observable ising --cudaq-target nvidia --container-digest sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef --json-output /tmp/grad_nvidia_w14_n02.json",
+            "commit": null,
+            "container_digest": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "1775914be58e8f65aa1e2afea494b9c5c5029c05ee97a1c10bc8c81cf5646534"
+          },
+          "isolates": "the gradient path while simulation is still cheap"
+        },
+        {
+          "case": "grad_nvidia_w18_n02",
+          "label": "value and gradient, ising, 18 wires",
+          "flagquantum_backend": "jax",
+          "n_wires": 18,
+          "layers": 2,
+          "batch_size": 1,
+          "observable": "ising",
+          "device": "cuda",
+          "mode": "statevector",
+          "forward_only": false,
+          "gradient_method": "parameter-shift",
+          "cudaq_target": "nvidia",
+          "flagquantum_dtype": "complex64",
+          "cudaq_dtype": "complex64",
+          "flagquantum_jit": true,
+          "iters": 5,
+          "warmup": 1,
+          "flagquantum_avg_seconds": 0.03708748519420624,
+          "cudaq_avg_seconds": 0.5329425003379583,
+          "flagquantum_loss": 5.850549697875977,
+          "cudaq_loss": 5.8505425453186035,
+          "comparison": {
+            "grad_atol": 0.0001,
+            "grad_max_abs_error": 1.8406659364700317e-05,
+            "loss_abs_error": 7.152557373046875e-06,
+            "loss_atol": 0.0001,
+            "slowdown_flagquantum_vs_cudaq": 0.06959003113973404,
+            "speedup_flagquantum_over_cudaq": 14.369874299841014,
+            "status": "ok"
+          },
+          "conclusion": {
+            "headline": "FlagQuantum JAX matches CUDA-Q precision for this workload.",
+            "speedup_flagquantum_over_cudaq": 14.369874299841014
+          },
+          "source_identity": {
+            "command": "benchmarks/cudaq_backend_compare.py --n-wires 18 --layers 2 --device cuda --observable ising --cudaq-target nvidia --container-digest sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5 --json-output /tmp/grad_nvidia_w18_n02.json",
+            "commit": null,
+            "container_digest": "sha256:bce47a929a36ed60a3a199183aead552b8466818839325ac149c28be9f02f2b5",
+            "hostname": "redacted",
+            "raw_log_sha256": null,
+            "source_dirty": null,
+            "workload_sha256": "2d4432013c8bb28207b136d5c327bb8649772f7f53a5bbb2d66868bb741eac10"
+          },
+          "isolates": "the gradient path once simulation starts to dominate"
+        }
+      ]
+    }
+  ],
+  "protocol_sensitivity": {
+    "measured_on": "jp-a800-172",
+    "note": "Recorded because the same 18-wire gradient invocation produced 72.3 ms in an earlier capture and 39.2 ms in this one. Rather than choose between them, the warmup count was swept with the iteration count fixed.",
+    "sweep": {
+      "forward_only_ising_22_wires": [
+        {
+          "warmup": 1,
+          "iters": 5,
+          "flagquantum_avg_seconds": 0.35567089132964613,
+          "cudaq_avg_seconds": 0.003926020115613937,
+          "ratio": 0.01103835093430569,
+          "loss_abs_error": 3.337860107421875e-06
+        },
+        {
+          "warmup": 3,
+          "iters": 5,
+          "flagquantum_avg_seconds": 0.3552979130297899,
+          "cudaq_avg_seconds": 0.0039927221834659575,
+          "ratio": 0.01123767418000901,
+          "loss_abs_error": 3.337860107421875e-06
+        }
+      ],
+      "value_and_gradient_ising_18_wires": [
+        {
+          "warmup": 1,
+          "iters": 5,
+          "flagquantum_avg_seconds": 0.03921032249927521,
+          "cudaq_avg_seconds": 0.534176041930914,
+          "ratio": 13.623352420546604,
+          "loss_abs_error": 7.152557373046875e-06
+        },
+        {
+          "warmup": 3,
+          "iters": 5,
+          "flagquantum_avg_seconds": 0.036581610515713694,
+          "cudaq_avg_seconds": 0.5313234139233828,
+          "ratio": 14.52433084363937,
+          "loss_abs_error": 7.62939453125e-06
+        },
+        {
+          "warmup": 5,
+          "iters": 5,
+          "flagquantum_avg_seconds": 0.032589136809110644,
+          "cudaq_avg_seconds": 0.5303752142935991,
+          "ratio": 16.27460148454521,
+          "loss_abs_error": 7.152557373046875e-06
+        }
+      ]
+    },
+    "forward_only_22_wires_is_steady_state": true,
+    "value_and_gradient_18_wires_is_steady_state": false,
+    "forward_only_22_wires_spread_percent": 0.1,
+    "value_and_gradient_18_wires_spread_percent": 16.89,
+    "consequence": "The forward-only conclusion is insensitive to warmup: the 22-wire case moves 0.1% between one and three warmups, so the widening gap it shows is a property of the two implementations. The 18-wire gradient ratio is not settled by this protocol: it rises monotonically with warmup, from 13.6x at one warmup to 16.3x at five, so a single digit must not be quoted for it. An earlier capture of the same configuration reported 7.9x, and that number is withdrawn as an under-warmed reading rather than reproduced.",
+    "withdrawn": [
+      {
+        "case": "grad_nvidia_w18_n02",
+        "previously_reported_ratio": 7.914,
+        "reason": "The same invocation reads 39.2 ms at the recorded protocol and 32.6 ms at five warmups. The 72.3 ms that produced 7.9x was a cold reading, not a steady state."
+      }
+    ]
+  },
+  "reading": "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md",
+  "artifacts_read_from": {
+    "jp-a800-172": "out5/ (probes) and controls3/ (controls)",
+    "jp-a800-171": "out/ (probes and controls)"
+  }
+}

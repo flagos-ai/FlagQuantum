@@ -5,13 +5,14 @@ from __future__ import annotations
 from .estimates import (
     estimate_density_bytes,
     estimate_mps_bytes,
+    estimate_stabilizer_bytes,
     estimate_state_bytes,
     estimate_tensor_network_bytes,
     estimate_tensor_network_working_set_bytes,
 )
 
 _VALID_STATE_MODES = frozenset(
-    {"statevector", "density_matrix", "mps", "tensor_network"}
+    {"statevector", "density_matrix", "mps", "tensor_network", "stabilizer"}
 )
 
 
@@ -47,7 +48,7 @@ def normalize_execution_state_mode(
     if state_mode not in _VALID_STATE_MODES:
         raise ValueError(
             "state_mode must be 'auto', 'statevector', 'density_matrix', "
-            "'mps', or 'tensor_network'."
+            "'mps', 'tensor_network', or 'stabilizer'."
         )
     return state_mode
 
@@ -78,6 +79,11 @@ def estimate_execution_state_bytes(
     hold more intermediate amplitudes than it returns, so a sparse reduction here
     would admit runs that cannot fit. The executor's
     ``TensorNetworkContractionProfile.peak_size`` is the measured value.
+
+    For ``stabilizer`` the footprint is the Clifford tableau itself, which is
+    polynomial in ``n_wires``; ``bsz`` and ``complex_bytes`` do not enter it
+    because a tableau carries bits rather than amplitudes and the executor refuses
+    a batch size above one for this mode.
     """
 
     if state_mode == "density_matrix":
@@ -109,6 +115,8 @@ def estimate_execution_state_bytes(
             ),
             working_set,
         )
+    if state_mode == "stabilizer":
+        return estimate_stabilizer_bytes(n_wires)
     return estimate_state_bytes(
         n_wires,
         bsz=bsz,
@@ -137,6 +145,11 @@ def recommend_execution_mode(
         recommended = (
             "distributed_tensor_network" if world_size > 1 else "tensor_network"
         )
+    elif state_mode == "stabilizer":
+        # A tableau has no cheaper sibling representation to fall back to, so a
+        # capacity problem is reported through ``state_bytes`` instead of being
+        # papered over by a label naming a representation the engine will not use.
+        return "stabilizer"
     if memory_limit_bytes is not None and state_bytes > memory_limit_bytes:
         return "distributed_statevector" if world_size > 1 else "mps"
     return recommended

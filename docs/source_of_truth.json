@@ -7,7 +7,9 @@
     "capability_maturity": "capability-maturity.toml",
     "benchmark_evidence": "benchmarks/results/",
     "support_policy": "pyproject.toml",
-    "release_changes": "docs/reference/RELEASE_NOTES.md"
+    "release_changes": "docs/reference/RELEASE_NOTES.md",
+    "cudaq_parity": "contracts/cudaq-parity-matrix.toml",
+    "qec_cudaq_alignment": "contracts/qec-cudaq-alignment-checklist.toml"
   },
   "externally_validated_authorities": {
     "benchmark_evidence": "python benchmarks/audit_results.py --input benchmarks/results"
@@ -17,6 +19,7 @@
     "docs/generated/OPERATOR_CAPABILITIES.md": "operator_capability",
     "docs/generated/CAPABILITIES.md": "capability_maturity",
     "docs/reference/KNOWN_LIMITATIONS.md": "capability_maturity",
+    "docs/reference/CUDAQ_PARITY_MATRIX.md": "cudaq_parity",
     "README.md": "capability_maturity"
   },
   "stable_documents": [
@@ -29,10 +32,12 @@
     "docs/guides/ALGORITHMS.md",
     "docs/generated/CAPABILITIES.md",
     "docs/generated/STABLE_API.md",
-    "docs/generated/OPERATOR_CAPABILITIES.md"
+    "docs/generated/OPERATOR_CAPABILITIES.md",
+    "docs/reference/CUDAQ_PARITY_MATRIX.md"
   ],
   "intent_documents": [
     "docs/roadmap/FLAGQUANTUM_VISION.md",
-    "docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md"
+    "docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md",
+    "docs/roadmap/CUDAQ_PARITY_STRATEGY.md"
   ]
 }

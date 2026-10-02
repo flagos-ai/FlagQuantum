@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.metadata
 import importlib.util
 import json
 import multiprocessing as mp
@@ -50,12 +51,20 @@ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 
 import torch
 
+SCHEMA = "flagquantum.external.cudaq_backend_compare.v1"
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from benchmarks.sc27_metadata import source_identity  # noqa: E402
+
 import flagquantum as fq  # noqa: E402
+from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
+
+# The JAX executor boundary imports its optional dependency only when an
+# execution function is called, so this import succeeds without JAX installed.
+from flagquantum.runtime.executors.jax import compile_quantum_kernel  # noqa: E402
 
 
 def _configure_torch_precision(mode: str) -> None:
@@ -70,6 +79,13 @@ def _device(requested: str) -> str:
     if requested == "auto":
         return "cuda" if torch.cuda.is_available() else "cpu"
     return requested
+
+
+def _installed_cudaq_version() -> str | None:
+    try:
+        return importlib.metadata.version("cudaq")
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 def _sync(device: str) -> None:
@@ -116,14 +132,14 @@ def _build_circuit(params: torch.Tensor, *, device: str) -> fq.Circuit:
     return circuit
 
 
-def _ising_hamiltonian(n_wires: int) -> fq.Hamiltonian:
+def _ising_hamiltonian(n_wires: int) -> Hamiltonian:
     terms = []
     for wire in range(int(n_wires) - 1):
-        terms.append(fq.pauli_term(0.7, "ZZ", (wire, wire + 1)))
+        terms.append(pauli_term(0.7, "ZZ", (wire, wire + 1)))
     for wire in range(int(n_wires)):
-        terms.append(fq.pauli_term(-0.2, "X", (wire,)))
-        terms.append(fq.pauli_term(0.05, "Z", (wire,)))
-    return fq.Hamiltonian(terms)
+        terms.append(pauli_term(-0.2, "X", (wire,)))
+        terms.append(pauli_term(0.05, "Z", (wire,)))
+    return Hamiltonian(terms)
 
 
 def _fq_value_and_grad(kernel: Any, params_seed: torch.Tensor, *, forward_only: bool) -> tuple[torch.Tensor, torch.Tensor]:
@@ -270,9 +286,17 @@ def _cudaq_gradient_instance(cudaq: Any, method: str) -> Any:
     raise AttributeError(f"CUDA-Q gradients module does not expose any of {names}.")
 
 
-def _cudaq_gradient_compute(gradient: Any, loss_fn: Any, values: list[float]) -> list[float]:
+def _cudaq_gradient_compute(
+    gradient: Any, loss_fn: Any, values: list[float], value_at_x: float
+) -> list[float]:
+    # CUDA-Q 0.16.0.post1 binds ParameterShift.compute as
+    # compute(parameter_vector, function, funcAtX), so the loss value at the
+    # point is an argument rather than something the strategy recomputes. The
+    # other orders are kept because the binding is not a documented stable API
+    # and a future release may drop the third argument.
     attempts = []
     call_patterns = (
+        lambda: gradient.compute(values, loss_fn, value_at_x),
         lambda: gradient.compute(values, loss_fn),
         lambda: gradient.compute(loss_fn, values),
         lambda: gradient.compute(values),
@@ -320,13 +344,14 @@ def _cudaq_value_and_grad(
     for row in rows:
         values = _cudaq_flat_params(row)
         loss_fn = lambda vector: _cudaq_observe_loss(cudaq, kernel, hamiltonian, list(vector))
-        losses.append(loss_fn(values))
+        value_at_x = loss_fn(values)
+        losses.append(value_at_x)
         if forward_only:
             grads.append(torch.zeros_like(row))
         elif method == "finite-difference":
             grads.append(torch.tensor(_cudaq_finite_difference(loss_fn, values), dtype=torch.float32).reshape_as(row))
         else:
-            grads.append(torch.tensor(_cudaq_gradient_compute(gradient, loss_fn, values), dtype=torch.float32).reshape_as(row))
+            grads.append(torch.tensor(_cudaq_gradient_compute(gradient, loss_fn, values, value_at_x), dtype=torch.float32).reshape_as(row))
     loss = torch.tensor(float(sum(losses)), dtype=torch.float32)
     grad = grads[0] if not batched else torch.stack(grads, dim=0)
     return loss, grad
@@ -468,6 +493,8 @@ def main() -> None:
     parser.add_argument("--torch-matmul-precision", default="highest")
     parser.add_argument("--loss-atol", type=float, default=1e-4)
     parser.add_argument("--grad-atol", type=float, default=1e-4)
+    parser.add_argument("--container-digest", default="")
+    parser.add_argument("--raw-log-sha256", default="")
     parser.add_argument("--json-output", default="")
     args = parser.parse_args()
 
@@ -479,7 +506,25 @@ def main() -> None:
     hamiltonian = _ising_hamiltonian(args.n_wires) if args.observable == "ising" else None
 
     payload: dict[str, Any] = {
+        "schema": SCHEMA,
         "benchmark": "cudaq_backend_compare",
+        # A cross-framework comparison is never release evidence: it measures
+        # this machine on this workload, not capacity expansion. The value comes
+        # from the closed vocabulary tests/benchmark_contract enforces.
+        "benchmark_evidence_class": "comparison_non_release",
+        "non_release_evidence": True,
+        "release_gate_allowed": False,
+        "scalability_claim_allowed": False,
+        "distribution_semantics": "single_device_fast_path",
+        "scalability_blockers": [
+            "One device ran one logical workload. Nothing was partitioned across "
+            "ranks, so no capacity-expansion statement follows from this payload.",
+            "This is a cross-framework comparison, and the two sides do not execute "
+            "the same schedule: the CUDA-Q side issues one host-side call per "
+            "gradient evaluation while the FlagQuantum side calls one fused "
+            "compiled program. A ratio here measures call structure as well as "
+            "numeric throughput.",
+        ],
         "n_wires": int(args.n_wires),
         "layers": int(args.layers),
         "batch_size": int(args.batch_size),
@@ -489,6 +534,11 @@ def main() -> None:
         "forward_only": bool(args.forward_only),
         "iters": int(args.iters),
         "warmup": int(args.warmup),
+        "gradient_method": args.cudaq_gradient_method,
+        "dtype": {
+            "flagquantum_jax": args.jax_compute_dtype,
+            "cudaq": "complex64",
+        },
         "environment": {
             "python": platform.python_version(),
             "torch": torch.__version__,
@@ -496,8 +546,27 @@ def main() -> None:
             "cuda_device_count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
             "platform": platform.platform(),
             "cudaq_installed": importlib.util.find_spec("cudaq") is not None,
+            "cudaq": _installed_cudaq_version(),
         },
     }
+    payload["source_identity"] = source_identity(
+        repo_root=REPO_ROOT,
+        workload={
+            "n_wires": int(args.n_wires),
+            "layers": int(args.layers),
+            "batch_size": int(args.batch_size),
+            "observable": args.observable,
+            "device": device,
+            "mode": fq_mode,
+            "forward_only": bool(args.forward_only),
+            "gradient_method": args.cudaq_gradient_method,
+            "cudaq_target": args.cudaq_target,
+            "iters": int(args.iters),
+            "warmup": int(args.warmup),
+        },
+        container_digest=args.container_digest or None,
+        raw_log_sha256=args.raw_log_sha256 or None,
+    )
 
     if importlib.util.find_spec("jax") is None:
         payload["flagquantum_jax"] = {"status": "unavailable", "reason": "jax is not installed"}
@@ -508,7 +577,7 @@ def main() -> None:
             _write_json_output(args.json_output, text)
         return
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         lambda values: _build_circuit(values, device=device),
         example_params,
         backend="jax",
@@ -597,11 +666,12 @@ def main() -> None:
             if payload["comparison"]["status"] == "ok"
             else "CUDA-Q comparison did not produce a precision-aligned result for this workload."
         ),
-        "recommended_claim": (
-            f"FlagQuantum is {payload['comparison'].get('speedup_flagquantum_over_cudaq'):.2f}x faster than "
-            f"CUDA-Q with loss_abs_error={payload['comparison'].get('loss_abs_error'):.3e}."
-            if payload["comparison"].get("speedup_flagquantum_over_cudaq") is not None
-            else None
+        # This payload is a non-release comparison on one machine. It records the
+        # measured ratio so a reader can audit it, and deliberately emits no
+        # claim sentence: benchmark honesty requires the reader to state the
+        # baseline, device, dtype, gradient method, and warmup alongside it.
+        "speedup_flagquantum_over_cudaq": payload["comparison"].get(
+            "speedup_flagquantum_over_cudaq"
         ),
     }
 

@@ -96,9 +96,33 @@ def estimate_tensor_network_working_set_bytes(
     return max(1, working * max(1, int(target_count)))
 
 
+def estimate_stabilizer_bytes(n_wires: int) -> int:
+    """Estimate Pauli-stabilizer tableau memory.
+
+    A Clifford circuit's state on ``n`` wires is represented as a
+    Aaronson-Gottesman tableau: ``2n`` generators, each carrying ``2n``
+    anticommutation bits (an X column and a Z column) plus one phase bit, so
+    ``2n * (2n + 1)`` bits rounded up to whole bytes.
+
+    The estimate is quadratic while :func:`estimate_state_bytes` is exponential,
+    which is the entire reason this representation is a separate execution mode.
+    At 16384 wires it reports about 134 MB where the dense amplitude store reports
+    ``8 * 2**16384`` bytes.
+
+    There is no batch axis: the planner that selects this mode refuses a batch
+    size above one, so one plan holds one tableau.
+    """
+
+    wires = int(n_wires)
+    if wires < 0:
+        raise ValueError("n_wires must be non-negative")
+    return (2 * wires * (2 * wires + 1) + 7) // 8
+
+
 __all__ = [
     "estimate_density_bytes",
     "estimate_mps_bytes",
+    "estimate_stabilizer_bytes",
     "estimate_state_bytes",
     "estimate_tensor_network_bytes",
     "estimate_tensor_network_working_set_bytes",

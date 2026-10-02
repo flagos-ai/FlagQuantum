@@ -38,6 +38,7 @@ from .noise import PhenomenologicalNoise
 
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
+_SEPARATOR = "^"
 
 
 def _probability(value: float, *, name: str) -> float:
@@ -83,8 +84,65 @@ def _target_index(token: str, prefix: str) -> int | None:
     return None
 
 
-def _parse_error_line(line: str) -> DemError:
-    """Parse one ``error(<p>) <targets...>`` line."""
+def _parse_shift_detectors(line: str) -> int:
+    """Return the detector-index shift a ``shift_detectors`` line states.
+
+    The instruction takes optional coordinates in parentheses and exactly one
+    target, the shift itself. Coordinates carry geometry the model does not
+    represent, so they are accepted and discarded for the same reason a
+    ``detector`` declaration's coordinates are: the index is the target.
+
+    Stim reaches the absolute detector index by adding the shifts accumulated so
+    far, so the caller accumulates this value rather than replacing one.
+    """
+
+    remainder = line[len("shift_detectors") :]
+    if remainder.startswith("("):
+        closing = remainder.find(")")
+        if closing < 0:
+            raise ValueError("shift_detectors coordinates must close in parentheses")
+        remainder = remainder[closing + 1 :]
+    tokens = remainder.split()
+    if len(tokens) != 1:
+        raise ValueError(
+            "a shift_detectors instruction must state exactly one "
+            "detector-index shift"
+        )
+    shift = tokens[0]
+    # Stim accepts an unsigned integer here and nothing else, so a signed or
+    # non-ASCII token is malformed rather than a negative shift in disguise.
+    if not shift.isascii() or not shift.isdigit():
+        raise ValueError(
+            "a shift_detectors instruction must state a non-negative integer "
+            f"shift, not {shift!r}"
+        )
+    return int(shift)
+
+
+def _toggle(targets: set[int], index: int) -> None:
+    """Flip one target's membership, which is how a repeated target cancels."""
+
+    if index in targets:
+        targets.remove(index)
+    else:
+        targets.add(index)
+
+
+def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
+    """Parse one ``error(<p>) <targets...>`` line into its symptom.
+
+    A detector target is relative to the shifts in force at that line, which is
+    what makes a ``shift_detectors`` instruction meaningful; an observable
+    target is absolute, because the format has no observable shift.
+
+    The signature is the symmetric difference of the line's targets, so a target
+    that appears twice cancels. Stim's ``^`` separators mark how a composite
+    mechanism decomposes into simpler ones; they partition the targets and do
+    not change which detectors and observables a shot of this mechanism flips,
+    which is the whole of what a signature records. The groups are therefore
+    not retained, and a decomposed line contributes the same signature its
+    targets state in any order.
+    """
 
     body = line[len("error") :]
     if not body.startswith("("):
@@ -97,19 +155,40 @@ def _parse_error_line(line: str) -> DemError:
         probability = float(body[:closing])
     except ValueError as error:
         raise ValueError("an error line must state a numeric probability") from error
-    detectors: list[int] = []
-    observables: list[int] = []
-    for token in body[closing + 1 :].split():
+    detectors: set[int] = set()
+    observables: set[int] = set()
+    tokens = body[closing + 1 :].split()
+    if not tokens:
+        raise ValueError(
+            "an error mechanism must flip at least one detector or observable"
+        )
+    group_is_empty = True
+    for token in tokens:
+        if token == _SEPARATOR:
+            if group_is_empty:
+                raise ValueError(
+                    "an error separator must sit between two groups of targets"
+                )
+            group_is_empty = True
+            continue
+        group_is_empty = False
         detector = _target_index(token, _DETECTOR_PREFIX)
-        observable = _target_index(token, _OBSERVABLE_PREFIX)
         if detector is not None:
-            detectors.append(detector)
-        elif observable is not None:
-            observables.append(observable)
-        else:
-            raise ValueError(f"error targets must be D or L indices, not {token!r}")
+            _toggle(detectors, detector + detector_shift)
+            continue
+        observable = _target_index(token, _OBSERVABLE_PREFIX)
+        if observable is not None:
+            _toggle(observables, observable)
+            continue
+        if _SEPARATOR in token:
+            raise ValueError("an error separator must be separated by spacing")
+        raise ValueError(f"error targets must be D or L indices, not {token!r}")
+    if group_is_empty:
+        raise ValueError("an error separator must sit between two groups of targets")
     # ``DemError`` re-checks this in its own constructor; refusing here as well
-    # fails at the parse site, where the offending line is still in hand.
+    # fails at the parse site, where the offending line is still in hand. A
+    # decomposed line whose groups cancel reaches this as well, because the
+    # signature it states is empty.
     if not detectors and not observables:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
@@ -122,14 +201,20 @@ def _parse_error_line(line: str) -> DemError:
 
 
 def _parse_declaration_line(
-    line: str, *, instruction: str, prefix: str, coordinates: bool
+    line: str,
+    *,
+    instruction: str,
+    prefix: str,
+    coordinates: bool,
+    detector_shift: int,
 ) -> int:
     """Parse one ``detector [<coordinates>] D<i>`` declaration into ``i``.
 
     Coordinates carry geometry the model does not represent, so a detector
     declaration accepts them and discards them: the declared index is the
     target, never the coordinate. A logical-observable declaration takes no
-    coordinates, which is the form the format itself accepts.
+    coordinates, which is the form the format itself accepts. A detector index
+    is relative to the shifts in force at that line.
     """
 
     remainder = line[len(instruction) :]
@@ -149,7 +234,7 @@ def _parse_declaration_line(
             f"a {instruction} declaration must name a {prefix} index, "
             f"not {tokens[0]!r}"
         )
-    return index
+    return index + (detector_shift if prefix == _DETECTOR_PREFIX else 0)
 
 
 def _declared_count(declared: set[int], *, name: str, prefix: str) -> int:
@@ -176,6 +261,8 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
 
     declared_detectors: set[int] = set()
     declared_observables: set[int] = set()
+    referenced_observables: set[int] = set()
+    detector_shift = 0
     errors: list[DemError] = []
     for line in text.splitlines():
         stripped = line.strip()
@@ -186,7 +273,9 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
         head = stripped.split("(", 1)[0].split()
         keyword = head[0] if head else ""
         if keyword == "error":
-            errors.append(_parse_error_line(stripped))
+            error = _parse_error_line(stripped, detector_shift=detector_shift)
+            errors.append(error)
+            referenced_observables.update(error.observables)
         elif keyword == "detector":
             declared_detectors.add(
                 _parse_declaration_line(
@@ -194,6 +283,7 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
                     instruction="detector",
                     prefix=_DETECTOR_PREFIX,
                     coordinates=True,
+                    detector_shift=detector_shift,
                 )
             )
         elif keyword == "logical_observable":
@@ -203,25 +293,31 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
                     instruction="logical_observable",
                     prefix=_OBSERVABLE_PREFIX,
                     coordinates=False,
+                    detector_shift=detector_shift,
                 )
             )
+        elif keyword == "shift_detectors":
+            detector_shift += _parse_shift_detectors(stripped)
         elif keyword == "repeat":
             raise ValueError(
                 "repeat blocks are not supported: expand the block into the "
                 "instructions it repeats"
-            )
-        elif keyword == "shift_detectors":
-            raise ValueError(
-                "shift_detectors is not supported: every detector index in the "
-                "text must be absolute"
             )
         else:
             raise ValueError(f"unsupported stim instruction {stripped!r}")
     num_detectors = _declared_count(
         declared_detectors, name="detector", prefix=_DETECTOR_PREFIX
     )
-    num_observables = _declared_count(
-        declared_observables, name="logical_observable", prefix=_OBSERVABLE_PREFIX
+    # Stim declares the observable when no error mechanism references it and
+    # omits the declaration when one does, so at most one of these two sources
+    # has anything to say. A declared shape governs; the referenced indices
+    # govern only where there is no declaration to state the shape.
+    num_observables = (
+        _declared_count(
+            declared_observables, name="logical_observable", prefix=_OBSERVABLE_PREFIX
+        )
+        if declared_observables
+        else (max(referenced_observables) + 1 if referenced_observables else 0)
     )
     return num_detectors, num_observables, tuple(errors)
 
@@ -424,44 +520,50 @@ class DetectorErrorModel:
         """Build a model from stim's text representation of a detector error model.
 
         The shape comes from the ``detector`` and ``logical_observable``
-        declarations and from nowhere else. Reading it off the largest index an
-        error mentions would accept a text that had lost its trailing detectors,
-        so a text without a ``detector`` declaration is refused by the
-        constructor instead.
+        declarations. Reading the detector count off the largest index an error
+        mentions would accept a text that had lost its trailing detectors, so a
+        text without a ``detector`` declaration is refused by the constructor
+        instead. The observable count is the exception: stim declares the
+        observable exactly when no error mechanism references it, so the count
+        falls back to the largest observable the errors name when no
+        declaration states it. At most one of the two sources has anything to
+        say, and a declared count always governs.
 
-        This reader handles the format :meth:`to_stim_text` emits and
-        hand-written text in the same style, not stim text in general. The
-        declarations must be complete and consecutive from zero, ``#`` comments
-        are not accepted, and the shape comes only from the declarations.
+        ``shift_detectors`` offsets every detector index on the lines that
+        follow it, in the declarations and in the error mechanisms alike, and
+        successive shifts accumulate. Coordinates are accepted and discarded on
+        both ``detector`` and ``shift_detectors``, because they carry geometry
+        the model does not represent.
 
-        In the two sweeps below, a stim detector error model parsed exactly when
-        both of two conditions held: the text carried no ``shift_detectors``, and
-        no error mechanism referenced the observable. The second condition
-        matters because stim does not always declare the observable: in every one
-        of the 240 single-error circuits below it emitted a
-        ``logical_observable`` declaration if and only if no error mechanism
-        referenced the observable, and this reader takes the shape from the
-        declarations alone.
+        An error line's signature is the symmetric difference of its targets, so
+        a repeated target cancels. Stim writes ``^`` between the groups a
+        composite mechanism decomposes into. Those groups are a decoder's
+        business: they partition the targets without changing which detectors
+        and observables a shot of the mechanism flips. The groups are therefore
+        not retained.
 
-        A developer-time sweep of stim 1.16.0 output -- 96 detector error models
-        from repetition-code and rotated-surface-code memory circuits, distances
-        three and five, one to three rounds, noisy and noise-free, with and
-        without flattening the circuit first -- refused all 48 that carried an
-        error and accepted 32, none of which carried one. A second sweep of 240
-        single-error circuits -- one ``X_ERROR`` on each data wire, the same two
-        families, distances and rounds -- refused 170 of them: 160 by the
-        ``shift_detectors`` rule and 10 because an error index fell outside the
-        declared shape. The 70 that satisfied both conditions were all accepted,
-        and 32 of those carried an error.
+        A ``repeat`` block is refused. Expanding one means interpreting a nested
+        instruction stream, and ``str(model.flattened())`` already states the
+        same instructions without the block, so this reader does not grow a
+        second implementation of the format. ``flatten_loops=True`` is not
+        equivalent: stim still emits a block for a long enough circuit.
 
-        So an untouched stim detector error model can parse, and stim output is
-        not refused as a class. Where it does parse the rates agree: the 32
-        accepted DEMs that carry an error match stim's own compiled sampler to
-        within 0.36 standard deviations over 20000 shots, and on the edited route
-        -- strip the observable instruction from a noisy circuit and the flattened
-        text is accepted, errors and all -- to within 2.61. What
-        :meth:`to_stim_text` writes is valid stim, but this method does not read
-        everything stim writes.
+        What remains refused is a ``repeat`` block, a ``#`` comment, a
+        declaration that skips an index, and a malformed line. A developer-time
+        sweep of stim 1.16.0 over 240 detector error models -- repetition-code
+        and rotated-surface-code memory circuits, distances three, five and
+        seven, rounds one, two, three, five and nine, noisy and noise-free, with
+        and without decomposed errors -- parsed all 180 that carried no block,
+        agreeing with a re-read of the same text on the shape, on the error
+        count, and on every ``(probability, detectors, observables)`` mechanism.
+        The 60 refusals were all ``repeat`` blocks, all from
+        ``repetition_code:memory`` at five rounds or more. Every one of the same
+        240 models parsed when ``flattened()`` supplied the text.
+
+        The printed text is lossy in the last digit: stim prints 17 significant
+        digits, and over that sweep the largest relative difference between an
+        in-memory probability and the printed one was 4.9e-16. The text is the
+        interchange format, so the printed value is the one this reader states.
         """
 
         num_detectors, num_observables, errors = _parse_stim_text(text)
@@ -797,12 +899,21 @@ def _forced_signature(
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Return the detectors and observables that ``source``'s forced error flips.
 
-    The source is lowered and executed twice, and both shots must agree: a
-    mechanism whose outcome depends on the trajectory is not a Pauli mechanism
-    in the reference gate set, so it is refused instead of contributing a
-    signature. The surviving shot is read through the layouts, never off the raw
-    register: a detector XORs the measurements its parity names, and an
+    The source is lowered and executed twice, and the two shots must agree on
+    the *flip set*: a mechanism whose signature depends on the trajectory is not
+    a Pauli mechanism in the reference gate set, so it is refused instead of
+    contributing a signature. The shot is read through the layouts, never off the
+    raw register: a detector XORs the measurements its parity names, and an
     observable XORs the terminal samples over the support of its Pauli.
+
+    The register bits themselves need not agree, and for a code with X-type
+    checks they do not: an X-type ancilla is prepared in ``|+>``, so its
+    round-zero outcome is random. What the model records is the flip a mechanism
+    causes relative to the noiseless outcome, and that is the parity the layouts
+    define — deterministic for the steady-state X-type detectors precisely
+    because the two rounds it compares were projected into the same eigenstate.
+    Requiring the raw bits to agree would refuse every code with an X-type check,
+    including the rotated surface code, for a randomness the model does not see.
 
     A syndrome measurement is read at ``round_index * len(checks) +
     position_in_checks``, where the position is the check's index in the code's
@@ -822,20 +933,15 @@ def _forced_signature(
     )
     classical: list[list[int]] = execution.classical_bits.tolist()
     samples: list[list[int]] = execution.samples.tolist()
-    if classical[0] != classical[1] or samples[0] != samples[1]:
-        raise ValueError(
-            "the forced error is not deterministic across trajectories, so it is "
-            "not a Pauli mechanism in the reference gate set"
-        )
-    classical_row = classical[0]
-    sample_row = samples[0]
     positions = {
         check.ancilla_wire: position
         for position, check in enumerate(circuit.code.checks)
     }
     checks = len(circuit.code.checks)
 
-    def measurement_bit(reference: MeasurementRef) -> int:
+    def measurement_bit(
+        classical_row: list[int], sample_row: list[int], reference: MeasurementRef
+    ) -> int:
         """Return the recorded bit one layout reference names.
 
         A syndrome reference is read at the position of the check that owns its
@@ -855,17 +961,34 @@ def _forced_signature(
             )
         return classical_row[reference.round_index * checks + position]
 
-    detectors = tuple(
-        detector.index
-        for detector in circuit.detectors.detectors
-        if sum(measurement_bit(reference) for reference in detector.parity) % 2 == 1
-    )
-    observables = tuple(
-        observable.index
-        for observable in circuit.observables.observables
-        if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
-    )
-    return detectors, observables
+    def flip_set(
+        classical_row: list[int], sample_row: list[int]
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        detectors = tuple(
+            detector.index
+            for detector in circuit.detectors.detectors
+            if sum(
+                measurement_bit(classical_row, sample_row, reference)
+                for reference in detector.parity
+            )
+            % 2
+            == 1
+        )
+        observables = tuple(
+            observable.index
+            for observable in circuit.observables.observables
+            if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
+        )
+        return detectors, observables
+
+    signature = flip_set(classical[0], samples[0])
+    if signature != flip_set(classical[1], samples[1]):
+        raise ValueError(
+            "the forced error's detector and observable flips are not "
+            "deterministic across trajectories, so it is not a Pauli mechanism "
+            "in the reference gate set"
+        )
+    return signature
 
 
 __all__ = ("DemError", "DemSample", "DetectorErrorModel")

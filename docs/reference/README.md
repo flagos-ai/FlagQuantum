@@ -19,6 +19,7 @@ support boundaries.
 
 - [Public API policy](PUBLIC_API_POLICY.md)
 - [Capability matrix](FEATURE_PARITY_MATRIX.md)
+- [CUDA-Q parity matrix](CUDAQ_PARITY_MATRIX.md) (generated from `contracts/cudaq-parity-matrix.toml`)
 - [Known limitations](KNOWN_LIMITATIONS.md)
 - [Release notes](RELEASE_NOTES.md)
 - [Publication validation scope](PUBLICATION_VALIDATION.md)

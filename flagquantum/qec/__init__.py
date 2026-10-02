@@ -9,7 +9,7 @@ from .circuit import (
     ObservableLayout,
     build_memory_circuit,
 )
-from .codes import CodeCheck, RepetitionCode, StabilizerCode
+from .codes import CodeCheck, RepetitionCode, RotatedSurfaceCode, StabilizerCode
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -17,7 +17,9 @@ from .decoders import (
     RepetitionTemporalDecoder,
     StreamingDecoder,
 )
+from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemSample, DetectorErrorModel
+from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
     RepetitionNoiseProfile,
@@ -43,6 +45,8 @@ __all__ = (
     "Correction",
     "DecodeResult",
     "Decoder",
+    "DecodingGraph",
+    "DecodingGraphEdge",
     "DemError",
     "DemSample",
     "DetectionEvent",
@@ -52,8 +56,10 @@ __all__ = (
     "ErrorEvent",
     "ErrorSchedule",
     "LogicalObservable",
+    "MatchingDecodeResult",
     "MeasurementRef",
     "MemoryCircuit",
+    "MinimumWeightMatchingDecoder",
     "NoiseSweepPoint",
     "ObservableLayout",
     "Pauli",
@@ -66,6 +72,7 @@ __all__ = (
     "RepetitionTemporalDecoder",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
+    "RotatedSurfaceCode",
     "StabilizerCode",
     "SyndromeRound",
     "StreamingDecoder",

@@ -155,10 +155,11 @@ class MemoryCircuit:
             raise TypeError("code must implement the StabilizerCode protocol")
         if not self.source.strip():
             raise ValueError("memory circuit source must not be empty")
-        expected = len(self.code.checks) * (self.rounds + 1)
+        expected = _detector_count(self.code, rounds=self.rounds)
         if len(self.detectors) != expected:
             raise ValueError(
-                "memory circuit detector count must match len(checks) * (rounds + 1)"
+                "memory circuit detector count must match the code's checks and "
+                "the configured rounds"
             )
         self._validate_layout()
 
@@ -202,6 +203,33 @@ class MemoryCircuit:
                     )
 
 
+def _require_z_type_readout(code: StabilizerCode) -> None:
+    """Refuse a code whose logical observable this memory experiment cannot read.
+
+    Both the initial data state and the terminal data readout are in the Z basis,
+    because the initial state is all-zero and this module reads out through the
+    runtime's final sample of each data wire, so a logical observable that is not
+    Z-type would be measured under premises that do not hold for it.
+    """
+
+    observables = code.logical_observables
+    if not observables or any(observable.x_wires for observable in observables):
+        raise ValueError(
+            "memory-circuit source requires a Z-type logical observable, because "
+            "both the initial state and the terminal data readout are in the Z "
+            "basis"
+        )
+
+
+def _detector_count(code: StabilizerCode, *, rounds: int) -> int:
+    """Return how many detectors one configured memory experiment must declare."""
+
+    _require_z_type_readout(code)
+    protected = sum(1 for check in code.checks if not check.stabilizer.x_wires)
+    total = len(code.checks)
+    return protected * (rounds + 1) + (total - protected) * (rounds - 1)
+
+
 def _check_source(code: StabilizerCode) -> str:
     lines = [
         f"def {_FUNCTION_NAME}(rounds):",
@@ -209,24 +237,33 @@ def _check_source(code: StabilizerCode) -> str:
         "    for round_index in range(rounds):",
     ]
     for check in code.checks:
+        ancilla = check.ancilla_wire
+        if check.stabilizer.x_wires:
+            lines.append(f"        qp.H(wires={ancilla})")
         for control, target in check.cnot_wires:
             lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
-        lines.append(f"        last = qp.measure(wires={check.ancilla_wire})")
-        lines.append(f"        qp.reset(wires={check.ancilla_wire})")
+        if check.stabilizer.x_wires:
+            lines.append(f"        qp.H(wires={ancilla})")
+        lines.append(f"        last = qp.measure(wires={ancilla})")
+        lines.append(f"        qp.reset(wires={ancilla})")
     lines.append("    return last")
     return "\n".join(lines) + "\n"
 
 
 def _detector_layout(code: StabilizerCode, *, rounds: int) -> DetectorLayout:
-    checks = code.checks
+    _require_z_type_readout(code)
     detectors: list[Detector] = []
     for round_index in range(rounds):
-        for check in checks:
+        for check in code.checks:
+            if round_index == 0 and check.stabilizer.x_wires:
+                continue
             parity = [MeasurementRef(round_index, check.ancilla_wire)]
             if round_index > 0:
                 parity.append(MeasurementRef(round_index - 1, check.ancilla_wire))
             detectors.append(Detector(index=len(detectors), parity=tuple(parity)))
-    for check in checks:
+    for check in code.checks:
+        if check.stabilizer.x_wires:
+            continue
         parity = [MeasurementRef(rounds - 1, check.ancilla_wire)]
         parity.extend(MeasurementRef(None, wire) for wire in check.stabilizer.support)
         detectors.append(Detector(index=len(detectors), parity=tuple(parity)))
@@ -251,11 +288,20 @@ def _observable_layout(code: StabilizerCode) -> ObservableLayout:
 def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
     """Build a code's memory-experiment source and its detection layouts.
 
-    Detector ``r * len(checks) + c`` compares check ``c`` in round ``r`` with
-    the same check in round ``r - 1``, where round ``-1`` is the known all-zero
-    prior state. The last ``len(checks)`` detectors compare the final syndrome
-    round with the terminal data readout. The source itself is a bounded hybrid
-    compiler program; this function neither lowers nor executes it.
+    A Z-type check is deterministic in round zero, because the initial state is
+    the all-zero state, and again at the terminal readout. It therefore gets one
+    detector per round comparing that round with the round before it, where round
+    ``-1`` is the known prior state, plus one terminal detector comparing the
+    final syndrome round with the terminal data readout.
+
+    An X-type check is deterministic in neither place. It gets one detector for
+    every round after the first, comparing two consecutive syndrome rounds, and
+    nothing else. Round-zero and terminal detectors require a Z-type readout of
+    the declared logical observable; a code that declares anything else is
+    refused.
+
+    The source itself is a bounded hybrid compiler program; this function neither
+    lowers nor executes it.
     """
 
     if not isinstance(code, StabilizerCode):

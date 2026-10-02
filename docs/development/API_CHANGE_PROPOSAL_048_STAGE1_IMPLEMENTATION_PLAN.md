@@ -1557,13 +1557,19 @@ The layer declares codes and detectors only. It does not build a detector error
 model, decode, sample evidence, or make any threshold, logical-suppression,
 real-time, or fault-tolerance claim.
 
-One representational boundary is explicit. `CodeCheck` requires every CNOT to
-control a data wire and target the check's ancilla, so it can describe only
-Z-type checks measured with a Z-basis ancilla. An X-type check couples the
-ancilla the other way and is not representable here, even though the `Pauli`
-record and the check's `stabilizer` field are basis-agnostic. This matches the
-repetition code, which detects bit flips; a code family needing X-type checks
-requires this record to grow before it can be described.
+One representational boundary was explicit at this stage. `CodeCheck` required
+every CNOT to control a data wire and target the check's ancilla, so it could
+describe only Z-type checks measured with a Z-basis ancilla, even though the
+`Pauli` record and the check's `stabilizer` field are basis-agnostic; the
+repetition code, which detects bit flips, was the only code this reached.
+
+**Superseded by W1-04a.** `CodeCheck` now fixes the CNOT direction per check type
+-- a Z-type check controls from the data into an ancilla prepared in `|0>`, an
+X-type check controls from an ancilla prepared in `|+>` into the data -- and
+refuses a mixed X-and-Z stabilizer. `RotatedSurfaceCode` is the code family this
+paragraph named, and `build_memory_circuit` declares `z_checks * (rounds + 1) +
+x_checks * (rounds - 1)` detectors for it. The rest of this stage's record is
+unchanged.
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
