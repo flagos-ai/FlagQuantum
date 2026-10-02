@@ -30,6 +30,9 @@ This catalog is generated from the machine-validated
 | Render a figure for a document or notebook | Circuit drawing | Experimental | [Run example](../../flagquantum/drawer/README.md) |
 | Check a program's wiring and gate order by eye | Circuit drawing | Experimental | [Run example](../../flagquantum/drawer/README.md) |
 | Draw with Circuit.draw or the flagquantum.drawer entry points | Circuit drawing | Experimental | [Run example](../../flagquantum/drawer/README.md) |
+| Place a reusable block on chosen qubits of a wider circuit | Construction-time program composition | Development evidence | [Run example](../../docs/reference/API.md) |
+| Undo a program by taking its inverse | Construction-time program composition | Development evidence | [Run example](../../docs/reference/API.md) |
+| Build a subroutine library and compose it into one circuit | Construction-time program composition | Development evidence | [Run example](../../docs/reference/API.md) |
 | Simulate a small or medium circuit exactly | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Train a parameterized quantum circuit | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Run local VQE and quantum machine learning | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
@@ -257,6 +260,20 @@ Render one circuit as terminal text or a Matplotlib figure through one shared la
 - **Start:** [quick example](../../flagquantum/drawer/README.md)
 - **Documentation:** [guide](../../flagquantum/drawer/README.md)
 - **Known boundary:** Presentation only. The drawer owns layout, labels, gate symbols, and styles; it does not execute, compile, validate, or route a circuit, and it changes no numerical result. The text renderer depends only on the standard library and Core, while Matplotlib is optional and is imported only by the figure renderer, so draw_mpl is absent from flagquantum.drawer when Matplotlib is not installed. The rendered text layout is not a frozen contract: no compatibility guarantee is made for exact spacing, gate symbols, column placement, or option names, and the only tests assert renderer self-consistency rather than a golden diagram. Rendering is single-process CPU work with no streaming or interactive backend. Structured hybrid programs, pulse-level schedules, and target timing diagrams are not drawable. The package README is the only user-facing documentation.
+
+### Construction-time program composition
+
+Build a larger program out of smaller ones in place: place one program on chosen qubits, and invert a program, without introducing a second IR.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.Circuit.compose`, `flagquantum.Circuit.adjoint`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/reference/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
+- **Known boundary:** Both methods are Stable Core additions to the fq.Circuit type, approved by docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md and docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md, and the surrounding family is incomplete. Circuit.compose accepts a Circuit or a CircuitIR and appends the other program's instructions to the receiver, rewritten onto the qubits the caller names; with neither argument the placement is the identity over the source width. Composing appends rather than assigns, so a target qubit that already carries instructions is legal and is not overwritten, while two source qubits may not share one target. Placement is explicit and fail-closed: qubits and qubit_map are mutually exclusive, a map must name every source qubit, a repeated, negative or out-of-range target is refused, and mixing batch sizes is refused rather than broadcast. Circuit.adjoint returns a new circuit that undoes one by reversing the instruction order and inverting each instruction from the rule its opcode declares, so an angle is negated, a self-inverse gate is copied, and s, sdg, sx, sxdg, t and tdg pair with their partners. An instruction that carries a matrix is inverted by conjugate transpose of that matrix, and that route is read before the opcode rule because the matrix is what executes; 31 of the 35 registered opcodes invert, the four that do not are the noise channels. A noise channel, a dynamic operation, a classically conditioned instruction, a matrix without a conjugate transpose and an unknown opcode without a matrix are each refused with CapabilityError rather than copied forward. Composition is a rewrite of qubit labels and not a second program description: neither method changes IR_VERSION, both emit instructions the IR already describes, and neither adds a root export, so no existing program changes meaning. control and power belong to this family and are absent: neither has an approved API change proposal, so a multi-controlled or exponentiated form is an owned gap rather than an unimplemented detail. The surface is single-process CPU work on one program with no execution, compilation, routing, noise handling, or scalability claim, and it is not differentiable by itself because composition records instructions rather than evaluating them. contracts/circuit-composition-contract.toml is the authoritative list of these guarantees and of every refusal, and tests/unit/test_circuit_composition_contract.py reads it back against the implementation.
 
 ### OpenQASM 2 and OpenQASM 3 interchange
 

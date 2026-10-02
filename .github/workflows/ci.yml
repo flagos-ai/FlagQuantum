@@ -111,6 +111,8 @@ jobs:
         run: python tools/check_qiskit_interop_contract.py
       - name: Verify PennyLane interoperability contract
         run: python tools/check_pennylane_interop_contract.py
+      - name: Verify construction-time composition contract
+        run: python tools/check_circuit_composition_contract.py
       - name: Verify interoperability capability-gap matrix
         run: python tools/check_interop_capability_gap_matrix.py
       - name: Verify OpenQASM import contract
