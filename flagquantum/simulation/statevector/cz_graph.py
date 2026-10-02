@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
 import torch
@@ -97,6 +98,8 @@ def _apply_cz_graph_cpu(
     signs: torch.Tensor,
     wires: Sequence[int],
     n_wires: int,
+    *,
+    inplace: bool = False,
 ) -> torch.Tensor:
     """Apply cached CZ-graph signs with one pass over a CPU statevector."""
 
@@ -114,4 +117,13 @@ def _apply_cz_graph_cpu(
     for wire in normalized_wires:
         factor_shape[wire + 1] = 2
     tensor = state.reshape((state.shape[0],) + (2,) * int(n_wires))
-    return (tensor * signs.reshape(factor_shape)).reshape(state.shape)
+    shaped_signs = signs.reshape(factor_shape)
+    if (
+        inplace
+        and not state.requires_grad
+        and os.getenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    ):
+        tensor.mul_(shaped_signs)
+        return state
+    return (tensor * shaped_signs).reshape(state.shape)

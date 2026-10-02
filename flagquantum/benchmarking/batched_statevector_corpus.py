@@ -41,6 +41,7 @@ EngineName = Literal[
     "flagquantum_native_fused_rotation_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_diagonal_graph_rollback",
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_assembly_rollback",
@@ -61,6 +62,7 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_fused_rotation_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_diagonal_graph_rollback",
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_assembly_rollback",
@@ -92,6 +94,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_native_clifford_phase_map_rollback": (
         "FlagQuantum native batch (Clifford phase-map rollback)"
+    ),
+    "flagquantum_native_diagonal_graph_rollback": (
+        "FlagQuantum native batch (functional diagonal-graph rollback)"
     ),
     "flagquantum_native_dense_width_rollback": (
         "FlagQuantum native batch (4-wire dense rollback)"
@@ -245,6 +250,7 @@ def _engine_callable(
                 FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
                 FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
                 FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_INPLACE_DIAGONAL_GRAPHS="1",
             ):
                 return cast(torch.Tensor, batched.state(refresh=True))
 
@@ -327,6 +333,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_clifford_phase_map_rollback
+    if engine == "flagquantum_native_diagonal_graph_rollback":
+
+        def native_diagonal_graph_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_INPLACE_DIAGONAL_GRAPHS="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_diagonal_graph_rollback
     if engine == "flagquantum_native_dense_width_rollback":
 
         def native_dense_width_rollback() -> torch.Tensor:
@@ -430,6 +449,7 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
         "flagquantum_native_fused_rotation_layer_rollback": ("flagquantum",),
         "flagquantum_native_clifford_matching_rollback": ("flagquantum",),
         "flagquantum_native_clifford_phase_map_rollback": ("flagquantum",),
+        "flagquantum_native_diagonal_graph_rollback": ("flagquantum",),
         "flagquantum_native_dense_width_rollback": ("flagquantum",),
         "flagquantum_native_layout_retention": ("flagquantum",),
         "flagquantum_native_assembly_rollback": ("flagquantum",),
@@ -460,6 +480,8 @@ def _execution_strategy(engine: EngineName) -> str:
         return "native_parameter_batch_clifford_matching_rollback"
     if engine == "flagquantum_native_clifford_phase_map_rollback":
         return "native_parameter_batch_clifford_phase_map_rollback"
+    if engine == "flagquantum_native_diagonal_graph_rollback":
+        return "native_parameter_batch_functional_diagonal_graph_rollback"
     if engine == "flagquantum_native_dense_width_rollback":
         return "native_parameter_batch_four_wire_dense_rollback"
     if engine == "pennylane_lightning_native_batch":

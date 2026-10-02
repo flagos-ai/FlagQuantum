@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from math import isfinite
 from numbers import Real
@@ -177,6 +178,8 @@ def _apply_controlled_phase_graph_cpu(
     factors: torch.Tensor,
     wires: Sequence[int],
     n_wires: int,
+    *,
+    inplace: bool = False,
 ) -> torch.Tensor:
     """Apply precomputed controlled-phase graph factors in one state pass."""
 
@@ -194,4 +197,14 @@ def _apply_controlled_phase_graph_cpu(
     for wire in normalized_wires:
         factor_shape[wire + 1] = 2
     tensor = state.reshape((state.shape[0],) + (2,) * int(n_wires))
-    return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
+    shaped_factors = factors.reshape(factor_shape)
+    if (
+        inplace
+        and not state.requires_grad
+        and not factors.requires_grad
+        and os.getenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    ):
+        tensor.mul_(shaped_factors)
+        return state
+    return (tensor * shaped_factors).reshape(state.shape)

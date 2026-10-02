@@ -1523,6 +1523,21 @@ def test_cpu_cz_graph_kernel_matches_sequential_application_and_gradient(dtype):
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_cpu_cz_graph_can_update_an_owned_state_in_place(dtype):
+    generator = torch.Generator().manual_seed(1762)
+    state = torch.randn((2, 64), dtype=dtype, generator=generator)
+    signs, wires = _cz_graph_signs_cpu(((0, 5), (1, 3), (4, 2)), device=state.device)
+    expected = _apply_cz_graph_cpu(state.clone(), signs, wires, n_wires=6)
+    storage = state.untyped_storage().data_ptr()
+
+    actual = _apply_cz_graph_cpu(state, signs, wires, n_wires=6, inplace=True)
+
+    assert actual is state
+    assert actual.untyped_storage().data_ptr() == storage
+    torch.testing.assert_close(actual, expected)
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_cpu_disjoint_diagonal_regions_match_sequential_application(dtype):
     generator = torch.Generator().manual_seed(1761)
     state = torch.randn((2, 32), dtype=dtype, generator=generator)
