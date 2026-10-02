@@ -891,7 +891,9 @@
         "complex128"
       ],
       "opcode": "bit_flip",
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -908,7 +910,9 @@
         "complex128"
       ],
       "opcode": "phase_flip",
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -925,7 +929,9 @@
         "complex128"
       ],
       "opcode": "depolarizing",
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -942,7 +948,9 @@
         "complex128"
       ],
       "opcode": "amplitude_damping",
-      "parameters": [],
+      "parameters": [
+        "gamma"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"

@@ -90,6 +90,7 @@ This catalog is generated from the machine-validated
 | Resume a multi-node tensor-network run from its checkpoint | Two-node tensor-network training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
 | Inspect inter-node slice-boundary communication and rank placement | Two-node tensor-network training | Production supported | [Run example](../../docs/guides/MULTINODE_RUNBOOK.md) |
 | Validate small noisy circuits exactly | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
+| Write a channel directly in a circuit | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Evaluate low-entanglement noisy circuits with MPS trajectories | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Resume reproducible trajectory ensembles | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Simulate driven amplitude damping | Continuous-time Lindblad density-matrix evolution | Production supported | [Run example](../../examples/lindblad_evolution.py) |
@@ -416,17 +417,17 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 
 ### Exact and trajectory-based noisy simulation
 
-Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths.
+Write a channel into a circuit or lower a validated Kraus noise model into FlagQuantum IR, then execute exact density-matrix or MPS quantum-trajectory paths.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.noise.NoiseModel`, `flagquantum.noise.noisy_density_matrix`, `flagquantum.runtime.run_noisy_mps`, `flagquantum.runtime.run_noisy_statevector`
+- **Public API:** `flagquantum.noise.NoiseModel`, `flagquantum.noise.channel_from_parameters`, `flagquantum.noise.noisy_density_matrix`, `flagquantum.runtime.run_noisy_mps`, `flagquantum.runtime.run_noisy_statevector`
 - **Runtime modes:** `density_matrix`, `noisy_mps`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_device_fast_path_or_rank_local_trajectory_partition`
 - **Start:** [quick example](../../examples/noisy_simulation_v1.py)
 - **Documentation:** [guide](../../docs/guides/NOISY_SIMULATION.md)
-- **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Lowering refuses a rule naming a wire outside the program width and refuses a model whose rules match no instruction at all, so a misspelled gate name cannot yield a clean result; a model that matches some instructions stays legal. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
+- **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Four channel opcodes (bit_flip, phase_flip, depolarizing, amplitude_damping) declare the scalar their factory takes, so they can be written directly into a circuit as well as attached to a gate through a NoiseModel rule; the two routes lower to the same instruction, and a program is planned as noisy because it carries a channel, not because a model was passed. That same reading of the program decides the trajectory representation under mode='auto' and restores it from a saved plan, so an inline channel and an equivalent NoiseModel rule select the same route. A representation that holds amplitudes -- mps, tensor_network, and statevector -- refuses a channel instead of returning the noiseless number, and mode='stabilizer' names its own obstacle. A channel instruction's matrix field is the Kraus tuple, so consumers read it as a sequence rather than as one tensor. Only those four opcodes are reachable by name: the remaining flagquantum.noise callables, including thermal relaxation, readout error, and coherent overrotation, are NoiseModel rules only. Channel parameters are bound real scalars; a trainable channel probability has no gradient path. Lowering refuses a rule naming a wire outside the program width and refuses a model whose rules match no instruction at all, so a misspelled gate name cannot yield a clean result; a model that matches some instructions stays legal. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
 
 ### Continuous-time Lindblad density-matrix evolution
 

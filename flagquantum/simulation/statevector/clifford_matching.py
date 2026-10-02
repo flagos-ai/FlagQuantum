@@ -10,6 +10,7 @@ import torch
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..native_cpu.permutation import native_cpu_clifford_matching_available
+from .fixed_layer_cpu import _matrix_tensors
 from .program import (
     _StatevectorCliffordMatchingStep,
     _StatevectorGateStep,
@@ -122,8 +123,9 @@ def native_clifford_matching_compile_enabled(
             for value in instruction.params.values()
         )
         or any(
-            instruction.matrix is not None and instruction.matrix.requires_grad
+            isinstance(value, torch.Tensor) and value.requires_grad
             for instruction in instructions
+            for value in _matrix_tensors(instruction.matrix)
         )
     )
     return bool(

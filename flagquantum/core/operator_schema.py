@@ -74,12 +74,25 @@ def _unitary(
     )
 
 
-def _channel(opcode: str) -> OperatorSchema:
+def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
+    """Declare a channel and the probability or rate names it accepts.
+
+    ``parameters`` is keyword-only so that a channel cannot be added without
+    stating them: an opcode whose probability exists only inside its Kraus
+    operators is one a reader of the lowered program cannot map, which is what
+    kept the four channels out of every interop contract.
+
+    ``differentiable`` stays ``False`` even when ``parameters`` is non-empty.
+    The flag states whether an executor can return a derivative for the opcode,
+    and a channel is sampled rather than differentiated.  Declaring a number and
+    being able to differentiate it are two separate claims.
+    """
+
     return OperatorSchema(
         opcode=opcode,
         aliases=(),
         arity=1,
-        parameters=(),
+        parameters=parameters,
         dtype_policy=("complex64", "complex128"),
         semantic_kind="channel",
         adjoint="not_applicable",
@@ -121,10 +134,10 @@ _SCHEMAS = (
     _unitary("rzz", 2, parameters=("theta",)),
     _unitary("ccx", 3, aliases=("ccnot", "toffoli"), adjoint="self_inverse"),
     _unitary("cswap", 3, aliases=("fredkin",), adjoint="self_inverse"),
-    _channel("bit_flip"),
-    _channel("phase_flip"),
-    _channel("depolarizing"),
-    _channel("amplitude_damping"),
+    _channel("bit_flip", parameters=("probability",)),
+    _channel("phase_flip", parameters=("probability",)),
+    _channel("depolarizing", parameters=("probability",)),
+    _channel("amplitude_damping", parameters=("gamma",)),
 )
 
 OPERATOR_SCHEMAS: Mapping[str, OperatorSchema] = MappingProxyType(
