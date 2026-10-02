@@ -9,6 +9,7 @@ import flagquantum.simulation.mps.environment_dispatch as environment_dispatch
 from flagquantum.simulation.mps.environment_dispatch import (
     _mps_environment_channels_kernel_enabled,
     _mps_environment_channels_kernel_match,
+    _mps_environment_channels_rollout_enabled,
     _require_mps_environment_channels_kernel,
 )
 from flagquantum.simulation.mps.site_kernels import (
@@ -31,6 +32,7 @@ def test_mps_environment_channels_dispatch_binds_exact_catalog_implementation() 
     assert implementation.implementation_id == "FQKI-TRITON-MPS-005-A"
     assert implementation.symbol == "fused_mps_environment_channels"
     assert implementation.directions == ("forward",)
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
@@ -63,10 +65,25 @@ def test_mps_environment_channels_dispatch_fails_closed() -> None:
         )
 
 
-def test_mps_environment_channels_route_rejects_cpu_when_enabled(
+@pytest.mark.parametrize("disabled", ("0", "false", "off", "no", " FALSE "))
+def test_mps_environment_channels_rollout_defaults_on_and_supports_kill_switch(
+    monkeypatch: pytest.MonkeyPatch,
+    disabled: str,
+) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
+    assert _mps_environment_channels_rollout_enabled()
+
+    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", disabled)
+    assert not _mps_environment_channels_rollout_enabled()
+
+    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "1")
+    assert _mps_environment_channels_rollout_enabled()
+
+
+def test_mps_environment_channels_route_rejects_cpu_by_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "1")
+    monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
     channels = torch.randn(5, 2, 4, 4, dtype=torch.complex64)
     tensor = torch.randn(2, 4, 2, 4, dtype=torch.complex64)
 
@@ -83,10 +100,11 @@ def test_mps_environment_channels_route_enforces_evidenced_window(
     tensor = torch.randn(8, 16, 2, 16, device="cuda", dtype=torch.complex64)
 
     monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
-    assert not _mps_environment_channels_kernel_enabled(channels, tensor)
-
-    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "1")
     assert _mps_environment_channels_kernel_enabled(channels, tensor)
+
+    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "0")
+    assert not _mps_environment_channels_kernel_enabled(channels, tensor)
+    monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
     assert not _mps_environment_channels_kernel_enabled(
         channels.transpose(-2, -1),
         tensor,
@@ -109,7 +127,7 @@ def test_mps_environment_channels_route_enforces_evidenced_window(
 def test_mps_environment_channels_route_rejects_gradients(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "1")
+    monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
     channels = torch.randn(
         5,
         2,
@@ -136,7 +154,7 @@ def test_mps_environment_channels_product_path_uses_catalog(
     monkeypatch: pytest.MonkeyPatch,
     compiled: bool,
 ) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "1")
+    monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
     catalog_routes: list[str] = []
     require_cataloged_kernel = (
         environment_dispatch._require_mps_environment_channels_kernel
@@ -182,3 +200,28 @@ def test_mps_environment_channels_product_path_uses_catalog(
             "flagtree": "flagtree",
         }[distribution]
     )
+
+
+@pytest.mark.parametrize("compiled", (False, True))
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_mps_environment_channels_kill_switch_uses_reference(
+    monkeypatch: pytest.MonkeyPatch,
+    compiled: bool,
+) -> None:
+    monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", "0")
+    channels = torch.randn(8, 8, 8, 8, device="cuda", dtype=torch.complex64)
+    tensor = torch.randn(8, 8, 2, 8, device="cuda", dtype=torch.complex64)
+    expected = torch.einsum(
+        "tbij,bipr,bjps->tbrs",
+        channels,
+        tensor.conj(),
+        tensor,
+    )
+    reset_site_kernel_stats(clear_cache=True)
+
+    actual = environment_transfer_channels(channels, tensor, compiled=compiled)
+
+    torch.testing.assert_close(actual, expected, rtol=2e-4, atol=1e-4)
+    assert site_kernel_stats()["triton_environment_channels_calls"] == 0

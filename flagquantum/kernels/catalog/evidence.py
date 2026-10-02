@@ -188,8 +188,10 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_mps_environment_channels_triton.py::test_fused_mps_environment_channels_cpu_fallback_preserves_gradients",
             "tests/unit/test_mps_environment_channels_triton.py::test_fused_mps_environment_channels_outside_window_uses_fallback",
+            "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_rollout_defaults_on_and_supports_kill_switch",
             "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_route_enforces_evidenced_window",
             "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_route_rejects_gradients",
+            "tests/unit/test_mps_environment_channels_catalog_dispatch.py::test_mps_environment_channels_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_environment_channels_dispatch_a800.json",
