@@ -132,6 +132,36 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+The MPS-001 two-site gate-contraction route is opt-in through
+`FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
+entry for contiguous CUDA `complex64` tensors outside reverse execution once
+the contraction contains at least `2**12` elements for forward-only calls or
+`2**18` elements when gradients are required. Equal-shape spatial buckets use
+the same catalog route from `2**18` elements. Calls outside those contracts
+retain the existing PyTorch contraction, and both routes feed the unchanged
+downstream SVD or QR factorization.
+
+The checked-in
+[`mps_two_site_dispatch_a800.json`](../../benchmarks/results/local/mps_two_site_dispatch_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each of four
+fixed contraction shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
+3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape combinations,
+the catalog-authorized contraction ranges from `0.81x` to `1.45x` versus eager
+PyTorch and from `3.12x` to `4.41x` versus its warm compiled reference for the
+forward direction. Forward plus backward ranges from `0.97x` to `1.30x` versus
+eager and from `1.84x` to `2.37x` versus warm compiled. Maximum forward
+absolute and relative L2 error are `4.20e-9` and `2.95e-7`; maximum gradient
+absolute and relative L2 error are `3.49e-7` and `3.33e-7`. The direct wrapper
+ranges from `0.68x` to `2.14x` for forward and `0.95x` to `1.21x` for forward
+plus backward. Because neither eager comparison wins on every measured shape,
+and because this microbenchmark excludes the downstream MPS factorization, the
+canonical aggregate records `retain_opt_in`. The warm compiled complex baseline
+also carries PyTorch Inductor's warning that complex code generation may be
+worse than eager, so it is a compatibility baseline rather than evidence of an
+optimized complex kernel. This is bounded development hardware evidence, not a
+release gate or scalability claim. Reproduce or validate it with
+[`benchmarks/mps_two_site_dispatch.py`](../../benchmarks/mps_two_site_dispatch.py).
+
 The MPS-003 one-site gate route is opt-in through
 `FQ_TRITON_MPS_ONE_SITE=1`. Compiled site buckets authorize the exact catalog
 entry for contiguous CUDA `complex64` tensors and batched two-by-two gates once
