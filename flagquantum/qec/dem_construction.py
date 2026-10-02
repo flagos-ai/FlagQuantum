@@ -23,13 +23,17 @@ before it, with no terminal data readout. That is deliberately not the geometry
 data qubits and so ends in terminal detectors. The difference belongs to the
 description, not to the model, and a test pins each geometry to its own route.
 
-Both routes carry the same family of faults: a data wire's flip at a round
-boundary is the bit flip :class:`~flagquantum.qec.PhenomenologicalNoise` names,
-so it shows up in the Z-type detectors and in the Z-type logical operators. The
-phase-flip family upstream's ``hx`` and ``lx`` matrices describe, and upstream's
-independent ``px``, ``py``, ``pz`` and ``pm`` rates, are not expressible through
-one data-flip scalar and one measurement-flip scalar. That limit is recorded in
-the alignment contract rather than approximated here.
+Both routes carry the same family of faults. On the matrix route the three data
+faults are the three Pauli errors: an X fault reaches the Z-type detectors and
+the Z-type logical operators, a Z fault reaches the X-type detectors and the
+X-type logical operators, and a Y fault reaches both. Each data fault in round
+``r`` shows up in the detector band of round ``r`` and in the band after it, and
+a measurement fault shows up in its own check's detector and in the next round's,
+which is the code-capacity experiment stated as detector differences.
+
+The circuit route states one of those families, the data bit flip, because a
+memory circuit measures the data qubits in the Z basis and its layouts are
+therefore Z memory. That is a property of the program, not a gap in the model.
 """
 
 from __future__ import annotations
@@ -46,7 +50,7 @@ from .circuit import MeasurementRef, MemoryCircuit
 from .codes import StabilizerCode
 from .noise import PhenomenologicalNoise
 
-__all__ = ("code_matrices",)
+__all__ = ("CssCodeMatrices", "css_code_matrices")
 
 Entry = tuple[float, tuple[int, ...], tuple[int, ...]]
 # One mechanism: its rate, the detectors it flips, and the observables it flips.
@@ -137,43 +141,45 @@ def _column_supports(
 
 
 def _code_matrix_entries(
-    *,
-    hz: torch.Tensor,
+    matrices: CssCodeMatrices,
     noise: PhenomenologicalNoise,
-    lz: torch.Tensor | None = None,
     num_rounds: int = 1,
 ) -> tuple[int, int, tuple[Entry, ...]]:
     """Return the model shape and every mechanism a code's matrices imply.
 
-    The matrices are read, not simulated. ``hz`` has one row per Z-type check and
-    one column per data qubit, and ``hz[k, q]`` is one when a bit flip on qubit
-    ``q`` flips check ``k``. ``lz`` uses the same convention for the logical
-    operators, with ``lz[r, q]`` one when a bit flip on qubit ``q`` flips logical
-    observable ``r``; it may be omitted, and then no mechanism flips an
-    observable.
+    The matrices are read, not simulated. Each has one column per data qubit, and
+    a fault is read as the columns it selects: ``hz[k, q]`` is one when an X fault
+    on qubit ``q`` flips Z-type check ``k``, ``hx[k, q]`` is one when a Z fault
+    flips X-type check ``k``, and the two logical matrices state the same relation
+    for the observable rows.
 
-    Every data qubit ``noise.data_flip`` reaches contributes one mechanism per
-    round, and every check ``noise.measurement_flip`` reaches contributes one
-    measurement mechanism per round. The model has no terminal data readout, so
-    a round's mechanisms are read against that round's detector band and the band
-    after it, and the final round has no band after it. The detector geometry is
-    therefore the code-capacity one, which is deliberately not the geometry
-    :func:`_memory_circuit_entries` derives from a memory circuit; the module
-    docstring states the difference.
+    A round's detector band holds one row per check, Z-type checks first, and the
+    band is compared against the band before it, so a data fault lands in its own
+    round's band and in the band after it and the final round has no band after
+    it. A measurement fault lands in its own check's row and in the next round's,
+    and flips no observable, because the logical measurement is taken once at the
+    end of the experiment.
 
-    An entry that flips nothing at all -- a qubit outside every check and outside
-    every logical operator -- is not a mechanism a model can store, and an entry
-    whose signature another entry already has is one fault to a decoder. Both are
-    resolved where every construction route resolves them, in
-    ``DetectorErrorModel._merge_mechanisms``, by the independent-parity rule.
+    The model describes the code-capacity experiment: the data begins in the
+    code's ``+1`` eigenspace of every check, so every round-zero check is
+    deterministic and there is no preparation-fault family. A code whose
+    preparation is not a code state is the circuit route's business, not this
+    one's, and it is there that a check whose round-zero outcome is a coin toss
+    has to be handled.
+
+    Every data qubit the noise reaches contributes one mechanism per round per
+    fault family, and every check the noise reaches contributes one measurement
+    mechanism per round. An entry that flips nothing at all -- a qubit outside
+    every check and outside every logical operator -- is not a mechanism a model
+    can store, and an entry whose signature another entry already has is one fault
+    to a decoder. Both are resolved where every construction route resolves them,
+    in ``DetectorErrorModel._merge_mechanisms``, by the independent-parity rule.
 
     Raises:
-        TypeError: If a matrix is not a binary integer tensor or ``noise`` is not
-            a :class:`~flagquantum.qec.PhenomenologicalNoise`.
-        ValueError: If ``num_rounds`` is below one, if a matrix is not
-            two-dimensional, if ``lz`` disagrees with ``hz`` about how many data
-            qubits the code has, or if ``hz`` declares no check -- a model needs
-            at least one detector.
+        TypeError: If ``noise`` is not a
+            :class:`~flagquantum.qec.PhenomenologicalNoise`.
+        ValueError: If ``num_rounds`` is below one, or if the matrices declare no
+            check -- a model needs at least one detector.
     """
 
     if isinstance(num_rounds, bool) or not isinstance(num_rounds, Integral):
@@ -182,108 +188,260 @@ def _code_matrix_entries(
         raise ValueError("num_rounds must be at least one")
     if not isinstance(noise, PhenomenologicalNoise):
         raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(matrices, CssCodeMatrices):
+        raise TypeError("matrices must be a CssCodeMatrices")
     rounds = int(num_rounds)
 
-    checks = _binary_matrix(hz, name="hz")
-    num_checks = int(checks.shape[0])
-    num_qubits = int(checks.shape[1])
-    if num_qubits == 0:
-        raise ValueError(
-            "hz declares no data qubit, so it declares no check a fault could "
-            "flip and the model would have no detector to describe"
-        )
+    # ``CssCodeMatrices`` has already refused a disagreement about the number of
+    # columns, so one column count describes all four matrices here.
+    num_qubits = matrices.num_qubits
+    num_z_checks = matrices.num_z_checks
+    num_x_checks = matrices.num_x_checks
+    num_checks = num_z_checks + num_x_checks
     if num_checks == 0:
         raise ValueError(
-            f"hz declares {num_qubits} data qubits but no check, so the model "
-            "would have no detector to describe"
+            f"the matrices declare {num_qubits} data qubits but no check, so the "
+            "model would have no detector to describe"
         )
-    logicals = (
-        torch.zeros((0, num_qubits), dtype=torch.int64)
-        if lz is None
-        else _binary_matrix(lz, name="lz")
-    )
-    if int(logicals.shape[1]) != num_qubits:
-        raise ValueError(
-            f"lz has {int(logicals.shape[1])} columns but hz has {num_qubits}; a "
-            "logical operator matrix must be indexed by the same data qubits"
-        )
+    num_z_logicals = matrices.num_z_logicals
 
-    hz_columns = _column_supports(checks, num_qubits)
-    lz_columns = _column_supports(logicals, num_qubits)
+    hz_columns = _column_supports(matrices.hz, num_qubits)
+    hx_columns = _column_supports(matrices.hx, num_qubits)
+    lz_columns = _column_supports(matrices.lz, num_qubits)
+    lx_columns = _column_supports(matrices.lx, num_qubits)
     entries: list[Entry] = []
     for round_index in range(rounds):
         band = round_index * num_checks
         following = band + num_checks
         has_next = round_index + 1 < rounds
-        if noise.data_flip:
-            for qubit in range(num_qubits):
-                detectors = [band + row for row in hz_columns[qubit]]
-                if has_next:
-                    detectors.extend(following + row for row in hz_columns[qubit])
-                entries.append((noise.data_flip, tuple(detectors), lz_columns[qubit]))
+        for qubit in range(num_qubits):
+            # An X fault reaches the Z-type checks, an X-type check being blind to
+            # it, and the same for the Z fault and the X-type checks. A Y fault is
+            # the two of them at once and therefore reaches both blocks.
+            z_block = [band + row for row in hz_columns[qubit]]
+            x_block = [band + num_z_checks + row for row in hx_columns[qubit]]
+            if has_next:
+                z_block.extend(following + row for row in hz_columns[qubit])
+                x_block.extend(
+                    following + num_z_checks + row for row in hx_columns[qubit]
+                )
+            z_logicals = lz_columns[qubit]
+            x_logicals = tuple(num_z_logicals + row for row in lx_columns[qubit])
+            if noise.data_flip:
+                entries.append((noise.data_flip, tuple(z_block), tuple(z_logicals)))
+            if noise.phase_flip:
+                entries.append((noise.phase_flip, tuple(x_block), tuple(x_logicals)))
+            if noise.both_flip:
+                entries.append(
+                    (
+                        noise.both_flip,
+                        tuple(z_block) + tuple(x_block),
+                        tuple(z_logicals) + tuple(x_logicals),
+                    )
+                )
         if noise.measurement_flip:
             for check in range(num_checks):
                 detectors = [band + check]
                 if has_next:
                     detectors.append(following + check)
                 entries.append((noise.measurement_flip, tuple(detectors), ()))
-    return rounds * num_checks, int(logicals.shape[0]), tuple(entries)
+    return rounds * num_checks, matrices.num_observables, tuple(entries)
 
 
-def code_matrices(code: StabilizerCode) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return a code record's Z-type check matrix and Z-type logical matrix.
+@dataclass(frozen=True)
+class CssCodeMatrices:
+    """The four sparse binary matrices a Calderbank-Shor-Steane code is read by.
 
-    Column ``q`` of both matrices is the ``q``-th wire :attr:`data_wires` names,
-    so a code is free to declare its data qubits on any wires. The rows follow
-    the code's own declaration order, and an X-type check or an X-type logical
-    operator contributes no row at all rather than an empty one: a fault this
-    route can express never flips it, so an all-zero row would declare an
-    observable no mechanism ever reports. That is the pair a bit-flip fault
-    probes -- an X fault on a data wire flips exactly the Z-type checks whose
-    support holds that wire, and exactly the logical operators whose Z support
-    holds it -- and it is the input the matrix route of construction takes, so a
-    code described by its stabilizers reaches a detector error model without a
-    circuit being written for it.
+    Column ``q`` of every matrix is the ``q``-th data qubit, so the four are
+    indexed alike and the record refuses a set that disagrees about how many data
+    qubits the code has. ``hz`` holds the Z-type checks and ``lz`` the Z-type
+    logical operators, which are the two matrices an X fault reaches -- an X fault
+    on qubit ``q`` flips exactly the Z-type checks whose support holds ``q`` and
+    exactly the Z-type logical operators whose support holds it. ``hx`` and ``lx``
+    are the same pair for a Z fault, which the X-type checks are sensitive to and
+    the Z-type checks are blind to. All four are carried because a code's two
+    fault families are two different experiments over one set of data qubits, and
+    a record that carried only one pair would be silently modelling half a CSS
+    code.
+
+    ``hx``, ``lz`` and ``lx`` may be omitted, and a block with no row is how a code
+    states that it has no check or no logical operator of that type -- an X-type
+    check measured on a code that has none is an empty block rather than a
+    missing record. A block that has rows but no column is malformed rather than
+    empty, because it states a check over no qubit.
+
+    Raises:
+        TypeError: If a block is not an integer tensor.
+        ValueError: If a block is not two-dimensional, carries an element that is
+            neither zero nor one, has rows but no column, or disagrees with
+            another block about how many data qubits the code has.
+
+    Examples:
+        >>> import torch
+        >>> from flagquantum.qec import CssCodeMatrices
+        >>> hz = torch.tensor([[1, 1, 0], [0, 1, 1]])
+        >>> matrices = CssCodeMatrices(hz=hz, lz=torch.tensor([[1, 1, 1]]))
+        >>> matrices.num_checks, matrices.num_observables
+        (2, 1)
+    """
+
+    hz: torch.Tensor
+    hx: torch.Tensor | None = None
+    lz: torch.Tensor | None = None
+    lx: torch.Tensor | None = None
+
+    def __post_init__(self) -> None:
+        blocks: dict[str, torch.Tensor | None] = {}
+        for name in ("hz", "hx", "lz", "lx"):
+            block = getattr(self, name)
+            blocks[name] = None if block is None else _binary_matrix(block, name=name)
+        for name, block in blocks.items():
+            if block is not None and int(block.shape[0]) and not int(block.shape[1]):
+                raise ValueError(
+                    f"{name} has {int(block.shape[0])} row(s) but no column, so it "
+                    "states a check or a logical operator over no data qubit"
+                )
+
+        widths = {
+            name: int(block.shape[1])
+            for name, block in blocks.items()
+            if block is not None and int(block.shape[1])
+        }
+        if len(set(widths.values())) > 1:
+            stated = ", ".join(f"{name} has {width}" for name, width in widths.items())
+            raise ValueError(
+                f"the matrices must be indexed by the same data qubits but "
+                f"{stated}; every non-empty block has one column per data qubit"
+            )
+        columns = next(iter(widths.values()), 0)
+
+        for name, block in blocks.items():
+            if block is None or not int(block.shape[0]):
+                blocks[name] = torch.zeros((0, columns), dtype=torch.int64)
+            else:
+                blocks[name] = block
+        for name, block in blocks.items():
+            object.__setattr__(self, name, block)
+
+    @property
+    def num_qubits(self) -> int:
+        """The number of data qubits every matrix is indexed by."""
+
+        return int(self.hz.shape[1])
+
+    @property
+    def num_z_checks(self) -> int:
+        """The number of Z-type checks, which are the Z-type detector rows."""
+
+        return int(self.hz.shape[0])
+
+    @property
+    def num_x_checks(self) -> int:
+        """The number of X-type checks, which are the X-type detector rows."""
+
+        return int(self.hx.shape[0])  # type: ignore[union-attr]
+
+    @property
+    def num_checks(self) -> int:
+        """The number of detectors in one round, every check counted once."""
+
+        return self.num_z_checks + self.num_x_checks
+
+    @property
+    def num_z_logicals(self) -> int:
+        """The number of Z-type logical operators, read by an X fault."""
+
+        return int(self.lz.shape[0])  # type: ignore[union-attr]
+
+    @property
+    def num_x_logicals(self) -> int:
+        """The number of X-type logical operators, read by a Z fault."""
+
+        return int(self.lx.shape[0])  # type: ignore[union-attr]
+
+    @property
+    def num_observables(self) -> int:
+        """The number of observable rows, the Z-type logicals first."""
+
+        return self.num_z_logicals + self.num_x_logicals
+
+
+def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
+    """Return a code record's CSS generator matrices.
+
+    Column ``q`` of every matrix is the ``q``-th wire :attr:`data_wires` names, so
+    a code is free to declare its data qubits on any wires, and the rows follow the
+    code's own declaration order. Each of the code's checks contributes one row to
+    the matrix of its own type and none to the other, and each logical observable
+    does the same, so a code that declares an X-type logical operator is modelled
+    with one and a code that declares none states an empty block.
+
+    A logical observable that is neither pure X-type nor pure Z-type is refused
+    rather than read as one of the two. It anticommutes with some check of each
+    type, so it is not a CSS logical operator, and reading only its X support or
+    only its Z support would report a different observable than the code declared.
 
     Raises:
         TypeError: If ``code`` is not a :class:`~flagquantum.qec.StabilizerCode`.
-        ValueError: If the code declares no Z-type check -- read as Z memory it
-            would have no detector -- or if a check's support names a wire the
-            code does not declare as a data wire.
+        ValueError: If a logical observable is of mixed type, or if a check or
+            observable names a wire the code does not declare as a data wire.
     """
 
     if not isinstance(code, StabilizerCode):
         raise TypeError("code must be a StabilizerCode")
     data_wires = tuple(code.data_wires)
     columns = {wire: index for index, wire in enumerate(data_wires)}
-    checks = tuple(check for check in code.checks if check.stabilizer.z_wires)
-    if not checks:
-        raise ValueError(
-            f"{type(code).__name__} declares no Z-type check, so read as Z "
-            "memory it has no detector for a fault to flip"
+
+    def _rows(entries: tuple[tuple[str, tuple[int, ...]], ...]) -> torch.Tensor:
+        matrix = torch.zeros((len(entries), len(data_wires)), dtype=torch.int64)
+        for row, (label, support) in enumerate(entries):
+            for wire in support:
+                if wire not in columns:
+                    raise ValueError(
+                        f"{label} acts on wire {wire}, which "
+                        f"{type(code).__name__} does not declare as a data wire"
+                    )
+                matrix[row, columns[wire]] = 1
+        return matrix
+
+    checks = tuple(code.checks)
+    hz = _rows(
+        tuple(
+            (f"check {check.index}", check.stabilizer.z_wires)
+            for check in checks
+            if check.stabilizer.z_wires
         )
-    hz = torch.zeros((len(checks), len(data_wires)), dtype=torch.int64)
-    for row, check in enumerate(checks):
-        for wire in check.stabilizer.support:
-            if wire not in columns:
-                raise ValueError(
-                    f"check {check.index} acts on wire {wire}, which "
-                    f"{type(code).__name__} does not declare as a data wire"
-                )
-            hz[row, columns[wire]] = 1
-    observables = tuple(
-        observable for observable in code.logical_observables if observable.z_wires
     )
-    lz = torch.zeros((len(observables), len(data_wires)), dtype=torch.int64)
-    for row, observable in enumerate(observables):
-        for wire in observable.z_wires:
-            if wire not in columns:
-                raise ValueError(
-                    f"logical observable {row} acts on wire {wire}, which "
-                    f"{type(code).__name__} does not declare as a data wire"
-                )
-            lz[row, columns[wire]] = 1
-    return hz, lz
+    hx = _rows(
+        tuple(
+            (f"check {check.index}", check.stabilizer.x_wires)
+            for check in checks
+            if check.stabilizer.x_wires
+        )
+    )
+    observables = tuple(code.logical_observables)
+    for index, observable in enumerate(observables):
+        if observable.x_wires and observable.z_wires:
+            raise ValueError(
+                f"logical observable {index} is neither an X-type nor a Z-type "
+                "operator, so it is not a CSS logical operator: reading it as one "
+                "of the two would report an observable the code does not declare"
+            )
+    lz = _rows(
+        tuple(
+            (f"logical observable {index}", observable.z_wires)
+            for index, observable in enumerate(observables)
+            if observable.z_wires
+        )
+    )
+    lx = _rows(
+        tuple(
+            (f"logical observable {index}", observable.x_wires)
+            for index, observable in enumerate(observables)
+            if observable.x_wires
+        )
+    )
+    return CssCodeMatrices(hz=hz, hx=hx, lz=lz, lx=lx)
 
 
 _ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"

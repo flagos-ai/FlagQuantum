@@ -130,14 +130,17 @@ descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
 `from_memory_circuit` calls: it enumerates the locations a noise record
 configures, injects one at a time into the source program the circuit carries,
 and reads the flip set off the circuit's own detector and observable layouts.
-`_code_matrix_entries` is the **read** route: it takes a parity-check matrix
-(`hz[k, q]` is one when a bit flip on data qubit `q` flips check `k`) and a
-logical-operator matrix in the same convention, and derives every signature
-combinatorially, with nothing lowered or executed.
+`_code_matrix_entries` is the **read** route: it takes the four CSS blocks
+(`hz[k, q]` is one when a Z-type check `k` sees data qubit `q`, `hx`, and the
+logical-operator matrices `lz` and `lx` in the same convention), and derives every
+signature combinatorially, with nothing lowered or executed.
 `DetectorErrorModel.from_code_matrices` is its public entry point and
-`code_matrices` is the bridge that lifts a code record's Z-type checks and Z-type
-logical operators into the pair it consumes, so a code described by its
-stabilizers reaches a model without a circuit being written for it.
+`css_code_matrices` is the bridge that lifts a code record into the
+`CssCodeMatrices` record it consumes, so a code described by its stabilizers
+reaches a model without a circuit being written for it. The bridge reads every
+block the record declares; a logical observable that is neither pure X nor pure Z
+is refused with its index named rather than read as one of the two, so the fault
+family a half-read code would have lost cannot be lost silently.
 
 The two routes describe different experiments and the difference is stated rather
 than glossed. The matrix route is the code-capacity one: a fault in round `r`
@@ -146,7 +149,12 @@ final round has no band after it, so its detector count is `num_rounds *
 num_checks` with no terminal readout. A memory circuit measures its data qubits,
 so it gains a terminal detector per Z-type check and its count is one band per
 round plus that terminal. Neither geometry stands for the other, and each is
-pinned against stim through a transcription that states its own assumption.
+pinned against stim through a transcription that states its own assumption. A
+fault that is still in the data at the end of the run is still seen by the
+logical readout, so a physical fault spans one band, and the model's second band
+is the one place the two descriptions genuinely diverge; that divergence is
+pinned as the exact relation between the two mechanism sets rather than as a
+tolerance.
 
 Both routes carry the same single fault family: a data wire's bit flip and a
 check's syndrome bit flipped at readout. The phase-flip family an `hx`/`lx` pair
@@ -214,13 +222,20 @@ compared across four noise strengths and two seeds.
 
 `tests/qec/test_dem_code_matrices_stim.py` is the read route's separate
 independent check, and it is separate on purpose. Its stim circuit states the
-code-capacity assumption and nothing else: the faults live on their own qubits,
-which are reset every round, so a fault cannot leak past the round it is injected
-in, and the observable is accumulated on a wire of its own. Handing stim that
-circuit and requiring its own error analysis to reproduce the shape, the
-mechanism count and every full signature and rate is a statement about the matrix
-route rather than about the memory circuit — the memory circuit's transcription
-ends in a terminal data readout and has a different detector count. Running the
+code-capacity assumption and nothing else: the data qubits persist across rounds
+and no terminal data readout exists, so a fault keeps flipping the syndrome of
+every later extraction and the detector count is the matrix route's own. The
+experiment is run once per readout basis, because `lz` and `lx` anti-commute and
+no single state has both as a deterministic value, and the model is restricted to
+the matching basis for each run. An extraction before round zero is noiseless and
+declares no detector: it supplies the prior every round-zero band is compared
+against, which is the only way an X-type check can have one at all, since an
+X-type ancilla on a register never measured in that basis has a coin-toss
+outcome. Handing stim that circuit and requiring its own error analysis to
+reproduce the shape and every full signature and rate is a statement about the
+matrix route rather than about the memory circuit — the memory circuit's
+transcription ends in a terminal data readout and has a different detector
+count. Running the
 matrix route against the memory transcription would conflate the two geometries
 and hide which of them a failure belonged to, so the same suite asserts that they
 differ: at distance three and three rounds the repetition code has six detectors

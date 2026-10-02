@@ -10,7 +10,13 @@ from .circuit import (
     ObservableLayout,
     build_memory_circuit,
 )
-from .codes import CodeCheck, RepetitionCode, RotatedSurfaceCode, StabilizerCode
+from .codes import (
+    CodeCheck,
+    RepetitionCode,
+    RotatedSurfaceCode,
+    StabilizerCode,
+    SteaneCode,
+)
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -20,7 +26,7 @@ from .decoders import (
 )
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
-from .dem_construction import code_matrices
+from .dem_construction import CssCodeMatrices, css_code_matrices
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
@@ -45,6 +51,7 @@ from .types import (
 
 __all__ = (
     "CodeCheck",
+    "CssCodeMatrices",
     "Correction",
     "DecodeResult",
     "Decoder",
@@ -80,10 +87,11 @@ __all__ = (
     "RepetitionMemoryShot",
     "RotatedSurfaceCode",
     "StabilizerCode",
+    "SteaneCode",
     "SyndromeRound",
     "StreamingDecoder",
     "build_memory_circuit",
-    "code_matrices",
+    "css_code_matrices",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",
