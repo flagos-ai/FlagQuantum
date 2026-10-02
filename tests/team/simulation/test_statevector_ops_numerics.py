@@ -186,6 +186,101 @@ def test_native_parameterized_batch_layer_does_not_bypass_autograd(
     )
 
 
+def _fused_rotation_batch_circuit(
+    inputs: torch.Tensor, angles: torch.Tensor
+) -> Circuit:
+    circuit = Circuit(6, bsz=inputs.shape[0], dtype=inputs.dtype, inputs=inputs)
+    for wire in range(6):
+        circuit.ry(wire, angles + 0.03 * wire)
+        circuit.rz(wire, -0.4 * angles + 0.02 * wire)
+    return circuit
+
+
+def test_native_fused_rotation_batch_layer_has_exact_rollback_and_preserves_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = torch.Generator().manual_seed(2267)
+    inputs = (
+        torch.randn((3, 64), generator=generator)
+        + 1j * torch.randn((3, 64), generator=generator)
+    ).to(torch.complex128)
+    original = inputs.clone()
+    angles = torch.linspace(-0.2, 0.3, 3, dtype=torch.float64)
+    circuit = _fused_rotation_batch_circuit(inputs, angles)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    assert (
+        circuit._last_statevector_runtime[
+            "native_cpu_parameterized_one_qubit_layer_regions"
+        ]
+        == 0
+    )
+    monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            == 1
+        )
+
+
+def test_native_fused_rotation_batch_layer_does_not_bypass_autograd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inputs = torch.randn((3, 64), dtype=torch.complex128, requires_grad=True)
+    angles = torch.linspace(-0.2, 0.3, 3, dtype=torch.float64, requires_grad=True)
+    circuit = _fused_rotation_batch_circuit(inputs, angles)
+    monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "1")
+
+    output = circuit.state(refresh=True)
+    output.real.sum().backward()
+
+    assert inputs.grad is not None
+    assert angles.grad is not None
+    assert (
+        circuit._last_statevector_runtime[
+            "native_cpu_parameterized_one_qubit_layer_regions"
+        ]
+        == 0
+    )
+
+
+def test_native_fused_rotation_layer_only_promotes_terminal_regions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = Circuit(6, bsz=3, dtype=torch.complex128)
+    for wire in range(6):
+        circuit.ry(wire, 0.1 + 0.01 * wire)
+        circuit.rz(wire, -0.2 - 0.01 * wire)
+    circuit.cx(0, 1)
+    for wire in range(6):
+        circuit.ry(wire, 0.3 + 0.01 * wire)
+        circuit.rz(wire, -0.4 - 0.01 * wire)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "1")
+    circuit.state(refresh=True)
+    program = next(
+        value
+        for key, value in circuit._backend_programs.items()
+        if key and key[0] == "statevector"
+    )
+    native_regions = tuple(
+        step for step in program if bool(getattr(step, "native_parameterized", False))
+    )
+
+    assert tuple(len(step.regions) for step in native_regions) == (6,)
+    assert all(
+        tuple(instruction.name for instruction in region.instructions) == ("ry", "rz")
+        for region in native_regions[0].regions
+    )
+
+
 def test_single_qubit_fusion_preserves_wire_order_and_reordering_evidence() -> None:
     layout = ((), ())
     program = tuple(

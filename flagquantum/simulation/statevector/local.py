@@ -40,6 +40,7 @@ from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
     native_fixed_layer_compile_enabled,
+    native_fused_rotation_layer_compile_enabled,
     native_parameterized_layer_compile_enabled,
 )
 from .operations import (
@@ -782,6 +783,14 @@ def _execute_statevector_program(
                 n_wires=circuit.n_wires,
                 owns_state=owns_output,
                 parameter_bindings=parameter_bindings,
+                matrix_builder=lambda region, state: _dense_region_matrix(
+                    circuit,
+                    region,
+                    state,
+                    parameter_bindings,
+                    batched_rx_ry_rz_matrices,
+                    batched_rotation_matrices,
+                ),
             )
             if native_output is not None:
                 output = native_output
@@ -984,6 +993,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 batch_size=batch_size,
             )
         )
+        native_fused_rotation_layer = native_fused_rotation_layer_compile_enabled()
         enable_cpu_native_clifford_matching = native_clifford_matching_compile_enabled(
             circuit._instructions,
             parameter_bindings,
@@ -1016,6 +1026,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_native_fixed_one_qubit_layer,
             "cpu_native_parameterized_one_qubit_layer",
             enable_cpu_native_parameterized_one_qubit_layer,
+            "cpu_native_fused_rotation_layer",
+            native_fused_rotation_layer,
             "cpu_native_clifford_matching",
             enable_cpu_native_clifford_matching,
             "cpu_controlled_phase_decomposition",
@@ -1042,6 +1054,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_native_parameterized_one_qubit_layer=(
                     enable_cpu_native_parameterized_one_qubit_layer
                 ),
+                enable_cpu_native_fused_rotation_layer=native_fused_rotation_layer,
                 enable_cpu_native_clifford_matching=(
                     enable_cpu_native_clifford_matching
                 ),
