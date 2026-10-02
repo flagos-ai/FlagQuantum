@@ -27,6 +27,7 @@ from .noise import (
 )
 from .pauli import Pauli
 from .repetition import run_repetition_memory_experiment
+from .sampling import sample_memory_circuit
 from .types import (
     Correction,
     DecodeResult,
@@ -79,4 +80,5 @@ __all__ = (
     "build_memory_circuit",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
+    "sample_memory_circuit",
 )

@@ -9,11 +9,21 @@ asks -- what do the measurements read out.
 
 What this module owns
 ---------------------
-One conversion and one numeric entry point:
+One conversion and two numeric entry points:
 
 - translating validated FlagQuantum IR into the engine's circuit form, refusing
-  every instruction this engine cannot represent, and
-- sampling measurement outcomes for a requested wire list.
+  every instruction this engine cannot represent,
+- sampling measurement outcomes for a requested wire list, and
+- sampling every measurement a Clifford program records when that program
+  carries positioned bit-flip channels.
+
+The second entry point exists because a detector error model is defined between
+syndrome rounds rather than at a named gate: quantum error correction places its
+data error at a round boundary and its measurement error immediately before one
+check's readout, and the program is the only place that says where those
+positions are. It is deliberately not reachable from the planned stabilizer
+mode, which refuses a channel outright -- a routed `mode="stabilizer"` run still
+executes noiseless Clifford circuits.
 
 It owns no device selection, no shot policy, no seed stream, no dispatch, and no
 public result assembly. A caller that needs those goes through Runtime, which
@@ -37,22 +47,30 @@ replacement interface, and an exit plan. For this module those are:
   and imports no NVIDIA component, so it sits in the open-neutral dependency
   class rather than in the accelerated-compute class this project has to
   replace.
-- Replacement interface and exit plan. The entry point is the seam. A native
-  tableau implementation can replace the body of `sample_stabilizer` without
-  changing a caller, and the Clifford gate set below is the contract a
-  replacement has to satisfy. That work is scheduled separately rather than
-  scaffolded here, so this module holds exactly one implementation.
+- Replacement interface and exit plan. The entry points are the seam. A native
+  tableau implementation can replace the bodies of `sample_stabilizer` and
+  `sample_noisy_measurements` without changing a caller, and the Clifford gate
+  set below is the contract a replacement has to satisfy. That work is scheduled
+  separately rather than scaffolded here, so this module holds exactly one
+  implementation of each.
 
 Fail-closed contract
 --------------------
 An instruction outside the Clifford gate set is refused with a named error
-naming the accepted set. Nothing is approximated, decomposed, or silently
-dropped, because a stabilizer result that quietly answers a different circuit is
-worse than a refusal: the caller cannot tell the two apart from the samples.
+naming the accepted set. The positioned-noise entry accepts one channel and one
+measurement shape: a single-wire `bit_flip` whose Kraus operators are the
+bit-flip pair, and one wire per measurement. Amplitude damping and phase
+damping are refused because this engine cannot represent them as one Pauli error
+at one position, and a multi-wire measurement is refused because the caller
+reads the record back one recorded bit at a time. Nothing is approximated,
+decomposed, or silently dropped, because a stabilizer result that quietly
+answers a different circuit is worse than a refusal: the caller cannot tell the
+two apart from the samples.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from importlib import import_module
 from types import ModuleType
@@ -63,6 +81,7 @@ import torch
 from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, ValidationError
+from ...noise import KrausChannel
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
 # the mapping is total over the Clifford subset of the operator schema: an
@@ -97,6 +116,17 @@ _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 
 # `stim` documents a seed as an integer in `range(2**64)`.
 _SEED_LIMIT = 2**64
+
+# The opcodes the positioned-noise entry translates, and the engine's names for
+# them. `bit_flip` is the only channel it executes: the flip is a Pauli error at
+# one position, which the engine represents exactly, while amplitude and phase
+# damping are not Pauli errors at all.
+_NOISE_OPCODE = "bit_flip"
+_MEASURE_OPCODE = "measure"
+_RESET_OPCODE = "reset"
+_NOISE_ENGINE_NAME = "X_ERROR"
+_MEASURE_ENGINE_NAME = "M"
+_RESET_ENGINE_NAME = "R"
 
 _EXTRA_NAME = "stim"
 
@@ -273,4 +303,203 @@ def sample_stabilizer(
     circuit = _engine_circuit(instructions, request.wires)
     sampler = circuit.compile_sampler(seed=validated_seed)
     samples = sampler.sample(shots=request.shots)
+    return torch.as_tensor(samples, dtype=torch.int64)
+
+
+def _validate_shots(shots: Any) -> int:
+    """Return the shot count, refusing anything that is not a positive integer."""
+
+    if isinstance(shots, bool) or not isinstance(shots, int):
+        raise ValidationError(f"shot count must be an integer, got {shots!r}")
+    if shots <= 0:
+        raise ValidationError(f"shot count must be positive, got {shots}")
+    return shots
+
+
+def _bit_flip_probability(instruction: Any, index: int) -> float:
+    """Return the flip probability a positioned bit-flip channel carries.
+
+    The channel's Kraus operators are the only thing an instruction carries, so
+    the probability is read back off them rather than trusted from a parameter
+    map. The operators are also compared against the bit-flip pair: an
+    instruction named ``bit_flip`` whose operators are a different channel would
+    otherwise be sampled as a bit flip, and the caller could not tell the two
+    apart from the samples.
+    """
+
+    matrix = instruction.matrix
+    operators = (
+        matrix.kraus if isinstance(matrix, KrausChannel) else tuple(matrix or ())
+    )
+    if len(operators) != 2:
+        raise CapabilityError(
+            f"instruction {index} {instruction.name!r} carries "
+            f"{len(operators)} Kraus operator(s); stabilizer sampling executes a "
+            "bit-flip channel as exactly two"
+        )
+    flipped = torch.as_tensor(operators[1])
+    probability = float(torch.real(torch.trace(flipped.mH @ flipped) / 2).item())
+    if not 0.0 <= probability <= 1.0:
+        raise ValidationError(
+            f"instruction {index} {instruction.name!r} flips with probability "
+            f"{probability}, which is not a probability"
+        )
+    pauli_x = torch.tensor([[0, 1], [1, 0]], dtype=flipped.dtype)
+    if not torch.allclose(flipped, math.sqrt(probability) * pauli_x, atol=1e-6):
+        raise CapabilityError(
+            f"instruction {index} {instruction.name!r} does not carry the "
+            "bit-flip pair; stabilizer sampling executes a bit-flip channel as "
+            "the identity and the Pauli X"
+        )
+    return probability
+
+
+def _noisy_operations(
+    ir: CircuitIR,
+) -> tuple[tuple[str, tuple[int, ...], float | None], ...]:
+    """Return engine operations for a Clifford program with positioned noise.
+
+    Gates, resets, measurements, and single-wire bit-flip channels all translate;
+    anything else is refused. A channel stays where the caller put it, which is
+    the whole point of this conversion: the position of a bit flip relative to
+    the gates around it is what makes it a data error at a round boundary or a
+    measurement error at one readout.
+    """
+
+    operations: list[tuple[str, tuple[int, ...], float | None]] = []
+    for index, instruction in enumerate(ir.instructions):
+        opcode = canonical_opcode(instruction.name)
+        schema = get_operator_schema(opcode)
+        wires = tuple(int(wire) for wire in instruction.wires)
+        if schema is not None and schema.channel:
+            if opcode != _NOISE_OPCODE:
+                raise CapabilityError(
+                    f"instruction {index} {opcode!r} is not supported by "
+                    "stabilizer sampling with positioned noise; the only channel "
+                    f"it executes exactly is {_NOISE_OPCODE!r}"
+                )
+            operations.append(
+                (_NOISE_ENGINE_NAME, wires, _bit_flip_probability(instruction, index))
+            )
+            continue
+        gate = _GATE_NAMES.get(opcode)
+        if gate is not None:
+            operations.append((gate, wires, None))
+            continue
+        if opcode == _MEASURE_OPCODE or opcode == _RESET_OPCODE:
+            if len(wires) != 1:
+                raise CapabilityError(
+                    f"instruction {index} {opcode!r} names {len(wires)} wire(s); "
+                    "stabilizer sampling records one bit per measurement, so a "
+                    "measurement must name one wire"
+                )
+            operations.append(
+                (
+                    (
+                        _MEASURE_ENGINE_NAME
+                        if opcode == _MEASURE_OPCODE
+                        else _RESET_ENGINE_NAME
+                    ),
+                    wires,
+                    None,
+                )
+            )
+            continue
+        raise CapabilityError(
+            f"instruction {index} {opcode!r} is not a Clifford gate, a reset, a "
+            f"measurement, or a {_NOISE_OPCODE!r} channel; stabilizer sampling "
+            f"accepts {_CLIFFORD_SET_TEXT}, {_MEASURE_OPCODE!r}, "
+            f"{_RESET_OPCODE!r}, and {_NOISE_OPCODE!r} and fails closed rather "
+            "than approximating"
+        )
+    return tuple(operations)
+
+
+def _noisy_engine_circuit(
+    operations: tuple[tuple[str, tuple[int, ...], float | None], ...],
+    terminal_wires: tuple[int, ...],
+) -> Any:
+    """Build the engine circuit for positioned noise and interleaved readouts."""
+
+    stim = _stim()
+    circuit = stim.Circuit()
+    for name, wires, probability in operations:
+        if probability is None:
+            circuit.append(name, list(wires))
+        else:
+            circuit.append(name, list(wires), probability)
+    if terminal_wires:
+        circuit.append(_MEASURE_ENGINE_NAME, list(terminal_wires))
+    return circuit
+
+
+def sample_noisy_measurements(
+    program: Any,
+    *,
+    shots: int,
+    terminal_wires: Sequence[int] | None = None,
+    seed: int | None = None,
+) -> torch.Tensor:
+    """Sample every measurement a Clifford program records.
+
+    Unlike :func:`sample_stabilizer`, which measures a requested wire list once
+    at the end of a noiseless circuit, this entry point executes the program's
+    own measurements in order and accepts single-wire bit-flip channels placed
+    between them. That is the shape a detector error model needs: a syndrome
+    round is read where the program reads it, and a bit flip lands exactly where
+    the caller put it.
+
+    Args:
+        program: A `~flagquantum.Circuit` or a validated `~flagquantum.CircuitIR`
+            whose instructions are Clifford gates, single-wire resets,
+            single-wire measurements, and single-wire bit-flip channels.
+        shots: Positive number of sampling repetitions.
+        terminal_wires: Wires to measure once after the program has run, in
+            record order. Defaults to no terminal measurement.
+        seed: Seed for the sampling stream. The engine documents identical
+            samples for an identical seed only on one engine version and one
+            machine's instruction set, so a seed reproduces a run rather than
+            pinning a bit pattern.
+
+    Returns:
+        An `int64` tensor of shape `(shots, num_recorded)`. The first columns are
+        the program's own measurements in instruction order, one column per
+        single-wire measurement; the remaining columns are ``terminal_wires`` in
+        the order given.
+
+    Raises:
+        StabilizerDependencyError: The optional engine is not installed.
+        CapabilityError: The program carries a channel other than a bit flip, a
+            non-Clifford gate, or a measurement naming more than one wire.
+        ValidationError: The shot count, seed, terminal wire, or record shape is
+            not a valid one.
+    """
+
+    ir = ensure_circuit_ir(program)
+    if ir.measurements:
+        kinds = ", ".join(sorted({node.kind for node in ir.measurements}))
+        raise CapabilityError(
+            "sample_noisy_measurements does not read lowered measurement nodes "
+            f"(found kind(s): {kinds}); the program's own measurements are what "
+            "it samples"
+        )
+    shots = _validate_shots(shots)
+    validated_seed = _validate_seed(seed)
+    selected = () if terminal_wires is None else tuple(terminal_wires)
+    outside = tuple(wire for wire in selected if wire >= ir.n_wires)
+    if outside:
+        raise ValidationError(
+            f"terminal wire(s) {outside} outside circuit range "
+            f"[0, {ir.n_wires - 1}]"
+        )
+    operations = _noisy_operations(ir)
+    recorded = sum(1 for name, _, _ in operations if name == _MEASURE_ENGINE_NAME)
+    if recorded + len(selected) == 0:
+        raise ValidationError(
+            "sampling requires at least one recorded measurement; the program "
+            "records none and no terminal wire was requested"
+        )
+    circuit = _noisy_engine_circuit(operations, selected)
+    sampler = circuit.compile_sampler(seed=validated_seed)
+    samples = sampler.sample(shots=shots)
     return torch.as_tensor(samples, dtype=torch.int64)

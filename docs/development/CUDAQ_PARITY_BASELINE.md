@@ -177,8 +177,9 @@ The validator enforces:
 - every declared domain appears in `domain_order`, and every status, priority, and
   dependency class is one of the declared values;
 - every `maturity_ref` names an entry that exists in `capability-maturity.toml`,
-  and a `supported` row has one; a row whose implementation spans two registry
-  entries names both through `maturity_refs` and uses one form or the other;
+  and a `supported` row has one; a row whose implementation genuinely spans more
+  than one registry entry names every one of them through `maturity_refs` and
+  uses one form or the other;
 - every row carries evidence, taken from the row or from its domain default, and
   every evidence item is either an existing repository path or a `search:` token
   recording the negative search that established an absence;
@@ -204,7 +205,7 @@ supported rows until executable manifests and tests exist. This baseline does no
 change that rule. Because every `supported` row in
 `contracts/cudaq-parity-matrix.toml` carries a `maturity_ref`, every such row
 already has a registered, executable FlagQuantum capability behind it. A row
-whose implementation spans two registry entries names both through
+whose implementation spans more than one registry entry names all of them through
 `maturity_refs`, and the tool checks every entry it names.
 
 ## Maintenance

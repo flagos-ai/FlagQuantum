@@ -79,11 +79,53 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
+## Sample the circuit itself, not the model
+
+`sampling.py` samples the same experiment from the circuit rather than from the
+model, so a logical-failure rate no longer depends on the statevector ceiling that
+bounds construction. It shares the code record and the noise record with the
+model above and nothing else: the model derives each mechanism's signature from
+the source, this module derives each mechanism's instruction position from the
+lowered program.
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    sample_memory_circuit,
+)
+
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+sample = sample_memory_circuit(
+    memory,
+    noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+    shots=1000,
+    seed=0,
+)
+print(sample.detectors.shape, sample.observables.shape)
+```
+
+A data flip is placed at the round boundary *before* the round's first gate, so it
+opens the frame that round's detectors compare against, and a measurement flip is
+placed immediately *before* the readout of the check it corrupts. Neither position
+exists in the source program, whose bounded hybrid capture refuses a channel call
+outright, so both are derived from the lowered program — and the program must
+lower to `rounds` identical blocks measuring each check once in the code's
+declared order. A program that lowers to anything else, a channel that is not the
+bit-flip pair, and a lowered measurement node are each refused with a stated
+reason rather than sampled under an attribution that may be wrong.
+
+Because the two samplers are separate code paths, a rate from this one is
+circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
+two to each other rather than letting either stand for the other.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model decoder,
+[sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [circuit.py](circuit.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:
