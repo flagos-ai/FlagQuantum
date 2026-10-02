@@ -48,6 +48,9 @@ SAVED_PARAMETER_VALIDATION_RESULT_NAME = (
     "native_cpu_adjoint_saved_parameter_validation_cpu_arm64_20261002.json"
 )
 PARALLEL_GRAIN_RESULT_NAME = "native_cpu_adjoint_parallel_grain_cpu_arm64_20261002.json"
+EULER_POST_REDUCTION_RESULT_NAME = (
+    "native_cpu_adjoint_euler_post_reduction_cpu_arm64_20261002.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
@@ -982,6 +985,74 @@ def test_checked_in_parallel_grain_comparison_is_reproducible() -> None:
     ).read_text(encoding="utf-8")
     assert "2.272x" in report
     assert "18.007x" in report
+    assert "PennyLane Lightning" in report
+    assert "FlagQuantum example" in report
+    assert "## Reproduce" in report
+
+
+def test_checked_in_euler_post_reduction_comparison_is_reproducible() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / EULER_POST_REDUCTION_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_euler_post_reduction_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        rollback,
+        "pennylane_lightning_adjoint",
+    ]
+    assert payload["n_wires"] == [14, 16, 18, 20, 22]
+    assert payload["environment"]["torch_threads"] == 8
+    assert payload["methodology"]["calls_per_sample"] == 3
+    assert len(payload["cases"]) == 10
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        optimized = case["engines"]["flagquantum_adjoint"]
+        legacy = case["engines"][rollback]
+        lightning = case["engines"]["pennylane_lightning_adjoint"]
+        assert optimized["backward"]["sample_count"] == 21
+        assert (
+            optimized["value_and_grad"]["median_seconds"]
+            <= 1.10 * legacy["value_and_grad"]["median_seconds"]
+        )
+        assert (
+            lightning["value_and_grad"]["median_seconds"]
+            > optimized["value_and_grad"]["median_seconds"]
+        )
+
+    wide_vqe = [
+        case
+        for case in payload["cases"]
+        if case["workload"]["name"] == "hardware_efficient_vqe"
+        and case["workload"]["n_wires"] in {20, 22}
+    ]
+    assert all(
+        case["comparison"]["engine_over_flagquantum_median"][rollback]["backward"]
+        > 1.08
+        for case in wide_vqe
+    )
+    assert all(
+        case["comparison"]["engine_over_flagquantum_median"][rollback]["value_and_grad"]
+        > 1.04
+        for case in wide_vqe
+    )
+
+    report = path.with_name(
+        "NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION_CPU_ARM64_20261002.md"
+    ).read_text(encoding="utf-8")
+    assert "1.127x" in report
+    assert "19.394x" in report
     assert "PennyLane Lightning" in report
     assert "FlagQuantum example" in report
     assert "## Reproduce" in report

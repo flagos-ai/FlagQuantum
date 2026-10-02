@@ -59,6 +59,12 @@ records an exact rollback A/B for branchless amplitude-pair traversal and the
 same-wire RZ/RY/RX Euler-triple reverse kernel. It reports absolute backward and
 total times, speedups, correctness, workload meaning, and reproduction steps.
 
+[`NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION_CPU_ARM64_20261002.md`](NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION_CPU_ARM64_20261002.md)
+records a same-binary rollback A/B for reducing raw Euler bilinears before the
+coordinate transform. It reports the wide-state VQE gain, the no-Euler QAOA
+control, complete PennyLane Lightning comparison, public example, and exact
+reproduction command.
+
 [`NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE_CPU_ARM64_20260929.md`](NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE_CPU_ARM64_20260929.md)
 records the 22-qubit VQE rollback A/B for terminal Euler-layer no-restore,
 CX-to-rotation boundary fusion, flat SIMD pair traversal, and reused Pauli
