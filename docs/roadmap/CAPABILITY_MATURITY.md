@@ -49,16 +49,19 @@ therefore walks `artifacts/`, `benchmarks/results/` and
 `docs/development/evidence/` rather than a list, and asks both questions a reader
 depends on. A revision is obtainable when this repository holds the commit and a ref
 of this repository reaches it, because a clone and a plain fetch obtain exactly the
-commits the refs they fetch reach; of the forty-seven distinct revisions recorded
+commits the refs they fetch reach; of the forty-eight distinct revisions recorded
 under those roots, one is obtainable. Every other revision must be declared in
 `evidence-revision-origins.toml`, which names the origin a reader can obtain it
 from. Asking only whether the object was in the database was not enough:
-twenty-four revisions are unreachable from every ref, so a clone obtains none of
-them, and twenty of the twenty-four are absent from this checkout's object database as
+twenty-five revisions are unreachable from every ref, so a clone obtains none of
+them, and twenty of the twenty-five are absent from this checkout's object database as
 well, so an answer read from the checkout would differ between checkouts and the
 declaration is what makes the verdict the same everywhere. `unreferenced_object`
 covers those, since the remote still serves the object by name while nothing
-guarantees that it will. `producing_host_history` covers the
+guarantees that it will. The class is measured rather than frozen: its most recent
+entry is a revision recorded by an artifact merged after this table was written, whose
+branch was deleted when its pull request merged, so an unobtainable pin reached `main`
+within a day of the gate that asks about it. `producing_host_history` covers the
 eighteen revisions of history this repository does not contain. Seventeen belong to
 `FlagQuantum/FlagQuantum`, a private repository re-created from a product baseline
 rather than cloned from this one; this repository's public history carries
@@ -93,8 +96,8 @@ rather than only reporting it. Five revisions are recorded by the four Jiuding
 records under that root that write the revision out in full, and all five are
 unreferenced objects of this repository's
 remote, each confirmed by fetching it from a fresh repository three times, so they
-are declared in `evidence-revision-origins.toml`, which now carries twenty-four
-revisions of that class. Those records are what `docs/guides/JIUDING.md`, the release
+are declared in `evidence-revision-origins.toml`, whose unreferenced-object class the
+change also states one entry larger. Those records are what `docs/guides/JIUDING.md`, the release
 notes and this document cite as their hardware evidence, and until this root was
 walked their pins were disclosures a reader relied on that nothing checked.
 
@@ -122,7 +125,7 @@ completed: one in the Quafu artifact, nine in three Jiuding records, one in a CU
 comparison record, one in the Quafu live-execution document, one in the split
 real/imag contract, and five in this document. Completing the Quafu artifact's
 `source_revision`
-is why the table gained a twenty-fourth `unreferenced_object` row: the eight-character
+is why the table gained an `unreferenced_object` row: the eight-character
 pin named a commit this repository does not hold, and writing the revision out in
 full is what let the gate ask about it for the first time. Three Jiuding records were
 already inside the walk before their citations were completed, and the gate read

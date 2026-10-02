@@ -24,27 +24,33 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Forty-seven distinct revisions are recorded under the three walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other forty-six appear below in
+# Forty-eight distinct revisions are recorded under the three walked roots, and one of
+# them -- a commit on `main` -- is obtainable. The other forty-seven appear below in
 # one of three states.
 #
-# `unreferenced_object` (twenty-four revisions) means no branch and no tag reaches
+# `unreferenced_object` (twenty-five revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote
-# does serve all twenty-four to `git fetch origin <revision>` by name, each
+# does serve all twenty-five to `git fetch origin <revision>` by name, each
 # confirmed over three fresh fetches, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the twenty-four is the head of a closed
-# pull request. No ref of this repository reaches any of the twenty-four, so a
+# policy rather than a promise, and one of the twenty-five is the head of a closed
+# pull request. No ref of this repository reaches any of the twenty-five, so a
 # complete clone obtains none of them; twenty are absent from this checkout's object
-# database as well, and the remaining four linger here without a ref, which is what an
-# answer read from the checkout rather than from the declaration would depend on. The
+# database as well, and the remaining five linger here without a ref, which is what an
+# answer read from the checkout rather than from the declaration would depend on. Two
+# of the twenty-five entered this table from a different direction than the rest. The
 # twenty-fourth is
-# `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered this table only after
+# `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
-# unobtainable pin sat inside a walked artifact unasked.
+# unobtainable pin sat inside a walked artifact unasked. The twenty-fifth,
+# `0e2d57204cb4fdd3f002de94367346923f7d1b33`, was published after this table was
+# first written by `benchmarks/results/local/mps_two_site_dispatch_a800.json`, and
+# the branch that introduced it was deleted when its pull request merged, so the
+# object is exactly as unobtainable as the rest of the class: three fresh `git fetch`
+# attempts served it by name, and no ref of this repository reaches it.
 #
 # `producing_host_history` (eighteen revisions) means the run happened in a history
 # this repository does not contain. Seventeen are commits of
@@ -429,6 +435,14 @@ path = "benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json"
 
 [[artifact.revision]]
 value = "f1e0dbcdb57c5889a7c2ae6a17456b44139667ff"
+origin = "unreferenced_object"
+
+
+[[artifact]]
+path = "benchmarks/results/local/mps_two_site_dispatch_a800.json"
+
+[[artifact.revision]]
+value = "0e2d57204cb4fdd3f002de94367346923f7d1b33"
 origin = "unreferenced_object"
 
 
