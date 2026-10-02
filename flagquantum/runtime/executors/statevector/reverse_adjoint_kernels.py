@@ -21,6 +21,7 @@ from ....simulation.statevector.operations import (
 )
 from .forward import (
     StatevectorExchangeWorkspace,
+    _flat_local_address_supported,
     _is_diagonal_instruction,
     _triton_local_cx_enabled,
     _vectorized_cross_shard_cx,
@@ -278,6 +279,7 @@ def _apply_matrix_gate(
         if instruction.name == "cx" and _triton_local_cx_enabled(
             device_type=shard_state.amplitudes.device.type,
             dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+            addressable=_flat_local_address_supported(shard_state.amplitudes),
         ):
             state, scratch = _vectorized_local_cx_gate(
                 shard_state,

@@ -38,6 +38,7 @@ from .forward import (
     StatevectorExchangeWorkspace,
     TorchDistributedStatevectorResult,
     _cross_shard_cx_packing_enabled,
+    _flat_local_address_supported,
     _is_diagonal_instruction,
     _ket_checkpoint_mode,
     _local_block_fusion_enabled,
@@ -809,6 +810,7 @@ class _ShardedForwardSweep:
                 runtime_supported=instruction.name == "cx",
                 device_type=self.shard_state.amplitudes.device.type,
                 dtype=str(self.shard_state.amplitudes.dtype).removeprefix("torch."),
+                addressable=_flat_local_address_supported(self.shard_state.amplitudes),
             )
             if instruction.name == "cx":
                 self.kernel_dispatch_evidence.record(cx_decision)

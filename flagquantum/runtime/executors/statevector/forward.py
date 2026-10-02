@@ -14,6 +14,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....kernels.catalog import KernelRequest
+from ....kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -71,11 +72,23 @@ def _single_process_cpu_direct_enabled() -> bool:
     return raw.strip().lower() not in {"0", "false", "off", "no"}
 
 
+def _flat_local_address_supported(amplitudes: torch.Tensor) -> bool:
+    """Whether a Triton flat local-gate kernel may address this shard.
+
+    The local kernels derive one linear element offset per amplitude pair, so a
+    state past their address contract stays on the index-based eager path
+    instead of faulting the CUDA context.
+    """
+
+    return amplitudes.numel() <= FLAT_LOCAL_MAX_AMPLITUDES
+
+
 def _triton_local_1q_decision(
     *,
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    addressable: bool = True,
 ) -> KernelDecision:
     requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
         "1",
@@ -96,7 +109,7 @@ def _triton_local_1q_decision(
         ),
         implementation_id="FQKI-TRITON-SV-001-A",
         requested=requested,
-        runtime_supported=runtime_supported,
+        runtime_supported=runtime_supported and addressable,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
         capture_compiler_identity=True,
@@ -108,6 +121,7 @@ def _triton_local_cx_decision(
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    addressable: bool = True,
 ) -> KernelDecision:
     return select_cataloged_triton_kernel(
         "local_cx",
@@ -122,18 +136,21 @@ def _triton_local_cx_decision(
         ),
         implementation_id="FQKI-TRITON-SV-002-A",
         requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
-        runtime_supported=runtime_supported,
+        runtime_supported=runtime_supported and addressable,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
         capture_compiler_identity=True,
     )
 
 
-def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
+def _triton_local_cx_enabled(
+    *, device_type: str, dtype: str, addressable: bool = True
+) -> bool:
     return bool(
         _triton_local_cx_decision(
             device_type=device_type,
             dtype=dtype,
+            addressable=addressable,
         ).accelerated
     )
 
@@ -624,6 +641,7 @@ def _vectorized_local_gate(
         runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+        addressable=_flat_local_address_supported(shard_state.amplitudes),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)

@@ -5,6 +5,7 @@ import importlib.util
 import pytest
 
 import flagquantum.kernels.provenance as kernel_provenance
+import flagquantum.runtime.executors.statevector.forward as forward
 import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
 from flagquantum.kernels.catalog import KernelRequest
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
@@ -183,6 +184,48 @@ def test_portable_mode_has_precedence_over_accelerator_availability(monkeypatch)
 
     assert not decision.accelerated
     assert decision.reason == "portable_mode"
+
+
+def test_dispatch_keeps_an_unaddressable_shard_on_the_index_path(monkeypatch):
+    """A state past the flat-local addressing contract must not reach a kernel."""
+
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
+
+    cx = forward._triton_local_cx_decision(
+        device_type="cuda", dtype="complex64", addressable=False
+    )
+    local_1q = forward._triton_local_1q_decision(
+        device_type="cuda", dtype="complex64", addressable=False
+    )
+
+    assert not cx.accelerated
+    assert not local_1q.accelerated
+    assert cx.reason == "input_not_supported"
+    assert local_1q.reason == "input_not_supported"
+
+
+def test_dispatch_accelerates_an_addressable_shard(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
+    triton_available.cache_clear()
+
+    try:
+        decision = forward._triton_local_cx_decision(
+            device_type="cuda", dtype="complex64", addressable=True
+        )
+    finally:
+        triton_available.cache_clear()
+
+    assert decision.accelerated
+
+
+def test_the_flat_local_address_limit_matches_the_kernel_contract():
+    import flagquantum.kernels.triton as triton_kernels
+
+    assert forward.FLAT_LOCAL_MAX_AMPLITUDES == triton_kernels.FLAT_LOCAL_MAX_AMPLITUDES
 
 
 def test_dispatch_evidence_aggregates_actual_decisions(monkeypatch):
