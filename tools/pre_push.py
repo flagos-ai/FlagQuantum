@@ -120,6 +120,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_openqasm_import_contract.py"),
         ),
         Check(
+            "qubit vocabulary ledger",
+            (python_executable, "tools/check_qubit_vocabulary.py"),
+        ),
+        Check(
             "Double-Single FP32 contract",
             (python_executable, "tools/check_double_single_contract.py"),
         ),
