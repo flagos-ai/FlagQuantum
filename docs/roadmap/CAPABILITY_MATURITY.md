@@ -45,16 +45,16 @@ Only six checked-in validators resolved a revision, and each had its artifact pa
 written into it, so an artifact no validator named was never asked: nineteen
 artifacts under `artifacts/` recorded revisions this repository does not contain,
 and thirteen of them said nothing about it. `tools/check_evidence_revisions.py`
-therefore walks `artifacts/`, `benchmarks/results/` and
+therefore walks every citation file type under `artifacts/`, `benchmarks/results/` and
 `docs/development/evidence/` rather than a list, and asks both questions a reader
 depends on. A revision is obtainable when this repository holds the commit and a ref
 of this repository reaches it, because a clone and a plain fetch obtain exactly the
-commits the refs they fetch reach; of the sixty-two distinct revisions recorded
+commits the refs they fetch reach; of the sixty-three distinct revisions recorded
 under those roots, one is obtainable. Every other revision must be declared in
 `evidence-revision-origins.toml`, which names the origin a reader can obtain it
 from. Asking only whether the object was in the database was not enough:
-thirty-nine revisions are unreachable from every ref, so a clone obtains none of
-them, and thirty of the thirty-nine are absent from this checkout's object database as
+forty revisions are unreachable from every ref, so a clone obtains none of
+them, and thirty-one of the forty are absent from this checkout's object database as
 well, so an answer read from the checkout would differ between checkouts and the
 declaration is what makes the verdict the same everywhere. `unreferenced_object`
 covers those, since the remote still serves the object by name while nothing
@@ -84,14 +84,17 @@ six artifacts under `artifacts/` do and which
 one abbreviated value no measurement here expands; both records are read, and a
 revision whose two records disagree fails the gate rather than passing twice.
 
-The gate walks JSON artifacts under exactly those three roots, which is a boundary
-rather than a claim of full coverage, and what falls outside it is measured rather
-than assumed. Counting a pin as any full-length hexadecimal value, fifty-nine
-(file, revision) pairs across sixteen files record a revision that no artifact under
-those roots records: fifty-five of the pairs are under `docs/`, two under
-`examples/`, one in `.github/`, and one under `benchmarks/` in prose the JSON-only
-walk cannot see. Those pairs name fifty-four distinct revisions, of which fifty-one
-resolve in this checkout and three do not.
+The gate walks every citation file type under exactly those three roots, which is a
+boundary rather than a claim of full coverage, and what falls outside it is measured
+rather than assumed. Counting a pin as any full-length hexadecimal value in a tracked
+file outside those roots, and a pair only when no walked artifact records that
+revision, sixty-nine (file, revision) pairs across fifteen files record a revision no
+walked artifact records: sixty-three of the pairs are under `docs/`, five under
+`examples/`, and one in `.github/`. Those pairs name fifty-four distinct revisions, of
+which fifty-one resolve in this checkout and three do not. The count is a measurement
+of this tree rather than a constant, because it includes the pins in this document: a
+paragraph that names a revision raises the number it reports, so a reader who repeats
+the method here reads a later count than the one written down.
 
 Adding `docs/development/evidence/` accounted for the largest group of those pairs
 rather than only reporting it. All fourteen unreferenced revisions that root's
@@ -127,27 +130,31 @@ ended in a timeout after ninety seconds, and a timeout is uninformative in eithe
 direction. What answers instead is a request for the commit object, scoped to the
 repository the revision is declared against: GitHub's
 `GET /repos/flagos-ai/FlagQuantum/git/commits/<sha>`, and the same value under
-`/commits/<sha>`, each asked twice. That endpoint answers 200 for all thirty-nine
+`/commits/<sha>`, each asked twice. That endpoint answers 200 for all forty
 `unreferenced_object` revisions, 404 for all eighteen `producing_host_history` ones
 and 404 for all four `external_dependency` ones, while also answering 200 for a commit
 on `main`, 404 for a commit of `pytorch/pytorch` and 404 for a commit that exists only
 in the checkout that produced it -- so the endpoint reads this repository's object
-database, not GitHub's, and the thirty-nine it holds are exactly the thirty-nine no ref
+database, not GitHub's, and the forty it holds are exactly the forty no ref
 reaches. It is reproducible with `gh api` by anyone who reads the table, which the
 fetch count is not.
 
-What remains outside the walk is three revisions, and none is a pin a reader is
-asked to check out. `.github/workflows/ci.yml` compares a base revision against the
+What remains outside the walk is three values, and none is a pin a reader is asked to
+check out. `.github/workflows/ci.yml` compares a base revision against the
 git zero-SHA placeholder, so the all-zero value is a shell literal rather than a
 revision. `examples/assets/manifest.json` records a revision of
 `google-bert/bert-base-uncased` in `assets[2].revision` and `assets[3].revision` --
 the value quoted as `BERT_TOKENIZER_REVISION` in `examples/quantum_transformer.py` --
-and no FlagQuantum repository contains it or should. The third,
-`aaa3a70c698dc629c37baa2719607444aa3b6381`, is named in prose by
-`benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md`; the
-remote serves it, so it belongs to the unreferenced-object class declared above, and
-it stays outside because the walk reads JSON artifacts and not the markdown citing
-them, which is a limit of the walk rather than a statement about the revision.
+and `e6281661ce1c48d982bc483cf8a173c1bbeb5d31` is the same class in `stanfordnlp/imdb`;
+no FlagQuantum repository contains either and neither is this repository's to account
+for. The class the walk left outside until now -- a revision named in prose by a
+comparison record under `benchmarks/results/` -- is no longer outside:
+`benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` and
+`benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md` are asked about
+the three revisions they name, `aaa3a70c698dc629c37baa2719607444aa3b6381` among them,
+and the three are declared in `evidence-revision-origins.toml` against the files that
+name them. Which file type a revision is written in no longer decides whether a reader
+is told what it is.
 
 The walk asks what an artifact records; it does not ask whether a reader can turn the
 citation into a commit. A shortened hexadecimal run cannot be expanded by a reader

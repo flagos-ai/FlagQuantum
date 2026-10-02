@@ -341,6 +341,98 @@ def test_gate_walks_artifacts_no_validator_names(repository: Path) -> None:
     assert "artifacts/added_later.json" in errors[0]
 
 
+def _write_prose(
+    root: Path, name: str, text: str, directory: str = "artifacts"
+) -> Path:
+    path = root / directory / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_a_revision_written_in_prose_under_a_walked_root_is_read(
+    repository: Path,
+) -> None:
+    # Red before this change: the walk opened `*.json` and nothing else, so a record
+    # that named the revision it ran at in a sentence was read by no check even under
+    # a root the walk already covered. The miss is the same defect as an artifact no
+    # validator named, one file type over, and it is what left a real comparison
+    # record's pin unasked until now.
+    _with_filler(repository)
+    _write_prose(
+        repository,
+        "notes.md",
+        f"The run combined the runner at revision {ABSENT_REVISION} with the"
+        " released source.\n",
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "artifacts/notes.md" in errors[0]
+    assert ABSENT_REVISION in errors[0]
+    assert "line 1" in errors[0]
+    # The revision is written in prose, so no field can carry an origin beside it and
+    # the diagnostic asks for the table rather than offering the artifact-side answer.
+    assert "_origin" not in errors[0]
+
+
+def test_a_prose_revision_is_declared_against_the_file_that_names_it(
+    repository: Path,
+) -> None:
+    # The control for the test above, and the scope of the declaration: a prose record
+    # holds no revision-named field, so the table is the only place its revision can be
+    # accounted for. A declaration naming another file does not cover it, which is what
+    # makes the two markdown comparison records appear in the table in their own right
+    # rather than behind the JSON they report on.
+    _write_prose(
+        repository,
+        "notes.md",
+        f"The run combined the runner at revision {OTHER_ABSENT_REVISION}.\n",
+    )
+    _write_artifact(
+        repository, "other.json", {"source_revision": OTHER_ABSENT_REVISION}
+    )
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/other.json", OTHER_ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        ),
+    )
+
+    uncovered = _errors(repository)
+    assert len(uncovered) == 1
+    assert "artifacts/notes.md" in uncovered[0]
+
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/other.json", OTHER_ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        )
+        + _declaration(
+            "artifacts/notes.md", OTHER_ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        ),
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_only_a_full_length_run_is_read_out_of_prose(repository: Path) -> None:
+    # The length is the whole of what separates a revision from the other hexadecimal
+    # text a prose record carries -- a digest, a task identifier, a date -- because a
+    # file that is not JSON holds no field name to scope the question. A shortened run
+    # is the citation half's business, which reports it only when this repository can
+    # expand it, and an abbreviating record is not asked here.
+    _with_filler(repository)
+    _write_prose(
+        repository,
+        "notes.md",
+        f"Task {ABSENT_REVISION[:12]} ran against digest {FILLER_REVISION[:32]}.\n",
+    )
+
+    assert _errors(repository) == ()
+
+
 def test_gate_walks_the_benchmark_result_root(repository: Path) -> None:
     # Red before this change: the walked roots named `artifacts/` only, so the pins
     # under `benchmarks/results/` were never asked however many validators existed.
