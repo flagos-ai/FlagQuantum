@@ -186,7 +186,9 @@ _SHORT_REVISION_PATTERN = re.compile(
 #: only while the remote retains unreferenced objects. Whether the checkout running
 #: this gate also holds the object depends on that checkout and not on the remote, so
 #: the gate cannot tell this origin from a commit no repository serves; the
-#: declaration is verified by fetching the revision from the remote by name.
+#: declaration is established by counted fetches of the revision from the remote by
+#: name, whose method ``evidence-revision-origins.toml`` states, because a failed
+#: fetch is a dropped connection or a transient error as readily as a refusal.
 ORIGIN_UNREFERENCED_OBJECT = "unreferenced_object"
 
 #: The revision names a commit of an external dependency recorded beside it.
