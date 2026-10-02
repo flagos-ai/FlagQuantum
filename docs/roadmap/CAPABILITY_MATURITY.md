@@ -76,6 +76,40 @@ own revisions by stating `<field>_origin` beside any field that records one, whi
 six artifacts under `artifacts/` do; both records are read, and a revision whose two
 records disagree fails the gate rather than passing twice.
 
+The gate walks JSON artifacts under exactly those two roots, which is a boundary
+rather than a claim of full coverage, and what falls outside it is measured rather
+than assumed. Counting a pin as any full-length hexadecimal value, sixty-three
+(file, revision) pairs across nineteen files record a revision that no artifact under
+those roots records: fifty-nine of the pairs are under `docs/`, two under
+`examples/`, one in `.github/`, and one under `benchmarks/` in prose the JSON-only
+walk cannot see. Those pairs name fifty-nine distinct revisions, of which fifty-one
+resolve in a complete clone and eight do not. Two of the eight are not revisions:
+`.github/workflows/ci.yml` records the git zero-SHA placeholder, and
+`benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` names a
+runner revision in prose inside a root the gate already reads. Five of the remaining
+are unreferenced objects of this repository's remote, served anonymously by name and
+reached by no ref, the same class as the eighteen declared above: `0a26c364…`
+(`base_commit` of a private-GPU Bell record), `aec65643…` and `ecaf903c…`
+(`implementation_commit` of two further records), and `b30886cb…` and `0a13cfa2…`
+(`image.runtime_source_commit` and `image.benchmark_driver_commit` of a
+strong-scaling record), all under `docs/development/evidence/`. Only
+`docs/guides/JIUDING.md` points a reader at any of those records, and no test, tool,
+or workflow reads one, so their pins are disclosures a reader relies on and nothing
+checks.
+
+The eighth is why widening the roots is a decision rather than a one-line change.
+`examples/assets/manifest.json` records a revision of `google-bert/bert-base-uncased`
+in `assets[2].revision` and `assets[3].revision` -- the value quoted as
+`BERT_TOKENIZER_REVISION` in `examples/quantum_transformer.py` -- and no FlagQuantum
+repository contains it or should. The walk is key-agnostic by design: it treats any
+full-length hexadecimal value at any depth as a revision, which is how it finds the
+field names this repository uses without maintaining a list of them. Walking
+`examples/` would therefore demand a FlagQuantum origin for a third-party dataset
+revision, reporting a defect where the tree is correct. Narrowing the rule to a
+declared set of revision-bearing field names, or declaring a root's revision fields
+with it, is the precondition for walking any root that mixes FlagQuantum pins with
+revisions of another system.
+
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its
 returned loss and `.grad` are explicitly FP32 delivery boundaries. A separate
