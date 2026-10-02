@@ -27,6 +27,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.algorithms.primitives import qft
 from flagquantum.core import ADJOINT_RULES, OPERATOR_SCHEMAS
 from flagquantum.core.ir import IR_VERSION, Instruction, IRValidationError
 from flagquantum.errors import CapabilityError, ValidationError
@@ -253,6 +254,88 @@ def test_the_placement_flags_hold_on_a_measured_composition() -> None:
     assert placement["mutates_receiver"] is True
     assert placement["returns"] == "receiver"
     assert len(block.to_ir().instructions) == 3
+
+
+def _instruction_fields(
+    circuit: fq.Circuit,
+) -> list[tuple[str, tuple[int, ...], dict[str, Any]]]:
+    """Return the three fields a composed instruction must carry unchanged."""
+
+    return [
+        (item.name, item.wires, dict(item.params))
+        for item in circuit.to_ir().instructions
+    ]
+
+
+def test_compose_expands_to_the_hand_built_program() -> None:
+    """Expansion, instruction by instruction: the composed program is the hand-built one.
+
+    `expansion_tests` in the contract names this test, and
+    `tools/check_circuit_composition_contract.py` refuses a name that is not here. The
+    measurement is exact equality of the emitted instruction lists, not a state
+    comparison: two different programs can reach the same state, and the contract claims
+    the emitted program.
+    """
+
+    block = fq.Circuit(2).h(0).cnot(0, 1).rz(1, 0.3)
+
+    # A non-identity placement into a receiver that already carries an instruction, so
+    # both the remapping and the append are inside one comparison.
+    composed = fq.Circuit(4).x(2).compose(block, qubits=(2, 0))
+    hand_built = fq.Circuit(4).x(2).h(2).cnot(2, 0).rz(0, 0.3)
+    assert _instruction_fields(composed) == _instruction_fields(hand_built)
+    assert composed.to_ir().instructions == hand_built.to_ir().instructions
+    assert torch.allclose(composed.state(), hand_built.state())
+
+    # The same comparison with the default placement, which is the identity map.
+    default = fq.Circuit(2).compose(block)
+    assert _instruction_fields(default) == _instruction_fields(block)
+    assert default.to_ir().instructions == block.to_ir().instructions
+
+    # The exit condition of this wave, with a library program instead of a hand one. The
+    # plan writes `fq.gates.qft(3)`; that path does not exist, and the shipped program is
+    # `flagquantum.algorithms.primitives.qft`. The expansion is written out by hand here
+    # so the comparison does not run the same code it is checking.
+    library = fq.Circuit(5).h(0).compose(qft(3), qubits=(1, 2, 3))
+    expected = fq.Circuit(5).h(0)
+    expected.h(1)
+    expected.cphase(2, 1, theta=math.pi / 2)
+    expected.cphase(3, 1, theta=math.pi / 4)
+    expected.h(2)
+    expected.cphase(3, 2, theta=math.pi / 2)
+    expected.h(3)
+    expected.swap(1, 3)
+    assert _instruction_fields(library) == _instruction_fields(expected)
+    assert library.to_ir().instructions == expected.to_ir().instructions
+    assert torch.allclose(library.state(), expected.state())
+
+
+def test_adjoint_expands_to_the_hand_built_inverse() -> None:
+    """Expansion, instruction by instruction: the inverse is the reversed hand-built one.
+
+    The contract also claims `returns = "new_circuit"` and
+    `receiver_is_mutated = false`, so the comparison is made against a receiver that is
+    read again afterwards rather than against the object the method returned.
+    """
+
+    block = fq.Circuit(2).h(0).cnot(0, 1).rz(1, 0.3)
+    forward = _instruction_fields(block)
+
+    inverse = block.adjoint()
+    hand_built = fq.Circuit(2).rz(1, -0.3).cnot(0, 1).h(0)
+    assert _instruction_fields(inverse) == _instruction_fields(hand_built)
+    assert inverse.to_ir().instructions == hand_built.to_ir().instructions
+    assert _instruction_fields(block) == forward
+
+    # The inverse undoes the program: the two together are the identity on the state, in
+    # the composed order `adjoint` then `block`. This is the numeric half of the same
+    # claim and it is measured through `compose`, so it also covers placement.
+    circuit = fq.Circuit(3, dtype=torch.complex128)
+    circuit.compose(block.adjoint(), qubits=(0, 1))
+    circuit.compose(block, qubits=(0, 1))
+    initial = fq.Circuit(3, dtype=torch.complex128).state().detach()
+    assert len(circuit.to_ir().instructions) == 6
+    assert torch.allclose(circuit.state().detach(), initial, atol=1e-14)
 
 
 def test_declared_adjoint_rules_are_the_operator_schema_vocabulary() -> None:
