@@ -91,6 +91,10 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "same native adjoint with the legacy 128-item rotation scheduling grain",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_euler_post_reduction_rollback": (
+            "same native adjoint with Euler gradients transformed once per pair",
+            "statevector_adjoint",
+        ),
         "pennylane_lightning_adjoint": (
             "lightning.qubit adjoint through the PyTorch interface",
             "statevector_adjoint",
