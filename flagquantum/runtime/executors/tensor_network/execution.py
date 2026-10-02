@@ -8,7 +8,7 @@ handled by :mod:`distributed_execution`.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from math import ceil
 from pathlib import Path
@@ -254,15 +254,68 @@ class _SparseContractionOutcome:
 
     value: torch.Tensor
     tasks: tuple[DistributedTNSliceTask, ...]
-    rank_partial_bytes: dict[int, int]
+    rank_partial_bytes: Mapping[int, int]
     semantics: str
     scalability_blockers: tuple[str, ...]
     working_set_preflight: dict[str, Any]
 
 
+class GatheredRankBytes(Mapping[int, int]):
+    """Per-rank reduction payload sizes, kept on the device until they are read.
+
+    The contraction gathers these sizes on the device because every rank
+    publishes every rank's `local_memory_bytes_by_rank`, and reporting the local
+    rank's bytes with zeros for the others would describe a topology that did
+    not run. The numbers are evidence about the run rather than input to it, so
+    converting them inside the contraction put a device-to-host copy in the
+    region a profiler measures: the sample then carried the cost of publishing a
+    number nobody had asked for yet. The gathered tensors are kept and converted
+    when the summary that publishes them is built, which is after execution.
+
+    The mapping is read-only, and its content is what the dict it replaces
+    held, so a caller cannot tell the two apart except by when it synchronizes.
+    The conversion is done once and kept, because the sizes it reads were fixed
+    by the collective that produced them.
+    """
+
+    __slots__ = ("_gathered", "_values")
+
+    def __init__(self, gathered: Sequence[torch.Tensor]) -> None:
+        self._gathered = tuple(gathered)
+        self._values: tuple[int, ...] | None = None
+
+    def _read(self) -> tuple[int, ...]:
+        if self._values is None:
+            if self._gathered:
+                self._values = tuple(
+                    int(value) for value in torch.cat(list(self._gathered)).tolist()
+                )
+            else:
+                self._values = ()
+        return self._values
+
+    def __getitem__(self, rank: int) -> int:
+        values = self._read()
+        index = int(rank)
+        if index < 0:
+            index += len(values)
+        if not 0 <= index < len(values):
+            raise KeyError(rank)
+        return values[index]
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(range(len(self._gathered)))
+
+    def __len__(self) -> int:
+        return len(self._gathered)
+
+    def __repr__(self) -> str:
+        return f"GatheredRankBytes(ranks={len(self._gathered)})"
+
+
 def _gather_rank_partial_bytes(
     local_bytes: int, *, local_tensor: torch.Tensor
-) -> dict[int, int]:
+) -> GatheredRankBytes:
     """Collect every rank's reduction payload, not just this rank's.
 
     `local_memory_bytes_by_rank` is read as per-rank evidence, so reporting the
@@ -270,15 +323,19 @@ def _gather_rank_partial_bytes(
     did not run. The gather rides the same device and dtype family as the
     contracted tensor because a backend may reject a CPU collective (NCCL) or a
     CPU-only process group may reject a CUDA one (gloo).
+
+    The local size is written by a device-side fill rather than by copying a
+    one-element host list across, because that copy was a host-to-device
+    transfer issued inside the measured region to publish a number the host
+    already knew. `fill_` takes the value as an argument and issues no transfer.
     """
 
     world_size = dist.get_world_size()
-    local = torch.tensor(
-        [int(local_bytes)], dtype=torch.int64, device=local_tensor.device
-    )
+    local = torch.zeros(1, dtype=torch.int64, device=local_tensor.device)
+    local.fill_(int(local_bytes))
     gathered = [torch.empty_like(local) for _ in range(world_size)]
     dist.all_gather(gathered, local)
-    return {rank: int(value.item()) for rank, value in enumerate(gathered)}
+    return GatheredRankBytes(gathered)
 
 
 def _distributed_sparse_contraction(
@@ -403,7 +460,7 @@ def _distributed_sparse_contraction(
         world_size=world_size,
         local_world_size=local_world_size,
     )
-    partial_bytes: dict[int, int] = {}
+    partial_bytes: Mapping[int, int] = {}
     if context is not None and context.initialized:
         if tasks and shared_steps is None:
             raise RuntimeError(
@@ -428,13 +485,17 @@ def _distributed_sparse_contraction(
         blockers: tuple[str, ...] = ()
     else:
         partials = []
+        # One process contracted every simulated rank's slices, so these sizes
+        # are measured rather than collected, and they are already on the host.
+        simulated_partial_bytes: dict[int, int] = {}
         for task_rank in range(world_size):
             local_tasks = tuple(task for task in tasks if task.owner_rank == task_rank)
             partial = _contract_assigned_tensor_slices(
                 nodes, output_labels, local_tasks
             )
-            partial_bytes[task_rank] = _tensor_nbytes(partial)
+            simulated_partial_bytes[task_rank] = _tensor_nbytes(partial)
             partials.append(partial)
+        partial_bytes = simulated_partial_bytes
         value = (
             sum(partials[1:], partials[0])
             if partials
@@ -883,7 +944,7 @@ def run_distributed_tensor_network(
     )
     state_cache = None
     local_simulation = False
-    rank_partial_bytes: dict[int, int] = {}
+    rank_partial_bytes: Mapping[int, int] = {}
     if context is not None and context.initialized:
         local_tasks = tuple(task for task in tasks if task.owner_rank == context.rank)
         partial = _contract_assigned_tensor_slices(
@@ -896,13 +957,17 @@ def run_distributed_tensor_network(
         state_cache = partial.reshape(plan.bsz, 2**plan.n_wires)
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
         partials = []
+        # One process contracted every simulated rank's slices, so these sizes
+        # are measured rather than collected, and they are already on the host.
+        simulated_partial_bytes: dict[int, int] = {}
         for task_rank in range(world_size):
             local_tasks = tuple(task for task in tasks if task.owner_rank == task_rank)
             partial = _contract_assigned_tensor_slices(
                 plan.nodes, plan.output_labels, local_tasks
             )
-            rank_partial_bytes[task_rank] = _tensor_nbytes(partial)
+            simulated_partial_bytes[task_rank] = _tensor_nbytes(partial)
             partials.append(partial)
+        rank_partial_bytes = simulated_partial_bytes
         if partials:
             total = partials[0]
             for partial in partials[1:]:

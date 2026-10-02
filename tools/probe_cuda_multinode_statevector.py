@@ -98,6 +98,13 @@ MEASUREMENT = "sharded_statevector_forward"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
 
+#: The staging audit profiles the steady state for the same reason the samples
+#: warm up: a circuit's first execution also does the planning it will not
+#: repeat, and that work is not what the interchange under audit consists of.
+#: The count is the sample's own, so the audited region and the measured region
+#: are the same region.
+HOST_STAGING_WARMUP_EXECUTIONS = MEASUREMENT_WARMUP_ITERATIONS
+
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -132,15 +139,35 @@ def _git_revision() -> str:
         return "unavailable"
 
 
-def _forward_circuit() -> fq.Circuit:
+def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
+    """The forward scope, with its angles bound where the workload holds them.
+
+    Without a device the angles are Python floats, which is the form the
+    single-device reference uses. With one they are device tensors, which is the
+    form a training loop holds its parameters in: an accelerator workload handed
+    a host scalar has to copy that scalar across, so a host-scalar circuit would
+    make the measured region carry one parameter upload per rotation that the
+    production shape does not have.
+
+    The tensors are detached leaves rather than `nn.Parameter`s. A parameter's
+    gradient metadata is additional state to move, and this workload's
+    parameters are not differentiated, so carrying it would measure something
+    the workload does not do.
+    """
+
+    def angle(value: float) -> Any:
+        if device is None:
+            return value
+        return torch.tensor(value, dtype=REAL_DTYPE, device=device)
+
     return (
         fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
         .h(0)
-        .ry(4, 0.31)
+        .ry(4, angle(0.31))
         .cx(4, 1)
-        .rx(3, -0.27)
+        .rx(3, angle(-0.27))
         .cx(0, 4)
-        .rz(4, 0.19)
+        .rz(4, angle(0.19))
         .cx(3, 2)
     )
 
@@ -266,7 +293,7 @@ def _performance_observations(
     is visible rather than summarized away.
     """
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
 
     def once() -> float:
         _synchronize(device)
@@ -340,6 +367,15 @@ def _host_staging_observation(
     profiler is recorded rather than raised -- fail-closed for the claim, and a
     run that cannot audit its staging still produces an artifact that says so.
 
+    The profiled region is the workload's steady state, which is the form the
+    performance samples also measure: one unprofiled execution runs first, and
+    the record states that it did. A circuit's first execution additionally
+    performs the planning it will not repeat -- which wire carries the rank bit
+    is solved once per shape and reused afterwards -- so profiling the first
+    execution would audit the planner's one-time work rather than the
+    interchange the claim is about. The number of warm-up executions is recorded
+    rather than implied, so a reader can see the scope they were given.
+
     Availability is agreed on collectively. A rank that recorded "not audited"
     while its peer entered the profiled run would be in a different collective
     from it, and the lane would report a hang instead of the reason.
@@ -354,7 +390,15 @@ def _host_staging_observation(
             "profiler_error": reason or "the profiler is unavailable on another rank",
         }
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
+    for _ in range(HOST_STAGING_WARMUP_EXECUTIONS):
+        execute_torch_distributed_statevector(
+            circuit,
+            device=device,
+            dtype=COMPLEX_DTYPE,
+            local_world_size=local_world_size,
+        )
+    _synchronize(device)
     with torch.profiler.profile(activities=_profiler_activities(device)) as profile:
         execute_torch_distributed_statevector(
             circuit,
@@ -383,6 +427,7 @@ def _host_staging_observation(
         ],
         "profiled_workload": MEASUREMENT,
         "profiler_event_count": len(events),
+        "profiled_warmup_executions": HOST_STAGING_WARMUP_EXECUTIONS,
         "host_transfer_observed": bool(transfers),
         "host_transfer_events": transfers,
     }
@@ -735,7 +780,7 @@ def probe(
     host_staging: dict[str, Any] | None = None
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
-        circuit = _forward_circuit()
+        circuit = _forward_circuit(device=device)
         result = execute_torch_distributed_statevector(
             circuit,
             device=device,

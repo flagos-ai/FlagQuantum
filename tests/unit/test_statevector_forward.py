@@ -37,6 +37,9 @@ from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
     StatevectorShardState,
 )
+from flagquantum.runtime.executors.statevector.program_cache import (
+    remap_instruction_wires,
+)
 from flagquantum.runtime.executors.statevector.transpose_dispatch import (
     _triton_transpose_1q_decision,
 )
@@ -665,6 +668,141 @@ def test_communication_aware_layout_rejects_unknown_optimization_target():
             world_size=2,
             optimization_target="backward_only",
         )
+
+
+def test_repeat_layout_reuses_the_remapped_program(monkeypatch):
+    """A repeat execution must not re-validate the parameters it already has.
+
+    Remapping rebuilds every instruction, and rebuilding one re-validates its
+    parameters. Validation of an accelerator-resident angle decides finiteness by
+    reading the value back, so rebuilding the program inside the execution region
+    synchronized the device once per parameterized gate on every execution. The
+    count is what makes that regression observable: an execution that rebuilds
+    the program calls the validator again.
+    """
+
+    from flagquantum.core import ir as ir_module
+    from flagquantum.runtime.executors.statevector import program_cache
+
+    program_cache._REMAPPED_PROGRAM_CACHE.clear()
+    validated = 0
+    original = ir_module._normalize_angle
+
+    def counting_normalize_angle(value, *, opcode, parameter):
+        nonlocal validated
+        validated += 1
+        return original(value, opcode=opcode, parameter=parameter)
+
+    monkeypatch.setattr(ir_module, "_normalize_angle", counting_normalize_angle)
+    theta = torch.tensor(0.23, requires_grad=True)
+    ir = fq.Circuit(5).h(0).ry(4, theta).cx(4, 1).rx(3, theta).cx(0, 4).to_ir()
+
+    first, first_mapping = communication_aware_wire_layout(
+        ir, world_size=2, local_world_size=1
+    )
+    after_first = validated
+    second, second_mapping = communication_aware_wire_layout(
+        ir, world_size=2, local_world_size=1
+    )
+
+    assert first_mapping == second_mapping and first_mapping != (0, 1, 2, 3, 4)
+    assert after_first == 4, "the first layout validates the two bound parameters twice"
+    assert validated == after_first, "a repeat layout re-validated the parameters"
+    assert tuple(instruction.wires for instruction in second.instructions) == tuple(
+        instruction.wires for instruction in first.instructions
+    )
+
+
+def test_layout_does_not_reuse_another_circuits_parameters():
+    """A cached program carries its own parameters, not the new circuit's."""
+
+    from flagquantum.runtime.executors.statevector import program_cache
+
+    program_cache._REMAPPED_PROGRAM_CACHE.clear()
+    first = fq.Circuit(5).h(0).ry(4, 0.31).cx(4, 1).rx(3, -0.27).cx(0, 4).to_ir()
+    second = fq.Circuit(5).h(0).ry(4, 0.77).cx(4, 1).rx(3, 0.11).cx(0, 4).to_ir()
+
+    remapped_first, _ = communication_aware_wire_layout(
+        first, world_size=2, local_world_size=1
+    )
+    remapped_second, _ = communication_aware_wire_layout(
+        second, world_size=2, local_world_size=1
+    )
+
+    def angles(program):
+        return [
+            instruction.params["theta"]
+            for instruction in program.instructions
+            if "theta" in instruction.params
+        ]
+
+    assert angles(remapped_first) == [0.31, -0.27]
+    assert angles(remapped_second) == [0.77, 0.11]
+
+
+def test_instruction_relabelling_does_not_revalidate_its_parameters(monkeypatch):
+    """The persistent layout relabels per step, and must not read back per step.
+
+    The sweep relabels each instruction against the mapping it currently holds.
+    Rebuilding an instruction re-validates its parameters, and validating an
+    accelerator-resident angle decides finiteness by reading the value back, so a
+    rebuild inside the execution region is a device synchronization in the
+    measured path. The validator's call count is what makes that visible.
+    """
+
+    from flagquantum.core import ir as ir_module
+    from flagquantum.runtime.executors.statevector import program_cache
+
+    program_cache._REMAPPED_INSTRUCTION_CACHE.clear()
+    validated = 0
+    original = ir_module._normalize_angle
+
+    def counting_normalize_angle(value, *, opcode, parameter):
+        nonlocal validated
+        validated += 1
+        return original(value, opcode=opcode, parameter=parameter)
+
+    monkeypatch.setattr(ir_module, "_normalize_angle", counting_normalize_angle)
+    instruction = fq.Circuit(4).ry(2, 0.4).to_ir().instructions[0]
+    mapping = [0, 1, 3, 2]
+    before = validated
+
+    once = remap_instruction_wires(instruction, mapping)
+    after_first = validated
+    twice = remap_instruction_wires(instruction, mapping)
+
+    assert tuple(once.wires) == (3,)
+    assert once is twice, "the relabelled instruction was rebuilt a second time"
+    assert after_first - before == 1
+    assert validated == after_first
+    # A mapping that leaves the wires alone must not rebuild at all.
+    identity = remap_instruction_wires(instruction, [0, 1, 2, 3])
+    assert identity is instruction
+    assert validated == after_first
+
+
+def test_instruction_relabelling_keeps_cached_entries_distinct():
+    """Two instructions that relabel to the same wires stay separate.
+
+    The cache is keyed on the source instruction, so an entry must never be
+    handed to a different instruction that happens to share its destination
+    wires and its id -- which is only impossible while the source is alive.
+    """
+
+    from flagquantum.runtime.executors.statevector import program_cache
+
+    program_cache._REMAPPED_INSTRUCTION_CACHE.clear()
+    first = fq.Circuit(4).ry(2, 0.4).to_ir().instructions[0]
+    second = fq.Circuit(4).rx(3, -0.9).to_ir().instructions[0]
+
+    remapped_first = remap_instruction_wires(first, [0, 1, 3, 2])
+    remapped_second = remap_instruction_wires(second, [1, 0, 3, 2])
+
+    assert remapped_first is not remapped_second
+    assert remapped_first.name == "ry" and remapped_second.name == "rx"
+    assert remapped_first.params != remapped_second.params
+    assert tuple(remapped_first.wires) == (3,)
+    assert tuple(remapped_second.wires) == (2,)
 
 
 def test_communication_aware_layout_penalizes_full_shard_subgroup_alignment():

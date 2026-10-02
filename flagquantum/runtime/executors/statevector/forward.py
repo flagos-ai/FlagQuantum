@@ -14,18 +14,20 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....kernels.catalog import KernelRequest
+from ....simulation.statevector.index_basis import (
+    _basis_indices_for_wires,
+    _basis_offset,
+    _wire_mask,
+    _zero_basis_local_indices,
+)
 from ....simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
     _apply_local_gate_eager,
     _apply_matrix,
-    _basis_indices_for_wires,
-    _basis_offset,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
-    _wire_mask,
-    _zero_basis_local_indices,
 )
 from ...distributed.identity import DistributedIdentity
 from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
@@ -40,6 +42,7 @@ from .models import (
     DistributedStatevectorPlan,
     StatevectorShardState,
 )
+from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
@@ -316,24 +319,18 @@ def communication_aware_wire_layout(
     if permutation == identity:
         return ir, permutation
 
-    def remap(wires: Sequence[int]) -> tuple[int, ...]:
-        return tuple(permutation[int(wire)] for wire in wires)
-
+    instructions, observables, measurements = remapped_program(
+        ir, cache_key, permutation
+    )
     return (
+        # The IR object itself is rebuilt rather than shared: its metadata is a
+        # plain mapping, and a caller that edited one would otherwise edit every
+        # later execution's copy of it.
         replace(
             ir,
-            instructions=tuple(
-                replace(instruction, wires=remap(instruction.wires))
-                for instruction in ir.instructions
-            ),
-            observables=tuple(
-                replace(observable, wires=remap(observable.wires))
-                for observable in ir.observables
-            ),
-            measurements=tuple(
-                replace(measurement, wires=remap(measurement.wires))
-                for measurement in ir.measurements
-            ),
+            instructions=instructions,
+            observables=observables,
+            measurements=measurements,
             metadata={
                 **ir.metadata,
                 "statevector_logical_to_physical_wires": permutation,

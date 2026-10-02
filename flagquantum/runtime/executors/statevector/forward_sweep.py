@@ -61,6 +61,7 @@ from .layout import (
 )
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
+from .program_cache import remap_instruction_wires
 from .transpose_dispatch import _triton_transpose_1q_tensor_decision
 
 
@@ -340,12 +341,8 @@ class _ShardedForwardSweep:
             self.local_count += 1
             return index + 1
         original_instruction = self.ir.instructions[index]
-        instruction = replace(
-            original_instruction,
-            wires=tuple(
-                self.persistent_mapping[int(wire)]
-                for wire in original_instruction.wires
-            ),
+        instruction = remap_instruction_wires(
+            original_instruction, self.persistent_mapping
         )
         touched = any(wire in self.plan.sharded_wires for wire in instruction.wires)
         cursor = self._cx_segment(index, instruction, touched)
@@ -663,7 +660,7 @@ class _ShardedForwardSweep:
                 ):
                     break
                 block_instructions.append(
-                    replace(candidate_original, wires=(candidate_wire,))
+                    remap_instruction_wires(candidate_original, self.persistent_mapping)
                 )
                 block_matrices.append(self.matrices[block_cursor])
                 block_wires.append(candidate_wire)

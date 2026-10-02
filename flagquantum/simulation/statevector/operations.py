@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from numbers import Number
 
 import torch
 
@@ -32,6 +31,11 @@ from .diagonal_cpu import (
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
     fuse_native_parameterized_one_qubit_layers,
+)
+from .index_basis import (
+    _basis_indices_for_wires,
+    _basis_offsets_tensor,
+    _zero_basis_local_indices,
 )
 from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
@@ -125,14 +129,21 @@ def _diagonal_region(instructions: Sequence[Instruction]) -> bool:
 def _instruction_matrix(
     instruction: Instruction, *, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
-    constant_parameters = instruction.matrix is None and all(
-        isinstance(value, Number) for value in instruction.params.values()
-    )
-    construction_device = torch.device("cpu") if constant_parameters else device
+    """Return the concrete matrix for one instruction on the device it runs on.
+
+    A gate with only constant parameters used to be built on the host and copied
+    to the target device afterwards. The copy was a real host-to-device transfer
+    in the caller's stream: it made an accelerator run stage the gate it was
+    about to apply, and a profiled region recorded that staging as a property of
+    the workload. `gate_matrix` already caches fixed gates per device, so
+    building on the target device leaves an accelerator run with no staging copy
+    at all, and leaves a CPU run constructing exactly where it did before.
+    """
+
     matrix = _gate_matrix(
         instruction,
         bsz=1,
-        device=construction_device,
+        device=device,
         dtype=dtype,
     ).to(device=device, dtype=dtype)
     if matrix.ndim == 3:
@@ -1037,58 +1048,6 @@ def _compose_gate_matrices(matrices: Sequence[torch.Tensor]) -> torch.Tensor:
     return combined
 
 
-def _zero_basis_local_indices(
-    compressed_start: int,
-    compressed_end: int,
-    wires: Sequence[int],
-    *,
-    n_wires: int,
-    rank_bits: int,
-    device: torch.device,
-) -> torch.Tensor:
-    """Expand compressed indices with zero bits at the selected local wires."""
-
-    positions = sorted(n_wires - int(wire) - 1 - rank_bits for wire in wires)
-    indices = torch.arange(
-        compressed_start, compressed_end, dtype=torch.long, device=device
-    )
-    for position in positions:
-        low_mask = (1 << position) - 1
-        low = indices & low_mask
-        indices = ((indices - low) << 1) | low
-    return indices
-
-
-def _basis_indices_for_wires(
-    global_indices: torch.Tensor, *, n_wires: int, wires: Sequence[int]
-) -> torch.Tensor:
-    """Extract the selected wire bits as compact basis indices."""
-
-    wires = tuple(int(wire) for wire in wires)
-    basis = torch.zeros_like(global_indices, dtype=torch.long)
-    for position, wire in enumerate(wires):
-        bit = (global_indices >> (n_wires - wire - 1)) & 1
-        basis |= bit.to(dtype=torch.long) << (len(wires) - position - 1)
-    return basis
-
-
-def _wire_mask(n_wires: int, wire: int) -> int:
-    """Return the global statevector bit mask for one logical wire."""
-
-    return 1 << (int(n_wires) - int(wire) - 1)
-
-
-def _basis_offset(n_wires: int, wires: Sequence[int], basis_index: int) -> int:
-    """Expand a compact gate-basis index into a global statevector offset."""
-
-    wires = tuple(int(wire) for wire in wires)
-    offset = 0
-    for position, wire in enumerate(wires):
-        if (int(basis_index) >> (len(wires) - position - 1)) & 1:
-            offset |= _wire_mask(n_wires, wire)
-    return offset
-
-
 def _apply_diagonal_gate_eager(
     amplitudes: torch.Tensor,
     diagonal: torch.Tensor,
@@ -1171,12 +1130,10 @@ def _apply_local_gate_eager(
     out = torch.empty_like(amplitudes) if output is None else output
     output_bytes = out.numel() * out.element_size()
 
-    local_offsets = torch.tensor(
-        [
-            _basis_offset(n_wires, wires, basis) >> rank_bits
-            for basis in range(gate_dim)
-        ],
-        dtype=torch.long,
+    local_offsets = _basis_offsets_tensor(
+        n_wires,
+        wires,
+        rank_bits=rank_bits,
         device=out.device,
     )
     peak = 0
