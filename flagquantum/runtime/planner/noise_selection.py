@@ -424,9 +424,24 @@ def _select_candidate(
     return available[0], selection_basis
 
 
+def carries_noise_channels(circuit_or_ir: Any) -> bool:
+    """Whether a program already contains channel instructions.
+
+    A program is noisy because it carries channels, not because a caller passed a
+    model: `lower_noise_model` writes the same instructions either way, and a
+    channel built directly by `Circuit` is on the wire already. Reading the
+    program keeps one answer for both routes.
+    """
+
+    ir = ensure_circuit_ir(circuit_or_ir)
+    return any(
+        instruction.metadata.get("is_channel") for instruction in ir.instructions
+    )
+
+
 def plan_noise_execution_selection(
     circuit_or_ir: Any,
-    noise_model: Any,
+    noise_model: Any = None,
     *,
     bsz: int = 1,
     world_size: int = 1,
@@ -446,7 +461,13 @@ def plan_noise_execution_selection(
     pilot_confidence_level: float | None = None,
     pilot_observable_count: int = 1,
 ) -> NoiseExecutionSelection:
-    """Evaluate density, statevector-trajectory, and MPS-trajectory candidates."""
+    """Evaluate density, statevector-trajectory, and MPS-trajectory candidates.
+
+    ``noise_model`` may be ``None`` when the program already carries its channels,
+    which is the case for a channel a caller wrote with `Circuit`. The model is
+    only one of the two ways those instructions reach the program; the selection
+    itself is about the instructions.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
     _validate_selection_inputs(
@@ -493,7 +514,12 @@ def plan_noise_execution_selection(
             n_wires=ir.n_wires,
             channel_count=len(channels),
             circuit_digest=ir.content_hash,
-            noise_model_identity=noise_model.identity,
+            # A calibration record keys on both, so an inline channel needs an
+            # identity of its own. The program digest is the honest one: it is what
+            # already identifies which circuit these channels belong to.
+            noise_model_identity=(
+                noise_model.identity if noise_model is not None else ir.content_hash
+            ),
             trajectory_count=trajectory_estimate.cost_count,
             trajectory_batch_size=trajectory_batch_size,
             world_size=world_size,
@@ -598,5 +624,6 @@ def plan_noise_execution_selection(
 __all__ = (
     "NoiseBackendCandidate",
     "NoiseExecutionSelection",
+    "carries_noise_channels",
     "plan_noise_execution_selection",
 )

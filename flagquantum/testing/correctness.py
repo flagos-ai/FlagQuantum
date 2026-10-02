@@ -131,6 +131,7 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
                 Instruction(
                     name=case.operator,
                     wires=(0,),
+                    params=dict(channel.parameters),
                     matrix=channel.kraus,
                     metadata={"is_channel": True},
                 ),

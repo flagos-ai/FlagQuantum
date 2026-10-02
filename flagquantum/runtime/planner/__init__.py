@@ -63,6 +63,7 @@ from .noise_calibration import (
 from .noise_selection import (
     NoiseBackendCandidate,
     NoiseExecutionSelection,
+    carries_noise_channels,
     plan_noise_execution_selection,
 )
 from .providers import (
@@ -448,7 +449,7 @@ def select_execution_mode(
     """Choose the native execution mode for automatic dispatch."""
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
-    if noise_model is not None:
+    if noise_model is not None or carries_noise_channels(ir):
         return plan_noise_execution_selection(
             ir,
             noise_model,
@@ -798,12 +799,20 @@ def plan(
         world_size=resolve_distributed_backend_policy().effective_world_size,
         require_gradients=bool(resolved.require_gradients),
     )
-    if noise_model is not None and resolved.mode not in {"auto", "density_matrix"}:
+    # The stabilizer route names the specific obstacle -- a channel is not a
+    # Clifford operation -- and the engine owns that vocabulary, so its own check
+    # runs first and the generic representation rule below answers for the rest.
+    if resolved.mode == "stabilizer":
+        _require_stabilizer_request(resolved, source_ir)
+    if (
+        noise_model is not None or carries_noise_channels(source_ir)
+    ) and resolved.mode not in {"auto", "density_matrix"}:
+        # The channel's Kraus operators are not a unitary, so a representation that
+        # holds amplitudes cannot execute them. Refusing here is what keeps
+        # `mode="mps"` from returning the noiseless number instead of a failure.
         raise ValidationError(
             "stable noisy execution supports mode='auto' or mode='density_matrix'"
         )
-    if resolved.mode == "stabilizer":
-        _require_stabilizer_request(resolved, source_ir)
     from ...core.runtime_config import get_runtime_config
 
     selected_config = runtime_config or get_runtime_config()
@@ -842,8 +851,15 @@ def plan(
     stable_trajectory_count = 32
     stable_mps_max_bond: int | None = None
     complex_bytes = 16 if resolved.precision == "complex128" else 8
+    # The model is one of two ways channel instructions reach the program; the
+    # other is a channel the caller wrote with `Circuit`. Everything below is a
+    # statement about the instructions, so it reads the program rather than the
+    # argument, and an inline channel gets the same route an equivalent model
+    # would. Reading only the argument left `mode="auto"` with an inline channel
+    # on a plain MPS representation, which returned the noiseless number.
+    has_noise = noise_model is not None or carries_noise_channels(source_ir)
     if (
-        noise_model is not None
+        has_noise
         and resolved.mode == "auto"
         and resolved.allow_approximate
         and resolved.memory_limit_bytes is not None
@@ -879,7 +895,7 @@ def plan(
         allow_approximate=resolved.allow_approximate,
         config=selected_config,
     )
-    if noise_model is not None:
+    if has_noise:
         noisy_mps = internal_plan.state_mode == "mps"
         internal_plan = replace(
             internal_plan,
@@ -895,7 +911,14 @@ def plan(
                     if noisy_mps
                     else internal_plan.state_bytes
                 ),
-                noise_model_identity=noise_model.identity,
+                # A caller who passed a model gets that model's identity. An
+                # inline channel has no model, and the program digest is the
+                # honest identity for it: it is what already names the channels.
+                noise_model_identity=(
+                    noise_model.identity
+                    if noise_model is not None
+                    else source_ir.content_hash
+                ),
             ),
         )
     from ..execution_plan_contract import attach_execution_contract
@@ -906,7 +929,7 @@ def plan(
         requested_options=options or ExecutionOptions(),
         resolved_options=resolved,
         noise_model=noise_model,
-        preserve_program_instructions=noise_model is not None,
+        preserve_program_instructions=has_noise,
     )
 
 
@@ -976,6 +999,7 @@ __all__ = [
     "build_execution_plan",
     "build_noisy_execution_plan",
     "build_tn_working_set_calibration",
+    "carries_noise_channels",
     "estimate_density_bytes",
     "estimate_mps_bytes",
     "estimate_tensor_network_bytes",

@@ -58,7 +58,7 @@ def _snapshot(**changes: object) -> TargetCapabilitySnapshot:
             {"name": "h", "parameters": ()},
             {"name": "cx", "parameters": ()},
             {"name": "rx", "parameters": ("theta",)},
-            {"name": "amplitude_damping", "parameters": ()},
+            {"name": "amplitude_damping", "parameters": ("gamma",)},
         ),
     }
     values.update(changes)
@@ -167,7 +167,7 @@ def test_target_mismatch_fails_before_emission(
 def test_missing_backend_lowering_fails_before_capability_acceptance() -> None:
     circuit = CircuitIR(
         n_wires=1,
-        instructions=(Instruction("amplitude_damping", (0,)),),
+        instructions=(Instruction("amplitude_damping", (0,), params={"gamma": 0.1}),),
         dtype="complex128",
     )
     with pytest.raises(

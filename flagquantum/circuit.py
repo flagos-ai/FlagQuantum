@@ -357,11 +357,30 @@ class Circuit:
                 f"Gate {name!r} references wire(s) {outside} outside circuit "
                 f"range [0, {self.n_wires - 1}]."
             )
+        opcode = canonical_opcode(name)
+        schema = get_operator_schema(opcode)
+        metadata: dict[str, Any] = {}
+        if schema is not None and schema.channel:
+            if matrix is not None:
+                raise ValidationError(
+                    f"Channel {opcode!r} derives its Kraus operators from its "
+                    "declared parameters; pass parameters instead of a matrix."
+                )
+            from .noise.channels import channel_from_parameters
+
+            channel = channel_from_parameters(opcode, merged_params)
+            matrix = channel.kraus
+            # Keep the declared parameters on the instruction at their stored
+            # value, so an inline channel and a channel the noise model lowered
+            # are the same instruction and the plan identity covers both alike.
+            merged_params = dict(channel.parameters)
+            metadata["is_channel"] = True
         instruction = Instruction(
-            name=canonical_opcode(name),
+            name=opcode,
             wires=normalized_wires,
             params=merged_params,
             matrix=matrix,
+            metadata=metadata,
         )
         self._instructions.append(instruction)
         self._invalidate_execution_cache(instructions_changed=True)
@@ -765,7 +784,8 @@ def _install_gate_method(name: str) -> None:
         parameter_names = schema.parameters if schema is not None else ()
         if len(values) > len(parameter_names):
             raise TypeError(
-                f"{name} accepts {arity} wire(s) and {len(parameter_names)} parameter(s)"
+                f"{name} accepts {arity} qubit(s) and "
+                f"{len(parameter_names)} parameter(s)"
             )
         # Positional values may cover only a prefix of the schema: the remaining
         # parameters are allowed to arrive as keywords, as in `rx(0, theta=0.5)`.

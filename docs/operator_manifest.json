@@ -991,7 +991,9 @@
       ],
       "opcode": "bit_flip",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1009,7 +1011,9 @@
       ],
       "opcode": "phase_flip",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1027,7 +1031,9 @@
       ],
       "opcode": "depolarizing",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1045,7 +1051,9 @@
       ],
       "opcode": "amplitude_damping",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "gamma"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"

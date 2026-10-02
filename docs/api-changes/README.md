@@ -20,6 +20,7 @@ process.
 - [Complete the qubit terminology migration on the public surface](FQ-QUBIT-TERMINOLOGY-COMPLETION-20261002.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
+- [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)
 - [Circuit expressiveness contract](FQ-CIRCUIT-EXPRESSIVENESS-CONTRACT-20260930.md)
 - [Gradient parameter frequencies](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
