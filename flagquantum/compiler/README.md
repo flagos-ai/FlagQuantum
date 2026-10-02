@@ -84,18 +84,24 @@ statevectors instead of measurement statistics has to know that; flag records of
 it belong in the capability registry, which `capability-maturity.toml` owns.
 
 Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
-wires, over a supercontrolled entangler the basis publishes -- `cx` or `cz`, the
-two opcodes this IR declares that Qiskit's two-qubit basis decomposer accepts as
-a basis gate. A matrix is the only input it accepts: turning a *named* two-qubit
-gate into the entangler basis would need that gate's matrix, which belongs to
+wires, over any supercontrolled entangler the basis publishes. Six declared
+arity-2 opcodes reach a supercontrolled Weyl point: `cx`, `cz` and `cy` as they
+stand, and `rzz`, `ryy` and `rxx` at an angle of `pi/2`. `cphase` is excluded on
+purpose -- its only supercontrolled angle is `pi`, where it is `cz`, so it would
+add a spelling rather than reach. Carrying the interaction rotations is what
+opens a trapped-ion or flux-tunable-coupler basis, whose only two-qubit gate is a
+rotation and which publishes no `cx` at all; such a basis now reaches all eleven
+declared two-qubit unitaries where it previously reached one. A matrix is the
+only input the synthesis accepts: turning a *named* two-qubit gate into the
+entangler basis would need that gate's matrix, which belongs to
 `flagquantum.simulation`, so the named path keeps its hand-written rules only and
 fails closed beyond them. The cost is one entangler for `cx`, `cz`, and `cy`, two
 for the controllized rotations, and three for `swap`, which is the far corner of
 the Weyl chamber; all eleven declared two-qubit unitaries reproduce their source
-to within `7.3e-16` on a `rz`/`sx`/`cx` basis, up to one global phase.
+to within `1.1e-15` over any of the six entanglers, up to one global phase.
 [benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
 holds the reach, cost, and phase measurement, and cross-checks the entangler
-count against Qiskit's `TwoQubitBasisDecomposer`.
+count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
