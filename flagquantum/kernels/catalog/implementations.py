@@ -216,6 +216,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_mps_hermitian_observable_adjoint",
         layouts=("mps_local_observable",),
         directions=("vjp",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(

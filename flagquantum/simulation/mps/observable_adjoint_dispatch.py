@@ -20,7 +20,9 @@ _MAX_CONTRACTION_WORK = 1 << 25
 
 
 def _mps_observable_adjoint_dispatch_enabled() -> bool:
-    return os.getenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "0").strip().lower() not in {
+    """Return whether the evidenced MPS-006 rollout is enabled."""
+
+    return os.getenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "1").strip().lower() not in {
         "0",
         "false",
         "off",
