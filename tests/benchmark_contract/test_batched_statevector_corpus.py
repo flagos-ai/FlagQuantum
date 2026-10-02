@@ -46,6 +46,7 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
             "flagquantum_native_parameterized_layer_rollback",
             "flagquantum_native_fused_rotation_layer_rollback",
             "flagquantum_native_clifford_matching_rollback",
+            "flagquantum_native_rotation_clifford_rollback",
             "flagquantum_native_clifford_phase_map_rollback",
             "flagquantum_native_diagonal_graph_rollback",
             "flagquantum_native_dense_width_rollback",
@@ -92,6 +93,12 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         assert (
             case["correctness"]["engines"][
                 "flagquantum_native_clifford_matching_rollback"
+            ]["max_abs_error"]
+            <= 1e-10
+        )
+        assert (
+            case["correctness"]["engines"][
+                "flagquantum_native_rotation_clifford_rollback"
             ]["max_abs_error"]
             <= 1e-10
         )
