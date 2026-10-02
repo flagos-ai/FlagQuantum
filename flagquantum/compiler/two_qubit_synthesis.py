@@ -734,17 +734,8 @@ def synthesize_two_qubit(
 
     The result is equal to `matrix` up to one global phase, which FlagQuantum IR
     cannot record. An empty tuple, for the two-wire identity, is a correct answer.
-
-    Examples:
-        >>> from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
-        >>> leaves = synthesize_two_qubit(
-        ...     [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
-        ...     wires=(0, 1),
-        ...     entangler="cx",
-        ...     z_rotation="rz",
-        ... )
-        >>> [item.name for item in leaves or ()]
-        ['cx']
+    A matrix already in the entangler's own class, such as `cx` read with
+    `wires=(0, 1)`, comes back as the entangler alone.
     """
 
     if entangler not in SUPERCONTROLLED_ENTANGLERS:
