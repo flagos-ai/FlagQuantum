@@ -588,14 +588,6 @@ origin = "unreferenced_object"
 
 
 [[artifact]]
-path = "benchmarks/results/local/mps_wire_probability_dispatch_a800.json"
-
-[[artifact.revision]]
-value = "e153e5370b1b9f5568a4fd7242a482a06d6a261e"
-origin = "unreferenced_object"
-
-
-[[artifact]]
 path = "benchmarks/results/smoke/mps-single-node-preflight-patent-20260728.json"
 
 [[artifact.revision]]

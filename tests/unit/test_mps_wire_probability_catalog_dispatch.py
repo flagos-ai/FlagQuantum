@@ -63,6 +63,28 @@ def test_mps_wire_probability_dispatch_fails_closed() -> None:
         )
 
 
+@pytest.mark.parametrize("valid", (True, False))
+def test_mps_wire_probability_accelerator_validation_is_async(
+    monkeypatch: pytest.MonkeyPatch,
+    valid: bool,
+) -> None:
+    calls: list[tuple[torch.Tensor, str]] = []
+    monkeypatch.setattr(
+        torch,
+        "_assert_async",
+        lambda condition, message: calls.append((condition, message)),
+    )
+    probabilities = torch.tensor([[0.25, 0.75]])
+    if not valid:
+        probabilities[0, 0] = torch.nan
+
+    probability_dispatch._require_valid_accelerator_probabilities(probabilities)
+
+    [(condition, message)] = calls
+    assert bool(condition) is valid
+    assert message == "MPS measurement probabilities are not finite"
+
+
 def test_mps_wire_probability_reference_path_reports_fallback(monkeypatch) -> None:
     monkeypatch.delenv("FQ_TRITON_MPS_WIRE_PROBABILITIES", raising=False)
     state = MPSState.zero(1, bsz=3, dtype=torch.complex64)

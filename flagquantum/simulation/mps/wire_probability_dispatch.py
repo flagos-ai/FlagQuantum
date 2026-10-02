@@ -118,6 +118,16 @@ def _try_apply_cataloged_mps_wire_probabilities(
     return _apply_cataloged_mps_wire_probabilities(tensor)
 
 
+def _require_valid_accelerator_probabilities(
+    probabilities: torch.Tensor,
+) -> None:
+    """Fail closed without synchronizing the accelerator hot path."""
+
+    normalizer = probabilities.sum(dim=-1)
+    condition = torch.isfinite(probabilities).all() & (normalizer > 1e-12).all()
+    torch._assert_async(condition, "MPS measurement probabilities are not finite")
+
+
 def _mps_wire_probabilities(state: MPSState, wire: int) -> torch.Tensor:
     """Evaluate one sampling probability pair through MPS-007 or PyTorch."""
 
@@ -128,14 +138,16 @@ def _mps_wire_probabilities(state: MPSState, wire: int) -> torch.Tensor:
         _record_mps_wire_probability_fallback()
         probabilities = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
         probabilities = torch.clamp(probabilities, min=0)
-    else:
-        _record_mps_wire_probability_route()
-    normalizer = probabilities.sum(dim=-1, keepdim=True)
-    if bool(torch.any(~torch.isfinite(probabilities))) or bool(
-        torch.any(normalizer <= 1e-12)
-    ):
-        raise RuntimeError("MPS measurement probabilities are not finite")
-    return probabilities / torch.clamp(normalizer, min=1e-12)
+        normalizer = probabilities.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(probabilities))) or bool(
+            torch.any(normalizer <= 1e-12)
+        ):
+            raise RuntimeError("MPS measurement probabilities are not finite")
+        return probabilities / torch.clamp(normalizer, min=1e-12)
+
+    _record_mps_wire_probability_route()
+    _require_valid_accelerator_probabilities(probabilities)
+    return probabilities
 
 
 __all__ = (
@@ -144,6 +156,7 @@ __all__ = (
     "_mps_wire_probability_kernel_enabled",
     "_mps_wire_probability_kernel_match",
     "_mps_wire_probabilities",
+    "_require_valid_accelerator_probabilities",
     "_require_mps_wire_probability_kernel",
     "_try_apply_cataloged_mps_wire_probabilities",
 )
