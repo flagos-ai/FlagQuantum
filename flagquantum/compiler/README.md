@@ -84,14 +84,23 @@ of the equivalence library and basis search Qiskit ships. Each rule is an exact
 closed form that forwards the source instruction's own parameter objects and
 metadata, so a trainable angle stays in the autograd graph; no rule introduces an
 angle the caller did not write; and the search branches on opcode names only,
-never on a value. Fifteen of the sixteen entries reproduce their source exactly
-and `cphase` is equal to it up to one global phase, which FlagQuantum IR has no
-field to record. The table stores the shortest statement of each identity rather
-than its closure, so the search expands each rule's leaves through the table
-again: a `cz` basis plus a z-rotation reaches all eleven declared two-qubit
+never on a value. Seventeen of the eighteen entries reproduce their source
+exactly and `cphase` is equal to it up to one global phase, which FlagQuantum IR
+has no field to record. The table stores the shortest statement of each identity
+rather than its closure, so the search expands each rule's leaves through the
+table again: a `cz` basis plus a z-rotation reaches all eleven declared two-qubit
 opcodes by name, where the four hand-written rules this replaced reached two of
-them. `ion-trap-rz-rx-rzz` is the recorded gap -- every rule routes down to `cx`
-or `cz`, and that basis publishes neither.
+them. The two three-wire entries cover the whole of this IR's multi-controlled
+surface -- `ccx` as its fifteen-gate standard form and `cswap` as a `ccx` around
+two `cx` -- and they reach the three bases that publish a `cx` or a `cz` sink.
+Qiskit splits the same operation into a Gray-code, a recursive and a V-chain
+construction, but at two controls the first of those is `CCXGate` itself and the
+other two exist to trade ancillas for fewer entanglers at five controls and up,
+which this IR cannot express. The Gray-code *statement* is still measured against
+the taken one, and declined: seven declared leaves against fifteen, but eight
+two-qubit gates against six.
+`ion-trap-rz-rx-rzz` is the recorded gap -- every entangling rule routes down to
+`cx` or `cz`, and that basis publishes neither.
 [benchmarks/compiler_basis_translation.py](../../benchmarks/compiler_basis_translation.py)
 holds the per-rule fidelity, the per-basis reach, and the difference from Qiskit's
 `BasisTranslator` on the same target bases.

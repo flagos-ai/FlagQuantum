@@ -21,6 +21,7 @@ from flagquantum.compiler.basis_translation import (
     translate,
 )
 from flagquantum.compiler.native_gate_legalization import (
+    NativeGateLegalizationError,
     _native_descriptors,
     _supports,
     legalize_native_gates,
@@ -52,6 +53,18 @@ _TWO_QUBIT_UNITARIES = tuple(
         name
         for name, schema in OPERATOR_SCHEMAS.items()
         if schema.unitary and schema.arity == 2
+    )
+)
+
+#: Every unitary opcode this IR declares on more than two wires. It is the whole
+#: of the multi-controlled surface: above arity three the IR has no opcode to
+#: name, so a Qiskit construction that only differs at five controls and up has
+#: nothing here to differ on.
+_THREE_WIRE_UNITARIES = tuple(
+    sorted(
+        name
+        for name, schema in OPERATOR_SCHEMAS.items()
+        if schema.unitary and schema.arity == 3
     )
 )
 
@@ -183,7 +196,7 @@ def _legalize(program: CircuitIR, *opcodes: str):
 def test_the_table_covers_every_opcode_it_claims_and_no_non_unitary_one() -> None:
     # Non-vacuity: the checks below iterate the table, so it has to be the size
     # it claims, and a channel must not have crept into it.
-    assert len(EQUIVALENCE_RULES) == 16
+    assert len(EQUIVALENCE_RULES) == 18
     for opcode, rules in EQUIVALENCE_RULES.items():
         assert rules, opcode
         schema = OPERATOR_SCHEMAS[opcode]
@@ -199,14 +212,16 @@ def test_the_table_covers_every_opcode_it_claims_and_no_non_unitary_one() -> Non
 def test_every_rule_reproduces_its_source_through_the_runtime() -> None:
     """The gate matrices are the only authority a rule can be checked against.
 
-    Fifteen of the sixteen entries are exact and `cphase` is not, which is
+    Seventeen of the eighteen entries are exact and `cphase` is not, which is
     asserted in both directions: a rule that started carrying a phase fails the
-    exact branch, and `cphase` losing its phase fails the inexact branch.
+    exact branch, and `cphase` losing its phase fails the inexact branch. The two
+    arity-3 entries are covered here like any other, which is the point of
+    checking a rule against the runtime matrix rather than against a source.
     """
 
     exact = sorted(set(EQUIVALENCE_RULES) - _PHASE_CARRYING_RULES)
     # Non-vacuity: both branches below have to have something in them.
-    assert len(exact) == 15
+    assert len(exact) == 17
     assert len(_PHASE_CARRYING_RULES) == 1
     assert exact == sorted(set(EQUIVALENCE_RULES) - {"cphase"})
     for opcode in sorted(EQUIVALENCE_RULES):
@@ -369,6 +384,104 @@ def test_every_declared_two_qubit_unitary_has_a_rule_or_is_named_native() -> Non
             assert translate(source, can_run=can_run) is None
             continue
         assert translate(source, can_run=can_run) is not None, name
+
+
+def test_every_declared_three_wire_unitary_reaches_a_cx_basis() -> None:
+    """The multi-controlled group is closed by the table, not by the search.
+
+    `ccx` and `cswap` are the whole arity-3 surface. A basis publishing `rz`,
+    `sx` and `cx` reaches both, and the recursion is real for `cswap`: its rule
+    emits a `ccx`, which the search expands again, so the leaves returned are
+    fifteen-gate groups rather than three.
+    """
+
+    assert _THREE_WIRE_UNITARIES == ("ccx", "cswap")
+    for name in _THREE_WIRE_UNITARIES:
+        assert name in EQUIVALENCE_RULES, name
+    basis = ("rz", "sx", "cx")
+    can_run = _can_run(*basis)
+    for name in _THREE_WIRE_UNITARIES:
+        # Non-vacuity: the source is not native, so a result is a rewrite.
+        assert not can_run(_source(name)), name
+        result = _legalize(CircuitIR(3, (_source(name),), dtype="complex128"), *basis)
+        names = tuple(item.name for item in result.program.instructions)
+        assert set(names) <= set(basis), (name, sorted(set(names) - set(basis)))
+        assert result.changed is True
+        assert result.decompositions, name
+        # The two `tdg` leaves of the `ccx` rule are Euler-synthesized, so the
+        # report names the source opcode and a rewrite that left the basis.
+        assert result.decompositions[0].source_opcode == name
+    # `cswap` recurses through its `ccx` leaf, so it is strictly longer than the
+    # three leaves its own rule states, and it is the eight-entangler shape.
+    direct = EQUIVALENCE_RULES["cswap"][0].build(_source("cswap"))
+    assert [leaf.name for leaf in direct] == ["cx", "ccx", "cx"]
+    expanded = translate(
+        _source("cswap"), can_run=can_run, z_rotation="rz", pulse_opcode="sx"
+    )
+    assert expanded is not None
+    assert [leaf.name for leaf in expanded].count("cx") == 8
+
+
+def test_the_ccx_rule_is_the_fifteen_gate_form_qiskit_decomposes_to() -> None:
+    """`ccx` is `CCXGate._define`, leaf for leaf and in order.
+
+    Qiskit's `MCXGrayCode` returns `CCXGate` at two controls, so the standard
+    fifteen-gate definition is the reference here rather than the Gray-code
+    statement. The order is pinned because it is what makes the six `cx` count
+    observable: a different but equally valid ordering is a different number of
+    entanglers on some bases.
+    """
+
+    source = Instruction("ccx", (0, 1, 2))
+    leaves = EQUIVALENCE_RULES["ccx"][0].build(source)
+    assert [leaf.name for leaf in leaves] == [
+        "h",
+        "cx",
+        "tdg",
+        "cx",
+        "t",
+        "cx",
+        "tdg",
+        "cx",
+        "t",
+        "t",
+        "h",
+        "cx",
+        "t",
+        "tdg",
+        "cx",
+    ]
+    assert [leaf.wires for leaf in leaves[:4]] == [
+        (2,),
+        (1, 2),
+        (2,),
+        (0, 2),
+    ]
+    # Six entanglers, which is the count Qiskit's `BasisTranslator` also pays.
+    assert [leaf.name for leaf in leaves].count("cx") == 6
+    # Every leaf is a declared opcode, not a name the IR has no schema for.
+    for leaf in leaves:
+        assert OPERATOR_SCHEMAS[leaf.name].unitary, leaf.name
+
+
+def test_the_three_wire_rules_fail_closed_without_an_entangler_sink() -> None:
+    """No sink, no reach -- and the refusal names the gate that is missing.
+
+    The search may not borrow an entangler it was not given. It still returns the
+    shortest rewrite it found, as documented, but every leaf of that rewrite is
+    re-checked by the consumer, and a rewrite containing an unsupported gate is a
+    refusal rather than a result. Both halves are asserted, so the refusal cannot
+    pass by the private helper returning None for an unrelated reason.
+    """
+
+    can_run = _can_run("h", "s", "t")
+    for name in _THREE_WIRE_UNITARIES:
+        leaves = translate(_source(name), can_run=can_run)
+        assert leaves is not None, name
+        assert any(leaf.name not in {"h", "s", "t"} for leaf in leaves), name
+        with pytest.raises(NativeGateLegalizationError) as raised:
+            _legalize(CircuitIR(3, (_source(name),), dtype="complex128"), "h", "s", "t")
+        assert "requires unsupported native gate" in str(raised.value), name
 
 
 # --------------------------------------------------------------------------
