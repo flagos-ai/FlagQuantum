@@ -43,15 +43,16 @@ import argparse
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 import torch
 
+from flagquantum.compiler.basis_translation import translate
 from flagquantum.compiler.native_gate_legalization import (
     NativeGateLegalizationError,
     _native_descriptors,
-    _specialized_replacement,
     _supports,
     legalize_native_gates,
 )
@@ -215,12 +216,14 @@ def legalize(program: CircuitIR, basis: Basis):
 
 
 def baseline_reach(basis: Basis) -> dict[str, Any]:
-    """The same reach with only the hand-written rewrites, no synthesis.
+    """How far the equivalence table alone reaches, with no synthesis.
 
-    Replays the decision the legalizer made before `one_qubit_synthesis` existed:
-    a basis supports an opcode directly, or one of the four hand-written rules
-    rewrites it into gates the basis supports. This is the number the reach below
-    is measured against, computed from the same descriptors rather than quoted.
+    A basis supports an opcode directly, or an exact identity rewrites it into
+    gates the basis supports. Four one-wire identities exist -- `x`, `rx`, `ry`
+    and `sdg` -- and this is the number the reach below is measured against,
+    computed from the same descriptors rather than quoted. It is the same
+    quantity `compiler_two_qubit_synthesis` reports, so the two benchmarks can
+    be read side by side.
     """
 
     descriptors = _native_descriptors(snapshot(basis), evaluated_at=_NOW)
@@ -230,7 +233,7 @@ def baseline_reach(basis: Basis) -> dict[str, Any]:
         if _supports(descriptors, instruction):
             legalized.append(opcode)
             continue
-        replacement = _specialized_replacement(instruction)
+        replacement = translate(instruction, can_run=partial(_supports, descriptors))
         if replacement is not None and all(
             _supports(descriptors, leaf) for leaf in replacement
         ):
@@ -278,8 +281,8 @@ def reach(basis: Basis) -> dict[str, Any]:
         "replacement_lengths": leaves,
         "max_replacement_length": max(leaves.values()) if leaves else 0,
         "native_opcodes": sorted(native),
-        "rewrite_only_legalized_opcode_count": before["legalized_opcode_count"],
-        "rewrite_only_legalized_opcodes": before["legalized_opcodes"],
+        "identity_table_reach_count": before["legalized_opcode_count"],
+        "identity_table_reach_opcodes": before["legalized_opcodes"],
     }
 
 
@@ -472,7 +475,7 @@ def main() -> None:
     for row in payload["reach"]:
         print(
             f"{row['label']:28s} "
-            f"{row['rewrite_only_legalized_opcode_count']:>4d}/18 "
+            f"{row['identity_table_reach_count']:>4d}/18 "
             f"{row['legalized_opcode_count']:>4d}/18 "
             f"{row['max_replacement_length']:>11d} "
             f"{row['unresolved_opcode_count']:>11d}"
