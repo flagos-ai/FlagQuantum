@@ -51,7 +51,6 @@ from .forward import (
     _vectorized_pair_exchange_gate,
     _vectorized_subgroup_exchange_gate,
     communication_aware_wire_layout,
-    remap_instruction_wires,
 )
 from .forward_rzz_segment import apply_native_rzz_segment
 from .kernel_dispatch import KernelDispatchEvidence
@@ -62,6 +61,7 @@ from .layout import (
 )
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
+from .program_cache import remap_instruction_wires
 from .transpose_dispatch import _triton_transpose_1q_tensor_decision
 
 

@@ -23,7 +23,6 @@ from flagquantum.runtime.executors.statevector.forward import (
     _vectorized_pair_exchange_gate,
     _wait_for_exchange,
     communication_aware_wire_layout,
-    remap_instruction_wires,
 )
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
@@ -37,6 +36,9 @@ from flagquantum.runtime.executors.statevector.kernel_dispatch import (
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
     StatevectorShardState,
+)
+from flagquantum.runtime.executors.statevector.program_cache import (
+    remap_instruction_wires,
 )
 from flagquantum.runtime.executors.statevector.transpose_dispatch import (
     _triton_transpose_1q_decision,
@@ -680,9 +682,9 @@ def test_repeat_layout_reuses_the_remapped_program(monkeypatch):
     """
 
     from flagquantum.core import ir as ir_module
-    from flagquantum.runtime.executors.statevector import forward as forward_module
+    from flagquantum.runtime.executors.statevector import program_cache
 
-    forward_module._REMAPPED_PROGRAM_CACHE.clear()
+    program_cache._REMAPPED_PROGRAM_CACHE.clear()
     validated = 0
     original = ir_module._normalize_angle
 
@@ -714,9 +716,9 @@ def test_repeat_layout_reuses_the_remapped_program(monkeypatch):
 def test_layout_does_not_reuse_another_circuits_parameters():
     """A cached program carries its own parameters, not the new circuit's."""
 
-    from flagquantum.runtime.executors.statevector import forward as forward_module
+    from flagquantum.runtime.executors.statevector import program_cache
 
-    forward_module._REMAPPED_PROGRAM_CACHE.clear()
+    program_cache._REMAPPED_PROGRAM_CACHE.clear()
     first = fq.Circuit(5).h(0).ry(4, 0.31).cx(4, 1).rx(3, -0.27).cx(0, 4).to_ir()
     second = fq.Circuit(5).h(0).ry(4, 0.77).cx(4, 1).rx(3, 0.11).cx(0, 4).to_ir()
 
@@ -749,9 +751,9 @@ def test_instruction_relabelling_does_not_revalidate_its_parameters(monkeypatch)
     """
 
     from flagquantum.core import ir as ir_module
-    from flagquantum.runtime.executors.statevector import forward as forward_module
+    from flagquantum.runtime.executors.statevector import program_cache
 
-    forward_module._REMAPPED_INSTRUCTION_CACHE.clear()
+    program_cache._REMAPPED_INSTRUCTION_CACHE.clear()
     validated = 0
     original = ir_module._normalize_angle
 
@@ -787,9 +789,9 @@ def test_instruction_relabelling_keeps_cached_entries_distinct():
     wires and its id -- which is only impossible while the source is alive.
     """
 
-    from flagquantum.runtime.executors.statevector import forward as forward_module
+    from flagquantum.runtime.executors.statevector import program_cache
 
-    forward_module._REMAPPED_INSTRUCTION_CACHE.clear()
+    program_cache._REMAPPED_INSTRUCTION_CACHE.clear()
     first = fq.Circuit(4).ry(2, 0.4).to_ir().instructions[0]
     second = fq.Circuit(4).rx(3, -0.9).to_ir().instructions[0]
 

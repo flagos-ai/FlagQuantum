@@ -9,12 +9,11 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
+from ....simulation.statevector.index_basis import _basis_offset, _wire_mask
 from ....simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
     _apply_gate_basis_vectors_eager,
-    _basis_offset,
     _instruction_matrix,
-    _wire_mask,
 )
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,

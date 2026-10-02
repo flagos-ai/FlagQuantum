@@ -16,6 +16,13 @@ from flagquantum.simulation.statevector.cz_graph import (
     _cz_graph_signs_cpu,
     _fuse_cz_graphs,
 )
+from flagquantum.simulation.statevector.index_basis import (
+    _basis_indices_for_wires,
+    _basis_offset,
+    _basis_offsets_tensor,
+    _wire_mask,
+    _zero_basis_local_indices,
+)
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
     _cpu_disjoint_dense_max_wires,
@@ -29,14 +36,9 @@ from flagquantum.simulation.statevector.operations import (
     _apply_local_gate_eager,
     _apply_matrix,
     _apply_matrix_layout,
-    _basis_indices_for_wires,
-    _basis_offset,
-    _basis_offsets_tensor,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
     _instruction_matrix,
-    _wire_mask,
-    _zero_basis_local_indices,
 )
 from flagquantum.simulation.statevector.program import _StatevectorCZGraphStep
 from flagquantum.simulation.statevector.two_qubit_cpu import (
