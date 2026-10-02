@@ -217,7 +217,7 @@ def test_checked_in_a800_evidence_is_canonical_and_default_eligible() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
-    assert payload["direct_kernel_win_on_all_cases"]
+    assert not payload["direct_kernel_win_on_all_cases"]
     assert payload["public_dispatch_win_over_eager_on_all_cases"]
     assert payload["public_dispatch_win_over_compiled_on_all_cases"]
     assert payload["dispatch_selection_decision"] == "eligible_for_default"

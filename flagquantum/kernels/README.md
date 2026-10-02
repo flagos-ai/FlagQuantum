@@ -163,6 +163,23 @@ window. The same `FQ_TRITON_MPS_ENVIRONMENT=1` rollout switch routes eligible
 multi-channel transfers through the exact MPS-005 catalog entry and reports
 them separately through `site_kernel_stats()`.
 
+The checked-in
+[`mps_environment_channels_dispatch_a800.json`](../../benchmarks/results/local/mps_environment_channels_dispatch_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each of five
+fixed channel-transfer shapes on `jp-a800-171` and `jp-a800-172`, under stock
+Triton 3.7.1 and FlagTree 0.7.0. Across all 20 host, compiler, and shape
+combinations, the complete public dispatch path is `1.03x` to `4.21x` faster
+than eager PyTorch and `3.69x` to `8.48x` faster than its warm compiled
+reference, with maximum absolute error `3.22e-8`. The direct kernel wrapper is
+`0.79x` to `6.76x` the speed of the direct einsum: FlagTree 0.7.0 loses that
+microbenchmark at the largest `16 x 8 x 16 x 16` boundary shape on both hosts,
+while the public dispatch path still wins against both public baselines. The
+canonical aggregate therefore records `eligible_for_default`; this authorizes
+a separate dispatch-promotion review but does not itself change the opt-in
+policy. The result is bounded development hardware evidence, not a release
+gate or scalability claim. Reproduce or validate it with
+[`benchmarks/mps_environment_channels_dispatch.py`](../../benchmarks/mps_environment_channels_dispatch.py).
+
 MPS-006 evaluates the local tensor VJP of a Hermitian observable contribution
 without constructing a per-site autograd graph. Hermitian left and right
 environments and a Hermitian two-by-two operator make the two Wirtinger terms
