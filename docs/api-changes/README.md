@@ -27,3 +27,4 @@ process.
 - [Quafu credential presence fails closed before submission](FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md)
 - [Quafu service compilation through `fq.run`](FQ-QUAFU-SERVICE-COMPILATION.md)
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)
+- [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
