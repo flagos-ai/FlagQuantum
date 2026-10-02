@@ -56,13 +56,16 @@ def parameter_shift_gradient(
             flat,
             index,
         )
-        total = None
+        terms = []
         for coefficient, shift in rule:
             shifted = flat.clone()
             shifted[index] += shift
-            term = coefficient * loss_fn(circuit_builder(shifted.reshape_as(base)))
-            total = term if total is None else total + term
-        grads.append(total)
+            terms.append(
+                coefficient * loss_fn(circuit_builder(shifted.reshape_as(base)))
+            )
+        # A one-pair rule is summed with a single tensor so no extra zero enters
+        # the graph; every evaluated term carries the caller's loss gradient.
+        grads.append(terms[0] if len(terms) == 1 else torch.stack(terms).sum())
     return (
         torch.stack(grads)
         .reshape_as(base)
