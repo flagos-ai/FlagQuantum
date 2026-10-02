@@ -32,6 +32,7 @@ Use `optimize(program)` for target-independent optimization and
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
+| Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
@@ -51,6 +52,20 @@ no field for it, so those rewrites are equal up to one global phase -- the same
 contract every `U3`-based hardware basis publishes. A consumer that compares raw
 statevectors instead of measurement statistics has to know that; flag records of
 it belong in the capability registry, which `capability-maturity.toml` owns.
+
+Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
+wires, over a supercontrolled entangler the basis publishes -- `cx` or `cz`, the
+two opcodes this IR declares that Qiskit's two-qubit basis decomposer accepts as
+a basis gate. A matrix is the only input it accepts: turning a *named* two-qubit
+gate into the entangler basis would need that gate's matrix, which belongs to
+`flagquantum.simulation`, so the named path keeps its hand-written rules only and
+fails closed beyond them. The cost is one entangler for `cx`, `cz`, and `cy`, two
+for the controllized rotations, and three for `swap`, which is the far corner of
+the Weyl chamber; all eleven declared two-qubit unitaries reproduce their source
+to within `7.3e-16` on a `rz`/`sx`/`cx` basis, up to one global phase.
+[benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
+holds the reach, cost, and phase measurement, and cross-checks the entangler
+count against Qiskit's `TwoQubitBasisDecomposer`.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
