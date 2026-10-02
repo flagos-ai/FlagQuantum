@@ -139,6 +139,21 @@ forward inputs without gradients, bond dimensions at most 32, and contraction
 work at most `2**22`. Other inputs remain on the existing PyTorch eager or
 compiled path, and route counts are exposed through `site_kernel_stats()`.
 
+The checked-in
+[`mps_environment_dispatch_a800.json`](../../benchmarks/results/local/mps_environment_dispatch_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each Identity
+and Pauli-Z case on `jp-a800-171` and `jp-a800-172`, under stock Triton 3.7.1
+and FlagTree 0.7.0. Across the fixed eight-case support matrix, the direct
+kernel wrapper is `1.39x` to `8.90x` faster than the equivalent PyTorch einsum.
+The complete public dispatch path is `3.08x` to `10.60x` faster than the eager
+reference and `2.09x` to `7.09x` faster than its warm compiled reference, with
+maximum absolute error `2.53e-8`. The canonical aggregate therefore records
+`eligible_for_default`; this authorizes a separate dispatch-promotion review
+but does not itself change the opt-in policy. The result is bounded development
+hardware evidence, not a release gate or scalability claim. Reproduce or
+validate it with
+[`benchmarks/mps_environment_dispatch.py`](../../benchmarks/mps_environment_dispatch.py).
+
 MPS-005 groups as many as eight observable channels in each Triton program so
 the channels reuse site-tensor loads. Its implementation supports contiguous
 CUDA `complex64` forward inputs without gradients, at most 32 channels, bond
