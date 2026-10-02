@@ -80,7 +80,7 @@ No row in this document is a performance comparison or a scalability claim.
 
 | Domain | supported | partial | unsupported | out_of_scope | Total |
 | --- | --- | --- | --- | --- | --- |
-| language_and_programming_model | 0 | 4 | 9 | 0 | 13 |
+| language_and_programming_model | 0 | 5 | 8 | 0 | 13 |
 | compiler_and_ir | 0 | 7 | 7 | 0 | 14 |
 | simulation_backends | 4 | 6 | 4 | 0 | 14 |
 | noise_and_error_models | 0 | 5 | 1 | 0 | 6 |
@@ -92,7 +92,7 @@ No row in this document is a performance comparison or a scalability claim.
 | realtime_control | 0 | 0 | 4 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 9 | 37 | 49 | 0 | 95 |
+| **Total** | 9 | 38 | 48 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -112,7 +112,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `python_ast_kernel` (language_and_programming_model): FlagQuantum builds circuits through an explicit builder API. There is no AST layer, so a user cannot write a Python function body as a kernel.
 - `kernel_first_class_functions` (language_and_programming_model): The public CircuitIR schema 1.0 has no function or call construct. The internal levels designed in MULTI_LEVEL_IR_ARCHITECTURE.md 5.2 do, and are the planned home.
 - `classical_control_flow` (language_and_programming_model): CircuitIR 1.0 expresses a straight-line instruction list. Classical values with def-use, blocks, branches, and bounded loops are designed but not implemented.
-- `control_adjoint_modifiers` (language_and_programming_model): Only the named gates ccx and cswap provide multi-controlled forms, and no adjoint modifier exists. A unitary passed through Circuit.any is not a modifier.
+- `control_adjoint_modifiers` (language_and_programming_model): The adjoint half is present on the Stable Core type: Circuit.adjoint() inverts a program by reversing its instruction order and inverting each instruction from the rule its opcode declares, inverting an instruction that carries a matrix by conjugate transpose, and refusing a noise channel, a dynamic operation, a classically conditioned instruction, a matrix without a conjugate transpose and an unknown opcode without a matrix with CapabilityError instead of copying them forward. 31 of the 35 registered opcodes invert. The control half is absent: only the named gates ccx and cswap provide multi-controlled forms, no controlled-modifier constructor exists, and a unitary passed through Circuit.any is not a modifier. `power` is absent for the same reason. Neither gap has an approved API change proposal, so both are owned rather than partially built.
 - `type_system_qubit_register_view` (language_and_programming_model): CircuitIR 1.0 addresses wires by integer index and has no type system. The designed QuantumIR type system and its reference-versus-value linearity rules are not implemented.
 - `dynamic_kernel_measurement_feedback` (language_and_programming_model): FlagQuantum implements this through runtime/dynamic with a candidate-stable public namespace. The registered level is below production, and the surface is narrower than the CUDA-Q baseline.
 - `custom_operation_registration` (language_and_programming_model): Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation.
@@ -217,7 +217,7 @@ CUDA-Q surface: nvq++, @cudaq.kernel, kernel arguments, classical control flow, 
 | `kernel_first_class_functions` | Kernels are typed callables with parameters, composition, and nested calls | unsupported | now | none | `ir` | The public CircuitIR schema 1.0 has no function or call construct. The internal levels designed in MULTI_LEVEL_IR_ARCHITECTURE.md 5.2 do, and are the planned home. |
 | `classical_control_flow` | if, for, and while over classical values inside a kernel | unsupported | now | none | `ir` | CircuitIR 1.0 expresses a straight-line instruction list. Classical values with def-use, blocks, branches, and bounded loops are designed but not implemented. |
 | `runtime_qubit_allocation` | Qubit allocation and release at kernel runtime with qubit lifetime | unsupported | next | none | `ir` | Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented. |
-| `control_adjoint_modifiers` | cudaq.control and cudaq.adjoint applied to arbitrary operations | unsupported | now | none | none | Only the named gates ccx and cswap provide multi-controlled forms, and no adjoint modifier exists. A unitary passed through Circuit.any is not a modifier. |
+| `control_adjoint_modifiers` | cudaq.control and cudaq.adjoint applied to arbitrary operations | partial | now | none | `circuit_composition` | The adjoint half is present on the Stable Core type: Circuit.adjoint() inverts a program by reversing its instruction order and inverting each instruction from the rule its opcode declares, inverting an instruction that carries a matrix by conjugate transpose, and refusing a noise channel, a dynamic operation, a classically conditioned instruction, a matrix without a conjugate transpose and an unknown opcode without a matrix with CapabilityError instead of copying them forward. 31 of the 35 registered opcodes invert. The control half is absent: only the named gates ccx and cswap provide multi-controlled forms, no controlled-modifier constructor exists, and a unitary passed through Circuit.any is not a modifier. `power` is absent for the same reason. Neither gap has an approved API change proposal, so both are owned rather than partially built. |
 | `type_system_qubit_register_view` | qubit, qvector, and qview types with linearity rules | unsupported | now | none | `ir` | CircuitIR 1.0 addresses wires by integer index and has no type system. The designed QuantumIR type system and its reference-versus-value linearity rules are not implemented. |
 | `dynamic_kernel_measurement_feedback` | Mid-circuit measurement and measurement-result-driven branching inside a kernel | partial | now | none | `dynamic_circuits` | FlagQuantum implements this through runtime/dynamic with a candidate-stable public namespace. The registered level is below production, and the surface is narrower than the CUDA-Q baseline. |
 | `custom_operation_registration` | register_operation for user-defined operations with backend capability negotiation | partial | now | none | none | Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation. |
@@ -232,6 +232,7 @@ Evidence:
 - domain default: `flagquantum/operators.py`
 - domain default, negative search: no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema
 
+- `control_adjoint_modifiers` override: `contracts/circuit-composition-contract.toml`, `tests/unit/test_circuit_composition_contract.py`
 - `custom_operation_registration` override: `flagquantum/circuit.py`, `flagquantum/operators.py`
 - `pauli_tracking_sbe` override: `flagquantum/simulation/stabilizer/engine.py`, `search:the sampling engine declines a noise instruction instead of tracking its frame`
 - `asynchronous_execution` override: `search:no asynchronous entry point and no in-flight result handle`

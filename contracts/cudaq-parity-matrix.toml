@@ -186,10 +186,12 @@ reason = "Wire count is fixed at circuit construction. Runtime allocation is des
 [[domains.capabilities]]
 id = "control_adjoint_modifiers"
 cudaq = "cudaq.control and cudaq.adjoint applied to arbitrary operations"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "none"
-reason = "Only the named gates ccx and cswap provide multi-controlled forms, and no adjoint modifier exists. A unitary passed through Circuit.any is not a modifier."
+maturity_ref = "circuit_composition"
+reason = "The adjoint half is present on the Stable Core type: Circuit.adjoint() inverts a program by reversing its instruction order and inverting each instruction from the rule its opcode declares, inverting an instruction that carries a matrix by conjugate transpose, and refusing a noise channel, a dynamic operation, a classically conditioned instruction, a matrix without a conjugate transpose and an unknown opcode without a matrix with CapabilityError instead of copying them forward. 31 of the 35 registered opcodes invert. The control half is absent: only the named gates ccx and cswap provide multi-controlled forms, no controlled-modifier constructor exists, and a unitary passed through Circuit.any is not a modifier. `power` is absent for the same reason. Neither gap has an approved API change proposal, so both are owned rather than partially built."
+evidence = ["contracts/circuit-composition-contract.toml", "tests/unit/test_circuit_composition_contract.py"]
 
 [[domains.capabilities]]
 id = "type_system_qubit_register_view"
