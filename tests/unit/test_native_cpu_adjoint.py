@@ -1372,6 +1372,19 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
     )
 
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD", "1")
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "0")
+    per_pair_ket = initial_ket.clone()
+    per_pair_adjoint = initial_adjoint.clone()
+    per_pair_gradients = fused_rotation_segment_adjoint_(
+        per_pair_ket,
+        per_pair_adjoint,
+        angles,
+        gate_kinds,
+        wire_tensor,
+        n_wires=7,
+    )
+
+    monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "1")
     fast_ket = initial_ket.clone()
     fast_adjoint = initial_adjoint.clone()
     fast_gradients = fused_rotation_segment_adjoint_(
@@ -1385,6 +1398,7 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
 
     assert rollback_gradients is not None
     assert nested_gradients is not None
+    assert per_pair_gradients is not None
     assert fast_gradients is not None
     tolerance = 5e-5 if dtype == torch.complex64 else 4e-12
     torch.testing.assert_close(
@@ -1400,6 +1414,13 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
     torch.testing.assert_close(fast_ket, nested_ket, atol=tolerance, rtol=tolerance)
     torch.testing.assert_close(
         fast_adjoint, nested_adjoint, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(
+        fast_gradients, per_pair_gradients, atol=tolerance, rtol=tolerance
+    )
+    torch.testing.assert_close(fast_ket, per_pair_ket, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(
+        fast_adjoint, per_pair_adjoint, atol=tolerance, rtol=tolerance
     )
 
 

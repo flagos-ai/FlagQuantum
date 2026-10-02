@@ -195,9 +195,13 @@ provenance.
 
 - Additive: one new root export, `fq.gradient`. No existing export is renamed,
   removed, reordered, or changed.
-- `root_export_budget` moves from 34 to 35 in
+- `root_export_budget` moves from 35 to 36 in
   `contracts/public-api-v1-candidate.json`, and `stable_core.retain` follows,
-  keeping the invariant that the budget equals the retained name count.
+  keeping the invariant that the budget equals the retained name count. When this
+  proposal was approved the budget read 34 and the change was written as 34 to 35;
+  `main` had meanwhile raised it to 35 for `from_openqasm`, so the merged tree
+  reconciles to 35 to 36 and `len(fq.__all__)` is `36` rather than the `35` this
+  branch measured alone.
 - `docs/public_api_v1.json` gains `gradient` in `stable_exports` with its
   verification test, so the generated `docs/generated/STABLE_API.md` gains one
   row.
@@ -252,7 +256,8 @@ The exact routes agree across all three modes to `rtol=1e-9`. A single-qubit
 `Ry` closed form pins the absolute scale: `autograd` returns
 `-0.29552021622657776` where `-sin(0.3)` is `-0.29552020666133955`, an absolute
 error of `9.57e-09`. `fq.gradient(...).gradient.requires_grad` is `False`, and
-`len(fq.__all__)` is `35`.
+`len(fq.__all__)` is `36` in the merged tree (`35` on this branch alone, which is
+what the measurement above was taken on).
 
 The 34-row gate is the reason this entry point has a focused test file at all.
 Enumerating every declared parameter of every differentiable opcode and checking

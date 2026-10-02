@@ -72,6 +72,12 @@ def _flat_rotation_pair_simd_enabled() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
+def _euler_post_reduction_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
 def native_cpu_cx_rotation_adjoint_fusion_available() -> bool:
     """Return whether a CX permutation may feed a native rotation adjoint."""
 
@@ -398,6 +404,7 @@ def _fused_rotation_segment_adjoint_result(
                 _rotation_segment_parallel_grain(),
                 _rotation_pair_fast_path_enabled(),
                 _flat_rotation_pair_simd_enabled(),
+                _euler_post_reduction_enabled(),
                 restore_state,
                 fuse_preceding_hadamards
                 and native_cpu_adjoint_rzz_h_fusion_available(),

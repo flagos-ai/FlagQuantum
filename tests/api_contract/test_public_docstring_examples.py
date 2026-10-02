@@ -8,6 +8,10 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import Layout
+from flagquantum.compiler.openqasm_import import (
+    import_openqasm,
+    import_openqasm_to_ir,
+)
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
@@ -26,11 +30,14 @@ ENTRIES = (
     fq.Observable,
     fq.compile,
     fq.expectation,
+    fq.from_openqasm,
     fq.gradient,
     fq.plan,
     fq.run,
     fq.train,
     gather_distributed_statevector,
+    import_openqasm,
+    import_openqasm_to_ir,
     planner.plan,
     recommend_simulator,
     run_cirq,

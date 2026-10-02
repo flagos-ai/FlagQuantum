@@ -36,6 +36,15 @@ are otherwise unchanged.
   result reports whether backward replayed it. See
   [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
   [gradient methods example](../../examples/gradient_methods/README.md).
+- Added the stable `fq.from_openqasm(source)` entry point, which reads back the
+  OpenQASM 2 and OpenQASM 3 text
+  `flagquantum.compiler.openqasm.emit_openqasm` writes. It reports the imported
+  program, the version it declared, and the classical-bit to qubit mapping its
+  terminal measurement block records, and exposes `to_ir()`, `to_circuit()`, and
+  `to_openqasm()`. Text outside the canonical subset is refused with an
+  `OpenQASMImportError` whose `issue_code` names the reason, so nothing is
+  imported approximately. See
+  [OpenQASM import](../api-changes/FQ-OPENQASM-IMPORT-20261002.md).
 
 - Added the experimental
   `flagquantum.experimental.distributed.train_distributed_tensor_network`

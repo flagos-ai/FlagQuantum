@@ -274,8 +274,12 @@ def _require_finite_angle(value: Any, *, owner: str) -> None:
 def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     """Check that a gate parameter is a real angle, without rewriting it.
 
-    Every gate parameter in the operator registry is a rotation angle, so it has to
-    denote a real number.  ``Circuit.ry(0, "0.3")`` stored the string, and the only
+    Every parameter in the operator registry has to denote a finite real number.
+    For a gate that number is a rotation angle; for a channel it is a probability
+    or a damping rate, and the ``[0, 1]`` range is left to the channel factory
+    because that is where the number's physical meaning lives.  The refusal names
+    the opcode as the registry classifies it, so a channel mistake is not reported
+    as a gate.  ``Circuit.ry(0, "0.3")`` stored the string, and the only
     reader was the simulator: the failure surfaced as ``ExecutionError: planned
     execution failed`` wrapping ``TypeError: new(): invalid data type 'str'``, which
     reports neither the gate nor the parameter.  ``ry(0, True)`` was worse than a late
@@ -307,7 +311,9 @@ def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     rules above are untouched by that: a type is static, so they hold on every path.
     """
 
-    owner = f"gate {opcode!r} parameter {parameter!r}"
+    schema = get_operator_schema(opcode)
+    kind = "channel" if schema is not None and schema.channel else "gate"
+    owner = f"{kind} {opcode!r} parameter {parameter!r}"
     if isinstance(value, (Parameter, ParameterExpression)):
         return
     if isinstance(value, bool):
@@ -368,15 +374,28 @@ class Instruction:
                 raise IRValidationError(
                     f"opcode {name!r} requires {schema.arity} wire(s), got {len(self.wires)}"
                 )
-            missing = tuple(key for key in schema.parameters if key not in self.params)
-            if missing:
-                raise IRValidationError(
-                    f"opcode {name!r} is missing parameter(s): {', '.join(missing)}"
+            # A gate has one representation, so every parameter it declares is
+            # required. A channel has two: the declared probability or rate, and the
+            # Kraus operators those were turned into. An instruction that already
+            # carries the operators is the channel, and requiring the numbers again
+            # would make an IR written before channel opcodes declared them
+            # unreadable under an exact-match IR version. What a channel with no
+            # operators has to define it is its parameters, so there they are
+            # required -- earlier than the executor's own refusal to run one.
+            materialized = schema.channel and self.matrix is not None
+            if not materialized:
+                missing = tuple(
+                    key for key in schema.parameters if key not in self.params
                 )
+                if missing:
+                    raise IRValidationError(
+                        f"opcode {name!r} is missing parameter(s): {', '.join(missing)}"
+                    )
             for parameter in schema.parameters:
-                _normalize_angle(
-                    self.params[parameter], opcode=name, parameter=parameter
-                )
+                if parameter in self.params:
+                    _normalize_angle(
+                        self.params[parameter], opcode=name, parameter=parameter
+                    )
 
 
 @dataclass(frozen=True)

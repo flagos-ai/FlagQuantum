@@ -53,6 +53,18 @@ descriptors and applies the bounded, verified CircuitIR decompositions.
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
 expert-facing entry point.
+`two_qubit_synthesis.py` owns the two-qubit KAK angles, the entangler table, and
+the entangler cost behind the same decompositions: it turns a 4x4 unitary into a
+supercontrolled entangler repeated one to three times, with one one-qubit factor
+between each, and it too is a private helper. The table holds every declared
+arity-2 opcode that reaches a supercontrolled Weyl point together with the angle
+it has to be applied at, so a target whose only two-qubit gate is an interaction
+rotation is synthesizable. It takes a matrix rather than an instruction, because
+the matrix of a named two-qubit gate belongs to `flagquantum.simulation`, which
+this layer must not import. The three parameter-free entangler matrices and the
+closed form of the rotation family are the only gate matrices it holds, and
+`tests/unit/test_compilation_two_qubit_synthesis.py` pins them entry-by-entry
+against that table.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
@@ -105,6 +117,8 @@ expert-facing entry points. Change or compose them through `optimize`.
   `native_gate_legalization.py`.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
   `one_qubit_synthesis.py`.
+- Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in
+  `two_qubit_synthesis.py`.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in

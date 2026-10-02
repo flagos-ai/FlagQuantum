@@ -383,7 +383,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -401,7 +401,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "s",
       "aliases": [
         "sd"
       ],
@@ -421,7 +421,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "tdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -439,7 +439,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "t",
       "aliases": [
         "td"
       ],
@@ -459,7 +459,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sxdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -477,7 +477,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sx",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -495,7 +495,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -519,7 +519,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -543,7 +543,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -567,7 +567,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [
         "p"
       ],
@@ -593,7 +593,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -617,7 +617,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "adjoint_u2_angles",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -645,7 +645,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "adjoint_u3_angles",
       "aliases": [
         "u"
       ],
@@ -757,7 +757,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -783,7 +783,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -809,7 +809,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -835,7 +835,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -860,7 +860,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -885,7 +885,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -910,7 +910,7 @@
       ]
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -991,7 +991,9 @@
       ],
       "opcode": "bit_flip",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1009,7 +1011,9 @@
       ],
       "opcode": "phase_flip",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1027,7 +1031,9 @@
       ],
       "opcode": "depolarizing",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "probability"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"
@@ -1045,7 +1051,9 @@
       ],
       "opcode": "amplitude_damping",
       "parameter_frequencies": [],
-      "parameters": [],
+      "parameters": [
+        "gamma"
+      ],
       "semantic_kind": "channel",
       "wire_convention": [
         "target"

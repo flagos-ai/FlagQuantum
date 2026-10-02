@@ -33,6 +33,7 @@ must validate the resulting behavior directly.
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
 | `legacy-root-api-test-debt.json` | Zero baseline preventing legacy root API references from returning to tests. |
 | `gradient-api-v1-candidate.json` | Authorized additive Stable Core contract for the `gradient` root export, its accepted method values, and the method it refuses. |
+| `openqasm-import-v1-candidate.json` | Authorized additive Stable Core contract for the `from_openqasm` root export, its refusal vocabulary, and the accepted OpenQASM versions. |
 | `execution-options-v1-candidate.json` | Proposed, not-yet-authorized Stable Core contract for `ExecutionOptions`. |
 
 Validate the API migration baseline with

@@ -237,6 +237,7 @@ def _noisy_program(
                 Instruction(
                     name=_NOISE_OPCODE,
                     wires=(wire,),
+                    params={"probability": float(probability)},
                     matrix=bit_flip_channel(probability).kraus,
                     metadata={"is_channel": True},
                 )

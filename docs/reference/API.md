@@ -15,6 +15,9 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
+| Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
+| Save or load OpenQASM text | `flagquantum.compiler.openqasm.emit_openqasm`, `fq.from_openqasm` | Imported program plus its measurement mapping |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
@@ -53,6 +56,44 @@ semantic qubit keywords. For example, `h(0)` and `h(qubit=0)` are equivalent;
 `cx(0, 1)` and `cx(control=0, target=1)` are equivalent. Symmetric two-qubit
 gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
 FlagQuantum IR continue to use `wires=`.
+
+`Circuit.compose(other, *, qubits=None, qubit_map=None)` continues a circuit with a
+program that was built on its own qubits, rewriting every instruction onto the qubits
+the caller names and returning the receiving circuit:
+
+```python
+block = fq.Circuit(2).h(0).cx(0, 1)
+circuit = fq.Circuit(4).x(0).compose(block, qubits=(1, 2))
+```
+
+`other` accepts a `fq.Circuit` or a `fq.CircuitIR`. With neither `qubits` nor
+`qubit_map` the placement is the identity. The map must name every qubit of `other`,
+must not place two of them on one target, and must stay inside the receiving circuit;
+a partial mapping is refused rather than completed by identity, because an identity
+image would move a gate silently.
+
+`Circuit.adjoint()` returns the circuit that undoes the one it is called on: the
+instructions in reverse order, each replaced by the single gate that inverts it. The
+rule belongs to the gate and is declared once in the operator schema, so a
+self-inverse gate is kept as it is, an angle is negated, and `s`/`t`/`sx` become
+`sdg`/`tdg`/`sxdg`:
+
+```python
+block = fq.Circuit(2).h(0).ry(0, 0.3).cx(0, 1)
+inverse = block.adjoint()
+[(item.name, item.params) for item in inverse.to_ir().instructions]
+# [('cx', {}), ('ry', {'theta': -0.3}), ('h', {})]
+```
+
+The block being inverted is left usable, and the result carries the same qubit
+count, batch size, device, and dtype. A gate recorded with its own matrix through
+`Circuit.unitary(...)` is inverted through that matrix. An operation with no
+unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
+classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
+the operation instead of being dropped from the inverse.
+
+Together, `compose` and `adjoint` express the block-reuse idiom: a sub-program is
+placed where it is needed, and the same sub-program undone is placed after it.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
@@ -132,6 +173,39 @@ separate sealed jobs without changing the selected physical-qubit mapping.
 the estimator standard error, group count, per-group shots, and total shots;
 provenance records every provider task and deployment identity. Mixed outputs
 and unsupported remote outputs fail before compilation or submission.
+
+## OpenQASM interchange
+
+One program can be written as text and read back:
+
+```python
+import flagquantum as fq
+from flagquantum.compiler.openqasm import emit_openqasm
+
+text = emit_openqasm(fq.Circuit(2).h(0).cx(0, 1))
+program = fq.from_openqasm(text)
+```
+
+`emit_openqasm` writes OpenQASM 2 or 3 through `version=`. `fq.from_openqasm`
+reads the canonical subset that emitter writes and refuses everything else with
+an `OpenQASMImportError` whose `issue_code` names the reason, so nothing is
+imported approximately. Import does not execute the program.
+
+The result reports what was read: `instructions` in source order,
+`measurement_qubits` as the qubit behind each classical bit, the declared
+`version`, and the `source` text. It is not a bare `fq.Circuit`, because a
+`Circuit` cannot carry the terminal measurement that defines that mapping. Call
+`to_circuit()` for the ordinary sampling path, `to_ir()` when the measurement
+mapping must be preserved, or `to_openqasm()` to get the canonical text back:
+
+```python
+counts = fq.run(program.to_circuit(), outputs=fq.counts(), shots=256).counts[0]
+```
+
+Import accepts one quantum register and one classical register, requires bound
+numeric parameters, refuses `barrier` and `reset`, and requires the measurement
+block to be terminal. It reads `U` as `u3`, because OpenQASM 3 has no two-angle
+gate, and accepts `pow(-1) @ sx` as the one inverse the emitter writes.
 
 ## Optimize a program
 

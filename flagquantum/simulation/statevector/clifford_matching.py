@@ -3,17 +3,25 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from ..native_cpu.permutation import native_cpu_clifford_matching_available
+from ..native_cpu.permutation import (
+    compact_cx_permutation_images,
+    fused_clifford_matching_out,
+    native_cpu_clifford_matching_available,
+    use_compact_cpu_cx_mapping,
+)
+from .fixed_layer_cpu import _matrix_tensors
 from .program import (
     _StatevectorCliffordMatchingStep,
+    _StatevectorDisjointDenseStep,
     _StatevectorGateStep,
     _StatevectorPreCXStep,
+    _StatevectorProgramStep,
 )
 
 _CLIFFORD_PHASE_MAP_CACHE_BYTES = 128 * 1024 * 1024
@@ -101,6 +109,67 @@ def _encode_clifford_phase_mapping(
     return _store_clifford_phase_map(key, signed), None
 
 
+def clifford_matching_output_reuse_enabled(
+    program: Sequence[_StatevectorProgramStep],
+) -> bool:
+    """Return whether every region preserves a reusable two-state lifetime."""
+
+    return bool(
+        os.getenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and all(
+            isinstance(step, _StatevectorCliffordMatchingStep)
+            or (
+                isinstance(step, _StatevectorDisjointDenseStep)
+                and (
+                    step.native_preferred
+                    or step.native_clifford
+                    or step.native_parameterized
+                )
+            )
+            for step in program
+        )
+    )
+
+
+def apply_native_clifford_matching(
+    step: _StatevectorCliffordMatchingStep,
+    state: torch.Tensor,
+    *,
+    n_wires: int,
+    scratch: torch.Tensor | None,
+    reuse_output: bool,
+    owns_state: bool,
+    mapping_builder: Callable[..., torch.Tensor],
+) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+    """Apply one matching and retain only a safe previous-state scratch."""
+
+    cx_mapping = (
+        compact_cx_permutation_images(step.controls, step.targets, n_wires)
+        if use_compact_cpu_cx_mapping(n_wires)
+        else mapping_builder(
+            step.controls,
+            step.targets,
+            n_wires,
+            device=state.device,
+            dtype=state.dtype,
+        )
+    )
+    cx_mapping, cz_edges = _encode_clifford_phase_mapping(cx_mapping, step, n_wires)
+    output = fused_clifford_matching_out(
+        state,
+        cx_mapping,
+        cz_edges,
+        n_wires,
+        output=scratch if reuse_output else None,
+    )
+    if output is None:
+        return None, scratch
+    if reuse_output and owns_state and state.shape == output.shape:
+        return output, state
+    return output, None if scratch is output else scratch
+
+
 def native_clifford_matching_compile_enabled(
     instructions: Sequence[Instruction],
     parameter_bindings: tuple[torch.Tensor, ...] | None,
@@ -122,8 +191,9 @@ def native_clifford_matching_compile_enabled(
             for value in instruction.params.values()
         )
         or any(
-            instruction.matrix is not None and instruction.matrix.requires_grad
+            isinstance(value, torch.Tensor) and value.requires_grad
             for instruction in instructions
+            for value in _matrix_tensors(instruction.matrix)
         )
     )
     return bool(

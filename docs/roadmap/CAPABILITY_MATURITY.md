@@ -94,12 +94,28 @@ resolve in this checkout and three do not.
 Adding `docs/development/evidence/` accounted for the largest group of those pairs
 rather than only reporting it. Five revisions are recorded by the four Jiuding
 records under that root that write the revision out in full, and all five are
-unreferenced objects of this repository's
-remote, each confirmed by fetching it from a fresh repository three times, so they
-are declared in `evidence-revision-origins.toml`, whose unreferenced-object class the
-change also states one entry larger. Those records are what `docs/guides/JIUDING.md`, the release
-notes and this document cite as their hardware evidence, and until this root was
-walked their pins were disclosures a reader relied on that nothing checked.
+unreferenced objects of this repository's remote, so they are declared in
+`evidence-revision-origins.toml`, whose unreferenced-object class the change
+also states one entry larger. Those records are what `docs/guides/JIUDING.md`, the
+release notes and this document cite as their hardware evidence, and until this root
+was walked their pins were disclosures a reader relied on that nothing checked.
+
+Whether that origin is the right one turns on a measurement, so the measurement had
+to be worth trusting, and the first attempt at it was not. Separating
+`unreferenced_object` from a revision no repository publishes is what separates a
+remote that still serves the object by name from one that does not, and the first
+probe counted a failed `git fetch` as a refusal -- on a host that loses connectivity
+to `github.com` for minutes at a time, which turns a dropped connection into a claim
+about the server. A failed attempt is uninformative in either direction: one of the
+twenty-five failed an attempt while the remote's ref advertisement was succeeding, and
+then served twenty of twenty further attempts. What supports the class is the
+successes, so the method counts only attempts in which the ref advertisement succeeds
+immediately before and after the fetch. All twenty-five reached three counted fetches
+that way; under the earlier method four of them had been recorded below three, which
+reads as objects the server may already have dropped. `evidence-revision-origins.toml`
+states the method and its result. No check re-runs it, because the checks in this
+repository do not use the network, so this is the one claim behind the table that
+rests on a stated method and a recorded count rather than on a green check.
 
 What remains outside the walk is three revisions, and none is a pin a reader is
 asked to check out. `.github/workflows/ci.yml` compares a base revision against the

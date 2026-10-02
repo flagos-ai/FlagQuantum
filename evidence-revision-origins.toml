@@ -34,7 +34,8 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote
 # does serve all twenty-five to `git fetch origin <revision>` by name, each
-# confirmed over three fresh fetches, but retaining an unreferenced object is server
+# confirmed by three counted fresh fetches under the method stated below, but
+# retaining an unreferenced object is server
 # policy rather than a promise, and one of the twenty-five is the head of a closed
 # pull request. No ref of this repository reaches any of the twenty-five, so a
 # complete clone obtains none of them; twenty are absent from this checkout's object
@@ -49,8 +50,26 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # `0e2d57204cb4fdd3f002de94367346923f7d1b33`, was published after this table was
 # first written by `benchmarks/results/local/mps_two_site_dispatch_a800.json`, and
 # the branch that introduced it was deleted when its pull request merged, so the
-# object is exactly as unobtainable as the rest of the class: three fresh `git fetch`
+# object is exactly as unobtainable as the rest of the class: three counted `git fetch`
 # attempts served it by name, and no ref of this repository reaches it.
+#
+# The fetch confirmation is only worth its method, because a probe that reads a
+# failed fetch as a refusal cannot tell a deleted object from a dropped connection or
+# a transient error, and these probes run from a host that loses connectivity to
+# `github.com` for minutes at a time. A failed attempt carries no information either
+# way: revision `05154c4b89758150c3bcee958135bd62f3b1ad8c`, recorded by
+# `benchmarks/results/smoke/release_candidates/mps_boundary_transport/summary.json`,
+# failed one attempt while the remote's ref advertisement was succeeding, and then
+# served twenty of twenty further attempts, so one failure is not evidence about the
+# object. What supports the origin above is therefore the successes. The remote's ref
+# advertisement is checked immediately before and after every attempt, an attempt is
+# counted only when both checks and the fetch succeed, and all twenty-five reached
+# three counted fetches that way. The uncounted method is what the first pass used,
+# and it recorded four of the twenty-five below three successes -- three as two of
+# three and one as one of two when the run was stopped -- which reads as a server that
+# may already have dropped them. A count that cannot separate the state it measures
+# from the one it does not is the defect this table exists to remove, so the method is
+# stated here rather than left in the shell history of whoever ran it.
 #
 # `producing_host_history` (eighteen revisions) means the run happened in a history
 # this repository does not contain. Seventeen are commits of

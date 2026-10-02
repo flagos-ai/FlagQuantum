@@ -21,25 +21,35 @@ _MAX_CONTRACTION_WORK = 1 << 22
 _MAX_CHANNELS = 32
 _MAX_CHANNEL_BOND = 16
 _MAX_CHANNEL_CONTRACTION_WORK = 1 << 23
+_DISABLED_VALUES = frozenset({"0", "false", "off", "no"})
 
 
-def _mps_environment_dispatch_enabled() -> bool:
-    return os.getenv("FQ_TRITON_MPS_ENVIRONMENT", "0").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
+def _mps_environment_transfer_rollout_enabled() -> bool:
+    """Return whether the evidenced MPS-004 default route is enabled."""
+
+    return (
+        os.getenv("FQ_TRITON_MPS_ENVIRONMENT", "1").strip().lower()
+        not in _DISABLED_VALUES
+    )
+
+
+def _mps_environment_channels_rollout_enabled() -> bool:
+    """Return whether the evidenced MPS-005 default route is enabled."""
+
+    return (
+        os.getenv("FQ_TRITON_MPS_ENVIRONMENT", "1").strip().lower()
+        not in _DISABLED_VALUES
+    )
 
 
 def _mps_environment_kernel_enabled(
     environment: torch.Tensor,
     tensor: torch.Tensor,
 ) -> bool:
-    """Return whether the opt-in route supports this exact tensor pair."""
+    """Return whether the MPS-004 default route supports this tensor pair."""
 
     if (
-        not _mps_environment_dispatch_enabled()
+        not _mps_environment_transfer_rollout_enabled()
         or environment.ndim != 3
         or tensor.ndim != 4
     ):
@@ -75,7 +85,7 @@ def _mps_environment_channels_kernel_enabled(
     """Return whether MPS-005 supports this exact tensor pair."""
 
     if (
-        not _mps_environment_dispatch_enabled()
+        not _mps_environment_channels_rollout_enabled()
         or channels.ndim != 4
         or tensor.ndim != 4
     ):
@@ -241,8 +251,10 @@ def _try_apply_cataloged_mps_environment_channels(
 __all__ = (
     "_apply_cataloged_mps_environment",
     "_apply_cataloged_mps_environment_channels",
+    "_mps_environment_channels_rollout_enabled",
     "_mps_environment_channels_kernel_enabled",
     "_mps_environment_channels_kernel_match",
+    "_mps_environment_transfer_rollout_enabled",
     "_mps_environment_kernel_enabled",
     "_mps_environment_kernel_match",
     "_require_mps_environment_kernel",

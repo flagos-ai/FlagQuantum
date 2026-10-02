@@ -306,9 +306,11 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     validate_measurements(requests, n_wires=source_ir.n_wires)
     mode = str(decision["mode"])
     noisy_plan = execution_plan.noisy_execution_plan
+    # The plan, not the argument, says what the program needs: an inline channel
+    # has no model and still needs the trajectory route, and an MPS
+    # representation without it silently returns the noiseless number.
     if (
-        noise_model is not None
-        and noisy_plan is not None
+        noisy_plan is not None
         and noisy_plan.representation == "mps"
         and noisy_plan.evolution == "quantum_trajectory"
     ):

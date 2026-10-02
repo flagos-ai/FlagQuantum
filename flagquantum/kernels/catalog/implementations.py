@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .schema import KernelDirection, KernelImplementation
+from .schema import KernelDirection, KernelImplementation, KernelMaturity
 
 
 def _triton(
@@ -14,6 +14,7 @@ def _triton(
     layouts: tuple[str, ...],
     directions: tuple[KernelDirection, ...] = ("forward",),
     addressing: tuple[str, ...] = ("local",),
+    maturity: KernelMaturity = "experimental",
     internal_fallback: bool = False,
 ) -> KernelImplementation:
     return KernelImplementation(
@@ -27,7 +28,7 @@ def _triton(
         layouts=layouts,
         directions=directions,
         addressing=addressing,
-        maturity="experimental",
+        maturity=maturity,
         internal_fallback=internal_fallback,
     )
 
@@ -187,6 +188,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_mps_one_site",
         layouts=("mps_one_site",),
         directions=("forward", "backward"),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
@@ -195,6 +197,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_environment",
         "fused_mps_environment_transfer",
         layouts=("mps_environment",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
@@ -203,6 +206,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_environment",
         "fused_mps_environment_channels",
         layouts=("mps_environment_channels",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(

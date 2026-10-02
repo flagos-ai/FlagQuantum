@@ -2,12 +2,16 @@
 
 A detector error model names every independent physical error mechanism by the
 detectors and logical observables it flips. Construction is exact and does not
-sample: the reference gate set is Clifford and every configured channel is a
-Pauli channel, so forcing one mechanism through the circuit yields a
-deterministic signature. ``DetectorErrorModel.from_memory_circuit`` builds a
-model that way: it enumerates the noise locations a ``PhenomenologicalNoise``
-record configures, drops the ones that flip nothing at all, and merges the ones
-that flip the same detectors and observables.
+sample, and it has two routes. ``DetectorErrorModel.from_memory_circuit`` is the
+circuit route, and ``dem_construction`` owns its engine: it enumerates the noise
+locations a ``PhenomenologicalNoise`` record configures, drops the ones that flip
+nothing at all, and merges the ones that flip the same detectors and observables.
+``DetectorErrorModel.from_code_matrices`` is the matrix route: it reads a
+parity-check matrix and a logical-operator matrix and derives the signatures
+combinatorially, with nothing lowered or executed. The two routes describe
+different experiments -- the matrix route is code capacity and has no terminal
+data readout -- so their detector counts differ, and each is pinned to its own
+stim transcription rather than to the other's.
 
 A model may also arrive with two mechanisms on one signature, because stim's
 text format allows it and this reader preserves what the text states. Merging is
@@ -37,13 +41,11 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import Enum
 from numbers import Integral, Real
-from typing import Literal
 
 import torch
 
-from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
-from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
-from .circuit import MeasurementRef, MemoryCircuit
+from .circuit import MemoryCircuit
+from .dem_construction import _code_matrix_entries, _memory_circuit_entries
 from .noise import PhenomenologicalNoise
 
 _DETECTOR_PREFIX = "D"
@@ -787,49 +789,57 @@ class DetectorErrorModel:
     ) -> DetectorErrorModel:
         """Build the exact model of every noise location a memory circuit has.
 
-        Each location :func:`_mechanisms` enumerates is forced through the
-        circuit on its own and its signature read off the layouts, so the model
-        is derived from the program rather than asserted about it. The refusals
-        of the injection engine reach the caller unchanged: a hand-built circuit
-        whose source does not match its layouts fails closed with a stated
-        reason instead of building a model that misdescribes it.
+        Each location the circuit's round structure and ``noise`` imply is forced
+        through the circuit on its own and its signature is read off the layouts,
+        so the model is derived from the program rather than asserted about it.
+        The refusals of the injection engine reach the caller unchanged: a
+        hand-built circuit whose source does not match its layouts fails closed
+        with a stated reason instead of building a model that misdescribes it.
         """
 
-        if not isinstance(circuit, MemoryCircuit):
-            raise TypeError("circuit must be a MemoryCircuit")
-        if not isinstance(noise, PhenomenologicalNoise):
-            raise TypeError("noise must be a PhenomenologicalNoise")
-        entries: list[tuple[float, tuple[int, ...], tuple[int, ...]]] = []
-        for mechanism in _mechanisms(circuit, noise):
-            if mechanism.kind == "data":
-                source = _inject_data_flip(
-                    circuit,
-                    round_index=mechanism.round_index,
-                    wire=mechanism.wire,
-                )
-            elif mechanism.kind == "measurement":
-                source = _inject_measurement_flip(
-                    circuit,
-                    round_index=mechanism.round_index,
-                    ancilla_wire=mechanism.wire,
-                )
-            else:
-                # Unreachable through ``_mechanisms``, which sets the field from
-                # the annotation; stated for a caller that builds records itself,
-                # where a bare ``else`` would read an unknown kind as a
-                # measurement flip whenever the wire is a declared ancilla.
-                raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
-            detectors, observables = _forced_signature(circuit, source)
-            entries.append((mechanism.probability, detectors, observables))
+        num_detectors, num_observables, entries = _memory_circuit_entries(
+            circuit, noise
+        )
         return cls._merge_mechanisms(
             entries,
-            # The model describes the circuit's own layouts, not a count
-            # re-derived from the code. Stage 1 pins both to each other, so
-            # ``len(circuit.code.checks) * (circuit.rounds + 1)`` for the
-            # detector count and ``len(circuit.code.logical_observables)`` for
-            # the observable count are equivalent mutants.
-            num_detectors=len(circuit.detectors),
-            num_observables=len(circuit.observables),
+            num_detectors=num_detectors,
+            num_observables=num_observables,
+        )
+
+    @classmethod
+    def from_code_matrices(
+        cls,
+        *,
+        hz: torch.Tensor,
+        noise: PhenomenologicalNoise,
+        lz: torch.Tensor | None = None,
+        num_rounds: int = 1,
+    ) -> DetectorErrorModel:
+        """Build the code-capacity model of a parity-check and logical matrix.
+
+        ``hz`` and ``lz`` are read directly rather than simulated, so an
+        arbitrary code reaches a model without a circuit record standing for it:
+        a code whose checks and logical operators are known as matrices needs no
+        gadget, no wire layout, and no statevector. See
+        :func:`~flagquantum.qec.dem_construction._code_matrix_entries` for the row
+        and column conventions and for the detector geometry, which is the
+        code-capacity one and not the geometry
+        :meth:`from_memory_circuit` reads off a circuit.
+
+        The rates come from ``noise`` exactly as they do on the circuit route: a
+        data wire's bit flip at a round boundary, and a syndrome bit flipped at a
+        check's readout. The phase-flip family and the per-location rates
+        upstream states are therefore not reachable here, which the alignment
+        contract records against this entry point.
+        """
+
+        num_detectors, num_observables, entries = _code_matrix_entries(
+            hz=hz, noise=noise, lz=lz, num_rounds=num_rounds
+        )
+        return cls._merge_mechanisms(
+            entries,
+            num_detectors=num_detectors,
+            num_observables=num_observables,
         )
 
     def to_stim_text(self) -> str:
@@ -863,297 +873,6 @@ class DetectorErrorModel:
         """Number of independent error mechanisms in the model."""
 
         return len(self.errors)
-
-
-# The forced-error engine drives the memory circuit one mechanism at a time. It
-# injects a single physical error into the bounded hybrid-compiler program the
-# circuit carries, executes the result, and reads the detector and observable
-# flips off the Stage 1 layouts. Nothing here is public: a mechanism is a
-# physical location, and the model above is what a caller is given.
-
-_ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"
-_FLIP_INDENT = "        "
-
-
-@dataclass(frozen=True)
-class _Mechanism:
-    """One physical noise location, by kind, round, and wire.
-
-    The record carries the coordinates the matching injector needs rather than a
-    rendered source. A caller that fires a set of mechanisms at once has to
-    re-inject them into the one program it executes, and it cannot rebuild a
-    source from a string alone; carrying coordinates also keeps injection in
-    exactly one place. ``kind`` is ``"data"`` for a flip on a data wire, where
-    ``wire`` is that data wire, and ``"measurement"`` for a flip on a check's
-    syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
-    literal rather than a free string, so a caller that builds a record by hand
-    is told at the type checker which two flips exist.
-    """
-
-    kind: Literal["data", "measurement"]
-    round_index: int
-    wire: int
-    probability: float
-
-
-def _mechanisms(
-    circuit: MemoryCircuit, noise: PhenomenologicalNoise
-) -> tuple[_Mechanism, ...]:
-    """Return every noise location a probability makes possible, in order.
-
-    Data flips come first — one per round per data wire — and measurement flips
-    second, one per round per check. Both loops walk the code's own tuples in
-    order, which is the order the emitted program measures in. A location whose
-    probability is zero cannot flip anything, so it is not enumerated at all: a
-    caller that counts mechanisms then counts exactly what can happen.
-
-    A code that declares a data wire twice is refused rather than enumerated
-    twice. Its second copy would be the same physical location as the first
-    with the same signature, so merging them states one location's rate as two
-    independent flips, ``p * (1 - p) + p * (1 - p)``, instead of ``p`` — a wrong
-    model with no signal. A code whose checks share an ancilla wire is refused
-    for the same reason: both checks record their syndrome bit at one position
-    in the classical register, so the later check's position overwrites the
-    earlier one's and each round's detectors read that one bit for both. The
-    injection engine refuses that shape too, but only where it injects — its
-    anchor is the measurement line, so a model built from data flips alone never
-    reaches it — which is why the refusal is stated here, before any mechanism
-    is enumerated.
-    """
-
-    data_wires = circuit.code.data_wires
-    if len(set(data_wires)) != len(data_wires):
-        raise ValueError(
-            "the code declares a repeated data wire, so a mechanism at that "
-            "location would be enumerated twice and merged with itself"
-        )
-    ancilla_wires = [check.ancilla_wire for check in circuit.code.checks]
-    if len(set(ancilla_wires)) != len(ancilla_wires):
-        repeated = sorted(
-            wire for wire in set(ancilla_wires) if ancilla_wires.count(wire) > 1
-        )
-        raise ValueError(
-            f"the code declares a repeated check ancilla wire ({repeated[0]}): "
-            "two checks record one syndrome bit, so the model would read the "
-            "same bit for both"
-        )
-    mechanisms: list[_Mechanism] = []
-    if noise.data_flip:
-        for round_index in range(circuit.rounds):
-            for wire in data_wires:
-                mechanisms.append(
-                    _Mechanism(
-                        kind="data",
-                        round_index=round_index,
-                        wire=wire,
-                        probability=noise.data_flip,
-                    )
-                )
-    if noise.measurement_flip:
-        for round_index in range(circuit.rounds):
-            for check in circuit.code.checks:
-                mechanisms.append(
-                    _Mechanism(
-                        kind="measurement",
-                        round_index=round_index,
-                        wire=check.ancilla_wire,
-                        probability=noise.measurement_flip,
-                    )
-                )
-    return tuple(mechanisms)
-
-
-def _checked_round(circuit: MemoryCircuit, round_index: int, *, label: str) -> int:
-    """Return ``round_index`` once it names a round this circuit configures."""
-
-    if isinstance(round_index, bool) or not isinstance(round_index, Integral):
-        raise TypeError(f"{label} must be an integer")
-    if round_index not in range(circuit.rounds):
-        raise ValueError(
-            f"{label} {round_index} is outside the configured rounds "
-            f"0..{circuit.rounds - 1}"
-        )
-    return int(round_index)
-
-
-def _checked_wire(wires: tuple[int, ...], wire: int, *, label: str) -> int:
-    """Return ``wire`` once the code declares it."""
-
-    if isinstance(wire, bool) or not isinstance(wire, Integral):
-        raise TypeError(f"{label} must be an integer")
-    if wire not in wires:
-        raise ValueError(f"{label} {wire} is not declared by the code")
-    return int(wire)
-
-
-def _single_anchor(source: str, anchor: str, *, label: str) -> int:
-    """Return the offset of ``anchor``, refusing a source that repeats or lacks it.
-
-    An anchor that occurs twice cannot say which occurrence the mechanism
-    belongs to, so it is refused rather than resolved to the first one.
-    """
-
-    occurrences = source.count(anchor)
-    if occurrences != 1:
-        raise ValueError(
-            f"{label} must occur exactly once in the source, found {occurrences}"
-        )
-    return source.index(anchor)
-
-
-def _forced_flip(round_index: int, wire: int) -> str:
-    """Return the guarded single-qubit ``X`` that forces one error."""
-
-    return (
-        f"{_FLIP_INDENT}if round_index == {round_index}:\n"
-        f"{_FLIP_INDENT}    qp.X(wires={wire})\n"
-    )
-
-
-def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) -> str:
-    """Return ``circuit``'s source with one ``X`` forced on a data wire.
-
-    The flip is guarded by ``if round_index == <round_index>:`` and inserted at
-    the start of that round, before any of the round's CNOTs, so the error opens
-    the frame the round's detectors compare against.
-    """
-
-    checked_round = _checked_round(circuit, round_index, label="data-flip round")
-    checked_wire = _checked_wire(circuit.code.data_wires, wire, label="data-flip wire")
-    offset = _single_anchor(
-        circuit.source, _ROUND_LOOP_ANCHOR, label="the round loop anchor"
-    )
-    end = offset + len(_ROUND_LOOP_ANCHOR)
-    return (
-        f"{circuit.source[:end]}"
-        f"{_forced_flip(checked_round, checked_wire)}"
-        f"{circuit.source[end:]}"
-    )
-
-
-def _inject_measurement_flip(
-    circuit: MemoryCircuit, *, round_index: int, ancilla_wire: int
-) -> str:
-    """Return ``circuit``'s source with one check measurement forced to flip.
-
-    The flip is an ``X`` on the ancilla immediately before the check measures
-    it, guarded by ``if round_index == <round_index>:``. A check's ancilla wire
-    is unique to it, so the anchor names exactly one check; a source where that
-    line is missing or repeated is refused rather than injected into the wrong
-    check.
-    """
-
-    checked_round = _checked_round(circuit, round_index, label="measurement-flip round")
-    checked_wire = _checked_wire(
-        circuit.code.ancilla_wires, ancilla_wire, label="measurement-flip ancilla"
-    )
-    offset = _single_anchor(
-        circuit.source,
-        f"{_FLIP_INDENT}last = qp.measure(wires={checked_wire})\n",
-        label="the check measurement anchor",
-    )
-    return (
-        f"{circuit.source[:offset]}"
-        f"{_forced_flip(checked_round, checked_wire)}"
-        f"{circuit.source[offset:]}"
-    )
-
-
-def _forced_signature(
-    circuit: MemoryCircuit, source: str
-) -> tuple[tuple[int, ...], tuple[int, ...]]:
-    """Return the detectors and observables that ``source``'s forced error flips.
-
-    The source is lowered and executed twice, and the two shots must agree on
-    the *flip set*: a mechanism whose signature depends on the trajectory is not
-    a Pauli mechanism in the reference gate set, so it is refused instead of
-    contributing a signature. The shot is read through the layouts, never off the
-    raw register: a detector XORs the measurements its parity names, and an
-    observable XORs the terminal samples over the support of its Pauli.
-
-    The register bits themselves need not agree, and for a code with X-type
-    checks they do not: an X-type ancilla is prepared in ``|+>``, so its
-    round-zero outcome is random. What the model records is the flip a mechanism
-    causes relative to the noiseless outcome, and that is the parity the layouts
-    define — deterministic for the steady-state X-type detectors precisely
-    because the two rounds it compares were projected into the same eigenstate.
-    Requiring the raw bits to agree would refuse every code with an X-type check,
-    including the rotated surface code, for a randomness the model does not see.
-
-    A syndrome measurement is read at ``round_index * len(checks) +
-    position_in_checks``, where the position is the check's index in the code's
-    ``checks`` tuple. That is the order the emitted loop measures in, which is
-    what the classical register records; ``CodeCheck.index`` is a label the code
-    chooses and need not be that order.
-    """
-
-    program = capture_source(source, (INDEX,))
-    lowered = lower_dynamic_program(
-        program,
-        (circuit.rounds,),
-        max_dynamic_measurements=circuit.rounds * len(circuit.code.checks),
-    )
-    execution = execute_hybrid_dynamic_session(
-        lowered.circuit, shots=2, seed=0, strategy="trajectory"
-    )
-    classical: list[list[int]] = execution.classical_bits.tolist()
-    samples: list[list[int]] = execution.samples.tolist()
-    positions = {
-        check.ancilla_wire: position
-        for position, check in enumerate(circuit.code.checks)
-    }
-    checks = len(circuit.code.checks)
-
-    def measurement_bit(
-        classical_row: list[int], sample_row: list[int], reference: MeasurementRef
-    ) -> int:
-        """Return the recorded bit one layout reference names.
-
-        A syndrome reference is read at the position of the check that owns its
-        ancilla, so an ancilla no check owns has no recorded bit to read. A
-        layout may name one — ``MemoryCircuit`` ties the reference to the code's
-        declared ancilla wires, not to its checks — so the lookup states the
-        failure instead of raising a bare ``KeyError``.
-        """
-
-        if reference.round_index is None:
-            return sample_row[reference.wire]
-        position = positions.get(reference.wire)
-        if position is None:
-            raise ValueError(
-                f"detector syndrome measurement names ancilla wire "
-                f"{reference.wire}, which no check owns"
-            )
-        return classical_row[reference.round_index * checks + position]
-
-    def flip_set(
-        classical_row: list[int], sample_row: list[int]
-    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
-        detectors = tuple(
-            detector.index
-            for detector in circuit.detectors.detectors
-            if sum(
-                measurement_bit(classical_row, sample_row, reference)
-                for reference in detector.parity
-            )
-            % 2
-            == 1
-        )
-        observables = tuple(
-            observable.index
-            for observable in circuit.observables.observables
-            if sum(sample_row[wire] for wire in observable.pauli.support) % 2 == 1
-        )
-        return detectors, observables
-
-    signature = flip_set(classical[0], samples[0])
-    if signature != flip_set(classical[1], samples[1]):
-        raise ValueError(
-            "the forced error's detector and observable flips are not "
-            "deterministic across trajectories, so it is not a Pauli mechanism "
-            "in the reference gate set"
-        )
-    return signature
 
 
 __all__ = ("DemError", "DemSample", "DetectorErrorModel")

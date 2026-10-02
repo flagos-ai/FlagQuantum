@@ -36,6 +36,7 @@ OBSERVABLE_OUTPUTS_CONTRACT = (
 )
 TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
 GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
+OPENQASM_IMPORT_CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -201,6 +202,9 @@ def validate() -> tuple[str, ...]:
     )
     twin_contract = json.loads(TWIN_CONTRACT.read_text(encoding="utf-8"))
     gradient_contract = json.loads(GRADIENT_CONTRACT.read_text(encoding="utf-8"))
+    openqasm_import_contract = json.loads(
+        OPENQASM_IMPORT_CONTRACT.read_text(encoding="utf-8")
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -253,6 +257,9 @@ def validate() -> tuple[str, ...]:
     if gradient_contract.get("implementation_authorized") is True:
         authorized_changes.update(gradient_contract.get("root_additions", ()))
         authorized_changes.update(gradient_contract.get("root_removals", ()))
+    if openqasm_import_contract.get("implementation_authorized") is True:
+        authorized_changes.update(openqasm_import_contract.get("root_additions", ()))
+        authorized_changes.update(openqasm_import_contract.get("root_removals", ()))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -300,6 +307,8 @@ def validate() -> tuple[str, ...]:
     expected_signatures.update(observable_outputs_contract.get("signatures", {}))
     if gradient_contract.get("implementation_authorized") is True:
         expected_signatures.update(gradient_contract.get("signatures", {}))
+    if openqasm_import_contract.get("implementation_authorized") is True:
+        expected_signatures.update(openqasm_import_contract.get("signatures", {}))
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -392,6 +401,7 @@ def _validate_authorized_execution_options(
         "compile": fq.compile,
         "counts": fq.counts,
         "expectation": fq.expectation,
+        "from_openqasm": fq.from_openqasm,
         "gradient": fq.gradient,
         "probabilities": fq.probabilities,
         "samples": fq.samples,

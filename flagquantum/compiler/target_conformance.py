@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..errors import CompilationError
+from .openqasm_gates import FIXED_GATES, PARAMETERIZED_GATES
 from .target_emission import TargetEmissionResult, emit_legalized_target
 from .target_legalization import TargetLegalizationResult
 
@@ -40,38 +41,10 @@ _QASM2_CREG = re.compile(r"creg c\[([1-9][0-9]*)\];")
 _QASM3_QREG = re.compile(r"qubit\[([1-9][0-9]*)\] q;")
 _QASM3_CREG = re.compile(r"bit\[([1-9][0-9]*)\] c;")
 
-_FIXED_QASM_GATES = {
-    "id": "i",
-    "x": "x",
-    "y": "y",
-    "z": "z",
-    "h": "h",
-    "s": "s",
-    "sdg": "sdg",
-    "t": "t",
-    "tdg": "tdg",
-    "sx": "sx",
-    "cx": "cx",
-    "cy": "cy",
-    "cz": "cz",
-    "swap": "swap",
-    "ccx": "ccx",
-    "cswap": "cswap",
-}
-_PARAMETERIZED_QASM_GATES = {
-    "rx": ("rx", ("theta",)),
-    "ry": ("ry", ("theta",)),
-    "rz": ("rz", ("theta",)),
-    "u1": ("u1", ("theta",)),
-    "u2": ("u2", ("phi", "lbd")),
-    "u3": ("u3", ("theta", "phi", "lbd")),
-    "p": ("phase", ("theta",)),
-    "cu1": ("cphase", ("theta",)),
-    "cp": ("cphase", ("theta",)),
-    "crx": ("crx", ("theta",)),
-    "cry": ("cry", ("theta",)),
-    "crz": ("crz", ("theta",)),
-}
+# The strict round-trip check recognises exactly the spellings import recognises,
+# so both directions read one table rather than two copies of it.
+_FIXED_QASM_GATES = FIXED_GATES
+_PARAMETERIZED_QASM_GATES = PARAMETERIZED_GATES
 
 
 def _reconstructed_program(

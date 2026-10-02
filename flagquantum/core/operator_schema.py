@@ -6,6 +6,31 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Any
+
+#: Rule names ``OperatorSchema.adjoint`` may use, and what each one computes.
+#:
+#: ``self_inverse``         the opcode is its own inverse; parameters are unchanged.
+#: ``negate_parameters``    every angle is negated in place.
+#: ``adjoint_u2_angles``    ``phi -> -lbd - pi`` and ``lbd -> -phi - pi``, which is the
+#:                          inverse of ``U2(phi, lbd)`` in this gate's angle convention.
+#: ``adjoint_u3_angles``    ``theta -> -theta``, ``phi -> -lbd`` and ``lbd -> -phi``,
+#:                          which is the inverse of ``U3(theta, phi, lbd)``.
+#: ``matrix_adjoint``       the declaration alone does not determine the inverse; the
+#:                          concrete matrix is required.
+#: ``not_applicable``       the opcode is not invertible (a noise channel).
+#:
+#: An ``adjoint`` value that is none of these names the inverse opcode directly, which is
+#: how ``s`` and ``sdg`` declare each other. Such a partner must be a parameter-free
+#: unitary of the same arity that declares this opcode back, so the pairing is symmetric.
+ADJOINT_RULES: tuple[str, ...] = (
+    "self_inverse",
+    "negate_parameters",
+    "adjoint_u2_angles",
+    "adjoint_u3_angles",
+    "matrix_adjoint",
+    "not_applicable",
+)
 
 
 @dataclass(frozen=True)
@@ -182,12 +207,26 @@ def _unitary(
     )
 
 
-def _channel(opcode: str) -> OperatorSchema:
+def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
+    """Declare a channel and the probability or rate names it accepts.
+
+    ``parameters`` is keyword-only so that a channel cannot be added without
+    stating them: an opcode whose probability exists only inside its Kraus
+    operators is one a reader of the lowered program cannot map, which is what
+    kept the four channels out of every interop contract.
+
+    ``differentiable`` ends up ``False`` for every channel even when
+    ``parameters`` is non-empty, because a channel declares no parameter
+    frequencies: the derived flag states whether a derivative rule is known for
+    the opcode, and a channel is sampled rather than differentiated. Declaring a
+    number and being able to differentiate it are two separate claims.
+    """
+
     return OperatorSchema(
         opcode=opcode,
         aliases=(),
         arity=1,
-        parameters=(),
+        parameters=parameters,
         dtype_policy=("complex64", "complex128"),
         semantic_kind="channel",
         adjoint="not_applicable",
@@ -202,48 +241,122 @@ _SCHEMAS = (
     _unitary("y", 1, adjoint="self_inverse"),
     _unitary("z", 1, adjoint="self_inverse"),
     _unitary("h", 1, aliases=("hadamard",), adjoint="self_inverse"),
-    _unitary("s", 1),
-    _unitary("sdg", 1, aliases=("sd",)),
-    _unitary("t", 1),
-    _unitary("tdg", 1, aliases=("td",)),
-    _unitary("sx", 1),
-    _unitary("sxdg", 1),
-    _unitary("rx", 1, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("ry", 1, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("rz", 1, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("s", 1, adjoint="sdg"),
+    _unitary("sdg", 1, aliases=("sd",), adjoint="s"),
+    _unitary("t", 1, adjoint="tdg"),
+    _unitary("tdg", 1, aliases=("td",), adjoint="t"),
+    _unitary("sx", 1, adjoint="sxdg"),
+    _unitary("sxdg", 1, adjoint="sx"),
+    _unitary(
+        "rx",
+        1,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "ry",
+        1,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "rz",
+        1,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
     _unitary(
         "phase",
         1,
         aliases=("p",),
         parameters=("theta",),
         frequencies=((1.0,),),
+        adjoint="negate_parameters",
     ),
-    _unitary("u1", 1, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("u2", 1, parameters=("phi", "lbd"), frequencies=((1.0,), (1.0,))),
+    _unitary(
+        "u1",
+        1,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "u2",
+        1,
+        parameters=("phi", "lbd"),
+        frequencies=((1.0,), (1.0,)),
+        adjoint="adjoint_u2_angles",
+    ),
     _unitary(
         "u3",
         1,
         aliases=("u",),
         parameters=("theta", "phi", "lbd"),
         frequencies=((1.0,), (1.0,), (1.0,)),
+        adjoint="adjoint_u3_angles",
     ),
     _unitary("cx", 2, aliases=("cnot",), adjoint="self_inverse"),
     _unitary("cy", 2, adjoint="self_inverse"),
     _unitary("cz", 2, adjoint="self_inverse"),
     _unitary("swap", 2, adjoint="self_inverse"),
-    _unitary("crx", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
-    _unitary("cry", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
-    _unitary("crz", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
-    _unitary("cphase", 2, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("rxx", 2, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("ryy", 2, parameters=("theta",), frequencies=((1.0,),)),
-    _unitary("rzz", 2, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary(
+        "crx",
+        2,
+        parameters=("theta",),
+        frequencies=((0.5, 1.0),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "cry",
+        2,
+        parameters=("theta",),
+        frequencies=((0.5, 1.0),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "crz",
+        2,
+        parameters=("theta",),
+        frequencies=((0.5, 1.0),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "cphase",
+        2,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "rxx",
+        2,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "ryy",
+        2,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
+    _unitary(
+        "rzz",
+        2,
+        parameters=("theta",),
+        frequencies=((1.0,),),
+        adjoint="negate_parameters",
+    ),
     _unitary("ccx", 3, aliases=("ccnot", "toffoli"), adjoint="self_inverse"),
     _unitary("cswap", 3, aliases=("fredkin",), adjoint="self_inverse"),
-    _channel("bit_flip"),
-    _channel("phase_flip"),
-    _channel("depolarizing"),
-    _channel("amplitude_damping"),
+    _channel("bit_flip", parameters=("probability",)),
+    _channel("phase_flip", parameters=("probability",)),
+    _channel("depolarizing", parameters=("probability",)),
+    _channel("amplitude_damping", parameters=("gamma",)),
 )
 
 OPERATOR_SCHEMAS: Mapping[str, OperatorSchema] = MappingProxyType(
@@ -261,6 +374,79 @@ def canonical_opcode(name: str) -> str:
 
 def get_operator_schema(name: str) -> OperatorSchema | None:
     return OPERATOR_SCHEMAS.get(canonical_opcode(name))
+
+
+def _negate_angle(value: Any) -> Any:
+    """Negate one angle, or every angle of a per-batch sequence of angles."""
+
+    if isinstance(value, (list, tuple)):
+        return type(value)(_negate_angle(item) for item in value)
+    return -value
+
+
+def _shift_angle(value: Any, delta: float) -> Any:
+    """Subtract ``delta`` from one angle, or from every angle of a sequence."""
+
+    if isinstance(value, (list, tuple)):
+        return type(value)(_shift_angle(item, delta) for item in value)
+    return value - delta
+
+
+def inverse_operator(
+    schema: OperatorSchema, params: Mapping[str, Any]
+) -> tuple[str, dict[str, Any]] | None:
+    """Return the opcode and parameters that invert one use of ``schema``.
+
+    The inverse replaces one gate inside a larger product, so it is a single gate of
+    the same arity applied to the same qubits, never a decomposition.
+
+    ``None`` means the schema's ``adjoint`` declaration does not determine an inverse
+    on its own: ``matrix_adjoint`` needs the concrete matrix, and ``not_applicable``
+    says no inverse exists. The caller is expected to refuse those cases and report
+    which declaration it met, so that a caller never silently drops a gate.
+
+    A parameter that carries one angle per batch entry is a sequence of angles, and it
+    is transformed element by element. ``Parameter`` and ``ParameterExpression`` values
+    are transformed symbolically, so the inverse of a template stays a template.
+
+    Args:
+        schema: The declaration of the gate being inverted.
+        params: That gate's parameter mapping.
+
+    Returns:
+        The inverse opcode with its parameters, or ``None`` when the declaration is
+        not enough.
+    """
+
+    if schema.adjoint == "self_inverse":
+        return schema.opcode, dict(params)
+    if schema.adjoint == "negate_parameters":
+        return schema.opcode, {
+            name: _negate_angle(params[name]) if name in schema.parameters else value
+            for name, value in params.items()
+        }
+    if schema.adjoint == "adjoint_u2_angles":
+        return schema.opcode, {
+            **params,
+            "phi": _shift_angle(_negate_angle(params["lbd"]), math.pi),
+            "lbd": _shift_angle(_negate_angle(params["phi"]), math.pi),
+        }
+    if schema.adjoint == "adjoint_u3_angles":
+        return schema.opcode, {
+            **params,
+            "theta": _negate_angle(params["theta"]),
+            "phi": _negate_angle(params["lbd"]),
+            "lbd": _negate_angle(params["phi"]),
+        }
+    partner = OPERATOR_SCHEMAS.get(schema.adjoint)
+    if (
+        partner is not None
+        and partner.unitary
+        and not partner.parameters
+        and partner.arity == schema.arity
+    ):
+        return partner.opcode, {}
+    return None
 
 
 def gate_info(name: str) -> GateInfo:
@@ -303,11 +489,13 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
 __all__ = [
     "OperatorSchema",
     "GateInfo",
+    "ADJOINT_RULES",
     "OPERATOR_ALIASES",
     "OPERATOR_SCHEMAS",
     "canonical_opcode",
     "get_operator_schema",
     "gate_info",
+    "inverse_operator",
     "operator_manifest",
     "parameter_shift_rule",
 ]

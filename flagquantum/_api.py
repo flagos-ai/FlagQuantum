@@ -327,4 +327,33 @@ def plan(
     )
 
 
+def from_openqasm(source: str) -> Any:
+    """Import OpenQASM 2 or OpenQASM 3 text as a FlagQuantum program.
+
+    This is the inverse of ``emit_openqasm``: it reads the canonical subset
+    FlagQuantum writes and refuses everything else with an issue code, so an
+    imported program is never an approximation of the text.
+
+    Args:
+        source: The complete text of one OpenQASM program.
+
+    Returns:
+        An :class:`~flagquantum.compiler.openqasm_import.OpenQASMImport`, which
+        exposes the imported instructions, the declared register width, the
+        qubit behind each classical bit, and ``to_circuit``.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> program = fq.from_openqasm("OPENQASM 2.0;\\ninclude \\"qelib1.inc\\";\\n"
+        ...     "qreg q[2];\\ncreg c[2];\\nh q[0];\\ncx q[0], q[1];\\n"
+        ...     "measure q[0] -> c[0];\\nmeasure q[1] -> c[1];")
+        >>> [instruction.name for instruction in program.instructions]
+        ['h', 'cx']
+    """
+
+    return import_module(".compiler.openqasm_import", __package__).import_openqasm(
+        source
+    )
+
+
 __all__: tuple[str, ...] = ()

@@ -51,10 +51,10 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Two families declared, no matrix-level record, no Steane/colour/qLDPC. |
+| `qec_code_record` | partial | now | `qec_code_library` | Two families declared and both now feed the matrix route, but no named matrix record, no X-type logical readout, no Steane/colour/qLDPC. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Route named after cudaq-qec's own. |
-| `qec_dem_construction` | partial | now | — | Construction exists and is exact; no CSS-matrix entry point, no context object. |
+| `qec_dem_construction` | partial | now | — | Construction is exact on both the circuit and the matrix route; no context object, no X/Y fault family. |
 | `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches; no error ids, no rates vector. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
@@ -204,10 +204,37 @@ on columns of a carrier that records them. That absence belongs to
 row's floor is folded under stays `partial`: one operation inside a row can be
 aligned while the row it sits in is not.
 
+The construction row then closed its second input end. A detector error model can
+now be read off matrices as well as forced through a circuit:
+`DetectorErrorModel.from_code_matrices(hz=..., lz=..., noise=..., num_rounds=...)`
+takes the parity-check matrix that says which checks a bit flip on a data qubit
+toggles and the matrix that says which logical operators it toggles, and derives
+every mechanism combinatorially, with `flagquantum.qec.code_matrices` lifting a
+code record's Z-type checks and logical operators into that pair. This is
+upstream's `dem_from_css_matrices` geometry rather than the memory circuit's, and
+the difference is a difference between two experiments rather than between two
+implementations: the matrix route has no terminal data readout, so its detector
+count is `num_rounds * num_checks` where a memory circuit's is one band per round
+plus a terminal detector per Z-type check. Both geometries are pinned separately
+and neither is allowed to stand for the other — `tests/qec/test_dem_code_matrices_stim.py`
+hands stim a circuit that states the code-capacity assumption, with the faults on
+their own qubits reset every round so a fault cannot leak past its round, and
+requires stim's own error analysis to reproduce the shape, the mechanism count
+and every signature and rate; `tests/qec/test_dem_stim_reference_rates.py` does
+the same for the memory circuit's gate-for-gate transcription.
+
+What this did **not** close is the fault family. The matrix route reads `hz` and
+`lz`, so an X fault has no representation: `hx`, `lx` and the `px`/`py`/`pz`
+split upstream can state are still unreachable, and an X-type logical operator
+contributes no row rather than an all-zero one. That limit is carried by
+`dem_code_capacity_noise`, which stays `reshaped`, and by the code-record row's
+own note about the observable readout. A matrix-level entry point without the
+second fault family is one entry point, not the row.
+
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
 The short version, because the full table is in the TOML. Across 23 field rows:
-2 `equivalent`, 2 `renamed`, 1 `extra`, 10 `reshaped`, 8 `absent`.
+2 `equivalent`, 2 `renamed`, 1 `extra`, 11 `reshaped`, 7 `absent`.
 
 **Equivalent (2).** `detector_error_matrix` and `observables_flips_matrix` are
 the same matrices in the same orientation — rows are detectors or observables,
@@ -238,16 +265,28 @@ libraries; the produced stim text in the CUDA-Q stack comes from
 negative result on the upstream side, marked `provenance_unverified`, so it is
 "nothing to align to at this layer" rather than "ahead".
 
-**Reshaped (10).** The model carrier, the per-error rates, the counts, the
-sampling function, the memory-circuit entry point, the noise record, the
-measurement-to-detector map, the kernel annotation surface, the decoder result
-record and the decoder base protocol. The two widest of these:
+**Reshaped (11).** The model carrier, the per-error rates, the counts, the
+sampling function, the memory-circuit entry point, the matrix-level entry point,
+the noise record, the measurement-to-detector map, the kernel annotation
+surface, the decoder result record and the decoder base protocol. The two widest
+of these:
 
 - **Noise record.** Upstream `CssNoise` carries independent X, Y and Z data
   rates plus a measurement rate, each also expressible per qubit or per check.
   `PhenomenologicalNoise` here is one data-flip scalar and one measurement-flip
   scalar. Per-location rates are not expressible, and neither is an asymmetric
   X/Z channel.
+- **Matrix-level entry point.** Upstream
+  `dem_from_css_matrices(code: CssCodes | cudaq_qec.Code, noise: CssNoise,
+  num_rounds=1)` takes one record carrying all four parity matrices and returns
+  a model whose detectors are one band per round, with
+  `extended_dem_from_css_matrices` alongside it returning a sparse `H` and `O`.
+  Here the same geometry is reached from two keyword matrices through
+  `DetectorErrorModel.from_code_matrices`, and a code record reaches those
+  matrices through `code_matrices`, which reads the Z-type checks and the Z-type
+  logical operators only: an X fault has no representation, so `hx` and `lx`
+  have no counterpart and an X-type logical operator is dropped rather than
+  reported as an all-zero row. There is no extended-record sibling.
 - **Sampling function.** Upstream
   `dem_sampling(check_matrix, num_shots, error_probabilities, seed=None, backend="auto")`
   is a free function over a matrix plus a rate vector returning sampled check
@@ -257,11 +296,10 @@ record and the decoder base protocol. The two widest of these:
   tensors, which is a full-precision-vs-`uint8` boundary worth knowing before an
   adapter is written.
 
-**Absent (8).** `error_ids` (mutually exclusive / correlated errors),
+**Absent (7).** `error_ids` (mutually exclusive / correlated errors),
 `canonicalize_for_rounds`, the chunk/seam/stitch/close family,
-`dem_from_css_matrices`, `dem_from_kernel` itself, the decoder registry
-(`get_decoder` + `@decoder`), the sampling backend selector, and the decoder
-configuration schema.
+`dem_from_kernel` itself, the decoder registry (`get_decoder` + `@decoder`), the
+sampling backend selector, and the decoder configuration schema.
 
 Of the absent set, `error_ids` and `canonicalize_for_rounds` are the two that
 sit closest to work already planned: a matcher wants round structure and a
@@ -453,7 +491,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_sampling_backend` | absent | No execution-target selector; upstream has `auto`/`cpu`/`gpu`. |
 | `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), free function against classmethod. |
 | `dem_to_stim_text` | extra | No writer found upstream at this layer; the produced text comes from CUDA-Q core. |
-| `dem_from_css_matrices` | absent | No matrix-level entry point, so an arbitrary parity-check matrix has no route in. |
+| `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. |
 | `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis. No context object. |
 | `dem_code_capacity_noise` | reshaped | Two uniform scalars against X/Y/Z data rates plus a measurement rate, each also per qubit or per check. |
 | `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |

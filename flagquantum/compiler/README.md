@@ -32,9 +32,40 @@ Use `optimize(program)` for target-independent optimization and
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
+| Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
+| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+
+## Save and load OpenQASM
+
+`emit_openqasm` writes one program as OpenQASM 2 or 3 text, and the stable
+`fq.from_openqasm` reads that text back. It accepts only the subset the emitter
+writes and refuses everything else with an `OpenQASMImportError` that names the
+reason in `issue_code`:
+
+```python
+import flagquantum as fq
+from flagquantum.compiler.openqasm import emit_openqasm
+
+text = emit_openqasm(fq.Circuit(2).h(0).cx(0, 1))
+program = fq.from_openqasm(text)
+
+program.instructions            # the imported gates, in source order
+program.measurement_qubits      # the qubit behind each classical bit
+fq.run(program.to_circuit(), outputs=fq.counts(), shots=256).counts[0]
+```
+
+Import returns the program rather than a `Circuit` because a `Circuit` cannot
+carry a terminal measurement; call `to_circuit()` for the sampling path and
+`to_ir()` when the measurement mapping must be preserved. It never executes
+anything, and it does not read arbitrary third-party OpenQASM.
+
+`openqasm_gates.py` holds the gate spellings both directions read. `openqasm.py`
+emits, `openqasm_import.py` parses, and `target_conformance.py` checks an
+emission against an expected program; the three share one table, so a spelling
+one direction accepts and the other writes cannot appear.
 
 A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded
@@ -51,6 +82,26 @@ no field for it, so those rewrites are equal up to one global phase -- the same
 contract every `U3`-based hardware basis publishes. A consumer that compares raw
 statevectors instead of measurement statistics has to know that; flag records of
 it belong in the capability registry, which `capability-maturity.toml` owns.
+
+Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
+wires, over any supercontrolled entangler the basis publishes. Six declared
+arity-2 opcodes reach a supercontrolled Weyl point: `cx`, `cz` and `cy` as they
+stand, and `rzz`, `ryy` and `rxx` at an angle of `pi/2`. `cphase` is excluded on
+purpose -- its only supercontrolled angle is `pi`, where it is `cz`, so it would
+add a spelling rather than reach. Carrying the interaction rotations is what
+opens a trapped-ion or flux-tunable-coupler basis, whose only two-qubit gate is a
+rotation and which publishes no `cx` at all; such a basis now reaches all eleven
+declared two-qubit unitaries where it previously reached one. A matrix is the
+only input the synthesis accepts: turning a *named* two-qubit gate into the
+entangler basis would need that gate's matrix, which belongs to
+`flagquantum.simulation`, so the named path keeps its hand-written rules only and
+fails closed beyond them. The cost is one entangler for `cx`, `cz`, and `cy`, two
+for the controllized rotations, and three for `swap`, which is the far corner of
+the Weyl chamber; all eleven declared two-qubit unitaries reproduce their source
+to within `1.1e-15` over any of the six entanglers, up to one global phase.
+[benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
+holds the reach, cost, and phase measurement, and cross-checks the entangler
+count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in

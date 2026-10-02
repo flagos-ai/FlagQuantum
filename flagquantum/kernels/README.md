@@ -199,12 +199,13 @@ is bounded development hardware evidence, not a release gate or scalability
 claim. Reproduce or validate it with
 [`benchmarks/mps_projected_two_site_dispatch.py`](../../benchmarks/mps_projected_two_site_dispatch.py).
 
-The MPS-003 one-site gate route is opt-in through
-`FQ_TRITON_MPS_ONE_SITE=1`. Compiled site buckets authorize the exact catalog
-entry for contiguous CUDA `complex64` tensors and batched two-by-two gates once
-the flattened batch-by-bond contraction contains at least `2**12` elements.
-The custom autograd boundary preserves tensor and gate gradients; other calls
-retain the existing eager or compiled real/imaginary PyTorch contraction.
+The MPS-003 one-site gate route is enabled by default inside its measured
+support window. Set `FQ_TRITON_MPS_ONE_SITE=0` to disable it explicitly. Direct
+single-site calls and compiled site buckets authorize the exact catalog entry
+for contiguous CUDA `complex64` tensors and two-by-two gates once the flattened
+batch-by-bond contraction contains at least `2**12` elements. The custom
+autograd boundary preserves tensor and gate gradients; disabled or unsupported
+calls retain the existing eager or compiled real/imaginary PyTorch contraction.
 
 The checked-in
 [`mps_one_site_dispatch_a800.json`](../../benchmarks/results/local/mps_one_site_dispatch_a800.json)
@@ -220,18 +221,20 @@ direct wrapper ranges from `0.55x` to `5.25x` for forward and `0.88x` to
 `1.13x` for forward plus backward, so the artifact does not claim a direct
 microbenchmark win on every shape. The canonical aggregate nevertheless
 records `eligible_for_default` because the complete public path wins in both
-directions against both public baselines; this authorizes a separate dispatch
-promotion review but does not itself change the opt-in policy. The result is
-bounded development hardware evidence, not a release gate or scalability
-claim. Reproduce or validate it with
+directions against both public baselines. MPS-003 is therefore the first
+`provisional` catalog implementation and uses default dispatch within the
+measured support window, with the explicit environment kill switch above. The
+result is bounded development hardware evidence, not a release gate or
+scalability claim. Reproduce or validate it with
 [`benchmarks/mps_one_site_dispatch.py`](../../benchmarks/mps_one_site_dispatch.py).
 
-The MPS-004 identity/Pauli-Z environment-transfer route is opt-in through
-`FQ_TRITON_MPS_ENVIRONMENT=1`. Dispatch authorizes the exact catalog entry
-before importing Triton and selects it only for contiguous CUDA `complex64`
-forward inputs without gradients, bond dimensions at most 32, and contraction
-work at most `2**22`. Other inputs remain on the existing PyTorch eager or
-compiled path, and route counts are exposed through `site_kernel_stats()`.
+The MPS-004 identity/Pauli-Z environment-transfer route is enabled by default
+inside its measured support window. Set `FQ_TRITON_MPS_ENVIRONMENT=0` to disable
+it explicitly. Dispatch authorizes the exact catalog entry before importing
+Triton and selects it only for contiguous CUDA `complex64` forward inputs
+without gradients, bond dimensions at most 32, and contraction work at most
+`2**22`. Other inputs remain on the existing PyTorch eager or compiled path,
+and route counts are exposed through `site_kernel_stats()`.
 
 The checked-in
 [`mps_environment_dispatch_a800.json`](../../benchmarks/results/local/mps_environment_dispatch_a800.json)
@@ -241,21 +244,23 @@ and FlagTree 0.7.0. Across the fixed eight-case support matrix, the direct
 kernel wrapper is `1.39x` to `8.90x` faster than the equivalent PyTorch einsum.
 The complete public dispatch path is `3.08x` to `10.60x` faster than the eager
 reference and `2.09x` to `7.09x` faster than its warm compiled reference, with
-maximum absolute error `2.53e-8`. The canonical aggregate therefore records
-`eligible_for_default`; this authorizes a separate dispatch-promotion review
-but does not itself change the opt-in policy. The result is bounded development
-hardware evidence, not a release gate or scalability claim. Reproduce or
-validate it with
+maximum absolute error `2.53e-8`. The canonical aggregate records
+`eligible_for_default`, and MPS-004 is now a `provisional` implementation with
+default dispatch inside the measured window and the explicit kill switch above.
+The result is bounded development hardware evidence, not a release gate or
+scalability claim. Reproduce or validate it with
 [`benchmarks/mps_environment_dispatch.py`](../../benchmarks/mps_environment_dispatch.py).
 
 MPS-005 groups as many as eight observable channels in each Triton program so
-the channels reuse site-tensor loads. Its implementation supports contiguous
-CUDA `complex64` forward inputs without gradients, at most 32 channels, bond
-dimensions at most 16, and contraction work at most `2**23`. The wrapper keeps
-the exact PyTorch contraction as its explicit fallback outside that measured
-window. The same `FQ_TRITON_MPS_ENVIRONMENT=1` rollout switch routes eligible
-multi-channel transfers through the exact MPS-005 catalog entry and reports
-them separately through `site_kernel_stats()`.
+the channels reuse site-tensor loads. The route is enabled by default inside
+its measured support window and shares the explicit
+`FQ_TRITON_MPS_ENVIRONMENT=0` kill switch with MPS-004. Its implementation
+supports contiguous CUDA `complex64` forward inputs without gradients, at most
+32 channels, bond dimensions at most 16, and contraction work at most `2**23`.
+The wrapper keeps the exact PyTorch contraction as its explicit fallback
+outside that measured window. Eligible multi-channel transfers authorize the
+exact MPS-005 catalog entry and are reported separately through
+`site_kernel_stats()`.
 
 The checked-in
 [`mps_environment_channels_dispatch_a800.json`](../../benchmarks/results/local/mps_environment_channels_dispatch_a800.json)
@@ -268,10 +273,11 @@ reference, with maximum absolute error `3.22e-8`. The direct kernel wrapper is
 `0.79x` to `6.76x` the speed of the direct einsum: FlagTree 0.7.0 loses that
 microbenchmark at the largest `16 x 8 x 16 x 16` boundary shape on both hosts,
 while the public dispatch path still wins against both public baselines. The
-canonical aggregate therefore records `eligible_for_default`; this authorizes
-a separate dispatch-promotion review but does not itself change the opt-in
-policy. The result is bounded development hardware evidence, not a release
-gate or scalability claim. Reproduce or validate it with
+canonical aggregate records `eligible_for_default`, and MPS-005 is now a
+`provisional` implementation with default dispatch inside the measured window
+and the explicit shared kill switch above. The result is bounded development
+hardware evidence, not a release gate or scalability claim. Reproduce or
+validate it with
 [`benchmarks/mps_environment_channels_dispatch.py`](../../benchmarks/mps_environment_channels_dispatch.py).
 
 MPS-006 evaluates the local tensor VJP of a Hermitian observable contribution
@@ -423,9 +429,10 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 25 implementations are implemented and
-experimental. The rest of the 100/800 portfolio is planned or candidate work,
-not shipped capability.
+The current 23 semantics and 25 implementations are implemented. MPS-003,
+MPS-004, and MPS-005 are provisional after their evidenced default-dispatch
+promotions; the other 22 implementations remain experimental. The rest of the
+100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
 
