@@ -20,6 +20,7 @@ from .core.operator_schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,
+    inverse_operator,
 )
 from .core.parameters import (
     bind_parameter_value,
@@ -27,7 +28,7 @@ from .core.parameters import (
 )
 from .core.qubit_mapping import normalize_qubits, qubit_map_from, remap_qubits
 from .core.runtime_config import RuntimeConfig, get_runtime_config
-from .errors import ValidationError
+from .errors import CapabilityError, ValidationError
 
 if TYPE_CHECKING:
     from .noise import NoiseModel
@@ -59,6 +60,68 @@ def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
     if count < minimum:
         raise ValidationError(f"Circuit {name} must be >= {minimum}, got {count}")
     return count
+
+
+def _inverted_instruction(instruction: Instruction) -> Instruction:
+    """Return the single gate that undoes one recorded instruction.
+
+    The matrix recorded on an instruction is what the simulator executes, so it decides
+    the inverse whenever it is present: an operation with an explicit matrix is inverted
+    by conjugate transpose, which is the only rule that inverts a user-supplied unitary.
+    Opcode rules apply to the remaining instructions, and an instruction that neither
+    route can invert is refused instead of being copied forward unchanged.
+
+    ``CapabilityError`` is the class the errors-module boundary reserves for a capability
+    that is absent rather than a value that is wrong, which is the case here: the program
+    is well formed, and undoing it is the part that is not available.
+    """
+
+    reason: str | None = None
+    if instruction.metadata.get("is_channel"):
+        reason = "it is a noise channel, which has no unitary inverse"
+    elif instruction.metadata.get("is_dynamic"):
+        reason = "it is a dynamic operation, which has no fixed inverse"
+    elif instruction.metadata.get("conditions"):
+        reason = "it is classically conditioned, which has no fixed inverse"
+
+    if reason is None:
+        matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
+        if matrix is not None:
+            inverted_matrix = getattr(matrix, "mH", None)
+            if inverted_matrix is None:
+                reason = "its matrix does not expose a conjugate transpose"
+            else:
+                return Instruction(
+                    name=instruction.name,
+                    wires=instruction.wires,
+                    params=dict(instruction.params),
+                    matrix=inverted_matrix,
+                    metadata=dict(instruction.metadata),
+                )
+
+    if reason is None:
+        schema = get_operator_schema(instruction.name)
+        if schema is None:
+            reason = "it is an unknown opcode with no matrix"
+        else:
+            inverted = inverse_operator(schema, instruction.params)
+            if inverted is None:
+                reason = (
+                    f"its adjoint declaration {schema.adjoint!r} names no inverse gate"
+                )
+            else:
+                opcode, params = inverted
+                return Instruction(
+                    name=opcode,
+                    wires=instruction.wires,
+                    params=params,
+                    metadata=dict(instruction.metadata),
+                )
+
+    raise CapabilityError(
+        f"Cannot invert instruction {instruction.name!r} on qubits "
+        f"{instruction.wires}: {reason}."
+    )
 
 
 def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
@@ -363,6 +426,55 @@ class Circuit:
         return self.gate(name, wires, matrix=unitary)
 
     unitary = any
+
+    def adjoint(self) -> "Circuit":
+        """Return the circuit that undoes this one.
+
+        The instructions are emitted in reverse order, and each one is replaced by the
+        single gate that inverts it. The rule belongs to the opcode, is declared once in
+        :data:`flagquantum.core.OPERATOR_SCHEMAS`, and is read from there: a gate that is
+        its own inverse is kept as it is, an angle is negated, and ``s``/``t``/``sx``
+        become ``sdg``/``tdg``/``sxdg``. The qubits of every instruction are unchanged,
+        because the inverse of a gate acts on the same qubits in the same order.
+
+        A custom operation recorded through :meth:`any` is inverted through its own
+        matrix rather than through an opcode rule, since that matrix is what executes.
+
+        This is a construction-time operation: it emits instructions the IR already
+        describes, so ``IR_VERSION`` does not change. The result is a new circuit, so
+        the circuit being inverted stays usable, and a reusable block can be inverted
+        before it is appended a second time.
+
+        Returns:
+            A new circuit with the same qubit count, batch size, device, and dtype.
+
+        Raises:
+            CapabilityError: If an instruction is not an invertible fixed gate: a noise
+                channel, a mid-circuit measurement or reset, a classically conditioned
+                gate, or a custom operation whose matrix is not a unitary.
+
+        Examples:
+            >>> import flagquantum as fq
+            >>> circuit = fq.Circuit(2).h(0).s(0).cx(0, 1)
+            >>> [item.name for item in circuit.adjoint().to_ir().instructions]
+            ['cx', 'sdg', 'h']
+        """
+
+        inverse = type(self)(
+            n_qubits=self.n_wires,
+            bsz=self.bsz,
+            device=self.device,
+            dtype=self.dtype,
+            inputs=self._inputs,
+            config=self.runtime_config,
+        )
+        inverse._instructions.extend(
+            _inverted_instruction(instruction)
+            for instruction in reversed(self._instructions)
+        )
+        if self._instructions:
+            inverse._invalidate_execution_cache(instructions_changed=True)
+        return inverse
 
     def compose(
         self,

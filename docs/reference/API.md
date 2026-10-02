@@ -16,6 +16,7 @@ tests, and rendered in the
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
 | Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
+| Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
@@ -68,6 +69,29 @@ circuit = fq.Circuit(4).x(0).compose(block, qubits=(1, 2))
 must not place two of them on one target, and must stay inside the receiving circuit;
 a partial mapping is refused rather than completed by identity, because an identity
 image would move a gate silently.
+
+`Circuit.adjoint()` returns the circuit that undoes the one it is called on: the
+instructions in reverse order, each replaced by the single gate that inverts it. The
+rule belongs to the gate and is declared once in the operator schema, so a
+self-inverse gate is kept as it is, an angle is negated, and `s`/`t`/`sx` become
+`sdg`/`tdg`/`sxdg`:
+
+```python
+block = fq.Circuit(2).h(0).ry(0, 0.3).cx(0, 1)
+inverse = block.adjoint()
+[(item.name, item.params) for item in inverse.to_ir().instructions]
+# [('cx', {}), ('ry', {'theta': -0.3}), ('h', {})]
+```
+
+The block being inverted is left usable, and the result carries the same qubit
+count, batch size, device, and dtype. A gate recorded with its own matrix through
+`Circuit.unitary(...)` is inverted through that matrix. An operation with no
+unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
+classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
+the operation instead of being dropped from the inverse.
+
+Together, `compose` and `adjoint` express the block-reuse idiom: a sub-program is
+placed where it is needed, and the same sub-program undone is placed after it.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
