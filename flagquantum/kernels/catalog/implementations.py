@@ -206,6 +206,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_environment",
         "fused_mps_environment_channels",
         layouts=("mps_environment_channels",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
