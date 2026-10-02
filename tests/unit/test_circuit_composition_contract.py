@@ -1,0 +1,528 @@
+"""Conformance of the construction-time composition contract with the implementation.
+
+`tests/unit/test_circuit_compose.py` and `tests/unit/test_circuit_adjoint.py` own the
+semantics: which instruction each opcode becomes, which placement is refused, and what
+the result executes to. This file owns the contract in
+`contracts/circuit-composition-contract.toml` and asks one question of it -- is every
+sentence in it still true of the code?
+
+That is a different measurement. The contract is the repository's own list of the
+refusal vocabulary, so it is checked against the implementation rather than trusted: a
+phrase that no longer occurs in its source, a refusal whose exception class changed, a
+declared rule name that the operator schema does not define, an operation that the
+contract calls absent but that someone added, or an opcode census that no longer
+supports a `reachable = false` row all fail here.
+"""
+
+from __future__ import annotations
+
+import inspect
+import json
+import math
+from collections.abc import Callable, Mapping
+from pathlib import Path
+from typing import Any
+
+import pytest
+import torch
+
+import flagquantum as fq
+from flagquantum.core import ADJOINT_RULES, OPERATOR_SCHEMAS
+from flagquantum.core.ir import IR_VERSION, Instruction, IRValidationError
+from flagquantum.errors import CapabilityError, ValidationError
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
+    import tomli as tomllib
+
+pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[2]
+CONTRACT = ROOT / "contracts" / "circuit-composition-contract.toml"
+
+#: The exception class each contracted `exception` name denotes. A name absent here is
+#: a contracted class this test does not know how to observe, which is a failure.
+_EXCEPTIONS: dict[str, type[BaseException]] = {
+    "TypeError": TypeError,
+    "ValidationError": ValidationError,
+    "CapabilityError": CapabilityError,
+}
+
+
+def _contract() -> dict[str, Any]:
+    return tomllib.loads(CONTRACT.read_text(encoding="utf-8"))
+
+
+def _refusals() -> list[dict[str, Any]]:
+    refusals: list[dict[str, Any]] = _contract()["refusals"]
+    return refusals
+
+
+def _composable(width: int = 2) -> fq.Circuit:
+    return fq.Circuit(width).h(0)
+
+
+def _with_instruction(instruction: Instruction) -> fq.Circuit:
+    """Return a two-qubit circuit holding one hand-built instruction."""
+
+    circuit = fq.Circuit(2)
+    circuit._instructions.append(instruction)
+    return circuit
+
+
+#: One call per contracted refusal that a user can reach. The keys must be exactly the
+#: `reachable = true` codes; a row without a trigger would otherwise be asserted only by
+#: its source text, and a trigger without a row would be an undocumented refusal.
+_TRIGGERS: dict[str, Callable[[], object]] = {
+    "both_placement_arguments": lambda: fq.Circuit(3).compose(
+        _composable(), qubits=(0, 1), qubit_map={0: 0, 1: 1}
+    ),
+    "program_not_composable": lambda: fq.Circuit(3).compose(5),
+    "qubit_label_not_an_integer": lambda: fq.Circuit(3).compose(
+        _composable(), qubits=(1.0, 2)
+    ),
+    "placement_not_a_mapping": lambda: fq.Circuit(3).compose(
+        _composable(), qubit_map=[1, 2]
+    ),
+    "batch_size_mismatch": lambda: fq.Circuit(2, bsz=3).compose(fq.Circuit(2)),
+    "placement_incomplete": lambda: fq.Circuit(3).compose(_composable(), qubits=(1,)),
+    "placement_map_incomplete": lambda: fq.Circuit(3).compose(
+        _composable(), qubit_map={0: 0}
+    ),
+    "placement_map_unknown_source": lambda: fq.Circuit(3).compose(
+        _composable(), qubit_map={0: 0, 1: 1, 7: 2}
+    ),
+    "target_qubit_repeated": lambda: fq.Circuit(3).compose(
+        _composable(), qubits=(1, 1)
+    ),
+    "target_qubit_negative": lambda: fq.Circuit(3).compose(
+        _composable(), qubits=(-1, 0)
+    ),
+    "target_qubit_out_of_range": lambda: fq.Circuit(3).compose(
+        _composable(), qubits=(2, 3)
+    ),
+    "inverse_of_channel": lambda: fq.Circuit(1).depolarizing(0, 0.1).adjoint(),
+    # `reset` with this metadata is what the dynamic runtime writes for a mid-circuit
+    # reset, so the trigger is the real instruction rather than a synthetic one.
+    "inverse_of_dynamic_operation": lambda: _with_instruction(
+        Instruction("reset", (1,), metadata={"is_dynamic": True})
+    ).adjoint(),
+    "inverse_of_conditioned_gate": lambda: _with_instruction(
+        Instruction("x", (1,), metadata={"conditions": (("c", 1),)})
+    ).adjoint(),
+    "inverse_of_undeclared_rule": lambda: _with_instruction(
+        Instruction("bit_flip", (1,), params={"probability": 0.1})
+    ).adjoint(),
+    # A custom operation may carry any matrix, and one recorded as a nested sequence
+    # rather than a tensor exposes no conjugate transpose.
+    "inverse_of_matrix_without_conjugate_transpose": lambda: _with_instruction(
+        Instruction("custom", (1,), matrix=((1.0, 0.0), (0.0, 1.0)))
+    ).adjoint(),
+}
+
+
+def test_contract_header_names_the_surface_and_its_authorization() -> None:
+    contract = _contract()
+
+    assert contract["schema"] == "flagquantum_circuit_composition_contract_v1"
+    assert contract["maturity"] == "development_evidence"
+    assert contract["surface"] == "construction_time_program_composition"
+    assert contract["ir_version_effect"] == "none"
+    assert contract["root_export_effect"] == "none"
+    for field in ("implementation", "placement_implementation", "adjoint_rule_source"):
+        assert (ROOT / contract[field]).is_file(), field
+    for proposal in contract["authorization"]:
+        assert (ROOT / proposal).is_file(), proposal
+
+
+def test_the_contracted_operations_exist_and_the_absent_ones_do_not() -> None:
+    scope = _contract()["scope"]
+
+    for name in scope["provided"]:
+        assert callable(getattr(fq.Circuit, name.split(".")[-1])), name
+    for name in scope["not_provided"]:
+        # The absence is contracted, so adding one of these is a contract change and
+        # not an implementation detail.
+        assert not hasattr(fq.Circuit, name.split(".")[-1]), name
+    assert "no approved API change proposal" in scope["not_provided_reason"]
+
+
+def test_placement_arguments_are_the_contracted_signature() -> None:
+    placement = _contract()["placement"]
+    signature = inspect.signature(fq.Circuit.compose)
+
+    assert list(signature.parameters) == [
+        "self",
+        placement["program_argument"],
+        *placement["arguments"],
+    ]
+    assert (
+        signature.parameters[placement["program_argument"]].kind
+        is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert all(
+        signature.parameters[name].kind is inspect.Parameter.KEYWORD_ONLY
+        for name in placement["arguments"]
+    )
+    assert all(
+        signature.parameters[name].default is None for name in placement["arguments"]
+    )
+    assert placement["arguments_are_mutually_exclusive"] is True
+    assert placement["mutates_receiver"] is True
+    assert placement["returns"] == "receiver"
+
+
+def test_the_placement_flags_hold_on_a_measured_composition() -> None:
+    """Every `[placement]` flag is the user-visible result of one measurement.
+
+    A flag no test reads is a comment, so each one is checked by composing a two-qubit
+    program whose instructions are distinguishable by qubit and by parameter, and
+    reading the emitted instructions back.
+    """
+
+    placement = _contract()["placement"]
+    block = fq.Circuit(2).h(0).cnot(1, 0).rz(0, 0.7)
+    receiver = fq.Circuit(4).x(2)
+
+    # `existing_instructions_preserved`, `source_order_preserved` and
+    # `occupied_target_qubits_are_legal`, in one measurement: qubit 2 already carried
+    # `x`, that `x` is still first, the source follows in its own order, and the
+    # source's own qubit 0 lands on the already-occupied qubit 2 rather than replacing
+    # anything. The source is left untouched, which is why it can be composed again.
+    receiver.compose(block, qubits=(2, 0))
+    emitted = [(item.name, item.wires) for item in receiver.to_ir().instructions]
+    assert emitted == [
+        ("x", (2,)),
+        ("h", (2,)),
+        ("cx", (0, 2)),
+        ("rz", (2,)),
+    ]
+    assert placement["occupied_target_qubits_are_legal"] is True
+    assert placement["existing_instructions_preserved"] is True
+    assert [item.wires for item in block.to_ir().instructions] == [(0,), (1, 0), (0,)]
+
+    # `default_placement`: with neither argument the source lands on the low qubits.
+    default = fq.Circuit(4).compose(fq.Circuit(2).h(0).cnot(0, 1))
+    assert [(item.name, item.wires) for item in default.to_ir().instructions] == [
+        ("h", (0,)),
+        ("cx", (0, 1)),
+    ]
+    assert placement["default_placement"] == "identity"
+
+    # `placement_is_total_over_source_width` is asserted through its refusal in the
+    # parametrised refusal test; here it fixes that a complete mapping is accepted.
+    assert placement["placement_is_total_over_source_width"] is True
+
+    # `single_label_allowed_only_for_width_one`: a bare label works for width one and is
+    # rejected by arity for width two, so it is not a general shorthand.
+    assert fq.Circuit(4).compose(fq.Circuit(1).h(0), qubits=2).to_ir().instructions[
+        0
+    ].wires == (2,)
+    with pytest.raises(ValidationError, match="qubits must name all"):
+        fq.Circuit(4).compose(block, qubits=2)
+    assert placement["single_label_allowed_only_for_width_one"] is True
+
+    # `instruction_payload_preserved`: `rz` keeps its angle and a custom instruction
+    # keeps its matrix and metadata, so composition is a rewrite and not a re-creation.
+    custom = fq.Circuit(1).any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    custom._instructions[-1].metadata["origin"] = "test"
+    carried = fq.Circuit(2).compose(fq.Circuit(1).rz(0, 0.25), qubits=1)
+    carried.compose(custom, qubits=0)
+    angle, matrix_instruction = carried.to_ir().instructions
+    assert angle.params == {"theta": 0.25}
+    assert torch.equal(matrix_instruction.matrix, torch.eye(2, dtype=torch.complex128))
+    assert matrix_instruction.metadata == {"origin": "test"}
+    assert placement["instruction_payload_preserved"] == [
+        "name",
+        "params",
+        "matrix",
+        "metadata",
+    ]
+
+    # `batch_size_must_match` is asserted through its refusal; a matching batch is
+    # carried through rather than silently flattened.
+    batched = fq.Circuit(2, bsz=3).compose(fq.Circuit(2, bsz=3).h(0))
+    assert batched.bsz == 3
+    assert placement["batch_size_must_match"] is True
+
+    # `mutates_receiver` and `returns`: the receiver is the result, so the two are the
+    # same object and the source is left alone.
+    receiver2 = fq.Circuit(2)
+    assert receiver2.compose(block) is receiver2
+    assert placement["mutates_receiver"] is True
+    assert placement["returns"] == "receiver"
+    assert len(block.to_ir().instructions) == 3
+
+
+def test_declared_adjoint_rules_are_the_operator_schema_vocabulary() -> None:
+    adjoint = _contract()["adjoint"]
+
+    # The vocabulary has one owner. Restating it in the contract is only safe while
+    # this equality holds.
+    assert list(ADJOINT_RULES) == adjoint["declared_opcode_rules"]
+    assert adjoint["receiver_is_mutated"] is False
+    assert adjoint["instruction_order"] == "reversed"
+    assert adjoint["instruction_qubits"] == "unchanged"
+    signature = inspect.signature(fq.Circuit.adjoint)
+    assert list(signature.parameters) == ["self"]
+    # The contract names the preserved attributes, so a rename must reach it. Only the
+    # current name is contracted: `n_wires` is a deprecated alias and is not user-facing.
+    assert "n_wires" not in adjoint["preserves"]
+    for attribute in adjoint["preserves"]:
+        assert hasattr(fq.Circuit(1), attribute), attribute
+
+
+def test_the_adjoint_flags_hold_on_a_measured_inversion() -> None:
+    """Every `[adjoint]` flag is the user-visible result of one measurement."""
+
+    adjoint = _contract()["adjoint"]
+    block = fq.Circuit(2).h(0).cnot(0, 1).rz(1, 0.7)
+    forward = [(item.name, item.wires) for item in block.to_ir().instructions]
+
+    inverse = block.adjoint()
+    assert [(item.name, item.wires) for item in inverse.to_ir().instructions] == [
+        ("rz", (1,)),
+        ("cx", (0, 1)),
+        ("h", (0,)),
+    ]
+
+    # `instruction_order` and `instruction_qubits`: the order is reversed and no qubit
+    # is relabelled, so the inverse of a block acts on the same qubits it acted on.
+    assert [wires for _, wires in forward] == [(0,), (0, 1), (1,)]
+    assert [wires for _, wires in [(n, w) for n, w in forward]][::-1] == [
+        (1,),
+        (0, 1),
+        (0,),
+    ]
+    assert adjoint["instruction_order"] == "reversed"
+    assert adjoint["instruction_qubits"] == "unchanged"
+
+    # `instruction_order_within_gate` is about the order of a gate's own qubits, which
+    # is not reversed: only the order of the instructions is.
+    assert inverse.to_ir().instructions[1].wires == (0, 1)
+    assert adjoint["instruction_order_within_gate"] == "unchanged"
+
+    # `receiver_is_mutated` and `returns`: the source stays usable, so a reusable block
+    # can be inverted and appended again.
+    assert [(item.name, item.wires) for item in block.to_ir().instructions] == forward
+    assert inverse is not block
+    assert adjoint["receiver_is_mutated"] is False
+    assert adjoint["returns"] == "new_circuit"
+
+    # `preserves`: the inverse is the same program shape, so it executes the same way.
+    # The list is closed, so both dropping an entry and claiming one that is not kept
+    # fail here: the attribute names are read from the contract, not restated.
+    assert adjoint["preserves"] == ["n_qubits", "bsz", "device", "dtype"]
+    shaped = fq.Circuit(3, bsz=2, device="cpu", dtype=torch.complex64).h(1)
+    inverted = shaped.adjoint()
+    assert inverted.to_ir().instructions != ()
+    for attribute in adjoint["preserves"]:
+        assert getattr(inverted, attribute) == getattr(shaped, attribute), attribute
+
+    # `empty_circuit_result`: inverting nothing is nothing, and the width survives.
+    empty = fq.Circuit(2).adjoint()
+    assert empty.to_ir().instructions == ()
+    assert empty.n_qubits == 2
+    assert adjoint["empty_circuit_result"] == "empty_circuit"
+
+    # `matrix_route_precedes_opcode_rule` and `matrix_route`: an opcode that is its own
+    # inverse keeps its name and is inverted through the matrix it carries, because that
+    # matrix is what executes. The rule for `h` would have copied the name forward with
+    # the matrix unchanged, which is the wrong inverse here.
+    angle = 0.7
+    matrix = torch.tensor(
+        [
+            [complex(math.cos(-angle / 2), math.sin(-angle / 2)), 0j],
+            [0j, complex(math.cos(angle / 2), math.sin(angle / 2))],
+        ],
+        dtype=torch.complex128,
+    )
+    instruction = _with_instruction(Instruction("h", (1,), matrix=matrix))
+    conjugated = instruction.adjoint().to_ir().instructions[0]
+    assert conjugated.name == "h"
+    assert torch.allclose(conjugated.matrix, matrix.mH)
+    assert not torch.allclose(conjugated.matrix, matrix)
+    assert adjoint["matrix_route_precedes_opcode_rule"] is True
+    assert adjoint["matrix_route"] == "conjugate_transpose"
+
+
+def test_the_unreachable_adjoint_branch_is_unreachable_by_construction() -> None:
+    """The `reachable = false` row is measured here rather than asserted in the table."""
+
+    unreachable = [row for row in _refusals() if row["reachable"] is False]
+    assert [row["code"] for row in unreachable] == ["inverse_of_unknown_opcode"]
+    assert unreachable[0]["code"] not in _TRIGGERS
+
+    # An unknown opcode carrying a matrix inverts through that matrix, so it never
+    # reaches the "unknown opcode with no matrix" branch.
+    custom = _with_instruction(
+        Instruction("unregistered", (1,), matrix=torch.eye(2, dtype=torch.complex128))
+    ).adjoint()
+    assert [item.name for item in custom.to_ir().instructions] == ["unregistered"]
+
+    # And an unknown opcode without a matrix cannot be built at all, which is what makes
+    # the branch unreachable instead of merely untested.
+    with pytest.raises(IRValidationError, match="unknown opcode"):
+        Instruction("unregistered", (1,))
+
+
+def test_composition_adds_no_ir_field_and_no_root_export() -> None:
+    """The contract's central claim: construction-time, not a second IR.
+
+    "Construction-time" is a claim about what the two operations emit, so it is measured
+    that way. Both are run over a circuit whose instructions come from every route the
+    IR supports, and every field of every instruction that comes out must already belong
+    to the declared :class:`Instruction` fields. A new field would be an IR change, and
+    an IR change moves the frozen ``IR_VERSION`` literal, which is why that pin is
+    checked here as well rather than assumed.
+    """
+
+    contract = _contract()
+    declared = {field for field in Instruction.__dataclass_fields__}
+    baseline = json.loads(
+        (ROOT / "contracts/public-api-v0.2-baseline.json").read_text(encoding="utf-8")
+    )
+    assert baseline["exports"]["IR_VERSION"]["value"]["value"] == IR_VERSION
+
+    source = (
+        fq.Circuit(2)
+        .h(0)
+        .cnot(0, 1)
+        .any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    )
+    emitted = [
+        *source.compose(fq.Circuit(1).x(0), qubits=1).to_ir().instructions,
+        *source.adjoint().to_ir().instructions,
+    ]
+    assert emitted
+    for instruction in emitted:
+        assert set(instruction.__dataclass_fields__) == declared
+        # An instruction is either a registered opcode or a custom operation that
+        # carries its own matrix, which is the only other route the IR describes.
+        schema = OPERATOR_SCHEMAS.get(instruction.name)
+        assert (schema is not None and schema.opcode == instruction.name) or (
+            instruction.matrix is not None
+        ), instruction.name
+
+    assert contract["ir_version_effect"] == "none"
+    assert contract["root_export_effect"] == "none"
+    assert not [name for name in fq.__all__ if name in {"compose", "adjoint"}]
+
+
+def test_the_refusal_vocabulary_is_unique_and_complete() -> None:
+    contract = _contract()
+    refusals = _refusals()
+    codes = [row["code"] for row in refusals]
+    phrases = [row["message_phrase"] for row in refusals]
+    required = {
+        "entry_point",
+        "code",
+        "exception",
+        "message_phrase",
+        "message_source",
+        "reachable",
+        "trigger",
+    }
+
+    assert len(codes) == len(set(codes)), "two refusals share a code"
+    assert len(phrases) == len(set(phrases)), "two refusals share a message phrase"
+    for row in refusals:
+        assert required <= set(row), (row["code"], sorted(required - set(row)))
+        assert row["entry_point"] in {"compose", "adjoint"}, row["code"]
+        assert row["exception"] in _EXCEPTIONS, row["exception"]
+        assert (ROOT / row["message_source"]).is_file(), row["message_source"]
+        if row["reachable"] is False:
+            assert row.get("reachability_note"), row["code"]
+    # The internal-only list is the contract explaining a gap in its own vocabulary: it
+    # must name a real refusal that the contracted entry points cannot reach, so that the
+    # list stays a statement about this surface instead of a parking space.
+    for entry in contract["issue_codes"]["internal_only"]:
+        assert entry["exception"] == "ValueError", entry
+        source = (ROOT / entry["source"]).read_text(encoding="utf-8")
+        assert entry["message_phrase"] in source, entry
+        assert entry["owner"] in source, entry
+        assert entry["reason"]
+
+
+@pytest.mark.parametrize("code", sorted(_TRIGGERS))
+def test_each_contracted_refusal_raises_its_contracted_class(code: str) -> None:
+    row = next(item for item in _refusals() if item["code"] == code)
+    expected = _EXCEPTIONS[row["exception"]]
+
+    with pytest.raises(expected) as error:
+        _TRIGGERS[code]()
+
+    assert type(error.value).__name__ == row["exception"]
+    assert row["message_phrase"] in str(error.value), row["code"]
+
+
+def test_every_reachable_refusal_has_a_trigger_and_every_trigger_a_refusal() -> None:
+    contracted = {row["code"] for row in _refusals() if row["reachable"] is True}
+    unreachable = {row["code"] for row in _refusals() if row["reachable"] is False}
+
+    assert contracted == set(_TRIGGERS)
+    assert not contracted & unreachable
+    assert unreachable == {"inverse_of_unknown_opcode"}
+    assert {row["entry_point"] for row in _refusals() if row["reachable"]} == {
+        "compose",
+        "adjoint",
+    }
+
+
+@pytest.mark.parametrize(
+    "row",
+    [row for row in _refusals()],
+    ids=[row["code"] for row in _refusals()],
+)
+def test_every_contracted_phrase_still_occurs_in_its_source(
+    row: Mapping[str, Any],
+) -> None:
+    # Every phrase is checked here, reachable or not. A reachable one is also raised by
+    # the trigger test above; the unreachable row has no other check, because no user
+    # path raises it -- yet the vocabulary is frozen either way, so its phrase must
+    # remain in the code that would report it.
+    source = (ROOT / row["message_source"]).read_text(encoding="utf-8")
+
+    assert row["message_phrase"] in source, row["code"]
+
+
+def test_the_opcode_census_supports_the_unreachable_adjoint_rows() -> None:
+    """Every registered opcode is inverted, or is a channel refused by the first rule.
+
+    The two `reachable = false` adjoint rows are only honest while this census holds:
+    `inverse_of_undeclared_rule` needs an opcode whose `adjoint` names no single gate,
+    and `inverse_of_unknown_opcode` needs one that the IR accepted without a matrix.
+    Registering such an opcode makes one of them reachable, and this test fails so that
+    the contract is updated instead of quietly going stale.
+    """
+
+    inverted: list[str] = []
+    channels: list[str] = []
+    for opcode, schema in sorted(OPERATOR_SCHEMAS.items()):
+        if schema.opcode != opcode:
+            continue
+        params = dict.fromkeys(schema.parameters, 0.3)
+        circuit = getattr(fq.Circuit(max(schema.arity, 1)), opcode)(
+            *range(schema.arity), **params
+        )
+        try:
+            circuit.adjoint()
+        except CapabilityError as error:
+            assert "noise channel" in str(error), opcode
+            channels.append(opcode)
+        else:
+            inverted.append(opcode)
+
+    census = _contract()["verification"]["opcode_census"]
+    assert len(inverted) + len(channels) == len(OPERATOR_SCHEMAS)
+    assert len(inverted) == 31 and len(channels) == 4, (inverted, channels)
+    assert channels == sorted(
+        name
+        for name, schema in OPERATOR_SCHEMAS.items()
+        if schema.opcode == name and schema.adjoint == "not_applicable"
+    )
+    assert f"{len(inverted)} of {len(OPERATOR_SCHEMAS)} registered opcodes invert" in (
+        census
+    )
+    assert "the 4 refusals are the noise channels" in census
