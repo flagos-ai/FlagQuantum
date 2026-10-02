@@ -112,8 +112,9 @@ performance, or production certification.
 
 ## A800 CUDA and Torch-FL reference
 
-The exact source revision `8671e660` passed the same 1/16/64-step optimizer
-matrix on an NVIDIA A800-SXM4-80GB through both `cuda:0` and Torch-FL
+The exact source revision `8671e6601a00b2a8f3b2d874c1e79f7752ecafdc` passed the
+same 1/16/64-step optimizer matrix on an NVIDIA A800-SXM4-80GB through both
+`cuda:0` and Torch-FL
 `flagos:0`. High and low master words stayed on the selected logical device,
 `Tensor.grad` was not used, and float64 tensors were not materialized on the
 accelerator. The two routes produced zero recorded metric delta.
