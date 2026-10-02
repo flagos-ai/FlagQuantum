@@ -79,6 +79,36 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
+One fault stated twice is a second refusal, and merging is the repair. A model
+whose mechanisms repeat a signature — the same detectors *and* the same
+observables — is one a matcher must not weight, because the graph would hold two
+parallel edges and take the cheaper, so the decoder refuses it and names the
+merge that resolves it:
+
+```python
+from flagquantum.qec import DetectorErrorModel
+
+split = DetectorErrorModel.from_stim_text(
+    "error(0.01) D0 L0\n"
+    "error(0.01) D0 L0\n"
+    "detector D0\n"
+    "logical_observable L0\n"
+)
+print(split.mechanisms_are_unique())  # False
+whole = split.merge_duplicate_mechanisms()  # DemMergeRule.INDEPENDENT_PARITY
+print(whole.num_errors, whole.errors[0].probability)  # 1 0.0198
+```
+
+`merge_duplicate_mechanisms(rule=...)` gives every shared signature one prior.
+`DemMergeRule.INDEPENDENT_PARITY`, the default, is the probability that an odd
+number of the group fires; `DemMergeRule.CLAMPED_LINEAR_SUM` adds them and clamps
+at one, for a caller whose mechanisms exclude each other. The parity rule is
+exact rather than tidy: a detector's rate is a product of `1 - 2p` factors over
+the mechanisms that touch it, so the combined prior of a group is the single `p`
+whose factor is that group's product and every rate is unchanged.
+`mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
+the refusal.
+
 ## Sample the circuit itself, not the model
 
 `sampling.py` samples the same experiment from the circuit rather than from the

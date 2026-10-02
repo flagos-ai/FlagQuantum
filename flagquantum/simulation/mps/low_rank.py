@@ -7,10 +7,22 @@ full two-site matrix.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from math import sqrt
 
 import torch
+
+
+def _projected_kernel_enabled() -> bool:
+    """Return whether the experimental MPS-002 route is explicitly enabled."""
+
+    return os.getenv("FQ_TRITON_MPS_PROJECTED_TWO_SITE", "0").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
 
 
 @lru_cache(maxsize=64)
@@ -73,7 +85,8 @@ def fixed_rank_two_site_range_qr(
     # MPS-002 is forward-only; keep the eager contraction whenever autograd
     # must observe the sampled range construction.
     use_projected_kernel = (
-        left.is_cuda
+        _projected_kernel_enabled()
+        and left.is_cuda
         and left.dtype == torch.complex64
         and gate.device == left.device
         and right.device == left.device

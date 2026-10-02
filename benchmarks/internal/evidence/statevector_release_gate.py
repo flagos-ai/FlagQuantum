@@ -1,11 +1,25 @@
-"""Fail-closed readiness gate for ISSUE-044 production acceptance."""
+"""Fail-closed readiness gate for ISSUE-044 production acceptance.
+
+The gate separates two evidence roles. A *release payload* is a signed
+``measured_production_run`` artifact that shards one logical workload across
+ranks and sets ``release_gate_allowed``; only those contribute release worlds and
+must carry the per-rank field contract. A *single-device baseline* is the signed
+capacity failure that proves the frozen workload exceeds one device. One device
+has no ranks to shard across, so no ``world_size=1`` artifact can satisfy the
+release gate -- see ``capacity_workload.single_gpu_baseline.rationale``. The
+baseline is required, signed, and bound to the frozen capacity digest, but read
+as provenance evidence rather than as a release-gate payload. Because the strict
+promotion audit requires every file under ``RESULTS`` to be release-grade sharded
+scalability evidence, the baseline is read from its own declared directory.
+"""
 
 from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from flagquantum.runtime.observability.evidence import verify_evidence_artifact
 
@@ -33,7 +47,11 @@ def evaluate_issue044_release(
 ) -> tuple[bool, tuple[str, ...]]:
     blockers: list[str] = []
     production: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
+    baselines: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
     rejected_integrity = False
+    single_device_claimants = False
+    capacity = manifest["capacity_workload"]
+    baseline_contract = capacity["single_gpu_baseline"]
     for artifact in artifacts:
         if artifact.get("artifact_class") != "measured_production_run":
             continue
@@ -47,18 +65,24 @@ def evaluate_issue044_release(
             if not valid:
                 rejected_integrity = True
                 continue
-        if evidence.get("release_gate_allowed") is True:
+        if _is_single_device_baseline(artifact, evidence, baseline_contract):
+            baselines.append((evidence, provenance))
+        if evidence.get("release_gate_allowed") is not True:
+            continue
+        if _as_int(evidence.get("world_size")) > 1:
             production.append((evidence, provenance))
+        else:
+            single_device_claimants = True
     if rejected_integrity:
         blockers.append("invalid_or_unsigned_production_artifact")
+    if single_device_claimants:
+        blockers.append("single_device_world_cannot_be_a_release_payload")
 
     worlds = {_as_int(evidence.get("world_size")) for evidence, _ in production}
     required_worlds = set(manifest["topologies"]["single_node_world_sizes"])
     if not required_worlds <= worlds:
         blockers.append("missing_release_world_sizes")
-    if not any(
-        _as_int(evidence.get("node_count")) >= 2 for evidence, _ in production
-    ):
+    if not any(_as_int(evidence.get("node_count")) >= 2 for evidence, _ in production):
         blockers.append("missing_multinode_correctness_artifact")
 
     speed = manifest["speed_workload"]
@@ -69,12 +93,10 @@ def evaluate_issue044_release(
     ]
     speed_accepted = any(
         _as_float(evidence.get("speedup")) >= _as_float(speed["minimum_speedup"])
-        and _confidence_interval_lower(evidence) > _as_float(
-            speed["confidence_interval_must_exclude_speedup"]
-        )
+        and _confidence_interval_lower(evidence)
+        > _as_float(speed["confidence_interval_must_exclude_speedup"])
         and _as_int(provenance.get("warmup")) >= _as_int(speed["warmup_steps"])
-        and _as_int(provenance.get("iterations"))
-        >= _as_int(speed["measured_steps"])
+        and _as_int(provenance.get("iterations")) >= _as_int(speed["measured_steps"])
         and _as_float(evidence.get("scaling_efficiency"))
         >= _as_float(speed["minimum_scaling_efficiency"])
         for evidence, provenance in speed_candidates
@@ -82,14 +104,13 @@ def evaluate_issue044_release(
     if not speed_accepted:
         blockers.append("missing_statistically_significant_speedup_artifact")
 
-    capacity = manifest["capacity_workload"]
     single_gpu_oom = any(
         evidence.get("acceptance_case") == "single_gpu_capacity_failure"
         and _as_int(evidence.get("world_size")) == 1
         and evidence.get("single_device_oom_observed") is True
         and evidence.get("capacity_failure_reason")
         and evidence.get("workload_sha256") == capacity["workload_sha256"]
-        for evidence, _ in production
+        for evidence, _ in baselines
     )
     if not single_gpu_oom:
         blockers.append("missing_single_gpu_measured_oom_artifact")
@@ -111,7 +132,25 @@ def evaluate_issue044_release(
         for evidence, provenance in production
     ):
         blockers.append("production_artifact_missing_required_fields")
+    baseline_fields = set(baseline_contract["required_artifact_fields"])
+    if baselines and any(
+        not _has_required_fields(evidence, provenance, baseline_fields)
+        for evidence, provenance in baselines
+    ):
+        blockers.append("single_gpu_baseline_missing_required_fields")
     return not blockers, tuple(blockers)
+
+
+def _is_single_device_baseline(
+    artifact: Mapping[str, Any],
+    evidence: Mapping[str, Any],
+    contract: Mapping[str, Any],
+) -> bool:
+    return (
+        evidence.get("acceptance_case") == "single_gpu_capacity_failure"
+        and _as_int(evidence.get("world_size")) == 1
+        and artifact.get("evidence_scope") == contract["evidence_scope"]
+    )
 
 
 def _confidence_interval_lower(evidence: Mapping[str, Any]) -> float:
@@ -162,11 +201,32 @@ def _has_required_fields(
     return True
 
 
+def baseline_results(manifest: Mapping[str, Any]) -> Path:
+    """Return the declared single-device baseline directory.
+
+    The directory must sit outside the promoted release directory, because the
+    strict promotion audit requires every file under ``RESULTS`` to be
+    release-grade sharded scalability evidence and a single-device run can never
+    be. Keeping the separation machine-checked stops the two roles from merging.
+    """
+
+    path = Path(manifest["capacity_workload"]["single_gpu_baseline"]["results_path"])
+    if path == RESULTS or RESULTS in path.parents:
+        raise ValueError(
+            f"the single-device baseline cannot live under {RESULTS}; "
+            "the strict promotion audit requires every promoted file to be "
+            "release-grade sharded scalability evidence"
+        )
+    return path
+
+
 def main() -> None:
     manifest = load_manifest()
+    directories = (RESULTS, baseline_results(manifest))
     artifacts = [
         json.loads(path.read_text(encoding="utf-8"))
-        for path in sorted(RESULTS.glob("*.json"))
+        for directory in directories
+        for path in sorted(directory.glob("*.json"))
     ]
     signing_key = os.environ.get("FQ_EVIDENCE_SIGNING_KEY", "").encode()
     passed, blockers = evaluate_issue044_release(

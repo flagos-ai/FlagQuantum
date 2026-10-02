@@ -693,6 +693,111 @@ def test_parameter_shift_gradient_matches_autograd_for_training_loss():
     assert torch.allclose(shift_grad, autograd_params.grad.detach(), atol=1e-5)
 
 
+_DIFFERENTIABLE_GATE_PARAMETER_COUNTS = {
+    "rx": 1,
+    "ry": 1,
+    "rz": 1,
+    "phase": 1,
+    "u1": 1,
+    "u2": 2,
+    "u3": 3,
+    "crx": 1,
+    "cry": 1,
+    "crz": 1,
+    "cphase": 1,
+    "rxx": 1,
+    "ryy": 1,
+    "rzz": 1,
+}
+_TWO_QUBIT_DIFFERENTIABLE_GATES = frozenset(
+    {"crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz"}
+)
+
+
+def _sensitive_two_qubit_loss(circuit):
+    """Sum every single-qubit Pauli so that no gate hides behind a null slope."""
+
+    options = fq.ExecutionOptions(precision="complex128")
+    total = None
+    for qubit in (0, 1):
+        for observable in (fq.Z, fq.X, fq.Y):
+            value = (
+                fq.run(
+                    circuit,
+                    outputs=fq.expectation(observable(qubit)),
+                    options=options,
+                )
+                .measurements[0]
+                .value
+            )
+            value = value.reshape(()).real.to(torch.float64)
+            total = value if total is None else total + value
+    return total
+
+
+def _differentiable_gate_circuit(values, opcode):
+    circuit = fq.Circuit(2).h(0).ry(1, theta=0.31)
+    qubits = [0, 1] if opcode in _TWO_QUBIT_DIFFERENTIABLE_GATES else [0]
+    arguments = [
+        values[index].reshape(())
+        for index in range(_DIFFERENTIABLE_GATE_PARAMETER_COUNTS[opcode])
+    ]
+    getattr(circuit, opcode)(*qubits, *arguments)
+    return circuit
+
+
+@pytest.mark.parametrize("opcode", sorted(_DIFFERENTIABLE_GATE_PARAMETER_COUNTS))
+def test_parameter_shift_matches_autograd_for_every_differentiable_opcode(opcode):
+    """Each gate's own declared frequency set has to reproduce autograd."""
+
+    count = _DIFFERENTIABLE_GATE_PARAMETER_COUNTS[opcode]
+    parameters = torch.tensor([0.37, -0.22, 0.11][:count], dtype=torch.float64)
+    autograd_parameters = parameters.detach().clone().requires_grad_(True)
+
+    def build(values):
+        return _differentiable_gate_circuit(values, opcode)
+
+    reference = _sensitive_two_qubit_loss(build(autograd_parameters))
+    reference.backward()
+    assert autograd_parameters.grad is not None
+    shift_gradient = parameter_shift_gradient(
+        build, parameters, _sensitive_two_qubit_loss
+    )
+
+    torch.testing.assert_close(
+        shift_gradient,
+        autograd_parameters.grad.detach(),
+        atol=1e-9,
+        rtol=1e-9,
+    )
+
+
+def test_parameter_shift_rejects_a_parameter_that_controls_two_gates():
+    def build(values):
+        return fq.Circuit(1).rx(0, theta=values[0]).ry(0, theta=values[0])
+
+    with pytest.raises(ValueError, match="exactly one gate parameter"):
+        parameter_shift_gradient(
+            build,
+            torch.tensor([0.2], dtype=torch.float64),
+            lambda circuit: circuit.expectation_z((0,)).sum(),
+        )
+
+
+def test_parameter_shift_rejects_a_parameter_that_scales_a_gate():
+    """A shifted user parameter is only an angle when it is the gate's angle."""
+
+    def build(values):
+        return fq.Circuit(1).h(0).rx(0, theta=2 * values[0])
+
+    with pytest.raises(ValueError, match="enter its gate angle directly"):
+        parameter_shift_gradient(
+            build,
+            torch.tensor([0.2], dtype=torch.float64),
+            lambda circuit: circuit.expectation_z((0,)).sum(),
+        )
+
+
 def test_batched_parameter_shift_uses_one_evaluation_and_matches_autograd():
     params = torch.tensor([0.17, -0.31], dtype=torch.float64)
     autograd_params = params.detach().clone().requires_grad_(True)

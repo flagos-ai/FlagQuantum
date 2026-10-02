@@ -1,0 +1,3668 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "cross_framework_differentiable_simulator_workload_corpus",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.2089738935142453,
+            "forward": 0.9236459856486956,
+            "value_and_grad": 0.9951762477756556
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.9742552169372296,
+            "forward": 1.4034164449057307,
+            "value_and_grad": 1.2412774198518046
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 1.7239504755205214e-15,
+            "passed": true,
+            "value_max_abs_error": 8.881784197001252e-15
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.001098542008548975,
+            "mean_seconds": 0.0006157282374000975,
+            "median_seconds": 0.0005794169846922159,
+            "min_seconds": 0.0005397920031100512,
+            "relative_median_absolute_deviation": 0.04523167255825317,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0005771249998360872,
+              0.0005603750178124756,
+              0.0005969580088276416,
+              0.0005568329943343997,
+              0.0005506669986061752,
+              0.0005903749843128026,
+              0.0005410839803516865,
+              0.0005582500016316772,
+              0.0005794169846922159,
+              0.0006418330012820661,
+              0.0007230420014820993,
+              0.0005532089853659272,
+              0.000686624989612028,
+              0.0005397920031100512,
+              0.0006651250005234033,
+              0.0005507910100277513,
+              0.0005645409983117133,
+              0.001098542008548975,
+              0.0006104170170146972,
+              0.0006030420190654695,
+              0.0005822499806527048
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.0023470829764846712,
+            "mean_seconds": 0.0015631468559149653,
+            "median_seconds": 0.0013511670113075525,
+            "min_seconds": 0.0011360420030541718,
+            "relative_median_absolute_deviation": 0.13130649815097206,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0011360420030541718,
+              0.0013511670113075525,
+              0.0023470829764846712,
+              0.0012494580005295575,
+              0.0012257919879630208,
+              0.001744999986840412,
+              0.0011737500026356429,
+              0.0018411249911878258,
+              0.001303124998230487,
+              0.0019485829980112612,
+              0.0013233330100774765,
+              0.0011859170044772327,
+              0.0019258329994045198,
+              0.0011909589811693877,
+              0.0021393329952843487,
+              0.0012186249950900674,
+              0.0012189580011181533,
+              0.0022773340169806033,
+              0.0016650420147925615,
+              0.00198095798259601,
+              0.001378667016979307
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.0033758760255295783,
+            "mean_seconds": 0.002178875093315063,
+            "median_seconds": 0.0019609169976320118,
+            "min_seconds": 0.001713167002890259,
+            "relative_median_absolute_deviation": 0.12549384545182196,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.001713167002890259,
+              0.001911542029120028,
+              0.002944040985312313,
+              0.0018062909948639572,
+              0.001776458986569196,
+              0.0023353749711532146,
+              0.0017148339829873294,
+              0.002399374992819503,
+              0.001882541982922703,
+              0.0025904159992933273,
+              0.002046375011559576,
+              0.00173912598984316,
+              0.002612457989016548,
+              0.0017307509842794389,
+              0.002804457995807752,
+              0.0017694160051178187,
+              0.0017834989994298667,
+              0.0033758760255295783,
+              0.0022754590318072587,
+              0.0025840000016614795,
+              0.0019609169976320118
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.0013419999741017818,
+            "mean_seconds": 0.0007757161885300386,
+            "median_seconds": 0.0007005000079516321,
+            "min_seconds": 0.0006271669990383089,
+            "relative_median_absolute_deviation": 0.05912493985520045,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0013419999741017818,
+              0.0006821249844506383,
+              0.0006271669990383089,
+              0.001012833003187552,
+              0.000715957983629778,
+              0.0006700830126646906,
+              0.0007277079857885838,
+              0.0006702499813400209,
+              0.0007005000079516321,
+              0.0006432500085793436,
+              0.0008223339973483235,
+              0.0006590829871129245,
+              0.0006525420176330954,
+              0.000702916004229337,
+              0.000676166993798688,
+              0.0009045420156326145,
+              0.0006590410193894058,
+              0.0010416250152047724,
+              0.0007258330006152391,
+              0.0006792079948354512,
+              0.0009748749725986272
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.0032894579926505685,
+            "mean_seconds": 0.0015397103325951668,
+            "median_seconds": 0.0012479999859351665,
+            "min_seconds": 0.001132916018832475,
+            "relative_median_absolute_deviation": 0.05996233339310346,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.00117816700367257,
+              0.0012238329800311476,
+              0.0011650829983409494,
+              0.001819249999243766,
+              0.0011923749989364296,
+              0.0011731669947039336,
+              0.0020763750071637332,
+              0.0011525000154506415,
+              0.0012652089935727417,
+              0.001132916018832475,
+              0.0021590410033240914,
+              0.0012264169927220792,
+              0.0012255839828867465,
+              0.0013042500067967921,
+              0.0012479999859351665,
+              0.00196995897567831,
+              0.0012787079904228449,
+              0.0032894579926505685,
+              0.0012256250192876905,
+              0.001770791015587747,
+              0.0022572090092580765
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.004331083007855341,
+            "mean_seconds": 0.0023154265211252053,
+            "median_seconds": 0.0019514580199029297,
+            "min_seconds": 0.0017761660274118185,
+            "relative_median_absolute_deviation": 0.06595479984687014,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.002520166977774352,
+              0.001905957964481786,
+              0.0017922499973792583,
+              0.002832083002431318,
+              0.0019083329825662076,
+              0.0018432500073686242,
+              0.002804082992952317,
+              0.0018227499967906624,
+              0.001965709001524374,
+              0.0017761660274118185,
+              0.002981375000672415,
+              0.0018854999798350036,
+              0.001878126000519842,
+              0.002007166011026129,
+              0.0019241669797338545,
+              0.0028745009913109243,
+              0.0019377490098122507,
+              0.004331083007855341,
+              0.0019514580199029297,
+              0.0024499990104231983,
+              0.0032320839818567038
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0011993339867331088,
+            "mean_seconds": 0.0006450912859734325,
+            "median_seconds": 0.0005645000201184303,
+            "min_seconds": 0.0005205420020502061,
+            "relative_median_absolute_deviation": 0.04982286878379969,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0005402499809861183,
+              0.0009248749993275851,
+              0.0005664170021191239,
+              0.0005363750096876174,
+              0.0005377919878810644,
+              0.0005270830006338656,
+              0.0005401659873314202,
+              0.0005645000201184303,
+              0.0005589159845840186,
+              0.0005427500000223517,
+              0.0005662080075126141,
+              0.0006484170153271407,
+              0.0005392080056481063,
+              0.0007003330101724714,
+              0.0006014170066919178,
+              0.0005205420020502061,
+              0.0005623339966405183,
+              0.0011579999991226941,
+              0.0006192080036271363,
+              0.0005927919992245734,
+              0.0011993339867331088
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.0028114589804317802,
+            "mean_seconds": 0.0020621089996503933,
+            "median_seconds": 0.0018962500034831464,
+            "min_seconds": 0.0017135829839389771,
+            "relative_median_absolute_deviation": 0.07310480077140767,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0018873749941121787,
+              0.002140291006071493,
+              0.0017842080269474536,
+              0.0017135829839389771,
+              0.0018962500034831464,
+              0.0017194579995702952,
+              0.0019031659758184105,
+              0.002522374998079613,
+              0.0018318330112379044,
+              0.00175762502476573,
+              0.00176749998354353,
+              0.0027508329949341714,
+              0.001775790995452553,
+              0.0023678749857936054,
+              0.0018014590023085475,
+              0.0017389999993611127,
+              0.002572875004261732,
+              0.0018972080142702907,
+              0.0028114589804317802,
+              0.0019240000110585243,
+              0.002740124997217208
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.003939458983950317,
+            "mean_seconds": 0.0027072002856238257,
+            "median_seconds": 0.002434041991364211,
+            "min_seconds": 0.002246541000204161,
+            "relative_median_absolute_deviation": 0.07169144598655416,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.002427624975098297,
+              0.003065166005399078,
+              0.0023506250290665776,
+              0.0022499579936265945,
+              0.002434041991364211,
+              0.002246541000204161,
+              0.0024433319631498307,
+              0.003086875018198043,
+              0.002390748995821923,
+              0.0023003750247880816,
+              0.0023337079910561442,
+              0.003399250010261312,
+              0.0023149990011006594,
+              0.003068207995966077,
+              0.0024028760090004653,
+              0.0022595420014113188,
+              0.0031352090009022504,
+              0.003055208013392985,
+              0.0034306669840589166,
+              0.0025167920102830976,
+              0.003939458983950317
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "c6db6448470a5abf25ac8f6cda2a780f7b6802e576f2ea989659f89e54a1907a",
+        "gate_count": 39,
+        "gate_density_per_wire": 3.9,
+        "logical_depth": 12,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 10,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 9,
+          "rx": 10,
+          "ry": 10,
+          "rz": 10
+        },
+        "parameterized_gate_count": 30,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 30,
+        "two_qubit_gate_count": 9,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 39,
+        "ir_content_hash": "c8ba67d92201886f3c6bcd099c8defb7cc45015810aa8d736df95280ab15ccbd",
+        "layers": 1,
+        "logical_statevector_bytes": 16384,
+        "n_wires": 10,
+        "name": "hardware_efficient_vqe",
+        "observable": "0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
+        "observable_term_count": 19,
+        "parameter_count": 30,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.1319454790945969,
+            "forward": 1.0931548978536396,
+            "value_and_grad": 1.2094622777480288
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.6648775333795979,
+            "forward": 3.040333678703032,
+            "value_and_grad": 2.118246322171918
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 3.9968028886505635e-15,
+            "passed": true,
+            "value_max_abs_error": 1.7763568394002505e-15
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.0021582089830189943,
+            "mean_seconds": 0.0012628729954095824,
+            "median_seconds": 0.0011646249913610518,
+            "min_seconds": 0.00104975001886487,
+            "relative_median_absolute_deviation": 0.07252033613378178,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0021582089830189943,
+              0.0012092079850845039,
+              0.0012923750036861748,
+              0.0011280839971732348,
+              0.0010699579725041986,
+              0.0010599590023048222,
+              0.0015584169887006283,
+              0.0011755829909816384,
+              0.0010801659955177456,
+              0.0011553750082384795,
+              0.0012505000049714,
+              0.0010639579850248992,
+              0.0011004159750882536,
+              0.0011894579802174121,
+              0.0011141249851789325,
+              0.00104975001886487,
+              0.0011835840123239905,
+              0.0019319580169394612,
+              0.0011646249913610518,
+              0.001443832996301353,
+              0.0011407920101191849
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.002856583974789828,
+            "mean_seconds": 0.001970863095872725,
+            "median_seconds": 0.0018182079948019236,
+            "min_seconds": 0.0016542910016141832,
+            "relative_median_absolute_deviation": 0.036688864949360404,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0019343750027474016,
+              0.0019833330006804317,
+              0.0017837079940363765,
+              0.0018851670029107481,
+              0.0018204169755335897,
+              0.0017515000072307885,
+              0.001855042006354779,
+              0.002613000018754974,
+              0.0017952920170500875,
+              0.0018216670141555369,
+              0.002615125005831942,
+              0.001709500007564202,
+              0.0017084580031223595,
+              0.0026441250229254365,
+              0.0017915409989655018,
+              0.0016542910016141832,
+              0.0017628749774303287,
+              0.0018089590012095869,
+              0.0018182079948019236,
+              0.002856583974789828,
+              0.0017749579856172204
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.004300416971091181,
+            "mean_seconds": 0.0032337360912823073,
+            "median_seconds": 0.0029828329861629754,
+            "min_seconds": 0.0027040410204790533,
+            "relative_median_absolute_deviation": 0.058320063094158624,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.004092583985766396,
+              0.0031925409857649356,
+              0.0030760829977225512,
+              0.003013251000083983,
+              0.0028903749480377883,
+              0.0028114590095356107,
+              0.0034134589950554073,
+              0.0037885830097366124,
+              0.002875458012567833,
+              0.0029770420223940164,
+              0.003865625010803342,
+              0.002773457992589101,
+              0.002808873978210613,
+              0.0038335830031428486,
+              0.0029056659841444343,
+              0.0027040410204790533,
+              0.002946458989754319,
+              0.003740917018149048,
+              0.0029828329861629754,
+              0.004300416971091181,
+              0.0029157499957364053
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.0028201250243000686,
+            "mean_seconds": 0.0014580197637856362,
+            "median_seconds": 0.0013182919938117266,
+            "min_seconds": 0.001197790988953784,
+            "relative_median_absolute_deviation": 0.061917997125054816,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0016355410043615848,
+              0.0012584160140249878,
+              0.0018222499929834157,
+              0.001248375017894432,
+              0.001388459000736475,
+              0.001258875010535121,
+              0.001205375010613352,
+              0.0012837079993914813,
+              0.001462374988477677,
+              0.0012366659939289093,
+              0.0012655830068979412,
+              0.0013744999887421727,
+              0.0016070000128820539,
+              0.0012798339885193855,
+              0.0014382090012077242,
+              0.0019697500101756305,
+              0.0013182919938117266,
+              0.0013232079800218344,
+              0.0012240830110386014,
+              0.0028201250243000686,
+              0.001197790988953784
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.0029224579920992255,
+            "mean_seconds": 0.0021565812847776605,
+            "median_seconds": 0.0019875829748343676,
+            "min_seconds": 0.0016354169929400086,
+            "relative_median_absolute_deviation": 0.15816948634037445,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.002690167020773515,
+              0.0029224579920992255,
+              0.0017702910117805004,
+              0.0016354169929400086,
+              0.002561707980930805,
+              0.0018819999822881073,
+              0.0019112919981125742,
+              0.0018284580146428198,
+              0.0027146250067744404,
+              0.0023709579836577177,
+              0.0018262090161442757,
+              0.0024915829999372363,
+              0.00253649998921901,
+              0.001774625008692965,
+              0.0024011670029722154,
+              0.001871999993454665,
+              0.002377083001192659,
+              0.0019278750114608556,
+              0.0016732079966459423,
+              0.0019875829748343676,
+              0.0021330000017769635
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.004807707999134436,
+            "mean_seconds": 0.0036146010485632965,
+            "median_seconds": 0.003607623977586627,
+            "min_seconds": 0.0028837920108344406,
+            "relative_median_absolute_deviation": 0.13608873095170346,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0043257080251351,
+              0.004180874006124213,
+              0.003592541004763916,
+              0.0028837920108344406,
+              0.00395016698166728,
+              0.0031408749928232282,
+              0.0031166670087259263,
+              0.003112166014034301,
+              0.0041769999952521175,
+              0.003607623977586627,
+              0.003091792023042217,
+              0.003866082988679409,
+              0.004143500002101064,
+              0.0030544589972123504,
+              0.0038393760041799396,
+              0.0038417500036302954,
+              0.0036953749950043857,
+              0.00325108299148269,
+              0.0028972910076845437,
+              0.004807707999134436,
+              0.0033307909907307476
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0017861670057754964,
+            "mean_seconds": 0.0008679444297394227,
+            "median_seconds": 0.0007743329915683717,
+            "min_seconds": 0.0007054580200929195,
+            "relative_median_absolute_deviation": 0.059351731998781174,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0017861670057754964,
+              0.0009629580017644912,
+              0.000748124992242083,
+              0.0007254589872900397,
+              0.0009561660117469728,
+              0.0007054580200929195,
+              0.0008235420100390911,
+              0.0007197500090114772,
+              0.00074562500230968,
+              0.0008061249973252416,
+              0.0007743329915683717,
+              0.0008250829996541142,
+              0.0008895419887267053,
+              0.0007675410015508533,
+              0.0007283749873749912,
+              0.0007470410200767219,
+              0.0007895420130807906,
+              0.0007364169869106263,
+              0.0014305420045275241,
+              0.0008202499884646386,
+              0.000738792004995048
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.006865959003334865,
+            "mean_seconds": 0.005629107186992076,
+            "median_seconds": 0.005527959001483396,
+            "min_seconds": 0.004935165983624756,
+            "relative_median_absolute_deviation": 0.028204979777083958,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.00550999998813495,
+              0.005335124995326623,
+              0.006143209000583738,
+              0.005812458985019475,
+              0.005357582995202392,
+              0.005461291002575308,
+              0.005449374992167577,
+              0.005214625009102747,
+              0.005305875005433336,
+              0.0055122500052675605,
+              0.005527959001483396,
+              0.005388750025304034,
+              0.005611458997009322,
+              0.004935165983624756,
+              0.00601637500221841,
+              0.005545874999370426,
+              0.005683874973328784,
+              0.005610041989712045,
+              0.00563729097484611,
+              0.006286707997787744,
+              0.006865959003334865
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.007604751008329913,
+            "mean_seconds": 0.0064970516167314986,
+            "median_seconds": 0.006318375002592802,
+            "min_seconds": 0.00570270698517561,
+            "relative_median_absolute_deviation": 0.028903948098725242,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.007296166993910447,
+              0.0062980829970911145,
+              0.006891333992825821,
+              0.006537917972309515,
+              0.006313749006949365,
+              0.0061667490226682276,
+              0.006272917002206668,
+              0.005934375018114224,
+              0.006051500007743016,
+              0.006318375002592802,
+              0.006302291993051767,
+              0.006213833024958149,
+              0.006501000985736027,
+              0.00570270698517561,
+              0.0067447499895934016,
+              0.006292916019447148,
+              0.006473416986409575,
+              0.006346458976622671,
+              0.007067832979373634,
+              0.007106957986252382,
+              0.007604751008329913
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "c4f1e61c48378436135ecf9c45c8a8236e067db071bf23be0e37abe6f308131a",
+        "gate_count": 55,
+        "gate_density_per_wire": 3.9285714285714284,
+        "logical_depth": 16,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 14,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 13,
+          "rx": 14,
+          "ry": 14,
+          "rz": 14
+        },
+        "parameterized_gate_count": 42,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 42,
+        "two_qubit_gate_count": 13,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 55,
+        "ir_content_hash": "fc8c455d4ca139f5a4edd760a1fda918ec2c4e7a4907b20dc2c6bad32e244109",
+        "layers": 1,
+        "logical_statevector_bytes": 262144,
+        "n_wires": 14,
+        "name": "hardware_efficient_vqe",
+        "observable": "0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
+        "observable_term_count": 27,
+        "parameter_count": 42,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.0173061231329998,
+            "forward": 0.9887134806014826,
+            "value_and_grad": 1.007016437474323
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.09074709381963252,
+            "forward": 8.29151938279091,
+            "value_and_grad": 3.788579628204343
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 1.0126495260478471e-14,
+            "passed": true,
+            "value_max_abs_error": 8.881784197001252e-15
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.011299375008093193,
+            "mean_seconds": 0.01048397228892316,
+            "median_seconds": 0.010475541988853365,
+            "min_seconds": 0.009615833987481892,
+            "relative_median_absolute_deviation": 0.033860681162426694,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.01073987502604723,
+              0.011143707990413532,
+              0.01024654199136421,
+              0.010627917014062405,
+              0.010235875000944361,
+              0.010849542013602331,
+              0.01048487500520423,
+              0.010565083008259535,
+              0.010925875016255304,
+              0.011299375008093193,
+              0.010475541988853365,
+              0.010341249988414347,
+              0.010120833001565188,
+              0.009615833987481892,
+              0.009692874999018386,
+              0.011248416994931176,
+              0.010014917002990842,
+              0.009948500024620444,
+              0.010415917000500485,
+              0.010215832997346297,
+              0.01095483300741762
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.010510666004847735,
+            "mean_seconds": 0.008738277755799658,
+            "median_seconds": 0.00862391700502485,
+            "min_seconds": 0.008033082995098084,
+            "relative_median_absolute_deviation": 0.015828073433558656,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.008532874984666705,
+              0.00862391700502485,
+              0.008279499976197258,
+              0.008449082990409806,
+              0.008885791990906,
+              0.008760416996665299,
+              0.008172000001650304,
+              0.009445832984056324,
+              0.00865849998081103,
+              0.010510666004847735,
+              0.008587499993154779,
+              0.008450666995486245,
+              0.008033082995098084,
+              0.00850766699295491,
+              0.00852633302565664,
+              0.008530166989658028,
+              0.0091106669860892,
+              0.008722749975277111,
+              0.008742125006392598,
+              0.008722665981622413,
+              0.00925162501516752
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.02181004101294093,
+            "mean_seconds": 0.01922225004472282,
+            "median_seconds": 0.01912166699185036,
+            "min_seconds": 0.018123500980436802,
+            "relative_median_absolute_deviation": 0.024307085004352448,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.019272750010713935,
+              0.019767624995438382,
+              0.01852604196756147,
+              0.01907700000447221,
+              0.01912166699185036,
+              0.01960995901026763,
+              0.018656875006854534,
+              0.02001091599231586,
+              0.019584374997066334,
+              0.02181004101294093,
+              0.019063041982008144,
+              0.01879191698390059,
+              0.018153915996663272,
+              0.018123500980436802,
+              0.018219208024675027,
+              0.019778583984589204,
+              0.01912558398908004,
+              0.018671249999897555,
+              0.019158042006893083,
+              0.01893849897896871,
+              0.02020645802258514
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.011316415999317542,
+            "mean_seconds": 0.01057899590454153,
+            "median_seconds": 0.01065683300839737,
+            "min_seconds": 0.00974750000750646,
+            "relative_median_absolute_deviation": 0.022188395790789902,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.010538957983953878,
+              0.011316415999317542,
+              0.010865666001336649,
+              0.010735082993051037,
+              0.010820958006661385,
+              0.010796124988701195,
+              0.010742707992903888,
+              0.011024875013390556,
+              0.010588124976493418,
+              0.010147791996132582,
+              0.010970333009026945,
+              0.01002429099753499,
+              0.010166499996557832,
+              0.010826874990016222,
+              0.01032641701749526,
+              0.010376917023677379,
+              0.01065683300839737,
+              0.010769500018795952,
+              0.00974750000750646,
+              0.010296666994690895,
+              0.010420374979730695
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.010467084008269012,
+            "mean_seconds": 0.008773861048255293,
+            "median_seconds": 0.008526582998456433,
+            "min_seconds": 0.007978957990417257,
+            "relative_median_absolute_deviation": 0.029461862288896072,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.008530124992830679,
+              0.008452666021184996,
+              0.00935495799058117,
+              0.009062875004019588,
+              0.008908292016712949,
+              0.008993249997729436,
+              0.00943891701172106,
+              0.010467084008269012,
+              0.01033612500759773,
+              0.008101916988380253,
+              0.008320666995132342,
+              0.008526582998456433,
+              0.008570915990276262,
+              0.00842895798268728,
+              0.007978957990417257,
+              0.00847962501575239,
+              0.008468790998449549,
+              0.008496166992699727,
+              0.008158582990290597,
+              0.0087777920125518,
+              0.008397833007620648
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.021491959021659568,
+            "mean_seconds": 0.019352856952796822,
+            "median_seconds": 0.0192558329727035,
+            "min_seconds": 0.017906082997797057,
+            "relative_median_absolute_deviation": 0.026922594655048173,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.019069082976784557,
+              0.019769082020502537,
+              0.02022062399191782,
+              0.019797957997070625,
+              0.019729250023374334,
+              0.01978937498643063,
+              0.020181625004624948,
+              0.021491959021659568,
+              0.020924249984091148,
+              0.018249708984512836,
+              0.019291000004159287,
+              0.018550873995991424,
+              0.018737415986834094,
+              0.0192558329727035,
+              0.018305375007912517,
+              0.01885654203942977,
+              0.01912562400684692,
+              0.01926566701149568,
+              0.017906082997797057,
+              0.019074459007242694,
+              0.018818207987351343
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0019278750114608556,
+            "mean_seconds": 0.0011638134753974598,
+            "median_seconds": 0.0009506249916739762,
+            "min_seconds": 0.0009004589810501784,
+            "relative_median_absolute_deviation": 0.023581320473366592,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0009385830198880285,
+              0.0019278750114608556,
+              0.0013003330095671117,
+              0.000945457984926179,
+              0.0009666660043876618,
+              0.000940708996495232,
+              0.0009506249916739762,
+              0.0019174999906681478,
+              0.0009004589810501784,
+              0.0009282079990953207,
+              0.0009520839957986027,
+              0.0009222080116160214,
+              0.0009454169776290655,
+              0.0009587499953340739,
+              0.0016589589940849692,
+              0.0009402910072822124,
+              0.0009408750047441572,
+              0.0014808330161031336,
+              0.0011818750062957406,
+              0.0009222090011462569,
+              0.0018201659840997308
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.08149970902013592,
+            "mean_seconds": 0.07156335718935311,
+            "median_seconds": 0.07150537500274368,
+            "min_seconds": 0.06732870900304988,
+            "relative_median_absolute_deviation": 0.022788496802130576,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.07150537500274368,
+              0.07268687497708015,
+              0.07186908298172057,
+              0.08149970902013592,
+              0.07264562501222827,
+              0.07163399999262765,
+              0.0715224580198992,
+              0.07153804099652916,
+              0.07207845800439827,
+              0.06899270799476653,
+              0.07061279198387638,
+              0.07030716701410711,
+              0.07531575000029989,
+              0.0698758749931585,
+              0.06954658299218863,
+              0.06829450000077486,
+              0.06732870900304988,
+              0.0692457499972079,
+              0.0692282090021763,
+              0.06808724999427795,
+              0.07901558399316855
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.0824451670050621,
+            "mean_seconds": 0.07272717066475057,
+            "median_seconds": 0.0724439580226317,
+            "min_seconds": 0.06826958400779404,
+            "relative_median_absolute_deviation": 0.022214868956171144,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0724439580226317,
+              0.07461474998854101,
+              0.07316941599128768,
+              0.0824451670050621,
+              0.07361229101661593,
+              0.07257470898912288,
+              0.07247308301157318,
+              0.07345554098719731,
+              0.07297891698544845,
+              0.06992091599386185,
+              0.07156487597967498,
+              0.07122937502572313,
+              0.07626116697792895,
+              0.07083462498849258,
+              0.0712055419862736,
+              0.06923479100805707,
+              0.06826958400779404,
+              0.07072658301331103,
+              0.07041008400847204,
+              0.06900945899542421,
+              0.08083574997726828
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "1aa635cc77534cb350ff646c62e88332d47ea408c124593201cd0fbbb0fd1eca",
+        "gate_count": 71,
+        "gate_density_per_wire": 3.9444444444444446,
+        "logical_depth": 20,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 17,
+          "rx": 18,
+          "ry": 18,
+          "rz": 18
+        },
+        "parameterized_gate_count": 54,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 54,
+        "two_qubit_gate_count": 17,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 71,
+        "ir_content_hash": "e60e1cd0ef7ed7b83ee0277f8573d7b60263596794f9b05f31116f94845a3089",
+        "layers": 1,
+        "logical_statevector_bytes": 4194304,
+        "n_wires": 18,
+        "name": "hardware_efficient_vqe",
+        "observable": "0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
+        "observable_term_count": 35,
+        "parameter_count": 54,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 0.9943169772247169,
+            "forward": 0.9764524057726699,
+            "value_and_grad": 0.9886447620411009
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.006836960749711335,
+            "forward": 12.1361128083054,
+            "value_and_grad": 4.774429524262026
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 9.524048216746905e-13,
+            "passed": true,
+            "value_max_abs_error": 2.6645352591003757e-14
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.2328881670255214,
+            "mean_seconds": 0.20187150400375858,
+            "median_seconds": 0.19949770800303668,
+            "min_seconds": 0.18350524999550544,
+            "relative_median_absolute_deviation": 0.03945742570497565,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.19806808399152942,
+              0.18814650000422262,
+              0.20582504200865515,
+              0.2328881670255214,
+              0.19949770800303668,
+              0.1842224160209298,
+              0.19273475001682527,
+              0.18350524999550544,
+              0.20026024998514913,
+              0.20246787500218488,
+              0.19059645899687894,
+              0.20710504200542346,
+              0.20853966698632576,
+              0.19162604201119393,
+              0.19396612502168864,
+              0.18767600000137463,
+              0.22258708300068974,
+              0.20456887502223253,
+              0.19706049998058006,
+              0.22382079099770635,
+              0.22413895800127648
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.15535562500008382,
+            "mean_seconds": 0.13100867661636412,
+            "median_seconds": 0.12883124998188578,
+            "min_seconds": 0.12120662498637103,
+            "relative_median_absolute_deviation": 0.02320962484186224,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.12991570800659247,
+              0.1228503749880474,
+              0.13702541598468088,
+              0.1293073330016341,
+              0.12796741697820835,
+              0.1230726659996435,
+              0.12219749999349006,
+              0.1217346670164261,
+              0.1282732920080889,
+              0.12643145900801755,
+              0.12120662498637103,
+              0.1358085419924464,
+              0.12584112500189804,
+              0.12969470900134183,
+              0.12883124998188578,
+              0.12811841600341722,
+              0.14535091698053293,
+              0.13092529200366698,
+              0.1299131250125356,
+              0.15136074999463744,
+              0.15535562500008382
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.3794945830013603,
+            "mean_seconds": 0.3328801806201227,
+            "median_seconds": 0.3279837919981219,
+            "min_seconds": 0.30523991701193154,
+            "relative_median_absolute_deviation": 0.03979325291745299,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.3279837919981219,
+              0.31099687499227,
+              0.342850457993336,
+              0.3621955000271555,
+              0.327465124981245,
+              0.3072950820205733,
+              0.31493225001031533,
+              0.30523991701193154,
+              0.32853354199323803,
+              0.32889933401020244,
+              0.31180308398324996,
+              0.34291358399786986,
+              0.3343807919882238,
+              0.32132075101253577,
+              0.3227973750035744,
+              0.31579441600479186,
+              0.3679379999812227,
+              0.3354941670258995,
+              0.32697362499311566,
+              0.3751815409923438,
+              0.3794945830013603
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.21857845899648964,
+            "mean_seconds": 0.19825655947733184,
+            "median_seconds": 0.19836395798483863,
+            "min_seconds": 0.18114437500480562,
+            "relative_median_absolute_deviation": 0.03825459569767363,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.19534320899401791,
+              0.19167616701452062,
+              0.20439783297479153,
+              0.20889800001168624,
+              0.20261908299289644,
+              0.19980012500309385,
+              0.18470937499660067,
+              0.20595229099853896,
+              0.20049700001254678,
+              0.19180204201256856,
+              0.20674508300726302,
+              0.21212808298878372,
+              0.19836395798483863,
+              0.19831483301823027,
+              0.18114437500480562,
+              0.1890950830129441,
+              0.21857845899648964,
+              0.19357237499207258,
+              0.18812337500276044,
+              0.2085095829970669,
+              0.18311741700745188
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.18144245899748057,
+            "mean_seconds": 0.13108004961949996,
+            "median_seconds": 0.1257975839835126,
+            "min_seconds": 0.11894870799733326,
+            "relative_median_absolute_deviation": 0.026460834020847607,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.12294304100214504,
+              0.1248441250063479,
+              0.13210900002741255,
+              0.18144245899748057,
+              0.12266912500490434,
+              0.12445933299022727,
+              0.12235266700736247,
+              0.13256162501056679,
+              0.1257975839835126,
+              0.1258064590219874,
+              0.13647054199827835,
+              0.12971570799709298,
+              0.13985941701685078,
+              0.1237910829950124,
+              0.12108441698364913,
+              0.11894870799733326,
+              0.1692249169864226,
+              0.12614533299347386,
+              0.12415066600078717,
+              0.12246887499350123,
+              0.12583595799515024
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.3903404590091668,
+            "mean_seconds": 0.32933660909683177,
+            "median_seconds": 0.3242594579933211,
+            "min_seconds": 0.30222879198845476,
+            "relative_median_absolute_deviation": 0.03777029384023462,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.31828624999616295,
+              0.3165202920208685,
+              0.3365068330022041,
+              0.3903404590091668,
+              0.3252882079978008,
+              0.3242594579933211,
+              0.30706204200396314,
+              0.33851391600910574,
+              0.3262945839960594,
+              0.31760850103455596,
+              0.34321562500554137,
+              0.3418437909858767,
+              0.3382233750016894,
+              0.3221059160132427,
+              0.30222879198845476,
+              0.30804379101027735,
+              0.38780337598291226,
+              0.31971770798554644,
+              0.3122740410035476,
+              0.33097845799056813,
+              0.3089533750026021
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0029427089903037995,
+            "mean_seconds": 0.0016662123310934042,
+            "median_seconds": 0.0013639579992741346,
+            "min_seconds": 0.0010517909831833094,
+            "relative_median_absolute_deviation": 0.19941963382669117,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.001642583985812962,
+              0.0010919579945039004,
+              0.0028498750180006027,
+              0.0013100829964969307,
+              0.0017957919917535037,
+              0.0013111660082358867,
+              0.0011060420074500144,
+              0.0011947079910896719,
+              0.0010972080053761601,
+              0.0013675420195795596,
+              0.0010517909831833094,
+              0.0018820420082192868,
+              0.0019280409906059504,
+              0.0024249169800896198,
+              0.0011574169911909848,
+              0.0029427089903037995,
+              0.0011714590073097497,
+              0.0011359170021023601,
+              0.0013639579992741346,
+              0.0024819159880280495,
+              0.0026833339943550527
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 1.8454842500214,
+            "mean_seconds": 1.5990124464802822,
+            "median_seconds": 1.5635105830151588,
+            "min_seconds": 1.4825427910254803,
+            "relative_median_absolute_deviation": 0.03903294078694531,
+            "sample_count": 21,
+            "samples_seconds": [
+              1.5231732919928618,
+              1.4825427910254803,
+              1.7949596669932362,
+              1.5886470420227852,
+              1.6460563750006258,
+              1.495340583001962,
+              1.5814685419900343,
+              1.5106599159771577,
+              1.524476249993313,
+              1.568473792023724,
+              1.518670999997994,
+              1.6946502499922644,
+              1.5624239169992507,
+              1.5635105830151588,
+              1.5024821670085657,
+              1.6668704579933546,
+              1.7012995420082007,
+              1.5556814170267899,
+              1.4887867090001237,
+              1.8454842500214,
+              1.7636028330016416
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 1.847966166009428,
+            "mean_seconds": 1.6006786588113755,
+            "median_seconds": 1.5659354999952484,
+            "min_seconds": 1.4836347490199842,
+            "relative_median_absolute_deviation": 0.03978191694081953,
+            "sample_count": 21,
+            "samples_seconds": [
+              1.5248158759786747,
+              1.4836347490199842,
+              1.7978095420112368,
+              1.589957125019282,
+              1.6478521669923794,
+              1.4966517490101978,
+              1.5825745839974843,
+              1.5118546239682473,
+              1.5255734579986893,
+              1.5698413340433035,
+              1.5197227909811772,
+              1.6965322920004837,
+              1.5643519579898566,
+              1.5659354999952484,
+              1.5036395839997567,
+              1.6698131669836584,
+              1.7024710010155104,
+              1.5568173340288922,
+              1.4901506669993978,
+              1.847966166009428,
+              1.7662861669959966
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "cd21e37194059421dc575112c40d6f22a6660e00c91b0e192f8ff27220fc8484",
+        "gate_count": 87,
+        "gate_density_per_wire": 3.9545454545454546,
+        "logical_depth": 24,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 21,
+          "rx": 22,
+          "ry": 22,
+          "rz": 22
+        },
+        "parameterized_gate_count": 66,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 66,
+        "two_qubit_gate_count": 21,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 87,
+        "ir_content_hash": "3132177566e6efbdc057aeeea13e56893fad38caf23e46eef86b1b01a1d14556",
+        "layers": 1,
+        "logical_statevector_bytes": 67108864,
+        "n_wires": 22,
+        "name": "hardware_efficient_vqe",
+        "observable": "0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
+        "observable_term_count": 43,
+        "parameter_count": 66,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.020556266714826,
+            "forward": 0.9452174391903687,
+            "value_and_grad": 0.9567438126136404
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 1.276354265315722,
+            "forward": 1.186239404153282,
+            "value_and_grad": 1.1908533970313855
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 2.6645352591003757e-15,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.0009344999853055924,
+            "mean_seconds": 0.00035680757026143725,
+            "median_seconds": 0.0003020000003743917,
+            "min_seconds": 0.00027337498613633215,
+            "relative_median_absolute_deviation": 0.05380797119221914,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0002771669824142009,
+              0.00030899999546818435,
+              0.0003035829868167639,
+              0.00030025001615285873,
+              0.00028416700661182404,
+              0.0003031250089406967,
+              0.00027337498613633215,
+              0.00028474998543970287,
+              0.00033954199170693755,
+              0.00030162499751895666,
+              0.0003026670019607991,
+              0.0003064170014113188,
+              0.00028454200946725905,
+              0.0002827080024871975,
+              0.0009344999853055924,
+              0.0003020000003743917,
+              0.000354708987288177,
+              0.0008446660067420453,
+              0.00029495800845324993,
+              0.0003182500076945871,
+              0.0002909580070991069
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.0020353749860078096,
+            "mean_seconds": 0.0013246408586079876,
+            "median_seconds": 0.0012123750057071447,
+            "min_seconds": 0.0010843330237548798,
+            "relative_median_absolute_deviation": 0.06650170315170927,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0011512500059325248,
+              0.0013455000007525086,
+              0.001739916013320908,
+              0.001203916996018961,
+              0.0011464580020401627,
+              0.0012445839820429683,
+              0.0010843330237548798,
+              0.0012742920080199838,
+              0.0017271669930778444,
+              0.0020353749860078096,
+              0.0011935000075027347,
+              0.001372208003886044,
+              0.0011317500029690564,
+              0.0011052080080844462,
+              0.0012247080157976598,
+              0.0010924999951384962,
+              0.00202470799558796,
+              0.001131541997892782,
+              0.001163332985015586,
+              0.0012123750057071447,
+              0.0012128340022172779
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.002379416982876137,
+            "mean_seconds": 0.0016814484288694249,
+            "median_seconds": 0.0015306250134017318,
+            "min_seconds": 0.001357708009891212,
+            "relative_median_absolute_deviation": 0.08093098030827005,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0014284169883467257,
+              0.001654499996220693,
+              0.002043499000137672,
+              0.0015041670121718198,
+              0.0014306250086519867,
+              0.001547708990983665,
+              0.001357708009891212,
+              0.0015590419934596866,
+              0.002066708984784782,
+              0.0023369999835267663,
+              0.0014961670094635338,
+              0.0016786250052973628,
+              0.0014162920124363154,
+              0.0013879160105716437,
+              0.002159208001103252,
+              0.0013944999955128878,
+              0.002379416982876137,
+              0.0019762080046348274,
+              0.001458290993468836,
+              0.0015306250134017318,
+              0.0015037920093163848
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.001278833980904892,
+            "mean_seconds": 0.0003710933780807647,
+            "median_seconds": 0.00030820799292996526,
+            "min_seconds": 0.00028679100796580315,
+            "relative_median_absolute_deviation": 0.04799032969573216,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.00032991700572893023,
+              0.0003041250165551901,
+              0.00030820799292996526,
+              0.00030574999982491136,
+              0.0002995000104419887,
+              0.001278833980904892,
+              0.00028679100796580315,
+              0.0005819590005557984,
+              0.0002936249948106706,
+              0.000298625003779307,
+              0.0002919590042438358,
+              0.00033045897725969553,
+              0.0003233749885112047,
+              0.00036866599111817777,
+              0.00029341698973439634,
+              0.00030929199419915676,
+              0.00036320899380370975,
+              0.0003183749795425683,
+              0.00029325002105906606,
+              0.00031279100221581757,
+              0.0003008339845109731
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.001899916009278968,
+            "mean_seconds": 0.0011945634323637933,
+            "median_seconds": 0.001145957998232916,
+            "min_seconds": 0.0010194170172326267,
+            "relative_median_absolute_deviation": 0.033924449731410816,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0011569170164875686,
+              0.0011602909944485873,
+              0.001286791986785829,
+              0.0010537079942878336,
+              0.0011299169855192304,
+              0.0011516250087879598,
+              0.0010194170172326267,
+              0.0011341670178808272,
+              0.0010859579779207706,
+              0.0010951250151265413,
+              0.0011077500239480287,
+              0.001899916009278968,
+              0.0015762909897603095,
+              0.001193042000522837,
+              0.0011207920033484697,
+              0.0011848339927382767,
+              0.001145957998232916,
+              0.0012496249983087182,
+              0.0010432910057716072,
+              0.0011370410211384296,
+              0.0011533750221133232
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.002430458989692852,
+            "mean_seconds": 0.001565656810444558,
+            "median_seconds": 0.0014644160110037774,
+            "min_seconds": 0.0013062080251984298,
+            "relative_median_absolute_deviation": 0.05792960308743668,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0014868340222164989,
+              0.0014644160110037774,
+              0.0015949999797157943,
+              0.001359457994112745,
+              0.001429416995961219,
+              0.002430458989692852,
+              0.0013062080251984298,
+              0.0017161260184366256,
+              0.0013795829727314413,
+              0.0013937500189058483,
+              0.0013997090281918645,
+              0.0022303749865386635,
+              0.0018996659782715142,
+              0.0015617079916410148,
+              0.001414208993082866,
+              0.0014941259869374335,
+              0.0015091669920366257,
+              0.0015679999778512865,
+              0.0013365410268306732,
+              0.0014498320233542472,
+              0.0014542090066242963
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0009208749979734421,
+            "mean_seconds": 0.0004145338066986629,
+            "median_seconds": 0.0003854589886032045,
+            "min_seconds": 0.00036533400998450816,
+            "relative_median_absolute_deviation": 0.03534743704258521,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.00038458299241028726,
+              0.00038066698471084237,
+              0.00036816601641476154,
+              0.00036612499388866127,
+              0.0003929169906768948,
+              0.00036533400998450816,
+              0.00046704200212843716,
+              0.0003797499812208116,
+              0.0003754159843083471,
+              0.00041941599920392036,
+              0.0003854589886032045,
+              0.000393084017559886,
+              0.0003668749995995313,
+              0.00037150000571273267,
+              0.00037183400127105415,
+              0.00040166699909605086,
+              0.00040625000838190317,
+              0.0003973329730797559,
+              0.00039900001138448715,
+              0.0009208749979734421,
+              0.0003919169830624014
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.0021657080214936286,
+            "mean_seconds": 0.0015592697586509444,
+            "median_seconds": 0.0014381670043803751,
+            "min_seconds": 0.0013093749876134098,
+            "relative_median_absolute_deviation": 0.05904461236722211,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0014381670043803751,
+              0.001455040997825563,
+              0.0013947499974165112,
+              0.0013162089744582772,
+              0.0021657080214936286,
+              0.0013433330168481916,
+              0.0013435409928206354,
+              0.0017551250057294965,
+              0.0013093749876134098,
+              0.0019710829947143793,
+              0.0020552080241031945,
+              0.002145749982446432,
+              0.001415290986187756,
+              0.0013632919872179627,
+              0.0013651659828610718,
+              0.0016369999793823808,
+              0.0015056669944897294,
+              0.0013987080019433051,
+              0.0015230830176733434,
+              0.0014545839803759009,
+              0.0013885840016882867
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.0025586250121705234,
+            "mean_seconds": 0.001973803565349607,
+            "median_seconds": 0.0018227499967906624,
+            "min_seconds": 0.0016823339683469385,
+            "relative_median_absolute_deviation": 0.05449624602499795,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0018227499967906624,
+              0.0018357079825364053,
+              0.0017629160138312727,
+              0.0016823339683469385,
+              0.0025586250121705234,
+              0.0017086670268326998,
+              0.0018105829949490726,
+              0.002134874986950308,
+              0.0016847909719217569,
+              0.0023904989939182997,
+              0.002440667012706399,
+              0.002538834000006318,
+              0.0017821659857872874,
+              0.0017347919929306954,
+              0.001736999984132126,
+              0.0020386669784784317,
+              0.0019119170028716326,
+              0.001796040975023061,
+              0.0019220830290578306,
+              0.002375458978349343,
+              0.001780500984750688
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "b05adc420341b54907545bc73066980b7d55d7406c2becc8fcd77402e19d01d2",
+        "gate_count": 29,
+        "gate_density_per_wire": 2.9,
+        "logical_depth": 11,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 10,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "h": 10,
+          "rx": 10,
+          "rzz": 9
+        },
+        "parameterized_gate_count": 19,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 20,
+        "two_qubit_gate_count": 9,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 29,
+        "ir_content_hash": "743174cb94e59d41056538476203f2e69e9ddcb42894eb9ddfe12b15560a432a",
+        "layers": 1,
+        "logical_statevector_bytes": 16384,
+        "n_wires": 10,
+        "name": "qaoa_path_maxcut",
+        "observable": "sum((1 - Z_i Z_{i+1}) / 2)",
+        "observable_term_count": 10,
+        "parameter_count": 2,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.0395647619525348,
+            "forward": 1.0702747322378596,
+            "value_and_grad": 1.0871471366000427
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.4944404587776692,
+            "forward": 2.2448811409338476,
+            "value_and_grad": 1.6027344579392038
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 8.43769498715119e-15,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.001812375005101785,
+            "mean_seconds": 0.0010635853797707352,
+            "median_seconds": 0.0010194169881287962,
+            "min_seconds": 0.0009785000002011657,
+            "relative_median_absolute_deviation": 0.018148593847911353,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0009992079867515713,
+              0.0010357919964008033,
+              0.0009830000053625554,
+              0.001812375005101785,
+              0.001066292024916038,
+              0.0010233329958282411,
+              0.001024666999001056,
+              0.0010121669911313802,
+              0.0009785000002011657,
+              0.0010235410009045154,
+              0.0010194169881287962,
+              0.0010378339793533087,
+              0.0010009160032495856,
+              0.0009788330062292516,
+              0.001225249987328425,
+              0.0009974589920602739,
+              0.0010360000014770776,
+              0.0010003340139519423,
+              0.0010139590012840927,
+              0.0010653329954948276,
+              0.0010010830010287464
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.002136333001544699,
+            "mean_seconds": 0.0017370457104074635,
+            "median_seconds": 0.0016785409825388342,
+            "min_seconds": 0.0016101660148706287,
+            "relative_median_absolute_deviation": 0.016036555945984125,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0017082919948734343,
+              0.0017179589776787907,
+              0.001656291977269575,
+              0.0016455829900223762,
+              0.002136333001544699,
+              0.001656375010497868,
+              0.0016752499795984477,
+              0.0016811669920571148,
+              0.0016719999839551747,
+              0.0016758339770603925,
+              0.0016101660148706287,
+              0.0018207500106655061,
+              0.0016614579944871366,
+              0.0017054589989129454,
+              0.0018749170121736825,
+              0.0016714170051272959,
+              0.0016641249821987003,
+              0.0016785409825388342,
+              0.001987625000765547,
+              0.0018141670152544975,
+              0.0017642500170040876
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.0034579579951241612,
+            "mean_seconds": 0.0028006310901781987,
+            "median_seconds": 0.0026999169785995036,
+            "min_seconds": 0.002629583002999425,
+            "relative_median_absolute_deviation": 0.018303153332069038,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0027074999816250056,
+              0.002753750974079594,
+              0.0026392919826321304,
+              0.0034579579951241612,
+              0.003202625026460737,
+              0.002679708006326109,
+              0.0026999169785995036,
+              0.002693333983188495,
+              0.0026504999841563404,
+              0.002699374977964908,
+              0.002629583002999425,
+              0.002858583990018815,
+              0.0026623739977367222,
+              0.002684292005142197,
+              0.0031001669995021075,
+              0.0026688759971875697,
+              0.002700124983675778,
+              0.0026788749964907765,
+              0.00300158400204964,
+              0.002879500010749325,
+              0.002765333018032834
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.0018855840025935322,
+            "mean_seconds": 0.0011397659490328458,
+            "median_seconds": 0.001059749978594482,
+            "min_seconds": 0.0009822499996516854,
+            "relative_median_absolute_deviation": 0.03986786819511373,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0010477500036358833,
+              0.0010632499761413783,
+              0.0010175000061281025,
+              0.0011042080004699528,
+              0.0009822499996516854,
+              0.0016473330033477396,
+              0.00103087502066046,
+              0.0010235410009045154,
+              0.001103916991269216,
+              0.0010542919917497784,
+              0.0011364170059096068,
+              0.0010310419893357903,
+              0.0011711249826475978,
+              0.0010034999868366867,
+              0.001059749978594482,
+              0.0011052910122089088,
+              0.0013339169963728637,
+              0.0010219590039923787,
+              0.0010852499981410801,
+              0.0018855840025935322,
+              0.0010263339790981263
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.0057084170111920685,
+            "mean_seconds": 0.0020861804798533697,
+            "median_seconds": 0.0017965000006370246,
+            "min_seconds": 0.001589708001120016,
+            "relative_median_absolute_deviation": 0.057357080590150836,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0016337500128429383,
+              0.0022052910062484443,
+              0.0016942500078584999,
+              0.0027644170040730387,
+              0.001589708001120016,
+              0.0016957090119831264,
+              0.0017262919864151627,
+              0.00181629101280123,
+              0.0057084170111920685,
+              0.0016587080026511103,
+              0.00225499999942258,
+              0.0017882079991977662,
+              0.0021297920029610395,
+              0.0017194160027429461,
+              0.002237250009784475,
+              0.0018299160001333803,
+              0.0017965000006370246,
+              0.0016934580053202808,
+              0.002281875000335276,
+              0.0018519169825594872,
+              0.0017336250166408718
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.006812334002461284,
+            "mean_seconds": 0.0032259464288862155,
+            "median_seconds": 0.002935207012342289,
+            "min_seconds": 0.0025719580007717013,
+            "relative_median_absolute_deviation": 0.08643581007971557,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0026815000164788216,
+              0.0032685409823898226,
+              0.0027117500139866024,
+              0.0038686250045429915,
+              0.0025719580007717013,
+              0.003343042015330866,
+              0.0027571670070756227,
+              0.0028398320137057453,
+              0.006812334002461284,
+              0.0027129999944008887,
+              0.003391417005332187,
+              0.0028192499885335565,
+              0.0033009169856086373,
+              0.002722915989579633,
+              0.003296999988378957,
+              0.002935207012342289,
+              0.0031304169970098883,
+              0.0027154170093126595,
+              0.0033671249984763563,
+              0.0037375009851530194,
+              0.002759958995738998
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0009912500099744648,
+            "mean_seconds": 0.0005413669555093206,
+            "median_seconds": 0.0005040410032961518,
+            "min_seconds": 0.00045270801638253033,
+            "relative_median_absolute_deviation": 0.06183229392800864,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0009284169937018305,
+              0.00045270801638253033,
+              0.0005391669983509928,
+              0.0004988749860785902,
+              0.0005100830167066306,
+              0.00045420799870043993,
+              0.0005040410032961518,
+              0.0005099580157548189,
+              0.0005073340144008398,
+              0.00047883301158435643,
+              0.0004644579894375056,
+              0.0005253749841358513,
+              0.0004616249934770167,
+              0.0009912500099744648,
+              0.00045525000314228237,
+              0.00045458300155587494,
+              0.0004754579858854413,
+              0.00047287499182857573,
+              0.0006521670147776604,
+              0.0005095410160720348,
+              0.0005225000204518437
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.007684084004722536,
+            "mean_seconds": 0.0039100672847347424,
+            "median_seconds": 0.0037681249959859997,
+            "min_seconds": 0.0032067910069599748,
+            "relative_median_absolute_deviation": 0.038989149983862506,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0033988329814746976,
+              0.0033250410051550716,
+              0.0038362919876817614,
+              0.004091375012649223,
+              0.003685332980239764,
+              0.003698082990013063,
+              0.003851207991829142,
+              0.003496541001368314,
+              0.004088625020813197,
+              0.003656999993836507,
+              0.003395166015252471,
+              0.0037927920056972653,
+              0.0037681249959859997,
+              0.003517125005600974,
+              0.0032067910069599748,
+              0.004161707998719066,
+              0.0038991250039543957,
+              0.003889874991727993,
+              0.003915040986612439,
+              0.007684084004722536,
+              0.0037532499991357327
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.00819362502079457,
+            "mean_seconds": 0.004451434240244063,
+            "median_seconds": 0.004327249975176528,
+            "min_seconds": 0.003662041010102257,
+            "relative_median_absolute_deviation": 0.041856847059435646,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.004327249975176528,
+              0.003777749021537602,
+              0.004375458986032754,
+              0.004590249998727813,
+              0.0041954159969463944,
+              0.004152290988713503,
+              0.004355248995125294,
+              0.004006499017123133,
+              0.004595959035214037,
+              0.004135833005420864,
+              0.0038596240046899766,
+              0.0043181669898331165,
+              0.004229749989463016,
+              0.004508375015575439,
+              0.003662041010102257,
+              0.004616291000274941,
+              0.004374582989839837,
+              0.004362749983556569,
+              0.0045672080013900995,
+              0.00819362502079457,
+              0.004275750019587576
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "a9f2b5ee3d6d0a15d4bc237a4308f929b7de37626cafc889ac987d114b83ae5e",
+        "gate_count": 41,
+        "gate_density_per_wire": 2.9285714285714284,
+        "logical_depth": 15,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 14,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "h": 14,
+          "rx": 14,
+          "rzz": 13
+        },
+        "parameterized_gate_count": 27,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 28,
+        "two_qubit_gate_count": 13,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 41,
+        "ir_content_hash": "5d8b52dd0d21ea673e5484f4405c9f8b58994e9b65771e8e45734e7f207b2094",
+        "layers": 1,
+        "logical_statevector_bytes": 262144,
+        "n_wires": 14,
+        "name": "qaoa_path_maxcut",
+        "observable": "sum((1 - Z_i Z_{i+1}) / 2)",
+        "observable_term_count": 14,
+        "parameter_count": 2,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 0.9773454294654934,
+            "forward": 0.9970484950006658,
+            "value_and_grad": 1.0019474448099661
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.05131925884163308,
+            "forward": 4.51161168866609,
+            "value_and_grad": 2.0232865937713913
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 3.6415315207705135e-14,
+            "passed": true,
+            "value_max_abs_error": 1.7763568394002505e-15
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.013143125019269064,
+            "mean_seconds": 0.012216837430882845,
+            "median_seconds": 0.012173792027169839,
+            "min_seconds": 0.011595707997912541,
+            "relative_median_absolute_deviation": 0.0149706861637388,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.012351209006737918,
+              0.011844124994240701,
+              0.011991542007308453,
+              0.011595707997912541,
+              0.012173792027169839,
+              0.012216292001539841,
+              0.012422041996615008,
+              0.011614583025220782,
+              0.012139083992224187,
+              0.011771416990086436,
+              0.01212716699228622,
+              0.012232083012349904,
+              0.012169124995125458,
+              0.012391791999107227,
+              0.012329709017649293,
+              0.012059333006618544,
+              0.012839250004617497,
+              0.012035207997541875,
+              0.012373957986710593,
+              0.013143125019269064,
+              0.012733041978208348
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.011702957999659702,
+            "mean_seconds": 0.009866144808862979,
+            "median_seconds": 0.009670334024121985,
+            "min_seconds": 0.009259667014703155,
+            "relative_median_absolute_deviation": 0.028579675561403957,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.009528541995678097,
+              0.009304582985350862,
+              0.010045583010651171,
+              0.009587083011865616,
+              0.009393959015142173,
+              0.009670334024121985,
+              0.00963066698750481,
+              0.010305374977178872,
+              0.01046116600628011,
+              0.009414416999788955,
+              0.009700333001092076,
+              0.00944804199389182,
+              0.0096138330118265,
+              0.009259667014703155,
+              0.00945458299247548,
+              0.010357166000176221,
+              0.011702957999659702,
+              0.010225457983324304,
+              0.010231833992293105,
+              0.009995915985200554,
+              0.009857541997916996
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.0245422080042772,
+            "mean_seconds": 0.022082982239745825,
+            "median_seconds": 0.021886626025661826,
+            "min_seconds": 0.021148707979591563,
+            "relative_median_absolute_deviation": 0.014569398818069885,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.021879751002416015,
+              0.021148707979591563,
+              0.022037125017959625,
+              0.021182791009778157,
+              0.02156775104231201,
+              0.021886626025661826,
+              0.022052708984119818,
+              0.021919958002399653,
+              0.022600249998504296,
+              0.02118583398987539,
+              0.021827499993378296,
+              0.021680125006241724,
+              0.021782958006951958,
+              0.02165145901381038,
+              0.021784292010124773,
+              0.022416499006794766,
+              0.0245422080042772,
+              0.02226066598086618,
+              0.022605791979003698,
+              0.023139041004469618,
+              0.022590583976125345
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.013428250007564202,
+            "mean_seconds": 0.012146652903452161,
+            "median_seconds": 0.011897999997017905,
+            "min_seconds": 0.01154791601584293,
+            "relative_median_absolute_deviation": 0.027725246249826023,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.011796750011853874,
+              0.011731542006600648,
+              0.012227874976815656,
+              0.012346333009190857,
+              0.011551916977623478,
+              0.0116019589768257,
+              0.012732209026580676,
+              0.011789333977503702,
+              0.012481125013437122,
+              0.01184041699161753,
+              0.01154791601584293,
+              0.011799874977441505,
+              0.011897999997017905,
+              0.01184550000471063,
+              0.012576541979797184,
+              0.012049792014295235,
+              0.013150708982720971,
+              0.012332332989899442,
+              0.013428250007564202,
+              0.011775000020861626,
+              0.012576333014294505
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.01112358400132507,
+            "mean_seconds": 0.009792494096992803,
+            "median_seconds": 0.009641791984904557,
+            "min_seconds": 0.00927045798744075,
+            "relative_median_absolute_deviation": 0.02820617137068506,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.00970841699745506,
+              0.009630041982745752,
+              0.009511625015875325,
+              0.00939233400276862,
+              0.009373207984026521,
+              0.00929924999945797,
+              0.009337666997453198,
+              0.010242000018479303,
+              0.009685875003924593,
+              0.010278583009494469,
+              0.009726249991217628,
+              0.00927045798744075,
+              0.009641791984904557,
+              0.009548707981593907,
+              0.00945012501324527,
+              0.010108707996550947,
+              0.01112358400132507,
+              0.009913750021951273,
+              0.009994167019613087,
+              0.011052917019696906,
+              0.009352916007628664
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.024274292984046042,
+            "mean_seconds": 0.021939147000444963,
+            "median_seconds": 0.02192924902192317,
+            "min_seconds": 0.02090120897628367,
+            "relative_median_absolute_deviation": 0.017759707120447117,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.021505167009308934,
+              0.0213615839893464,
+              0.02173949999269098,
+              0.021738667011959478,
+              0.02092512496165,
+              0.02090120897628367,
+              0.022069876024033874,
+              0.022031333995983005,
+              0.022167000017361715,
+              0.022119000001112,
+              0.021274166007060558,
+              0.021070332964882255,
+              0.021539791981922463,
+              0.021394207986304536,
+              0.022026666993042454,
+              0.022158500010846183,
+              0.024274292984046042,
+              0.022246083011850715,
+              0.02342241702717729,
+              0.022827917040558532,
+              0.02192924902192317
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0013903749932069331,
+            "mean_seconds": 0.0006598075242003514,
+            "median_seconds": 0.000624749984126538,
+            "min_seconds": 0.0005799999926239252,
+            "relative_median_absolute_deviation": 0.055154823065010995,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0006541250040754676,
+              0.0005879170203115791,
+              0.0005811250011902303,
+              0.0006641249929089099,
+              0.0005799999926239252,
+              0.0007296670228242874,
+              0.0005882080004084855,
+              0.0006619589985348284,
+              0.0006139999895822257,
+              0.0005966669996269047,
+              0.0005807499983347952,
+              0.0006172499852254987,
+              0.0006678329955320805,
+              0.0005902920092921704,
+              0.0005997910047881305,
+              0.0006257079949136823,
+              0.0013903749932069331,
+              0.0006432080117519945,
+              0.0006283750117290765,
+              0.000624749984126538,
+              0.000629832997219637
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 0.05082679199404083,
+            "mean_seconds": 0.04479139880692985,
+            "median_seconds": 0.043628792016534135,
+            "min_seconds": 0.04172137498972006,
+            "relative_median_absolute_deviation": 0.030597157780240396,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.043628792016534135,
+              0.044195415975991637,
+              0.042082375002792105,
+              0.04172137498972006,
+              0.04229387498344295,
+              0.04335208400152624,
+              0.05082679199404083,
+              0.0432075840071775,
+              0.04255012501380406,
+              0.043469458003528416,
+              0.042334541998570785,
+              0.04264870801125653,
+              0.04459200002020225,
+              0.042115499993087724,
+              0.04460091597866267,
+              0.0496607499953825,
+              0.050134166987845674,
+              0.047319832985522225,
+              0.047369042003992945,
+              0.046338582993485034,
+              0.04617745798896067
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.05152454198105261,
+            "mean_seconds": 0.04545120633113021,
+            "median_seconds": 0.0442829170206096,
+            "min_seconds": 0.04238549998262897,
+            "relative_median_absolute_deviation": 0.03181908824766334,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0442829170206096,
+              0.044783332996303216,
+              0.042663500003982335,
+              0.04238549998262897,
+              0.04287387497606687,
+              0.044081751024350524,
+              0.05141499999444932,
+              0.04386954300571233,
+              0.04316412500338629,
+              0.04406612500315532,
+              0.04291529199690558,
+              0.04326595799648203,
+              0.04525983301573433,
+              0.042705792002379894,
+              0.0452007069834508,
+              0.050286457990296185,
+              0.05152454198105261,
+              0.04796304099727422,
+              0.04799741701572202,
+              0.04696333297761157,
+              0.046807290986180305
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "af52d5c0591fc77b040165b5f9fe8fece2d1bf2de58e5241447a5f0f4b5ddfe4",
+        "gate_count": 53,
+        "gate_density_per_wire": 2.9444444444444446,
+        "logical_depth": 19,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "h": 18,
+          "rx": 18,
+          "rzz": 17
+        },
+        "parameterized_gate_count": 35,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 36,
+        "two_qubit_gate_count": 17,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 53,
+        "ir_content_hash": "eb1794d01143cdc7d275ba9aa82f419889531ea723e3b2ac0c088dae5458abe5",
+        "layers": 1,
+        "logical_statevector_bytes": 4194304,
+        "n_wires": 18,
+        "name": "qaoa_path_maxcut",
+        "observable": "sum((1 - Z_i Z_{i+1}) / 2)",
+        "observable_term_count": 18,
+        "parameter_count": 2,
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "cross_engine_comparable_metrics": [
+          "value_and_grad"
+        ],
+        "engine_over_flagquantum_median": {
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "backward": 1.017130713843786,
+            "forward": 0.9932804973944207,
+            "value_and_grad": 0.9957425730349716
+          },
+          "pennylane_lightning_adjoint": {
+            "backward": 0.003572751282490191,
+            "forward": 6.176293215365026,
+            "value_and_grad": 2.5825737823643395
+          }
+        },
+        "primary_performance_metric": "value_and_grad",
+        "ratio_semantics": "values above one mean FlagQuantum is faster; only value_and_grad is comparable across framework timing boundaries"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-09,
+        "engines": {
+          "flagquantum_adjoint": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "flagquantum_adjoint_saved_parameter_revalidation": {
+            "gradient_max_abs_error": 0.0,
+            "passed": true,
+            "value_max_abs_error": 0.0
+          },
+          "pennylane_lightning_adjoint": {
+            "gradient_max_abs_error": 1.780353642288901e-12,
+            "passed": true,
+            "value_max_abs_error": 1.7763568394002505e-15
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_adjoint"
+      },
+      "engines": {
+        "flagquantum_adjoint": {
+          "backward": {
+            "max_seconds": 0.2683720409986563,
+            "mean_seconds": 0.21441201180762923,
+            "median_seconds": 0.21002720898832195,
+            "min_seconds": 0.2013650000153575,
+            "relative_median_absolute_deviation": 0.029412465279639213,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.21308508299989626,
+              0.20730662500136532,
+              0.20953254101914354,
+              0.22338308399775997,
+              0.20970762500655837,
+              0.21879937502671964,
+              0.20530016598058864,
+              0.2013650000153575,
+              0.20364066699403338,
+              0.2025548749952577,
+              0.21002720898832195,
+              0.22122058298555203,
+              0.22061795799527317,
+              0.2038497909961734,
+              0.2161576660000719,
+              0.2683720409986563,
+              0.2240802499873098,
+              0.20552933399449103,
+              0.2062172079749871,
+              0.21150208299513906,
+              0.22040308400755748
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.19190716699813493,
+            "mean_seconds": 0.1569713037170004,
+            "median_seconds": 0.1535890419909265,
+            "min_seconds": 0.14921324999886565,
+            "relative_median_absolute_deviation": 0.01909776862086829,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.15264637497602962,
+              0.1520787919871509,
+              0.16692466600215994,
+              0.15192987499176525,
+              0.15772170800482854,
+              0.1543207920040004,
+              0.15764929202850908,
+              0.15018991701072082,
+              0.15459625000949018,
+              0.15099320901208557,
+              0.1575755830272101,
+              0.15065583400428295,
+              0.14921324999886565,
+              0.15204662500764243,
+              0.163684708008077,
+              0.19190716699813493,
+              0.1535890419909265,
+              0.1518952090118546,
+              0.15193154200096615,
+              0.1601809999847319,
+              0.16466654199757613
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.46027920799679123,
+            "mean_seconds": 0.3713833155246296,
+            "median_seconds": 0.36760279201553203,
+            "min_seconds": 0.35155491702607833,
+            "relative_median_absolute_deviation": 0.024086909017266997,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.3657314579759259,
+              0.3593854169885162,
+              0.3764572070213035,
+              0.3753129589895252,
+              0.3674293330113869,
+              0.37312016703072004,
+              0.3629494580090977,
+              0.35155491702607833,
+              0.35823691700352356,
+              0.3535480840073433,
+              0.36760279201553203,
+              0.371876416989835,
+              0.3698312079941388,
+              0.35589641600381583,
+              0.3798423740081489,
+              0.46027920799679123,
+              0.3776692919782363,
+              0.35742454300634563,
+              0.35814874997595325,
+              0.37168308297987096,
+              0.3850696260051336
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "flagquantum_adjoint_saved_parameter_revalidation": {
+          "backward": {
+            "max_seconds": 0.22534591701696627,
+            "mean_seconds": 0.21250193647574633,
+            "median_seconds": 0.21362512500490993,
+            "min_seconds": 0.20133433298906311,
+            "relative_median_absolute_deviation": 0.03628591905869559,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.21714737502043135,
+              0.20521729098982178,
+              0.20780737500172108,
+              0.21362512500490993,
+              0.21851604199036956,
+              0.20290995799587108,
+              0.20133433298906311,
+              0.21385162501246668,
+              0.21694937499705702,
+              0.2016250409942586,
+              0.22097275001578964,
+              0.22522037499584258,
+              0.20757649998995475,
+              0.20346987500670366,
+              0.22034358399105258,
+              0.22534591701696627,
+              0.2251638330053538,
+              0.20539666697732173,
+              0.20587354101007804,
+              0.20502562500769272,
+              0.219168458977947
+            ]
+          },
+          "differentiation": "flagquantum_statevector_adjoint",
+          "forward": {
+            "max_seconds": 0.18106195802101865,
+            "mean_seconds": 0.1555349641449062,
+            "median_seconds": 0.15255700002308004,
+            "min_seconds": 0.14908837497932836,
+            "relative_median_absolute_deviation": 0.016021336352206206,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.1526117079774849,
+              0.1528636250004638,
+              0.1517230000172276,
+              0.1568321249797009,
+              0.15396620801766403,
+              0.15107649998390116,
+              0.15048937502433546,
+              0.1596302079851739,
+              0.14908837497932836,
+              0.14958900000783615,
+              0.1502320829895325,
+              0.18106195802101865,
+              0.14988662500400096,
+              0.15011283301282674,
+              0.16608941700542346,
+              0.17216179199749604,
+              0.1559533329855185,
+              0.1517124160018284,
+              0.15185191601631232,
+              0.15255700002308004,
+              0.15674475001287647
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "gradient_work_runs_during_the_autograd_callback",
+            "note": "The callback includes the engine's reverse-mode or adjoint gradient work.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 0.40628233301686123,
+            "mean_seconds": 0.36803690062065253,
+            "median_seconds": 0.3660377499763854,
+            "min_seconds": 0.35121404100209475,
+            "relative_median_absolute_deviation": 0.023425520955100542,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.36975908299791627,
+              0.3580809159902856,
+              0.3595303750189487,
+              0.3704572499846108,
+              0.3724822500080336,
+              0.35398645797977224,
+              0.3518237080133986,
+              0.3734818329976406,
+              0.3660377499763854,
+              0.35121404100209475,
+              0.37120483300532214,
+              0.40628233301686123,
+              0.3574631249939557,
+              0.3535827080195304,
+              0.38643300099647604,
+              0.3975077090144623,
+              0.3811171659908723,
+              0.3571090829791501,
+              0.35772545702639036,
+              0.35758262503077276,
+              0.3759132089908235
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0",
+            "torch": "2.13.0"
+          }
+        },
+        "pennylane_lightning_adjoint": {
+          "backward": {
+            "max_seconds": 0.0012782919802702963,
+            "mean_seconds": 0.0008224007130290071,
+            "median_seconds": 0.0007503749802708626,
+            "min_seconds": 0.0006617080071009696,
+            "relative_median_absolute_deviation": 0.06574446388212121,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.0012599159963428974,
+              0.0007123750110622495,
+              0.0007997080101631582,
+              0.0007129159930627793,
+              0.000950165995163843,
+              0.0012782919802702963,
+              0.000804667011834681,
+              0.0006617080071009696,
+              0.000701541022863239,
+              0.0006730830064043403,
+              0.0007503749802708626,
+              0.0007010419794823974,
+              0.0006807500030845404,
+              0.0007162500114645809,
+              0.0012402919819578528,
+              0.0007407499942928553,
+              0.0007712499937042594,
+              0.0008154590032063425,
+              0.0007430420082528144,
+              0.0007591249886900187,
+              0.0007977079949341714
+            ]
+          },
+          "differentiation": "pennylane_lightning_adjoint_with_torch_interface",
+          "forward": {
+            "max_seconds": 1.057331999996677,
+            "mean_seconds": 0.9536941170975167,
+            "median_seconds": 0.9486109580029733,
+            "min_seconds": 0.8984058749920223,
+            "relative_median_absolute_deviation": 0.022147558819104556,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.9340558749972843,
+              0.9397557920019608,
+              1.057331999996677,
+              0.9587764170137234,
+              0.9909150419989601,
+              0.9633889590040781,
+              0.9333102919918019,
+              0.9258734169998206,
+              0.9502774170250632,
+              0.9170681659888942,
+              0.9486109580029733,
+              0.9389209159999155,
+              0.8984058749920223,
+              0.9148654169985093,
+              0.9437112919986248,
+              0.9776367080048658,
+              0.9696203749917913,
+              0.9618422920175362,
+              0.9817126660200302,
+              0.911130749998847,
+              1.010365833004471
+            ]
+          },
+          "memory": {
+            "peak_rss_bytes": null,
+            "scope": "not_measured"
+          },
+          "timing_semantics": {
+            "autograd_callback_metric": "backward",
+            "cross_engine_comparable_metrics": [
+              "value_and_grad"
+            ],
+            "cross_engine_phase_comparison_allowed": false,
+            "gradient_work_attribution": "adjoint_derivative_work_may_run_during_value_evaluation",
+            "note": "The Torch autograd callback may only retrieve or contract derivatives prepared while the QNode was evaluated.",
+            "primary_performance_metric": "value_and_grad",
+            "value_evaluation_metric": "forward"
+          },
+          "value_and_grad": {
+            "max_seconds": 1.0581317080068402,
+            "mean_seconds": 0.9545165178105457,
+            "median_seconds": 0.9493613329832442,
+            "min_seconds": 0.8990866249951068,
+            "relative_median_absolute_deviation": 0.022152041874474095,
+            "sample_count": 21,
+            "samples_seconds": [
+              0.9353157909936272,
+              0.940468167013023,
+              1.0581317080068402,
+              0.9594893330067862,
+              0.9918652079941239,
+              0.9646672509843484,
+              0.9341149590036366,
+              0.9265351250069216,
+              0.9509789580479264,
+              0.9177412489952985,
+              0.9493613329832442,
+              0.9396219579793978,
+              0.8990866249951068,
+              0.9155816670099739,
+              0.9449515839805827,
+              0.9783774579991587,
+              0.9703916249854956,
+              0.9626577510207426,
+              0.982455708028283,
+              0.911889874987537,
+              1.011163540999405
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane_lightning": "0.45.0",
+            "torch": "2.13.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "f34de961d0a77170c4c99d79a7776f977966b59256a90a0007f246400b6ffa63",
+        "gate_count": 65,
+        "gate_density_per_wire": 2.9545454545454546,
+        "logical_depth": 23,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "h": 22,
+          "rx": 22,
+          "rzz": 21
+        },
+        "parameterized_gate_count": 43,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 44,
+        "two_qubit_gate_count": 21,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_adjoint": true,
+          "flagquantum_adjoint_saved_parameter_revalidation": true,
+          "pennylane_lightning_adjoint": true
+        },
+        "maximum_value_and_grad_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "dtype": "complex128",
+        "gate_count": 65,
+        "ir_content_hash": "a2b01dae139873d09ef74ca86f92421c4aa0e3c14b76714eaf0b13a1eb6bd8a3",
+        "layers": 1,
+        "logical_statevector_bytes": 67108864,
+        "n_wires": 22,
+        "name": "qaoa_path_maxcut",
+        "observable": "sum((1 - Z_i Z_{i+1}) / 2)",
+        "observable_term_count": 22,
+        "parameter_count": 2,
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_device_fast_path",
+  "engines": [
+    "flagquantum_adjoint",
+    "flagquantum_adjoint_saved_parameter_revalidation",
+    "pennylane_lightning_adjoint"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "torch": "2.13.0",
+    "torch_default_dtype": "float64",
+    "torch_threads": 1
+  },
+  "hostname": "redacted",
+  "layers": 1,
+  "methodology": {
+    "calls_per_sample": 1,
+    "circuit_and_device_construction_included": false,
+    "cross_engine_phase_comparison_allowed": false,
+    "engine_order": "rotated_per_iteration_within_one_process",
+    "exact_statevector": true,
+    "expectation_evaluation_included": true,
+    "gradient_zeroing_included": false,
+    "hidden_fallback_allowed": false,
+    "iterations": 21,
+    "measurement_scope": "expectation_forward_plus_full_reverse_mode_parameter_gradient",
+    "memory_measured_in_isolated_process": false,
+    "optimizer_step_included": false,
+    "parameter_initialization_included": false,
+    "phase_metric_labels": {
+      "backward": "autograd_callback",
+      "forward": "value_evaluation"
+    },
+    "primary_performance_metric": "value_and_grad",
+    "warmup": 3
+  },
+  "n_wires": [
+    10,
+    14,
+    18,
+    22
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "differentiable_simulator_corpus",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.differentiable_simulator_corpus.v1",
+  "support_matrix": {
+    "cirq_simulator": {
+      "included": false,
+      "reason": "FlagQuantum's Cirq bridge has no native PyTorch gradient contract"
+    },
+    "flagquantum_adjoint": {
+      "contract": "native reversible statevector adjoint",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_compact_cx_index_rollback": {
+      "contract": "same native adjoint with a materialized full-state CX index",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_cx_rotation_fusion_rollback": {
+      "contract": "same native adjoint with separate CX gather and rotation traversal",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_euler_triple_rollback": {
+      "contract": "same native adjoint with Euler fast path disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_flat_pair_simd_rollback": {
+      "contract": "same native adjoint with nested rotation-pair traversal",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_cx_rollback": {
+      "contract": "same native adjoint with forward CX gather disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_rzz_rotation_rollback": {
+      "contract": "same native adjoint with the backward RZZ/H boundary fusion, forward shared-RZZ fusion, and specialized rotation arithmetic disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_forward_wide_tile_rollback": {
+      "contract": "same native adjoint with legacy six-wire forward rotation tiles",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_gather_rollback": {
+      "contract": "rollback to per-gate full-state gather indices",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_boundary_rollback": {
+      "contract": "same native adjoint with eager observable boundary",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_cache_rollback": {
+      "contract": "same native adjoint with observable-weight cache disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_observable_rotation_rollback": {
+      "contract": "same native adjoint with observable seeding separate from the first reverse rotation tile",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_python_fallback": {
+      "contract": "same direct-layout adjoint with native operator disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_rotation_tile_rollback": {
+      "contract": "same native adjoint with legacy two-wire rotation tiles",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_saved_parameter_revalidation": {
+      "contract": "same native adjoint with redundant backward parameter validation enabled",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "flagquantum_adjoint_shared_rzz_rollback": {
+      "contract": "same native adjoint with shared-RZZ fusion disabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_adjoint_terminal_no_restore_rollback": {
+      "contract": "same native adjoint with earliest-layer state restoration enabled",
+      "gradient_method": "statevector_adjoint",
+      "included": false
+    },
+    "flagquantum_native": {
+      "contract": "native PyTorch reverse-mode autograd",
+      "gradient_method": "backpropagation through exact statevector",
+      "included": false
+    },
+    "pennylane_default_qubit": {
+      "contract": "default.qubit backprop through the PyTorch interface",
+      "gradient_method": "torch_reverse_mode_autograd",
+      "included": false
+    },
+    "pennylane_lightning_adjoint": {
+      "contract": "lightning.qubit adjoint through the PyTorch interface",
+      "gradient_method": "statevector_adjoint",
+      "included": true
+    },
+    "qiskit_aer": {
+      "included": false,
+      "reason": "FlagQuantum's Aer bridge has no native PyTorch gradient contract"
+    }
+  },
+  "workloads": [
+    "hardware_efficient_vqe",
+    "qaoa_path_maxcut"
+  ],
+  "world_size": 1
+}

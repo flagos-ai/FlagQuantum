@@ -105,7 +105,7 @@ def test_a_non_clifford_gate_fails_planning_with_the_gate_named() -> None:
 
 
 def test_planning_refuses_a_channel_before_a_route_is_selected() -> None:
-    circuit = fq.Circuit(2).h(0).depolarizing(1)
+    circuit = fq.Circuit(2).h(0).depolarizing(1, 0.1)
 
     with pytest.raises(CapabilityError, match="is a noise channel"):
         fq.plan(circuit, options=_options())

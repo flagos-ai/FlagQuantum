@@ -49,6 +49,16 @@ routing result to hand back to legalization.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`one_qubit_synthesis.py` owns the one-qubit Euler angles behind those
+decompositions: it turns any declared single-qubit unitary into z-rotations plus
+a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
+expert-facing entry point.
+`two_qubit_synthesis.py` owns the two-qubit KAK angles and the entangler cost
+behind the same decompositions: it turns a 4x4 unitary into a supercontrolled
+entangler repeated one to three times, with one one-qubit factor between each,
+and it too is a private helper. It takes a matrix rather than an instruction,
+because the matrix of a named two-qubit gate belongs to
+`flagquantum.simulation`, which this layer must not import.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
@@ -99,6 +109,10 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
+  `one_qubit_synthesis.py`.
+- Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in
+  `two_qubit_synthesis.py`.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in

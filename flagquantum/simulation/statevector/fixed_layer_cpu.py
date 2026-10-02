@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
+from typing import Any
 
 import torch
 
@@ -28,6 +29,22 @@ _NATIVE_PARAMETERIZED_GATES = frozenset({"rx", "ry", "rz"})
 _NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "sdg": 3, "x": 4, "y": 5, "z": 6}
 
 
+def _matrix_tensors(value: Any) -> tuple[torch.Tensor, ...]:
+    """The tensors an instruction carries in its matrix field.
+
+    A gate holds one unitary tensor there. A channel holds the tuple of Kraus
+    operators it was materialized from. Reading the field as a value keeps this
+    guard from assuming which of the two it is, which is what raised
+    ``AttributeError: 'tuple' object has no attribute 'requires_grad'``.
+    """
+
+    if isinstance(value, torch.Tensor):
+        return (value,)
+    if isinstance(value, (tuple, list)):
+        return tuple(item for item in value if isinstance(item, torch.Tensor))
+    return ()
+
+
 def _native_layer_compile_safe(
     instructions: Sequence[Instruction],
     parameter_bindings: tuple[torch.Tensor, ...] | None,
@@ -49,8 +66,11 @@ def _native_layer_compile_safe(
             for value in instruction.params.values()
         )
         or any(
-            instruction.matrix is not None and instruction.matrix.requires_grad
+            isinstance(value, torch.Tensor) and value.requires_grad
+            # A channel instruction carries its Kraus operators in the same field,
+            # so the field is read as a value rather than assumed to be one tensor.
             for instruction in instructions
+            for value in _matrix_tensors(instruction.matrix)
         )
     )
     return bool(
