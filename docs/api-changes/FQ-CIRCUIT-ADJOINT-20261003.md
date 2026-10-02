@@ -13,10 +13,10 @@ method: the numbered `docs/development/API_CHANGE_PROPOSAL_0NN_*.md` series
 records the older, runtime-route proposals (`063` backend execution admission,
 `064` stabilizer execution mode) and this change adds no runtime route, so there
 is no second document to keep in step with this one. The sibling change
-`Circuit.compose` has its own proposal,
-[`FQ-CIRCUIT-COMPOSITION-20261002.md`](FQ-CIRCUIT-COMPOSITION-20261002.md); it owns
-placement, this one owns inversion, and nothing here approves `control` or
-`power`.
+`Circuit.compose` has its own proposal, `FQ-CIRCUIT-COMPOSITION-20261002.md`,
+which lives on its own branch (#375) and is therefore named here rather than
+linked: a relative link from this branch would not resolve. It owns placement,
+this one owns inversion, and nothing here approves `control` or `power`.
 
 The authorization question was whether this needs one at all. `AGENTS.md`
 non-negotiable rule 8 protects *stable exports, signatures, defaults, result
@@ -151,7 +151,11 @@ implementations resolve `u2` and `u3` to the same matrix, so the rule declared i
 
 ## Evidence
 
-Repository state: `origin/main` at `9dec7649`, with this proposal applied.
+Repository state: `origin/main` at `9dec7649`, with this proposal applied. The
+measurements below were taken there. The branch has since merged `origin/main` at
+`817247a2`, which carries the parameter-frequency declaration (#373) and inline
+channels (#371); neither reads or changes `adjoint`, and the manifest difference
+against that revision is still the same 20 lines, so nothing measured here moved.
 
 | Claim | Command | Result |
 | --- | --- | --- |

@@ -114,6 +114,45 @@ def test_invalid_qubit_indices(factory):
         factory(qubits=[-1])
 
 
+@pytest.mark.parametrize("factory", [fq.X, fq.Y, fq.Z])
+def test_pauli_constructor_qubit_keyword(factory):
+    new = factory(qubit=2)
+    assert new == factory(2)
+    with pytest.warns(DeprecationWarning, match="0.4.0"):
+        old = factory(wire=2)
+    assert old == new
+    with pytest.raises(TypeError, match="not both"):
+        factory(qubit=2, wire=2)
+    with pytest.raises(TypeError, match="requires a qubit"):
+        factory()
+
+
+def test_identity_observable_qubit_keyword():
+    assert fq.I() == fq.I(qubit=None)
+    assert fq.I(qubit=0) == fq.I()
+    with pytest.warns(DeprecationWarning, match="0.4.0"):
+        assert fq.I(wire=0) == fq.I()
+    with pytest.raises(TypeError, match="not both"):
+        fq.I(qubit=0, wire=0)
+
+
+def test_pauli_constructor_refusals_use_qubit_wording():
+    """A refusal a user reads must not name the vocabulary the release is retiring."""
+
+    with pytest.raises(TypeError, match="observable qubit must be an integer"):
+        fq.X(0.5)
+    with pytest.raises(ValueError, match="observable qubit must be a non-negative"):
+        fq.Z(-1)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        assert fq.X(qubit=0) == fq.X(0)
+        assert fq.I(qubit=0) == fq.I()
+
+    with pytest.raises(ValueError, match="disjoint qubits"):
+        _ = fq.Z(0) @ fq.X(0)
+
+
 @pytest.mark.parametrize(
     ("model_name", "expected_qubits"),
     [

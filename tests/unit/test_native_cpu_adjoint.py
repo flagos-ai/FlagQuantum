@@ -1597,6 +1597,49 @@ def test_native_rotation_segment_wide_tiles_match_legacy_tiles(
     )
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_segment_adaptive_grain_matches_legacy_grain(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_adjoint_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    generator = torch.Generator().manual_seed(7119)
+    initial_ket = (
+        torch.randn((2, 256), generator=generator)
+        + 1j * torch.randn((2, 256), generator=generator)
+    ).to(dtype)
+    initial_adjoint = (
+        torch.randn((2, 256), generator=generator)
+        + 1j * torch.randn((2, 256), generator=generator)
+    ).to(dtype)
+    angles = torch.linspace(0.01, 0.24, 24, dtype=real_dtype)
+    gate_kinds = torch.tensor((2, 1, 0) * 8, dtype=torch.int64)
+    wires = torch.tensor(tuple(wire for wire in range(8) for _ in range(3)))
+
+    def execute(enabled: str) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_FINE_GRAIN", enabled)
+        ket = initial_ket.clone()
+        adjoint = initial_adjoint.clone()
+        gradients = fused_rotation_segment_adjoint_(
+            ket,
+            adjoint,
+            angles,
+            gate_kinds,
+            wires,
+            n_wires=8,
+        )
+        assert gradients is not None
+        return gradients, ket, adjoint
+
+    adaptive = execute("1")
+    legacy = execute("0")
+    tolerance = 6e-5 if dtype == torch.complex64 else 5e-12
+    for actual, expected in zip(adaptive, legacy, strict=True):
+        torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+
+
 def test_native_rotation_segment_wide_tiles_cover_complete_large_layer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

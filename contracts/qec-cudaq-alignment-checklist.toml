@@ -219,22 +219,31 @@ fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and t
 
 [[rows]]
 id = "qec_dem_merge"
-status = "absent"
+status = "aligned"
 floor = "now"
 floor_override_reason = "The parity matrix folds merging under qec_decoder_family, whose priority is now. Merging is construction-adjacent rather than decoder-adjacent here, so the floor is now even though the matrix row it belongs to is also now."
 domain_items = ["cudaq-qec library"]
 dependency_class = "B_open_neutral"
 baseline = "dem_merge_duplicate_columns(dem, mode) with PriorCombineMode.or_combine and PriorCombineMode.sum_combine, plus are_dem_columns_unique / assert_dem_columns_unique."
-target = "A stated merge rule, chosen by the caller, over the columns of a model."
-symbols_present = ["flagquantum.qec.DetectorErrorModel"]
-symbols_absent = ["dem_merge_duplicate_columns", "PriorCombineMode", "are_dem_columns_unique"]
+target = "A merge rule the caller states, giving every shared mechanism signature one prior, with the predicate and the refusal that make the rule enforceable rather than advisory."
+symbols_present = [
+    "flagquantum.qec.DemMergeRule",
+    "flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms",
+    "flagquantum.qec.DetectorErrorModel.mechanisms_are_unique",
+    "flagquantum.qec.DetectorErrorModel.require_unique_mechanisms",
+]
+symbols_absent = ["dem_merge_duplicate_columns", "PriorCombineMode", "are_dem_columns_unique", "assert_dem_columns_unique"]
 negative_search = [
     "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_errors",
     "flagquantum/qec/merge.py",
 ]
-evidence = ["flagquantum/qec/dem.py", "flagquantum/qec/IMPLEMENTATION.md"]
-next_action = "Merging happens today, but only inside construction and only with the parity rule: mechanisms that flip the same detectors and observables are merged as 1 - 2p products. Upstream makes the merge an operation with two modes. Decide whether the parity rule stays the only rule (and is documented as such) or becomes one of a stated set, before a second caller needs the other one."
-fail_closed = "The merged count is recorded in the DEM reason text and the mechanism count is asserted against stim's own model at distance two and three, so an implicit merge that changed the model would show up as a shape disagreement rather than as a silent numeric drift."
+evidence = [
+    "flagquantum/qec/dem.py",
+    "flagquantum/qec/matching.py",
+    "tests/qec/test_dem_merge.py",
+    "flagquantum/qec/IMPLEMENTATION.md",
+]
+fail_closed = "The rule is enforced where it is load-bearing rather than only offered: a matcher refuses a model that states one signature twice and names the merge that resolves it, so an unmerged duplicate is a refusal and never a silently cheaper parallel edge. The arithmetic is checked against its closed form and against the exact preservation of every detector and observable rate, with the sum rule's failure to preserve them denied in the same test file, so the two rules cannot drift into one another unnoticed."
 
 [[rows]]
 id = "qec_dem_chunking"
@@ -568,13 +577,13 @@ note = "No canonicalization operation. This is the operation a matcher needs whe
 [[fields]]
 id = "dem_merge_operation"
 cudaq_symbol = "dem_merge_duplicate_columns(dem, mode) with PriorCombineMode.or_combine and PriorCombineMode.sum_combine"
-flagquantum_symbol = ""
-verdict = "absent"
+flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms"
+verdict = "renamed"
 negative_search = [
     "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_errors",
     "flagquantum/qec/merge.py",
 ]
-note = "Merging exists here only as an implicit step of construction and only with the parity rule (1 - 2p products); there is no operation, no mode argument and no sum-combine equivalent. The distinction matters because the two modes are not interchangeable: the parity rule is right for independent mechanisms that coincide and wrong for mechanisms that exclude each other."
+note = "Same operation, same two rules, different nouns and a different carrier. Upstream it is a free function over a dem with a mode enum; here it is a method on the model whose rule is an enum of its own, because this model has no columns to merge and the thing a shared signature is a property of is the mechanism record. The formulas are the upstream ones rather than approximations of them: or_combine is 1/2(1 - prod(1 - 2p_i)), which for two mechanisms is p1 + p2 - 2 p1 p2, sum_combine is min(1, sum(p_i)), and a group of one is passed through bit for bit rather than run through either. The mode is named for what it computes here: or_combine names a GF(2) column OR, while the quantity it produces is the probability that an odd number of the mechanisms fire, and that quantity is what the caller is choosing between. Upstream's are_dem_columns_unique and assert_dem_columns_unique have counterparts in mechanisms_are_unique and require_unique_mechanisms, and the assert is load-bearing rather than unused: the matcher calls it before it weights the model, because a signature stated twice would otherwise become two parallel edges and a decoder would take the cheaper weight. The default rule is exact and not merely tidy, which is the second thing this row records: a detector's rate is a product of 1 - 2p factors over the mechanisms that touch it, so a group's combined prior is the single p whose factor is that product, and every detector and observable rate is therefore unchanged; tests/qec/test_dem_merge.py asserts that as an equality and denies it of the sum rule in the same file."
 
 [[fields]]
 id = "dem_seam_and_chunk_api"

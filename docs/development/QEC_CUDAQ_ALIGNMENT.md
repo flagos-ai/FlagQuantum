@@ -6,7 +6,7 @@ open. The TOML is the checklist; the Python tool is the check that it still
 describes a real repository; this document is the part a person reads once.
 
 ```
-python tools/check_qec_cudaq_alignment.py        # 306 checks, exit 0 or 1
+python tools/check_qec_cudaq_alignment.py        # 313 checks, exit 0 or 1
 python -m pytest tests/unit/test_qec_cudaq_alignment_check.py -q
 ```
 
@@ -56,7 +56,7 @@ from the matrix's `priority`, the row states why.
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Route named after cudaq-qec's own. |
 | `qec_dem_construction` | partial | now | — | Construction exists and is exact; no CSS-matrix entry point, no context object. |
 | `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches; no error ids, no rates vector. |
-| `qec_dem_merge` | absent | now | — | Merging is implicit and parity-only; upstream has two stated modes. |
+| `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
@@ -67,10 +67,15 @@ from the matrix's `priority`, the row states why.
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
-Everything a `supported` row would need is deliberately *not* claimed here. No
-row is `aligned`, because no row has the evidence an `aligned` claim would
-require — and the checker enforces that: an `aligned` row must name a present
-symbol and may not sit on a matrix row that says `unsupported`.
+Everything a `supported` row would need is deliberately *not* claimed here. One
+row is `aligned` and the rest are not, and the single `aligned` row is the one
+whose upstream surface has no item left unaccounted for, symbol by symbol. The
+checker enforces the floor of that bar rather than the bar itself: an `aligned`
+row must name a symbol that resolves and may not sit on a matrix row that says
+`unsupported`. That a row clears the mechanical bar is therefore not the
+argument for calling it aligned; the argument is in the sections below, where
+each row states what it closed and what it did not, and a row that still has a
+half to name stays `partial`.
 
 **What `qec_decoder_family` closed, and what it did not.** The row's order was
 "decoding graph with `log((1-p)/p)` edge weights and observable labels, a
@@ -144,22 +149,88 @@ preceding the readout, so moving a measurement channel one instruction earlier
 still reads the same parity. That position is pinned by the instruction index
 rather than by a rate, which is where a caller relies on the position.
 
+**What `qec_dem_merge` closed.** This is the one row with no half left to name,
+and it is worth being precise about why, because the row was `absent` while the
+merge itself was happening all along. Construction has always folded mechanisms
+that flip the same detectors and observables, with the product-of-`1 - 2p` rule.
+What was absent was the *surface*: a caller could not ask for a merge, could not
+choose the rule, and could not ask whether a model needed one. Upstream states
+all three — `dem_merge_duplicate_columns(dem, mode)` with `or_combine` and
+`sum_combine`, plus `are_dem_columns_unique` and `assert_dem_columns_unique` —
+and all three now exist here under names that say what they compute:
+`DemMergeRule.INDEPENDENT_PARITY` and `DemMergeRule.CLAMPED_LINEAR_SUM`,
+`DetectorErrorModel.merge_duplicate_mechanisms(rule=...)`,
+`mechanisms_are_unique()` and `require_unique_mechanisms()`.
+
+The two rules are the upstream formulas and not approximations of them.
+`or_combine` is `1/2 (1 - prod(1 - 2p_i))`, which for two mechanisms is
+`p1 + p2 - 2 p1 p2`; `sum_combine` is `min(1, sum(p_i))`; a group of one is
+passed through bit for bit rather than run through either. The default is the
+parity rule, as it is upstream. Naming the modes for what they compute rather
+than for the `GF(2)` column operation they are implemented with is the one
+deliberate divergence, and it is what makes the row's `renamed` verdict worth
+stating rather than glossing: `or_combine` names an implementation, and the
+quantity a caller is choosing between is the probability that an odd number of
+the mechanisms fire.
+
+The default rule is exact, and that is the part which is checked rather than
+asserted. A detector's rate is built from a product of `1 - 2p` factors over the
+mechanisms that touch it, and a merged group's combined prior is the single `p`
+whose factor *is* that group's product, so regrouping the factors cannot change
+the product and every detector rate and every observable rate is preserved
+exactly. The test asserts that as an equality on a model with a three-way
+duplicate, and denies it of the sum rule in the same file, so the two rules
+cannot drift into one another without a failure.
+
+The row also closed the reason merging matters at all, which is a correctness
+argument rather than a tidiness one. The decoding graph keeps one edge per
+mechanism, so a signature stated twice becomes two parallel edges with two
+weights and a matcher charges the cheaper of them — for mechanisms of `0.1` and
+`0.2` that is `log 4`, or `1.386`, where the fault's own combined parity `0.26`
+has weight `log(0.74 / 0.26)`, or `1.046`. The charge is larger than the fault's
+weight, so a matcher would prefer a longer chain of other mechanisms over the
+mechanism that actually fired.
+`MinimumWeightMatchingDecoder.from_detector_error_model` therefore calls
+`require_unique_mechanisms()` before it builds the graph, and a model that states
+one signature twice is refused with a message naming both mechanisms and the
+merge that resolves them. Upstream's `assert_dem_columns_unique` is never called
+in the upstream production code; here the assert is the load-bearing one.
+
+What the row did not close, and what it therefore does not claim: this model
+still has no error identifiers, so there is nothing to carry across a merge and
+nothing for a merged group to be an alternative *to*. Upstream's merge operates
+on columns of a carrier that records them. That absence belongs to
+`dem_error_ids`, which stays `absent`, and it is the reason the matrix row this
+row's floor is folded under stays `partial`: one operation inside a row can be
+aligned while the row it sits in is not.
+
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
 The short version, because the full table is in the TOML. Across 23 field rows:
-2 `equivalent`, 1 `renamed`, 1 `extra`, 10 `reshaped`, 9 `absent`.
+2 `equivalent`, 2 `renamed`, 1 `extra`, 10 `reshaped`, 8 `absent`.
 
 **Equivalent (2).** `detector_error_matrix` and `observables_flips_matrix` are
 the same matrices in the same orientation — rows are detectors or observables,
 columns are error mechanisms — with a container difference only (`numpy uint8`
 upstream, `torch int8` here).
 
-**Renamed (1).** `dem_from_stim_text(text, use_decomp_suggestions=False)` is
+**Renamed (2).** `dem_from_stim_text(text, use_decomp_suggestions=False)` is
 `DetectorErrorModel.from_stim_text`. Both delegate the format definition to
 stim's own parser. The refusals differ in kind, not in spirit: upstream
 documents two losses on the stim path (error ids always empty, `^` separators
 ignored), this repository refuses constructs it cannot represent (`repeat`,
 comments, skipped indices, malformed lines).
+
+The second is `dem_merge_duplicate_columns(dem, mode)`, a free function over a
+dem with a mode enum, which is `DetectorErrorModel.merge_duplicate_mechanisms`
+here — a method, because the thing a shared signature is a property of is the
+model's own mechanism record rather than a pair of columns. The two rules are
+the same two rules and the formulas are the same formulas; what changed is the
+noun (`or_combine` names the `GF(2)` column OR the rule is implemented with,
+while the value it produces is the probability that an odd number of the
+mechanisms fire) and the placement of the uniqueness predicate and the assert,
+which upstream offers and never calls and which the local matcher calls before
+it weights a model.
 
 **Extra (1).** `to_stim_text`. No writer was found in the cudaq-qec bindings or
 libraries; the produced stim text in the CUDA-Q stack comes from
@@ -186,11 +257,11 @@ record and the decoder base protocol. The two widest of these:
   tensors, which is a full-precision-vs-`uint8` boundary worth knowing before an
   adapter is written.
 
-**Absent (9).** `error_ids` (mutually exclusive / correlated errors),
-`canonicalize_for_rounds`, `dem_merge_duplicate_columns` with its two modes,
-the chunk/seam/stitch/close family, `dem_from_css_matrices`, `dem_from_kernel`
-itself, the decoder registry (`get_decoder` + `@decoder`), the sampling backend
-selector, and the decoder configuration schema.
+**Absent (8).** `error_ids` (mutually exclusive / correlated errors),
+`canonicalize_for_rounds`, the chunk/seam/stitch/close family,
+`dem_from_css_matrices`, `dem_from_kernel` itself, the decoder registry
+(`get_decoder` + `@decoder`), the sampling backend selector, and the decoder
+configuration schema.
 
 Of the absent set, `error_ids` and `canonicalize_for_rounds` are the two that
 sit closest to work already planned: a matcher wants round structure and a
@@ -386,7 +457,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis. No context object. |
 | `dem_code_capacity_noise` | reshaped | Two uniform scalars against X/Y/Z data rates plus a measurement rate, each also per qubit or per check. |
 | `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |
-| `dem_merge_operation` | absent | Merging is implicit, construction-only, parity-rule-only; upstream has two stated modes. |
+| `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |
 | `dem_seam_and_chunk_api` | absent | Monolithic model; no chunk, no seam, nothing to slide a window over. |
 | `dem_measurement_to_detector_map` | reshaped | Ordered `MeasurementRef` records on the layout against a stored sparse D matrix on the model. |
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |

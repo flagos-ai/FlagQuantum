@@ -52,6 +52,7 @@ from .operator_schema import (
     get_operator_schema,
     inverse_operator,
     operator_manifest,
+    parameter_shift_rule,
 )
 from .parameters import (
     Parameter,
@@ -106,6 +107,7 @@ __all__ = [
     "gate_info",
     "inverse_operator",
     "operator_manifest",
+    "parameter_shift_rule",
     "RUNTIME_CONFIG_VERSION",
     "RuntimeConfig",
     "get_runtime_config",

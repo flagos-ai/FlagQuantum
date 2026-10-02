@@ -7,6 +7,7 @@ tests/test_statevector_triton_gates.py
 tests/unit/test_hva_forward_tangent_triton.py
 tests/unit/test_mps_environment_catalog_dispatch.py
 tests/unit/test_mps_two_site_triton.py
+tests/unit/test_mps_low_rank.py
 tests/unit/test_mps_environment_channels_triton.py
 tests/unit/test_mps_environment_triton.py
 tests/unit/test_mps_observable_adjoint_triton.py
