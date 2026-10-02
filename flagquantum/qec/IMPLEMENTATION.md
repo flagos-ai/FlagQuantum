@@ -125,6 +125,38 @@ per check measurement per round, minus the locations whose probability is zero,
 with the mechanisms that flip the same detectors and observables merged. The
 model is exact for Pauli noise in the reference gate set.
 
+`dem_construction.py` owns where those mechanisms come from, and it knows two
+descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
+`from_memory_circuit` calls: it enumerates the locations a noise record
+configures, injects one at a time into the source program the circuit carries,
+and reads the flip set off the circuit's own detector and observable layouts.
+`_code_matrix_entries` is the **read** route: it takes a parity-check matrix
+(`hz[k, q]` is one when a bit flip on data qubit `q` flips check `k`) and a
+logical-operator matrix in the same convention, and derives every signature
+combinatorially, with nothing lowered or executed.
+`DetectorErrorModel.from_code_matrices` is its public entry point and
+`code_matrices` is the bridge that lifts a code record's Z-type checks and Z-type
+logical operators into the pair it consumes, so a code described by its
+stabilizers reaches a model without a circuit being written for it.
+
+The two routes describe different experiments and the difference is stated rather
+than glossed. The matrix route is the code-capacity one: a fault in round `r`
+reaches the detector band of round `r` and the band of round `r + 1`, and the
+final round has no band after it, so its detector count is `num_rounds *
+num_checks` with no terminal readout. A memory circuit measures its data qubits,
+so it gains a terminal detector per Z-type check and its count is one band per
+round plus that terminal. Neither geometry stands for the other, and each is
+pinned against stim through a transcription that states its own assumption.
+
+Both routes carry the same single fault family: a data wire's bit flip and a
+check's syndrome bit flipped at readout. The phase-flip family an `hx`/`lx` pair
+describes, and the independent `px`/`py`/`pz`/`pm` rates upstream states, are not
+expressible through one data-flip scalar and one measurement-flip scalar; that
+limit is recorded against the entry point in the alignment contract rather than
+approximated here. On the matrix route an X-type check and an X-type logical
+operator therefore contribute no row at all, rather than an all-zero row that
+would declare an observable no mechanism ever reports.
+
 Merging is also an operation a caller asks for, not only a step construction
 performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every
 shared signature one prior, `DemMergeRule` states the two rules by what they
@@ -137,14 +169,18 @@ combined prior is the single `p` whose factor is that product, so regrouping the
 factors leaves every detector rate and every observable rate unchanged. The sum
 rule does not preserve them, and is offered for the caller who means it.
 
-Construction is exact and does not sample. Each mechanism's signature comes from
-one forced execution: the single error is injected into the circuit source, the
-source is lowered and executed twice, and the two shots must agree before the
-signature is read off the detector and observable layouts. That two-shot
-determinism assertion is both the fail-closed check for a mechanism that is not a
-Pauli mechanism in the reference gate set and the evidence that the signature is
-not sampled. The model is defined for Pauli noise only: a non-Pauli channel is
-refused with a stated reason rather than approximated.
+Construction is exact and does not sample. On the forced route each mechanism's
+signature comes from one forced execution: the single error is injected into the
+circuit source, the source is lowered and executed twice, and the two shots must
+agree before the signature is read off the detector and observable layouts. That
+two-shot determinism assertion is both the fail-closed check for a mechanism that
+is not a Pauli mechanism in the reference gate set and the evidence that the
+signature is not sampled. The model is defined for Pauli noise only: a non-Pauli
+channel is refused with a stated reason rather than approximated. The read route
+asserts determinism differently, by construction: its input is a support, so a
+matrix that is not binary, not two-dimensional, or not indexed by the same data
+qubits as its logical matrix is refused rather than rounded into shape.
+
 
 The model is built on the memory circuit without in-circuit feedback, because it
 describes the noise-to-detection mapping that a decoder inverts. The frozen
@@ -176,6 +212,20 @@ after the round's gates instead of before it deviates by 0.038 and a terminal
 detector that omits the data readout deviates by 0.107. The marginals are also
 compared across four noise strengths and two seeds.
 
+`tests/qec/test_dem_code_matrices_stim.py` is the read route's separate
+independent check, and it is separate on purpose. Its stim circuit states the
+code-capacity assumption and nothing else: the faults live on their own qubits,
+which are reset every round, so a fault cannot leak past the round it is injected
+in, and the observable is accumulated on a wire of its own. Handing stim that
+circuit and requiring its own error analysis to reproduce the shape, the
+mechanism count and every full signature and rate is a statement about the matrix
+route rather than about the memory circuit — the memory circuit's transcription
+ends in a terminal data readout and has a different detector count. Running the
+matrix route against the memory transcription would conflate the two geometries
+and hide which of them a failure belonged to, so the same suite asserts that they
+differ: at distance three and three rounds the repetition code has six detectors
+through matrices and eight through a memory circuit.
+
 Marginals alone would not separate a model that keeps every marginal and drops
 every correlation, so the same suite compares every detector pair rate. Because
 the mechanisms fire independently, a pair's exact rate follows from the product
@@ -190,17 +240,24 @@ reproduces the marginals by construction — while its pair rates miss by 10.7 t
 23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
 to 0.1794.
 
-Construction is a forced execution, so it is bounded by the statevector amplitude
-ceiling rather than by the detector error model's own cost. A rotated surface
-code is `distance**2` data wires plus one ancilla per check: `distance=2` is 7
-wires and `distance=3` is 17, and both build in seconds, while `distance=4` is 31
-wires (2**31 amplitudes) and did not complete in forty-five minutes, and
-`distance=5` is 49 wires and fails on the allocator. The modelled
+The forced route is a forced execution, so it is bounded by the
+statevector amplitude ceiling rather than by the detector error model's own cost.
+A rotated surface code is `distance**2` data wires plus one ancilla per check:
+`distance=2` is 7 wires and `distance=3` is 17, and both build in seconds, while
+`distance=4` is 31 wires (2**31 amplitudes) and did not complete in forty-five
+minutes, and `distance=5` is 49 wires and fails on the allocator. The modelled
 rotated-surface distance is therefore three. Reaching five and seven needs a
 signature route that does not materialise the state — either a first-party
 Clifford propagation in this layer, which is a second implementation of an
 algorithm this layer otherwise does not own, or an explicit decision that the
 larger-distance curve is a reference-only comparison.
+
+The matrix route is bounded by none of that. It reads a support rather than
+executing a program, so its cost is the number of nonzero matrix entries times
+the round count and a distance-5 or distance-7 patch reaches a model as easily as
+a distance-2 one. The ceiling above is a property of the circuit route, not of
+the construction contract, and the two are allowed to differ because they answer
+different questions.
 
 The stim interchange is a text format, not a package dependency: nothing in
 `dem.py` imports `stim`, and the reader is exercised against real stim output by
@@ -376,13 +433,20 @@ same syndrome predictions once that fault is merged back.
 Nothing about a code, a distance, a round count, or a check layout enters the
 graph. Whatever the model states is what the graph holds, so the decoder inherits
 every scope limit of the model it consumes, including the modelled rotated-surface
-distance of three that the statevector amplitude ceiling imposes on construction.
-Measured on the two codes this layer models at three rounds and two percent noise:
+distance of three that the statevector amplitude ceiling imposes on the circuit
+route. It also inherits the fault family: a model read from matrices states only
+the bit-flip family, so the matching decoder is matched to that model and not to
+a channel the matrix route cannot describe. Measured on the two codes this layer
+models at three rounds and two percent noise:
 the repetition code at distance three gives 15 edges of which 6 reach the boundary
 and every weight is 3.8918, and the rotated surface code at distance three gives 45
 edges of which 20 reach the boundary, with six of the weights at 3.1991 and the
 other 39 at 3.8918. Every mechanism in both models flips one detector or two, so
-neither model reaches the hyperedge refusal.
+neither model reaches the hyperedge refusal. A matrix-route model is graphlike
+only while it stays inside one round: at two rounds the middle data wire of the
+distance-3 repetition code flips the same check in both detector bands, which is
+a four-detector mechanism, and `from_detector_error_model` refuses it as a
+hyperedge rather than projecting it onto a pair.
 
 `MinimumWeightMatchingDecoder` decodes a syndrome exactly in two steps. The first
 searches the graph from each defective detector and yields the cheapest chain of
