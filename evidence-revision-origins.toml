@@ -16,18 +16,25 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # about it. No validator read `benchmarks/results/` at all, which is where seventeen
 # further revisions and the fifty-one artifacts recording them were found.
 #
-# Forty-one distinct revisions are recorded under the two walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other forty appear below in one of
-# three states.
+# Forty-two distinct revisions are recorded under the two walked roots, and one of
+# them -- a commit on `main` -- is obtainable. The other forty-one appear below in one
+# of three states.
 #
-# `unreferenced_object` (eighteen revisions) means no branch and no tag reaches the
+# `unreferenced_object` (nineteen revisions) means no branch and no tag reaches the
 # commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote
-# does serve all eighteen to `git fetch origin <revision>` by name today, but
+# does serve all nineteen to `git fetch origin <revision>` by name today, but
 # retaining an unreferenced object is server policy rather than a promise, and one
-# of the eighteen is the head of a closed pull request.
+# of the nineteen is the head of a closed pull request.
+#
+# The nineteenth is the ordinary way a new one appears: a benchmark artifact
+# recorded the head of the branch that produced it, and the pull request was
+# merged with a squash, so `main` carries a single new commit while the recorded
+# revision is left reached by no ref. Re-pointing the artifact at the squash commit
+# would state that the run executed code it never executed, so the revision is kept
+# and declared here.
 #
 # `producing_host_history` (eighteen revisions) means the run happened in a history
 # this repository does not contain. Seventeen are commits of
@@ -370,6 +377,14 @@ path = "benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json"
 
 [[artifact.revision]]
 value = "f1e0dbcdb57c5889a7c2ae6a17456b44139667ff"
+origin = "unreferenced_object"
+
+
+[[artifact]]
+path = "benchmarks/results/local/mps_two_site_dispatch_a800.json"
+
+[[artifact.revision]]
+value = "0e2d57204cb4fdd3f002de94367346923f7d1b33"
 origin = "unreferenced_object"
 
 

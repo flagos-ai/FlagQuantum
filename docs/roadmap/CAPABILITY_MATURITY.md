@@ -48,20 +48,23 @@ and thirteen of them said nothing about it. `tools/check_evidence_revisions.py`
 therefore walks `artifacts/` and `benchmarks/results/` rather than a list, and asks
 both questions a reader depends on. A revision is obtainable when this repository
 holds the commit and a ref of this repository reaches it, because a clone and a
-plain fetch obtain exactly the commits the refs they fetch reach; of the forty-one
+plain fetch obtain exactly the commits the refs they fetch reach; of the forty-two
 distinct revisions recorded under those roots, one is obtainable. Every other
 revision must be declared in `evidence-revision-origins.toml`, which names the
 origin a reader can obtain it from. Asking only whether the object was in the
-database was not enough: eighteen revisions are held by this repository's remote
+database was not enough: nineteen revisions are held by this repository's remote
 while no branch and no tag reaches them, so a clone obtains none of them, and
 `unreferenced_object` covers those, since the remote still serves the object by
-name while nothing guarantees that it will. `producing_host_history` covers the
-eighteen revisions of history this repository does not contain. Seventeen belong to
-`FlagQuantum/FlagQuantum`, a private repository re-created from a product baseline
-rather than cloned from this one; this repository's public history carries
-look-alike commits with the same subjects but different objects, trees, and
-parents, so a reader can obtain none of the seventeen and re-pointing a pin would
-present a run as having executed code it never executed. The eighteenth,
+name while nothing guarantees that it will. A squash merge produces one of these
+with no force-update at all: the branch head an artifact recorded is reached only
+by that branch, and the single commit `main` gains is a different object.
+`producing_host_history` covers the eighteen revisions of history this repository
+does not contain. Seventeen belong to `FlagQuantum/FlagQuantum`, a private
+repository re-created from a product baseline rather than cloned from this one;
+this repository's public history carries look-alike commits with the same subjects
+but different objects, trees, and parents, so a reader can obtain none of the
+seventeen and re-pointing a pin would present a run as having executed code it
+never executed. The eighteenth,
 `6cfc4c3708227a4bb2c6e35c9f71e502239a2e63`, is published in no repository at all:
 two cross-framework comparison artifacts record it as `source_revision_full` after
 recording a null commit, because the runtime containers ship no git binary, so the
@@ -88,7 +91,7 @@ resolve in a complete clone and eight do not. Two of the eight are not revisions
 `benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` names a
 runner revision in prose inside a root the gate already reads. Five of the remaining
 are unreferenced objects of this repository's remote, served anonymously by name and
-reached by no ref, the same class as the eighteen declared above: `0a26c364…`
+reached by no ref, the same class as the nineteen declared above: `0a26c364…`
 (`base_commit` of a private-GPU Bell record), `aec65643…` and `ecaf903c…`
 (`implementation_commit` of two further records), and `b30886cb…` and `0a13cfa2…`
 (`image.runtime_source_commit` and `image.benchmark_driver_commit` of a
