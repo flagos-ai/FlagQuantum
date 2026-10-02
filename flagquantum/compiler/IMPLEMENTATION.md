@@ -49,6 +49,10 @@ routing result to hand back to legalization.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`one_qubit_synthesis.py` owns the one-qubit Euler angles behind those
+decompositions: it turns any declared single-qubit unitary into z-rotations plus
+a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
+expert-facing entry point.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
@@ -99,6 +103,8 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
+  `one_qubit_synthesis.py`.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in
