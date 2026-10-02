@@ -801,14 +801,21 @@ class DetectorErrorModel:
         text. This package's ``to_stim_text`` writes a probability with
         ``repr``, the shortest decimal that reads back as the identical double,
         and it lost none of the twenty thousand draws in the pinned sweep.
-        Stim's own printer writes sixteen significant digits, which is not
-        always enough to name the double it was given: about a quarter of the
-        same draws came back changed, by at most 5.5e-16 relative, and the
-        format bounds that at one part in 10**15. A caller comparing a model
-        against text stim wrote therefore compares within that bound; one
-        comparing against this package's own text needs no allowance.
-        ``tests/qec/test_dem_stim_text_precision.py`` pins the digit count, the
-        direction of the loss and the bound.
+        Stim's own printer writes at its stream precision, which follows the
+        platform's ``long double``: nineteen significant digits where that type
+        is the x86 80-bit extended one, so the Linux CI runners, and sixteen
+        where it is a double, so arm64 macOS. Seventeen digits name a double
+        uniquely, which makes the width the whole of the difference. At nineteen
+        digits a reprint returned every one of the same draws unchanged; at
+        sixteen about a quarter of them came back changed, by at most 5.4e-16
+        relative, and that format bounds the drift at one part in 10**15. A
+        caller comparing a model against text stim wrote therefore compares
+        within that bound where the width is the narrower one, and needs no
+        allowance where it is not; one comparing against this package's own text
+        needs no allowance on either platform.
+        ``tests/qec/test_dem_stim_text_precision.py`` reads the width off stim's
+        own output and pins the digit count, the direction of the loss and the
+        bound against it.
         """
 
         num_detectors, num_observables, errors = _parse_stim_text(

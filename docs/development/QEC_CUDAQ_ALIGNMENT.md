@@ -330,15 +330,21 @@ negative result on the upstream side, marked `provenance_unverified`, so it is
 Because there is no upstream writer to align to, the writer is aligned to stim's
 own, and the two differ in precision: `to_stim_text` writes a probability with
 `repr`, the shortest decimal that reads back as the identical double, while
-stim's `str` writes sixteen significant digits and so cannot always name the
-double it was given. Over a pinned sweep of twenty thousand probabilities the
-first lost none and the second changed about a quarter; the drift stim
-introduces is bounded by one part in `10**15` and measured at `5.5e-16` worst
-case. The reader therefore states the printed value on both paths, because the
-printed value is what the interchange carried, and
-`tests/qec/test_dem_stim_text_precision.py` pins the format, the direction of the
-loss and the bound so that a stim release changing its precision fails there
-rather than invalidating this record.
+stim's `str` writes at
+`std::setprecision(std::numeric_limits<long double>::digits10 + 1)`, so the width
+is a property of the platform's `long double` rather than a constant of stim —
+nineteen significant digits where that type is the x86 80-bit extended one, so
+the Linux CI runners, and sixteen where it is a double, so arm64 macOS.
+Seventeen digits name a double uniquely, so at nineteen digits stim's printer
+returns the identical double and at sixteen it cannot always: over a pinned sweep
+of twenty thousand probabilities the first width lost none and the second changed
+about a quarter, and the drift at that width is bounded by one part in `10**15`
+and measured at `5.4e-16` worst case. The reader therefore states the printed
+value on both paths, because the printed value is what the interchange carried,
+and `tests/qec/test_dem_stim_text_precision.py` reads the width off stim's own
+output and pins the format, the direction of the loss and the bound against it, so
+that a stim release changing its precision fails there rather than invalidating
+this record.
 
 **Reshaped (11).** The model carrier, the per-error rates, the counts, the
 sampling function, the memory-circuit entry point, the matrix-level entry point,

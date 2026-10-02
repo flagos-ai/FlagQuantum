@@ -50,12 +50,17 @@ reader does not duplicate. ``flatten_loops=True`` is not enough on its own:
 Stim still emits ``repeat`` for a long enough circuit, which the test below
 measures.
 
-The probability digits are lossy on the way out. ``str(model)`` prints 17
-significant digits, so the in-memory probability and the one this reader returns
-differ by at most one unit in the last place; across the 240-model developer-time
-sweep described in ``flagquantum/qec/IMPLEMENTATION.md`` the largest relative
-difference is 4.9e-16. The text is the interchange format, so the text's value is
-the one that survives, and the two readers agree exactly on it.
+The probability digits are stim's printer to choose. ``str(model)`` writes at
+``std::setprecision(std::numeric_limits<long double>::digits10 + 1)``, so
+nineteen significant digits on the x86-64 Linux runners, where ``long double``
+is the 80-bit extended type, and sixteen on arm64 macOS, where it is a double.
+Seventeen digits name a double uniquely, so the former returns the identical
+double for every mechanism while the latter can differ from the in-memory
+probability in the last place; across the 240-model developer-time sweep
+described in ``flagquantum/qec/IMPLEMENTATION.md`` the largest relative
+difference measured on the sixteen-digit platform was 4.9e-16. The text is the
+interchange format, so the text's value is the one that survives, and the two
+readers agree exactly on it.
 
 Stim is an optional dependency, so this file skips when it is absent.
 """

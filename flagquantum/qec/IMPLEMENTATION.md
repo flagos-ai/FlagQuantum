@@ -343,31 +343,40 @@ repetition code cannot supply that discrimination: at distance three, three roun
 and one percent noise the two readings of `^` differ by at most 0.0024, so the
 test uses a circuit whose decompositions actually merge groups.
 
-The text is exact on this side and lossy on stim's, and the loss is in stim's
-writer rather than in this one. `to_stim_text()` writes a probability with
-`repr`, the shortest decimal that reads back as the identical double, so over
-twenty thousand swept probabilities no written value returned as a different
-one. stim's `str()` writes sixteen significant digits, which is a measured
-format rather than an estimate, and that is not always enough to name the double
-it was given: over the same sweep about a quarter of the probabilities came back
-from stim's own reprint as a different value. The reader therefore states the
-printed value, because the printed value is what the interchange carried.
+The text is exact on this side, and on stim's side the loss depends on the width
+stim's printer was built with rather than on the value. `to_stim_text()` writes a
+probability with `repr`, the shortest decimal that reads back as the identical
+double, so over twenty thousand swept probabilities no written value returned as a
+different one. stim's `str()` writes at
+`std::setprecision(std::numeric_limits<long double>::digits10 + 1)`, so the number
+of digits follows the platform's `long double`: nineteen significant digits where
+that type is the x86 80-bit extended one, which is the Linux CI platform, and
+sixteen where it is a double, which is arm64 macOS. Seventeen significant decimal
+digits name every double uniquely, so at nineteen digits the reprint returned
+every one of the swept probabilities unchanged and at sixteen about a quarter of
+them came back as a different value. That is a measured format rather than an
+estimate. The reader therefore states the printed value, because the printed
+value is what the interchange carried.
 
-The drift stim introduces is bounded by one part in `10**15`. Sixteen
-significant decimal digits round to within half a unit in the last of them, and
-reading that decimal back as a double adds at most one binary unit in the last
-place, which is under `2**-51` of the value; the two together stay under the
-bound. The sweeps confirm it rather than assume it: the worst relative
-difference between an in-memory probability and the one stim printed was
-`5.5e-16` over the pinned sweep and `4.9e-16` over the earlier developer sweep,
-both inside the bound. `tests/qec/test_dem_stim_text_precision.py` pins the
-digit count, the direction of the loss and the bound, and it is a separate file
-because it measures stim's writer rather than this package's model.
+Where the width is the narrower one, the drift stim introduces is bounded by one
+part in `10**15`. Sixteen significant decimal digits round to within half a unit
+in the last of them, and reading that decimal back as a double adds at most one
+binary unit in the last place, which is under `2**-51` of the value; the two
+together stay under the bound. The sweeps confirm it rather than assume it: the
+worst relative difference between an in-memory probability and the one stim
+printed was `5.4e-16` over the pinned sweep and `4.9e-16` over the earlier
+developer sweep, both inside the bound. Widths at or above seventeen digits need
+no bound at all, because they round nothing away.
+`tests/qec/test_dem_stim_text_precision.py` reads the width off stim's own output
+and then holds the digit count, the direction of the loss and the bound against
+that width, and it is a separate file because it measures stim's writer rather
+than this package's model.
 
 A round-trip assertion must compare against a re-read of the printed text rather
 than against the in-memory model, or it reports differences that the printing
-caused. That applies to text stim wrote; this package's own writer needs no such
-allowance, which the same file demonstrates.
+caused. That applies to text stim wrote on a platform whose `long double` is a
+double; this package's own writer needs no such allowance on any platform, which
+the same file demonstrates.
 
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
