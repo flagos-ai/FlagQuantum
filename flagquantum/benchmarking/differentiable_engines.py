@@ -23,6 +23,7 @@ EngineName = Literal[
     "flagquantum_adjoint_cx_rotation_fusion_rollback",
     "flagquantum_adjoint_terminal_no_restore_rollback",
     "flagquantum_adjoint_compact_cx_index_rollback",
+    "flagquantum_adjoint_saved_parameter_revalidation",
     "pennylane_lightning_adjoint",
 ]
 
@@ -53,5 +54,6 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_cx_rotation_fusion_rollback",
         "flagquantum_adjoint_terminal_no_restore_rollback",
         "flagquantum_adjoint_compact_cx_index_rollback",
+        "flagquantum_adjoint_saved_parameter_revalidation",
     )
 )

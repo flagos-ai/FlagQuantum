@@ -83,6 +83,10 @@ def build_support_matrix(engines: Sequence[str]) -> dict[str, dict[str, object]]
             "same native adjoint with a materialized full-state CX index",
             "statevector_adjoint",
         ),
+        "flagquantum_adjoint_saved_parameter_revalidation": (
+            "same native adjoint with redundant backward parameter validation enabled",
+            "statevector_adjoint",
+        ),
         "pennylane_lightning_adjoint": (
             "lightning.qubit adjoint through the PyTorch interface",
             "statevector_adjoint",

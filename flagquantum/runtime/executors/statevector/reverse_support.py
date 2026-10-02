@@ -65,6 +65,12 @@ def _gradient_bucketing_enabled() -> bool:
     return get_bool("FQ_STATEVECTOR_GRADIENT_BUCKETING", True)
 
 
+def _saved_parameter_revalidation_enabled() -> bool:
+    """Whether backward repeats validation already completed during forward."""
+
+    return get_bool("FQ_STATEVECTOR_ADJOINT_REVALIDATE_SAVED_PARAMETERS", False)
+
+
 def _reverse_cross_shard_cx_packing_enabled() -> bool:
     return os.getenv(
         "FQ_STATEVECTOR_REVERSE_CROSS_SHARD_CX_PACK", "0"
@@ -75,13 +81,15 @@ def _bind_parameters(
     ir: CircuitIR,
     slots: Sequence[tuple[int, str, int]],
     parameters: Sequence[torch.Tensor],
+    *,
+    validate: bool = True,
 ) -> CircuitIR:
     instructions = list(ir.instructions)
     params_by_instruction: dict[int, dict[str, Any]] = {}
     validated_parameters: set[int] = set()
     for instruction_index, name, parameter_index in slots:
         instruction = instructions[instruction_index]
-        if parameter_index not in validated_parameters:
+        if validate and parameter_index not in validated_parameters:
             _normalize_angle(
                 parameters[parameter_index],
                 opcode=instruction.name,
@@ -104,6 +112,21 @@ def _bind_parameters(
             parameter_constants=(),
         )
     return replace(ir, instructions=tuple(instructions))
+
+
+def _bind_saved_parameters(
+    ir: CircuitIR,
+    slots: Sequence[tuple[int, str, int]],
+    parameters: Sequence[torch.Tensor],
+) -> CircuitIR:
+    """Bind autograd-saved tensors with the configured validation rollback."""
+
+    return _bind_parameters(
+        ir,
+        slots,
+        parameters,
+        validate=_saved_parameter_revalidation_enabled(),
+    )
 
 
 @dataclass
