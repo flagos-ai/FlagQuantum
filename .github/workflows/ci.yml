@@ -443,7 +443,7 @@ jobs:
           for version in ${OPTIONAL_VERSIONS}; do
             python -m pip install --upgrade "pennylane==${version}"
             python tools/check_pennylane_interop_contract.py
-            python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py -m pennylane -q
+            python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py tests/benchmark_contract/test_batched_statevector_corpus.py -m pennylane -q
             python -c "import sys, flagquantum; assert not any(name == 'pennylane' or name.startswith('pennylane.') for name in sys.modules)"
           done
 
