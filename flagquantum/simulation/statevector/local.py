@@ -714,7 +714,6 @@ def _execute_statevector_program(
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
     """Execute a compiled program for one full batch or bounded batch window."""
-
     batched_rx_ry_rz_matrices, batched_rotation_matrices = (
         _prepare_batched_rotation_matrices(
             circuit,
@@ -756,18 +755,27 @@ def _execute_statevector_program(
                 )
             if step.cz_edges:
                 signs, wires = _cz_graph_signs_cpu(step.cz_edges, device=output.device)
-                output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
+                output = _apply_cz_graph_cpu(
+                    output,
+                    signs,
+                    wires,
+                    circuit.n_wires,
+                    inplace=owns_output or bool(step.controls),
+                )
             owns_output = True
             continue
         if isinstance(step, _StatevectorControlledPhaseGraphStep):
             factors, wires = _controlled_phase_graph_factors(circuit, step, output)
             output = _apply_controlled_phase_graph_cpu(
-                output, factors, wires, circuit.n_wires
+                output, factors, wires, circuit.n_wires, inplace=owns_output
             )
+            owns_output = True
             continue
         if isinstance(step, _StatevectorCZGraphStep):
             signs, wires = _cz_graph_signs(circuit, step, output.device)
-            output = _apply_cz_graph_cpu(output, signs, wires, circuit.n_wires)
+            output = _apply_cz_graph_cpu(
+                output, signs, wires, circuit.n_wires, inplace=owns_output
+            )
             continue
         if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
             output = _apply_diagonal_matrix(

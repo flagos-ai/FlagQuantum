@@ -1,0 +1,680 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "batch_sizes": [
+    32
+  ],
+  "benchmark": "cross_framework_batched_statevector_peak_rss",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "flagquantum_native_diagonal_graph_rollback": 1.0181925685829387,
+          "pennylane_lightning_native_batch": 2.674395621071089
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_diagonal_graph_rollback": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_native_batch": {
+            "max_abs_error": 1.912626053299222e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 0.9507479580061045,
+            "mean_seconds": 0.7590591099102643,
+            "median_seconds": 0.759850041999016,
+            "min_seconds": 0.5524414590036031,
+            "relative_median_absolute_deviation": 0.1362997002899464,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.7361533340008464,
+              0.6382194170146249,
+              0.608835041988641,
+              0.5524414590036031,
+              0.9222620000073221,
+              0.863417374988785,
+              0.801206333009759,
+              0.759850041999016,
+              0.7149532079929486,
+              0.9507479580061045,
+              0.8015640410012566
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 0.8027028329961468,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 336625664,
+            "maximum_norm_error": 1.6209256159527285e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 525320192,
+            "pre_execution_peak_rss_bytes": 188694528,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 0.8027028329961468,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 336625664,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 525320192,
+                "pre_execution_peak_rss_bytes": 188694528
+              },
+              {
+                "cold_execution_seconds": 0.7640675000147894,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 375160832,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 568147968,
+                "pre_execution_peak_rss_bytes": 192987136
+              },
+              {
+                "cold_execution_seconds": 0.8373795830120798,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 330907648,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 512475136,
+                "pre_execution_peak_rss_bytes": 181567488
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.02374531381246925,
+          "median_statevectors_per_second": 42.11357271997287,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_diagonal_graph_rollback": {
+          "batch_total": {
+            "max_seconds": 1.1411630419897847,
+            "mean_seconds": 0.7982697990955785,
+            "median_seconds": 0.7736736660008319,
+            "min_seconds": 0.5493717910139821,
+            "relative_median_absolute_deviation": 0.1372994902941261,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.6674486660049297,
+              0.7080639170017093,
+              0.5648741250042804,
+              0.5493717910139821,
+              0.8993993339827284,
+              0.8121696660236921,
+              0.8644213750085328,
+              0.7736736660008319,
+              0.7627088330045808,
+              1.0376733750163112,
+              1.1411630419897847
+            ]
+          },
+          "execution_strategy": "native_parameter_batch_functional_diagonal_graph_rollback",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 0.7216434160072822,
+            "engine": "flagquantum_native_diagonal_graph_rollback",
+            "execution_peak_rss_growth_bytes": 340541440,
+            "maximum_norm_error": 1.6209256159527285e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 542801920,
+            "pre_execution_peak_rss_bytes": 202260480,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 0.659621833008714,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 407633920,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 609648640,
+                "pre_execution_peak_rss_bytes": 202014720
+              },
+              {
+                "cold_execution_seconds": 0.8796969999966677,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 301957120,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 504578048,
+                "pre_execution_peak_rss_bytes": 202620928
+              },
+              {
+                "cold_execution_seconds": 0.7216434160072822,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 340541440,
+                "maximum_norm_error": 1.6209256159527285e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 542801920,
+                "pre_execution_peak_rss_bytes": 202260480
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.024177302062525996,
+          "median_statevectors_per_second": 41.36110792733844,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_native_batch": {
+          "batch_total": {
+            "max_seconds": 2.6330109999980778,
+            "mean_seconds": 2.0069795114501505,
+            "median_seconds": 2.032139624992851,
+            "min_seconds": 1.6233932079921942,
+            "relative_median_absolute_deviation": 0.1727655849440327,
+            "sample_count": 11,
+            "samples_seconds": [
+              1.6233932079921942,
+              1.7561579169996548,
+              1.635911582998233,
+              2.032139624992851,
+              2.308419707987923,
+              2.1575306250015274,
+              2.210778084001504,
+              1.6452698339999188,
+              1.681055833993014,
+              2.393107207986759,
+              2.6330109999980778
+            ]
+          },
+          "execution_strategy": "framework_native_broadcast_batch",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 1.6971855419978965,
+            "engine": "pennylane_lightning_native_batch",
+            "execution_peak_rss_growth_bytes": 274071552,
+            "maximum_norm_error": 1.6653345369377348e-14,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 539377664,
+            "pre_execution_peak_rss_bytes": 256147456,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 1.6971855419978965,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 228605952,
+                "maximum_norm_error": 1.6653345369377348e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 484753408,
+                "pre_execution_peak_rss_bytes": 256147456
+              },
+              {
+                "cold_execution_seconds": 1.9465936660126317,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 274071552,
+                "maximum_norm_error": 1.6653345369377348e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 539377664,
+                "pre_execution_peak_rss_bytes": 265306112
+              },
+              {
+                "cold_execution_seconds": 1.6098197089741006,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 399376384,
+                "maximum_norm_error": 1.6653345369377348e-14,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 639352832,
+                "pre_execution_peak_rss_bytes": 239976448
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.0635043632810266,
+          "median_statevectors_per_second": 15.746949474553242,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native_batch": true,
+          "flagquantum_native_diagonal_graph_rollback": true,
+          "pennylane_lightning_native_batch": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 285,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "truncated_qft_statevector",
+        "scalar_ir_content_hash": "4aa08d85943b755bd2d735127dbf795e115259b75ffa4710855a8df166fb91db"
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_batch_median": {
+          "flagquantum_native_diagonal_graph_rollback": 1.1149351880456666,
+          "pennylane_lightning_native_batch": 2.3067285375411104
+        },
+        "ratio_semantics": "values above one mean FlagQuantum batch is faster"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native_batch": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "flagquantum_native_diagonal_graph_rollback": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_native_batch": {
+            "max_abs_error": 7.37257477290143e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native_batch"
+      },
+      "engines": {
+        "flagquantum_native_batch": {
+          "batch_total": {
+            "max_seconds": 0.342436250008177,
+            "mean_seconds": 0.2919265266417907,
+            "median_seconds": 0.29316666699014604,
+            "min_seconds": 0.24773333402117714,
+            "relative_median_absolute_deviation": 0.04740420575706865,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.342436250008177,
+              0.28845683301915415,
+              0.30706399999326095,
+              0.2834528330131434,
+              0.260892916994635,
+              0.29316666699014604,
+              0.3043433749990072,
+              0.30371945901424624,
+              0.24773333402117714,
+              0.31693195799016394,
+              0.2629941670165863
+            ]
+          },
+          "execution_strategy": "native_parameter_batch",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 0.3007284159830306,
+            "engine": "flagquantum_native_batch",
+            "execution_peak_rss_growth_bytes": 326074368,
+            "maximum_norm_error": 2.220446049250313e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 528711680,
+            "pre_execution_peak_rss_bytes": 201900032,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 0.3007284159830306,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 326074368,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 528711680,
+                "pre_execution_peak_rss_bytes": 202637312
+              },
+              {
+                "cold_execution_seconds": 0.27844533300958574,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 344211456,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 546111488,
+                "pre_execution_peak_rss_bytes": 201900032
+              },
+              {
+                "cold_execution_seconds": 0.346952166990377,
+                "engine": "flagquantum_native_batch",
+                "execution_peak_rss_growth_bytes": 271532032,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 460767232,
+                "pre_execution_peak_rss_bytes": 189235200
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.009161458343442064,
+          "median_statevectors_per_second": 109.15292767944723,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "flagquantum_native_diagonal_graph_rollback": {
+          "batch_total": {
+            "max_seconds": 0.38525095902150497,
+            "mean_seconds": 0.3350448297304948,
+            "median_seconds": 0.32686183298937976,
+            "min_seconds": 0.2887347089999821,
+            "relative_median_absolute_deviation": 0.09934804469510958,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.32686183298937976,
+              0.33431533302064054,
+              0.32642270901123993,
+              0.29272745799971744,
+              0.3593349169823341,
+              0.2887347089999821,
+              0.38048333299229853,
+              0.378271916997619,
+              0.2990876669937279,
+              0.3140022920269985,
+              0.38525095902150497
+            ]
+          },
+          "execution_strategy": "native_parameter_batch_functional_diagonal_graph_rollback",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 0.3008867090102285,
+            "engine": "flagquantum_native_diagonal_graph_rollback",
+            "execution_peak_rss_growth_bytes": 411254784,
+            "maximum_norm_error": 2.220446049250313e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 613842944,
+            "pre_execution_peak_rss_bytes": 202457088,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 0.2904199170006905,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 411680768,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 614006784,
+                "pre_execution_peak_rss_bytes": 202326016
+              },
+              {
+                "cold_execution_seconds": 0.3116262910189107,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 365379584,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 567836672,
+                "pre_execution_peak_rss_bytes": 202457088
+              },
+              {
+                "cold_execution_seconds": 0.3008867090102285,
+                "engine": "flagquantum_native_diagonal_graph_rollback",
+                "execution_peak_rss_growth_bytes": 411254784,
+                "maximum_norm_error": 2.220446049250313e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 613842944,
+                "pre_execution_peak_rss_bytes": 202588160
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.010214432280918118,
+          "median_statevectors_per_second": 97.90069310735258,
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_native_batch": {
+          "batch_total": {
+            "max_seconds": 0.8831839999766089,
+            "mean_seconds": 0.6790673180896026,
+            "median_seconds": 0.6762559170019813,
+            "min_seconds": 0.4977570829796605,
+            "relative_median_absolute_deviation": 0.10286989623828063,
+            "sample_count": 11,
+            "samples_seconds": [
+              0.6066895409894641,
+              0.6870892500155605,
+              0.6171607500000391,
+              0.8133690000104252,
+              0.6805558330088388,
+              0.4977570829796605,
+              0.8831839999766089,
+              0.8371808750089258,
+              0.636405500001274,
+              0.6762559170019813,
+              0.5340927499928512
+            ]
+          },
+          "execution_strategy": "framework_native_broadcast_batch",
+          "isolated_memory": {
+            "aggregation": "median",
+            "cold_execution_seconds": 0.5730941249930765,
+            "engine": "pennylane_lightning_native_batch",
+            "execution_peak_rss_growth_bytes": 333299712,
+            "maximum_norm_error": 7.771561172376096e-16,
+            "measurement": "fresh_process_ru_maxrss",
+            "output_shape": [
+              32,
+              262144
+            ],
+            "peak_rss_bytes": 600834048,
+            "pre_execution_peak_rss_bytes": 267534336,
+            "sample_count": 3,
+            "samples": [
+              {
+                "cold_execution_seconds": 0.5730941249930765,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 371277824,
+                "maximum_norm_error": 7.771561172376096e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 630390784,
+                "pre_execution_peak_rss_bytes": 259112960
+              },
+              {
+                "cold_execution_seconds": 0.571560916985618,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 333299712,
+                "maximum_norm_error": 7.771561172376096e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 600834048,
+                "pre_execution_peak_rss_bytes": 267534336
+              },
+              {
+                "cold_execution_seconds": 0.6970296660147142,
+                "engine": "pennylane_lightning_native_batch",
+                "execution_peak_rss_growth_bytes": 308002816,
+                "maximum_norm_error": 7.771561172376096e-16,
+                "measurement": "fresh_process_ru_maxrss",
+                "output_shape": [
+                  32,
+                  262144
+                ],
+                "peak_rss_bytes": 581713920,
+                "pre_execution_peak_rss_bytes": 273711104
+              }
+            ]
+          },
+          "median_seconds_per_statevector": 0.021132997406311915,
+          "median_statevectors_per_second": 47.3193641570847,
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        }
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native_batch": true,
+          "flagquantum_native_diagonal_graph_rollback": true,
+          "pennylane_lightning_native_batch": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 32,
+        "dtype": "complex128",
+        "gate_count_per_item": 207,
+        "independent_parameter_count": 576,
+        "logical_statevector_bytes": 134217728,
+        "n_wires": 18,
+        "name": "dense_nonlocal_statevector",
+        "scalar_ir_content_hash": "d34add8608cf1e5c9929286ebcc5067860d4e4fa0e54e28925c67ec4b3983444"
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "median_of_fresh_processes_per_engine_case",
+  "engines": [
+    "flagquantum_native_batch",
+    "flagquantum_native_diagonal_graph_rollback",
+    "pennylane_lightning_native_batch"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "arm64",
+    "processor": "arm",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "hostname": "redacted",
+  "methodology": {
+    "circuit_construction_in_peak_rss": true,
+    "circuit_construction_in_timing": false,
+    "exact_statevector": true,
+    "external_bridge_batching": "repeated_single_item_bridge",
+    "iterations": 11,
+    "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+    "memory_probe_iterations": 3,
+    "memory_probe_warmup": 0,
+    "memory_scope": "fresh_process_high_water_resident_set",
+    "one_time_engine_initialization_in_timing": false,
+    "pennylane_native_batch_preprocessing_in_timing": false,
+    "pennylane_native_batch_result_materialization_in_timing": true,
+    "pennylane_native_batching": "broadcast_expand_preprocessed_once",
+    "per_call_conversion_and_result_retrieval_in_timing": true,
+    "process_baseline_included": true,
+    "timing_scope": "complete_N_statevector_user_task",
+    "warmup": 2
+  },
+  "n_wires": [
+    18
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.14",
+  "release_gate_allowed": false,
+  "runner": "batched_statevector_memory",
+  "scalability_blockers": [
+    "single_host_peak_rss_comparison"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.batched_statevector_memory.v1",
+  "workloads": [
+    "truncated_qft_statevector",
+    "dense_nonlocal_statevector"
+  ],
+  "world_size": 1
+}

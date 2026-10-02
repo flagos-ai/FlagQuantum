@@ -119,6 +119,13 @@ of 26 qubits and above are separate, non-gating capacity probes because the two
 engines and their working buffers can exceed 4 GiB even though one complex128
 statevector is smaller than that limit.
 
+The focused in-place diagonal-graph result records exact timings, execution RSS,
+the functional rollback, and PennyLane Lightning native-batch comparison for
+18-qubit Truncated QFT and Dense nonlocal batches. See the
+[decision scorecard](results/comparison/BATCHED_STATEVECTOR_INPLACE_DIAGONAL_GRAPHS_CPU_ARM64_20261002_SCORECARD.md),
+[generated table](results/comparison/BATCHED_STATEVECTOR_INPLACE_DIAGONAL_GRAPHS_CPU_ARM64_20261002.md),
+and [raw artifact](results/comparison/batched_statevector_inplace_diagonal_graphs_cpu_arm64_20261002.json).
+
 The single hardware-efficient circuit above is useful for longitudinal
 regression tracking, but it is not representative of every simulator workload.
 Run the feature-labelled workload corpus to compare several circuit structures
