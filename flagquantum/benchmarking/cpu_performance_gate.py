@@ -190,6 +190,8 @@ def evaluate(
     max_memory_growth: float = DEFAULT_MAX_MEMORY_GROWTH,
     minimum_samples: int = DEFAULT_MINIMUM_SAMPLES,
     minimum_memory_probes: int = DEFAULT_MINIMUM_MEMORY_PROBES,
+    comparison_engine: str | None = None,
+    max_native_over_comparison: float = 1.0,
 ) -> dict[str, Any]:
     """Compare two corpus payloads and return a machine-readable verdict."""
     if max_slowdown < 1.0:
@@ -200,9 +202,15 @@ def evaluate(
         raise ValueError("minimum_samples must be positive")
     if minimum_memory_probes < 1:
         raise ValueError("minimum_memory_probes must be positive")
+    if max_native_over_comparison <= 0:
+        raise ValueError("max_native_over_comparison must be positive")
     schemas = {baseline.get("schema"), current.get("schema")}
     if len(schemas) != 1 or current.get("schema") not in SUPPORTED_SCHEMAS:
         raise ValueError("baseline and current must use the same supported schema")
+    if comparison_engine is not None and current.get("schema") != (
+        "flagquantum.batched_statevector_memory.v1"
+    ):
+        raise ValueError("comparison_engine is supported only for batched statevectors")
 
     baseline_profile = comparison_profile(baseline)
     current_profile = comparison_profile(current)
@@ -353,6 +361,67 @@ def evaluate(
                 "current_over_baseline": memory_ratio,
                 "passed": memory_passed,
             }
+            if comparison_engine is not None:
+                current_engines = _mapping(current_case.get("engines"), "case.engines")
+                comparison = current_engines.get(comparison_engine)
+                comparison_correctness = correctness_engines.get(comparison_engine)
+                comparison_stable = stability_engines.get(comparison_engine) is True
+                if comparison is None:
+                    case_failures.append(
+                        f"comparison engine missing: {comparison_engine}"
+                    )
+                elif comparison_correctness is None:
+                    case_failures.append(
+                        f"comparison correctness missing: {comparison_engine}"
+                    )
+                else:
+                    comparison_timing = _mapping(
+                        _mapping(comparison, comparison_engine).get("batch_total"),
+                        f"{comparison_engine}.batch_total",
+                    )
+                    comparison_seconds = float(comparison_timing["median_seconds"])
+                    comparison_samples = int(comparison_timing["sample_count"])
+                    native_seconds = float(
+                        _mapping(current_engine.get("batch_total"), "batch_total")[
+                            "median_seconds"
+                        ]
+                    )
+                    if not math.isfinite(comparison_seconds) or comparison_seconds <= 0:
+                        raise ValueError(
+                            f"{key}: comparison engine median must be positive"
+                        )
+                    comparison_ratio = native_seconds / comparison_seconds
+                    comparison_passed = (
+                        comparison_samples >= minimum_samples
+                        and comparison_stable
+                        and _mapping(
+                            comparison_correctness, "comparison correctness"
+                        ).get("passed")
+                        is True
+                        and comparison_ratio <= max_native_over_comparison
+                    )
+                    if comparison_samples < minimum_samples:
+                        case_failures.append(
+                            f"{comparison_engine} has {comparison_samples} samples; "
+                            f"requires {minimum_samples}"
+                        )
+                    if not comparison_stable:
+                        case_failures.append(
+                            f"comparison measurement stability failed: {comparison_engine}"
+                        )
+                    if comparison_ratio > max_native_over_comparison:
+                        case_failures.append(
+                            f"native/comparison ratio {comparison_ratio:.3f} exceeds "
+                            f"{max_native_over_comparison:.3f} for {comparison_engine}"
+                        )
+                    metric_rows["comparison"] = {
+                        "engine": comparison_engine,
+                        "native_median_seconds": native_seconds,
+                        "comparison_median_seconds": comparison_seconds,
+                        "comparison_sample_count": comparison_samples,
+                        "native_over_comparison": comparison_ratio,
+                        "passed": comparison_passed,
+                    }
         if case_failures:
             failures.extend(f"{key}: {message}" for message in case_failures)
         rows.append(
@@ -381,6 +450,14 @@ def evaluate(
                 {
                     "max_memory_growth": max_memory_growth,
                     "minimum_memory_probes": minimum_memory_probes,
+                    **(
+                        {
+                            "comparison_engine": comparison_engine,
+                            "max_native_over_comparison": max_native_over_comparison,
+                        }
+                        if comparison_engine is not None
+                        else {}
+                    ),
                 }
                 if current["schema"] == "flagquantum.batched_statevector_memory.v1"
                 else {}
@@ -414,6 +491,12 @@ def main() -> int:
         type=int,
         default=DEFAULT_MINIMUM_MEMORY_PROBES,
     )
+    parser.add_argument("--comparison-engine")
+    parser.add_argument(
+        "--max-native-over-comparison",
+        type=float,
+        default=1.0,
+    )
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     report = evaluate(
@@ -423,6 +506,8 @@ def main() -> int:
         max_memory_growth=args.max_memory_growth,
         minimum_samples=args.minimum_samples,
         minimum_memory_probes=args.minimum_memory_probes,
+        comparison_engine=args.comparison_engine,
+        max_native_over_comparison=args.max_native_over_comparison,
     )
     if args.json_output is not None:
         write_json_atomic(args.json_output, report)

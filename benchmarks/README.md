@@ -258,6 +258,14 @@ The checked Apple-arm64 replay, exact times, RSS ratios, unchanged PennyLane
 Lightning context, and reproduction commands are in
 [`BATCHED_STATEVECTOR_REGRESSION_GATE_CPU_ARM64_20261001.md`](results/comparison/BATCHED_STATEVECTOR_REGRESSION_GATE_CPU_ARM64_20261001.md).
 
+The framework-floor follow-up can additionally require a maintained native
+path to remain faster than a named comparison engine. Its checked Random
+Clifford and Local brickwork profile requires FlagQuantum to retain at least a
+1.111x lead over PennyLane Lightning while still enforcing the internal timing,
+RSS, correctness, stability, and case-completeness checks. See the exact
+results and command in
+[`BATCHED_STATEVECTOR_FRAMEWORK_GATE_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_FRAMEWORK_GATE_CPU_ARM64_20261002_SCORECARD.md).
+
 FlagQuantum executes all bindings through its native parameter-batch path. The
 current Qiskit Aer, Cirq, and PennyLane bridges accept one statevector request at
 a time, so this runner repeats the public bridge call for each binding. It
