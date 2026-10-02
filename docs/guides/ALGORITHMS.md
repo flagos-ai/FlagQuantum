@@ -1064,6 +1064,118 @@ quantum singular value transformation for sparse matrices at constant precision;
 hardness result is for a different task, estimating a local Hamiltonian's ground-state
 energy at inverse-polynomial precision given a state close to the ground state.
 
+## Zero-noise extrapolation
+
+`error_mitigation.py` is the first error-mitigation unit. It measures one observable at
+several error strengths and continues the resulting curve to zero noise. Noise is scaled by
+multiplying the single error-probability parameter a channel declares, so a scaled channel
+is the same family at a different strength. `run_zne(circuit, hamiltonian,
+noise_model=..., scale_factors=..., order=...)` returns a `ZneResult`: the extrapolated
+estimate, the fit that produced it, the unmitigated measurement when the curve includes a
+scale factor of one, the measurements themselves, and the assumptions and limitations the
+estimate rests on. Two fits are offered — `polynomial_least_squares` and `richardson` — and
+each method checks its own point count before anything is simulated.
+
+**The estimate is `Tr(O rho)`, which is before measurement.** The unit extrapolates exact
+state expectations rather than samples: no shot is consumed, the estimate is a point value,
+and no confidence interval is computed or reported. That is why a noise model that declares
+a readout rule is refused rather than measured without it. Classical readout confusion is
+applied after measurement, so it is not in `rho`, and extrapolating a curve that omits it
+would return a state-preparation estimate under the name of a measured one. The refusal is
+by name rather than a silent omission; readout-error mitigation is absent from this unit.
+`variance_amplification` is the factor by which the fitted weights would amplify the
+variance of a shot-based estimate of the same points — it is a property of the scale grid
+and the fitted degree alone, and it is not a measured variance.
+
+**The assumption is the method's, and nothing checks it.** The estimate is unbiased exactly
+when the measured curve is a polynomial of degree at most `order` in the scale factor. The
+ideal signal must therefore not depend on the scale factor, and no other process may depend
+on it either. Neither condition is checkable from the measurements alone, and the unit says
+so where the number is rather than in a footnote. What exposes a violated assumption is the
+largest absolute residual the fit left. **A square fit's residual is zero by construction
+and is therefore not evidence**, so the record reports `max_residual` as absent when no
+degree of freedom is left rather than as an arithmetic zero, and the honest reading order is
+residual first, estimate second.
+
+**Scaling is the caller's claim, and one implementation is offered.** The declared scaling
+multiplies the one error-probability parameter each of `bit_flip`, `phase_flip`,
+`depolarizing`, `two_qubit_depolarizing`, `amplitude_damping` and `phase_damping` declares.
+It refuses `coherent_overrotation`, `reset_error` and `thermal_relaxation` by name:
+multiplying an angle or two independent reset probabilities does not scale the noise, and
+`thermal_relaxation`'s factory does not take its duration as one leading parameter. A
+channel whose product leaves the unit interval is refused too, because the scale factor is
+bounded by the channel it scales. A caller who needs one of the refused families supplies a
+`scaling` callable and owns the claim that the scaled model differs from the original only
+in noise strength; the result records which of the two claims it rests on, and the refusal
+is all-or-nothing over the model rather than leaving it partly scaled.
+
+**Not here:** probabilistic error cancellation, Clifford data regression, circuit folding,
+gate-folding scale factors, shot-based execution, and readout-error mitigation.
+
+**Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose noiseless value is
+`0.9999999403953552`, and with depolarizing noise at `p = 0.05` on the `cx`, the four scale
+factors `1, 3, 5, 7` give the exact curve `0.871111109257`, `0.639999987284`,
+`0.444444444444`, `0.284444452922`:
+
+```python
+import torch
+
+import flagquantum as fq
+
+from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_zne
+from flagquantum.noise import NoiseModel, depolarizing_channel
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+observable = Hamiltonian([HamiltonianTerm(1.0, "zz", (0, 1))])
+model = NoiseModel().add("cx", depolarizing_channel(0.05, dtype=torch.complex128))
+
+underfit = run_zne(
+    circuit, observable, noise_model=model, scale_factors=(1, 3, 5, 7), order=1,
+    dtype=torch.complex128,
+)
+print(f"{underfit.estimate:.12f}", f"{underfit.fit.max_residual:.4e}")
+# 0.951111100846 1.7778e-02
+
+result = run_zne(
+    circuit, observable, noise_model=model, scale_factors=(1, 3, 5, 7), order=2,
+    dtype=torch.complex128,
+)
+print(
+    f"{result.estimate:.12f}",
+    f"{result.fit.max_residual:.4e}",
+    result.fit.degrees_of_freedom,
+)
+# 1.000000003030 4.1723e-09 1
+
+print(f"{result.unmitigated:.12f}", f"{result.variance_amplification:.6f}")
+# 0.871111109257 2.940625
+
+print([f"{weight:.6f}" for weight in result.fit.weights])
+# ['1.537500', '-0.237500', '-0.637500', '0.337500']
+```
+
+The same four points fitted by Richardson at order 3 — its construction needs exactly
+`order + 1` points, so the fourth point buys a square degree-three fit rather than a
+redundant degree-two one — estimate `1.000000021110` at a variance amplification of
+`11.390625`, with `max_residual` absent because the fit interpolates. The degree is chosen
+by residual and not by ambition: degree three is 3.87x more costly here and an order of
+magnitude less accurate, because the exact curve is degree two and the extra freedom
+interpolates rounding rather than signal. In the runtime's default single precision the same
+degree-two run reaches `1.3e-7` from the noiseless value at a residual of `6.3e-8`, so the
+unmitigated distance of `1.288888907432559e-01` is still improved by a factor of `1.0e6`;
+precision moves the floor, not the conclusion.
+
+**A wrong assumption stays visible.** Under a coherent over-rotation of `0.15` on the `cx`,
+the declared scaling refuses the channel by name, and a caller-supplied callable that grows
+the angle with the scale factor gives estimates `1.271993498172` at degree one and
+`1.105716958201` at degree two — `2.7e-1` and then `1.1e-1` away from the noiseless value —
+with residuals of `8.9e-2` and `2.9e-2`. The residual falls but stays three to five orders
+above the `4.2e-9` floor the polynomial family reached at the same scale factors, so a
+higher degree does not converge to the right answer and the residual says so rather than the
+estimate merely looking close. No demonstration here is a performance, scaling, hardware or
+fault-tolerance claim: the whole path is single-process CPU density-matrix work on a
+two-wire circuit.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*

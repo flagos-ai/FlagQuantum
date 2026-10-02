@@ -404,6 +404,13 @@ These counts are portfolio envelopes. A candidate enters the machine catalog
 only when it has an executable symbol, a reference contract, and validation
 evidence. Until then it remains a planning item in this README.
 
+The error-mitigation row is the one family carrying a workload that already runs
+without a fused kernel of its own: zero-noise extrapolation is a sequence of
+exact expectation reads at scaled noise strengths, so the foundation measurement
+and expectation kernels serve it and the unit lives in `flagquantum.algorithms`
+rather than here. Readout-error mitigation, probabilistic error cancellation and
+Clifford data regression remain planning items with no implementation.
+
 ## Status and maturity
 
 Planning and implementation use separate status vocabularies:

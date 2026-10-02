@@ -554,7 +554,10 @@ Excludes:
 - Leakage.
 - Non-Markovian noise.
 - Complete noise-parameter gradients.
-- Comprehensive error mitigation.
+- Comprehensive error mitigation. Zero-noise extrapolation over scaled noise models is
+  implemented in `flagquantum.algorithms` and is indexed in the capability matrix;
+  readout-error mitigation, probabilistic error cancellation and Clifford data
+  regression are not, and no mitigation is part of the v1 trajectory scope.
 
 ## 6. Priorities and Risk Controls
 

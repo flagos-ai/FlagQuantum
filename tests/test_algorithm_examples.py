@@ -44,6 +44,7 @@ SCRIPTS = (
     "feature_selection",
     "qarm",
     "svd",
+    "error_mitigation",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -88,6 +89,17 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # `torch.linalg.svd` line under the first -- which can be dropped while the
     # phrase remains, the dismissal gap the module docstring records.
     "svd": ("the input model is assumed, not met", "not free to read"),
+    # Two halves again. "the curve is a polynomial in the scale factor of degree
+    # at most the fit order, which is not checkable from the measurements alone"
+    # is the assumption the method rests on, and "the estimate carries no measured
+    # uncertainty because it is Tr(O rho)" is what the unit gives up to reach it.
+    # Neither phrase covers its half's supporting detail -- the residual as the
+    # diagnostic, or the readout refusal that keeps the curve a state-preparation
+    # estimate -- both of which can be dropped while the phrase remains.
+    "error_mitigation": (
+        "not checkable from the measurements",
+        "no measured uncertainty",
+    ),
 }
 
 
@@ -244,6 +256,49 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
     assert _labelled(output, "raised")
     _assert_premise("svd", output)
+    assert "take away" in output
+
+
+def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
+    output = _run("error_mitigation")
+
+    assert (
+        "zero-noise extrapolation -- flagquantum.algorithms.error_mitigation" in output
+    )
+    assert _labelled(output, "noiseless value") == "0.99999994039535522"
+    assert _labelled(output, "scale factors") == "(1.0, 3.0, 5.0, 7.0)"
+    # The four ordinates, read off the exact noise-scaled curve.
+    assert _labelled(output, "scale 1") == "0.871111109257"
+    assert _labelled(output, "scale 3") == "0.639999987284"
+    assert _labelled(output, "scale 5") == "0.444444444444"
+    assert _labelled(output, "scale 7") == "0.284444452922"
+    # Three fits of the same curve: an underfit with a residual three orders
+    # above the degree-two floor, the degree-two fit, and a square Richardson fit
+    # whose residual is absent because the fit interpolates.
+    assert "max residual 1.7778e-02" in output
+    assert "max residual 4.1723e-09" in output
+    assert "max residual none: the fit interpolates" in output
+    assert _labelled(output, "unmitigated value") == "0.871111109257"
+    assert _labelled(output, "degree 2 improved by") == "2.058e+06x"
+    assert _labelled(output, "degree 1 improved by") == "2.636e+00x"
+    # The declared scaling refuses a channel whose parameter is an angle, and the
+    # caller's own scaling keeps a residual two orders above the floor.
+    assert _labelled(output, "declared scaling refuses").startswith(
+        "cannot scale the 'coherent_overrotation' channel"
+    )
+    assert _labelled(output, "caller scaling, degree 1").startswith(
+        "estimate 1.271993498172"
+    )
+    assert "max residual 8.9330e-02" in output
+    assert _labelled(output, "caller scaling, degree 2").startswith(
+        "estimate 1.105716958201"
+    )
+    assert "max residual 2.8865e-02" in output
+    # And the readout boundary: Tr(O rho) is read before measurement.
+    assert _labelled(output, "readout rule refused").startswith(
+        "the noise model declares a readout rule"
+    )
+    _assert_premise("error_mitigation", output)
     assert "take away" in output
 
 
