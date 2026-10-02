@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypeAlias
 
@@ -95,3 +96,32 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorDisjointDenseStep
 )
 _StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep
+
+
+def _preallocated_batch_assembly_beneficial(
+    program: Sequence[_StatevectorProgramStep],
+) -> bool:
+    """Avoid overlapping the final output with measured large mixed workspaces."""
+
+    matrix_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
+            )
+            else (step,)
+        )
+    )
+    has_rotation_sequence = any(
+        isinstance(step, _StatevectorFusedGateStep)
+        and len(step.instructions) >= 2
+        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+        for step in matrix_steps
+    )
+    has_clifford_matching = any(
+        isinstance(step, _StatevectorCliffordMatchingStep) for step in program
+    )
+    return not (has_rotation_sequence and has_clifford_matching)

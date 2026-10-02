@@ -116,6 +116,54 @@ def test_checked_in_preallocation_artifact_uses_robust_memory_samples() -> None:
         assert legacy["batch_total"]["relative_median_absolute_deviation"] <= 0.20
 
 
+def test_checked_in_preallocated_assembly_is_bounded_and_keeps_framework_lead() -> None:
+    path = (
+        REPOSITORY_ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / "batched_statevector_preallocated_assembly_cpu_arm64_20261002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert len(payload["cases"]) == 5
+    minimum_growth_reduction = {
+        "hardware_efficient_statevector": 0.15,
+        "truncated_qft_statevector": 0.01,
+        "random_clifford_statevector": 0.10,
+        "dense_nonlocal_statevector": 0.05,
+    }
+    for case in payload["cases"]:
+        assert set(case["engines"]) == {
+            "flagquantum_native_batch",
+            "flagquantum_native_assembly_rollback",
+            "pennylane_lightning_native_batch",
+        }
+        optimized = case["engines"]["flagquantum_native_batch"]
+        rollback = case["engines"]["flagquantum_native_assembly_rollback"]
+        lightning = case["engines"]["pennylane_lightning_native_batch"]
+        assert rollback["execution_strategy"] == (
+            "native_parameter_batch_functional_assembly_rollback"
+        )
+        assert optimized["isolated_memory"]["sample_count"] == 3
+        assert (
+            optimized["batch_total"]["median_seconds"]
+            < lightning["batch_total"]["median_seconds"]
+        )
+        assert (
+            optimized["batch_total"]["median_seconds"]
+            <= 1.05 * rollback["batch_total"]["median_seconds"]
+        )
+        required = minimum_growth_reduction.get(case["workload"]["name"])
+        if required is not None:
+            assert optimized["isolated_memory"]["execution_peak_rss_growth_bytes"] <= (
+                (1.0 - required)
+                * rollback["isolated_memory"]["execution_peak_rss_growth_bytes"]
+            )
+
+
 def test_checked_in_layout_lifetime_artifact_is_correct_stable_and_lower_rss() -> None:
     path = (
         REPOSITORY_ROOT
