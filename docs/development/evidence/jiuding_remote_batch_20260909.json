@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
   "implementation_commit": "e30b1b0c",
+  "implementation_commit_full": "e30b1b0cc999d3fe780fb3453fbf72587257df1b",
   "scope": "Bounded resident measurement batches through one Jiuding transport request",
   "image": {
     "id": "a376e919-31cf-442e-9c26-b004a32c3eed",

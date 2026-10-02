@@ -49,12 +49,12 @@ therefore walks `artifacts/`, `benchmarks/results/` and
 `docs/development/evidence/` rather than a list, and asks both questions a reader
 depends on. A revision is obtainable when this repository holds the commit and a ref
 of this repository reaches it, because a clone and a plain fetch obtain exactly the
-commits the refs they fetch reach; of the forty-eight distinct revisions recorded
+commits the refs they fetch reach; of the sixty-two distinct revisions recorded
 under those roots, one is obtainable. Every other revision must be declared in
 `evidence-revision-origins.toml`, which names the origin a reader can obtain it
 from. Asking only whether the object was in the database was not enough:
-twenty-five revisions are unreachable from every ref, so a clone obtains none of
-them, and twenty of the twenty-five are absent from this checkout's object database as
+thirty-nine revisions are unreachable from every ref, so a clone obtains none of
+them, and thirty of the thirty-nine are absent from this checkout's object database as
 well, so an answer read from the checkout would differ between checkouts and the
 declaration is what makes the verdict the same everywhere. `unreferenced_object`
 covers those, since the remote still serves the object by name while nothing
@@ -79,8 +79,10 @@ gate, so the table cannot be used to hide a checkable pin behind a claim. A
 declaration names an artifact or a directory, so a bulk evidence surface states one
 origin once instead of repeating it per file. An artifact may also account for its
 own revisions by stating `<field>_origin` beside any field that records one, which
-six artifacts under `artifacts/` do; both records are read, and a revision whose two
-records disagree fails the gate rather than passing twice.
+six artifacts under `artifacts/` do and which
+`docs/development/evidence/jiuding_workspace_credentials_20260910.json` does for the
+one abbreviated value no measurement here expands; both records are read, and a
+revision whose two records disagree fails the gate rather than passing twice.
 
 The gate walks JSON artifacts under exactly those three roots, which is a boundary
 rather than a claim of full coverage, and what falls outside it is measured rather
@@ -92,11 +94,12 @@ walk cannot see. Those pairs name fifty-four distinct revisions, of which fifty-
 resolve in this checkout and three do not.
 
 Adding `docs/development/evidence/` accounted for the largest group of those pairs
-rather than only reporting it. Five revisions are recorded by the four Jiuding
-records under that root that write the revision out in full, and all five are
-unreferenced objects of this repository's remote, so they are declared in
-`evidence-revision-origins.toml`, whose unreferenced-object class the change
-also states one entry larger. Those records are what `docs/guides/JIUDING.md`, the
+rather than only reporting it. All fourteen unreferenced revisions that root's
+artifacts record are declared in `evidence-revision-origins.toml` -- five written out
+in full by the four Jiuding records that did so when the root was added, and nine that
+the field-name rule reached afterwards -- so the change states the
+unreferenced-object class fourteen entries larger than the walk alone would have.
+Those records are what `docs/guides/JIUDING.md`, the
 release notes and this document cite as their hardware evidence, and until this root
 was walked their pins were disclosures a reader relied on that nothing checked.
 
@@ -116,6 +119,22 @@ reads as objects the server may already have dropped. `evidence-revision-origins
 states the method and its result. No check re-runs it, because the checks in this
 repository do not use the network, so this is the one claim behind the table that
 rests on a stated method and a recorded count rather than on a green check.
+
+That fetch count no longer answers, which is why the class now rests on a second
+measurement that can be repeated. Fetching a revision by name from the public remote
+hangs from this host instead of failing -- a bounded attempt on two of the revisions
+ended in a timeout after ninety seconds, and a timeout is uninformative in either
+direction. What answers instead is a request for the commit object, scoped to the
+repository the revision is declared against: GitHub's
+`GET /repos/flagos-ai/FlagQuantum/git/commits/<sha>`, and the same value under
+`/commits/<sha>`, each asked twice. That endpoint answers 200 for all thirty-nine
+`unreferenced_object` revisions, 404 for all eighteen `producing_host_history` ones
+and 404 for all four `external_dependency` ones, while also answering 200 for a commit
+on `main`, 404 for a commit of `pytorch/pytorch` and 404 for a commit that exists only
+in the checkout that produced it -- so the endpoint reads this repository's object
+database, not GitHub's, and the thirty-nine it holds are exactly the thirty-nine no ref
+reaches. It is reproducible with `gh api` by anyone who reads the table, which the
+fetch count is not.
 
 What remains outside the walk is three revisions, and none is a pin a reader is
 asked to check out. `.github/workflows/ci.yml` compares a base revision against the
@@ -153,32 +172,71 @@ revision do state it in full in the same file, so the check leaves them alone.
 The citation rule can only report a prefix it can expand, and it expands a prefix
 against a full-length value this repository records somewhere. Counting every JSON
 string scalar of 7 to 39 hexadecimal characters under the three walked roots gives
-969, which is mostly digests, task identifiers and container identifiers; exactly two
-of them prefix a revision this repository records in full. Both are the
-`source_revision` / `source_revision_full` pair in
-`benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json` and its
-gradient counterpart, where the file states the full value beside the recorded
-abbreviation and the check therefore accepts it rather than asking that recorded
-output be edited. Fourteen of the 969 sit in a field named for a revision --
-`base_commit`, `host_commit`, `implementation_commit`, `source_commit`,
-`source_revision`, `validation_driver_commit` -- and nothing in this repository
-expands any of them, so neither half of the gate asks about them: the revision walk
-needs forty characters, and the citation rule needs a value to expand against. That
-residue is the reason the declared-field work is the next change rather than an
-optional one, and it is reported here rather than repaired, because completing those
-values means reading the full revision out of a clone that holds the commit rather
-than guessing it from the abbreviation.
+979, and the value test cannot separate a citation from the rest: `deadbeef` and
+`2609091513234674683` are not less hexadecimal than a revision. Sixteen of the 979
+sit in a field named for a revision instead -- `base_commit`, `host_commit`,
+`implementation_commit`, `source_commit`, `source_revision`,
+`validation_driver_commit` -- and a field named for a revision names a commit by
+construction, which is a property of the name and not of the value. Before this
+change nothing in this repository expanded any of the sixteen, so neither half of the
+gate asked about them: the revision walk needs forty characters, and the citation rule
+needs a value to expand against. One of the sixteen, `6cfc4c3`, was already answered:
+the two CUDA-Q comparison records state the full value beside the recorded
+abbreviation, which the check accepts rather than asking that recorded output be
+edited. A pin no check can read is the kind of disclosure this table exists to remove,
+so the walk now reads a shortened value in a revision-named field. It reads a
+suffix rather than a list, because a list is a surface an artifact extends by naming a
+field: any name ending in `revision` or `commit` is read at any depth, the reviewed
+names are declared in `REVISION_FIELD_NAMES` for a reader rather than used to decide
+what to read, and a name this repository has not reviewed is reported rather than
+ignored. The check asks a shortened value the two questions it can answer: whether the
+artifact states the revision in full beside it, and whether it states the origin that
+accounts for the value instead. Stating an origin beside one field accounts for every
+field holding the same value, so an aggregate that repeats its runs' `source_revision`
+is asked once, because the origin belongs to the revision rather than to a repetition
+of it.
 
-`examples/` is why widening the roots is a decision rather than a one-line change.
-The walk is key-agnostic by design: it treats any
-full-length hexadecimal value at any depth as a revision, which is how it finds the
-field names this repository uses without maintaining a list of them. Walking
-`examples/` would therefore demand a FlagQuantum origin for a third-party dataset
-revision, reporting a defect where the tree is correct. Narrowing the rule to a
-declared set of revision-bearing field names, or declaring a root's revision fields
-with it, is the precondition for walking any root that mixes FlagQuantum pins with
-revisions of another system. `ci/` is left out for a different reason and does not
-wait on that work: `ci/flagos_cuda_reference.lock.json` records
+Fifteen values were left, and fourteen of them now have the revision written out in
+full in the artifact that records them, so the same two questions the walk asks of
+every other revision are asked of these for the first time. All fourteen answer
+`unreferenced_object`: four MPS dispatch records under
+`benchmarks/results/local` -- environment, environment-channels, one-site and
+projected-two-site -- the pool-workspace summary
+under `benchmarks/results/smoke/release_candidates`, and nine Jiuding records under
+`docs/development/evidence/` -- each an object of this repository's remote that no ref
+reaches, so a clone obtains none of them, and each was measured with the
+repository-scoped commit request the table's method paragraph states rather than
+inferred from the field it sat in. Four of those artifacts record the value once per
+run and repeat it in an aggregate, so the revision is written out beside each run and
+the aggregate's copy is accounted for by the same artifact, because the origin
+belongs to the revision rather than to a repetition of it. Writing the revision out in
+full is the stronger of the two answers the check accepts, because it lets a reader
+obtain the commit rather than only naming who holds it, and it is what made fourteen
+unchecked pins into fourteen measured ones. The fifteenth, `host_commit` in
+`docs/development/evidence/jiuding_workspace_credentials_20260910.json`, is the one
+abbreviated revision-named value under the walked roots that no measurement here
+expands: the same request answers `404` for it at both endpoints, so the artifact
+states `producing_host_history` beside the value and the value is kept as the run
+recorded it. The table gained no new class, and no recorded value was rewritten to fit
+one.
+
+`examples/` is why the root boundary is a decision rather than a missing line.
+`examples/assets/manifest.json` records `e628166` in `assets[0].revision` and
+`assets[1].revision` under the field name `revision`, which is now a name the walk
+reads, and the value is a revision of `stanfordnlp/imdb` that Hugging Face resolves
+to `e6281661ce1c48d982bc483cf8a173c1bbeb5d31` and this repository does not hold and
+should not. Its `assets[2].revision` and `assets[3].revision` hold the full-length
+`b644e1d1cc3f080c2e6d4db69cfdfac83719c814`, a revision of
+`google-bert/bert-base-uncased` -- the value quoted as `BERT_TOKENIZER_REVISION` in
+`examples/quantum_transformer.py` -- and the manifest's schema is a third-party asset
+record rather than a FlagQuantum evidence artifact. Reading that field as a
+FlagQuantum pin would ask a reader to check out a commit of another project, so the
+root stays outside the walk and the reason is stated here rather than left to the
+next person who widens it. The field-name rule is what makes that boundary
+expressible: a root may now be added once its revision-named fields are accounted
+for, and this root's are not this repository's to account for. `ci/` is left out for a
+different reason and does not wait on that work:
+`ci/flagos_cuda_reference.lock.json` records
 `2e00b393cf80088706b460a187aef185d3a283f4`, an external dependency already declared
 for the artifacts under `artifacts/`, but two
 validators read that file as an input, and a lock file pins an installation rather

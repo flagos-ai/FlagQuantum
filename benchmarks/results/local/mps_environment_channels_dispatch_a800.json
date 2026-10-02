@@ -1068,7 +1068,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_channels_dispatch.v1",
       "semantic_id": "mps.environment.transfer_channels",
-      "source_revision": "155c8c4ad"
+      "source_revision": "155c8c4ad",
+      "source_revision_full": "155c8c4ad686287d29caaecce275ad0f55373c6b"
     },
     {
       "cases": [
@@ -2116,7 +2117,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_channels_dispatch.v1",
       "semantic_id": "mps.environment.transfer_channels",
-      "source_revision": "155c8c4ad"
+      "source_revision": "155c8c4ad",
+      "source_revision_full": "155c8c4ad686287d29caaecce275ad0f55373c6b"
     },
     {
       "cases": [
@@ -3164,7 +3166,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_channels_dispatch.v1",
       "semantic_id": "mps.environment.transfer_channels",
-      "source_revision": "155c8c4ad"
+      "source_revision": "155c8c4ad",
+      "source_revision_full": "155c8c4ad686287d29caaecce275ad0f55373c6b"
     },
     {
       "cases": [
@@ -4212,7 +4215,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_channels_dispatch.v1",
       "semantic_id": "mps.environment.transfer_channels",
-      "source_revision": "155c8c4ad"
+      "source_revision": "155c8c4ad",
+      "source_revision_full": "155c8c4ad686287d29caaecce275ad0f55373c6b"
     }
   ],
   "scalability_blockers": [
