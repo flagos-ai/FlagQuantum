@@ -11,11 +11,55 @@ from flagquantum.runtime.observability.evidence import (
     create_evidence_artifact,
     verify_evidence_artifact,
 )
+from tools.seal_runtime_evidence import _rank_devices
 from tools.seal_runtime_evidence import main as seal_main
 
 pytestmark = pytest.mark.unit
 
 KEY = b"issue-038-test-key"
+
+
+def test_declared_rank_devices_can_name_a_second_host():
+    """A rank on another host must be recorded as such, not as a local device."""
+
+    devices, mapping = _rank_devices(
+        ("GPU-aaa@jp-a800-172", "GPU-bbb@jp-a800-171"), world_size=2
+    )
+
+    assert devices == ("GPU-aaa", "GPU-bbb")
+    assert mapping == (
+        "rank=0:node=jp-a800-172:device_uuid=GPU-aaa",
+        "rank=1:node=jp-a800-171:device_uuid=GPU-bbb",
+    )
+
+
+def test_declared_rank_devices_must_cover_every_rank():
+    with pytest.raises(SystemExit, match="received 1 device UUIDs"):
+        _rank_devices(("GPU-aaa",), world_size=2)
+
+
+def test_undeclared_rank_devices_still_map_ranks_positionally(monkeypatch):
+    monkeypatch.setattr(
+        "tools.seal_runtime_evidence._output",
+        lambda command: "GPU-aaa\nGPU-bbb\nGPU-ccc\n",
+    )
+
+    devices, mapping = _rank_devices(None, world_size=2)
+
+    assert devices == ("GPU-aaa", "GPU-bbb")
+    assert mapping == (
+        "rank=0:device_uuid=GPU-aaa",
+        "rank=1:device_uuid=GPU-bbb",
+    )
+
+
+def test_undeclared_rank_devices_fail_closed_when_the_host_is_too_small(monkeypatch):
+    monkeypatch.setattr(
+        "tools.seal_runtime_evidence._output", lambda command: "GPU-aaa\n"
+    )
+
+    with pytest.raises(SystemExit, match="requested world size 4, detected 1 GPUs"):
+        _rank_devices(None, world_size=4)
 
 
 def _provenance(device_count=2) -> RuntimeProvenance:

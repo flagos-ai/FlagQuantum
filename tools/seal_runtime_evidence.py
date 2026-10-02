@@ -32,6 +32,45 @@ def _output(command: Sequence[str]) -> str:
     ).stdout.strip()
 
 
+def _rank_devices(
+    declared: Sequence[str] | None, *, world_size: int
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return the device per rank and the rank-to-device mapping.
+
+    A declared entry may name the host that ran the rank as ``UUID@NODE``. The
+    node is recorded in the mapping rather than in the device list, because a
+    device inventory that mixed UUIDs with hostnames could not be checked
+    against ``nvidia-smi`` afterwards.
+    """
+
+    entries = list(declared or ())
+    if not entries:
+        detected = tuple(
+            line.strip()
+            for line in _output(
+                ("nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader")
+            ).splitlines()
+            if line.strip()
+        )
+        if len(detected) < world_size:
+            raise SystemExit(
+                f"requested world size {world_size}, detected {len(detected)} GPUs"
+            )
+        entries = list(detected[:world_size])
+    if len(entries) != world_size:
+        raise SystemExit(
+            f"requested world size {world_size}, received {len(entries)} device UUIDs"
+        )
+    devices: list[str] = []
+    mapping: list[str] = []
+    for rank, entry in enumerate(entries):
+        uuid, _, node = entry.partition("@")
+        devices.append(uuid.strip())
+        scope = f"node={node.strip()}:" if node.strip() else ""
+        mapping.append(f"rank={rank}:{scope}device_uuid={uuid.strip()}")
+    return tuple(devices), tuple(mapping)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--measurements", type=Path, required=True)
@@ -47,6 +86,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--iterations", type=int, required=True)
     parser.add_argument("--world-size", type=int, required=True)
     parser.add_argument("--seed", type=int, action="append", required=True)
+    parser.add_argument(
+        "--release-payload",
+        action="store_true",
+        help=(
+            "seal the measurements as a scalability release payload. The claim "
+            "flags are written here rather than by the measuring program, so a "
+            "run cannot promote itself: this tool also holds the release "
+            "preflight, and the strict audit still re-validates the payload."
+        ),
+    )
+    parser.add_argument(
+        "--device-uuid",
+        action="append",
+        default=None,
+        metavar="UUID[@NODE]",
+        help=(
+            "device that ran each rank, in rank order. Supply it for a run whose "
+            "ranks span hosts: this process can only see its own devices, so "
+            "detection alone would attribute every rank to this host."
+        ),
+    )
     args = parser.parse_args(argv)
 
     preflight_errors = environment_errors(world_size=args.world_size)
@@ -60,32 +120,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     evidence = json.loads(args.measurements.read_text(encoding="utf-8"))
     if not isinstance(evidence, dict):
         raise SystemExit("measurements must be a JSON object emitted by the executor")
-    detected_devices = tuple(
-        line.strip()
-        for line in _output(
-            (
-                "nvidia-smi",
-                "--query-gpu=uuid",
-                "--format=csv,noheader",
+    if args.release_payload:
+        if int(evidence.get("world_size", 0) or 0) <= 1:
+            raise SystemExit(
+                "a scalability release payload must shard one workload across "
+                "ranks; a single-device run can only be provenance evidence"
             )
-        ).splitlines()
-        if line.strip()
-    )
-    devices = detected_devices[: args.world_size]
-    if len(devices) != args.world_size:
-        raise SystemExit(
-            f"requested world size {args.world_size}, detected {len(detected_devices)} GPUs"
-        )
+        for key, value in (
+            ("claim_evidence_type", "production_training_benchmark"),
+            ("release_payload", True),
+            ("scalability_claim_allowed", True),
+            ("release_gate_allowed", True),
+        ):
+            evidence[key] = value
+    devices, ranks = _rank_devices(args.device_uuid, world_size=args.world_size)
     provenance = RuntimeProvenance(
         commit=_output(("git", "rev-parse", "HEAD")),
         workload_sha256=sha256_file(args.workload),
         command=tuple(args.command),
         devices=devices,
         topology=_output(("nvidia-smi", "topo", "-m")),
-        rank_mapping=tuple(
-            f"local_rank={rank}:device_uuid={device}"
-            for rank, device in enumerate(devices)
-        ),
+        rank_mapping=ranks,
         collective_backend=args.collective_backend,
         warmup=args.warmup,
         iterations=args.iterations,
