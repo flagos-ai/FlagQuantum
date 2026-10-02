@@ -17,6 +17,7 @@ process.
 - [Parameter mapping key contract](FQ-PARAMETER-MAPPING-20260910.md)
 - [Runtime Module object typing](FQ-RUNTIME-MODULE-TYPES-20260910.md)
 - [Qubit terminology migration](FQ-QUBIT-NAMING-20260913.md)
+- [Complete the qubit terminology migration on the public surface](FQ-QUBIT-TERMINOLOGY-COMPLETION-20261002.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Circuit expressiveness contract](FQ-CIRCUIT-EXPRESSIVENESS-CONTRACT-20260930.md)

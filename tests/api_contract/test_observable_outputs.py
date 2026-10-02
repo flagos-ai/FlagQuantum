@@ -105,7 +105,7 @@ def test_output_validation_fails_before_execution() -> None:
 
     with pytest.raises(ValueError, match="requires shots"):
         fq.run(circuit, outputs=fq.samples())
-    with pytest.raises(ValueError, match="disjoint wires"):
+    with pytest.raises(ValueError, match="disjoint qubits"):
         _ = fq.X(0) @ fq.Z(0)
     with pytest.raises(ValueError, match="outside"):
         fq.run(circuit, outputs=fq.expectation(fq.X(2)))
@@ -176,7 +176,7 @@ def test_output_requests_reject_a_wire_that_is_not_an_integer(
     """
 
     for wires in (wire, (wire,)):
-        with pytest.raises(TypeError, match="wire must be an integer"):
+        with pytest.raises(TypeError, match="qubit must be an integer"):
             factory(wires)
 
 
@@ -186,7 +186,7 @@ def test_output_requests_reject_a_negative_scalar_and_sequence_wire(
     factory: Callable[..., OutputRequest], wire: int
 ) -> None:
     for wires in (wire, (wire,)):
-        with pytest.raises(ValueError, match="wire must be a non-negative integer"):
+        with pytest.raises(ValueError, match="qubit must be a non-negative integer"):
             factory(wires)
 
 
@@ -196,7 +196,7 @@ def test_a_refused_output_wire_names_its_own_kind(
 ) -> None:
     """The refusal says which request was mistyped, not just that a wire was."""
 
-    with pytest.raises(TypeError, match=f"{factory.__name__} output wire"):
+    with pytest.raises(TypeError, match=f"{factory.__name__} output qubit"):
         factory(0.5)
 
 
@@ -232,18 +232,18 @@ def test_an_integral_wire_that_is_not_exactly_an_int_is_still_a_label() -> None:
 
 
 def test_an_observable_wire_is_read_by_the_same_rule() -> None:
-    with pytest.raises(TypeError, match="observable wire must be an integer, got 0.5"):
+    with pytest.raises(TypeError, match="observable qubit must be an integer, got 0.5"):
         fq.X(0.5)
-    with pytest.raises(TypeError, match="observable wire must be an integer, got '0'"):
+    with pytest.raises(TypeError, match="observable qubit must be an integer, got '0'"):
         fq.Z("0")
-    with pytest.raises(TypeError, match="observable wire must be an integer, got True"):
+    with pytest.raises(TypeError, match="observable qubit must be an integer, got True"):
         fq.Y(True)
-    with pytest.raises(ValueError, match="observable wire must be a non-negative"):
+    with pytest.raises(ValueError, match="observable qubit must be a non-negative"):
         fq.X(-1)
 
 
 def test_a_repeated_output_wire_is_still_refused_as_before() -> None:
-    with pytest.raises(ValueError, match="output wires must be unique"):
+    with pytest.raises(ValueError, match="output qubits must be unique"):
         fq.counts([0, 0])
-    with pytest.raises(ValueError, match="output wires must be unique"):
+    with pytest.raises(ValueError, match="output qubits must be unique"):
         fq.samples([1, 1, 1])
