@@ -74,6 +74,7 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports
           --follow-imports skip
           tools/ci_tier.py
+          tools/check_evidence_revisions.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
@@ -171,7 +172,18 @@ jobs:
           python -m pytest
           tests/unit/test_capability_maturity.py
           tests/unit/test_docs_source_of_truth.py
+          tests/unit/test_evidence_revisions.py
           -q
+      # The six artifact validators in this job resolve the revision of the one
+      # artifact each of them names, so an artifact no validator names was never
+      # asked -- which is how nineteen artifacts under `artifacts/` came to record
+      # revisions this repository does not contain. This step asks the question of
+      # the directory instead of a list: every full-length revision at any depth in
+      # an artifact under `artifacts/` must resolve here or be declared in
+      # `evidence-revision-origins.toml` with the origin a reader can obtain it
+      # from. It needs the full history this job already fetches.
+      - name: Verify evidence revision origins
+        run: python tools/check_evidence_revisions.py
       - name: Verify checked-in FlagOS reference evidence
         run: >-
           python tools/validate_flagos_reference_evidence.py
