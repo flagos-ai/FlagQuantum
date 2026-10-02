@@ -336,8 +336,9 @@ This is an additive success path plus a fail-closed correction.
 - **Not changing.** `IR_VERSION` stays `1.0`; the plan schema is unchanged; no
   root export is added or removed; no `ExecutionOptions` field is added.
   `flagquantum.noise` gains two exports, `CHANNEL_FACTORIES` and
-  `channel_from_parameters`, and `flagquantum.noise.carries_noise_channels` is
-  added to the planner's public surface.
+  `channel_from_parameters`, and
+  `flagquantum.runtime.planner.carries_noise_channels` is added to the planner's
+  public surface.
 
 The four channel opcodes remain in `[unsupported] flagquantum_opcodes` of
 `contracts/pennylane-interop-contract.toml`. That entry states what the

@@ -999,6 +999,7 @@ __all__ = [
     "build_execution_plan",
     "build_noisy_execution_plan",
     "build_tn_working_set_calibration",
+    "carries_noise_channels",
     "estimate_density_bytes",
     "estimate_mps_bytes",
     "estimate_tensor_network_bytes",
