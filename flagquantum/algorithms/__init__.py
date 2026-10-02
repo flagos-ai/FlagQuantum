@@ -2,6 +2,7 @@
 
 from . import amplitude_estimation as amplitude_estimation
 from . import core as core
+from . import error_mitigation as error_mitigation
 from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
@@ -34,6 +35,15 @@ from .core import (
     vqe_loss,
     zz_chain_hamiltonian,
 )
+from .error_mitigation import (
+    ExtrapolationFit,
+    ZneMeasurement,
+    ZneResult,
+    extrapolate_polynomial,
+    extrapolate_richardson,
+    run_zne,
+    scale_noise_model,
+)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationRecord,
@@ -44,6 +54,7 @@ from .optimization import (
 __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
+    "ExtrapolationFit",
     "Hamiltonian",
     "HamiltonianTerm",
     "HybridOptimizationResult",
@@ -52,7 +63,12 @@ __all__ = [
     "OptimizationRecord",
     "OptimizationStage",
     "VQEResult",
+    "ZneMeasurement",
+    "ZneResult",
     "amplitude_estimation",
+    "error_mitigation",
+    "extrapolate_polynomial",
+    "extrapolate_richardson",
     "feature_selection",
     "grover",
     "hardware_efficient_ansatz",
@@ -73,6 +89,8 @@ __all__ = [
     "run_layerwise_vqe",
     "run_vqe",
     "run_adapt_vqe",
+    "run_zne",
+    "scale_noise_model",
     "svd",
     "transverse_field_ising",
     "vqe_loss",

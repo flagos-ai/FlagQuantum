@@ -15,6 +15,7 @@ python -m examples.algorithms.quantum_kernel
 python -m examples.algorithms.feature_selection
 python -m examples.algorithms.qarm
 python -m examples.algorithms.svd
+python -m examples.algorithms.error_mitigation
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -37,6 +38,10 @@ What they show:
 - [`svd.py`](svd.py): a matrix's singular values read off the phase of its
   Hermitian embedding's exponential, plus the boundary of a one-wire counting
   register.
+- [`error_mitigation.py`](error_mitigation.py): an observable continued to zero
+  noise by polynomial least squares and by Richardson extrapolation over four
+  scaled models, with the residual of an underfit, of a square fit, and of a
+  non-polynomial family printed beside the estimate.
 
 ## These scripts use the subpackage surface
 
@@ -52,6 +57,8 @@ purification's amplitudes are all built classically here, quantum k-medians
 compares a distance table built classically and synthesizes its oracle from a
 truth table, quantum kernel estimation builds each feature state gate by gate
 from a classical vector, feature selection runs no solver, the frequent-item
-fractions iterate the transactions in Python, and the singular values come from a
-state built out of the classical `torch.linalg.svd` the readout estimates. The
-guide holds the full boundary for each.
+fractions iterate the transactions in Python, the singular values come from a
+state built out of the classical `torch.linalg.svd` the readout estimates, and
+zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
+that is not checkable from the measurements it fits. The guide holds the full
+boundary for each.

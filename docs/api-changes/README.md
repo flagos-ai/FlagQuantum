@@ -32,3 +32,4 @@ process.
 - [Quafu service compilation through `fq.run`](FQ-QUAFU-SERVICE-COMPILATION.md)
 - [OpenQASM import subset and `fq.from_openqasm`](FQ-OPENQASM-IMPORT-20261002.md)
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)
+- [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)

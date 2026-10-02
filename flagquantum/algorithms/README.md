@@ -21,6 +21,16 @@ executed by `tests/test_algorithm_examples.py`.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `error_mitigation.py`: zero-noise extrapolation — one observable measured at
+  several error strengths by scaling the single error-probability parameter each
+  noise channel declares, then continued to zero by polynomial least squares or
+  Richardson extrapolation, with the residual it left and the variance
+  amplification of its weights reported beside the estimate. A channel whose
+  parameters are not error probabilities is refused by name, and a model that
+  declares a readout rule is refused rather than measured without it, because the
+  estimate is `Tr(O rho)` and classical readout confusion is applied after
+  measurement. Probabilistic error cancellation, Clifford data regression and
+  readout-error mitigation are absent.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has
