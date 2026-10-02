@@ -3,7 +3,7 @@
   "issue": "ISSUE-044",
   "supersedes": "benchmarks/manifests/statevector_release_v1.json",
   "frozen_before_release_run": true,
-  "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 31-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible.",
+  "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 31-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible. Version 2 is amended in one narrow respect: the single-device capacity failure is read as provenance evidence rather than as a release-gate payload, so world size 1 is no longer a required release world. The measured bar is unchanged; see capacity_workload.single_gpu_baseline.rationale.",
   "runtime": {
     "backend": "pytorch_native",
     "collective_backend": "nccl",
@@ -11,7 +11,7 @@
     "jax_is_optional_comparison_only": true
   },
   "topologies": {
-    "single_node_world_sizes": [1, 2, 4, 8],
+    "single_node_world_sizes": [2, 4, 8],
     "multi_node_required": true,
     "minimum_multi_node_count": 2
   },
@@ -47,7 +47,27 @@
     "single_gpu_measured_oom_required": true,
     "multi_gpu_completion_required": true,
     "full_state_materialization_forbidden": true,
-    "prior_development_measurements_release_eligible": false
+    "prior_development_measurements_release_eligible": false,
+    "single_gpu_baseline": {
+      "evidence_role": "provenance_evidence",
+      "release_gate_payload": false,
+      "evidence_scope": "one_gpu_local",
+      "results_path": "benchmarks/results/smoke/release_candidates/statevector_single_gpu_capacity",
+      "rationale": "A single device cannot shard one logical workload across ranks, so no world_size=1 artifact can satisfy the release gate: a true scalability claim is rejected by 'sharded_across_ranks requires world_size > 1', and a false claim by 'release gate requires scalability_claim_allowed=True'. Requiring world size 1 among the release worlds was therefore unsatisfiable, not a measured bar. The single-device capacity failure is still mandatory, still signed, and still required to report the frozen capacity digest; it is read as provenance for the capacity requirement it demonstrates, excluded from the release worlds, and excluded from the per-rank release payload field contract, which asks for rank communication and per-rank gradients that one device has no ranks to report. It is also read from results_path rather than from benchmarks/results/scalability, because the strict promotion audit requires every file in that directory to be release-grade sharded scalability evidence, which a single-device run can never be.",
+      "required_artifact_fields": [
+        "raw_log_sha256",
+        "hardware_inventory",
+        "commit",
+        "workload_sha256",
+        "rank_mapping",
+        "distribution_semantics",
+        "acceptance_case",
+        "capacity_baseline_device",
+        "capacity_failure_reason",
+        "single_device_oom_observed",
+        "measured_peak_memory_bytes"
+      ]
+    }
   },
   "required_artifact_fields": [
     "raw_log_sha256",
