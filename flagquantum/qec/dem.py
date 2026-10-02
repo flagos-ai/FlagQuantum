@@ -191,20 +191,34 @@ def _toggle(targets: set[int], index: int) -> None:
         targets.add(index)
 
 
-def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
-    """Parse one ``error(<p>) <targets...>`` line into its symptom.
+def _parse_error_line(
+    line: str, *, detector_shift: int, decomposed: bool = False
+) -> tuple[DemError, ...]:
+    """Parse one ``error(<p>) <targets...>`` line into its mechanisms.
 
     A detector target is relative to the shifts in force at that line, which is
     what makes a ``shift_detectors`` instruction meaningful; an observable
     target is absolute, because the format has no observable shift.
 
-    The signature is the symmetric difference of the line's targets, so a target
-    that appears twice cancels. Stim's ``^`` separators mark how a composite
-    mechanism decomposes into simpler ones; they partition the targets and do
-    not change which detectors and observables a shot of this mechanism flips,
-    which is the whole of what a signature records. The groups are therefore
-    not retained, and a decomposed line contributes the same signature its
-    targets state in any order.
+    Stim's ``^`` separators mark how a composite mechanism decomposes into
+    simpler ones; they partition the targets and do not change which detectors
+    and observables a shot of this mechanism flips. Read one way, the line is a
+    single mechanism whose signature is the symmetric difference of all its
+    targets, and the groups are not retained. Read the other way, each group
+    becomes a mechanism of its own at the parent probability, which is the
+    decomposition suggestion the separators carry and is a lossy reading of the
+    line rather than an equivalent one: two components that can each fire
+    independently at probability ``p`` do not reproduce a single mechanism at
+    probability ``p``. ``decomposed`` selects between the two, and the combined
+    reading is the default because it is the one that preserves the model.
+
+    A target that appears twice cancels, within a group and across groups alike,
+    which is the symmetric difference the combined reading states. Two
+    components with no targets at all are also possible -- ``error(0.1) D0 ^
+    D0`` states one twice -- and neither reading drops what it cannot state: the
+    combined reading refuses a line whose whole signature is empty, and the
+    decomposed reading refuses a component whose own signature is empty, because
+    a mechanism that flips nothing is not a mechanism this model can hold.
     """
 
     body = line[len("error") :]
@@ -218,13 +232,14 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
         probability = float(body[:closing])
     except ValueError as error:
         raise ValueError("an error line must state a numeric probability") from error
-    detectors: set[int] = set()
-    observables: set[int] = set()
     tokens = body[closing + 1 :].split()
     if not tokens:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
         )
+    groups: list[tuple[set[int], set[int]]] = []
+    detectors: set[int] = set()
+    observables: set[int] = set()
     group_is_empty = True
     for token in tokens:
         if token == _SEPARATOR:
@@ -232,6 +247,8 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
                 raise ValueError(
                     "an error separator must sit between two groups of targets"
                 )
+            groups.append((detectors, observables))
+            detectors, observables = set(), set()
             group_is_empty = True
             continue
         group_is_empty = False
@@ -248,18 +265,48 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
         raise ValueError(f"error targets must be D or L indices, not {token!r}")
     if group_is_empty:
         raise ValueError("an error separator must sit between two groups of targets")
+    groups.append((detectors, observables))
+
+    if decomposed and len(groups) > 1:
+        # Upstream's `use_decomp_suggestions`: one column per component, each
+        # inheriting the parent instruction's probability. A component that
+        # flips nothing has no column to become, and dropping it silently would
+        # report a model with a mechanism removed, so the line is refused and
+        # the combined reading is named as the route that states it.
+        mechanisms: list[DemError] = []
+        for group_detectors, group_observables in groups:
+            if not group_detectors and not group_observables:
+                raise ValueError(
+                    "a decomposition component that flips nothing cannot be a "
+                    "mechanism of its own; read the line without "
+                    "use_decomp_suggestions to state its combined signature"
+                )
+            mechanisms.append(
+                DemError(
+                    probability=probability,
+                    detectors=tuple(group_detectors),
+                    observables=tuple(group_observables),
+                )
+            )
+        return tuple(mechanisms)
+
+    combined_detectors: set[int] = set()
+    combined_observables: set[int] = set()
+    for group_detectors, group_observables in groups:
+        combined_detectors ^= group_detectors
+        combined_observables ^= group_observables
     # ``DemError`` re-checks this in its own constructor; refusing here as well
-    # fails at the parse site, where the offending line is still in hand. A
-    # decomposed line whose groups cancel reaches this as well, because the
-    # signature it states is empty.
-    if not detectors and not observables:
+    # fails at the parse site, where the offending line is still in hand.
+    if not combined_detectors and not combined_observables:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
         )
-    return DemError(
-        probability=probability,
-        detectors=tuple(detectors),
-        observables=tuple(observables),
+    return (
+        DemError(
+            probability=probability,
+            detectors=tuple(combined_detectors),
+            observables=tuple(combined_observables),
+        ),
     )
 
 
@@ -314,12 +361,17 @@ def _declared_count(declared: set[int], *, name: str, prefix: str) -> int:
     return count
 
 
-def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
+def _parse_stim_text(
+    text: str, *, use_decomp_suggestions: bool = False
+) -> tuple[int, int, tuple[DemError, ...]]:
     """Parse stim text into a model shape and its error mechanisms.
 
     Only the instructions this model represents are accepted; every other
     construct is refused with a stated reason, so a text that carries
     information the model cannot hold fails closed instead of losing it.
+    ``use_decomp_suggestions`` decides whether a line's ``^`` groups are read as
+    one mechanism or as one mechanism each, which ``_parse_error_line`` states
+    in full.
     """
 
     declared_detectors: set[int] = set()
@@ -336,9 +388,14 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
         head = stripped.split("(", 1)[0].split()
         keyword = head[0] if head else ""
         if keyword == "error":
-            error = _parse_error_line(stripped, detector_shift=detector_shift)
-            errors.append(error)
-            referenced_observables.update(error.observables)
+            parsed = _parse_error_line(
+                stripped,
+                detector_shift=detector_shift,
+                decomposed=use_decomp_suggestions,
+            )
+            errors.extend(parsed)
+            for error in parsed:
+                referenced_observables.update(error.observables)
         elif keyword == "detector":
             declared_detectors.add(
                 _parse_declaration_line(
@@ -679,7 +736,9 @@ class DetectorErrorModel:
         return DemSample(detectors=detector_bits, observables=observable_bits)
 
     @classmethod
-    def from_stim_text(cls, text: str) -> DetectorErrorModel:
+    def from_stim_text(
+        cls, text: str, *, use_decomp_suggestions: bool = False
+    ) -> DetectorErrorModel:
         """Build a model from stim's text representation of a detector error model.
 
         The shape comes from the ``detector`` and ``logical_observable``
@@ -700,10 +759,24 @@ class DetectorErrorModel:
 
         An error line's signature is the symmetric difference of its targets, so
         a repeated target cancels. Stim writes ``^`` between the groups a
-        composite mechanism decomposes into. Those groups are a decoder's
-        business: they partition the targets without changing which detectors
-        and observables a shot of the mechanism flips. The groups are therefore
-        not retained.
+        composite mechanism decomposes into, and those groups are what
+        ``use_decomp_suggestions`` decides about. Read the default way, the line
+        is one mechanism flipping the symmetric difference of every target it
+        names, and the groups are not retained, because a shot of the mechanism
+        flips exactly that difference however the line groups it. Read the other
+        way, each group becomes a mechanism of its own at the line's
+        probability, which is the decomposition a matching decoder can use.
+
+        The second reading is not an equivalent statement of the same model and
+        is not offered as one: two components that each fire independently at
+        probability ``p`` do not reproduce one mechanism at probability ``p``,
+        and the caller that wants the components has asked for a graphlike
+        approximation rather than for the distribution. It is also the reading
+        under which the components can be weighted at all, which is why it
+        exists. A line with no separator is the same model under either reading,
+        and a component that flips nothing has no mechanism to become, so that
+        line is refused with the combined reading named as the route that states
+        it.
 
         A ``repeat`` block is refused. Expanding one means interpreting a nested
         instruction stream, and ``str(model.flattened())`` already states the
@@ -723,13 +796,24 @@ class DetectorErrorModel:
         ``repetition_code:memory`` at five rounds or more. Every one of the same
         240 models parsed when ``flattened()`` supplied the text.
 
-        The printed text is lossy in the last digit: stim prints 17 significant
-        digits, and over that sweep the largest relative difference between an
-        in-memory probability and the printed one was 4.9e-16. The text is the
-        interchange format, so the printed value is the one this reader states.
+        The printed text is the interchange format, so the printed value is the
+        one this reader states. What that costs depends on which side wrote the
+        text. This package's ``to_stim_text`` writes a probability with
+        ``repr``, the shortest decimal that reads back as the identical double,
+        and it lost none of the twenty thousand draws in the pinned sweep.
+        Stim's own printer writes sixteen significant digits, which is not
+        always enough to name the double it was given: about a quarter of the
+        same draws came back changed, by at most 5.5e-16 relative, and the
+        format bounds that at one part in 10**15. A caller comparing a model
+        against text stim wrote therefore compares within that bound; one
+        comparing against this package's own text needs no allowance.
+        ``tests/qec/test_dem_stim_text_precision.py`` pins the digit count, the
+        direction of the loss and the bound.
         """
 
-        num_detectors, num_observables, errors = _parse_stim_text(text)
+        num_detectors, num_observables, errors = _parse_stim_text(
+            text, use_decomp_suggestions=use_decomp_suggestions
+        )
         return cls(
             num_detectors=num_detectors,
             num_observables=num_observables,

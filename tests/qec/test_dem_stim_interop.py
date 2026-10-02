@@ -439,3 +439,78 @@ def test_the_surface_code_declares_the_detector_shape_stim_declares(
         z_checks * (rounds + 1) + x_checks * (rounds - 1)
     )
     assert len(memory.detectors.detectors) < (x_checks + z_checks) * (rounds + 1)
+
+
+def _sampled_rates(text: str, shots: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """Stim's own marginals for a detector error model text.
+
+    The sampler is the ground truth for what the text means, because the text is
+    a statement about the distribution and not about a parse tree.
+    """
+
+    det, obs = (
+        torch.as_tensor(part)
+        for part in stim.DetectorErrorModel(text)
+        .compile_sampler()
+        .sample(shots=shots)[:2]
+    )
+    return det.to(torch.float64).mean(dim=0), obs.to(torch.float64).mean(dim=0)
+
+
+def test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not() -> (
+    None
+):
+    """The cost of the decomposition suggestion, measured rather than asserted.
+
+    Upstream offers the same flag, so the alignment is that this reader offers
+    the same two readings and that the default one is stim's. Which reading stim
+    itself means is not a matter of taste: stim's sampler on the same text is the
+    reference, and at 200000 shots a rate near 0.15 carries a standard error of
+    about 0.0008, so the 0.004 tolerance sits at five standard errors.
+
+    The default reading is inside it -- worst measured deviation 0.0022 on the
+    detectors and 0.0016 on the observables. Expanding the components at the
+    parent probability is not: it holds the detector marginals (0.0022) but
+    misses the observable ones by 0.048, twelve times the tolerance and sixty
+    times the standard error. That separation is the point of the test. A
+    tolerance that both readings pass would not be evidence about either.
+    """
+
+    text = str(_decomposing_circuit().detector_error_model(decompose_errors=True))
+    assert "^" in text
+    det, obs = _sampled_rates(text, shots=200000)
+
+    stated = DetectorErrorModel.from_stim_text(text)
+    expanded = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+    # The two readings really are different models of the same text.
+    assert expanded.num_errors > stated.num_errors
+
+    stated_observable = float((stated.observable_rates() - obs).abs().max())
+    expanded_observable = float((expanded.observable_rates() - obs).abs().max())
+
+    assert float((stated.detector_rates() - det).abs().max()) < 0.004
+    assert stated_observable < 0.004
+    assert expanded_observable > 0.01
+    assert expanded_observable > stated_observable
+
+
+def test_stim_reads_a_detector_named_twice_as_a_symmetric_difference() -> None:
+    """The rule both the default reading and stim use, on the text that shows it.
+
+    ``D0`` is named in both groups, so the line's signature is ``D1`` alone and
+    ``D0`` never flips. The suggestion reading instead returns one mechanism per
+    group, which puts ``D0`` at probability 0.18 -- far above the 0.002 a
+    standard error at this shot count would allow -- so the assertion tells the
+    two readings apart instead of rounding them together.
+    """
+
+    text = "error(0.1) D0 D1 ^ D0\ndetector D0\ndetector D1\n"
+    det, _ = _sampled_rates(text, shots=200000)
+
+    stated = DetectorErrorModel.from_stim_text(text)
+    expanded = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+    assert float(det[0]) < 0.004
+    assert float((stated.detector_rates() - det).abs().max()) < 0.008
+    assert float(expanded.detector_rates()[0]) == pytest.approx(0.18)

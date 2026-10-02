@@ -58,7 +58,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches; no error ids, no rates vector. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
-| `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; input end is narrow. |
+| `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder and its PyMatching cross-check landed; no registry, no BP+OSD, no sliding window. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
@@ -282,11 +282,33 @@ columns are error mechanisms — with a container difference only (`numpy uint8`
 upstream, `torch int8` here).
 
 **Renamed (2).** `dem_from_stim_text(text, use_decomp_suggestions=False)` is
-`DetectorErrorModel.from_stim_text`. Both delegate the format definition to
-stim's own parser. The refusals differ in kind, not in spirit: upstream
-documents two losses on the stim path (error ids always empty, `^` separators
-ignored), this repository refuses constructs it cannot represent (`repeat`,
-comments, skipped indices, malformed lines).
+`DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=False)`, with the
+flag keyword-only here because the route in is a classmethod. Both delegate the
+format definition to stim's own parser, and both offer the same two readings of a
+`^` separator under the same flag name. The default reading states the line stim
+wrote: the signature is the symmetric difference of the line's targets, so a
+detector named twice cancels and the groups are not retained. The flag returns one
+mechanism per component at the line's probability instead, which is the graphlike
+decomposition a matching decoder consumes.
+
+Which reading is stim's is settled by stim's own sampler on the same text rather
+than by preference. On a distance-five, two-round rotated surface code at 200000
+shots, the default reading's worst missed observable marginal is 0.0016 against a
+tolerance of 0.004, while expanding the components misses by 0.048 — twelve times
+the tolerance, and sixty times the standard error at that shot count. The flag is
+therefore offered as a documented approximation of the line, not as an alternative
+statement of it, and
+`test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not`
+asserts the separation, so a tolerance that both readings passed would not be
+evidence about either.
+
+What remains of upstream's two stated losses is the error-id one, and that is a
+property of the record on both sides rather than of this reader. The rest of the
+refusals differ in kind, not in spirit: upstream hands the text to stim and states
+what it loses, this repository refuses constructs its own record cannot hold
+(`repeat`, comments, skipped indices, malformed lines) rather than dropping them —
+and one construct more under the expanded reading alone, a component that cancels
+to nothing, which no mechanism can state.
 
 The second is `dem_merge_duplicate_columns(dem, mode)`, a free function over a
 dem with a mode enum, which is `DetectorErrorModel.merge_duplicate_mechanisms`
@@ -304,6 +326,19 @@ libraries; the produced stim text in the CUDA-Q stack comes from
 `cudaq.DEMResult.dem` in core and from the Logical preview CLI. This is a
 negative result on the upstream side, marked `provenance_unverified`, so it is
 "nothing to align to at this layer" rather than "ahead".
+
+Because there is no upstream writer to align to, the writer is aligned to stim's
+own, and the two differ in precision: `to_stim_text` writes a probability with
+`repr`, the shortest decimal that reads back as the identical double, while
+stim's `str` writes sixteen significant digits and so cannot always name the
+double it was given. Over a pinned sweep of twenty thousand probabilities the
+first lost none and the second changed about a quarter; the drift stim
+introduces is bounded by one part in `10**15` and measured at `5.5e-16` worst
+case. The reader therefore states the printed value on both paths, because the
+printed value is what the interchange carried, and
+`tests/qec/test_dem_stim_text_precision.py` pins the format, the direction of the
+loss and the bound so that a stim release changing its precision fails there
+rather than invalidating this record.
 
 **Reshaped (11).** The model carrier, the per-error rates, the counts, the
 sampling function, the memory-circuit entry point, the matrix-level entry point,
@@ -533,7 +568,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_counts` | reshaped | Methods upstream against properties here; `num_error_mechanisms` against `num_errors`. |
 | `dem_sampling_function` | reshaped | Free function over matrix + rates returning syndromes *and* mechanisms, against a model method returning detectors + observables. |
 | `dem_sampling_backend` | absent | No execution-target selector; upstream has `auto`/`cpu`/`gpu`. |
-| `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), free function against classmethod. |
+| `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), same `use_decomp_suggestions` flag with the same default, free function against classmethod; the default reading is the one stim's own sampler means, and the expanded one is the approximation upstream documents it as. |
 | `dem_to_stim_text` | extra | No writer found upstream at this layer; the produced text comes from CUDA-Q core. |
 | `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. |
 | `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis. No context object. |

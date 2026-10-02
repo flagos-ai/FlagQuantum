@@ -288,16 +288,37 @@ that follow it, in the declarations and in the error mechanisms alike, and
 successive instructions accumulate. A `^` separator partitions the groups a
 composite mechanism decomposes into; those groups are a decoder's business and
 the signature is the symmetric difference of the line's targets, so a repeated
-target cancels and the groups are not retained. An observable count that only the
-error targets state is inferred from them, because stim declares the observable
-exactly when no mechanism references it; a declared count still governs.
+target cancels and the groups are not retained by default. An observable count
+that only the error targets state is inferred from them, because stim declares the
+observable exactly when no mechanism references it; a declared count still governs.
+
+The separator's groups are also available to a caller that wants them, because a
+matching decoder needs one graphlike component per edge and upstream exposes the
+same choice as `dem_from_stim_text(dem_text, use_decomp_suggestions=True)`.
+`DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)` returns one
+mechanism per group, each at the probability the line states, which is the
+decomposition the separators carry: on a rotated surface code at distance five and
+two rounds it turns 536 mechanisms into 1042. That reading is a different model
+from the line and is not an equivalent statement of it, because two components that
+each fire independently at probability `p` do not reproduce one mechanism at
+probability `p`. Held to stim's own sampler on the same text, the default reading's
+worst marginal misses by 0.0016 on the observables and this one misses by 0.048,
+which is what makes the tolerance in
+`test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not`
+evidence rather than decoration. The expanded model is a model in its own right --
+it prints and re-reads unchanged -- and it is the default reading that states the
+line stim wrote.
 
 What remains refused is a `repeat` block, a `#` comment, a declaration that skips
 an index, and a malformed line. The `repeat` refusal is deliberate rather than
 pending: expanding a block means interpreting a nested instruction stream, and
 `str(model.flattened())` already states the same instructions without the block.
 `flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit.
+block for a long enough circuit. One more line is refused by the suggested reading
+alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
+nothing, and a component with no targets has no mechanism to become, so the reader
+refuses it and names the default reading -- which states that line as `D1` -- as
+the route that states it.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
@@ -322,12 +343,31 @@ repetition code cannot supply that discrimination: at distance three, three roun
 and one percent noise the two readings of `^` differ by at most 0.0024, so the
 test uses a circuit whose decompositions actually merge groups.
 
-The text is lossy in the last digit, because stim prints 17 significant digits.
-Over that sweep the largest relative difference between an in-memory probability
-and the printed one was 4.9e-16, so the printed value is the one this reader
-states. A round-trip assertion must compare against a re-read of the printed text
-rather than against the in-memory model, or it reports differences that the
-printing caused.
+The text is exact on this side and lossy on stim's, and the loss is in stim's
+writer rather than in this one. `to_stim_text()` writes a probability with
+`repr`, the shortest decimal that reads back as the identical double, so over
+twenty thousand swept probabilities no written value returned as a different
+one. stim's `str()` writes sixteen significant digits, which is a measured
+format rather than an estimate, and that is not always enough to name the double
+it was given: over the same sweep about a quarter of the probabilities came back
+from stim's own reprint as a different value. The reader therefore states the
+printed value, because the printed value is what the interchange carried.
+
+The drift stim introduces is bounded by one part in `10**15`. Sixteen
+significant decimal digits round to within half a unit in the last of them, and
+reading that decimal back as a double adds at most one binary unit in the last
+place, which is under `2**-51` of the value; the two together stay under the
+bound. The sweeps confirm it rather than assume it: the worst relative
+difference between an in-memory probability and the one stim printed was
+`5.5e-16` over the pinned sweep and `4.9e-16` over the earlier developer sweep,
+both inside the bound. `tests/qec/test_dem_stim_text_precision.py` pins the
+digit count, the direction of the loss and the bound, and it is a separate file
+because it measures stim's writer rather than this package's model.
+
+A round-trip assertion must compare against a re-read of the printed text rather
+than against the in-memory model, or it reports differences that the printing
+caused. That applies to text stim wrote; this package's own writer needs no such
+allowance, which the same file demonstrates.
 
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
