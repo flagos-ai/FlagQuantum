@@ -730,8 +730,9 @@ cudaq = "cudaq.optimizers with Adam, COBYLA, GradientDescent, LBFGS, NelderMead,
 status = "partial"
 priority = "next"
 dependency_class = "none"
-reason = "The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is the gap, because COBYLA, NelderMead, and SPSA have no implementation and the training entry point refuses an optimizer that is not a PyTorch one."
-evidence = ["flagquantum/runtime/training.py", "flagquantum/algorithms/optimization.py", "search:no gradient-free optimizer and no entry point that accepts one"]
+maturity_ref = "algorithms_spsa_optimizer"
+reason = "The gradient-based half is wider than the baseline's: the training path takes a PyTorch optimizer and the staged hybrid optimizer accepts adam, adamw, sgd, and LBFGS. The gradient-free half is now partly closed. SPSA is implemented as a standalone optimizer that consumes a plain objective callable and a parameter tensor instead of a gradient, and it spends two objective evaluations per step whatever the parameter count, which is the same recursion cudaq.optimizers exposes; the parity entry records its boundary rather than a convergence claim, and the estimator is biased rather than a gradient. COBYLA and NelderMead are still absent, and the training entry point still refuses an optimizer that is not a PyTorch one, so an SPSA run is a caller-owned loop and not an fq.train call."
+evidence = ["flagquantum/runtime/training.py", "flagquantum/algorithms/optimization.py", "flagquantum/algorithms/spsa.py", "search:no COBYLA or NelderMead optimizer"]
 
 [[domains.capabilities]]
 id = "classical_data_encoding"

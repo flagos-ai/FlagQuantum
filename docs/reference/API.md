@@ -365,6 +365,60 @@ assert torch.allclose(
 )
 ```
 
+## Optimize without a gradient
+
+When the objective is a sampled measurement — or any callable whose only accessible
+value is a scalar — there is no autograd graph to differentiate and no exact
+gradient to hand a PyTorch optimizer.
+`flagquantum.algorithms.SPSAOptimizer` minimizes such an objective from two
+evaluations per step, whatever the parameter count:
+
+```python
+import torch
+import flagquantum as fq
+from flagquantum import algorithms as fqa
+
+def sampled_energy(values):
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    circuit = circuit.ry(0, values[0]).ry(1, values[1]).cx(0, 1)
+    outputs = fq.expectation(fq.Z(0) + fq.Z(1))
+    return -fq.run(circuit, outputs=outputs).expectation().sum()
+
+optimizer = fqa.SPSAOptimizer(
+    maxiter=120,
+    perturbation=0.25,
+    generator=torch.Generator().manual_seed(13),
+)
+values = torch.full((2,), 0.4, dtype=torch.float64)
+for _ in range(120):
+    values = optimizer.step(sampled_energy, values)
+```
+
+The objective is a plain callable, not an `fq.Module`, and the optimizer never
+inspects it. `step(objective, parameters)` applies one update,
+`step_and_cost(objective, parameters)` also returns the cost read at the
+pre-update parameters, and `estimate_gradient(objective, parameters)` returns the
+estimate without advancing. `optimizer.evaluations` reports the objective calls
+spent.
+
+`*_exponent` parameters keep Spall's names for what they control:
+`parameter_gain_exponent` is the published `alpha` (`0.602` by default),
+`perturbation_exponent` is `gamma` (`0.101`), `perturbation` is `c`,
+`stability` is `A`, and `parameter_gain` is `a`. Passing `maxiter` alone derives
+`stability` and a `parameter_gain` whose first step is `0.05`.
+
+**The estimate is biased, so it is not a gradient.** The update it produces is an
+approximation of a gradient step, and an objective with an exact gradient is
+cheaper and more accurate through autograd or parameter shift. The reason to use
+this unit is the cost: two evaluations per step instead of `2 * n`. The
+perturbation comes from the `torch.Generator` the caller passes, so a seeded run
+replays; without one, the draw is not reproducible from the call site. Every
+refusal — a missing gain sequence, a non-positive perturbation, an objective that
+returns anything but one finite scalar, or an objective that writes into the
+tensor it is handed — is a `flagquantum.errors.ValidationError` raised before the
+objective runs. `SPSAOptimizer` lives in `flagquantum.algorithms` and carries no
+root-level `fq.` name.
+
 ## Errors
 
 Catch stable lifecycle categories from `flagquantum.errors`:

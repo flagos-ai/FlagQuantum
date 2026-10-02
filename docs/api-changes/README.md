@@ -33,3 +33,4 @@ process.
 - [OpenQASM import subset and `fq.from_openqasm`](FQ-OPENQASM-IMPORT-20261002.md)
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)
 - [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
+- [A native SPSA optimizer for objectives with no gradient](FQ-SPSA-OPTIMIZER-20261002.md)

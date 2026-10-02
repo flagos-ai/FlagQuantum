@@ -17,9 +17,12 @@ These examples do not use that alias:
   `error_mitigation.py`, which import the unit they demonstrate from the
   subpackage surface because `flagquantum.algorithms.<unit>` carries no
   root-level `fq.` name.
-  [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
-  reference they follow, and the place each unit's advantage premise is recorded
-  in full.
+  [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside
+  that directory: it imports its optimizer from the subpackage surface and also
+  `import flagquantum as fq`, because the objective it minimizes is a circuit it
+  has to build and run. [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md)
+  is the per-unit reference they follow, and the place each unit's advantage
+  premise is recorded in full.
 - [`extensions/reference_extensions.py`](extensions/reference_extensions.py) and
   [`extensions/reference_compiler_extension.py`](extensions/reference_compiler_extension.py)
   — they import the extension and ecosystem APIs, and the second also imports

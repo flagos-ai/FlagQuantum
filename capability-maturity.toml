@@ -1322,6 +1322,24 @@ focused_tests = "tests/unit/test_error_mitigation.py"
 integration_tests = "tests/test_error_mitigation.py"
 development_artifact = "flagquantum/algorithms/README.md"
 
+[capabilities.algorithms_spsa_optimizer]
+title = "Simultaneous perturbation stochastic approximation"
+summary = "Minimize a scalar objective with no gradient, from two objective evaluations per step whatever the parameter count, on a recursion whose direction is one randomly perturbed finite difference."
+category = "simulation_and_training"
+user_goals = ["Optimize an objective whose only accessible value is a sample", "Spend a fixed two evaluations per step instead of one per parameter", "Replay a seeded run from the call site"]
+public_apis = ["flagquantum.algorithms.spsa"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "examples/algorithms/spsa_optimizer.py"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "development_evidence"
+owner = "Algorithms maintainers"
+limitations = "The estimate this optimizer builds is biased for every finite perturbation and is not a gradient: its expectation reaches the objective's gradient only as the perturbation shrinks, so a single estimate is not a descent direction and the update it produces is an approximation of a gradient step. An objective that has an exact gradient is served more cheaply and more accurately by autograd or parameter shift, and this unit says so in its own module docstring rather than presenting itself as a preferred optimizer. What it supports is a cost claim and not an accuracy claim: one step spends two objective evaluations whether the objective has one parameter or 128, measured at parameter counts 1, 2, 8, 32 and 128, where a parameter-shift gradient spends 2*n. The optimizer executes nothing itself -- it calls a callable the caller supplies and never inspects it, so no runtime mode is selected, no circuit is built, no observable is measured, and the caller's objective owns whatever execution it performs. The perturbation is drawn from a torch.Generator the caller passes, which makes a seeded run replay on the parameters' own device; without one an internal generator is created for the parameter device and the draw is then not reproducible from the call site. Parameter names are domain names rather than the published single letters: parameter_gain is a, perturbation is c, stability is A, parameter_gain_exponent is alpha and perturbation_exponent is gamma, with Spall's defaults 0.602 and 0.101. Averaging the estimates, a per-coordinate or blockwise perturbation scale, constraint handling, and resuming an optimizer from serialized state are all absent, and each is a second algorithm with its own convergence conditions rather than a knob on this one. No convergence rate, iteration bound or confidence interval is computed or reported: the numbers a run produces are a trajectory of one objective and the spread across seeds is the estimator's variance rather than a tolerance. It makes no performance, convergence, scalability or hardware claim, and it adds no root-level fq name."
+focused_tests = "tests/unit/test_algorithms_spsa.py"
+development_artifact = "flagquantum/algorithms/README.md"
+
 [capabilities.stabilizer_sampling]
 title = "Clifford circuit sampling by Pauli stabilizer tracking"
 summary = "Sample computational-basis outcomes from a Clifford circuit whose wire count puts a dense amplitude store out of reach."

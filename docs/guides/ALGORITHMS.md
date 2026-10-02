@@ -21,6 +21,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
+| `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
 
 Two rows carry `—` in the Citation column rather than a source, and that is a
 statement rather than a placeholder: the Fourier transform and oracle synthesis
@@ -156,6 +157,14 @@ units carries a root-level `fq.` name.
   are approximation heuristics. Their evidence and their boundary are the ones
   already recorded for local statevector execution; this guide adds no
   asymptotic advantage conclusion for them.
+- **SPSA carries no advantage premise either, and what it offers is a cost.**
+  `spsa.py` is not an algorithm with a speedup to state: it is an optimizer, and
+  the quantity it improves is the number of objective evaluations per step, which
+  is two regardless of the parameter count. **Its estimate is biased for every
+  finite perturbation** and is not a gradient, so a caller with an exact gradient
+  available should use autograd or parameter shift instead. The claim this unit
+  supports is a cost claim on a stochastic objective, not an accuracy claim and
+  not an end-to-end advantage. See the section below.
 
 ## A runnable example
 
@@ -1187,12 +1196,116 @@ estimate merely looking close. No demonstration here is a performance, scaling, 
 fault-tolerance claim: the whole path is single-process CPU density-matrix work on a
 two-wire circuit.
 
+## SPSA optimization
+
+`spsa.py` is the first optimizer unit in this guide's programme, and the only unit
+here that is not an algorithm: it decides where to move a parameter vector rather
+than what to compute from one. `SPSAOptimizer(maxiter=..., stability=...,
+parameter_gain=..., perturbation=..., parameter_gain_exponent=...,
+perturbation_exponent=..., generator=...)` takes exactly one of `maxiter` and
+`stability` and drives a scalar objective through `step(objective, parameters)`,
+`step_and_cost(objective, parameters)`, or `estimate_gradient(objective,
+parameters)` alone. `steps` and `evaluations` report what it has spent.
+
+**Naming.** The published recursion is written with single letters — `a`, `c`,
+`A`, `alpha`, `gamma` — and none of those is a name. This unit uses the domain
+name of each quantity and records the correspondence: `parameter_gain` is `a`,
+`perturbation` is `c`, `stability` is `A`, `parameter_gain_exponent` is `alpha`,
+and `perturbation_exponent` is `gamma`. The defaults are Spall's: `0.602` and
+`0.101`. `stability` defaults to a tenth of `maxiter`, and `parameter_gain` is
+then derived so that the first step is `0.05` regardless of the run length —
+measured `0.05` for `maxiter` in 10, 200, and 5000.
+
+**The estimate is an estimate, not a gradient.** The two-point difference quotient
+is centered on a perturbation of size `c_k`, so the estimator is biased for every
+finite `c_k` and its expectation reaches the gradient only in the limit. Measured
+against the analytic gradient `[0.7480963877584119, 0.3586780454497614]` of a
+two-qubit Pauli energy: one draw has relative error `0.9999`, the mean of 64 draws
+`0.1259`, and the mean of 512 draws `0.0284`. The mean converges as `1/sqrt(n)`;
+a single draw does not converge to anything usable. **The reason to use this unit
+is the cost, not the direction:** one `step` spends two objective evaluations
+whether the objective has one parameter or 128, where a parameter-shift gradient
+spends `2 n` and an autograd step spends one forward and one backward pass. A
+caller whose objective has an exact gradient should use one.
+
+**The cost is constant and it is measured.** Ten `step` calls spend twenty
+objective evaluations at parameter counts 1, 2, 8, 32, and 128, and
+`SPSAOptimizer.evaluations` agrees with the counted calls at every size.
+`step_and_cost` spends three: two for the estimate and one for the cost it
+reports, which is read at the pre-update parameters.
+
+**The perturbation comes from a caller-owned `torch.Generator`.** The sign vector
+is drawn with `torch.randint` on a generator the caller passes in, so a run
+replays from the call site and on the parameters' own device. Without a generator
+one is created for the parameter device and the draw is no longer reproducible
+from outside; a generator whose device does not match the parameters is refused
+rather than silently drawing elsewhere. This is the one deliberate departure from
+the reference implementations, several of which draw from process-global `numpy`
+state; the comparison below measures what that costs and what it buys.
+
+**Convergence, and what its last digits are.** On `RY(0) RY(1) CX(0,1)` against
+`-(Z_0 + Z_1)`, 120 steps from `[0.4, 0.4]` with `perturbation=0.25` reach
+`-1.9991819605521022`, `-1.9990938026576754`, and `-1.9996860765168998` for seeds
+5, 11, and 13 at 240 evaluations each. The spread across seeds is the estimator's
+variance and not a solver's tolerance: the last digits belong to the draw. On a
+4096-shot objective of the same energy, 200 steps reach a distance from the exact
+minimum of `1.24e-05` (seed 17) and `1.55e-05` (seed 23).
+
+**Against the reference implementation, the trajectory agrees and the state
+ownership does not.** PennyLane 0.45.1's `qml.SPSAOptimizer(maxiter=120, c=0.25)`
+on the same circuit and the same seeds over the same 120 steps reaches
+`-1.9991819605521028`, `-1.999093802657676`, and `-1.9996860765168996` for seeds
+5, 11, and 13 against this unit's `-1.9991819605521022`,
+`-1.9990938026576754`, and `-1.9996860765168998` — the same trajectories to about
+`1e-15`, at 240 objective evaluations each. The two draws agree because a seeded
+`torch.Generator` and a seeded `numpy` global produce the same sign stream at
+these seeds; that is a measured coincidence of the two libraries' generators and
+nothing here depends on it. **What differs is who owns the state.** PennyLane
+reads and writes process-global `numpy` random state, so two optimizers in one
+process interleave unless the caller re-seeds around every call, while this unit
+owns a generator per instance. One consequence of the difference is a trap worth
+recording: PennyLane's `compute_grad` perturbs only the arguments that carry
+`requires_grad`, so passing a plain `numpy` array as the initial parameters makes
+it evaluate the objective twice per step and update nothing — measured, the
+final energy was exactly the initial `-1.769414348676468` after 120 steps and 240
+calls, with nothing raised. This unit takes a `torch.Tensor` and refuses anything
+else at the first call rather than looping silently.
+
+**What it refuses, and before the objective runs.** A constructor without a gain
+sequence, a non-positive `perturbation` or `parameter_gain`, a non-finite
+exponent, and a generator that cannot draw on the parameter device all raise
+`ValidationError` at construction. A non-callable objective, non-floating or empty
+or non-finite parameters, an objective returning anything other than one finite
+scalar, and **an objective that writes into the tensor it is handed** raise before
+any evaluation is spent. The last one matters because the estimate is a difference
+of two evaluations and the reported cost is a third: an in-place objective makes
+those three describe different parameters, which is a wrong number rather than an
+error, so it is refused instead of silently cloned.
+
+**There is no averaging, no constraint handling, and no checkpoint protocol.**
+The recursion as published updates from one estimate. Variance reduction, a
+per-coordinate perturbation scale, and resuming an optimizer from serialized
+state are all absent, and each is a second algorithm with its own conditions
+rather than a knob on this one.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
   **123**(1-3), 155-225 (2002), DOI 10.1016/S0166-218X(01)00341-9 — the
   substitution `x_i = (1 + s_i) / 2` and the pseudo-Boolean form of the
   objective.
+- SPSA is attributed to J. C. Spall, "Multivariate stochastic approximation using
+  a simultaneous perturbation gradient approximation", *IEEE Transactions on
+  Automatic Control* **37**(3), 332-341 (1992), DOI 10.1109/9.119632 — the
+  simultaneous-perturbation estimate and the two gain sequences this unit names
+  `parameter_gain` and `perturbation`. The practical guidance — the default
+  exponents `alpha = 0.602` and `gamma = 0.101`, the `A` in the step-size
+  denominator, and the advice to choose `A` from the expected number of
+  iterations rather than to tune it — is J. C. Spall, "An overview of the
+  simultaneous perturbation method for efficient optimization", *Johns Hopkins
+  APL Technical Digest* **19**(4), 482-492 (1998). The second is a technical
+  digest rather than a peer-reviewed article and is cited for the practical
+  defaults only, not for the convergence result, which is the 1992 paper's.
 - Barahona, *J. Phys. A* **15**(10), 3241-3253 (1982),
   DOI 10.1088/0305-4470/15/10/028 — the ground state of a spin glass in a field
   is NP-hard, which is why the mapping is interesting to a solver at all.
@@ -1315,7 +1428,14 @@ two-wire circuit.
 Everything here is a demonstration-scale, teaching-oriented construction. No
 unit in this guide makes a performance claim, a capacity claim, or a
 quantum-advantage claim, and none of them certifies solver behavior,
-convergence, or hardware behavior. A unit is admitted to the index with the
+convergence, or hardware behavior. The one exception is a cost claim and it is
+stated as one: `spsa.py` spends a measured two objective evaluations per step at
+every parameter count it was tested at, which is a count of a unit's own calls
+and not a performance result. The trajectories its section reports are runs of one
+two-parameter objective, and they certify nothing about convergence in general —
+the unit's own `capability-maturity.toml` entry states the boundary, and the
+spread across seeds that the section reports is the estimator's variance rather
+than a tolerance. A unit is admitted to the index with the
 tests that exercise it and the boundary that limits it: the units classified in
 `capability-maturity.toml` record both there, and the two rows without an entry
 — the Fourier transform and phase estimation — carry their advantage premise in
