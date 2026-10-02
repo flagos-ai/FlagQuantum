@@ -132,6 +132,33 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+The MPS-003 one-site gate route is opt-in through
+`FQ_TRITON_MPS_ONE_SITE=1`. Compiled site buckets authorize the exact catalog
+entry for contiguous CUDA `complex64` tensors and batched two-by-two gates once
+the flattened batch-by-bond contraction contains at least `2**12` elements.
+The custom autograd boundary preserves tensor and gate gradients; other calls
+retain the existing eager or compiled real/imaginary PyTorch contraction.
+
+The checked-in
+[`mps_one_site_dispatch_a800.json`](../../benchmarks/results/local/mps_one_site_dispatch_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each of five
+fixed site-bucket shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
+3.7.1 and FlagTree 0.7.0. Across all 20 host, compiler, and shape combinations,
+the complete public dispatch path is `1.09x` to `1.46x` faster than eager
+PyTorch and `1.61x` to `2.53x` faster than its warm compiled reference for the
+forward direction. Forward plus backward is `1.22x` to `2.80x` faster than
+eager and `1.34x` to `2.27x` faster than warm compiled, with maximum forward
+absolute error `1.06e-8` and exact gradients for the measured inputs. The
+direct wrapper ranges from `0.55x` to `5.25x` for forward and `0.88x` to
+`1.13x` for forward plus backward, so the artifact does not claim a direct
+microbenchmark win on every shape. The canonical aggregate nevertheless
+records `eligible_for_default` because the complete public path wins in both
+directions against both public baselines; this authorizes a separate dispatch
+promotion review but does not itself change the opt-in policy. The result is
+bounded development hardware evidence, not a release gate or scalability
+claim. Reproduce or validate it with
+[`benchmarks/mps_one_site_dispatch.py`](../../benchmarks/mps_one_site_dispatch.py).
+
 The MPS-004 identity/Pauli-Z environment-transfer route is opt-in through
 `FQ_TRITON_MPS_ENVIRONMENT=1`. Dispatch authorizes the exact catalog entry
 before importing Triton and selects it only for contiguous CUDA `complex64`

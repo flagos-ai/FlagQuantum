@@ -151,6 +151,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_mps_one_site_triton.py::test_fused_mps_one_site_cpu_fallback_matches_reference",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_one_site_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-MPS-004-A",
