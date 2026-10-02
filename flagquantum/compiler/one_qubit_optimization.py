@@ -254,7 +254,7 @@ def _u3_angles(matrix: Matrix) -> tuple[float, float, float]:
 
 
 def _emit(
-    matrix: Matrix, *, wire: int, metadata: Mapping[str, Any]
+    matrix: Matrix, *, qubit: int, metadata: Mapping[str, Any]
 ) -> tuple[Instruction, ...]:
     """The shortest exact sequence over `u3`, `phase`, and `rz` for one matrix."""
 
@@ -265,7 +265,7 @@ def _emit(
         emitted.append(
             Instruction(
                 _GENERAL_OPCODE,
-                (wire,),
+                (qubit,),
                 params={"theta": theta, "phi": phi, "lbd": lam},
                 metadata=metadata,
             )
@@ -274,7 +274,7 @@ def _emit(
         emitted.append(
             Instruction(
                 _PHASE_OPCODE,
-                (wire,),
+                (qubit,),
                 params={"theta": phi + lam},
                 metadata=metadata,
             )
@@ -283,7 +283,7 @@ def _emit(
         emitted.append(
             Instruction(
                 _Z_ROTATION_OPCODE,
-                (wire,),
+                (qubit,),
                 params={"theta": anchor},
                 metadata=metadata,
             )
@@ -346,7 +346,7 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
         return None
     replacement = _emit(
         product,
-        wire=instructions[0].wires[0],
+        qubit=instructions[0].wires[0],
         metadata=instructions[0].metadata,
     )
     return replacement if len(replacement) < len(instructions) else None
@@ -370,8 +370,8 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     open_runs: dict[int, list[int]] = {}
     closed_runs: list[list[int]] = []
 
-    def close(wires: Iterable[int]) -> None:
-        for touched in wires:
+    def close(qubits: Iterable[int]) -> None:
+        for touched in qubits:
             run = open_runs.pop(touched, None)
             if run is not None:
                 closed_runs.append(run)
