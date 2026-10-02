@@ -32,6 +32,7 @@ must validate the resulting behavior directly.
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
 | `legacy-root-api-test-debt.json` | Zero baseline preventing legacy root API references from returning to tests. |
+| `openqasm-import-v1-candidate.json` | Authorized additive Stable Core contract for the `from_openqasm` root export, its refusal vocabulary, and the accepted OpenQASM versions. |
 | `execution-options-v1-candidate.json` | Proposed, not-yet-authorized Stable Core contract for `ExecutionOptions`. |
 
 Validate the API migration baseline with

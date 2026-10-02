@@ -115,11 +115,11 @@ contract updates:
 
 | File | SHA-256 |
 | --- | --- |
-| `docs/public_api_v1.json` | `d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4` |
-| `contracts/public-api-v0.2-baseline.json` | `ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea` |
-| `contracts/public-api-v1-candidate.json` | `72124b6557b09ffee1ecbcc682e958d50aa6a1895e77f96d6e3bb63581ddc256` |
+| `docs/public_api_v1.json` | `f25a0ce757863543f5c36dc57f69e767202c1752a2b30177e1ed9ce1f4698eda` |
+| `contracts/public-api-v0.2-baseline.json` | `c1070b1c6d66cd00d99ba8603945c38fc6dc89966abcfeb0615add7ff9d01032` |
+| `contracts/public-api-v1-candidate.json` | `f2abe1e7b5a54d5a74e6a2700dc01bdfbc7304b473ea179ce1aac00611dd276c` |
 | `contracts/experimental-namespace-v1-candidate.json` | `852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4` |
-| `contracts/experimental-surface-v2-candidate.json` | `f400fb5d8de97f4cf51a15e4c8d2634398fbd158b5b0fda0dbfcf0d4afd63ef4` |
+| `contracts/experimental-surface-v2-candidate.json` | `a825bb758eb2f0cceea90e8aed17c69816215c6efd068448164bf58ecefe9144` |
 
 Experimental v2 currently has status `implemented_pending_review`. Recording its
 hash does not approve or freeze Proposal 011.

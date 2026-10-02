@@ -35,7 +35,37 @@ Use `optimize(program)` for target-independent optimization and
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
+| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+
+## Save and load OpenQASM
+
+`emit_openqasm` writes one program as OpenQASM 2 or 3 text, and the stable
+`fq.from_openqasm` reads that text back. It accepts only the subset the emitter
+writes and refuses everything else with an `OpenQASMImportError` that names the
+reason in `issue_code`:
+
+```python
+import flagquantum as fq
+from flagquantum.compiler.openqasm import emit_openqasm
+
+text = emit_openqasm(fq.Circuit(2).h(0).cx(0, 1))
+program = fq.from_openqasm(text)
+
+program.instructions            # the imported gates, in source order
+program.measurement_qubits      # the qubit behind each classical bit
+fq.run(program.to_circuit(), outputs=fq.counts(), shots=256).counts[0]
+```
+
+Import returns the program rather than a `Circuit` because a `Circuit` cannot
+carry a terminal measurement; call `to_circuit()` for the sampling path and
+`to_ir()` when the measurement mapping must be preserved. It never executes
+anything, and it does not read arbitrary third-party OpenQASM.
+
+`openqasm_gates.py` holds the gate spellings both directions read. `openqasm.py`
+emits, `openqasm_import.py` parses, and `target_conformance.py` checks an
+emission against an expected program; the three share one table, so a spelling
+one direction accepts and the other writes cannot appear.
 
 A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded

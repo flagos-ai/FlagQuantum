@@ -11,34 +11,8 @@ import torch
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import is_parameterized_value, parameter_names_in_value
+from .openqasm_gates import EMITTED_GATES as _DIRECT_GATES
 from .operator_lowering import validate_lowering
-
-_DIRECT_GATES = {
-    "i": "id",
-    "x": "x",
-    "y": "y",
-    "z": "z",
-    "h": "h",
-    "s": "s",
-    "sdg": "sdg",
-    "t": "t",
-    "tdg": "tdg",
-    "rx": "rx",
-    "ry": "ry",
-    "rz": "rz",
-    "u1": "u1",
-    "u2": "u2",
-    "u3": "u3",
-    "cx": "cx",
-    "cy": "cy",
-    "cz": "cz",
-    "swap": "swap",
-    "crx": "crx",
-    "cry": "cry",
-    "crz": "crz",
-    "ccx": "ccx",
-    "cswap": "cswap",
-}
 
 
 def _format_number(value: Any) -> str:
