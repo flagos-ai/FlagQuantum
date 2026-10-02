@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import torch
 
@@ -25,6 +25,7 @@ from .core.parameters import (
     bind_parameter_value,
     parameter_names_in_value,
 )
+from .core.qubit_mapping import normalize_qubits, qubit_map_from, remap_qubits
 from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 
@@ -36,54 +37,6 @@ if TYPE_CHECKING:
     from .runtime.options import ExecutionOptions
     from .runtime.planner.models import RuntimeSelectionPlan
     from .runtime.result import ExecutionResult
-
-
-def _wire_argument(owner: str, value: Any) -> int:
-    """Read one wire label without quietly rewriting the caller's value.
-
-    ``int(wire)`` accepted ``0.5`` as wire ``0``, ``"0"`` as wire ``0`` and ``True`` as
-    wire ``1``, so a mistyped wire changed which qubit a gate acted on instead of
-    failing.  A wire label is an integer, read through the interpreter's own
-    ``__index__`` protocol, which admits NumPy integers and zero-dimensional torch
-    integer tensors while refusing floats and strings.  ``bool`` is refused although it
-    satisfies ``operator.index``, for the reason :func:`_count_argument` gives: it is a
-    flag rather than a label, and the other label-taking entry points in this package
-    refuse it too.  The range of the label is not this function's business -- the
-    circuit refuses a wire past its width and the IR refuses a negative one.
-    """
-
-    if isinstance(value, bool):
-        raise TypeError(f"{owner} wire must be an integer, got {value!r}")
-    try:
-        return operator.index(value)
-    except TypeError:
-        raise TypeError(f"{owner} wire must be an integer, got {value!r}") from None
-
-
-def _normalize_wires(wires: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
-    """Read the wire arguments of one instruction, one label at a time.
-
-    A single label and a sequence of labels are both accepted, and the order matters:
-    a label is tried first, so a bare zero-dimensional tensor is read as the label it
-    denotes instead of being iterated.  ``str`` is excluded from the sequence form,
-    because ``"01"`` is a mistyped label rather than two labels.
-    """
-
-    if isinstance(wires, (str, bytes)):
-        return (_wire_argument(owner, wires),)
-    try:
-        return (_wire_argument(owner, wires),)
-    except TypeError as scalar_error:
-        if not hasattr(wires, "__iter__"):
-            raise
-        try:
-            items = tuple(cast("Iterable[int]", wires))
-        except TypeError:
-            # An iterable that refuses to be iterated as a sequence -- a
-            # zero-dimensional tensor is the case that occurs -- is a bad label, not a
-            # bad sequence, so the scalar refusal is the true one.
-            raise scalar_error from None
-        return tuple(_wire_argument(owner, wire) for wire in items)
 
 
 def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
@@ -106,6 +59,26 @@ def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
     if count < minimum:
         raise ValidationError(f"Circuit {name} must be >= {minimum}, got {count}")
     return count
+
+
+def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
+    """Read the width, batch size, and instructions of a program being composed.
+
+    The instructions are read into a tuple, so composing a circuit onto itself
+    appends a snapshot rather than iterating the list that is growing under it. A
+    hand-built :class:`CircuitIR` that declares no batch size is read as ``bsz=1``,
+    which is what a program with no batch dimension means; a mismatch against the
+    target circuit is refused by the caller rather than resolved.
+    """
+
+    if isinstance(other, Circuit):
+        return other.n_qubits, other.bsz, tuple(other._instructions)
+    if isinstance(other, CircuitIR):
+        return other.n_wires, other.metadata.get("batch_size", 1), other.instructions
+    raise TypeError(
+        "Circuit.compose accepts a Circuit or a CircuitIR, got "
+        f"{type(other).__name__}"
+    )
 
 
 class _CircuitConstructionOptions(TypedDict):
@@ -350,7 +323,7 @@ class Circuit:
     ) -> "Circuit":
         merged_params = dict(params or {})
         merged_params.update(kwargs)
-        normalized_wires = _normalize_wires(wires, owner=f"Gate {name!r}")
+        normalized_wires = normalize_qubits(wires, owner=f"Gate {name!r}")
         outside = tuple(wire for wire in normalized_wires if wire >= self.n_wires)
         if outside:
             raise ValidationError(
@@ -390,6 +363,87 @@ class Circuit:
         return self.gate(name, wires, matrix=unitary)
 
     unitary = any
+
+    def compose(
+        self,
+        other: "Circuit | CircuitIR",
+        *,
+        qubits: Iterable[int] | int | None = None,
+        qubit_map: Mapping[int, int] | None = None,
+    ) -> "Circuit":
+        """Continue this circuit with another program, placed on chosen qubits.
+
+        Every instruction of ``other`` is rewritten onto the target qubits and
+        appended, so the result is the circuit that building those instructions by
+        hand in the same order would have produced. Composition is a construction-time
+        operation: it emits instructions the IR already describes, so ``IR_VERSION``
+        does not change.
+
+        Args:
+            other: The program to append, as a :class:`Circuit` or a
+                :class:`CircuitIR`.
+            qubits: Target qubit for each qubit of ``other``, in ``other``'s own
+                order. A single qubit is accepted for a one-qubit program.
+            qubit_map: Target qubit of each qubit of ``other``, keyed by the qubit
+                label ``other`` uses. At most one of ``qubits`` and ``qubit_map`` may
+                be given.
+
+        Returns:
+            This circuit, so that calls chain.
+
+        Raises:
+            TypeError: If both ``qubits`` and ``qubit_map`` are given, if ``other`` is
+                neither a :class:`Circuit` nor a :class:`CircuitIR`, or if a label is
+                not an integer.
+            ValidationError: If the two programs disagree on batch size, if the target
+                map does not name every qubit of ``other``, if it names one target
+                qubit twice, or if a target qubit is outside this circuit.
+
+        Examples:
+            >>> import flagquantum as fq
+            >>> bell = fq.Circuit(2).h(0).cx(0, 1)
+            >>> fq.Circuit(4).x(0).compose(bell, qubits=(1, 2)).to_ir().instructions[-1].wires
+            (1, 2)
+        """
+
+        local_qubits, other_bsz, instructions = _composition_source(other)
+        if other_bsz != self.bsz:
+            raise ValidationError(
+                f"Circuit.compose cannot mix batch sizes: this circuit has "
+                f"bsz={self.bsz}, the composed program has bsz={other_bsz}."
+            )
+        target = qubit_map_from(
+            local_qubits,
+            qubits=qubits,
+            qubit_map=qubit_map,
+            owner="Circuit.compose",
+        )
+        negative = tuple(qubit for qubit in target if qubit < 0)
+        if negative:
+            raise ValidationError(
+                f"Circuit.compose target qubit(s) {negative} must be non-negative."
+            )
+        outside = tuple(qubit for qubit in target if qubit >= self.n_wires)
+        if outside:
+            raise ValidationError(
+                f"Circuit.compose target qubit(s) {outside} outside circuit range "
+                f"[0, {self.n_wires - 1}]."
+            )
+        for instruction in instructions:
+            self._instructions.append(
+                Instruction(
+                    name=instruction.name,
+                    wires=remap_qubits(
+                        instruction.wires, target, owner="Circuit.compose"
+                    ),
+                    params=dict(instruction.params),
+                    matrix=instruction.matrix,
+                    metadata=dict(instruction.metadata),
+                )
+            )
+        if instructions:
+            self._invalidate_execution_cache(instructions_changed=True)
+        return self
 
     def to_ir(self) -> CircuitIR:
         if self._ir_cache is None:
@@ -571,7 +625,7 @@ class Circuit:
 
         if wires is None:
             wires = range(self.n_wires)
-        return _expectation_z(self, _normalize_wires(wires, owner="expectation_z"))
+        return _expectation_z(self, normalize_qubits(wires, owner="expectation_z"))
 
     def expectation_ps(
         self,

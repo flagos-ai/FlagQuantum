@@ -15,6 +15,7 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
@@ -52,6 +53,21 @@ semantic qubit keywords. For example, `h(0)` and `h(qubit=0)` are equivalent;
 `cx(0, 1)` and `cx(control=0, target=1)` are equivalent. Symmetric two-qubit
 gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
 FlagQuantum IR continue to use `wires=`.
+
+`Circuit.compose(other, *, qubits=None, qubit_map=None)` continues a circuit with a
+program that was built on its own qubits, rewriting every instruction onto the qubits
+the caller names and returning the receiving circuit:
+
+```python
+block = fq.Circuit(2).h(0).cx(0, 1)
+circuit = fq.Circuit(4).x(0).compose(block, qubits=(1, 2))
+```
+
+`other` accepts a `fq.Circuit` or a `fq.CircuitIR`. With neither `qubits` nor
+`qubit_map` the placement is the identity. The map must name every qubit of `other`,
+must not place two of them on one target, and must stay inside the receiving circuit;
+a partial mapping is refused rather than completed by identity, because an identity
+image would move a gate silently.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
