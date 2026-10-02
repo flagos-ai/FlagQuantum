@@ -49,8 +49,14 @@ from flagquantum.runtime.audit.claim_boundary import (
 from flagquantum.runtime.distributed.transport_observability import (
     classify_explicit_host_transfer,
 )
+from flagquantum.runtime.executors.statevector.forward import (
+    TorchDistributedStatevectorResult,
+)
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
+)
+from flagquantum.runtime.executors.statevector.gather import (
+    gather_distributed_statevector,
 )
 from flagquantum.runtime.executors.statevector.reverse import (
     StatevectorCheckpointPolicy,
@@ -97,6 +103,17 @@ TRAINABLE_VALUES = (0.23, -0.37)
 MEASUREMENT = "sharded_statevector_forward"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
+
+#: The export leg. A rank holds one shard and the executor refuses to rebuild the
+#: whole vector, because a reconstruction whose cost grows with the state is not a
+#: distributed result. This workload asks for it anyway: the exported amplitude
+#: vector *is* the product, so the gather is what the leg is for rather than a
+#: check on an answer computed somewhere else. The timings below are the export's
+#: own, and the artifact never presents them as a speedup -- an all-gather has no
+#: speedup to report.
+EXPORT_MEASUREMENT = "distributed_statevector_full_state_export"
+EXPORT_WARMUP_ITERATIONS = 2
+EXPORT_ITERATIONS = 5
 
 #: The staging audit profiles the steady state for the same reason the samples
 #: warm up: a circuit's first execution also does the planning it will not
@@ -252,6 +269,82 @@ def _validation_state(result: Any) -> torch.Tensor:
             physical_basis |= bit << (len(mapping) - physical_wire - 1)
         canonical[logical_basis] = internal[physical_basis]
     return canonical
+
+
+def _export_observation(
+    result: TorchDistributedStatevectorResult,
+    *,
+    device: torch.device,
+    world_size: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    """Export the whole amplitude vector, and time the gather that produces it.
+
+    This is a separate act from `_validation_state`. Validation compares against
+    a single-device reference through a gather written out by hand inside this
+    probe, so a defect in the runtime's own gather cannot hide behind it. The
+    export is that runtime gather, called because the vector is what this leg
+    produces; the export's own record is the product's description.
+
+    Each sample is checked against the same reference as it is taken, so the
+    duration and the vector it belongs to cannot come from different calls. A
+    gather that returned a permuted or truncated vector would otherwise be
+    published as a product.
+
+    Every rank runs this, because the gather is a collective.
+    """
+
+    reference = _forward_circuit().state()[0].to(device=device)
+
+    durations: list[float] = []
+    errors: list[float] = []
+    latest: Any = None
+    for index in range(EXPORT_WARMUP_ITERATIONS + EXPORT_ITERATIONS):
+        _synchronize(device)
+        started = time.perf_counter()
+        exported = gather_distributed_statevector(result)
+        _synchronize(device)
+        elapsed = time.perf_counter() - started
+        errors.append(float(torch.max(torch.abs(exported.state[0] - reference)).item()))
+        if index >= EXPORT_WARMUP_ITERATIONS:
+            durations.append(elapsed)
+        latest = exported
+    if latest is None:  # pragma: no cover - both counts are positive constants
+        raise RuntimeError("the export leg has no iterations to run")
+    summary = latest.summary()
+    _require_declared_placement(
+        summary, leg="export", world_size=world_size, local_world_size=local_world_size
+    )
+
+    observed_error = max(errors)
+    if observed_error > NUMERICAL_TOLERANCE:
+        raise RuntimeError(
+            "the exported amplitude vector disagrees with the single-device "
+            f"reference: max_abs_error={observed_error}"
+        )
+
+    product = latest.state[0].detach().to(device="cpu", dtype=torch.complex128)
+    return {
+        "measurement": EXPORT_MEASUREMENT,
+        "operation": summary["operation"],
+        "operation_semantics": summary["operation_semantics"],
+        "gather_cost_semantics": summary["gather_cost_semantics"],
+        "product": "full_amplitude_vector",
+        "product_is_the_full_state": True,
+        "amplitude_vector_sha256": hashlib.sha256(
+            product.numpy().tobytes()
+        ).hexdigest(),
+        "max_abs_error": observed_error,
+        "gather": measured_performance(
+            durations,
+            warmup_iterations=EXPORT_WARMUP_ITERATIONS,
+            measurement=EXPORT_MEASUREMENT,
+        ),
+        # The gather's own record, published whole rather than paraphrased: it
+        # carries the basis order, the rank ownership, the byte counts, and the
+        # blocker that keeps these durations from being read as a speedup.
+        "result": summary,
+    }
 
 
 def _network_observation(
@@ -591,6 +684,27 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     )
 
 
+def _exports_the_full_state(export: dict[str, Any] | None) -> bool:
+    """Whether the export leg produced the whole amplitude vector as its product.
+
+    Read from the recorded gather summary rather than from a bare flag beside it,
+    so the fact the blocker turns on and the fact the artifact publishes cannot
+    drift apart. Two things have to hold: the vector was materialized in full,
+    and it was the product rather than a shard moved aside to check an answer.
+    """
+
+    if export is None:
+        return False
+    result = export.get("result")
+    if not isinstance(result, dict):
+        return False
+    return (
+        result.get("full_state_materialization") is True
+        and result.get("amplitude_basis_order") == "canonical_logical"
+        and export.get("product") == "full_amplitude_vector"
+    )
+
+
 def _artifact(
     *,
     rank_records: list[dict[str, Any]],
@@ -599,12 +713,21 @@ def _artifact(
     training: dict[str, Any],
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
+    export: dict[str, Any] | None,
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
     # One dict, put into the evidence and then read back by the derivation, so
     # the blockers cannot be decided from a different set of observations than
     # the artifact publishes.
+    #
+    # The two full-state observations are kept apart because they are two
+    # different acts. Validation gathers a tiny state to check an answer against
+    # a single-device reference, and the gather is written out by hand inside
+    # this probe so that a defect in the runtime's own gather cannot hide behind
+    # it. The export is that runtime gather, called because the amplitude vector
+    # is what the export leg produces. Only the second one is a materialization
+    # the workload needs, so only the second one retracts the blocker.
     observations: dict[str, Any] = {
         "numerical_metrics": metrics,
         "training": training,
@@ -612,8 +735,9 @@ def _artifact(
         "network": network,
         "performance": performance,
         "host_staging": host_staging,
+        "export": export,
         "validation_full_state_materialization": True,
-        "production_full_state_materialization": False,
+        "production_full_state_materialization": _exports_the_full_state(export),
     }
     evidence = {
         "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
@@ -632,7 +756,8 @@ def _artifact(
             "local_world_size": local_world_size,
             "node_count": world_size // local_world_size,
             "distribution_semantics": "sharded_across_ranks",
-            "execution": "forward_backward_optimizer_and_checkpoint_resume",
+            "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+            "exported_product": "full_amplitude_vector",
         },
         "observations": observations,
         # Two kinds of boundary, kept apart because only one of them can move.
@@ -899,6 +1024,17 @@ def probe(
         host_staging = _host_staging_observation(
             device=device, local_world_size=local_world_size
         )
+        # The export runs after the staging audit so the profiled region stays
+        # the region the previous revision profiled. It runs on every rank and
+        # unconditionally: it is a workload whose product is the vector, not a
+        # timed leg the caller opts into, and the blocker it retracts is about
+        # the workload rather than about having taken a measurement.
+        export = _export_observation(
+            result,
+            device=device,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
 
         properties = torch.cuda.get_device_properties(device)
         record = result.summary()
@@ -930,6 +1066,7 @@ def probe(
                 training=training,
                 performance=performance,
                 host_staging=host_staging,
+                export=export,
                 world_size=world_size,
                 local_world_size=local_world_size,
             )
