@@ -268,6 +268,9 @@ def run_benchmark(
             "circuit_construction_in_timing": False,
             "one_time_engine_initialization_in_timing": False,
             "per_call_conversion_and_result_retrieval_in_timing": True,
+            "pennylane_native_batch_preprocessing_in_timing": False,
+            "pennylane_native_batch_result_materialization_in_timing": True,
+            "pennylane_native_batching": "broadcast_expand_preprocessed_once",
             "memory_scope": "fresh_process_high_water_resident_set",
             "memory_api": "resource.getrusage(RUSAGE_SELF).ru_maxrss",
             "memory_probe_warmup": 0,
@@ -297,13 +300,26 @@ def render_markdown(payload: dict[str, Any], *, artifact_name: str) -> str:
         "contaminate another's high-water mark. Each displayed value is the median",
         "of those probes; raw observations remain in JSON. The process baseline and",
         "circuit construction are included.",
-        "",
-        "| Workload | Qubits | Batch | Engine | Median time (ms) | vs FQ batch | Peak RSS (MiB) | Execution RSS growth (MiB) |",
-        "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
     ]
+    if "pennylane_lightning_native_batch" in payload["engines"]:
+        lines.extend(
+            (
+                "PennyLane Lightning native batch uses public broadcast expansion with",
+                "one-time device preprocessing outside warm timing. The separately named",
+                "bridge engine executes one public FlagQuantum bridge call per batch item.",
+            )
+        )
+    lines.extend(
+        (
+            "",
+            "| Workload | Qubits | Batch | Engine | Median time (ms) | vs FQ batch | Peak RSS (MiB) | Execution RSS growth (MiB) |",
+            "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
+        )
+    )
     for case in payload["cases"]:
         ratios = case["comparison"]["engine_over_flagquantum_batch_median"]
-        for engine, result in case["engines"].items():
+        for engine in payload["engines"]:
+            result = case["engines"][engine]
             ratio = 1.0 if engine == "flagquantum_native_batch" else ratios[engine]
             memory = result["isolated_memory"]
             lines.append(

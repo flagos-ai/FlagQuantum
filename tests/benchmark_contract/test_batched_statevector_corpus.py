@@ -127,6 +127,39 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
     assert "not each external framework's best raw batching API" in report
 
 
+@pytest.mark.pennylane
+def test_pennylane_native_batch_matches_flagquantum_batch() -> None:
+    pytest.importorskip("pennylane")
+    payload = run_benchmark(
+        workloads=("hardware_efficient_statevector",),
+        n_wires=(4,),
+        batch_sizes=(3,),
+        engines=(
+            "flagquantum_native_batch",
+            "pennylane_lightning_native_batch",
+        ),
+        threads=1,
+        warmup=0,
+        iterations=3,
+    )
+
+    case = payload["cases"][0]
+    assert case["correctness"]["passed"] is True
+    assert (
+        case["engines"]["pennylane_lightning_native_batch"]["execution_strategy"]
+        == "framework_native_broadcast_batch"
+    )
+    assert (
+        case["correctness"]["engines"]["pennylane_lightning_native_batch"][
+            "max_abs_error"
+        ]
+        <= 1e-10
+    )
+    report = render_markdown(payload, artifact_name="result.json")
+    assert "PennyLane native-batch" in report
+    assert "public broadcast expansion" in report
+
+
 def test_invalid_batch_contract_fails_closed() -> None:
     with pytest.raises(ValueError, match="batch_size must be positive"):
         build_parameter_batch("hardware_efficient_statevector", n_wires=4, batch_size=0)

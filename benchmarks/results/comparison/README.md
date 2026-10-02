@@ -29,6 +29,12 @@ Clifford-layer rollback A/B, public example, and reproduction command.
 records the exact Truncated QFT comparison and the deferred product-state SWAP
 materialization rollback A/B.
 
+[`BATCHED_STATEVECTOR_PENNYLANE_NATIVE_BATCH_CPU_ARM64_20261002_SCORECARD.md`](BATCHED_STATEVECTOR_PENNYLANE_NATIVE_BATCH_CPU_ARM64_20261002_SCORECARD.md)
+compares FlagQuantum's native parameter batch with both PennyLane Lightning's
+public broadcast expansion and the repeated single-item FlagQuantum bridge. It
+records exact times, speedups, correctness, peak RSS, baseline-adjusted execution
+growth, example code, reproduction steps, and the remaining memory gap.
+
 The differentiable simulator corpus adds matched exact expectation-value and
 full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
 default.qubit backprop. Its generated Markdown report contains the workload meaning,

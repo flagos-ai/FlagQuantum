@@ -40,6 +40,10 @@ def test_small_isolated_memory_probe_records_time_rss_and_correctness() -> None:
     assert (
         payload["distribution_semantics"] == "median_of_fresh_processes_per_engine_case"
     )
+    assert (
+        payload["methodology"]["pennylane_native_batch_preprocessing_in_timing"]
+        is False
+    )
     case = payload["cases"][0]
     for result in case["engines"].values():
         memory = result["isolated_memory"]
@@ -179,3 +183,80 @@ def test_checked_in_dense_width_artifact_records_speed_memory_and_framework() ->
         optimized["isolated_memory"]["peak_rss_bytes"]
         < rollback["isolated_memory"]["peak_rss_bytes"]
     )
+
+
+def test_checked_in_pennylane_native_batch_artifact_is_fair_and_complete() -> None:
+    comparison = REPOSITORY_ROOT / "benchmarks" / "results" / "comparison"
+    path = (
+        comparison
+        / "batched_statevector_pennylane_native_batch_cpu_arm64_20261002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    gate = json.loads(
+        (
+            comparison
+            / "batched_statevector_pennylane_native_batch_gate_cpu_arm64_20261002.json"
+        ).read_text(encoding="utf-8")
+    )
+    generated = (
+        comparison / "BATCHED_STATEVECTOR_PENNYLANE_NATIVE_BATCH_CPU_ARM64_20261002.md"
+    )
+    scorecard = (
+        comparison
+        / "BATCHED_STATEVECTOR_PENNYLANE_NATIVE_BATCH_CPU_ARM64_20261002_SCORECARD.md"
+    )
+
+    assert payload["hostname"] == "redacted"
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert (
+        payload["methodology"]["pennylane_native_batch_preprocessing_in_timing"]
+        is False
+    )
+    assert len(payload["cases"]) == 5
+    assert gate["verdict"] == "pass"
+    assert gate["policy"]["comparison_engine"] == "pennylane_lightning_native_batch"
+    assert gate["policy"]["max_native_over_comparison"] == 0.90
+    assert len(gate["cases"]) == 5
+    assert all(case["passed"] for case in gate["cases"])
+    for case in payload["cases"]:
+        assert set(case["engines"]) == {
+            "flagquantum_native_batch",
+            "pennylane_lightning_native_batch",
+            "pennylane_lightning_bridge",
+        }
+        native = case["engines"]["flagquantum_native_batch"]
+        lightning = case["engines"]["pennylane_lightning_native_batch"]
+        assert native["batch_total"]["sample_count"] == 11
+        assert lightning["batch_total"]["sample_count"] == 11
+        assert native["isolated_memory"]["sample_count"] == 3
+        assert lightning["isolated_memory"]["sample_count"] == 3
+        assert (
+            native["batch_total"]["median_seconds"]
+            < lightning["batch_total"]["median_seconds"]
+        )
+        assert (
+            case["correctness"]["engines"]["pennylane_lightning_native_batch"][
+                "max_abs_error"
+            ]
+            <= 1e-10
+        )
+    assert generated.read_text(encoding="utf-8") == render_markdown(
+        payload, artifact_name=path.name
+    )
+    scorecard_text = scorecard.read_text(encoding="utf-8")
+    for case in payload["cases"]:
+        native_ms = (
+            case["engines"]["flagquantum_native_batch"]["batch_total"]["median_seconds"]
+            * 1000
+        )
+        lightning_ms = (
+            case["engines"]["pennylane_lightning_native_batch"]["batch_total"][
+                "median_seconds"
+            ]
+            * 1000
+        )
+        speedup = lightning_ms / native_ms
+        assert f"{native_ms:.3f} ms" in scorecard_text
+        assert f"{lightning_ms:.3f} ms" in scorecard_text
+        assert f"{speedup:.3f}x" in scorecard_text

@@ -48,6 +48,7 @@ EngineName = Literal[
     "qiskit_aer_bridge",
     "cirq_simulator_bridge",
     "pennylane_lightning_bridge",
+    "pennylane_lightning_native_batch",
 ]
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
@@ -65,6 +66,7 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "qiskit_aer_bridge",
     "cirq_simulator_bridge",
     "pennylane_lightning_bridge",
+    "pennylane_lightning_native_batch",
 )
 
 _ENGINE_LABELS: dict[EngineName, str] = {
@@ -98,6 +100,7 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     "qiskit_aer_bridge": "Qiskit Aer bridge",
     "cirq_simulator_bridge": "Cirq bridge",
     "pennylane_lightning_bridge": "PennyLane Lightning bridge",
+    "pennylane_lightning_native_batch": "PennyLane Lightning native batch",
 }
 
 
@@ -171,6 +174,49 @@ def _stack_results(results: Sequence[Any], engine: str) -> torch.Tensor:
             raise RuntimeError(f"{engine} returned no statevector")
         states.append(torch.as_tensor(state).reshape(1, -1))
     return torch.cat(states, dim=0)
+
+
+def _pennylane_native_batch_callable(
+    batched: fq.Circuit,
+    scalar: Sequence[fq.Circuit],
+) -> Callable[[], torch.Tensor]:
+    """Prepare Lightning's public broadcast expansion outside warm timing."""
+
+    qml = import_module("pennylane")
+    numpy = import_module("numpy")
+    conversion = import_module("flagquantum.ecosystem.pennylane.conversion")
+    n_wires = batched.n_wires
+    scalar_operations = tuple(
+        conversion.export_pennylane(scalar[0].to_ir()).quantum_script.operations
+    )
+    if len(scalar_operations) < n_wires:
+        raise RuntimeError("batched corpus lacks the parameterized terminal layer")
+    operations = list(scalar_operations[:-n_wires])
+    terminal = batched.to_ir().instructions[-n_wires:]
+    for wire, instruction in enumerate(terminal):
+        if instruction.name != "ry" or instruction.wires != (wire,):
+            raise RuntimeError("batched corpus terminal layer is not canonical RY")
+        angle = torch.as_tensor(instruction.params["theta"]).detach().cpu().numpy()
+        operations.append(qml.RY(angle, wires=wire))
+    script = qml.tape.QuantumScript(
+        operations,
+        measurements=(qml.state(),),
+        shots=None,
+    )
+    device = qml.device(
+        "lightning.qubit",
+        wires=range(n_wires),
+        shots=None,
+        c_dtype=numpy.complex128,
+    )
+    program, execution_config = device.preprocess()
+    circuits, postprocess = program((script,))
+
+    def execute() -> torch.Tensor:
+        native = postprocess(device.execute(circuits, execution_config))[0]
+        return torch.from_numpy(numpy.asarray(native).copy()).to(torch.complex128)
+
+    return execute
 
 
 def _engine_callable(
@@ -309,6 +355,8 @@ def _engine_callable(
             )
 
         return native_serial
+    if engine == "pennylane_lightning_native_batch":
+        return _pennylane_native_batch_callable(batched, scalar)
     if engine == "qiskit_aer_bridge":
         qiskit = import_module("flagquantum.ecosystem.qiskit")
         extensions = import_module("flagquantum.ecosystem.extensions")
@@ -353,6 +401,10 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
         "qiskit_aer_bridge": ("qiskit", "qiskit-aer"),
         "cirq_simulator_bridge": ("cirq-core",),
         "pennylane_lightning_bridge": ("pennylane", "pennylane-lightning"),
+        "pennylane_lightning_native_batch": (
+            "pennylane",
+            "pennylane-lightning",
+        ),
     }[engine]
     return {package: metadata.version(package) for package in packages}
 
@@ -370,6 +422,8 @@ def _execution_strategy(engine: EngineName) -> str:
         return "native_parameter_batch_clifford_phase_map_rollback"
     if engine == "flagquantum_native_dense_width_rollback":
         return "native_parameter_batch_four_wire_dense_rollback"
+    if engine == "pennylane_lightning_native_batch":
+        return "framework_native_broadcast_batch"
     return (
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
@@ -584,6 +638,7 @@ def run_benchmark(
             "exact_statevector": True,
             "independent_parameter_bindings": True,
             "external_bridge_batching": "repeated_single_item_bridge",
+            "pennylane_native_batching": "broadcast_expand_preprocessed_once",
             "engine_order": "rotated_per_iteration_within_one_process",
         },
         workloads=tuple(workloads),
@@ -600,16 +655,34 @@ def render_markdown(payload: dict[str, Any], *, artifact_name: str) -> str:
         "",
         f"Generated from [`{artifact_name}`]({artifact_name}). Each task returns N",
         "exact statevectors for N independent parameter bindings. FlagQuantum uses",
-        "its native parameter batch; current external bridges accept one item and",
-        "are therefore invoked repeatedly. This measures the FlagQuantum user-facing",
-        "interop surface, not each external framework's best raw batching API.",
-        "",
-        "| Workload | Qubits | Batch | Engine | Total (ms) | Per state (ms) | States/s | vs FQ batch |",
-        "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
     ]
+    if "pennylane_lightning_native_batch" in payload["engines"]:
+        lines.extend(
+            (
+                "its native parameter batch. Bridge engines accept one item and are",
+                "invoked repeatedly; the explicitly named PennyLane native-batch engine",
+                "uses Lightning's public broadcast expansion after one-time preprocessing.",
+            )
+        )
+    else:
+        lines.extend(
+            (
+                "its native parameter batch; current external bridges accept one item and",
+                "are therefore invoked repeatedly. This measures the FlagQuantum user-facing",
+                "interop surface, not each external framework's best raw batching API.",
+            )
+        )
+    lines.extend(
+        (
+            "",
+            "| Workload | Qubits | Batch | Engine | Total (ms) | Per state (ms) | States/s | vs FQ batch |",
+            "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
+        )
+    )
     for case in payload["cases"]:
         ratios = case["comparison"]["engine_over_flagquantum_batch_median"]
-        for engine, result in case["engines"].items():
+        for engine in payload["engines"]:
+            result = case["engines"][engine]
             total = result["batch_total"]["median_seconds"]
             ratio = 1.0 if engine == "flagquantum_native_batch" else ratios[engine]
             lines.append(
