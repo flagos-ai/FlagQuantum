@@ -25,13 +25,16 @@ from typing import Any
 import pytest
 
 from tools.check_evidence_revisions import (
+    EVIDENCE_ROOTS,
     ORIGIN_EXTERNAL_DEPENDENCY,
     ORIGIN_UNREFERENCED_OBJECT,
     evidence_errors,
+    recorded_origins,
     recorded_revisions,
 )
 from tools.evidence_provenance import (
     ORIGIN_PRODUCING_HOST_HISTORY,
+    SUPPORTED_REVISION_ORIGINS,
     ProvenanceUnavailableError,
     revision_is_published,
     revision_resolves,
@@ -45,6 +48,9 @@ ABSENT_REVISION = "0" * 40
 
 #: A second absent revision, used where a declaration and an artifact disagree.
 OTHER_ABSENT_REVISION = "1" * 40
+
+#: The revision `_with_filler` declares, which no case under test mentions.
+FILLER_REVISION = "9" * 40
 
 DECLARATION_HEADER = 'schema = "flagquantum.evidence_revision_origins.v1"\n'
 
@@ -137,6 +143,24 @@ def _errors(root: Path, *evidence_roots: Path) -> tuple[str, ...]:
         root=root,
         declarations=root / "evidence-revision-origins.toml",
         evidence_roots=evidence_roots or (root / "artifacts",),
+    )
+
+
+def _with_filler(root: Path, body: str = "") -> None:
+    """Write a well-formed table holding one unrelated declaration.
+
+    ``evidence_errors`` rejects an empty table before it walks, so a case about an
+    artifact that accounts for itself still needs the table to be usable. The filler
+    records a revision no case mentions, so it contributes no diagnostic of its own.
+    """
+
+    _write_artifact(root, "filler.json", {"source_revision": FILLER_REVISION})
+    _write_declarations(
+        root,
+        _declaration(
+            "artifacts/filler.json", FILLER_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        )
+        + body,
     )
 
 
@@ -300,6 +324,118 @@ def test_declared_revision_no_ref_reaches_passes(repository: Path) -> None:
     )
 
     assert _errors(repository) == ()
+
+
+def test_origin_stated_inside_the_artifact_accounts_for_it(repository: Path) -> None:
+    # Red before this change: the artifact disclosed why its pin is not obtainable
+    # here, `tools/evidence_provenance.py` read that disclosure, and this gate
+    # ignored it and demanded a row in the table anyway -- two records of one fact,
+    # neither aware of the other. Six checked-in artifacts state their own origin,
+    # so the disagreement was reachable on real evidence.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "self_described.json",
+        {
+            "source": {
+                "revision": ABSENT_REVISION,
+                "revision_origin": "producing_host_history",
+            }
+        },
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_origin_stated_beside_an_ordinary_field_is_honoured(repository: Path) -> None:
+    # The convention generalizes by suffix: whatever field records the revision
+    # carries the origin, so an artifact recording `base_commit` states
+    # `base_commit_origin` rather than reaching for a fixed key name.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "handoff.json",
+        {
+            "base_commit": ABSENT_REVISION,
+            "base_commit_origin": "producing_host_history",
+        },
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_origin_stated_inside_the_artifact_and_in_the_table_must_agree(
+    repository: Path,
+) -> None:
+    # Green before this change, which is the defect: the two records were never
+    # compared, so an artifact could contradict the table and pass twice. A record
+    # that contradicts itself is worse than one that says nothing, because it reads
+    # as a disclosure.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "contradicting.json",
+        {
+            "source": {
+                "revision": ABSENT_REVISION,
+                "revision_origin": "external_dependency",
+            }
+        },
+    )
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/filler.json", FILLER_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        )
+        + _declaration(
+            "artifacts/contradicting.json",
+            ABSENT_REVISION,
+            ORIGIN_PRODUCING_HOST_HISTORY,
+        ),
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "disagree" in errors[0]
+    assert ABSENT_REVISION in errors[0]
+
+
+def test_origin_stated_for_an_obtainable_revision_fails(repository: Path) -> None:
+    # The rule that makes an origin a disclosure rather than a hiding place applies
+    # to the artifact's own record too: a revision a clone obtains needs no origin,
+    # so stating one for it is rejected wherever it is stated.
+    _with_filler(repository)
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_artifact(
+        repository,
+        "resolving.json",
+        {"source": {"revision": head, "revision_origin": "producing_host_history"}},
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "needs no origin" in errors[0]
+
+
+def test_unsupported_origin_stated_inside_the_artifact_is_rejected(
+    repository: Path,
+) -> None:
+    # An unusable origin is named as such and does not account for the revision, so
+    # a typo cannot substitute for a disclosure.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "mistyped.json",
+        {"base_commit": ABSENT_REVISION, "base_commit_origin": "somewhere_else"},
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 2
+    assert any("is not a supported origin" in error for error in errors), errors
+    assert any("names no commit" in error for error in errors), errors
 
 
 def test_directory_declaration_covers_every_artifact_below_it(repository: Path) -> None:
@@ -543,3 +679,30 @@ def test_checked_in_evidence_accounts_for_every_recorded_revision() -> None:
         pytest.skip(f"this checkout cannot resolve revisions: {error}")
 
     assert errors == ()
+
+
+def test_checked_in_artifacts_state_origins_the_gate_reads() -> None:
+    # The convention is only a checked fact if the real tree uses it, so this reads
+    # both walked roots and requires the gate's second input to be populated. A tree
+    # in which no artifact stated its own origin would leave the cross-check
+    # unreachable, with the gate passing while comparing nothing. Agreement between
+    # the two records is enforced on this same tree by the test above, which runs the
+    # gate over it.
+    #
+    # The vocabulary is asserted too: an origin written inside an artifact is read by
+    # `tools/evidence_provenance.py` as well, so it must be one that module supports.
+    # `producing_host_history` is the only value the two vocabularies share, and the
+    # only one any checked-in artifact states.
+    stated: list[tuple[str, str, str]] = []
+    for evidence_root in EVIDENCE_ROOTS:
+        for path in sorted(evidence_root.rglob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            artifact = path.relative_to(ROOT).as_posix()
+            stated.extend(
+                (artifact, record.revision, record.origin)
+                for record in recorded_origins(payload)
+            )
+
+    assert stated, "no checked-in artifact states the origin of a revision it records"
+    for artifact, revision, origin in stated:
+        assert origin in SUPPORTED_REVISION_ORIGINS, (artifact, revision, origin)

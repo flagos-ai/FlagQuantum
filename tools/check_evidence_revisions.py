@@ -28,17 +28,28 @@ same path, so a complete clone reaches one verdict either way. The reachability
 question is asked only once presence is established, because a repository cannot
 report the refs reaching a commit it does not hold.
 
-The origins live in one table rather than inside each artifact because several of
-these artifacts are regenerated evidence: a checked-in contract test rebuilds the
-payload from the recorded runs and asserts equality
+A revision can be accounted for in two places, and the gate reads both. The first is
+the table: a declaration names one artifact, or a directory that contains the
+artifacts recording the revision, which is how a bulk evidence surface states one
+origin once instead of repeating it for every file.
+
+The second is the artifact itself. ``tools/evidence_provenance.py`` already reads
+``source.revision_origin``, and the same convention applies beside any field that
+records a revision: an artifact carrying ``base_commit`` may state
+``base_commit_origin``, and one carrying ``environment.torch_fl_revision`` may state
+``environment.torch_fl_revision_origin``. The table is not a replacement for that
+disclosure, and this gate does not treat it as one. Both are read, an artifact that
+states its origin is not also required to appear in the table, and an artifact whose
+two records disagree fails rather than passing twice: a record that contradicts
+itself is worse than one that says nothing, because it reads as disclosure.
+
+The table remains necessary because several of these artifacts are regenerated
+evidence: a checked-in contract test rebuilds the payload from the recorded runs and
+asserts equality
 (``build_flagos_statevector_capacity_profile(runs).to_dict() == payload``), so
 inserting a provenance key inside them would change what those artifacts must
-contain. An artifact whose ``source`` mapping is not rebuilt states the origin in
-``source.revision_origin`` instead, which ``tools/evidence_provenance.py`` already
-reads; both records answer the same question and neither is required for a
-revision this repository contains. A declaration names one artifact, or a
-directory that contains the artifacts recording the revision, which is how a bulk
-evidence surface states one origin once instead of repeating it for every file.
+contain. An origin stated in either place accounts for the revision, and neither is
+required for a revision this repository obtains.
 """
 
 from __future__ import annotations
@@ -125,8 +136,51 @@ class RevisionOrigin:
     repository: str | None = None
 
 
+@dataclass(frozen=True)
+class RecordedOrigin:
+    """An origin an artifact states inside itself for a revision it records.
+
+    Attributes:
+        revision: Full-length hexadecimal revision the artifact records.
+        field: JSON path of the field that records the revision.
+        origin: Value of the ``<field>_origin`` field beside it.
+    """
+
+    revision: str
+    field: str
+    origin: str
+
+
 def _load_toml(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def _recorded(payload: Any) -> tuple[dict[str, tuple[str, ...]], dict[str, str]]:
+    """Return the revisions ``payload`` records and every string leaf it holds.
+
+    One traversal answers both questions a caller has about an artifact -- which
+    revisions it records, and what it states beside them -- so an artifact is
+    decoded once and walked once per reader of it.
+    """
+
+    found: dict[str, list[str]] = {}
+    strings: dict[str, str] = {}
+
+    def walk(node: Any, path: str) -> None:
+        if isinstance(node, Mapping):
+            for key, value in node.items():
+                walk(value, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+        else:
+            if isinstance(node, str):
+                strings[path] = node
+            if is_full_revision(node):
+                found.setdefault(node, []).append(path)
+
+    walk(payload, "")
+    return {revision: tuple(paths) for revision, paths in found.items()}, strings
 
 
 def recorded_revisions(payload: Any) -> dict[str, tuple[str, ...]]:
@@ -141,20 +195,43 @@ def recorded_revisions(payload: Any) -> dict[str, tuple[str, ...]]:
         every place a revision appears instead of only the first.
     """
 
-    found: dict[str, list[str]] = {}
+    revisions, _ = _recorded(payload)
+    return revisions
 
-    def walk(node: Any, path: str) -> None:
-        if isinstance(node, Mapping):
-            for key, value in node.items():
-                walk(value, f"{path}.{key}" if path else str(key))
-        elif isinstance(node, Sequence) and not isinstance(node, (str, bytes)):
-            for index, value in enumerate(node):
-                walk(value, f"{path}[{index}]")
-        elif is_full_revision(node):
-            found.setdefault(node, []).append(path)
 
-    walk(payload, "")
-    return {revision: tuple(paths) for revision, paths in found.items()}
+def recorded_origins(payload: Any) -> tuple[RecordedOrigin, ...]:
+    """Return the origins ``payload`` states beside the revisions it records.
+
+    The convention is ``<field>_origin`` beside any field that records a revision,
+    so ``source.revision_origin`` beside ``source.revision`` and
+    ``base_commit_origin`` beside ``base_commit`` both count. An artifact that
+    states its own origin is accounted for without the table, and one that states
+    an origin contradicting the table is reported instead of being believed twice.
+
+    Args:
+        payload: Decoded JSON value of an evidence artifact.
+
+    Returns:
+        One entry per revision field that has a string ``_origin`` beside it.
+    """
+
+    return _stated_origins(*_recorded(payload))
+
+
+def _stated_origins(
+    revisions: Mapping[str, tuple[str, ...]], strings: Mapping[str, str]
+) -> tuple[RecordedOrigin, ...]:
+    """Pair each recorded revision field with the ``_origin`` field beside it."""
+
+    stated: list[RecordedOrigin] = []
+    for revision, paths in revisions.items():
+        for path in paths:
+            origin = strings.get(f"{path}_origin")
+            if origin is not None:
+                stated.append(
+                    RecordedOrigin(revision=revision, field=path, origin=origin)
+                )
+    return tuple(stated)
 
 
 def _declared_origins(document: Any) -> tuple[RevisionOrigin, ...]:
@@ -296,6 +373,7 @@ def _artifact_errors(
     revisions: Mapping[str, tuple[str, ...]],
     origins: Sequence[RevisionOrigin],
     *,
+    stated: Sequence[RecordedOrigin] = (),
     root: Path = ROOT,
     resolutions: dict[str, bool] | None = None,
     publications: dict[str, bool] | None = None,
@@ -306,6 +384,7 @@ def _artifact_errors(
         artifact: Repository-relative path used to match declarations.
         revisions: Recorded revisions mapped to the JSON paths that carry them.
         origins: Declarations from :func:`_declared_origins`.
+        stated: Origins the artifact states inside itself for those revisions.
         root: Repository to resolve revisions against.
         resolutions: Cache of the presence answer, to keep one ``git`` probe per
             distinct revision across the whole walk.
@@ -313,26 +392,54 @@ def _artifact_errors(
             this repository holds.
 
     Returns:
-        One diagnostic per revision this repository does not yield and that is
-        therefore undeclared, and for a declared revision that is obtainable,
-        which needs no origin.
+        One diagnostic per revision this repository does not yield and that
+        therefore has no origin recorded in either place, per origin stated for a
+        revision this repository does obtain, and per revision whose two records
+        contradict each other.
     """
 
-    declared = {
-        origin.revision
-        for origin in origins
-        if _declaration_covers(origin.artifact, artifact)
-    }
+    declared: dict[str, list[RevisionOrigin]] = {}
+    for origin in origins:
+        if _declaration_covers(origin.artifact, artifact):
+            declared.setdefault(origin.revision, []).append(origin)
+    disclosures: dict[str, list[RecordedOrigin]] = {}
+    for record in stated:
+        disclosures.setdefault(record.revision, []).append(record)
+
+    supported = ", ".join(repr(value) for value in SUPPORTED_ORIGINS)
     errors: list[str] = []
     for revision, paths in revisions.items():
         where = ", ".join(paths)
         obtainable = _obtainable(revision, root, resolutions, publications)
-        if revision in declared:
+        rows = declared.get(revision, [])
+        records = disclosures.get(revision, [])
+
+        for record in records:
+            if record.origin not in SUPPORTED_ORIGINS:
+                errors.append(
+                    f"{artifact} states {record.origin!r} in {record.field}_origin for "
+                    f"{revision}, which is not a supported origin; use one of "
+                    f"{supported}"
+                )
+        stated_origins = {
+            record.origin for record in records if record.origin in SUPPORTED_ORIGINS
+        }
+        table_origins = {row.origin for row in rows}
+        if table_origins and stated_origins and table_origins != stated_origins:
+            errors.append(
+                f"{artifact} records {revision} ({where}) with origin "
+                f"{sorted(table_origins)} in {DECLARATIONS.name} and origin "
+                f"{sorted(stated_origins)} in its own fields, which disagree; one of "
+                "the two is wrong"
+            )
+
+        accounted_at = _accounted_at(rows, records)
+        if accounted_at is not None:
             if obtainable:
                 errors.append(
-                    f"{artifact} declares an origin for {revision} ({where}), but a "
-                    "clone that fetches this repository obtains that commit, so the "
-                    "revision needs no origin"
+                    f"{artifact} states an origin for {revision} ({where}) {accounted_at}, "
+                    "but a clone that fetches this repository obtains that commit, so "
+                    "the revision needs no origin"
                 )
             continue
         if obtainable:
@@ -348,17 +455,44 @@ def _artifact_errors(
         errors.append(
             f"{artifact} records {revision} ({where}), which names no commit in this "
             f"repository; declare it in {DECLARATIONS.name} with origin "
-            f"{ORIGIN_PRODUCING_HOST_HISTORY!r} or {ORIGIN_EXTERNAL_DEPENDENCY!r}"
+            f"{ORIGIN_PRODUCING_HOST_HISTORY!r} or {ORIGIN_EXTERNAL_DEPENDENCY!r}, or "
+            f"state {paths[0]}_origin beside the field that records it"
         )
     return tuple(errors)
 
 
-def _read_artifacts(
-    evidence_roots: Sequence[Path], root: Path
-) -> tuple[dict[str, dict[str, tuple[str, ...]]], list[str]]:
-    """Decode every walked artifact once, keyed by repository-relative path."""
+def _accounted_at(
+    rows: Sequence[RevisionOrigin], records: Sequence[RecordedOrigin]
+) -> str | None:
+    """Return where a revision's origin is recorded, or None when it is not.
+
+    An origin that this module does not support does not account for a revision:
+    it is reported on its own, and the revision stays unaccounted for so that the
+    missing disclosure is not hidden behind an unusable one.
+    """
+
+    places: list[str] = []
+    if any(row.origin in SUPPORTED_ORIGINS for row in rows):
+        places.append(f"in {DECLARATIONS.name}")
+    if any(record.origin in SUPPORTED_ORIGINS for record in records):
+        places.append("in its own fields")
+    return " and ".join(places) if places else None
+
+
+def _read_artifacts(evidence_roots: Sequence[Path], root: Path) -> tuple[
+    dict[str, dict[str, tuple[str, ...]]],
+    dict[str, tuple[RecordedOrigin, ...]],
+    list[str],
+]:
+    """Decode every walked artifact once, keyed by repository-relative path.
+
+    Returns:
+        The revisions each artifact records, the origins each states inside itself,
+        and the artifacts that could not be decoded.
+    """
 
     records: dict[str, dict[str, tuple[str, ...]]] = {}
+    disclosures: dict[str, tuple[RecordedOrigin, ...]] = {}
     errors: list[str] = []
     for evidence_root in evidence_roots:
         for path in sorted(evidence_root.rglob("*.json")):
@@ -368,8 +502,10 @@ def _read_artifacts(
             except (OSError, json.JSONDecodeError) as error:
                 errors.append(f"{artifact} could not be read as JSON: {error}")
                 continue
-            records[artifact] = recorded_revisions(payload)
-    return records, errors
+            revisions, strings = _recorded(payload)
+            records[artifact] = revisions
+            disclosures[artifact] = _stated_origins(revisions, strings)
+    return records, disclosures, errors
 
 
 def evidence_errors(
@@ -389,7 +525,7 @@ def evidence_errors(
     errors = list(_declaration_errors(document))
     if errors:
         return tuple(errors)
-    records, read_errors = _read_artifacts(evidence_roots, root)
+    records, disclosures, read_errors = _read_artifacts(evidence_roots, root)
     errors.extend(read_errors)
     errors.extend(
         _declaration_consistency_errors(
@@ -405,6 +541,7 @@ def evidence_errors(
                 artifact,
                 revisions,
                 origins,
+                stated=disclosures.get(artifact, ()),
                 root=root,
                 resolutions=resolutions,
                 publications=publications,

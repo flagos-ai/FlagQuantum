@@ -71,7 +71,10 @@ this repository does not vendor and names the repository a reader obtains each f
 A revision that a clone obtains needs no origin, and declaring one for it fails the
 gate, so the table cannot be used to hide a checkable pin behind a claim. A
 declaration names an artifact or a directory, so a bulk evidence surface states one
-origin once instead of repeating it per file.
+origin once instead of repeating it per file. An artifact may also account for its
+own revisions by stating `<field>_origin` beside any field that records one, which
+six artifacts under `artifacts/` do; both records are read, and a revision whose two
+records disagree fails the gate rather than passing twice.
 
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its

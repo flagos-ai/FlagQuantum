@@ -187,11 +187,13 @@ jobs:
       # instead of a list, and asks two questions: every full-length revision at
       # any depth in an artifact under `artifacts/` or `benchmarks/results/` must
       # be obtainable here -- this repository holds the commit and a ref reaches
-      # it -- or be declared in `evidence-revision-origins.toml` with the origin a
-      # reader can obtain it from. Presence alone is not enough, because a commit
-      # only a deleted branch pointed at stays in the object database of the
-      # checkout that made it and no clone obtains it. It needs the full history
-      # this job already fetches.
+      # it -- or be accounted for by an origin, either declared in
+      # `evidence-revision-origins.toml` or stated inside the artifact as
+      # `<field>_origin` beside the field that records the revision. An artifact
+      # whose two records disagree fails rather than passing twice. Presence alone
+      # is not enough, because a commit only a deleted branch pointed at stays in
+      # the object database of the checkout that made it and no clone obtains it.
+      # It needs the full history this job already fetches.
       - name: Verify evidence revision origins
         run: python tools/check_evidence_revisions.py
       - name: Verify checked-in FlagOS reference evidence
