@@ -47,6 +47,7 @@ import statistics
 import subprocess
 import sys
 import time
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -175,6 +176,128 @@ def _measured_fraction(record: dict[str, Any], name: str, key: str) -> float:
     return 0.0
 
 
+def _owned_parameters(entries: Iterable[Mapping[str, Any]]) -> dict[str, list[str]]:
+    """Group the runtime's own per-parameter ownership records by owner rank.
+
+    The runtime names each parameter and the rank that owns it. The payload
+    restates that name instead of prefixing a second vocabulary onto it, so one
+    parameter keeps one identity across an artifact and the run it describes.
+    Which map a name appears in already says whether it names a parameter, its
+    gradient, or its update.
+    """
+
+    owned: dict[str, list[str]] = {}
+    for entry in entries:
+        owned.setdefault(f"rank:{int(entry['owner_rank'])}", []).append(
+            str(entry["parameter"])
+        )
+    for names in owned.values():
+        names.sort()
+    return owned
+
+
+def _agreed_ownership(
+    published: list[list[Mapping[str, Any]]], *, context: str
+) -> dict[str, list[str]]:
+    """The one parameter-to-owner map every rank published, or fail closed.
+
+    Ownership is not a rank-local measurement: the training result states the
+    whole map on every rank, so a payload that concatenated the ranks would list
+    each parameter once per rank, and one that read only rank 0 would accept a
+    leg whose other ranks reported a different map. Both are rejected here.
+    """
+
+    if not published or not published[0]:
+        raise SystemExit(
+            f"the sharded leg recorded no parameter ownership for {context}, so "
+            "a release payload cannot state which rank updated which parameter"
+        )
+    maps = [_owned_parameters(entries) for entries in published]
+    if any(mapping != maps[0] for mapping in maps[1:]):
+        raise SystemExit(
+            f"the ranks of the sharded leg disagree about which rank owns which "
+            f"parameter of {context}"
+        )
+    return maps[0]
+
+
+def _semantics_from_summary(summary: Mapping[str, Any]) -> dict[str, str]:
+    """Read the three ownership statements a training result published."""
+
+    return {
+        key: str(summary.get(key, "not_measured"))
+        for key in (
+            "parameter_ownership_semantics",
+            "gradient_ownership_semantics",
+            "optimizer_update_ownership_semantics",
+        )
+    }
+
+
+def _configuration_semantics(record: Mapping[str, Any], name: str) -> dict[str, str]:
+    """The ownership statements a speed leg recorded for one configuration."""
+
+    for item in record.get("measurements", {}).get("configurations", ()):
+        if item.get("name") == name:
+            return _semantics_from_summary(item)
+    return _semantics_from_summary({})
+
+
+def _shared_semantics(
+    statements: list[dict[str, str]], *, context: str
+) -> dict[str, str]:
+    """The ownership statements every rank of a sharded leg published."""
+
+    if any(item != statements[0] for item in statements[1:]):
+        raise SystemExit(
+            f"the ranks of the sharded leg disagree about the ownership "
+            f"semantics of {context}"
+        )
+    return statements[0]
+
+
+def _copy_map(owned: Mapping[str, list[str]]) -> dict[str, list[str]]:
+    """A copy of an owner map, so a payload's maps stay independent."""
+
+    return {owner: list(names) for owner, names in owned.items()}
+
+
+def _sharded_map(
+    owned: Mapping[str, list[str]], semantics: Mapping[str, str]
+) -> dict[str, list[str]]:
+    """The gradient map, empty when the measured reduction was not owner-scoped.
+
+    The audit reads a non-empty map as the evidence that each gradient was
+    reduced onto its owner, so a leg whose backward replicated them has nothing
+    to put here and the release fails closed instead of passing on a shape.
+    """
+
+    if semantics["gradient_ownership_semantics"] != "sharded_across_ranks":
+        return {}
+    return _copy_map(owned)
+
+
+def _runtime_ownership(
+    records: list[dict[str, Any]], name: str
+) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """Restate the ownership one configuration of a sharded speed leg measured."""
+
+    published = [
+        [
+            entry
+            for item in record.get("measurements", {}).get("configurations", ())
+            if item.get("name") == name
+            for entry in item.get("optimizer_ownership", ())
+        ]
+        for record in records
+    ]
+    semantics = _shared_semantics(
+        [_configuration_semantics(record, name) for record in records],
+        context=repr(name),
+    )
+    return _agreed_ownership(published, context=repr(name)), semantics
+
+
 def _bootstrap_ratio_interval(
     baseline: list[float],
     sharded: list[float],
@@ -298,17 +421,6 @@ def _write(args: argparse.Namespace, document: dict[str, Any]) -> None:
     print(args.measurements, flush=True)
 
 
-def _ownership(records: list[dict[str, Any]], key: str) -> dict[str, list[str]]:
-    owned: dict[str, list[str]] = {}
-    for record in records:
-        for item in record["measurements"].get("optimizer_ownership", ()):
-            name = str(item["parameter"])
-            owned.setdefault(f"rank:{int(item['owner_rank'])}", []).append(
-                f"{key}:{name}"
-            )
-    return owned
-
-
 def _placement(world: int, local_world_size: int) -> dict[str, str]:
     return {
         f"rank:{rank}": f"node:{rank // local_world_size}/gpu:{rank % local_world_size}"
@@ -333,6 +445,14 @@ def _production_fields(
     summaries = [record["measurements"] for record in records]
     communication = sum(int(item.get("communication_bytes", 0)) for item in summaries)
     single_node = local_world_size >= world
+    semantics = _shared_semantics(
+        [_semantics_from_summary(summary) for summary in summaries],
+        context=f"acceptance case {acceptance_case!r}",
+    )
+    owned = _agreed_ownership(
+        [list(summary.get("optimizer_ownership", ())) for summary in summaries],
+        context=f"acceptance case {acceptance_case!r}",
+    )
     return {
         "acceptance_case": acceptance_case,
         "world_size": world,
@@ -356,12 +476,10 @@ def _production_fields(
             int(item.get("completed_steps", 0)) for item in summaries
         ),
         "optimizer_update_semantics": "sharded_across_ranks",
-        "parameter_ownership_semantics": "sharded_across_ranks",
-        "gradient_ownership_semantics": "sharded_across_ranks",
-        "optimizer_update_ownership_semantics": "sharded_across_ranks",
-        "parameter_ownership": _ownership(records, "parameter"),
-        "gradient_ownership": _ownership(records, "gradient"),
-        "optimizer_update_ownership": _ownership(records, "update"),
+        **semantics,
+        "parameter_ownership": _copy_map(owned),
+        "gradient_ownership": _sharded_map(owned, semantics),
+        "optimizer_update_ownership": _copy_map(owned),
         "rank_placement": _placement(world, local_world_size),
         "local_memory_bytes_by_rank": peaks,
         "measured_peak_memory_bytes": max(peaks),
@@ -588,6 +706,24 @@ def _role_speed(args: argparse.Namespace) -> int:
                     "communication_fraction": float(
                         summary.get("communication_fraction", 0.0)
                     ),
+                    # The ownership maps a release payload publishes are the
+                    # runtime's own per-parameter records, so they travel with
+                    # the timing rather than being reconstructed later from the
+                    # world size.
+                    "optimizer_ownership": [
+                        dict(item) for item in summary.get("optimizer_ownership", ())
+                    ],
+                    "parameter_ownership_semantics": str(
+                        summary.get("parameter_ownership_semantics", "not_measured")
+                    ),
+                    "gradient_ownership_semantics": str(
+                        summary.get("gradient_ownership_semantics", "not_measured")
+                    ),
+                    "optimizer_update_ownership_semantics": str(
+                        summary.get(
+                            "optimizer_update_ownership_semantics", "not_measured"
+                        )
+                    ),
                 }
             )
         peak = int(torch.cuda.max_memory_allocated(device))
@@ -704,6 +840,7 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
         _measured_fraction(record, acceptance, "communication_fraction")
         for record in rank_records
     ]
+    ownership, ownership_semantics = _runtime_ownership(rank_records, acceptance)
     measurements = {
         "acceptance_case": "matched_speed",
         "world_size": world,
@@ -735,14 +872,19 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
             "needs a baseline to divide by"
         ),
         "capacity_premise_workload_sha256": capacity_digest,
-        "training_step_count": accepted_steps,
         "optimizer_update_semantics": "sharded_across_ranks",
-        "parameter_ownership_semantics": "sharded_across_ranks",
-        "gradient_ownership_semantics": "sharded_across_ranks",
-        "optimizer_update_ownership_semantics": "sharded_across_ranks",
-        "parameter_ownership": {"rank:0": ["parameter:matched-speed"]},
-        "gradient_ownership": {"rank:0": ["gradient:matched-speed"]},
-        "optimizer_update_ownership": {"rank:0": ["update:matched-speed"]},
+        "parameter_ownership_semantics": ownership_semantics[
+            "parameter_ownership_semantics"
+        ],
+        "gradient_ownership_semantics": ownership_semantics[
+            "gradient_ownership_semantics"
+        ],
+        "optimizer_update_ownership_semantics": ownership_semantics[
+            "optimizer_update_ownership_semantics"
+        ],
+        "parameter_ownership": _copy_map(ownership),
+        "gradient_ownership": _sharded_map(ownership, ownership_semantics),
+        "optimizer_update_ownership": _copy_map(ownership),
         "rank_placement": _placement(world, int(sharded["local_world_size"])),
         "local_memory_bytes_by_rank": peaks,
         "measured_peak_memory_bytes": max(peaks),

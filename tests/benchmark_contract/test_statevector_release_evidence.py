@@ -24,6 +24,7 @@ from benchmarks.internal.evidence.statevector_release_gate import (
     load_manifest,
 )
 from benchmarks.statevector_release_evidence import (
+    _agreed_ownership,
     _bootstrap_ratio_interval,
     _capacity_circuit,
     _gather,
@@ -58,6 +59,9 @@ def _rank_record(rank: int, world: int, *, peak: int, steps: int = 2) -> dict:
             "communication_bytes": 4096 * world,
             "communication_events": 10 * world,
             "losses": [0.5, 0.25],
+            "parameter_ownership_semantics": "sharded_across_ranks",
+            "gradient_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_ownership": [
                 {"parameter": f"parameter:{index}", "owner_rank": index % world}
                 for index in range(world)
@@ -188,6 +192,79 @@ def test_a_matched_speed_payload_states_the_capacity_premise_it_rests_on(tmp_pat
     assert validate_distributed_claim_evidence(evidence).release_gate_allowed is True
 
 
+def test_a_replicated_backward_publishes_no_gradient_ownership(tmp_path) -> None:
+    """A payload may not claim ownership the measured reduction did not create.
+
+    ``owner_reduce`` and ``reduce_scatter_sum`` leave each gradient on one rank;
+    a replicated backward leaves every rank holding the whole gradient. The
+    audit reads a non-empty gradient map as the evidence that the reduction was
+    owner-scoped, so a leg that measured a replicated reduction must publish the
+    semantics it measured and an empty map, and the release then fails closed.
+    """
+
+    artifact = _speed_summary(tmp_path, gradient_semantics="replicated_across_ranks")
+    evidence = artifact["evidence"]
+
+    assert evidence["gradient_ownership_semantics"] == "replicated_across_ranks"
+    assert evidence["gradient_ownership"] == {}
+    assert evidence["parameter_ownership"] != {}
+    assert evidence["optimizer_update_ownership"] != {}
+    audit = validate_distributed_claim_evidence(evidence)
+    assert audit.release_gate_allowed is False
+
+
+def test_a_matched_speed_payload_publishes_the_runtime_ownership_records(
+    tmp_path,
+) -> None:
+    """The maps are the runtime's per-parameter records, rank by rank."""
+
+    evidence = _speed_summary(tmp_path)["evidence"]
+
+    assert evidence["parameter_ownership_semantics"] == "sharded_across_ranks"
+    assert evidence["gradient_ownership_semantics"] == "sharded_across_ranks"
+    assert set(evidence["parameter_ownership"]) == {"rank:0", "rank:1"}
+    assert evidence["parameter_ownership"]["rank:0"] == ["parameter:0", "parameter:2"]
+    for key in (
+        "parameter_ownership",
+        "gradient_ownership",
+        "optimizer_update_ownership",
+    ):
+        owned = sorted(name for names in evidence[key].values() for name in names)
+        assert owned == sorted(f"parameter:{index}" for index in range(4)), key
+
+
+def test_ranks_that_disagree_about_ownership_produce_no_payload() -> None:
+    """A map is only evidence if every rank of the leg published the same one.
+
+    The runtime states the whole parameter-to-owner map on every rank, so a
+    payload that merged the ranks would list each parameter once per rank, and a
+    payload that trusted rank 0 alone would publish a map the rest of the leg
+    contradicts. Both are refused rather than sealed.
+    """
+
+    records = [
+        {
+            "rank": rank,
+            "measurements": {
+                "optimizer_ownership": [
+                    {
+                        "parameter": f"parameter:{index}",
+                        "owner_rank": (index + rank) % 2,
+                    }
+                    for index in range(4)
+                ]
+            },
+        }
+        for rank in range(2)
+    ]
+
+    with pytest.raises(SystemExit, match="disagree about which rank owns"):
+        _agreed_ownership(
+            [list(record["measurements"]["optimizer_ownership"]) for record in records],
+            context="acceptance case 'matched_speed'",
+        )
+
+
 def test_a_capacity_completion_payload_names_the_same_premise() -> None:
     """Both payload kinds name one premise, so the release reads consistently."""
 
@@ -237,6 +314,13 @@ def test_a_matched_speed_leg_that_measured_no_communication_reports_none(tmp_pat
             "seconds": [0.4, 0.42, 0.44, 0.46, 0.48],
             "minimum_seconds": 0.4,
             "median_seconds": 0.44,
+            "optimizer_ownership": [
+                {"parameter": f"parameter:{index}", "owner_rank": index % 2}
+                for index in range(4)
+            ],
+            "parameter_ownership_semantics": "sharded_across_ranks",
+            "gradient_ownership_semantics": "sharded_across_ranks",
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
         }
     ]
     sharded = {
@@ -250,8 +334,16 @@ def test_a_matched_speed_leg_that_measured_no_communication_reports_none(tmp_pat
         "workload_sha256": manifest["speed_workload"]["workload_sha256"],
         "software": {"torch": "2.13.0", "cuda": "13.0", "python": "3.12"},
         "ranks": [
-            {"measured_peak_memory_bytes": 4 * 1024**3, "timings": [0.1]},
-            {"measured_peak_memory_bytes": 4 * 1024**3, "timings": [0.1]},
+            {
+                "measured_peak_memory_bytes": 4 * 1024**3,
+                "timings": [0.1],
+                "measurements": {"configurations": copy.deepcopy(configurations)},
+            },
+            {
+                "measured_peak_memory_bytes": 4 * 1024**3,
+                "timings": [0.1],
+                "measurements": {"configurations": copy.deepcopy(configurations)},
+            },
         ],
         "measurements": {"configurations": configurations},
     }
@@ -346,7 +438,9 @@ def test_full_campaign_of_sealed_artifacts_passes_the_issue044_gate(tmp_path):
     assert passed is True
 
 
-def _speed_summary(tmp_path: Path) -> dict:
+def _speed_summary(
+    tmp_path: Path, *, gradient_semantics: str = "sharded_across_ranks"
+) -> dict:
     """Drive the frozen speed summary over synthetic legs and seal its output.
 
     The two legs carry deliberately different timings so the ratio is not a
@@ -356,6 +450,19 @@ def _speed_summary(tmp_path: Path) -> dict:
 
     manifest = load_manifest()
     acceptance = manifest["speed_workload"]["acceptance_configuration"]
+    # The runtime publishes one ownership record per parameter. The payload
+    # restates those records, so a synthetic leg has to carry them: this is the
+    # evidence the release audit reads to accept that the update was sharded.
+    ownership = [
+        {
+            "parameter": f"parameter:{index}",
+            "owner_rank": index % 2,
+            "gradient_reduction": "reduce_scatter_sum",
+            "optimizer_state_local": index % 2 == 0,
+            "update_route": "owner_step_then_broadcast",
+        }
+        for index in range(4)
+    ]
     configurations = [
         {
             "name": f"matched_speed_{index}",
@@ -372,6 +479,10 @@ def _speed_summary(tmp_path: Path) -> dict:
             "local_state_bytes": 8 * 2**24 // 2,
             "communication_fraction": (4096 * (index + 1))
             / (4096 * (index + 1) + 8 * 2**24 // 2),
+            "optimizer_ownership": copy.deepcopy(ownership),
+            "parameter_ownership_semantics": "sharded_across_ranks",
+            "gradient_ownership_semantics": gradient_semantics,
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
         }
         for index in range(3)
     ]
