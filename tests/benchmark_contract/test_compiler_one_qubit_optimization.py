@@ -35,10 +35,25 @@ _MEAN_OPTIMIZED_LENGTH = {
 #: What the target bases reach on the ``rz``/``sx`` program population. The four
 #: that publish a z-rotation and a pulse agree; ``clifford-t`` publishes neither
 #: and refuses every circuit.
+#:
+#: The two counts on the *declining* side are exact. That path leaves an
+#: ``rz``/``sx`` run exactly as it found it and every one of those opcodes is
+#: native to these bases, so the number is the program's own length and no
+#: synthesis touches it.
+#:
+#: The post-lowering count on the *folded* side is not exact, and pinning it as
+#: an integer was measured wrong: the fold emits a ``u3`` whose angles come from
+#: ``atan2``, and whether the target's Euler synthesis can then spell that ``u3``
+#: one gate shorter depends on whether an angle lands exactly on ``0`` or ``pi``
+#: -- a transcendental rounding, not a program property. The same program
+#: population gives 907 here, 893 in the CI lane, and 898 to 908 when the input
+#: angles are displaced by a single part in ``1e15``. The claim is the direction,
+#: so the direction is what is asserted, with the folded side bounded by ratio.
 _LEGAL_GATES_DECLINING = 771
-_LEGAL_GATES_NOT_DECLINING = 907
 _OPTIMIZED_GATES_DECLINING = 771
 _OPTIMIZED_GATES_NOT_DECLINING = 384
+_LEGAL_GATES_NOT_DECLINING_LOCAL = 907
+_LEGAL_GATES_NOT_DECLINING_SPREAD = 30
 _REFUSING_BASIS = "clifford-t"
 
 
@@ -135,7 +150,13 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
 
     Without the decline the fold is strictly shorter on the intermediate program
     (384 against 771) and strictly longer after the target's own lowering (907
-    against 771). Both halves have to hold, or the rule is not justified.
+    against 771 here). Both halves have to hold, or the rule is not justified.
+
+    Both halves are asserted as directions, because only the directions survive a
+    change of platform's transcendental library. See the note on
+    `_LEGAL_GATES_NOT_DECLINING_LOCAL`: the folded side's post-lowering count is a
+    synthesis outcome, and this test measures it as a ratio rather than pinning an
+    integer that only holds on the machine it was first read on.
     """
 
     measured = {row["label"]: row for row in payload["basis_reach"]}
@@ -150,15 +171,24 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
         assert (
             row["no_decline_rule"]["optimized_gates"] == _OPTIMIZED_GATES_NOT_DECLINING
         )
-        assert row["no_decline_rule"]["legal_gates"] == _LEGAL_GATES_NOT_DECLINING
         assert row["refused_circuits"] == 0, label
         assert (
             row["no_decline_rule"]["optimized_gates"]
             < row["declined_rule"]["optimized_gates"]
         )
+        # Folding looks better on the intermediate program and ends worse after
+        # the target's own lowering. The second half is the rule's whole
+        # justification, so it is asserted as a direction with margin: the local
+        # reading is 907 and the CI lane's is 893, both well inside the band.
+        folded_legal = row["no_decline_rule"]["legal_gates"]
         assert (
-            row["no_decline_rule"]["legal_gates"] > row["declined_rule"]["legal_gates"]
-        )
+            abs(folded_legal - _LEGAL_GATES_NOT_DECLINING_LOCAL)
+            <= _LEGAL_GATES_NOT_DECLINING_SPREAD
+        ), (label, folded_legal)
+        assert folded_legal > row["declined_rule"]["legal_gates"], label
+        # Non-vacuity: the ratio has to be about a synthesis that actually ran, so
+        # the folded side must still be larger than its own intermediate program.
+        assert folded_legal > row["no_decline_rule"]["optimized_gates"], label
 
 
 def test_the_qiskit_anchor_reports_the_global_phase_split(payload: dict) -> None:
