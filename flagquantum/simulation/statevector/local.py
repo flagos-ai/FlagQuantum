@@ -18,11 +18,6 @@ from ...core.runtime_config import runtime_config
 from ..gate_matrix import _parameter_batch_window
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
-from ..native_cpu.permutation import (
-    compact_cx_permutation_images,
-    fused_clifford_matching_out,
-    use_compact_cpu_cx_mapping,
-)
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .batching import (
     _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
@@ -31,8 +26,11 @@ from .batching import (
     _rotation_region_angles,
     _statevector_batch_input,
 )
-from .clifford_matching import _encode_clifford_phase_mapping as _encode_phase_mapping
-from .clifford_matching import native_clifford_matching_compile_enabled
+from .clifford_matching import (
+    apply_native_clifford_matching,
+    clifford_matching_output_reuse_enabled,
+    native_clifford_matching_compile_enabled,
+)
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
@@ -729,30 +727,19 @@ def _execute_statevector_program(
     circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
         batched_rotation_matrices
     )
+    reuse_clifford_output = clifford_matching_output_reuse_enabled(program)
     owns_output = False
+    clifford_scratch: torch.Tensor | None = None
     for step in program:
         if isinstance(step, _StatevectorCliffordMatchingStep):
-            cx_mapping = (
-                compact_cx_permutation_images(
-                    step.controls, step.targets, circuit.n_wires
-                )
-                if use_compact_cpu_cx_mapping(circuit.n_wires)
-                else _cx_sequence_permutation_index(
-                    step.controls,
-                    step.targets,
-                    circuit.n_wires,
-                    device=output.device,
-                    dtype=output.dtype,
-                )
-            )
-            cx_mapping, cz_edges = _encode_phase_mapping(
-                cx_mapping, step, circuit.n_wires
-            )
-            native_output = fused_clifford_matching_out(
+            native_output, clifford_scratch = apply_native_clifford_matching(
+                step,
                 output,
-                cx_mapping,
-                cz_edges,
-                circuit.n_wires,
+                n_wires=circuit.n_wires,
+                scratch=clifford_scratch,
+                reuse_output=reuse_clifford_output,
+                owns_state=owns_output,
+                mapping_builder=_cx_sequence_permutation_index,
             )
             if native_output is not None:
                 output = native_output
