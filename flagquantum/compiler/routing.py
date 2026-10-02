@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from threading import Lock
 from typing import Any
@@ -30,6 +30,20 @@ ROUTING_STRATEGIES = (
 
 # The two strategies that plan SWAPs from a search rather than estimating them.
 SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
+
+# The physical couplings a multi-wire instruction needs, as operand index pairs.
+# This is the authoritative vocabulary for multi-wire locality in the Compiler:
+# the pairs are the instruction's real two-wire interactions, taken from Core's
+# operand order (`ccx` is control1/control2/target and conjugates on the target;
+# `cswap` is control/target1/target2 and exchanges under the control), so the
+# requirement is not that the operands form a chain. The opcodes are Core's
+# arity-three operands, and
+# `tests/team/compiler/test_multi_wire_routing_locality.py` fails when a Core
+# arity of three or more has no entry here.
+_MULTI_WIRE_OPERAND_PAIRS: dict[str, tuple[tuple[int, int], ...]] = {
+    "ccx": ((0, 2), (1, 2)),
+    "cswap": ((0, 1), (0, 2)),
+}
 
 
 def _breadth_first_distances(
@@ -623,6 +637,46 @@ def _routing_metadata(
     }
 
 
+def _require_multi_wire_device_local(
+    instruction: Instruction,
+    wires: tuple[int, ...],
+    has_edge: Callable[[int, int], bool],
+) -> None:
+    """Fail closed unless a multi-wire instruction is executable on the device.
+
+    No router in this package synthesizes a three-or-more-wire instruction onto
+    physical couplings, and a routing strategy cannot insert SWAPs for one, so a
+    multi-wire instruction has to be decomposable where it stands. The required
+    couplings are read from `_MULTI_WIRE_OPERAND_PAIRS` rather than inferred from
+    the operand order, because the two known multi-wire instructions do not
+    interact on consecutive operands; an instruction with no entry is refused
+    instead of assumed local. Two-wire instructions keep their existing
+    SWAP-based handling.
+    """
+
+    if len(wires) < 3:
+        return
+    required = _MULTI_WIRE_OPERAND_PAIRS.get(instruction.name)
+    if required is None:
+        raise ValueError(
+            f"multi-wire instruction {instruction.name!r} has no verified physical "
+            f"connectivity rule: physical wires {wires}; decompose multi-wire "
+            "instructions onto device couplings before routing"
+        )
+    missing = tuple(
+        (wires[left], wires[right])
+        for left, right in required
+        if not has_edge(wires[left], wires[right])
+    )
+    if missing:
+        raise ValueError(
+            f"multi-wire instruction {instruction.name!r} requires physical "
+            f"couplings {missing} the device does not carry: physical wires "
+            f"{wires}; decompose multi-wire instructions onto device couplings "
+            "before routing"
+        )
+
+
 def _remap_instruction(
     instruction: Instruction,
     wires: tuple[int, ...],
@@ -690,6 +744,9 @@ def _route_persistent_layout(
     for source_index, instruction in enumerate(ir):
         mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
         if len(instruction.wires) != 2:
+            _require_multi_wire_device_local(
+                instruction, mapped_wires, coupling.has_edge
+            )
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -836,6 +893,9 @@ def _route_sabre(
         instruction = ir.instructions[source_index]
         placed_wires = plan.placements[source_index]
         if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
+            _require_multi_wire_device_local(
+                instruction, placed_wires, coupling.has_edge
+            )
             if instruction.metadata.get("is_channel"):
                 skipped_channel_count += 1
             routed.append(
@@ -932,6 +992,9 @@ def route_to_topology(
     skipped_channel_count = 0
     for source_index, instruction in enumerate(ir):
         if len(instruction.wires) != 2:
+            _require_multi_wire_device_local(
+                instruction, instruction.wires, coupling.has_edge
+            )
             routed.append(
                 _remap_instruction(
                     instruction,
