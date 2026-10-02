@@ -33,6 +33,7 @@ Use `optimize(program)` for target-independent optimization and
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
+| One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
@@ -75,6 +76,24 @@ A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
+
+Canonical optimization removes identities, cancels self-inverse pairs, adds up
+adjacent rotations that share one opcode, and folds a same-wire run that *mixes*
+opcodes -- `x rz(0.4) x`, four `t` gates spelling one `z`, the `h` that routing
+walked between two rotations -- into the shortest sequence that reproduces it.
+[one_qubit_optimization.py](one_qubit_optimization.py) is that last pass, and it
+is the Compiler-layer counterpart of Qiskit's `Optimize1qGates`. It is exact
+rather than exact-up-to-phase: a bare `u3` cannot carry a determinant, so the
+leftover is emitted on the same wire as `phase` or `rz` instead of being dropped,
+which is what Qiskit does with the `global_phase` field its DAG has and
+FlagQuantum IR does not. A run already spelled in one z-rotation/pulse alphabet
+is left alone, because the target's own lowering would re-spell the fold into
+more gates than the run had; that decline is measured, not assumed. No run
+carrying a trainable angle is folded at all -- composition reads numbers, and
+`merge_adjacent_rotations` keeps those angles in the autograd graph.
+[benchmarks/compiler_one_qubit_optimization.py](../../benchmarks/compiler_one_qubit_optimization.py)
+holds the per-length reduction, the statevector exactness, the decline, and the
+count difference from Qiskit's pass.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.

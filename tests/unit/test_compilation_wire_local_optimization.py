@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
+from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
 from flagquantum.compiler.pipeline import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
@@ -161,12 +162,18 @@ def _reference_merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
 
 
 def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
-    """The whole optimization pipeline as it stood before the wire index existed.
+    """The whole optimization pipeline with the traversal re-derived.
 
-    Only the traversal is re-derived here. The opcode tables and the parameter
-    arithmetic are imported from the implementation so that this oracle differs
-    from the code under test in exactly one respect: the reverse list scan that
-    the wire index replaced. If the two ever disagree, the index is wrong.
+    Only the traversal of the three wire-local passes is re-derived here. The
+    opcode tables and the parameter arithmetic are imported from the
+    implementation so that this oracle differs from the code under test in
+    exactly one respect: the reverse list scan that the wire index replaced. If
+    the two ever disagree, the index is wrong.
+
+    ``collapse_one_qubit_runs`` is called rather than re-derived, because it is a
+    different pass with its own traversal and not the subject of this oracle; it
+    is in the loop because the loop has to be the one the implementation runs for
+    the round-by-round comparison to mean anything.
     """
 
     ir = ensure_circuit_ir(circuit_or_ir)
@@ -176,6 +183,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = _reference_merge_self_inverse(ir)
         ir = _reference_merge_adjacent_rotations(ir)
         ir = _reference_remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
     raise AssertionError("the reference optimizer did not reach a fixed point")
