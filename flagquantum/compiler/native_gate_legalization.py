@@ -1,4 +1,12 @@
-"""Legalize CircuitIR instructions against an evidenced native gate set."""
+"""Legalize CircuitIR instructions against an evidenced native gate set.
+
+A rewrite is chosen from two sources, most exact first: the hand-written rules
+in this module, then one-qubit Euler synthesis in `one_qubit_synthesis`, which
+applies when the target publishes a z-rotation and a pi/2 x-rotation. Synthesis
+is only equal to its source up to one global phase; see that module for why no
+basis of those two pulses can do better, and why the exact rules stay ahead of
+it.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +32,7 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
+from .one_qubit_synthesis import HALF_PI_PULSE_OPCODES, synthesize_one_qubit
 
 
 class NativeGateLegalizationError(CompilationError):
@@ -158,7 +167,29 @@ def _supports(
     )
 
 
-def _replacement(instruction: Instruction) -> tuple[Instruction, ...] | None:
+def _z_rotation_opcode(
+    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
+) -> str | None:
+    """Return the z-rotation the target publishes, or None when it has none."""
+    for opcode in ("rz", "phase", "u1"):
+        if opcode in descriptors:
+            return opcode
+    return None
+
+
+def _half_pi_pulse_opcode(
+    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
+) -> str | None:
+    """Return the pi/2 x-rotation the target publishes, or None."""
+    for opcode in HALF_PI_PULSE_OPCODES:
+        if opcode in descriptors:
+            return opcode
+    return None
+
+
+def _specialized_replacement(
+    instruction: Instruction,
+) -> tuple[Instruction, ...] | None:
     metadata = instruction.metadata
     wires = instruction.wires
     if instruction.name == "x":
@@ -199,6 +230,37 @@ def _replacement(instruction: Instruction) -> tuple[Instruction, ...] | None:
             Instruction("cx", (left, right), metadata=metadata),
         )
     return None
+
+
+def _replacement(
+    instruction: Instruction,
+    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
+    *,
+    z_rotation: str | None,
+    pulse_opcode: str | None,
+) -> tuple[Instruction, ...] | None:
+    """Return the shortest verified rewrite whose gates are all native.
+
+    A target that publishes a z-rotation and a pi/2 x-rotation gains the general
+    one-qubit Euler synthesis. The hand-written rewrites stay first in line, so a
+    basis where a three-gate rewrite is already native keeps it instead of paying
+    five gates for the general form. When no rewrite is fully native the shortest
+    one is returned anyway, so the caller can name the gate the target is missing.
+    """
+    candidates: list[tuple[Instruction, ...]] = []
+    specialized = _specialized_replacement(instruction)
+    if specialized is not None:
+        candidates.append(specialized)
+    if z_rotation is not None and pulse_opcode is not None:
+        synthesized = synthesize_one_qubit(
+            instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode
+        )
+        if synthesized is not None:
+            candidates.append(synthesized)
+    for candidate in candidates:
+        if all(_supports(descriptors, item) for item in candidate):
+            return candidate
+    return candidates[0] if candidates else None
 
 
 def _identity(
@@ -243,6 +305,8 @@ def legalize_native_gates(
     if max_added_operations < 0:
         raise ValueError("max_added_operations must be non-negative")
     descriptors = _native_descriptors(snapshot, evaluated_at=evaluated_at)
+    z_rotation = _z_rotation_opcode(descriptors)
+    pulse_opcode = _half_pi_pulse_opcode(descriptors)
 
     instructions: list[Instruction] = []
     records: list[GateDecompositionRecord] = []
@@ -254,7 +318,12 @@ def legalize_native_gates(
             raise NativeGateLegalizationError(
                 f"custom matrix instruction {instruction.name!r} has no native contract"
             )
-        replacement = _replacement(instruction)
+        replacement = _replacement(
+            instruction,
+            descriptors,
+            z_rotation=z_rotation,
+            pulse_opcode=pulse_opcode,
+        )
         if replacement is None:
             raise NativeGateLegalizationError(
                 f"instruction {instruction.name!r} is not native and has no verified decomposition"
