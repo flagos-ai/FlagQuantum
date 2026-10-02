@@ -16,6 +16,8 @@ supports a `reachable = false` row all fail here.
 
 from __future__ import annotations
 
+import copy
+import importlib.util
 import inspect
 import json
 import math
@@ -609,3 +611,144 @@ def test_the_opcode_census_supports_the_unreachable_adjoint_rows() -> None:
         census
     )
     assert "the 4 refusals are the noise channels" in census
+
+
+# --------------------------------------------------------------------------------------
+# The gate: `tools/check_circuit_composition_contract.py`
+# --------------------------------------------------------------------------------------
+#
+# The tests above ask whether the contract is true of the code. This section asks the
+# other question: is the contract still enforced as a *gate*? The gate is what CI and
+# `tools/pre_push.py` run, so a clause it stopped reading is a clause nobody checks. Each
+# mutation below patches one clause and requires the gate to name it.
+
+_GATE_PATH = ROOT / "tools" / "check_circuit_composition_contract.py"
+_GATE_SPEC = importlib.util.spec_from_file_location(
+    "check_circuit_composition_contract", _GATE_PATH
+)
+assert _GATE_SPEC is not None and _GATE_SPEC.loader is not None
+_GATE = importlib.util.module_from_spec(_GATE_SPEC)
+_GATE_SPEC.loader.exec_module(_GATE)
+
+
+def test_the_composition_gate_accepts_the_checked_in_contract() -> None:
+    assert _GATE.contract_errors(_contract()) == ()
+
+
+def test_the_composition_gate_runs_in_ci_and_before_push() -> None:
+    """A gate that no workflow invokes is a script, not a gate."""
+
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "python tools/check_circuit_composition_contract.py" in workflow
+    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/check_circuit_composition_contract.py"' in pre_push
+
+
+def test_the_gate_and_this_file_agree_on_the_expansion_tests() -> None:
+    """One expand-and-compare test per provided operation, and it exists in this file."""
+
+    verification = _contract()["verification"]
+    provided = list(_contract()["scope"]["provided"])
+    assert list(verification["expansion_tests"]) == provided
+    source = Path(__file__).read_text(encoding="utf-8")
+    for operation, test in verification["expansion_tests"].items():
+        assert test.startswith("test_"), operation
+        assert f"def {test}(" in source, (operation, test)
+
+
+def _drop_rule(contract: dict[str, Any]) -> None:
+    contract["adjoint"]["declared_opcode_rules"].remove("adjoint_u2_angles")
+
+
+def _claim_control(contract: dict[str, Any]) -> None:
+    contract["scope"]["provided"].append("Circuit.control")
+    contract["scope"]["not_provided"].remove("Circuit.control")
+
+
+def _no_trigger(contract: dict[str, Any]) -> None:
+    row = next(item for item in contract["refusals"] if item["reachable"] is True)
+    del row["trigger"]
+
+
+def _no_reachability_note(contract: dict[str, Any]) -> None:
+    row = next(item for item in contract["refusals"] if item["reachable"] is False)
+    del row["reachability_note"]
+
+
+def _second_unreachable_row(contract: dict[str, Any]) -> None:
+    row = next(item for item in contract["refusals"] if item["reachable"] is True)
+    row["reachable"] = False
+    row["reachability_note"] = "claimed unreachable by this mutation"
+
+
+def _unknown_reason(contract: dict[str, Any]) -> None:
+    contract["refusals"][0]["exception"] = "RuntimeError"
+
+
+def _stale_phrase(contract: dict[str, Any]) -> None:
+    contract["refusals"][0]["message_phrase"] = "outside the wire range"
+
+
+def _missing_phrase_source(contract: dict[str, Any]) -> None:
+    contract["refusals"][0]["message_source"] = "flagquantum/core/absent.py"
+
+
+def _duplicate_code(contract: dict[str, Any]) -> None:
+    contract["refusals"][1]["code"] = contract["refusals"][0]["code"]
+
+
+def _stale_census(contract: dict[str, Any]) -> None:
+    contract["verification"]["opcode_census"] = "30 of 35 registered opcodes invert"
+
+
+def _expansion_test_missing(contract: dict[str, Any]) -> None:
+    del contract["verification"]["expansion_tests"]["Circuit.adjoint"]
+
+
+def _expansion_test_unknown(contract: dict[str, Any]) -> None:
+    contract["verification"]["expansion_tests"][
+        "Circuit.compose"
+    ] = "test_not_in_this_file"
+
+
+def _absent_authorization(contract: dict[str, Any]) -> None:
+    contract["authorization"].append("docs/api-changes/FQ-ABSENT-20990101.md")
+
+
+def _wrong_delivery(contract: dict[str, Any]) -> None:
+    contract["issue_codes"]["delivery"] = "prose"
+
+
+def _mutated_matrix_route(contract: dict[str, Any]) -> None:
+    contract["adjoint"]["matrix_route"] = "transpose"
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (_drop_rule, "declared adjoint rules drifted"),
+        (_claim_control, "contracted operation 'Circuit.control' does not exist"),
+        (_no_trigger, "is reachable with no trigger"),
+        (_no_reachability_note, "is unreachable with no reachability note"),
+        (_second_unreachable_row, "exactly one unreachable refusal"),
+        (_unknown_reason, "names unknown 'RuntimeError'"),
+        (_stale_phrase, "no longer occurs in"),
+        (_missing_phrase_source, "phrase source"),
+        (_duplicate_code, "refusal codes repeat"),
+        (_stale_census, "opcode census drifted"),
+        (_expansion_test_missing, "without an expansion test"),
+        (_expansion_test_unknown, "does not exist"),
+        (_absent_authorization, "authorization"),
+        (_wrong_delivery, "delivery form drifted"),
+        (_mutated_matrix_route, "matrix route must be conjugate_transpose"),
+    ],
+    ids=lambda item: getattr(item, "__name__", ""),
+)
+def test_the_composition_gate_refuses_a_mutated_contract(
+    mutate: Callable[[dict[str, Any]], None], expected: str
+) -> None:
+    contract = copy.deepcopy(_contract())
+    mutate(contract)
+    errors = _GATE.contract_errors(contract)
+    assert errors, f"{mutate.__name__} survived the gate"
+    assert any(expected in error for error in errors), (mutate.__name__, errors)
