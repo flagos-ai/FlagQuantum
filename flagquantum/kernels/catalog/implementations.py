@@ -225,6 +225,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_wire_probabilities",
         "fused_mps_wire_probabilities",
         layouts=("mps_site_tensor",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(

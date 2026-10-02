@@ -311,16 +311,16 @@ MPS-007 fuses the complex magnitude, left/right bond reduction, and
 normalization needed to obtain the two physical-index probabilities at one MPS
 site. Its implementation supports contiguous CUDA `complex64` tensors without
 gradients and at most `2**12` left-by-right bond elements; the wrapper retains
-the exact PyTorch reduction for other inputs. Runtime dispatch is opt-in through
-`FQ_TRITON_MPS_WIRE_PROBABILITIES=1`; eligible calls from the public MPS
-sampling path authorize the exact MPS-007 catalog entry before importing
-Triton. Route and fallback counts are exposed through `site_kernel_stats()`,
-and the first catalog-route event in each statistics window includes the active
-stock Triton or FlagTree compiler provenance. The Triton result is already
-normalized, so the public path returns it directly and enqueues finite-value
-validation with `torch._assert_async` instead of synchronizing the host for
-every wire. The switch remains opt-in until the default-selection change is
-reviewed independently.
+the exact PyTorch reduction for other inputs. Runtime dispatch is enabled by
+default inside that measured window. Set
+`FQ_TRITON_MPS_WIRE_PROBABILITIES=0` to use the reference path explicitly.
+Eligible calls from the public MPS sampling path authorize the exact MPS-007
+catalog entry before importing Triton. Route and fallback counts are exposed
+through `site_kernel_stats()`, and the first catalog-route event in each
+statistics window includes the active stock Triton or FlagTree compiler
+provenance. The Triton result is already normalized, so the public path returns
+it directly and enqueues finite-value validation with `torch._assert_async`
+instead of synchronizing the host for every wire.
 
 The checked-in
 [`mps_wire_probability_dispatch_a800.json`](../../benchmarks/results/local/mps_wire_probability_dispatch_a800.json)
@@ -331,9 +331,11 @@ Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
 absolute error `8.94e-8`. After removing redundant normalization and replacing
 per-wire host synchronization with device-side asynchronous validation, the
 complete public dispatch path is `1.27x` to `1.40x` faster across all 16
-host/compiler/shape cases. The canonical aggregate therefore records
-`eligible_for_default`; this is bounded development-hardware evidence, not a
-release gate or scalability claim.
+host/compiler/shape cases. The canonical aggregate records
+`eligible_for_default`, and MPS-007 is now a `provisional` implementation with
+default dispatch inside the measured window and the explicit kill switch
+above. This is bounded development-hardware evidence, not a release gate or
+scalability claim.
 Reproduce or validate it with
 [`benchmarks/mps_wire_probability_dispatch.py`](../../benchmarks/mps_wire_probability_dispatch.py).
 
@@ -445,8 +447,8 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 23 semantics and 25 implementations are implemented. MPS-003
-through MPS-006 are provisional after their evidenced default-dispatch
-promotions; the other 21 implementations remain experimental. The rest of the
+through MPS-007 are provisional after their evidenced default-dispatch
+promotions; the other 20 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
