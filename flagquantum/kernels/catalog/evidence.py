@@ -139,8 +139,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-002-A",
         "tests/unit/test_mps_two_site_triton.py::test_fused_mps_range_projection_avoids_full_matrix_with_correct_values",
+        "tests/unit/test_mps_low_rank.py::test_fixed_rank_two_site_opt_in_routes_inference_but_preserves_training_fallback",
         capability_tests=(
             "tests/unit/test_mps_two_site_triton.py::test_fused_mps_range_projection_cpu_fallback_matches_reference",
+            "tests/unit/test_mps_low_rank.py::test_fixed_rank_two_site_opt_in_routes_inference_but_preserves_training_fallback",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_projected_two_site_dispatch_a800.json",
         ),
     ),
     _evidence(
