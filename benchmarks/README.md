@@ -469,3 +469,52 @@ secret material:
 ```bash
 python tools/check_release_evidence_environment.py --world-size 8
 ```
+
+### Promotion walkthrough
+
+A campaign is four commands: generate the key, measure a leg, seal it, and
+promote the set once the gate passes it. Nothing in the sequence promotes on
+trust, and the sealer is the only place a claim flag is set.
+
+```bash
+# 1. One key per campaign, 32 random bytes, never committed and never logged.
+export FQ_EVIDENCE_SIGNING_KEY="$(openssl rand -hex 32)"
+
+# 2. Measure. The producer writes measurements only; it cannot claim anything.
+python -m torch.distributed.run --nnodes=2 --nproc-per-node=4 \
+  --node-rank=0 --master-addr=<host> --master-port=29500 \
+  benchmarks/statevector_release_evidence.py --role capacity-completion \
+  --node-count 2 --local-world-size 4 \
+  --workload-manifest benchmarks/manifests/statevector_capacity_workload_v2.json \
+  --measurements /tmp/capacity_completion.json 2>&1 | tee /tmp/capacity_completion.log
+
+# 3. Seal. `--release-payload` is what makes the envelope release-grade, and it
+#    is refused for a single-device run. Cross-host legs need one
+#    `--device-uuid <uuid>@<node>` per rank, or every rank is attributed to the
+#    host the sealer runs on.
+python tools/seal_runtime_evidence.py \
+  --measurements /tmp/capacity_completion.json \
+  --raw-log /tmp/capacity_completion.log \
+  --workload benchmarks/manifests/statevector_capacity_workload_v2.json \
+  --scope scheduled_4_8_gpu_scale --release-payload --world-size 8 \
+  --collective-backend nccl --device-uuid <uuid0>@0 ... --device-uuid <uuid7>@1 \
+  --output benchmarks/results/smoke/release_candidates/<campaign>/<leg>.json
+
+# 4. Evaluate the candidate set, then promote it. Both steps read the same
+#    gate, so a set that fails evaluation cannot be promoted.
+python benchmarks/internal/evidence/statevector_release_gate.py \
+  --candidate benchmarks/results/smoke/release_candidates/<campaign>
+python tools/promote_release_candidates.py \
+  --candidate benchmarks/results/smoke/release_candidates/<campaign>
+
+# 5. The promoted directory must now audit clean.
+python benchmarks/audit_results.py \
+  --input benchmarks/results/scalability --require-scalability
+```
+
+The sealer records the commit from `git rev-parse HEAD`, so a campaign must run
+from a checkout whose revision a reader can obtain. Keep the single-device
+capacity baseline in its own declared directory outside
+`benchmarks/results/scalability/`: the strict audit requires every file in the
+promoted directory to be release-grade sharded scalability evidence, and a
+one-device run never can be.
