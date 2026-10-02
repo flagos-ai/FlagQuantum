@@ -45,7 +45,13 @@ from numbers import Integral, Real
 import torch
 
 from .circuit import MemoryCircuit
-from .dem_construction import _code_matrix_entries, _memory_circuit_entries
+from .codes import StabilizerCode
+from .dem_construction import (
+    CssCodeMatrices,
+    _code_matrix_entries,
+    _memory_circuit_entries,
+    css_code_matrices,
+)
 from .noise import PhenomenologicalNoise
 
 _DETECTOR_PREFIX = "D"
@@ -809,37 +815,59 @@ class DetectorErrorModel:
     @classmethod
     def from_code_matrices(
         cls,
+        matrices: CssCodeMatrices,
         *,
-        hz: torch.Tensor,
         noise: PhenomenologicalNoise,
-        lz: torch.Tensor | None = None,
         num_rounds: int = 1,
     ) -> DetectorErrorModel:
-        """Build the code-capacity model of a parity-check and logical matrix.
+        """Build the code-capacity model of a set of CSS generator matrices.
 
-        ``hz`` and ``lz`` are read directly rather than simulated, so an
-        arbitrary code reaches a model without a circuit record standing for it:
-        a code whose checks and logical operators are known as matrices needs no
-        gadget, no wire layout, and no statevector. See
+        The matrices are read directly rather than simulated, so an arbitrary code
+        reaches a model without a circuit record standing for it: a code whose
+        checks and logical operators are known as matrices needs no gadget, no
+        wire layout, and no statevector. See
         :func:`~flagquantum.qec.dem_construction._code_matrix_entries` for the row
         and column conventions and for the detector geometry, which is the
         code-capacity one and not the geometry
         :meth:`from_memory_circuit` reads off a circuit.
 
-        The rates come from ``noise`` exactly as they do on the circuit route: a
-        data wire's bit flip at a round boundary, and a syndrome bit flipped at a
-        check's readout. The phase-flip family and the per-location rates
-        upstream states are therefore not reachable here, which the alignment
-        contract records against this entry point.
+        The rates come from ``noise`` as they do on the circuit route: a data
+        fault at a round boundary, and a syndrome bit flipped at a check's
+        readout. The matrix route carries all three Pauli data faults where the
+        circuit route carries the bit flip alone, because a circuit's detectors
+        are laid out for the basis it measures in and matrices have no such
+        layout. Upstream's per-qubit and per-check rates are not reachable here,
+        which the alignment contract records against this entry point.
         """
 
         num_detectors, num_observables, entries = _code_matrix_entries(
-            hz=hz, noise=noise, lz=lz, num_rounds=num_rounds
+            matrices, noise, num_rounds=num_rounds
         )
         return cls._merge_mechanisms(
             entries,
             num_detectors=num_detectors,
             num_observables=num_observables,
+        )
+
+    @classmethod
+    def from_code(
+        cls,
+        code: StabilizerCode,
+        *,
+        noise: PhenomenologicalNoise,
+        num_rounds: int = 1,
+    ) -> DetectorErrorModel:
+        """Build the code-capacity model of a code record.
+
+        The code is read into its CSS generator matrices by
+        :func:`~flagquantum.qec.css_code_matrices` and then into a model by
+        :meth:`from_code_matrices`, so a code described by its checks and its
+        logical observables reaches a detector error model in one call and without
+        a circuit being written for it.
+        """
+
+        return cls.from_code_matrices(
+            css_code_matrices(code), noise=noise, num_rounds=num_rounds
         )
 
     def to_stim_text(self) -> str:

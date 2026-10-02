@@ -58,7 +58,7 @@ from flagquantum.qec import (
     RepetitionCode,
     RotatedSurfaceCode,
     build_memory_circuit,
-    code_matrices,
+    css_code_matrices,
 )
 from flagquantum.qec.adapters import _BOUNDARY, _pymatching, _translate
 from flagquantum.qec.decoding_graph import DecodingGraph
@@ -429,11 +429,10 @@ def test_a_hyperedge_model_is_refused_before_the_translation() -> None:
     authority; the adapter inherits both refusals rather than adding a third.
     """
 
-    hz, lz = code_matrices(RotatedSurfaceCode(distance=3))
+    matrices = css_code_matrices(RotatedSurfaceCode(distance=3))
     model = DetectorErrorModel.from_code_matrices(
-        hz=hz,
+        matrices,
         noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
-        lz=lz,
         num_rounds=2,
     )
     with pytest.raises(CapabilityError) as info:

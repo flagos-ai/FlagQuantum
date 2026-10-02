@@ -66,12 +66,24 @@ class RepetitionNoiseProfile:
 
 @dataclass(frozen=True)
 class PhenomenologicalNoise:
-    """Independent data and measurement flips at fixed circuit locations.
+    """Independent per-location data and measurement faults.
 
-    ``data_flip`` applies to every data wire at the start of every syndrome
-    round, before that round's parity-check CNOTs. ``measurement_flip`` applies
-    to every syndrome measurement of every check in every round. Both are
-    independent per location per round.
+    The three data fields name the three single-qubit Pauli faults:
+    ``data_flip`` is an X fault, ``phase_flip`` a Z fault, and ``both_flip`` a Y
+    fault, which is the two of them at once. Each applies to every data wire at
+    the start of every syndrome round, before that round's parity-check CNOTs.
+    ``measurement_flip`` applies to every syndrome measurement of every check in
+    every round. All four are independent per location per round.
+
+    The data fault families are separate because a code-capacity model detects
+    them differently: an X fault flips the Z-type checks, a Z fault flips the
+    X-type checks, and a Y fault flips both. Setting all three to the same rate is
+    therefore a depolarizing channel, and setting only ``data_flip`` is the
+    bit-flip channel this record started as.
+
+    The rates are uniform. Upstream states an independent rate per qubit and per
+    check, which this record cannot express; the alignment contract records that
+    as an open gap rather than rounding it to a scalar here.
 
     This is a description of noise locations, not a ``NoiseModel``. The
     round-boundary data location has no equivalent in the executor's
@@ -81,10 +93,12 @@ class PhenomenologicalNoise:
     """
 
     data_flip: float = 0.0
+    phase_flip: float = 0.0
+    both_flip: float = 0.0
     measurement_flip: float = 0.0
 
     def __post_init__(self) -> None:
-        for name in ("data_flip", "measurement_flip"):
+        for name in ("data_flip", "phase_flip", "both_flip", "measurement_flip"):
             object.__setattr__(self, name, _probability(getattr(self, name), name=name))
 
 
