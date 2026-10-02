@@ -351,6 +351,8 @@ symbols_present = [
     "flagquantum.qec.DecodingGraphEdge",
     "flagquantum.qec.MinimumWeightMatchingDecoder",
     "flagquantum.qec.MatchingDecodeResult",
+    "flagquantum.qec.PyMatchingDecoder",
+    "flagquantum.qec.MatchingDependencyError",
 ]
 symbols_absent = [
     "get_decoder",
@@ -359,20 +361,21 @@ symbols_absent = [
     "DecoderResult",
 ]
 negative_search = [
-    "flagquantum/qec/adapters.py",
     "flagquantum/qec/registry.py",
 ]
 evidence = [
+    "flagquantum/qec/adapters.py",
     "flagquantum/qec/decoders.py",
     "flagquantum/qec/decoding_graph.py",
     "flagquantum/qec/matching.py",
     "flagquantum/qec/types.py",
+    "tests/qec/test_adapters_pymatching.py",
     "tests/qec/test_decoding_graph.py",
     "tests/qec/test_matching_decoder.py",
     "tests/qec/test_repetition_memory.py",
 ]
-next_action = "The two halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, and a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly. What is left is scope and plumbing, in this order. The optional PyMatching adapter as the bit-for-bit cross-check, behind an extra rather than as a dependency, because the self-implemented matcher is the authority and the cross-check is what keeps the correctness claim independent of an optional distribution. A registry, which is what makes the DEM-text entry point and an upstream-shaped get_decoder(name, ...) possible; the row keeps get_decoder absent deliberately, because a registry is a separate decision from a decoder and a name-keyed factory has no second caller yet. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. And a hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. Do not chase the closed-source NVIDIA decoder: interface shape only, and note that upstream's open chromobius and pymatching plugins are themselves the precedent for integrating rather than reimplementing."
-fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The four named absences are the registry, the two decoder families the matcher does not cover, and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution."
+next_action = "The three halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly, and the PyMatching cross-check behind the `pymatching` extra. The cross-check landed as a comparison of two selections rather than as an equality of two instruments, because the two instruments are not equal: PyMatching reports 3.9020747171643912 for a mechanism this package states as 3.9020746947749574, so the graph PyMatching minimizes over is not exactly this one and two explanations closer than that difference can be ordered differently on the two sides. What is asserted is therefore the cheapest weight on every syndrome, the observables wherever the cheapest explanation is unique, and the two refusals as the same set -- with a pinned tie on the distance-three repetition code so that the tie clause is a demonstrated fact rather than a place a disagreement could hide. What is left is scope and plumbing, in this order. A registry, which is what makes the DEM-text entry point and an upstream-shaped get_decoder(name, ...) possible; the row keeps get_decoder absent deliberately, because a registry is a separate decision from a decoder and a name-keyed factory has no second caller yet. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. And a hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. Do not chase the closed-source NVIDIA decoder: interface shape only, and note that upstream's open chromobius and pymatching plugins are themselves the precedent for integrating rather than reimplementing."
+fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The four named absences are the registry, the two decoder families the matcher does not cover, and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution. The cross-check fails closed in two places of its own rather than approximating a translation: a detector pair carrying two mechanisms is refused instead of being merged with PyMatching's `independent` strategy, which would collapse the pair and lose the logical-label difference, and a detector that no mechanism flips is refused because PyMatching infers its detector count from the edges it is given, so the syndrome vector would otherwise be renumbered. A graph outside the translation's domain is therefore refused by name while the matcher still answers it, so the cross-check's narrower domain is never reported as the authority's."
 
 [[rows]]
 id = "qec_decoder_configuration"
@@ -658,4 +661,4 @@ cudaq_symbol = "in-tree plugin sources under libs/qec/lib/decoders/plugins for c
 flagquantum_symbol = ""
 verdict = "absent"
 negative_search = ["flagquantum/qec/plugins"]
-note = "Not a capability to copy but a precedent that is direct evidence for this repository's plan: the framework being aligned to integrates open matching and matching-adjacent decoders behind a plugin boundary rather than reimplementing them, while its own closed decoder ships as a binary. That is the same split the parity matrix's qec_decoder_family reason records (integrate Apache-2.0, accelerate later through the FlagOS kernel path)."
+note = "Not a capability to copy but a precedent that is direct evidence for this repository's plan: the framework being aligned to integrates open matching and matching-adjacent decoders behind a plugin boundary rather than reimplementing them, while its own closed decoder ships as a binary. That is the same split the parity matrix's qec_decoder_family reason records (integrate Apache-2.0, accelerate later through the FlagOS kernel path). The integrating half of that split is now realized for one library -- flagquantum/qec/adapters.py is the PyMatching cross-check behind the pymatching extra -- and the field stays `absent` because the boundary is the field: the adapter is a concrete class over a decoding graph rather than a decoder registered under a name, so it proves integrating is the route without being the plugin protocol itself."

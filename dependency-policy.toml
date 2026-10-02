@@ -11,6 +11,12 @@ dev = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "r
 jax = ["jax>=0.10,<0.11"]
 cotengra = ["cotengra>=0.8,<0.9"]
 stim = ["stim>=1.16,<2"]
+# The matcher is self-implemented and is the authority; PyMatching is the
+# independent decoder the cross-check reads, and it stays behind an extra so the
+# core install and the decoder never depend on it. `flagquantum/qec/adapters.py`
+# records the boundary, the licence position, and what the comparison can and
+# cannot establish.
+pymatching = ["pymatching>=2.3,<3"]
 cuda = ["triton>=3.1,<4"]
 azure = ["qdk[azure]>=1.32.3,<2"]
 braket = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"]
@@ -28,7 +34,7 @@ interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-co
 [classes]
 development = ["dev"]
 accelerator_kernel = ["cuda"]
-optional_runtime = ["jax", "cotengra", "stim"]
+optional_runtime = ["jax", "cotengra", "stim", "pymatching"]
 heterogeneous_toolchain = ["cudaq"]
 interop = ["braket", "cirq", "pennylane", "quafu", "qiskit"]
 # A remote QPU provider SDK is neither an interop translation of a circuit
@@ -53,12 +59,13 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch"]
-core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "pymatching", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
 
 [tested]
 torch = ["2.5", "2.13"]
 jax = ["0.10"]
 stim = ["1.16"]
+pymatching = ["2.3"]
 azure = ["1.32.3"]
 braket = ["1.117.0", "1.127.1"]
 cirq = ["1.6.1", "1.7.0"]

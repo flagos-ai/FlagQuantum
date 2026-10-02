@@ -529,6 +529,10 @@ repetition-only `Decoder` protocol either. Nothing is built on top of this resul
 yet: there is no logical-error-rate estimator, no threshold scan, and no
 connection to the memory-experiment result records. The implementation imports
 `heapq`, `math`, `dataclasses`, and `numbers` and nothing else, so no new
-dependency is introduced; `stim` and `pymatching` are not imported, and the
-cross-check against `pymatching` as an independent implementation remains future
-work rather than a build dependency.
+dependency is introduced; `stim` and `pymatching` are not imported by it, and the
+cross-check against `pymatching` is a separate module behind the `pymatching`
+extra rather than a build dependency. That cross-check is
+`flagquantum/qec/adapters.py`, and what it established is stated there rather
+than here: the two decoders agree on the cheapest weight of every syndrome and on
+the observables wherever the cheapest explanation is unique, and a tie is
+uncomparable because PyMatching's own arithmetic is narrower than this module's.

@@ -168,11 +168,24 @@ the DEM and is required, not optional.
   path.
 
 Self-implementation is the authority for three reasons: it adds no runtime
-dependency, it runs in the `cpu-core` lane that installs only `.[dev]`, and
-bit-for-bit agreement between the self-implemented matcher and `pymatching` on
-identical DEMs is itself the correctness evidence. Hyperedge and non-graphlike
-detector error models fail closed rather than being approximated by graphlike
-edges.
+dependency, it runs in the `cpu-core` lane that installs only `.[dev]`, and it is
+the implementation the independent cross-check is read against. That cross-check
+landed, and its scope is narrower than "the two decoders agree", because the two
+instruments are not equal: `pymatching` reports `3.9020747171643912` for a
+mechanism this package states as `3.9020746947749574`, so the graph it minimizes
+over is not exactly this one and two explanations closer than that difference can
+be ordered differently on the two sides. The comparison is therefore of two
+*selections* over the same decoding graph — the cheapest weight of every syndrome
+with a tolerance of one single-precision rounding per selected mechanism, the
+observables wherever the cheapest explanation is unique, and the two refusals as
+the same set — and a tie is uncomparable rather than evidence against either
+implementation. Hyperedge and non-graphlike detector error models fail closed
+rather than being approximated by graphlike edges, and the translation refuses
+two graphs of its own rather than approximating them: a detector pair carrying
+two mechanisms, which `pymatching`'s `independent` merge strategy would collapse
+and thereby lose a logical-label difference, and a detector that no mechanism
+flips, which `pymatching` cannot represent because it infers its detector count
+from its edges.
 
 ### Stage 4 — Statistics and evidence
 
@@ -369,8 +382,11 @@ is not modified.
   `d = 5`, within an explicit shot budget.
 - Non-Pauli channels, hyperedge detector error models, and unsupported gates fail
   closed with a stated reason rather than being approximated.
-- The self-implemented matcher and `pymatching` agree bit for bit on identical
-  graphlike DEMs, and the agreement is a test.
+- The self-implemented matcher and `pymatching` agree on the cheapest weight of
+  every syndrome of a graphlike DEM inside the stated tolerance, on the observables
+  wherever the cheapest explanation is unique, and on which syndromes they refuse;
+  that agreement, the tied syndrome which makes unconditional agreement the wrong
+  claim, and both translation refusals are tests.
 - Logical failure is the parity of a declared logical observable, and the
   frozen profile's majority convention is documented as a deliberate,
   non-equivalent convention rather than silently unified.
