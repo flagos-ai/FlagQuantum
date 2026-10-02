@@ -31,6 +31,7 @@ from ...distributed.context import resolve_local_world_size, resolve_node_count
 from .distributed_optimizer import (
     execute_rank_owned_tn_sgd_step,
     plan_tn_parameter_owners,
+    plan_tn_parameter_ownership,
 )
 from .distributed_sliced_reverse import execute_distributed_sliced_tn_explicit_reverse
 from .sliced_tasks import plan_distributed_tn_slice_tasks
@@ -62,6 +63,11 @@ class ShardedTensorNetworkTrainingResult:
     local_world_size: int
     node_count: int
     rank: int
+    gradient_reduction: str
+    gradient_distribution_semantics: str
+    parameter_ownership_semantics: str
+    gradient_ownership: tuple[Mapping[str, Any], ...]
+    optimizer_update_ownership: tuple[Mapping[str, Any], ...]
     task_plan_identity: str
     slice_tasks: int
     slice_labels: tuple[int, ...]
@@ -111,8 +117,17 @@ class ShardedTensorNetworkTrainingResult:
             ),
             "forward_distribution_semantics": "sharded_across_ranks",
             "backward_distribution_semantics": "sharded_across_ranks",
-            "gradient_distribution_semantics": "sharded_across_ranks",
+            "gradient_reduction": self.gradient_reduction,
+            "gradient_distribution_semantics": self.gradient_distribution_semantics,
+            "gradient_ownership_semantics": self.gradient_distribution_semantics,
+            "parameter_ownership_semantics": self.parameter_ownership_semantics,
+            "gradient_ownership": tuple(dict(item) for item in self.gradient_ownership),
+            "optimizer_update_ownership": tuple(
+                dict(item) for item in self.optimizer_update_ownership
+            ),
+            "training_step_count": self.completed_steps - self.start_step,
             "optimizer_update_semantics": "sharded_across_ranks",
+            "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "task_plan_identity": self.task_plan_identity,
             "slice_tasks": self.slice_tasks,
             "slice_labels": self.slice_labels,
@@ -397,16 +412,7 @@ def train_distributed_tensor_network(
             f"{tasks_by_rank}; increase slice_count or reduce world_size"
         )
     owners = plan_tn_parameter_owners(len(parameters), world_size)
-    ownership = tuple(
-        {
-            "rank": owner,
-            "parameter_indices": tuple(
-                index for index, assigned in enumerate(owners) if assigned == owner
-            ),
-            "ownership": "rank_owned_optimizer_update",
-        }
-        for owner in range(world_size)
-    )
+    ownership = plan_tn_parameter_ownership(len(parameters), world_size)
 
     directory = None if checkpoint_directory is None else Path(checkpoint_directory)
     start_step = 0
@@ -457,6 +463,7 @@ def train_distributed_tensor_network(
             parameters,
             reverse.parameter_gradients,
             learning_rate=learning_rate,
+            gradient_reduction=gradient_reduction,
             process_group=process_group,
         )
         losses.append(float(loss.detach()))
@@ -517,6 +524,21 @@ def train_distributed_tensor_network(
     local_memory_bytes_by_rank = tuple(int(row[0]) for row in gathered_rows)
     owned_parameter_bytes_by_rank = tuple(int(row[1]) for row in gathered_rows)
 
+    # What the run may say about gradient ownership is read back from the step
+    # evidence rather than decided here: the reduction that ran is the only
+    # thing that knows whether the reduced gradient stayed on its owner. A run
+    # that resumed at its target step executed no reduction, so it reports that
+    # it measured none instead of inheriting the argument it was called with.
+    if step_records:
+        gradient_distribution_semantics = str(
+            step_records[-1]["optimizer"]["gradient_distribution_semantics"]
+        )
+    else:
+        gradient_distribution_semantics = "not_measured"
+    gradient_ownership = (
+        ownership if gradient_distribution_semantics == "sharded_across_ranks" else ()
+    )
+
     return ShardedTensorNetworkTrainingResult(
         losses=tuple(losses),
         # `steps` is the total target step count, so a resumed run reports the
@@ -527,6 +549,11 @@ def train_distributed_tensor_network(
         local_world_size=local_world_size,
         node_count=node_count,
         rank=rank,
+        gradient_reduction=gradient_reduction,
+        gradient_distribution_semantics=gradient_distribution_semantics,
+        parameter_ownership_semantics="sharded_across_ranks",
+        gradient_ownership=gradient_ownership,
+        optimizer_update_ownership=ownership,
         task_plan_identity=tasks.identity,
         slice_tasks=len(tasks.tasks),
         slice_labels=tuple(slicing.sliced_labels),
