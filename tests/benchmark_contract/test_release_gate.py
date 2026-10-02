@@ -1,4 +1,5 @@
 import hashlib
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -93,11 +94,40 @@ def test_manifest_freezes_workloads_thresholds_and_topologies():
     assert manifest["runtime"]["backend"] == "pytorch_native"
     capacity = manifest["capacity_workload"]
     workload_path = Path(capacity["manifest_path"])
-    assert capacity["n_wires"] == 31
+    # The recorded width is the narrowest one that still exhausts one A800: at
+    # 32 wires a single device completes, so a 32-wire baseline would falsify
+    # the premise the capacity case rests on rather than support it.
+    assert capacity["n_wires"] == 33
     assert (
         hashlib.sha256(workload_path.read_bytes()).hexdigest()
         == capacity["workload_sha256"]
     )
+    workload = json.loads(workload_path.read_text(encoding="utf-8"))
+    assert workload["n_wires"] == capacity["n_wires"]
+    assert workload["steps"] == capacity["minimum_optimizer_steps"]
+
+
+def test_manifest_pins_the_frozen_speed_workload_file():
+    """The timing protocol has one frozen definition, and this is its digest."""
+
+    speed = load_manifest()["speed_workload"]
+    path = Path(speed["manifest_path"])
+
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == speed["workload_sha256"]
+    frozen = json.loads(path.read_text(encoding="utf-8"))
+    assert frozen["warmup_steps"] == speed["warmup_steps"]
+    assert frozen["measured_steps"] == speed["measured_steps"]
+    names = [item["name"] for item in frozen["configurations"]]
+    assert speed["acceptance_configuration"] in names
+    assert sorted(item["n_wires"] for item in frozen["configurations"]) == sorted(
+        speed["qubits"]
+    )
+    assert sorted(item["depth"] for item in frozen["configurations"]) == sorted(
+        speed["depths"]
+    )
+    assert sorted(
+        item["cross_shard_gate_fraction"] for item in frozen["configurations"]
+    ) == sorted(speed["cross_shard_gate_fractions"])
 
 
 def test_single_device_baseline_is_provenance_evidence_not_a_release_world():

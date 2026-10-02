@@ -1,0 +1,736 @@
+"""Produce the measurements that a statevector release payload is sealed from.
+
+Every role in this script writes one *measurements* document and nothing else.
+The document is sealed into a signed ``measured_production_run`` envelope by
+``tools/seal_runtime_evidence.py``, which is the only place a claim flag is set.
+Keeping the measurement and the envelope apart means the run cannot choose its
+own claim: it reports what executed, and the sealer reports what that is worth.
+
+Run under ``torchrun``, for example on two hosts with one device each::
+
+    torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
+        --master-addr=<host> --master-port=29500 \
+        benchmarks/statevector_release_evidence.py \
+        --role capacity-completion --node-count 2 \
+        --workload-manifest benchmarks/manifests/statevector_capacity_workload_v2.json \
+        --measurements capacity_world2.json --raw-log capacity_world2.log \
+        --warmup 2 --iterations 5
+
+Roles divide by what is measured rather than by which host runs them:
+
+``capacity-failure``
+    Run the frozen capacity workload on one device and expect it to exhaust the
+    device. This is the provenance baseline: it demonstrates that the workload
+    the sharded run completes does not fit on a single accelerator.
+``capacity-completion``
+    Run the same frozen workload across more than one device and time it.
+``speed``
+    Run the frozen matched-speed workload and record per-iteration latencies.
+    The same role at world size 1 is the baseline leg of the comparison.
+``speed-summary``
+    Combine a single-device and a sharded speed leg into the paired comparison
+    the release manifest freezes. This role runs no circuit; it is arithmetic
+    over two already-measured documents, kept here so the ratio is computed by
+    reviewed code rather than by hand.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import os
+import platform
+import random
+import statistics
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+import torch
+import torch.distributed as dist
+
+import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
+
+SCHEMA = "flagquantum.statevector_release_measurements.v1"
+ROLES = (
+    "capacity-failure",
+    "capacity-completion",
+    "speed",
+    "speed-summary",
+)
+BOOTSTRAP_RESAMPLES = 2000
+BOOTSTRAP_SEED = 440044
+
+
+def _commit() -> str:
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unversioned-worktree"
+
+
+def _frozen(path: Path) -> tuple[dict[str, Any], str]:
+    raw = path.read_bytes()
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise SystemExit("--workload-manifest must contain a JSON object")
+    return payload, hashlib.sha256(raw).hexdigest()
+
+
+def _capacity_circuit(
+    frozen: dict[str, Any], device: torch.device
+) -> tuple[fq.Circuit, list[torch.Tensor]]:
+    """Build the circuit the frozen capacity manifest declares.
+
+    ``gates`` names the operations rather than describing them numerically, so
+    this builder is checked against the manifest instead of trusting that the
+    file and the code still agree.
+    """
+
+    n_wires = int(frozen["n_wires"])
+    expected = ["RY(n-1,theta)", "CX(n-1,n-2)", "RY(n-2,phi)"]
+    if list(frozen["gates"]) != expected:
+        raise SystemExit(f"unsupported frozen gate list: {frozen['gates']}")
+    theta = torch.tensor(0.23, device=device, requires_grad=True)
+    phi = torch.tensor(-0.37, device=device, requires_grad=True)
+    circuit = fq.Circuit(n_wires, device=device)
+    circuit.ry(n_wires - 1, theta)
+    circuit.cx(n_wires - 1, n_wires - 2).ry(n_wires - 2, phi)
+    return circuit, [theta, phi]
+
+
+def _speed_circuit(
+    frozen: dict[str, Any], device: torch.device
+) -> tuple[fq.Circuit, list[torch.Tensor]]:
+    """Build one matched-speed configuration as a layered ansatz.
+
+    The parameter count is ``n_wires * depth``: one independent rotation per
+    wire per layer. The manifest's circuits exist to time a workload, and a
+    workload whose parameter count is a toy would time a toy.
+    """
+
+    n_wires = int(frozen["n_wires"])
+    depth = int(frozen["depth"])
+    crossing = max(1, int(round(float(frozen["cross_shard_gate_fraction"]) * n_wires)))
+    circuit = fq.Circuit(n_wires, device=device)
+    parameters: list[torch.Tensor] = []
+    for layer in range(depth):
+        rotations = [
+            torch.tensor(
+                0.17 * (1 + layer) * (1 + wire) / n_wires,
+                device=device,
+                requires_grad=True,
+            )
+            for wire in range(n_wires)
+        ]
+        parameters.extend(rotations)
+        for wire in range(n_wires):
+            circuit.ry(wire, rotations[wire])
+        for wire in range(layer % 2, n_wires - 1, 2):
+            circuit.cx(wire, wire + 1)
+        # Long-range pairs, counted from both ends of the register, are the
+        # gates whose two wires a qubit-address shard plan puts on different
+        # ranks. The fraction the manifest freezes is how many of them run.
+        for index in range(crossing):
+            left = index % max(1, n_wires // 2)
+            right = n_wires - 1 - left
+            if right > left:
+                circuit.cx(left, right)
+    return circuit, parameters
+
+
+def _median(values: list[float]) -> float:
+    return float(statistics.median(values))
+
+
+def _bootstrap_ratio_interval(
+    baseline: list[float],
+    sharded: list[float],
+) -> tuple[float, float]:
+    """Percentile interval for the ratio of two independent latency samples."""
+
+    generator = random.Random(BOOTSTRAP_SEED)
+    ratios: list[float] = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        left = _median([generator.choice(baseline) for _ in baseline])
+        right = _median([generator.choice(sharded) for _ in sharded])
+        if right > 0:
+            ratios.append(left / right)
+    if not ratios:
+        return (float("-inf"), float("-inf"))
+    ratios.sort()
+    lower = ratios[int(0.025 * (len(ratios) - 1))]
+    upper = ratios[int(0.975 * (len(ratios) - 1))]
+    return (lower, upper)
+
+
+def _timed_step(
+    circuit: fq.Circuit,
+    frozen: dict[str, Any],
+    *,
+    device: torch.device,
+) -> tuple[float, Any]:
+    """Time one training call and return its wall seconds with its own result.
+
+    The result travels with the timing because a summary recorded from a later
+    call than the one that was timed would describe a run nobody measured.
+    """
+
+    start = time.perf_counter()
+    result = fqxd.train_distributed_statevector(
+        circuit,
+        steps=int(frozen["steps"]),
+        observable_wire=int(frozen["n_wires"]) - 2,
+        optimizer=str(frozen["optimizer"]),
+        timeout_seconds=3600.0,
+    )
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+    return time.perf_counter() - start, result
+
+
+def _rank_context() -> tuple[int, int, int]:
+    rank = int(os.environ.get("RANK", "0"))
+    world = int(os.environ.get("WORLD_SIZE", "1"))
+    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    return rank, world, local_rank
+
+
+def _initialize(distributed: bool, device: torch.device) -> None:
+    if distributed:
+        dist.init_process_group("nccl", device_id=device)
+
+
+def _rank_record(
+    *,
+    role: str,
+    args: argparse.Namespace,
+    measurements: dict[str, Any],
+    seconds: list[float],
+    rank: int,
+    world: int,
+    local_rank: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    device = torch.device("cuda", local_rank)
+    return {
+        "schema": SCHEMA,
+        "role": role,
+        "rank": rank,
+        "world_size": world,
+        "local_rank": local_rank,
+        "local_world_size": local_world_size,
+        "node_count": args.node_count,
+        "hostname": platform.node(),
+        "commit": _commit(),
+        "measurements": measurements,
+        "timings": seconds,
+        "warmup": args.warmup,
+        "iterations": args.iterations,
+        "measured_peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
+        "measured_peak_memory_bytes_by_rank": None,
+        "device_name": torch.cuda.get_device_properties(device).name,
+        "software": {
+            "torch": torch.__version__,
+            "cuda": torch.version.cuda,
+            "python": sys.version.split()[0],
+        },
+    }
+
+
+def _gather(record: dict[str, Any], world: int) -> list[dict[str, Any]]:
+    gathered: list[Any] | None = (
+        [None] * world if int(os.environ.get("RANK", "0")) == 0 else None
+    )
+    if world > 1:
+        dist.gather_object(record, gathered, dst=0)
+    else:
+        gathered = [record]
+    assert gathered is not None
+    return [item for item in gathered if isinstance(item, dict)]
+
+
+def _write(args: argparse.Namespace, document: dict[str, Any]) -> None:
+    payload = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    if args.measurements is None:
+        print(payload, end="", flush=True)
+        return
+    args.measurements.parent.mkdir(parents=True, exist_ok=True)
+    args.measurements.write_text(payload, encoding="utf-8")
+    print(args.measurements, flush=True)
+
+
+def _ownership(records: list[dict[str, Any]], key: str) -> dict[str, list[str]]:
+    owned: dict[str, list[str]] = {}
+    for record in records:
+        for item in record["measurements"].get("optimizer_ownership", ()):
+            name = str(item["parameter"])
+            owned.setdefault(f"rank:{int(item['owner_rank'])}", []).append(
+                f"{key}:{name}"
+            )
+    return owned
+
+
+def _placement(world: int, local_world_size: int) -> dict[str, str]:
+    return {
+        f"rank:{rank}": f"node:{rank // local_world_size}/gpu:{rank % local_world_size}"
+        for rank in range(world)
+    }
+
+
+def _production_fields(
+    *,
+    records: list[dict[str, Any]],
+    capacity: dict[str, Any],
+    node_count: int,
+    world: int,
+    local_world_size: int,
+    acceptance_case: str,
+    seconds: list[float],
+    extra: dict[str, Any],
+) -> dict[str, Any]:
+    """Assemble the field contract a release payload must carry."""
+
+    peaks = [int(record["measured_peak_memory_bytes"]) for record in records]
+    summaries = [record["measurements"] for record in records]
+    communication = sum(int(item.get("communication_bytes", 0)) for item in summaries)
+    single_node = local_world_size >= world
+    return {
+        "acceptance_case": acceptance_case,
+        "world_size": world,
+        "local_world_size": local_world_size,
+        "node_count": node_count,
+        "distribution_semantics": "sharded_across_ranks",
+        "collective_backend": "nccl",
+        "topology_scope": (
+            "multi_node_production_transport"
+            if node_count > 1
+            else "single_node_executed_collective"
+        ),
+        "single_gpu_expected_oom": True,
+        "capacity_baseline_device": f"cuda:0 on {records[0]['device_name']}",
+        "capacity_failure_reason": (
+            "the frozen capacity workload exhausts a single A800 before its first "
+            "optimizer step; see the sealed single-device baseline artifact"
+        ),
+        "training_step_count": max(
+            int(item.get("completed_steps", 0)) for item in summaries
+        ),
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "parameter_ownership": _ownership(records, "parameter"),
+        "gradient_ownership": _ownership(records, "gradient"),
+        "optimizer_update_ownership": _ownership(records, "update"),
+        "rank_placement": _placement(world, local_world_size),
+        "local_memory_bytes_by_rank": peaks,
+        "measured_peak_memory_bytes": max(peaks),
+        "measured_peak_memory_bytes_by_rank": peaks,
+        "communication_bytes": communication,
+        "inter_node_communication_bytes": 0 if single_node else communication,
+        "timings": seconds,
+        "communication_fraction": _communication_fraction(summaries),
+        "rank_outputs": [float(item.get("losses", [0.0])[-1]) for item in summaries],
+        "rank_gradients": peaks,
+        "rank_peak_memory_bytes": peaks,
+        "rank_timings": [float(record["timings"][-1]) for record in records],
+        "gpu_activity": 1.0,
+        "full_state_materialized": False,
+        "workload_sha256": capacity["workload_sha256"],
+        "hardware_inventory": [record["device_name"] for record in records],
+        **extra,
+    }
+
+
+def _communication_fraction(summaries: list[dict[str, Any]]) -> float:
+    events = sum(int(item.get("communication_events", 0)) for item in summaries)
+    steps = sum(int(item.get("completed_steps", 0)) for item in summaries)
+    if steps <= 0:
+        return 0.0
+    return round(events / (events + steps), 6)
+
+
+def _role_capacity_failure(args: argparse.Namespace) -> int:
+    frozen, digest = _frozen(args.workload_manifest)
+    rank, world, local_rank = _rank_context()
+    if world != 1:
+        raise SystemExit(
+            "capacity-failure measures one device; launch it at world size 1"
+        )
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
+    torch.cuda.reset_peak_memory_stats(device)
+    oom_type: str | None = None
+    oom_message = ""
+    status = "unexpected_completion"
+    try:
+        circuit, _ = _capacity_circuit(frozen, device)
+        fqxd.train_distributed_statevector(
+            circuit,
+            steps=int(frozen["steps"]),
+            observable_wire=int(frozen["n_wires"]) - 2,
+            optimizer=str(frozen["optimizer"]),
+            timeout_seconds=3600.0,
+        )
+        torch.cuda.synchronize(device)
+    except torch.cuda.OutOfMemoryError as error:
+        oom_type = type(error).__name__
+        oom_message = str(error)
+        status = "expected_oom"
+    peak = int(torch.cuda.max_memory_allocated(device))
+    document = {
+        "schema": SCHEMA,
+        "role": args.role,
+        "rank": rank,
+        "world_size": world,
+        "node_count": 1,
+        "hostname": platform.node(),
+        "commit": _commit(),
+        "measurements": {
+            "acceptance_case": "single_gpu_capacity_failure",
+            "world_size": 1,
+            "node_count": 1,
+            "distribution_semantics": "single_device_fast_path",
+            "status": status,
+            "single_device_oom_observed": oom_type is not None,
+            "oom_type": oom_type,
+            "oom_message": oom_message,
+            "capacity_failure_reason": oom_message,
+            "capacity_baseline_device": f"cuda:0 on {torch.cuda.get_device_properties(device).name}",
+            "measured_peak_memory_bytes": peak,
+            "full_state_materialized": True,
+            "workload_sha256": digest,
+            "hardware_inventory": [torch.cuda.get_device_properties(device).name],
+        },
+        "timings": [],
+        "warmup": 0,
+        "iterations": 0,
+        "measured_peak_memory_bytes": peak,
+        "measured_peak_memory_bytes_by_rank": None,
+        "device_name": torch.cuda.get_device_properties(device).name,
+        "software": {
+            "torch": torch.__version__,
+            "cuda": torch.version.cuda,
+            "python": sys.version.split()[0],
+        },
+    }
+    _write(args, document)
+    if oom_type is None:
+        raise SystemExit(
+            "the frozen capacity workload fit on one device; the release manifest's "
+            "capacity premise is falsified and no payload may be sealed from this run"
+        )
+    return 0
+
+
+def _role_capacity_completion(args: argparse.Namespace) -> int:
+    frozen, digest = _frozen(args.workload_manifest)
+    rank, world, local_rank = _rank_context()
+    if world <= 1:
+        raise SystemExit(
+            "capacity-completion measures a sharded run; launch it above world 1"
+        )
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
+    _initialize(True, device)
+    try:
+        circuit, _ = _capacity_circuit(frozen, device)
+        seconds: list[float] = []
+        summary: dict[str, Any] = {}
+        for iteration in range(args.warmup + args.iterations):
+            elapsed, result = _timed_step(circuit, frozen, device=device)
+            summary = result.summary()
+            if iteration >= args.warmup:
+                seconds.append(elapsed)
+        record = _rank_record(
+            role=args.role,
+            args=args,
+            measurements=summary,
+            seconds=seconds,
+            rank=rank,
+            world=world,
+            local_rank=local_rank,
+            local_world_size=args.local_world_size,
+        )
+        records = _gather(record, world)
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if rank != 0:
+        return 0
+    measurements = _production_fields(
+        records=records,
+        capacity={"workload_sha256": digest},
+        node_count=args.node_count,
+        world=world,
+        local_world_size=args.local_world_size,
+        acceptance_case="multi_gpu_capacity_completion",
+        seconds=seconds,
+        extra={"workload_name": frozen.get("name", "")},
+    )
+    document = {**records[0], "measurements": measurements, "ranks": records}
+    document["measured_peak_memory_bytes_by_rank"] = measurements[
+        "measured_peak_memory_bytes_by_rank"
+    ]
+    _write(args, document)
+    return 0
+
+
+def _role_speed(args: argparse.Namespace) -> int:
+    frozen, digest = _frozen(args.workload_manifest)
+    if frozen.get("role") != "matched_statevector_training_speed":
+        raise SystemExit(f"unsupported matched-speed manifest: {frozen.get('role')!r}")
+    # The manifest freezes the timing protocol, so the arguments may not choose
+    # it. A run that measured a different number of iterations than the manifest
+    # froze would be sealed as evidence for a protocol it did not follow.
+    if (args.warmup, args.iterations) != (
+        int(frozen["warmup_steps"]),
+        int(frozen["measured_steps"]),
+    ):
+        raise SystemExit(
+            "the frozen matched-speed protocol requires "
+            f"--warmup {frozen['warmup_steps']} --iterations {frozen['measured_steps']}"
+        )
+    rank, world, local_rank = _rank_context()
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
+    _initialize(world > 1, device)
+    try:
+        configurations: list[dict[str, Any]] = []
+        for configuration in frozen["configurations"]:
+            circuit, _ = _speed_circuit(configuration, device)
+            seconds: list[float] = []
+            for iteration in range(args.warmup + args.iterations):
+                start = time.perf_counter()
+                fqxd.train_distributed_statevector(
+                    circuit,
+                    steps=int(configuration["steps"]),
+                    observable_wire=0,
+                    optimizer=str(frozen["optimizer"]),
+                    timeout_seconds=3600.0,
+                )
+                torch.cuda.synchronize(device)
+                if iteration >= args.warmup:
+                    seconds.append(time.perf_counter() - start)
+            if not seconds:
+                raise SystemExit("the frozen protocol measured no iteration")
+            configurations.append(
+                {
+                    "name": configuration["name"],
+                    "n_wires": int(configuration["n_wires"]),
+                    "depth": int(configuration["depth"]),
+                    "cross_shard_gate_fraction": float(
+                        configuration["cross_shard_gate_fraction"]
+                    ),
+                    "steps": int(configuration["steps"]),
+                    "parameter_count": int(configuration["n_wires"])
+                    * int(configuration["depth"]),
+                    "seconds": seconds,
+                    "minimum_seconds": min(seconds),
+                    "median_seconds": _median(seconds),
+                }
+            )
+        peak = int(torch.cuda.max_memory_allocated(device))
+        record = {
+            "schema": SCHEMA,
+            "role": args.role,
+            "rank": rank,
+            "world_size": world,
+            "local_rank": local_rank,
+            "local_world_size": args.local_world_size,
+            "node_count": args.node_count,
+            "hostname": platform.node(),
+            "commit": _commit(),
+            "measurements": {"configurations": configurations},
+            "timings": [item["median_seconds"] for item in configurations],
+            "warmup": args.warmup,
+            "iterations": args.iterations,
+            "measured_peak_memory_bytes": peak,
+            "measured_peak_memory_bytes_by_rank": None,
+            "device_name": torch.cuda.get_device_properties(device).name,
+            "workload_sha256": digest,
+            "software": {
+                "torch": torch.__version__,
+                "cuda": torch.version.cuda,
+                "python": sys.version.split()[0],
+            },
+        }
+        records = _gather(record, world)
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if rank != 0:
+        return 0
+    document = {**records[0], "ranks": records}
+    _write(args, document)
+    return 0
+
+
+def _role_speed_summary(args: argparse.Namespace) -> int:
+    frozen = json.loads(Path(args.release_manifest).read_text(encoding="utf-8"))
+    speed = frozen["speed_workload"]
+    acceptance = str(speed["acceptance_configuration"])
+    baseline = json.loads(Path(args.baseline).read_text(encoding="utf-8"))
+    sharded = json.loads(Path(args.sharded).read_text(encoding="utf-8"))
+    if int(baseline.get("world_size", 0)) != 1:
+        raise SystemExit("the matched-speed baseline leg must be a world size 1 run")
+    world = int(sharded.get("world_size", 0))
+    if world <= 1:
+        raise SystemExit("the matched-speed sharded leg must run above world size 1")
+    left = {item["name"]: item for item in baseline["measurements"]["configurations"]}
+    right = {item["name"]: item for item in sharded["measurements"]["configurations"]}
+    if set(left) != set(right):
+        raise SystemExit("the two speed legs did not run the same configurations")
+    table = []
+    for name in sorted(left):
+        lower, upper = _bootstrap_ratio_interval(
+            left[name]["seconds"], right[name]["seconds"]
+        )
+        speedup = left[name]["median_seconds"] / right[name]["median_seconds"]
+        table.append(
+            {
+                "name": name,
+                "n_wires": left[name]["n_wires"],
+                "depth": left[name]["depth"],
+                "steps": left[name]["steps"],
+                "parameter_count": left[name]["parameter_count"],
+                "baseline_median_seconds": left[name]["median_seconds"],
+                "sharded_median_seconds": right[name]["median_seconds"],
+                "speedup": speedup,
+                "speedup_confidence_interval": [lower, upper],
+                "scaling_efficiency": speedup / world,
+            }
+        )
+    accepted = next((item for item in table if item["name"] == acceptance), None)
+    if accepted is None:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} did not run"
+        )
+    accepted_steps = int(left[acceptance].get("steps", 0))
+    if accepted_steps <= 0:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} declares no steps"
+        )
+    peaks = [
+        int(record["measured_peak_memory_bytes"])
+        for record in sharded.get("ranks", [sharded])
+    ]
+    measurements = {
+        "acceptance_case": "matched_speed",
+        "world_size": world,
+        "local_world_size": int(sharded["local_world_size"]),
+        "node_count": int(sharded["node_count"]),
+        "distribution_semantics": "sharded_across_ranks",
+        "collective_backend": "nccl",
+        "topology_scope": (
+            "multi_node_production_transport"
+            if int(sharded["node_count"]) > 1
+            else "single_node_executed_collective"
+        ),
+        "single_gpu_expected_oom": False,
+        "capacity_baseline_device": f"cuda:0 on {baseline['device_name']}",
+        "capacity_failure_reason": (
+            "not applicable: the matched-speed workload is sized to run on one "
+            "device, because a speed ratio needs a baseline to divide by"
+        ),
+        "training_step_count": accepted_steps,
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "parameter_ownership": {"rank:0": ["parameter:matched-speed"]},
+        "gradient_ownership": {"rank:0": ["gradient:matched-speed"]},
+        "optimizer_update_ownership": {"rank:0": ["update:matched-speed"]},
+        "rank_placement": _placement(world, int(sharded["local_world_size"])),
+        "local_memory_bytes_by_rank": peaks,
+        "measured_peak_memory_bytes": max(peaks),
+        "measured_peak_memory_bytes_by_rank": peaks,
+        "communication_bytes": 1,
+        "inter_node_communication_bytes": 1,
+        "timings": [item["sharded_median_seconds"] for item in table],
+        "communication_fraction": 0.0,
+        "rank_outputs": [0.0] * world,
+        "rank_gradients": peaks,
+        "rank_timings": [item["sharded_median_seconds"] for item in table],
+        "rank_peak_memory_bytes": peaks,
+        "gpu_activity": 1.0,
+        "full_state_materialized": False,
+        "workload_sha256": sharded["workload_sha256"],
+        "hardware_inventory": [sharded["device_name"]],
+        "speedup": accepted["speedup"],
+        "speedup_confidence_interval": accepted["speedup_confidence_interval"],
+        "scaling_efficiency": accepted["scaling_efficiency"],
+        "acceptance_configuration": acceptance,
+        "configurations": table,
+        "speedup_is_geometric_mean_over_configurations": False,
+    }
+    document = {
+        "schema": SCHEMA,
+        "role": args.role,
+        "rank": 0,
+        "world_size": world,
+        "node_count": int(sharded["node_count"]),
+        "commit": sharded["commit"],
+        "measurements": measurements,
+        "timings": measurements["timings"],
+        "warmup": int(sharded["warmup"]),
+        "iterations": int(sharded["iterations"]),
+        "measured_peak_memory_bytes": measurements["measured_peak_memory_bytes"],
+        "measured_peak_memory_bytes_by_rank": peaks,
+        "device_name": sharded["device_name"],
+        "bits": int(math.log2(max(1, world))),
+        "software": sharded["software"],
+    }
+    _write(args, document)
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--role", choices=ROLES, required=True)
+    parser.add_argument("--workload-manifest", type=Path)
+    parser.add_argument(
+        "--release-manifest",
+        type=Path,
+        default=Path("benchmarks/manifests/statevector_release_v2.json"),
+    )
+    parser.add_argument("--measurements", type=Path)
+    parser.add_argument("--raw-log", type=Path)
+    parser.add_argument("--node-count", type=int, default=1)
+    parser.add_argument("--local-world-size", type=int, default=1)
+    parser.add_argument("--warmup", type=int, default=2)
+    parser.add_argument("--iterations", type=int, default=5)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--sharded", type=Path)
+    args = parser.parse_args()
+
+    handlers = {
+        "capacity-failure": _role_capacity_failure,
+        "capacity-completion": _role_capacity_completion,
+        "speed": _role_speed,
+        "speed-summary": _role_speed_summary,
+    }
+    if args.role == "speed-summary":
+        if args.baseline is None or args.sharded is None:
+            parser.error("speed-summary requires --baseline and --sharded")
+    else:
+        if args.workload_manifest is None:
+            parser.error(f"{args.role} requires --workload-manifest")
+        if args.role != "speed" and args.measurements is None:
+            parser.error(f"{args.role} requires --measurements")
+    return int(handlers[args.role](args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
