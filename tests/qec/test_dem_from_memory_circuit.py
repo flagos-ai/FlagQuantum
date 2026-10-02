@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 
 import pytest
 
-from flagquantum.qec import dem as dem_module
+from flagquantum.qec import dem_construction as dem_module
 from flagquantum.qec.circuit import (
     Detector,
     DetectorLayout,
@@ -14,8 +14,8 @@ from flagquantum.qec.circuit import (
     build_memory_circuit,
 )
 from flagquantum.qec.codes import CodeCheck, RepetitionCode
-from flagquantum.qec.dem import (
-    DetectorErrorModel,
+from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem_construction import (
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,

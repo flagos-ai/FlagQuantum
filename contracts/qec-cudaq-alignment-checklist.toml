@@ -76,16 +76,18 @@ symbols_present = [
     "flagquantum.qec.RotatedSurfaceCode",
     "flagquantum.qec.CodeCheck",
     "flagquantum.qec.Pauli",
+    "flagquantum.qec.code_matrices",
 ]
-symbols_absent = ["CssCodes", "CssNoise", "css_matrices_from_code", "stabilizer_round"]
+symbols_absent = ["CssCodes", "CssNoise", "stabilizer_round"]
 negative_search = ["symbol:flagquantum.qec.SteaneCode", "symbol:flagquantum.qec.color_code"]
 evidence = [
     "flagquantum/qec/codes.py",
+    "flagquantum/qec/dem_construction.py",
     "tests/qec/test_codes.py",
     "tests/qec/test_surface_code.py",
 ]
-next_action = "Expose CSS generator matrices from a code record so a matrix-level DEM path has an input, and lift the two declaration limits that block the missing families: a check states one ancilla and one CNOT direction fixed by its type, and the observable readout refuses an X-type logical, so the surface patch is Z memory only. CUDA-Q's CSS surface carries lx and lz alike. Note in the same pass that upstream encodes a code as a set of kernels, so aligning to that shape is a decision about this repository's circuit model, not a small addition."
-fail_closed = "symbols_absent names the three matrix-level records and the operation-registration name, so the row stops claiming a matrix-level gap the day one appears; the negative search names Steane and colour, which the matrix's own reason text lists as missing. The surface patch is exercised by tests/qec/test_surface_code.py, so the Z-memory-only limit is a test-visible property rather than a note."
+next_action = "The matrix-level input the previous revision of this row asked for now exists: flagquantum.qec.code_matrices reads a code record's Z-type checks and Z-type logical operators into the pair the matrix construction route consumes, so a code described by its stabilizers reaches a detector error model without a circuit being written for it. Two declaration limits still stop the missing families, and they are independent of each other. A check states one ancilla and one CNOT direction fixed by its type, so a stabilizer that is neither pure X nor pure Z has no record. And the observable readout is Z-type only, so the surface patch is Z memory: code_matrices drops an X-type logical operator, and what it drops is a real fault family rather than a formatting choice. CUDA-Q's CSS surface carries lx and lz alike. Note in the same pass that upstream encodes a code as a set of kernels, so aligning to that shape is a decision about this repository's circuit model, not a small addition."
+fail_closed = "symbols_absent names the two matrix-level records and the operation-registration name, so the row stops claiming a matrix-level gap the day one appears; the negative search names Steane and colour, which the matrix's own reason text lists as missing. The surface patch is exercised by tests/qec/test_surface_code.py, so the Z-memory-only limit is a test-visible property rather than a note, and tests/qec/test_dem_code_matrices.py pins that an X-type check and an X-type logical operator contribute no row rather than an all-zero one."
 
 [[rows]]
 id = "qec_detector_annotations"
@@ -166,10 +168,12 @@ target = "A detector error model built from a circuit and a noise record, exact 
 symbols_present = [
     "flagquantum.qec.DetectorErrorModel",
     "flagquantum.qec.DetectorErrorModel.from_memory_circuit",
+    "flagquantum.qec.DetectorErrorModel.from_code_matrices",
     "flagquantum.qec.DetectorErrorModel.from_stim_text",
     "flagquantum.qec.DemError",
     "flagquantum.qec.PhenomenologicalNoise",
     "flagquantum.qec.build_memory_circuit",
+    "flagquantum.qec.code_matrices",
 ]
 symbols_absent = [
     "dem_from_kernel",
@@ -177,18 +181,19 @@ symbols_absent = [
     "dem_from_stim_text",
     "dem_from_memory_circuit",
     "z_dem_from_memory_circuit",
-    "dem_from_css_matrices",
-    "extended_dem_from_css_matrices",
     "DecoderContext",
 ]
 evidence = [
     "flagquantum/qec/dem.py",
+    "flagquantum/qec/dem_construction.py",
     "flagquantum/qec/noise.py",
     "tests/qec/test_dem_from_memory_circuit.py",
     "tests/qec/test_dem_signatures.py",
+    "tests/qec/test_dem_code_matrices.py",
+    "tests/qec/test_dem_code_matrices_stim.py",
 ]
-next_action = "The construction half is present and stronger at the input end than either upstream path: a circuit-level mechanism is forced through the circuit instead of read off matrices, and the signature must be agreed by two forced executions. The missing entry points are a DEM from CSS matrices and per-location rates, and a context object that carries the DEM plus the maps a decoder needs (upstream decoder_context_from_memory_circuit is exactly that). The second, larger gap is ownership: upstream the DEM comes out of the kernel's own annotations, which this repository cannot do until the annotation row moves."
-fail_closed = "A non-Pauli channel is refused with a stated reason rather than decomposed, and construction is bounded by the statevector ceiling, which is why the modelled rotated-surface distance stops at three; the per-error observable of a mechanism is not asserted from the source but read off the layout after the flip."
+next_action = "Both input ends are now covered: a circuit-level mechanism is forced through the circuit instead of read off mathematics, and a matrix-level descriptor reaches a model without a circuit being written for it. The gaps left in construction are the third fault family and the ownership question. Per-location rates, an independent px/py/pz/pm split, and the X and Z detector bands that an hx/lx pair implies are all still unreachable, because the noise record states two uniform scalars and the matrix route reads only hz and lz; that limit is carried by dem_code_capacity_noise and by the code-record row, not closed here. A context object that carries the model plus the maps a decoder needs is still missing (upstream decoder_context_from_memory_circuit is exactly that), and so is a model that comes out of the kernel's own annotations, which this repository cannot do until the annotation row moves."
+fail_closed = "A non-Pauli channel is refused with a stated reason rather than decomposed, and construction is bounded by the statevector ceiling, which is why the modelled rotated-surface distance stops at three; the matrix route is not bounded by it at all, because it reads a support rather than executing a program. The per-error observable of a mechanism is not asserted from the source but read off the layout after the flip on the circuit route, and derived from the logical matrix on the matrix route. The two routes describe different experiments and the difference is pinned rather than glossed: the matrix route has no terminal data readout, so its detector count is num_rounds * num_checks while a memory circuit's is one band per round plus a terminal detector per Z-type check, and tests/qec/test_dem_code_matrices_stim.py asserts both geometries against the assumption each one states. A matrix that is not binary, is not two-dimensional, or disagrees with the logical matrix about the number of data qubits is refused rather than coerced."
 
 [[rows]]
 id = "qec_dem_matrices_and_rates"
@@ -207,15 +212,19 @@ symbols_present = [
     "flagquantum.qec.DetectorErrorModel.observable_rates",
     "flagquantum.qec.DetectorErrorModel.num_errors",
     "flagquantum.qec.DemError",
+    "flagquantum.qec.DetectorErrorModel.from_code_matrices",
+    "flagquantum.qec.code_matrices",
 ]
 symbols_absent = ["error_ids", "canonicalize_for_rounds", "measurement_to_detectors"]
 evidence = [
     "flagquantum/qec/dem.py",
+    "flagquantum/qec/dem_construction.py",
     "tests/qec/test_dem_rates.py",
     "tests/qec/test_dem_sampling.py",
+    "tests/qec/test_dem_code_matrices.py",
 ]
-next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. Three additions would close the row. An error-id column, because mutually exclusive errors are how a correlated or decomposed mechanism is expressed and there is no way to say it here. A rates vector, because a matcher wants the column vector and this model stores a record per error. And a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand."
-fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. Three named absences cover the three additions, so the row moves when one lands rather than staying quietly stale."
+next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side is now reachable as well: code_matrices reads a code record into the parity-check and logical-operator matrices, and DetectorErrorModel.from_code_matrices turns that pair into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit no longer has to build a circuit to reach a model. Three additions would still close the row. An error-id column, because mutually exclusive errors are how a correlated or decomposed mechanism is expressed and there is no way to say it here. A rates vector, because a matcher wants the column vector and this model stores a record per error. And a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand."
+fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's. Three named absences cover the three additions, so the row moves when one lands rather than staying quietly stale."
 
 [[rows]]
 id = "qec_dem_merge"
@@ -291,8 +300,8 @@ evidence = [
     "tests/qec/test_dem_stim_interop.py",
     "tests/qec/test_dem_stim_reference_rates.py",
 ]
-next_action = "The interchange is present in both directions and independently checked: stim's own error analysis builds the model from a gate-for-gate transcription and agrees on shape, mechanism count and pair rates. The remaining narrowness is at the input end: a model can only come from one circuit record and one noise record, so an arbitrary annotated circuit has no route to a model, and the text is lossy in the last printed digit."
-fail_closed = "A round trip is compared against a re-read of the text rather than against the in-memory record, because stim prints 17 significant digits; the reference-rate test shares nothing with the FlagQuantum side but the gate sequence and the noise model. The reader refuses repeat, comments, skipped-index declarations and malformed lines by name rather than guessing."
+next_action = "The interchange is present in both directions and independently checked: stim's own error analysis builds the model from a gate-for-gate transcription and agrees on shape, mechanism count and pair rates. What the two entry points share is narrowness at the input end rather than the absence of one: a model comes either from one circuit record plus one noise record or from the two matrices the matrix route reads, and a stimulus for neither is accepted, so an arbitrary annotated circuit still has no route to a model. The text is also lossy in the last printed digit."
+fail_closed = "A round trip is compared against a re-read of the text rather than against the in-memory record, because stim prints 17 significant digits; the reference-rate test shares nothing with the FlagQuantum side but the gate sequence and the noise model. The matrix route's own stim check does the same for the code-capacity geometry, and it is a separate transcription on purpose because the two experiments do not have the same detector count. The reader refuses repeat, comments, skipped-index declarations and malformed lines by name rather than guessing."
 
 [[rows]]
 id = "qec_stim_sampling_join"
@@ -541,13 +550,12 @@ provenance_unverified = true
 [[fields]]
 id = "dem_from_css_matrices"
 cudaq_symbol = "dem_from_css_matrices(code: CssCodes | cudaq_qec.Code, noise: CssNoise, num_rounds=1) and extended_dem_from_css_matrices"
-flagquantum_symbol = ""
-verdict = "absent"
+flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.from_code_matrices"
+verdict = "reshaped"
 negative_search = [
-    "symbol:flagquantum.qec.DetectorErrorModel.from_css_matrices",
     "symbol:flagquantum.qec.CssMatrices",
 ]
-note = "No matrix-level entry point: a model can only be built from a circuit record plus a noise record. This is the cheapest of the absent entry points to add, because the parity matrices the path consumes are already derivable here, and it is the one that makes the code family question concrete (an arbitrary parity-check matrix is exactly what CssCodes accepts upstream)."
+note = "Both build a model of a code-capacity experiment -- num_rounds bands of one detector per check, each round compared with the round before it, and no terminal data readout -- from matrices rather than from a simulated circuit. The shape differs in three stated ways. Upstream takes one object that carries all four parity matrices and one noise record; here the check matrix and the logical matrix are two keyword arguments and the logical matrix is optional, and the pair is produced from a code record by flagquantum.qec.code_matrices. Upstream covers the X and Z detector bands and the lz and lx observable rows; here an X fault has no representation, so only hz and lz are read and an X-type logical operator is dropped rather than reported as an all-zero row. Upstream returns a detector_error_model and has an extended_dem_from_css_matrices sibling carrying a sparse H and O; there is no extended-record counterpart here. The named record is still absent, which is what the negative search states."
 
 [[fields]]
 id = "dem_from_memory_circuit"
@@ -561,7 +569,7 @@ id = "dem_code_capacity_noise"
 cudaq_symbol = "CssNoise(px, py, pz, pm, px_per_qubit, py_per_qubit, pz_per_qubit, pm_per_check) -- scalar rates uniform, per-element vectors overriding, per-check rates with Z checks first"
 flagquantum_symbol = "flagquantum.qec.PhenomenologicalNoise"
 verdict = "reshaped"
-note = "Both are phenomenological rate records over a memory experiment, and this is the widest single gap in the construction contract. Upstream expresses independent X, Y and Z data rates plus a measurement rate, each also per qubit or per check; here it is one data-flip scalar and one measurement-flip scalar. Per-location rates are therefore not expressible, and neither is an asymmetric X/Z channel, which the Y rate implies."
+note = "Both are phenomenological rate records over a memory experiment, and this is the widest single gap in the construction contract. Upstream expresses independent X, Y and Z data rates plus a measurement rate, each also per qubit or per check; here it is one data-flip scalar and one measurement-flip scalar. Per-location rates are therefore not expressible, and neither is an asymmetric X/Z channel, which the Y rate implies. Both construction routes now consume this record, and the matrix route consumes only its two scalars as well: reading a support needs no execution, so the row's absence is now a statement about the record rather than about a route's reach, and it stays open until the record itself carries the split."
 
 [[fields]]
 id = "dem_canonicalize"

@@ -13,7 +13,7 @@ from flagquantum.qec.circuit import (
     build_memory_circuit,
 )
 from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
-from flagquantum.qec.dem import (
+from flagquantum.qec.dem_construction import (
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,

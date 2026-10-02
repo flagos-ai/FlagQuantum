@@ -19,6 +19,7 @@ from .decoders import (
 )
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
+from .dem_construction import code_matrices
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
@@ -79,6 +80,7 @@ __all__ = (
     "SyndromeRound",
     "StreamingDecoder",
     "build_memory_circuit",
+    "code_matrices",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",

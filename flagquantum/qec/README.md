@@ -109,6 +109,48 @@ whose factor is that group's product and every rate is unchanged.
 `mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
 the refusal.
 
+## Build a model from matrices, without a circuit
+
+A code whose checks and logical operators are known as matrices needs no gadget
+and no wire layout. `code_matrices` reads a code record into the Z-type
+check matrix and the Z-type logical matrix, and `from_code_matrices` derives the
+mechanisms from them:
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    code_matrices,
+)
+
+hz, lz = code_matrices(RepetitionCode(distance=3))
+model = DetectorErrorModel.from_code_matrices(
+    hz=hz,
+    lz=lz,
+    noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+    num_rounds=3,
+)
+print(model.num_detectors, model.num_errors)  # 6 15
+```
+
+`hz[k, q]` is one when a bit flip on data qubit `q` flips check `k`, and `lz`
+uses the same convention for the logical operators; `lz` may be omitted, and then
+no mechanism flips an observable. A matrix that is not binary, is not
+two-dimensional, or disagrees with `lz` about the number of data qubits is
+refused rather than coerced, because a real-valued matrix is a rate description
+and rounding it would decide which checks a fault triggers.
+
+This route is the code-capacity experiment, so its detector geometry is not the
+memory circuit's. A fault in round `r` reaches the detector band of round `r` and
+the band of round `r + 1`, and the final round has no band after it, so the
+detector count is `num_rounds * num_checks` with no terminal readout — where a
+memory circuit gains a terminal detector per Z-type check because it measures its
+data qubits. Both geometries are pinned to their own route and neither stands for
+the other. The same limit as the circuit route applies to the fault family: the
+data flip is a bit flip, so an X-type check and an X-type logical operator have
+no row here, and the phase-flip family is not expressible.
+
 ## Sample the circuit itself, not the model
 
 `sampling.py` samples the same experiment from the circuit rather than from the
