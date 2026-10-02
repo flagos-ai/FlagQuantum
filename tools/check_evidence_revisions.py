@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
 """Require every recorded evidence revision to be obtainable or accounted for.
 
-``tools/evidence_provenance.py`` answers one question: does the source revision an
-artifact records name a commit this repository contains? Only the six checked-in
-validators ask it, and each one has its artifact path written into it. An artifact
-no validator names is therefore never asked, which is how nineteen artifacts under
-``artifacts/`` came to record revisions this repository does not contain while
-thirteen of them said nothing about it.
+``tools/evidence_provenance.py`` answers two questions about a source revision an
+artifact records: does this repository contain the commit, and does a ref of this
+repository reach it? Only the six checked-in validators ask either one, and each
+has its artifact path written into it. An artifact no validator names is therefore
+never asked, which is how nineteen artifacts under ``artifacts/`` came to record
+revisions this repository does not contain while thirteen of them said nothing
+about it.
 
-This gate asks the question of a directory instead of a list. Every full-length
+This gate asks those questions of a directory instead of a list. Every full-length
 revision recorded at any depth in a JSON artifact under a declared evidence root
-must either resolve against this repository or be declared in
+must either be obtainable from this repository or be declared in
 ``evidence-revision-origins.toml``, where the declaration states the origin a
-reader can obtain the revision from. An undeclared revision that does not resolve
+reader can obtain the revision from. An undeclared revision that is not obtainable
 fails the gate, so recording a pin and saying nothing about it is no longer a way
 to pass.
+
+Obtainable means both answers are yes. Presence alone is not enough: a commit that
+only a deleted branch pointed at stays in the object database of the checkout that
+produced it, so a pin measured against that checkout resolves while every clone
+that fetches this repository fails to obtain it. Reading presence as obtainability
+would also make the verdict depend on which clone ran the gate, because an
+unreachable object is retained on the producing host and absent elsewhere; asking
+about reachability as well sends an unresolved pin and an orphaned one down the
+same path, so a complete clone reaches one verdict either way. The reachability
+question is asked only once presence is established, because a repository cannot
+report the refs reaching a commit it does not hold.
 
 The origins live in one table rather than inside each artifact because several of
 these artifacts are regenerated evidence: a checked-in contract test rebuilds the
@@ -24,7 +36,9 @@ inserting a provenance key inside them would change what those artifacts must
 contain. An artifact whose ``source`` mapping is not rebuilt states the origin in
 ``source.revision_origin`` instead, which ``tools/evidence_provenance.py`` already
 reads; both records answer the same question and neither is required for a
-revision this repository contains.
+revision this repository contains. A declaration names one artifact, or a
+directory that contains the artifacts recording the revision, which is how a bulk
+evidence surface states one origin once instead of repeating it for every file.
 """
 
 from __future__ import annotations
@@ -50,6 +64,7 @@ try:
         ORIGIN_PRODUCING_HOST_HISTORY,
         ProvenanceUnavailableError,
         is_full_revision,
+        revision_is_published,
         revision_resolves,
     )
 except ModuleNotFoundError:  # direct script execution
@@ -57,6 +72,7 @@ except ModuleNotFoundError:  # direct script execution
         ORIGIN_PRODUCING_HOST_HISTORY,
         ProvenanceUnavailableError,
         is_full_revision,
+        revision_is_published,
         revision_resolves,
     )
 
@@ -65,12 +81,21 @@ SCHEMA = "flagquantum.evidence_revision_origins.v1"
 
 #: Directories whose JSON artifacts are walked. A directory is listed when its
 #: JSON files are evidence for a checked-in claim rather than a tool's output.
-EVIDENCE_ROOTS = (ROOT / "artifacts",)
+EVIDENCE_ROOTS = (ROOT / "artifacts", ROOT / "benchmarks" / "results")
+
+#: The revision names a commit this repository holds as an unreachable object.
+#: No ref reaches it, so a clone or a plain fetch does not obtain it, and it
+#: survives only while the remote retains unreferenced objects.
+ORIGIN_UNREFERENCED_OBJECT = "unreferenced_object"
 
 #: The revision names a commit of an external dependency recorded beside it.
 #: ``repository`` states where a reader obtains that commit.
 ORIGIN_EXTERNAL_DEPENDENCY = "external_dependency"
-SUPPORTED_ORIGINS = (ORIGIN_PRODUCING_HOST_HISTORY, ORIGIN_EXTERNAL_DEPENDENCY)
+SUPPORTED_ORIGINS = (
+    ORIGIN_PRODUCING_HOST_HISTORY,
+    ORIGIN_UNREFERENCED_OBJECT,
+    ORIGIN_EXTERNAL_DEPENDENCY,
+)
 
 ARTIFACT_FIELD = "artifact"
 ARTIFACT_PATH_FIELD = "path"
@@ -87,7 +112,8 @@ class RevisionOrigin:
     """A declared origin for one revision an evidence artifact records.
 
     Attributes:
-        artifact: Repository-relative path of the artifact that records it.
+        artifact: Repository-relative path of the artifact that records it, or of a
+            directory that contains the artifacts recording it.
         revision: Full-length hexadecimal revision the artifact records.
         origin: One of :data:`SUPPORTED_ORIGINS`.
         repository: Where to obtain the revision, for ``external_dependency``.
@@ -213,22 +239,37 @@ def _declaration_errors(document: Any) -> tuple[str, ...]:
 
 def _declaration_consistency_errors(
     document: Any,
+    records: Mapping[str, Mapping[str, tuple[str, ...]]],
     *,
     root: Path = ROOT,
     evidence_roots: Sequence[Path] = EVIDENCE_ROOTS,
 ) -> tuple[str, ...]:
-    """Return why a declared origin does not match the artifact it describes."""
+    """Return why a declared origin does not match the evidence it describes.
+
+    Args:
+        document: Decoded declaration table.
+        records: Each walked artifact mapped to the revisions it records, so a
+            declaration is checked against evidence the walk already decoded.
+        root: Repository the declaration paths are relative to.
+        evidence_roots: Directories the walk covered.
+    """
 
     errors: list[str] = []
     for declaration in _declared_origins(document):
-        artifact = root / declaration.artifact
-        if not artifact.is_file():
+        target = root / declaration.artifact
+        covered = [
+            artifact
+            for artifact in records
+            if _declaration_covers(declaration.artifact, artifact)
+        ]
+        if not target.is_dir() and not target.is_file():
             errors.append(
-                f"{declaration.artifact} is declared but not a file in this repository"
+                f"{declaration.artifact} is declared but is neither a file nor a "
+                "directory in this repository"
             )
             continue
         if not any(
-            _is_within(artifact, evidence_root) for evidence_root in evidence_roots
+            _is_within(target, evidence_root) for evidence_root in evidence_roots
         ):
             roots = ", ".join(sorted(path.name for path in evidence_roots))
             errors.append(
@@ -236,56 +277,73 @@ def _declaration_consistency_errors(
                 f"evidence roots ({roots}), so the declaration cannot take effect"
             )
             continue
-        try:
-            payload = _load_json(artifact)
-        except (OSError, json.JSONDecodeError) as error:
-            errors.append(f"{declaration.artifact} could not be read as JSON: {error}")
-            continue
-        if declaration.revision not in recorded_revisions(payload):
-            errors.append(
-                f"{declaration.artifact} does not record the declared revision "
-                f"{declaration.revision}"
-            )
+        if not any(declaration.revision in records[artifact] for artifact in covered):
+            if target.is_dir():
+                errors.append(
+                    f"no artifact under {declaration.artifact} records the declared "
+                    f"revision {declaration.revision}"
+                )
+            else:
+                errors.append(
+                    f"{declaration.artifact} does not record the declared revision "
+                    f"{declaration.revision}"
+                )
     return tuple(errors)
 
 
 def _artifact_errors(
     artifact: str,
-    payload: Any,
+    revisions: Mapping[str, tuple[str, ...]],
     origins: Sequence[RevisionOrigin],
     *,
     root: Path = ROOT,
     resolutions: dict[str, bool] | None = None,
+    publications: dict[str, bool] | None = None,
 ) -> tuple[str, ...]:
     """Return why an artifact's recorded revisions are not accounted for.
 
     Args:
         artifact: Repository-relative path used to match declarations.
-        payload: Decoded JSON value of the artifact.
+        revisions: Recorded revisions mapped to the JSON paths that carry them.
         origins: Declarations from :func:`_declared_origins`.
         root: Repository to resolve revisions against.
-        resolutions: Cache of already-resolved revisions, to keep one ``git``
-            probe per distinct revision across the whole walk.
+        resolutions: Cache of the presence answer, to keep one ``git`` probe per
+            distinct revision across the whole walk.
+        publications: Cache of the reachability answer, filled only for revisions
+            this repository holds.
 
     Returns:
-        One diagnostic per unaccounted revision, and for a declared revision the
-        repository already contains, which needs no origin.
+        One diagnostic per revision this repository does not yield and that is
+        therefore undeclared, and for a declared revision that is obtainable,
+        which needs no origin.
     """
 
     declared = {
-        origin.revision: origin for origin in origins if origin.artifact == artifact
+        origin.revision
+        for origin in origins
+        if _declaration_covers(origin.artifact, artifact)
     }
     errors: list[str] = []
-    for revision, paths in recorded_revisions(payload).items():
+    for revision, paths in revisions.items():
         where = ", ".join(paths)
-        if declared.pop(revision, None) is not None:
-            if _resolves(revision, root, resolutions):
+        obtainable = _obtainable(revision, root, resolutions, publications)
+        if revision in declared:
+            if obtainable:
                 errors.append(
-                    f"{artifact} declares an origin for {revision} ({where}), but this "
-                    "repository contains that commit, so the revision needs no origin"
+                    f"{artifact} declares an origin for {revision} ({where}), but a "
+                    "clone that fetches this repository obtains that commit, so the "
+                    "revision needs no origin"
                 )
             continue
+        if obtainable:
+            continue
         if _resolves(revision, root, resolutions):
+            errors.append(
+                f"{artifact} records {revision} ({where}), which this checkout holds "
+                "but no ref of this repository reaches, so a clone that fetches this "
+                f"repository does not obtain it; declare it in {DECLARATIONS.name} "
+                f"with origin {ORIGIN_UNREFERENCED_OBJECT!r}"
+            )
             continue
         errors.append(
             f"{artifact} records {revision} ({where}), which names no commit in this "
@@ -293,6 +351,25 @@ def _artifact_errors(
             f"{ORIGIN_PRODUCING_HOST_HISTORY!r} or {ORIGIN_EXTERNAL_DEPENDENCY!r}"
         )
     return tuple(errors)
+
+
+def _read_artifacts(
+    evidence_roots: Sequence[Path], root: Path
+) -> tuple[dict[str, dict[str, tuple[str, ...]]], list[str]]:
+    """Decode every walked artifact once, keyed by repository-relative path."""
+
+    records: dict[str, dict[str, tuple[str, ...]]] = {}
+    errors: list[str] = []
+    for evidence_root in evidence_roots:
+        for path in sorted(evidence_root.rglob("*.json")):
+            artifact = _relative(path, root)
+            try:
+                payload = _load_json(path)
+            except (OSError, json.JSONDecodeError) as error:
+                errors.append(f"{artifact} could not be read as JSON: {error}")
+                continue
+            records[artifact] = recorded_revisions(payload)
+    return records, errors
 
 
 def evidence_errors(
@@ -312,30 +389,27 @@ def evidence_errors(
     errors = list(_declaration_errors(document))
     if errors:
         return tuple(errors)
+    records, read_errors = _read_artifacts(evidence_roots, root)
+    errors.extend(read_errors)
     errors.extend(
         _declaration_consistency_errors(
-            document, root=root, evidence_roots=evidence_roots
+            document, records, root=root, evidence_roots=evidence_roots
         )
     )
     origins = _declared_origins(document)
     resolutions: dict[str, bool] = {}
-    for evidence_root in evidence_roots:
-        for path in sorted(evidence_root.rglob("*.json")):
-            artifact = _relative(path, root)
-            try:
-                payload = _load_json(path)
-            except (OSError, json.JSONDecodeError) as error:
-                errors.append(f"{artifact} could not be read as JSON: {error}")
-                continue
-            errors.extend(
-                _artifact_errors(
-                    artifact,
-                    payload,
-                    origins,
-                    root=root,
-                    resolutions=resolutions,
-                )
+    publications: dict[str, bool] = {}
+    for artifact, revisions in records.items():
+        errors.extend(
+            _artifact_errors(
+                artifact,
+                revisions,
+                origins,
+                root=root,
+                resolutions=resolutions,
+                publications=publications,
             )
+        )
     return tuple(errors)
 
 
@@ -353,6 +427,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print("evidence revision origins passed")
     return 0
+
+
+def _declaration_covers(declared: str, artifact: str) -> bool:
+    """Return whether a declaration written for ``declared`` applies to ``artifact``.
+
+    A declaration names one artifact or a directory, in which case it applies to
+    every artifact below that directory, so a bulk evidence surface states one
+    origin instead of repeating it for each file.
+    """
+
+    prefix = declared.rstrip("/")
+    return artifact == prefix or artifact.startswith(f"{prefix}/")
 
 
 def _is_within(path: Path, directory: Path) -> bool:
@@ -379,6 +465,37 @@ def _resolves(revision: str, root: Path, resolutions: dict[str, bool] | None) ->
     if revision not in resolutions:
         resolutions[revision] = revision_resolves(revision, root)
     return resolutions[revision]
+
+
+def _published(revision: str, root: Path, publications: dict[str, bool] | None) -> bool:
+    # Annotated for the same reason as in ``_resolves``.
+    if publications is None:
+        published: bool = revision_is_published(revision, root)
+        return published
+    if revision not in publications:
+        publications[revision] = revision_is_published(revision, root)
+    return publications[revision]
+
+
+def _obtainable(
+    revision: str,
+    root: Path,
+    resolutions: dict[str, bool] | None,
+    publications: dict[str, bool] | None,
+) -> bool:
+    """Return whether a clone that fetches this repository obtains ``revision``.
+
+    Presence and reachability are separate questions, and only both together mean
+    a reader can obtain the commit. A revision that resolves only because this
+    checkout still holds an object no ref reaches is not obtained by a clone or a
+    plain fetch, so it needs the same disclosure as a revision this repository
+    never contained. Asking reachability only after presence keeps a repository
+    that holds nothing from being asked for the refs reaching it.
+    """
+
+    if not _resolves(revision, root, resolutions):
+        return False
+    return _published(revision, root, publications)
 
 
 def _sequence(value: Any) -> Sequence[Any]:

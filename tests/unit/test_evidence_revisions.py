@@ -4,9 +4,10 @@ Only six validators asked `tools/evidence_provenance.py` whether a recorded
 revision names a real commit, and each one had its artifact path written into it.
 An artifact that no validator named was never asked, so nineteen artifacts under
 `artifacts/` recorded revisions this repository does not contain and thirteen of
-them said nothing about it. The gate under test asks the same question of a
-directory, and `evidence-revision-origins.toml` records the origin of every
-revision the answer is no for.
+them said nothing about it. The gate under test asks a directory both questions a
+reader depends on: whether this repository holds the commit, and whether a ref of
+this repository reaches it. `evidence-revision-origins.toml` records the origin of
+every revision the answer is no for.
 
 These tests build their own repository and artifacts rather than reading the
 ambient clone, so they state the gate's behaviour instead of the state of one
@@ -25,12 +26,15 @@ import pytest
 
 from tools.check_evidence_revisions import (
     ORIGIN_EXTERNAL_DEPENDENCY,
+    ORIGIN_UNREFERENCED_OBJECT,
     evidence_errors,
     recorded_revisions,
 )
 from tools.evidence_provenance import (
     ORIGIN_PRODUCING_HOST_HISTORY,
     ProvenanceUnavailableError,
+    revision_is_published,
+    revision_resolves,
 )
 
 pytestmark = pytest.mark.unit
@@ -85,6 +89,28 @@ def _write_artifact(root: Path, name: str, payload: Any) -> Path:
     return path
 
 
+def _unreferenced_commit(root: Path) -> str:
+    """Add a commit to the object database that no ref reaches."""
+
+    _git(root, "checkout", "-q", "-b", "side")
+    _git(
+        root,
+        "-c",
+        "user.email=evidence@example.invalid",
+        "-c",
+        "user.name=Evidence",
+        "commit",
+        "-q",
+        "--allow-empty",
+        "-m",
+        "side",
+    )
+    revision = _git(root, "rev-parse", "HEAD")
+    _git(root, "checkout", "-q", "main")
+    _git(root, "branch", "-q", "-D", "side")
+    return revision
+
+
 def _write_declarations(root: Path, body: str) -> Path:
     path = root / "evidence-revision-origins.toml"
     path.write_text(DECLARATION_HEADER + body, encoding="utf-8")
@@ -106,11 +132,11 @@ def _declaration(
     return "\n".join(lines) + "\n"
 
 
-def _errors(root: Path) -> tuple[str, ...]:
+def _errors(root: Path, *evidence_roots: Path) -> tuple[str, ...]:
     return evidence_errors(
         root=root,
         declarations=root / "evidence-revision-origins.toml",
-        evidence_roots=(root / "artifacts",),
+        evidence_roots=evidence_roots or (root / "artifacts",),
     )
 
 
@@ -181,6 +207,39 @@ def test_gate_walks_artifacts_no_validator_names(repository: Path) -> None:
     assert "artifacts/added_later.json" in errors[0]
 
 
+def test_gate_walks_the_benchmark_result_root(repository: Path) -> None:
+    # Red before this change: the walked roots named `artifacts/` only, so the pins
+    # under `benchmarks/results/` were never asked however many validators existed.
+    # That is where the release-candidate artifacts recording revisions no ref
+    # reaches were found, so the second root is asserted, not assumed.
+    path = repository / "benchmarks" / "results" / "smoke" / "candidate.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        json.dumps({"source_commit": ABSENT_REVISION}) + "\n", encoding="utf-8"
+    )
+    _write_artifact(
+        repository, "declared.json", {"source_revision": OTHER_ABSENT_REVISION}
+    )
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/declared.json",
+            OTHER_ABSENT_REVISION,
+            ORIGIN_PRODUCING_HOST_HISTORY,
+        ),
+    )
+
+    errors = _errors(
+        repository,
+        repository / "artifacts",
+        repository / "benchmarks" / "results",
+    )
+
+    assert len(errors) == 1
+    assert "benchmarks/results/smoke/candidate.json" in errors[0]
+    assert "source_commit" in errors[0]
+
+
 def test_declaring_a_revision_this_repository_contains_fails(repository: Path) -> None:
     # An origin is a disclosure that the revision is unavailable here. Declaring one
     # for a revision that resolves hides a checkable pin behind a claim, so it is
@@ -196,6 +255,104 @@ def test_declaring_a_revision_this_repository_contains_fails(repository: Path) -
 
     assert len(errors) == 1
     assert "needs no origin" in errors[0]
+
+
+def test_undeclared_revision_no_ref_reaches_fails(repository: Path) -> None:
+    # Red before this change: the gate asked only whether the object was in the
+    # database. A checkout that once held a branch keeps its commits, so a pin like
+    # this resolved on the machine that produced it and was unobtainable for every
+    # reader, which is the same defect as a pin no repository contains.
+    revision = _unreferenced_commit(repository)
+    assert revision_resolves(revision, repository) is True
+    assert revision_is_published(revision, repository) is False
+
+    _write_artifact(repository, "orphaned.json", {"source_revision": revision})
+    # The gate reads a missing table as an error before the walk, so the table
+    # carries one well-formed declaration and the orphan is what is left over.
+    _write_artifact(
+        repository, "declared.json", {"source_revision": OTHER_ABSENT_REVISION}
+    )
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/declared.json",
+            OTHER_ABSENT_REVISION,
+            ORIGIN_PRODUCING_HOST_HISTORY,
+        ),
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "no ref of this repository reaches" in errors[0]
+    assert ORIGIN_UNREFERENCED_OBJECT in errors[0]
+    assert "names no commit" not in errors[0]
+
+
+def test_declared_revision_no_ref_reaches_passes(repository: Path) -> None:
+    # The control for the test above: the failure is the missing disclosure and
+    # nothing else.
+    revision = _unreferenced_commit(repository)
+    _write_artifact(repository, "orphaned.json", {"source_revision": revision})
+    _write_declarations(
+        repository,
+        _declaration("artifacts/orphaned.json", revision, ORIGIN_UNREFERENCED_OBJECT),
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_directory_declaration_covers_every_artifact_below_it(repository: Path) -> None:
+    # A bulk evidence surface states one origin once instead of repeating it for
+    # every file, which is how the thirty-one artifacts recording one revision are
+    # disclosed without thirty-one identical blocks.
+    _write_artifact(repository, "suite/first.json", {"source_commit": ABSENT_REVISION})
+    _write_artifact(repository, "suite/second.json", {"source_commit": ABSENT_REVISION})
+    _write_declarations(
+        repository,
+        _declaration("artifacts/suite", ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY),
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_directory_declaration_stops_at_the_directory_boundary(
+    repository: Path,
+) -> None:
+    # A prefix is not a directory. `artifacts/suite` must not silently cover
+    # `artifacts/suite2`, or a declaration would read as disclosing evidence it
+    # never mentions.
+    _write_artifact(repository, "suite/first.json", {"source_commit": ABSENT_REVISION})
+    _write_artifact(
+        repository, "suite2/second.json", {"source_commit": ABSENT_REVISION}
+    )
+    _write_declarations(
+        repository,
+        _declaration("artifacts/suite", ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY),
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "artifacts/suite2/second.json" in errors[0]
+
+
+def test_directory_declaration_without_a_matching_artifact_fails(
+    repository: Path,
+) -> None:
+    _write_artifact(repository, "suite/first.json", {"source_commit": ABSENT_REVISION})
+    _write_declarations(
+        repository,
+        _declaration(
+            "artifacts/suite", OTHER_ABSENT_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        ),
+    )
+
+    errors = _errors(repository)
+
+    assert any(
+        "no artifact under artifacts/suite records" in error for error in errors
+    ), errors
 
 
 def test_declaring_a_revision_the_artifact_does_not_record_fails(
@@ -253,7 +410,7 @@ def test_declaration_for_a_missing_artifact_fails(repository: Path) -> None:
     errors = _errors(repository)
 
     assert len(errors) == 1
-    assert "not a file in this repository" in errors[0]
+    assert "neither a file nor a directory" in errors[0]
 
 
 def test_missing_declaration_file_fails_closed(repository: Path) -> None:
@@ -375,10 +532,11 @@ def test_every_undeclared_revision_is_named_in_the_failure(repository: Path) -> 
 
 def test_checked_in_evidence_accounts_for_every_recorded_revision() -> None:
     # The green-after state of this change, asserted against the real tree: every
-    # full-length revision recorded under `artifacts/` either resolves against this
-    # repository or is declared in `evidence-revision-origins.toml`. This is what
-    # fails when a new artifact records a pin nobody can obtain, so the disclosure
-    # cannot quietly fall behind the evidence again.
+    # full-length revision recorded under `artifacts/` or `benchmarks/results/` is
+    # either obtainable from this repository or declared in
+    # `evidence-revision-origins.toml`. This is what fails when a new artifact
+    # records a pin nobody can obtain, so the disclosure cannot quietly fall behind
+    # the evidence again.
     try:
         errors = evidence_errors()
     except ProvenanceUnavailableError as error:  # pragma: no cover - deep-clone lanes

@@ -43,11 +43,13 @@ jobs:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
-      # The evidence provenance gate below resolves each artifact's recorded
-      # source revision against this repository's history. A depth-1 clone
-      # cannot tell a revision it never fetched from one the repository never
-      # contained, and tools/evidence_provenance.py fails closed on that
-      # ambiguity rather than reading it as a pass.
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -181,11 +183,15 @@ jobs:
       # The six artifact validators in this job resolve the revision of the one
       # artifact each of them names, so an artifact no validator names was never
       # asked -- which is how nineteen artifacts under `artifacts/` came to record
-      # revisions this repository does not contain. This step asks the question of
-      # the directory instead of a list: every full-length revision at any depth in
-      # an artifact under `artifacts/` must resolve here or be declared in
-      # `evidence-revision-origins.toml` with the origin a reader can obtain it
-      # from. It needs the full history this job already fetches.
+      # revisions this repository does not contain. This step asks a directory
+      # instead of a list, and asks two questions: every full-length revision at
+      # any depth in an artifact under `artifacts/` or `benchmarks/results/` must
+      # be obtainable here -- this repository holds the commit and a ref reaches
+      # it -- or be declared in `evidence-revision-origins.toml` with the origin a
+      # reader can obtain it from. Presence alone is not enough, because a commit
+      # only a deleted branch pointed at stays in the object database of the
+      # checkout that made it and no clone obtains it. It needs the full history
+      # this job already fetches.
       - name: Verify evidence revision origins
         run: python tools/check_evidence_revisions.py
       - name: Verify checked-in FlagOS reference evidence
