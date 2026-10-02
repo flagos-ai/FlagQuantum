@@ -12,7 +12,7 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....core.ir import CircuitIR
+from ....core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from ....kernels.catalog import KernelRequest
 from ....simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
@@ -42,7 +42,69 @@ from .models import (
 )
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
+_REMAPPED_PROGRAM_CACHE: dict[
+    tuple[Any, ...],
+    tuple[
+        tuple[Instruction, ...], tuple[ObservableNode, ...], tuple[MeasurementNode, ...]
+    ],
+] = {}
+#: Keyed by source instruction identity and destination wires. The value keeps
+#: the source instruction alive, so its id cannot be recycled while the entry
+#: exists, and the rebuilt instruction is exactly the one that source produces.
+_REMAPPED_INSTRUCTION_CACHE: dict[
+    tuple[int, tuple[int, ...]], tuple[Instruction, Instruction]
+] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
+
+
+def _parameter_identity(ir: CircuitIR) -> tuple[tuple[int, ...], ...]:
+    """Identify the parameter objects an instruction sequence carries.
+
+    A remapped program is only interchangeable with another when it carries the
+    same parameter objects, so the cache is keyed on their identity rather than
+    on their values: values are re-read by the optimizer every step, and a
+    value-derived key would miss on every one of them. Identity is safe as a key
+    because the cached entry holds the instructions, which hold the parameters,
+    so those ids cannot be recycled while the entry lives.
+
+    Parameters that are plain numbers are compared by identity too, which is
+    sound for the same reason and only ever costs a duplicate entry.
+    """
+
+    return tuple(
+        tuple(id(value) for _, value in sorted(instruction.params.items()))
+        for instruction in ir.instructions
+    )
+
+
+def remap_instruction_wires(
+    instruction: Instruction, mapping: Sequence[int]
+) -> Instruction:
+    """Relabel one instruction's wires without re-validating its parameters.
+
+    Rebuilding an instruction re-validates every parameter it carries, and
+    validating an accelerator-resident angle decides finiteness by reading the
+    value back, so a rebuild inside the execution region synchronizes the device
+    once per parameterized gate. The persistent layout relabels instructions
+    while a circuit runs, and the same relabelling recurs on every execution of
+    the same program, so the rebuilt instruction is kept and reused.
+
+    An instruction whose wires do not move is returned unchanged: the sweep
+    relabels every instruction whether or not its wires are affected, and
+    skipping the rebuild is what keeps that read from happening at all.
+    """
+
+    wires = tuple(int(mapping[int(wire)]) for wire in instruction.wires)
+    if wires == tuple(int(wire) for wire in instruction.wires):
+        return instruction
+    key = (id(instruction), wires)
+    entry = _REMAPPED_INSTRUCTION_CACHE.get(key)
+    if entry is None:
+        entry = (instruction, replace(instruction, wires=wires))
+        if len(_REMAPPED_INSTRUCTION_CACHE) >= _COMMUNICATION_LAYOUT_CACHE_LIMIT:
+            _REMAPPED_INSTRUCTION_CACHE.pop(next(iter(_REMAPPED_INSTRUCTION_CACHE)))
+        _REMAPPED_INSTRUCTION_CACHE[key] = entry
+    return entry[1]
 
 
 def _is_diagonal_instruction(name: str) -> bool:
@@ -319,21 +381,44 @@ def communication_aware_wire_layout(
     def remap(wires: Sequence[int]) -> tuple[int, ...]:
         return tuple(permutation[int(wire)] for wire in wires)
 
-    return (
-        replace(
-            ir,
-            instructions=tuple(
+    # Remapping rebuilds every instruction, and rebuilding one re-validates its
+    # parameters. Validation of an accelerator-resident angle reads the value
+    # back to decide whether it is finite, so rebuilding the program inside the
+    # execution region made a repeat execution of the same circuit synchronize
+    # the device once per parameterized gate. The remapped program depends only
+    # on the wire structure and on which parameter objects are carried, so it is
+    # kept for the next execution of the same shape.
+    program_key = (cache_key, _parameter_identity(ir))
+    program = _REMAPPED_PROGRAM_CACHE.get(program_key)
+    if program is None:
+        program = (
+            tuple(
                 replace(instruction, wires=remap(instruction.wires))
                 for instruction in ir.instructions
             ),
-            observables=tuple(
+            tuple(
                 replace(observable, wires=remap(observable.wires))
                 for observable in ir.observables
             ),
-            measurements=tuple(
+            tuple(
                 replace(measurement, wires=remap(measurement.wires))
                 for measurement in ir.measurements
             ),
+        )
+        if len(_REMAPPED_PROGRAM_CACHE) >= _COMMUNICATION_LAYOUT_CACHE_LIMIT:
+            _REMAPPED_PROGRAM_CACHE.pop(next(iter(_REMAPPED_PROGRAM_CACHE)))
+        _REMAPPED_PROGRAM_CACHE[program_key] = program
+
+    instructions, observables, measurements = program
+    return (
+        # The IR object itself is rebuilt rather than shared: its metadata is a
+        # plain mapping, and a caller that edited one would otherwise edit every
+        # later execution's copy of it.
+        replace(
+            ir,
+            instructions=instructions,
+            observables=observables,
+            measurements=measurements,
             metadata={
                 **ir.metadata,
                 "statevector_logical_to_physical_wires": permutation,

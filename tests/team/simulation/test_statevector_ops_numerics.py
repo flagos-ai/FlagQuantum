@@ -31,6 +31,7 @@ from flagquantum.simulation.statevector.operations import (
     _apply_matrix_layout,
     _basis_indices_for_wires,
     _basis_offset,
+    _basis_offsets_tensor,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
     _instruction_matrix,
@@ -568,6 +569,54 @@ def test_gate_basis_offsets_preserve_wire_order():
     )
 
 
+@pytest.mark.parametrize(
+    ("wire_count", "gate_wires"),
+    (
+        (2, (0,)),
+        (2, (1,)),
+        (2, (0, 1)),
+        (3, (0,)),
+        (3, (2,)),
+        (3, (0, 2)),
+        (5, (1,)),
+        (5, (0, 4)),
+        (5, (1, 3)),
+        (8, (3,)),
+        (8, (2, 6)),
+        (8, (0, 7)),
+    ),
+)
+@pytest.mark.parametrize("rank_bits", (0, 1))
+def test_device_basis_offset_table_matches_the_host_expansion(
+    wire_count, gate_wires, rank_bits
+):
+    """The device offset table is the host expansion, computed without a copy.
+
+    The host list it replaced was copied to the device once per local gate per
+    execution. Deriving the same table from device arithmetic is only correct if
+    it is the same table, so it is compared entry by entry against the scalar
+    expansion that stays authoritative for the JAX and layout paths.
+    """
+
+    expected = torch.tensor(
+        [
+            _basis_offset(wire_count, gate_wires, basis) >> rank_bits
+            for basis in range(1 << len(gate_wires))
+        ],
+        dtype=torch.long,
+    )
+
+    table = _basis_offsets_tensor(
+        wire_count,
+        gate_wires,
+        rank_bits=rank_bits,
+        device=torch.device("cpu"),
+    )
+
+    assert table.dtype == torch.long
+    torch.testing.assert_close(table, expected)
+
+
 def test_local_eager_gate_kernel_is_usable_without_runtime_models():
     amplitudes = torch.tensor([[1, 0, 0, 0]], dtype=torch.complex64)
     x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
@@ -654,9 +703,16 @@ def test_gate_basis_block_combination_supports_batched_matrices():
     torch.testing.assert_close(updated, expected)
 
 
-def test_constant_gate_matrix_is_constructed_on_cpu_before_device_transfer(
-    monkeypatch,
-):
+def test_constant_gate_matrix_is_constructed_on_the_target_device(monkeypatch):
+    """A constant gate is built where it runs, not on the host and copied.
+
+    Building it on the host made every execution of a constant gate copy its
+    matrix across, because `gate_matrix` caches a fixed gate per device and the
+    cache key therefore named the host. The copy was a real transfer in the
+    amplitudes' stream. Nothing about a two-by-two constant needs the host, so a
+    constant gate is built on the device the gate runs on.
+    """
+
     observed = {}
 
     def recording_gate_matrix(instruction, *, bsz, device, dtype):
@@ -670,9 +726,31 @@ def test_constant_gate_matrix_is_constructed_on_cpu_before_device_transfer(
         dtype=torch.complex128,
     )
 
-    assert observed["device"].type == "cpu"
+    assert observed["device"].type == "meta"
     assert matrix.device.type == "meta"
     assert matrix.dtype == torch.complex128
+
+
+def test_constant_gate_matrix_is_still_built_on_the_host_for_a_host_run(
+    monkeypatch,
+):
+    """The CPU fast path is unchanged: a CPU gate is constructed on the CPU."""
+
+    observed = {}
+
+    def recording_gate_matrix(instruction, *, bsz, device, dtype):
+        observed["device"] = torch.device(device)
+        return torch.eye(2, dtype=dtype, device=device)
+
+    monkeypatch.setattr(statevector_ops, "_gate_matrix", recording_gate_matrix)
+    matrix = _instruction_matrix(
+        Instruction("rx", (0,), {"theta": 0.2}),
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+    )
+
+    assert observed["device"].type == "cpu"
+    assert matrix.device.type == "cpu"
 
 
 def test_tensor_parameter_matrix_preserves_device_autograd_path(monkeypatch):

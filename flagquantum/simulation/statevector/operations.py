@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from numbers import Number
 
 import torch
 
@@ -125,14 +124,21 @@ def _diagonal_region(instructions: Sequence[Instruction]) -> bool:
 def _instruction_matrix(
     instruction: Instruction, *, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
-    constant_parameters = instruction.matrix is None and all(
-        isinstance(value, Number) for value in instruction.params.values()
-    )
-    construction_device = torch.device("cpu") if constant_parameters else device
+    """Return the concrete matrix for one instruction on the device it runs on.
+
+    A gate with only constant parameters used to be built on the host and copied
+    to the target device afterwards. The copy was a real host-to-device transfer
+    in the caller's stream: it made an accelerator run stage the gate it was
+    about to apply, and a profiled region recorded that staging as a property of
+    the workload. `gate_matrix` already caches fixed gates per device, so
+    building on the target device leaves an accelerator run with no staging copy
+    at all, and leaves a CPU run constructing exactly where it did before.
+    """
+
     matrix = _gate_matrix(
         instruction,
         bsz=1,
-        device=construction_device,
+        device=device,
         dtype=dtype,
     ).to(device=device, dtype=dtype)
     if matrix.ndim == 3:
@@ -1089,6 +1095,34 @@ def _basis_offset(n_wires: int, wires: Sequence[int], basis_index: int) -> int:
     return offset
 
 
+def _basis_offsets_tensor(
+    n_wires: int,
+    wires: Sequence[int],
+    *,
+    rank_bits: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """The same expansion as :func:`_basis_offset`, built on the target device.
+
+    The per-gate offset table is two or four small integers, and it was built by
+    listing them in Python and copying the list across. That copy is a real
+    host-to-device transfer issued once per local gate per execution, in the same
+    stream as the amplitudes it indexes, so an accelerator run staged a table it
+    could have computed. Every input here is already a Python integer, so the
+    expansion is expressed once as device tensor arithmetic and nothing crosses
+    the host boundary.
+    """
+
+    wires = tuple(int(wire) for wire in wires)
+    gate_dim = 1 << len(wires)
+    basis = torch.arange(gate_dim, dtype=torch.long, device=device)
+    offsets = torch.zeros(gate_dim, dtype=torch.long, device=device)
+    for position, wire in enumerate(wires):
+        bit = (basis >> (len(wires) - position - 1)) & 1
+        offsets = offsets | (bit << (int(n_wires) - wire - 1))
+    return offsets >> int(rank_bits)
+
+
 def _apply_diagonal_gate_eager(
     amplitudes: torch.Tensor,
     diagonal: torch.Tensor,
@@ -1171,12 +1205,10 @@ def _apply_local_gate_eager(
     out = torch.empty_like(amplitudes) if output is None else output
     output_bytes = out.numel() * out.element_size()
 
-    local_offsets = torch.tensor(
-        [
-            _basis_offset(n_wires, wires, basis) >> rank_bits
-            for basis in range(gate_dim)
-        ],
-        dtype=torch.long,
+    local_offsets = _basis_offsets_tensor(
+        n_wires,
+        wires,
+        rank_bits=rank_bits,
         device=out.device,
     )
     peak = 0
