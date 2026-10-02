@@ -42,6 +42,7 @@ from .numerics import (
     RefinementStrategy,
 )
 from .operator_schema import (
+    ADJOINT_RULES,
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
     GateInfo,
@@ -49,6 +50,7 @@ from .operator_schema import (
     canonical_opcode,
     gate_info,
     get_operator_schema,
+    inverse_operator,
     operator_manifest,
 )
 from .parameters import (
@@ -98,9 +100,11 @@ __all__ = [
     "OPERATOR_SCHEMAS",
     "OperatorSchema",
     "GateInfo",
+    "ADJOINT_RULES",
     "canonical_opcode",
     "get_operator_schema",
     "gate_info",
+    "inverse_operator",
     "operator_manifest",
     "RUNTIME_CONFIG_VERSION",
     "RuntimeConfig",

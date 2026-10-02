@@ -15,6 +15,7 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
@@ -52,6 +53,26 @@ semantic qubit keywords. For example, `h(0)` and `h(qubit=0)` are equivalent;
 `cx(0, 1)` and `cx(control=0, target=1)` are equivalent. Symmetric two-qubit
 gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
 FlagQuantum IR continue to use `wires=`.
+
+`Circuit.adjoint()` returns the circuit that undoes the one it is called on: the
+instructions in reverse order, each replaced by the single gate that inverts it. The
+rule belongs to the gate and is declared once in the operator schema, so a
+self-inverse gate is kept as it is, an angle is negated, and `s`/`t`/`sx` become
+`sdg`/`tdg`/`sxdg`:
+
+```python
+block = fq.Circuit(2).h(0).ry(0, 0.3).cx(0, 1)
+inverse = block.adjoint()
+[(item.name, item.params) for item in inverse.to_ir().instructions]
+# [('cx', {}), ('ry', {'theta': -0.3}), ('h', {})]
+```
+
+The block being inverted is left usable, and the result carries the same qubit
+count, batch size, device, and dtype. A gate recorded with its own matrix through
+`Circuit.unitary(...)` is inverted through that matrix. An operation with no
+unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
+classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
+the operation instead of being dropped from the inverse.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
