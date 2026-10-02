@@ -217,6 +217,19 @@ class _ShardedForwardSweep:
             self.exchange_buffer_bytes
             // (self.plan.bsz * torch.empty((), dtype=self.dtype).element_size() * 4),
         )
+        # A rank-local gate reads and writes every amplitude it owns, and the
+        # chunks it works in are disjoint, so the state buffer is its own output
+        # buffer whenever no matrix in this program needs a gradient. Without
+        # this the sharded path reserved a second shard-sized buffer per local
+        # gate, which made a two-rank run hold more device memory than the
+        # single-device run it is supposed to expand -- the opposite of what a
+        # capacity claim is about. In-place writes are exact for a local gate
+        # because each chunk's write set is exactly its read set; a program that
+        # trains has to keep the old amplitudes for the backward pass, so it
+        # keeps the separate buffer.
+        self.local_output_in_place = not any(
+            matrix.requires_grad for matrix in self.matrices
+        )
         self.shard_state = initialize_statevector_shard(
             self.plan,
             rank=self.rank,
@@ -770,7 +783,7 @@ class _ShardedForwardSweep:
                 plan=self.plan,
                 chunk_amplitudes=self.chunk_amplitudes,
                 output=(
-                    self.shard_state.amplitudes if self.local_compilation else None
+                    self.shard_state.amplitudes if self.local_output_in_place else None
                 ),
             )
             self.peak_scratch = max(self.peak_scratch, scratch)
@@ -790,7 +803,7 @@ class _ShardedForwardSweep:
 
         if not touched or self.world_size == 1:
             local_output = (
-                self.shard_state.amplitudes if self.local_compilation else None
+                self.shard_state.amplitudes if self.local_output_in_place else None
             )
             cx_decision = _triton_local_cx_decision(
                 runtime_supported=instruction.name == "cx",
@@ -829,6 +842,9 @@ class _ShardedForwardSweep:
     ) -> None:
         """Apply one gate across shards, by the cheapest exchange it fits."""
 
+        local_output = (
+            self.shard_state.amplitudes if self.local_output_in_place else None
+        )
         if (
             _cross_shard_cx_packing_enabled()
             and instruction.name == "cx"
@@ -841,6 +857,7 @@ class _ShardedForwardSweep:
                 chunk_amplitudes=self.chunk_amplitudes,
                 process_group=self.process_group,
                 workspace=self.exchange_workspace,
+                output=local_output,
                 kernel_dispatch_evidence=self.kernel_dispatch_evidence,
             )
         elif (
@@ -857,6 +874,7 @@ class _ShardedForwardSweep:
                     process_group=self.process_group,
                     workspace=self.exchange_workspace,
                     pipeline=self.pipeline_pair_exchange,
+                    output=local_output,
                 )
             )
         else:
@@ -870,6 +888,7 @@ class _ShardedForwardSweep:
                     process_group=self.process_group,
                     workspace=self.exchange_workspace,
                     pipeline=self.pipeline_pair_exchange,
+                    output=local_output,
                 )
             )
         self.distributed_count += 1

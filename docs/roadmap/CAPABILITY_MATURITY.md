@@ -45,17 +45,23 @@ Only six checked-in validators resolved a revision, and each had its artifact pa
 written into it, so an artifact no validator named was never asked: nineteen
 artifacts under `artifacts/` recorded revisions this repository does not contain,
 and thirteen of them said nothing about it. `tools/check_evidence_revisions.py`
-therefore walks `artifacts/` and `benchmarks/results/` rather than a list, and asks
-both questions a reader depends on. A revision is obtainable when this repository
-holds the commit and a ref of this repository reaches it, because a clone and a
-plain fetch obtain exactly the commits the refs they fetch reach; of the forty-one
-distinct revisions recorded under those roots, one is obtainable. Every other
-revision must be declared in `evidence-revision-origins.toml`, which names the
-origin a reader can obtain it from. Asking only whether the object was in the
-database was not enough: eighteen revisions are held by this repository's remote
-while no branch and no tag reaches them, so a clone obtains none of them, and
-`unreferenced_object` covers those, since the remote still serves the object by
-name while nothing guarantees that it will. `producing_host_history` covers the
+therefore walks `artifacts/`, `benchmarks/results/` and
+`docs/development/evidence/` rather than a list, and asks both questions a reader
+depends on. A revision is obtainable when this repository holds the commit and a ref
+of this repository reaches it, because a clone and a plain fetch obtain exactly the
+commits the refs they fetch reach; of the forty-eight distinct revisions recorded
+under those roots, one is obtainable. Every other revision must be declared in
+`evidence-revision-origins.toml`, which names the origin a reader can obtain it
+from. Asking only whether the object was in the database was not enough:
+twenty-five revisions are unreachable from every ref, so a clone obtains none of
+them, and twenty of the twenty-five are absent from this checkout's object database as
+well, so an answer read from the checkout would differ between checkouts and the
+declaration is what makes the verdict the same everywhere. `unreferenced_object`
+covers those, since the remote still serves the object by name while nothing
+guarantees that it will. The class is measured rather than frozen: its most recent
+entry is a revision recorded by an artifact merged after this table was written, whose
+branch was deleted when its pull request merged, so an unobtainable pin reached `main`
+within a day of the gate that asks about it. `producing_host_history` covers the
 eighteen revisions of history this repository does not contain. Seventeen belong to
 `FlagQuantum/FlagQuantum`, a private repository re-created from a product baseline
 rather than cloned from this one; this repository's public history carries
@@ -76,39 +82,91 @@ own revisions by stating `<field>_origin` beside any field that records one, whi
 six artifacts under `artifacts/` do; both records are read, and a revision whose two
 records disagree fails the gate rather than passing twice.
 
-The gate walks JSON artifacts under exactly those two roots, which is a boundary
+The gate walks JSON artifacts under exactly those three roots, which is a boundary
 rather than a claim of full coverage, and what falls outside it is measured rather
-than assumed. Counting a pin as any full-length hexadecimal value, sixty-three
-(file, revision) pairs across nineteen files record a revision that no artifact under
-those roots records: fifty-nine of the pairs are under `docs/`, two under
+than assumed. Counting a pin as any full-length hexadecimal value, fifty-nine
+(file, revision) pairs across sixteen files record a revision that no artifact under
+those roots records: fifty-five of the pairs are under `docs/`, two under
 `examples/`, one in `.github/`, and one under `benchmarks/` in prose the JSON-only
-walk cannot see. Those pairs name fifty-nine distinct revisions, of which fifty-one
-resolve in a complete clone and eight do not. Two of the eight are not revisions:
-`.github/workflows/ci.yml` records the git zero-SHA placeholder, and
-`benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` names a
-runner revision in prose inside a root the gate already reads. Five of the remaining
-are unreferenced objects of this repository's remote, served anonymously by name and
-reached by no ref, the same class as the eighteen declared above: `0a26c364…`
-(`base_commit` of a private-GPU Bell record), `aec65643…` and `ecaf903c…`
-(`implementation_commit` of two further records), and `b30886cb…` and `0a13cfa2…`
-(`image.runtime_source_commit` and `image.benchmark_driver_commit` of a
-strong-scaling record), all under `docs/development/evidence/`. Only
-`docs/guides/JIUDING.md` points a reader at any of those records, and no test, tool,
-or workflow reads one, so their pins are disclosures a reader relies on and nothing
-checks.
+walk cannot see. Those pairs name fifty-four distinct revisions, of which fifty-one
+resolve in this checkout and three do not.
 
-The eighth is why widening the roots is a decision rather than a one-line change.
-`examples/assets/manifest.json` records a revision of `google-bert/bert-base-uncased`
-in `assets[2].revision` and `assets[3].revision` -- the value quoted as
-`BERT_TOKENIZER_REVISION` in `examples/quantum_transformer.py` -- and no FlagQuantum
-repository contains it or should. The walk is key-agnostic by design: it treats any
+Adding `docs/development/evidence/` accounted for the largest group of those pairs
+rather than only reporting it. Five revisions are recorded by the four Jiuding
+records under that root that write the revision out in full, and all five are
+unreferenced objects of this repository's
+remote, each confirmed by fetching it from a fresh repository three times, so they
+are declared in `evidence-revision-origins.toml`, whose unreferenced-object class the
+change also states one entry larger. Those records are what `docs/guides/JIUDING.md`, the release
+notes and this document cite as their hardware evidence, and until this root was
+walked their pins were disclosures a reader relied on that nothing checked.
+
+What remains outside the walk is three revisions, and none is a pin a reader is
+asked to check out. `.github/workflows/ci.yml` compares a base revision against the
+git zero-SHA placeholder, so the all-zero value is a shell literal rather than a
+revision. `examples/assets/manifest.json` records a revision of
+`google-bert/bert-base-uncased` in `assets[2].revision` and `assets[3].revision` --
+the value quoted as `BERT_TOKENIZER_REVISION` in `examples/quantum_transformer.py` --
+and no FlagQuantum repository contains it or should. The third,
+`aaa3a70c698dc629c37baa2719607444aa3b6381`, is named in prose by
+`benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md`; the
+remote serves it, so it belongs to the unreferenced-object class declared above, and
+it stays outside because the walk reads JSON artifacts and not the markdown citing
+them, which is a limit of the walk rather than a statement about the revision.
+
+The walk asks what an artifact records; it does not ask whether a reader can turn the
+citation into a commit. A shortened hexadecimal run cannot be expanded by a reader
+who does not already have the commit, so `tools/check_evidence_revisions.py` also
+requires any shortened run under a declared citation root to be given in full in the
+same file, and it reports a run that names exactly one revision this repository gives
+in full, because that is what separates a citation from a task identifier or a date.
+Eighteen such citations were reported at this branch point and all eighteen were
+completed: one in the Quafu artifact, nine in three Jiuding records, one in a CUDA-Q
+comparison record, one in the Quafu live-execution document, one in the split
+real/imag contract, and five in this document. Completing the Quafu artifact's
+`source_revision`
+is why the table gained an `unreferenced_object` row: the eight-character
+pin named a commit this repository does not hold, and writing the revision out in
+full is what let the gate ask about it for the first time. Three Jiuding records were
+already inside the walk before their citations were completed, and the gate read
+nothing in them until then: a widened root is not enough if the artifact abbreviates
+the revision it records. The `docs/development/INTEGRATION_WORKFLOW.md` and
+`docs/roadmap/QUANTUM_KERNEL_ARCHITECTURE_PLAN.md` citations that abbreviate a
+revision do state it in full in the same file, so the check leaves them alone.
+
+The citation rule can only report a prefix it can expand, and it expands a prefix
+against a full-length value this repository records somewhere. Counting every JSON
+string scalar of 7 to 39 hexadecimal characters under the three walked roots gives
+969, which is mostly digests, task identifiers and container identifiers; exactly two
+of them prefix a revision this repository records in full. Both are the
+`source_revision` / `source_revision_full` pair in
+`benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json` and its
+gradient counterpart, where the file states the full value beside the recorded
+abbreviation and the check therefore accepts it rather than asking that recorded
+output be edited. Fourteen of the 969 sit in a field named for a revision --
+`base_commit`, `host_commit`, `implementation_commit`, `source_commit`,
+`source_revision`, `validation_driver_commit` -- and nothing in this repository
+expands any of them, so neither half of the gate asks about them: the revision walk
+needs forty characters, and the citation rule needs a value to expand against. That
+residue is the reason the declared-field work is the next change rather than an
+optional one, and it is reported here rather than repaired, because completing those
+values means reading the full revision out of a clone that holds the commit rather
+than guessing it from the abbreviation.
+
+`examples/` is why widening the roots is a decision rather than a one-line change.
+The walk is key-agnostic by design: it treats any
 full-length hexadecimal value at any depth as a revision, which is how it finds the
 field names this repository uses without maintaining a list of them. Walking
 `examples/` would therefore demand a FlagQuantum origin for a third-party dataset
 revision, reporting a defect where the tree is correct. Narrowing the rule to a
 declared set of revision-bearing field names, or declaring a root's revision fields
 with it, is the precondition for walking any root that mixes FlagQuantum pins with
-revisions of another system.
+revisions of another system. `ci/` is left out for a different reason and does not
+wait on that work: `ci/flagos_cuda_reference.lock.json` records
+`2e00b393cf80088706b460a187aef185d3a283f4`, an external dependency already declared
+for the artifacts under `artifacts/`, but two
+validators read that file as an input, and a lock file pins an installation rather
+than recording what a measurement produced.
 
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its

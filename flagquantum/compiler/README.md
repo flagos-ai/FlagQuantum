@@ -58,6 +58,18 @@ behind the front layer, so it cannot be routed at all on part of the workload.
 [benchmarks/compiler_lookahead_swap.py](../../benchmarks/compiler_lookahead_swap.py)
 holds the measurement and the commands that reproduce it.
 
+The randomized layer-permutation search Qiskit shipped as `StochasticSwap` was
+measured the same way, and rejected on cost as well. Its plan is sound: the
+placements it records are the replay of its own SWAPs, and every two-wire
+operation it places sits on a device edge. It still retains 1.617 times the SWAPs
+`sabre_layout` retains and beats that strategy on none of the 140 measured
+programs, and Qiskit's own compiled implementation of the same algorithm retains
+0.5% fewer SWAPs on the same basis -- effectively the same count -- so the
+shortfall is the algorithm rather than the port. [benchmarks/compiler_stochastic_swap.py](../../benchmarks/compiler_stochastic_swap.py)
+holds the measurement and the commands that reproduce it. The checked-in port is
+also the only runnable form of the algorithm left to this repository, because
+Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
+
 Routing moves two-wire operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more wires, so such
 an operation is carried through unchanged, and only when the device already
