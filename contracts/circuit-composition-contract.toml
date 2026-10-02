@@ -110,6 +110,12 @@ reason = "the caller always adapts its input into the dense tuple form before re
 
 [verification]
 contract = "tests/unit/test_circuit_composition_contract.py"
+# Each provided operation must have one test that expands it and compares the result
+# with the program a user would have written by hand, instruction by instruction. This
+# requirement is what `tools/check_circuit_composition_contract.py` enforces: it refuses
+# a contract that names a test which is not a test in the file above, and it refuses an
+# operation that has no test named. An operation is not contracted until both hold.
+expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse" }
 # Registering an opcode changes this census. It is the measurement behind the
 # `reachable = false` row below, so it is recorded as evidence rather than assumed.
 opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
