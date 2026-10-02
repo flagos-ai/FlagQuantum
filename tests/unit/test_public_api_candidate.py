@@ -24,6 +24,7 @@ EXTENSION_PROTOCOL = ROOT / "contracts" / "extension-protocol-v1-candidate.json"
 REMOTE_JOBS = ROOT / "contracts" / "remote-jobs-v1-candidate.json"
 OBSERVABLE_OUTPUTS = ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 TWIN = ROOT / "contracts" / "twin-v1-candidate.json"
+OPENQASM_IMPORT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -94,6 +95,9 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     twin_contract = _load(TWIN)
     if twin_contract["implementation_authorized"] is True:
         authorized_additions.add(twin_contract["root_addition"])
+    openqasm_import_contract = _load(OPENQASM_IMPORT)
+    if openqasm_import_contract["implementation_authorized"] is True:
+        authorized_additions.update(openqasm_import_contract["root_additions"])
     assert set(classified) == set(exports) | authorized_additions
 
 
@@ -186,7 +190,11 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     twin_contract = _load(TWIN)
     assert twin_contract["root_manifest_authorized"] is True
     assert twin_contract["root_addition"] in final_core
-    assert len(final_core) == 34
+    openqasm_import_contract = _load(OPENQASM_IMPORT)
+    assert openqasm_import_contract["implementation_authorized"] is True
+    assert set(openqasm_import_contract["root_additions"]) == {"from_openqasm"}
+    assert set(openqasm_import_contract["root_additions"]) <= final_core
+    assert len(final_core) == 35
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core

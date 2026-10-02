@@ -15,6 +15,7 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Save or load OpenQASM text | `flagquantum.compiler.openqasm.emit_openqasm`, `fq.from_openqasm` | Imported program plus its measurement mapping |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
@@ -131,6 +132,39 @@ separate sealed jobs without changing the selected physical-qubit mapping.
 the estimator standard error, group count, per-group shots, and total shots;
 provenance records every provider task and deployment identity. Mixed outputs
 and unsupported remote outputs fail before compilation or submission.
+
+## OpenQASM interchange
+
+One program can be written as text and read back:
+
+```python
+import flagquantum as fq
+from flagquantum.compiler.openqasm import emit_openqasm
+
+text = emit_openqasm(fq.Circuit(2).h(0).cx(0, 1))
+program = fq.from_openqasm(text)
+```
+
+`emit_openqasm` writes OpenQASM 2 or 3 through `version=`. `fq.from_openqasm`
+reads the canonical subset that emitter writes and refuses everything else with
+an `OpenQASMImportError` whose `issue_code` names the reason, so nothing is
+imported approximately. Import does not execute the program.
+
+The result reports what was read: `instructions` in source order,
+`measurement_qubits` as the qubit behind each classical bit, the declared
+`version`, and the `source` text. It is not a bare `fq.Circuit`, because a
+`Circuit` cannot carry the terminal measurement that defines that mapping. Call
+`to_circuit()` for the ordinary sampling path, `to_ir()` when the measurement
+mapping must be preserved, or `to_openqasm()` to get the canonical text back:
+
+```python
+counts = fq.run(program.to_circuit(), outputs=fq.counts(), shots=256).counts[0]
+```
+
+Import accepts one quantum register and one classical register, requires bound
+numeric parameters, refuses `barrier` and `reset`, and requires the measurement
+block to be terminal. It reads `U` as `u3`, because OpenQASM 3 has no two-angle
+gate, and accepts `pow(-1) @ sx` as the one inverse the emitter writes.
 
 ## Optimize a program
 

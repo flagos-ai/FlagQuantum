@@ -8,6 +8,10 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import Layout
+from flagquantum.compiler.openqasm_import import (
+    import_openqasm,
+    import_openqasm_to_ir,
+)
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
@@ -25,9 +29,12 @@ ENTRIES = (
     fq.Observable,
     fq.compile,
     fq.expectation,
+    fq.from_openqasm,
     fq.plan,
     fq.run,
     fq.train,
+    import_openqasm,
+    import_openqasm_to_ir,
     planner.plan,
     recommend_simulator,
     run_cirq,
@@ -84,5 +91,5 @@ def test_every_module_with_examples_is_covered() -> None:
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (
-        "docstring examples in modules that no doctest entry runs: " f"{uncovered}"
+        f"docstring examples in modules that no doctest entry runs: {uncovered}"
     )

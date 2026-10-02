@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "status": "implementation_authorized",
+  "approval": {
+    "approved_at": "2026-10-02",
+    "approved_by": "API owner via explicit user directive",
+    "approval_record": "docs/api-changes/FQ-OPENQASM-IMPORT-20261002.md"
+  },
+  "implementation_authorized": true,
+  "root_additions": [
+    "from_openqasm"
+  ],
+  "root_removals": [],
+  "signatures": {
+    "from_openqasm": "(source: 'str') -> 'Any'"
+  },
+  "refusal_issue_codes": [
+    "duplicate_measurement_target",
+    "empty_source",
+    "incomplete_measurement",
+    "invalid_parameters",
+    "malformed_statement",
+    "not_canonical_text",
+    "out_of_range_qubit",
+    "unbound_parameter",
+    "unknown_gate",
+    "unknown_register",
+    "unsupported_version"
+  ],
+  "supported_versions": [
+    2.0,
+    3.0
+  ],
+  "rules": {
+    "accepts_only_canonical_subset": true,
+    "refusals_name_an_issue_code": true,
+    "import_is_construction_time_only": true,
+    "ir_version_unchanged": true,
+    "bound_parameters_only": true,
+    "terminal_measurement_required": true,
+    "single_quantum_register_required": true,
+    "single_classical_register_required": true,
+    "duplicate_emitter_implementation": false
+  },
+  "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
+}

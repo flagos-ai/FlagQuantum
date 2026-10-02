@@ -24,4 +24,5 @@ process.
 - [Pauli algebra and quantum_info ownership boundary](FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930.md)
 - [Quafu credential presence fails closed before submission](FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md)
 - [Quafu service compilation through `fq.run`](FQ-QUAFU-SERVICE-COMPILATION.md)
+- [OpenQASM import subset and `fq.from_openqasm`](FQ-OPENQASM-IMPORT-20261002.md)
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)

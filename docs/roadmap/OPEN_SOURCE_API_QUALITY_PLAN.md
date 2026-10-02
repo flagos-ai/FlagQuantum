@@ -441,10 +441,12 @@ root compatibility, update manifests/docs/import contracts. Target approximately
 Implementation record (2026-08-31):
 
 - `contracts/public-api-v1-candidate.json` classifies each of 60 exports exactly once.
-- Candidate Core has 34 entries in `contracts/public-api-v1-candidate.json` at the
+- Candidate Core has 35 entries in `contracts/public-api-v1-candidate.json` at the
   current revision, with `planned_additions` empty. It reached 22 at this
   checkpoint: 20 retained plus `ExecutionOptions`/`ExecutionPlan`. Later approved
-  proposals settled the core at the 34 entries the manifest records today.
+  proposals settled the core at the 35 entries the manifest records today,
+  the most recent being `from_openqasm` under
+  [`FQ-OPENQASM-IMPORT-20261002.md`](../api-changes/FQ-OPENQASM-IMPORT-20261002.md).
 - Remaining entries map to stable extensions, experimental, or pre-release removal.
 - `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` records migration; API owner approved
   classification/namespace migration on 2026-08-31. Final freeze remains separate.

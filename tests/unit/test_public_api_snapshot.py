@@ -59,6 +59,11 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
         and twin["root_manifest_authorized"] is True
     ):
         authorized_additions.add(twin["root_addition"])
+    openqasm_import = json.loads(
+        (ROOT / "contracts/openqasm-import-v1-candidate.json").read_text()
+    )
+    if openqasm_import["implementation_authorized"] is True:
+        authorized_additions.update(openqasm_import["root_additions"])
 
     assert (
         set(manifest["stable_exports"])

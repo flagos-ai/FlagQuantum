@@ -136,6 +136,9 @@ This catalog is generated from the machine-validated
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Save a circuit as OpenQASM text | OpenQASM 2 and OpenQASM 3 interchange | Production supported | [Run example](../../flagquantum/compiler/README.md) |
+| Load OpenQASM text back into FlagQuantum | OpenQASM 2 and OpenQASM 3 interchange | Production supported | [Run example](../../flagquantum/compiler/README.md) |
+| Know exactly why a piece of OpenQASM was refused | OpenQASM 2 and OpenQASM 3 interchange | Production supported | [Run example](../../flagquantum/compiler/README.md) |
 | Execute FlagQuantum code on Qiskit Aer | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
 | Compare an external simulator without changing the native default | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
 | Inspect external-backend provenance and fallback status | Qiskit Aer execution bridge | Experimental | [Run example](../../docs/guides/QISKIT_AER_EXECUTION.md) |
@@ -242,6 +245,20 @@ Render one circuit as terminal text or a Matplotlib figure through one shared la
 - **Start:** [quick example](../../flagquantum/drawer/README.md)
 - **Documentation:** [guide](../../flagquantum/drawer/README.md)
 - **Known boundary:** Presentation only. The drawer owns layout, labels, gate symbols, and styles; it does not execute, compile, validate, or route a circuit, and it changes no numerical result. The text renderer depends only on the standard library and Core, while Matplotlib is optional and is imported only by the figure renderer, so draw_mpl is absent from flagquantum.drawer when Matplotlib is not installed. The rendered text layout is not a frozen contract: no compatibility guarantee is made for exact spacing, gate symbols, column placement, or option names, and the only tests assert renderer self-consistency rather than a golden diagram. Rendering is single-process CPU work with no streaming or interactive backend. Structured hybrid programs, pulse-level schedules, and target timing diagrams are not drawable. The package README is the only user-facing documentation.
+
+### OpenQASM 2 and OpenQASM 3 interchange
+
+Write one FlagQuantum program as OpenQASM text and read that text back as the same program, with every other text refused by name.
+
+- **Maturity:** Production supported
+- **Public API:** `fq.from_openqasm`, `flagquantum.compiler.openqasm.emit_openqasm`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `bound_parameters_only`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../flagquantum/compiler/README.md)
+- **Documentation:** [guide](../../flagquantum/compiler/README.md)
+- **Known boundary:** Text interchange only; the importer never executes a program and does not make FlagQuantum an OpenQASM front end. Import accepts exactly the canonical subset the emitter writes and verifies that claim by re-emitting the parsed program and requiring statement equivalence, so text that denotes something the emitter would write differently is refused rather than interpreted approximately, and arbitrary third-party OpenQASM is out of scope. Both 2.0 and 3.0 are read; the version and its matching include statement are mandatory, so a program declaring any other version is refused as unsupported_version. One qreg or qubit register and one creg or bit register may be declared, and a program declaring more is malformed_statement. Because OpenQASM 3 spells the three-angle gate as U and has no two-angle gate, U is read as u3 unconditionally: u2(phi, lbd) and U(pi/2, phi, lbd) denote the same unitary and the emitter writes the same text for both. The inverse of sx is the one power accepted, spelled pow(-1) @ sx q[i]; every other power is unknown_gate. Parameters must be bound numbers, so rx(theta) q[0]; is unbound_parameter. barrier and reset are not opcodes and are refused. The measurement block must be terminal, must define every classical bit exactly once, each bit must read a distinct qubit, and a classical register wider than the quantum register or a partly defined measurement block is incomplete_measurement. Comments, blank lines, and spacing carry no meaning; any other textual difference from the canonical emission is not_canonical_text. Eleven refusal reasons form a closed vocabulary, each carried on OpenQASMImportError.issue_code, which is the first issue_code in the package. Import returns an OpenQASMImport rather than a Circuit because a Circuit cannot carry a measurement, and IR_VERSION stays 1.0 because import happens at construction time.
 
 
 ## Simulation and training
