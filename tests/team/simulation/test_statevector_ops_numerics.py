@@ -312,6 +312,11 @@ def test_large_complex128_state_uses_measured_wider_dense_groups() -> None:
     assert _cpu_disjoint_dense_max_wires(24, 1, torch.complex128) == 6
     assert _cpu_disjoint_dense_max_wires(22, 2, torch.complex128) == 4
     assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex64) == 4
+    assert _cpu_disjoint_dense_max_wires(18, 8, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(19, 16, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(17, 32, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(20, 8, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(18, 32, torch.complex64) == 4
 
 
 def test_adaptive_dense_fusion_width_can_be_disabled(monkeypatch) -> None:
@@ -321,6 +326,35 @@ def test_adaptive_dense_fusion_width_can_be_disabled(monkeypatch) -> None:
     assert _cpu_disjoint_dense_max_wires(20, 1, torch.complex128) == 4
     assert _cpu_disjoint_dense_max_wires(22, 1, torch.complex128) == 6
     assert _cpu_disjoint_dense_max_wires(24, 1, torch.complex128) == 6
+    assert _cpu_disjoint_dense_max_wires(18, 32, torch.complex128) == 4
+    assert _cpu_disjoint_dense_max_wires(19, 8, torch.complex128) == 4
+
+
+def test_batched_medium_dense_width_preserves_input_gradient(monkeypatch) -> None:
+    generator = torch.Generator().manual_seed(2267)
+    values = (
+        torch.randn((2, 2**18), generator=generator)
+        + 1j * torch.randn((2, 2**18), generator=generator)
+    ).to(torch.complex128)
+
+    def execute(enabled: str) -> tuple[torch.Tensor, torch.Tensor]:
+        monkeypatch.setenv("FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH", enabled)
+        inputs = values.clone().requires_grad_(True)
+        circuit = Circuit(18, bsz=2, dtype=torch.complex128, inputs=inputs)
+        for wire in range(18):
+            circuit.ry(wire, 0.03 * (wire + 1))
+            circuit.rz(wire, -0.02 * (wire + 1))
+        output = circuit.state(refresh=True)
+        gradient = torch.autograd.grad(output[:, ::4096].real.sum(), inputs)[0]
+        return output.detach(), gradient
+
+    expected_output, expected_gradient = execute("0")
+    actual_output, actual_gradient = execute("1")
+
+    torch.testing.assert_close(actual_output, expected_output, atol=2e-13, rtol=2e-13)
+    torch.testing.assert_close(
+        actual_gradient, expected_gradient, atol=2e-13, rtol=2e-13
+    )
 
 
 def test_dense_single_wire_regions_accept_wider_large_state_bound() -> None:

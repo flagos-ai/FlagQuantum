@@ -230,6 +230,12 @@ It collapses exact H/S/Sdg/X/Y/Z layers into one native traversal and records a
 1.974x focused rollback speedup on the 18-qubit, batch-32 Random Clifford task.
 On this measured task, FlagQuantum is 1.468x faster than the same-run PennyLane
 Lightning bridge; the inapplicable local-brickwork control remains explicit.
+The adaptive dense-width follow-up is documented in
+[`BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md).
+It selects six-wire dense groups for complex128 batches at 18–19 qubits,
+records a 1.379x focused rollback speedup on local brickwork, and measures
+FlagQuantum 1.241x faster than the same-run PennyLane Lightning bridge while
+retaining the explicit four-wire rollback and applicability boundary.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a
