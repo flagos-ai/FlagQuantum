@@ -4,6 +4,34 @@ One document per proposed change to the Stable Core public API. This one
 finishes the migration that [Qubit terminology migration](FQ-QUBIT-NAMING-20260913.md)
 started and explicitly scoped out.
 
+> **Scope superseded on 2026-10-05; the decisions below still stand.**
+>
+> The user restated the constraint as *the whole package*, not a documented
+> subset, and the tiers below cannot carry it: this document's T3 count of 250 was
+> produced by a filter that drops a package's `__init__.py`, so it silently
+> excluded `flagquantum/observables/__init__.py` — the module that defines `fq.X`,
+> `fq.Y`, and `fq.Z`, and the home of seven of the eight shipped aliases. The
+> "documented surface" tier is decided by prefix matching in `docs/**` and reads
+> 87 or 138 depending on how the query is written, so no gate can enforce it.
+>
+> The migration is now led by
+> [`FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md`](FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md)
+> (authorization, 329 measured sites) and
+> [`API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md`](../development/API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md)
+> (decision record). Its baseline lives in
+> `contracts/qubit-vocabulary-contract.toml` and is enforced by
+> `tools/check_qubit_vocabulary.py`.
+>
+> **What carries forward unchanged**: the `Omitted` sentinel rule, the
+> `warn_qubit_alias` deprecation path, the removal version, the serialized-key and
+> environment-variable exclusions, and this document's *Acceptance Tests* clause
+> that the gate must fail on a fixture introducing a `wire` parameter. That gate
+> did not exist when this document was written; it exists now.
+>
+> **What is superseded**: the four-tier split and its 17/3/250/5 arithmetic, and
+> the 22-row *Rename inventory* as the program's scope. The inventory remains
+> accurate about the names it lists; it is no longer the complete list.
+
 ## Decision and authorization
 
 The user asked on 2026-09-13 for gradual retirement of wire terminology, and on
