@@ -417,6 +417,18 @@ def _parse(
         line, text = statements[index]
         if any(pattern.fullmatch(text) for pattern in _MEASUREMENT_PATTERNS):
             break
+        # A second register declaration is refused here rather than left to
+        # fail later on the first reference to it. Without this check the
+        # refusal that arrives names an operand or an index, which describes
+        # the symptom of a redefinition instead of the redefinition.
+        if _register(text) is not None:
+            _refuse(
+                "malformed_statement",
+                f"statement {text!r} declares a second register; FlagQuantum "
+                "imports a program with exactly one quantum and one classical "
+                "register",
+                line=line,
+            )
         inverse = _INVERSE_PREFIX.fullmatch(text)
         if inverse is not None:
             square_root = _SQRT_X_OPERANDS.fullmatch(inverse.group("rest"))
