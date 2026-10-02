@@ -42,8 +42,8 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # paragraph below states, but retaining an unreferenced object is server
 # policy rather than a promise, and one of the forty is the head of a closed
 # pull request. No ref of this repository reaches any of the forty, so a
-# complete clone obtains none of them; thirty-one are absent from this checkout's object
-# database as well, and the remaining nine linger here without a ref, which is what an
+# complete clone obtains none of them; thirty-two are absent from this checkout's object
+# database as well, and the remaining eight linger here without a ref, which is what an
 # answer read from the checkout rather than from the declaration would depend on.
 #
 # Fourteen of the forty entered this table from a direction the first pass could
@@ -168,9 +168,9 @@ schema = "flagquantum.evidence_revision_origins.v1"
 #
 # A `path` names an artifact, or a directory that contains the artifacts recording
 # the revision, which is how `benchmarks/results/local` states one origin for the
-# thirty-one files that record the same run state. Declaring an origin for a
-# revision a clone obtains fails the gate, so this table cannot be used to hide a
-# checkable pin behind a claim.
+# thirty-five files that record one of the revisions declared for it. Declaring an
+# origin for a revision a clone obtains fails the gate, so this table cannot be used
+# to hide a checkable pin behind a claim.
 #
 # An artifact may account for its own revisions instead, by stating
 # `<field>_origin` beside any field that records one -- `source.revision_origin`
@@ -584,6 +584,14 @@ path = "benchmarks/results/local/mps_two_site_dispatch_a800.json"
 
 [[artifact.revision]]
 value = "0e2d57204cb4fdd3f002de94367346923f7d1b33"
+origin = "unreferenced_object"
+
+
+[[artifact]]
+path = "benchmarks/results/local/mps_wire_probability_dispatch_a800.json"
+
+[[artifact.revision]]
+value = "1e01fd975c7d7554769db1a543c65f0129f9945a"
 origin = "unreferenced_object"
 
 

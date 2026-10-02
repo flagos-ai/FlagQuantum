@@ -210,6 +210,16 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/validate_required_checks.py"),
         ),
         Check(
+            # This gate reads checked-in evidence and the git object database, so it
+            # runs anywhere the repository is, and it is the only reader of the
+            # revisions a benchmark artifact records. A change that replaces an
+            # artifact's recorded revision and leaves `evidence-revision-origins.toml`
+            # naming the old one passes every other check in this list, so the one
+            # place it can be caught before the branch is published is here.
+            "evidence revision provenance",
+            (python_executable, "tools/check_evidence_revisions.py"),
+        ),
+        Check(
             "multi-team ownership policy",
             (python_executable, "tools/check_team_scope.py", "--validate"),
         ),
