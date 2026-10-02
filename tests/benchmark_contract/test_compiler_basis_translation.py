@@ -1,20 +1,23 @@
 """Contract for the named-gate equivalence table measurement W8-04 records.
 
-The benchmark module answers three questions. Which exact identities does the
+The benchmark module answers four questions. Which exact identities does the
 table carry, and does each one reproduce its source when the whole path is run?
 How many of the table's opcodes reach each recorded basis by name, with no
-matrix and no synthesis? And where does Qiskit's own ``BasisTranslator``, over
-the standard equivalence library, disagree with that reach?
+matrix and no synthesis, split by arity? Is the identity taken for ``ccx`` the
+cheapest exact one, measured against the Gray-code statement W8-05 declined? And
+where does Qiskit's own ``BasisTranslator``, over the standard equivalence
+library, disagree with that reach?
 
 These tests hold that evidence in place. They fail if a rule stops reproducing
 its source, if a basis stops reaching the opcodes the table reaches today, if a
-second entry becomes inexact, or if the one recorded disagreement is reported as
-agreement or silently dropped.
+second entry becomes inexact, if the multi-controlled comparison goes vacuous, or
+if the one recorded disagreement is reported as agreement or silently dropped.
 """
 
 import pytest
 
 from benchmarks.compiler_basis_translation import (
+    _MULTI_CONTROLLED,
     _PHASE_CARRYING_RULES,
     TABLE_OPCODES,
     run_benchmark,
@@ -30,15 +33,27 @@ pytestmark = pytest.mark.benchmark_contract
 #: cannot pass as "still reachable". The four closed bases agree with Qiskit
 #: exactly; `ion-trap-rz-rx-rzz` is the recorded gap.
 _NAME_REACH = {
-    "ibm-rz-sx-cx": 16,
-    "ibm-heron-cz": 16,
-    "rotational": 16,
+    "ibm-rz-sx-cx": 18,
+    "ibm-heron-cz": 18,
+    "rotational": 18,
     "ion-trap-rz-rx-rzz": 8,
     "clifford-t": 7,
 }
 
+#: The same reach split by arity, so the three-wire entries cannot be counted as
+#: a two-wire improvement. `clifford-t` publishes `t` but not `tdg`, so the
+#: fifteen-gate `ccx` statement stops one rule short of it -- a table gap in the
+#: `tdg` direction that is recorded rather than papered over.
+_ARITY_REACH = {
+    "ibm-rz-sx-cx": {"1": 5, "2": 11, "3": 2},
+    "ibm-heron-cz": {"1": 5, "2": 11, "3": 2},
+    "rotational": {"1": 5, "2": 11, "3": 2},
+    "ion-trap-rz-rx-rzz": {"1": 5, "2": 3, "3": 0},
+    "clifford-t": {"1": 3, "2": 4, "3": 0},
+}
+
 #: The one basis whose named reach is below Qiskit's, and why: the table routes
-#: every two-qubit rule down to `cx` or `cz`, and this basis publishes neither,
+#: every entangling rule down to `cx` or `cz`, and this basis publishes neither,
 #: only a parametrized `rzz`.
 _RECORDED_GAP = "ion-trap-rz-rx-rzz"
 
@@ -65,8 +80,8 @@ def test_the_table_is_the_size_it_claims_and_measured_entry_by_entry(
     assert payload["table_opcode_count"] == len(EQUIVALENCE_RULES)
     assert payload["table_opcodes"] == sorted(EQUIVALENCE_RULES)
     assert {row["opcode"] for row in payload["rules"]} == set(TABLE_OPCODES)
-    assert payload["table_opcode_count"] == 16
-    assert payload["exact_rule_count"] == 15
+    assert payload["table_opcode_count"] == 18
+    assert payload["exact_rule_count"] == 17
     assert payload["phase_carrying_rules"] == ["cphase"]
     assert set(_PHASE_CARRYING_RULES) == {"cphase"}
 
@@ -138,12 +153,95 @@ def test_every_basis_reaches_exactly_the_measured_set_of_names(payload: dict) ->
             ), (label, opcode, error)
 
 
+def test_the_reach_is_split_by_arity_so_the_three_wire_entries_are_visible(
+    payload: dict,
+) -> None:
+    """The declared arity of every opcode, not the label the table happens to use."""
+
+    measured = {row["label"]: row for row in payload["name_reach"]}
+    assert set(measured) == set(_ARITY_REACH)
+    # The table is not all one arity, so the split has something to separate.
+    assert {OPERATOR_SCHEMAS[name].arity for name in TABLE_OPCODES} == {1, 2, 3}
+    for label, expected in _ARITY_REACH.items():
+        row = measured[label]
+        for arity, reached in expected.items():
+            declared = sum(
+                1
+                for name in TABLE_OPCODES
+                if OPERATOR_SCHEMAS[name].arity == int(arity)
+            )
+            assert row["reached_by_arity"][arity] == {
+                "opcode_count": declared,
+                "reached_count": reached,
+            }, (label, arity)
+        # Non-vacuity: the split has to add up to the total it splits.
+        assert (
+            sum(item["reached_count"] for item in row["reached_by_arity"].values())
+            == row["reached_count"]
+        ), label
+
+
+def test_the_multi_controlled_entries_reach_every_closed_basis(payload: dict) -> None:
+    """`ccx` and `cswap` were refused on all five bases before this round.
+
+    Three of the five now carry both. The two that do not are refused for the
+    recorded reason -- the table's `cx`/`cz` sink for the rotating-frame basis,
+    and a `tdg` the Clifford+T basis does not publish -- so the entries are a
+    reach added to the closed bases and not a claim about the other two.
+    """
+
+    measured = {row["label"]: row for row in payload["multi_controlled_name_reach"]}
+    assert set(measured) == set(_NAME_REACH)
+    assert payload["multi_controlled_before_reach_count"] == 0
+    assert payload["named_multi_controlled_opcodes"] == sorted(_MULTI_CONTROLLED)
+    reached = sorted(label for label, row in measured.items() if row["reached_count"])
+    assert reached == ["ibm-heron-cz", "ibm-rz-sx-cx", "rotational"], measured
+    for label, row in measured.items():
+        for opcode, count in row["entangler_counts"].items():
+            assert count > 0, (label, opcode)
+        for opcode, error in row["refused"].items():
+            assert "requires unsupported native gate" in error, (label, opcode)
+    # The two refusals are for different reasons, and each names its own gate.
+    assert "tdg" in measured["clifford-t"]["refused"]["ccx"]
+    assert "cz" in measured[_RECORDED_GAP]["refused"]["ccx"]
+
+
+def test_the_ccx_statement_is_the_cheapest_exact_one_measured_not_preferred(
+    payload: dict,
+) -> None:
+    """The Gray-code form is a real alternative, and the numbers decline it.
+
+    Qiskit's ``MCXGrayCode`` returns ``CCXGate`` at two controls, so at the one
+    arity this IR declares the Gray code, the recursive construction and the
+    V-chain construction are the same circuit. The Gray-code *statement* is still
+    a candidate in its own right, and it is the shorter one -- seven declared
+    leaves against fifteen. It loses on what a consumer pays: eight two-qubit
+    gates on the interaction basis against six, and a larger synthesized program.
+    This test holds both halves in place, so a future change cannot keep the
+    preference while the measurement stops supporting it.
+    """
+
+    comparison = payload["multi_controlled_form_comparison"]
+    assert comparison["taken"] == "identity-table"
+    assert comparison["qiskit_counterpart"] == "MCXGrayCode"
+    forms = {row["form"]: row for row in comparison["forms"]}
+    assert set(forms) == {"identity-table", "gray-code"}
+    taken, gray = forms["identity-table"], forms["gray-code"]
+    assert taken["exact"] and gray["exact"]
+    assert taken["declared_leaf_count"] == 15
+    assert gray["declared_leaf_count"] == 7
+    assert gray["declared_leaf_count"] < taken["declared_leaf_count"]
+    assert taken["interaction_entangler_count"] == 6
+    assert gray["interaction_entangler_count"] == 8
+    assert taken["interaction_leaf_count"] < gray["interaction_leaf_count"]
+
+
 def test_a_basis_without_cx_or_cz_reaches_only_what_needs_no_entangler_sink(
     payload: dict,
 ) -> None:
     """The recorded gap is the table's two-name sink, measured not asserted.
 
-    Every two-qubit rule composes down to `cx` or `cz`, and `cx` and `cz` are
+    Every entangling rule composes down to `cx` or `cz`, and `cx` and `cz` are
     each other's rule, so a target publishing neither can build neither. The
     names that still reach such a target are exactly the ones that need no
     entangler: the rotation the basis already publishes, the two rotations the
@@ -199,3 +297,34 @@ def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
     flat = sorted({value for values in gap.values() for value in values})
     assert any(abs(value - 1.5707963267948966) < 1e-9 for value in flat), flat
     assert rows[_RECORDED_GAP]["introduced_angle_opcode_count"] >= 8
+
+
+def test_the_qiskit_anchor_agrees_on_the_multi_controlled_entangler_counts(
+    payload: dict,
+) -> None:
+    """The one quantity both ports can be compared on for `ccx` and `cswap`.
+
+    Raw instruction counts are not comparable -- this port spells a `t` as an
+    `rz`/`sx` pair where Qiskit's ZSX decomposer emits the `sx` first -- so the
+    anchor compares two-qubit gate counts and nothing else. Non-vacuity: the
+    comparison is asserted only over the bases where *both* ports reached both
+    opcodes, and that set is asserted to be non-empty.
+    """
+
+    anchor = payload["reference_anchor"]
+    if not anchor["available"]:
+        pytest.skip("Qiskit is not installed; the anchor is a cross-check only")
+
+    compared = anchor["multi_controlled_compared_bases"]
+    assert compared == ["ibm-heron-cz", "ibm-rz-sx-cx", "rotational"], compared
+    assert anchor["multi_controlled_agreement_count"] == len(compared)
+    for label in compared:
+        qiskit = anchor["multi_controlled_entangler_counts"][label]
+        port = anchor["port_multi_controlled_entangler_counts"][label]
+        assert qiskit == port, (label, qiskit, port)
+        assert sorted(qiskit) == sorted(_MULTI_CONTROLLED), (label, qiskit)
+        assert qiskit["ccx"] == 6 and qiskit["cswap"] == 8, qiskit
+    # The two bases outside the comparison are outside it because this port
+    # refuses the opcodes there, not because Qiskit does.
+    for label in set(_NAME_REACH) - set(compared):
+        assert anchor["port_multi_controlled_entangler_counts"][label] == {}, label

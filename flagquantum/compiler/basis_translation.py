@@ -9,7 +9,7 @@ that composes it, which is the Compiler-layer counterpart of the equivalence
 library and basis search Qiskit ships.
 
 Every rule is an exact closed form. `cx` is `cz` conjugated by one `h`, `rzz` is
-`cx` around a `rz`, and the rest follow from those. Fifteen of the sixteen
+`cx` around a `rz`, and the rest follow from those. Seventeen of the eighteen
 entries reproduce their source exactly; `cphase` is the exception, because
 turning a controlled rotation into a controlled phase needs a third `rz` on the
 control wire and that rotation leaves a global phase behind. FlagQuantum IR has
@@ -18,9 +18,18 @@ only up to that one phase -- the same contract the one-qubit and two-qubit
 syntheses publish, and the reason `cphase` is the one entry a test pins as
 inexact rather than allowing either answer.
 
+The table spans both arities the IR declares more than one opcode at. Its two
+three-wire entries cover `ccx` and `cswap`, the only arity-3 unitary opcodes
+there are. That is the whole of the multi-controlled family here: Qiskit splits
+it into a Gray-code, a recursive and a V-chain construction, but the first of
+those returns `CCXGate` itself at two controls and the other two exist to trade
+ancillas for fewer entanglers at five controls and up, which this IR cannot
+express. `benchmarks/compiler_basis_translation.py` measures the Gray-code form
+against the one taken here and records why it was not taken.
+
 No rule introduces an angle the caller did not write. That is a narrower contract
-than an equivalence library usually carries, and it has a measured cost: the
-table routes every two-qubit rule down to `cx` or `cz`, so a target publishing
+than an equivalence library usually carries, and it has a measured cost: every
+entangling rule in the table routes down to `cx` or `cz`, so a target publishing
 only a parametrized entangler such as `rzz` is reached by the rules that already
 name that rotation and not by the rest. Qiskit's standard library bottoms out in
 a rotation like that by introducing `pi/2` and friends; this table may not, and
@@ -29,10 +38,10 @@ rather than smoothing it over. Both facts are deliberate.
 
 The number of entries is not the reach. Most of them do not name their own leaf
 set: `cry` becomes a `crx`, which becomes a `crz`, which becomes two `cx` around
-two `rz`. The search below expands each rule's leaves through the table again, so
-a target that publishes `cx` and a z-rotation still reaches `cry` through three
-levels, and the table stores the shortest statement of each identity rather than
-its closure.
+two `rz`, and `cswap` becomes a `ccx` around two `cx`. The search below expands
+each rule's leaves through the table again, so a target that publishes `cx` and a
+z-rotation still reaches `cry` through three levels, and the table stores the
+shortest statement of each identity rather than its closure.
 
 The search branches only on opcode names, never on a parameter value, so a
 trainable angle cannot change the chosen path, and every rule forwards the
@@ -287,6 +296,66 @@ def _z_to_ss(instruction: Instruction) -> tuple[Instruction, ...]:
     )
 
 
+def _ccx_to_t_form(instruction: Instruction) -> tuple[Instruction, ...]:
+    """`CCX` as the fifteen-gate `H`/`T`/`Tdg`/`CX` identity, exactly.
+
+    This is the definition Qiskit's `MCXGrayCode` reaches at two controls rather
+    than a Gray-code derivation of its own: `MCXGrayCode.__new__` returns
+    `CCXGate` for one to four controls and only builds a Gray-code chain from five
+    up, so at the one arity FlagQuantum IR declares -- `ccx` and `cswap` are its
+    only arity-3 unitary opcodes -- the Gray code, the recursive and the V-chain
+    construction are the same circuit. The measured alternative is in
+    `benchmarks/compiler_basis_translation.py`: a Gray-code form over three
+    `cphase` plus two `cx` stores seven leaves instead of fifteen and is equally
+    exact, but costs eight two-qubit gates against six here, and its further
+    expansion depends on the one rule in this table that is not exact.
+
+    The identity is exact -- the T-count form of Barenco et al. -- so unlike
+    `cphase` it leaves no global phase behind. The leaves it names carry no angle
+    of their own; the fixed `pi/4` a `t` needs appears only when a target's
+    one-qubit synthesis writes it, which is the target's accounting and not this
+    rule's.
+    """
+
+    control0, control1, target = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("h", (target,), metadata),
+        _gate("cx", (control1, target), metadata),
+        _gate("tdg", (target,), metadata),
+        _gate("cx", (control0, target), metadata),
+        _gate("t", (target,), metadata),
+        _gate("cx", (control1, target), metadata),
+        _gate("tdg", (target,), metadata),
+        _gate("cx", (control0, target), metadata),
+        _gate("t", (control1,), metadata),
+        _gate("t", (target,), metadata),
+        _gate("h", (target,), metadata),
+        _gate("cx", (control0, control1), metadata),
+        _gate("t", (control0,), metadata),
+        _gate("tdg", (control1,), metadata),
+        _gate("cx", (control0, control1), metadata),
+    )
+
+
+def _cswap_to_cx_ccx(instruction: Instruction) -> tuple[Instruction, ...]:
+    """`CSWAP` as `CX CCX CX`, all three conjugating the same target pair.
+
+    The statement, not the closure: the `ccx` leaf is expanded by the rule above
+    through the same search, so a target that can carry a Toffoli carries a
+    Fredkin without this entry repeating fifteen gates. Qiskit's `CSwapGate`
+    declares the same three-operand form on the same operand order.
+    """
+
+    control, target0, target1 = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cx", (target1, target0), metadata),
+        _gate("ccx", (control, target0, target1), metadata),
+        _gate("cx", (target1, target0), metadata),
+    )
+
+
 EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
     {
         "cx": (EquivalenceRule("cx", _cx_to_cz),),
@@ -305,6 +374,8 @@ EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
         "rx": (EquivalenceRule("rx", _rx_to_hrzh),),
         "ry": (EquivalenceRule("ry", _ry_to_shzhs),),
         "sdg": (EquivalenceRule("sdg", _sdg_to_sss),),
+        "ccx": (EquivalenceRule("ccx", _ccx_to_t_form),),
+        "cswap": (EquivalenceRule("cswap", _cswap_to_cx_ccx),),
     }
 )
 

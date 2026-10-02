@@ -50,7 +50,7 @@ internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
 `basis_translation.py` owns the equivalence table and the deterministic search
-behind the named-instruction path of those decompositions: it holds sixteen
+behind the named-instruction path of those decompositions: it holds eighteen
 exact identities from named opcodes to named opcodes, composes them so a rule
 whose leaves are themselves rewritable still resolves, and introduces no angle
 the source instruction did not carry. It is a private helper, not an
