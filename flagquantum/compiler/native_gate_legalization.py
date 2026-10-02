@@ -203,7 +203,16 @@ def _half_pi_pulse_opcode(
 def _entangler_opcode(
     descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
 ) -> str | None:
-    """Return the supercontrolled entangler the target publishes, or None."""
+    """Return the supercontrolled entangler the target publishes, or None.
+
+    The table is iterated rather than the target's descriptor map, because a
+    target may publish several entanglers and the choice has to be a fixed
+    function of the published set. `SUPERCONTROLLED_ENTANGLERS` is ordered so a
+    parameter-free spelling is always preferred over one that has to be applied
+    at an angle, and so the answer for a given target never depends on a mapping's
+    insertion order.
+    """
+
     for opcode in SUPERCONTROLLED_ENTANGLERS:
         if opcode in descriptors:
             return opcode

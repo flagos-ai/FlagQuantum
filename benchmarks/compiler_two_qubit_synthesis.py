@@ -107,9 +107,10 @@ def _gate(name: str) -> dict[str, Any]:
     return {"name": name, "parameters": tuple(OPERATOR_SCHEMAS[name].parameters)}
 
 
-#: The two IBM-style shapes a QPU basis publishes, plus the rotation-only basis
-#: this repository already records elsewhere. ``clifford-t`` is the fail-closed
-#: control: it publishes neither a z-rotation nor a pulse.
+#: The two IBM-style shapes a QPU basis publishes, the rotation-only basis this
+#: repository already records elsewhere, and a trapped-ion shape whose only
+#: two-qubit gate is a rotation. ``clifford-t`` is the fail-closed control: it
+#: publishes neither a z-rotation nor a pulse.
 DEFAULT_BASES: tuple[Basis, ...] = (
     Basis(
         "ibm-rz-sx-cx",
@@ -128,6 +129,15 @@ DEFAULT_BASES: tuple[Basis, ...] = (
         "sx",
     ),
     Basis("rotational", (_gate("rz"), _gate("rx"), _gate("cz")), "cz", "rz", "rx"),
+    # Ion-trap and flux-tunable-coupler targets publish an interaction rotation
+    # and no `cx` at all; this is the basis W8-03 opens.
+    Basis(
+        "ion-trap-rz-rx-rzz",
+        (_gate("rz"), _gate("rx"), _gate("rzz")),
+        "rzz",
+        "rz",
+        "rx",
+    ),
     Basis(
         "clifford-t",
         (_gate("h"), _gate("s"), _gate("t"), _gate("cx")),
@@ -563,6 +573,38 @@ def run_benchmark(*, bases: tuple[Basis, ...] = DEFAULT_BASES) -> dict[str, Any]
     }
 
 
+def _reference_entanglers() -> tuple[tuple[str, Any], ...]:
+    """The port's entanglers as Qiskit gate objects, in the port's own order.
+
+    Qiskit's `KAK_GATE_NAMES` lists only `cx`, `cz`, `iswap`, `rxx`, `ecr` and
+    `rzx`, so this table is built here rather than looked up: `cy`, `ryy` and
+    `rzz` are accepted by `TwoQubitBasisDecomposer` and are supercontrolled, they
+    are simply not the spellings Qiskit's basis *chooser* knows. `rxx`, `ryy` and
+    `rzz` are pinned to the angle the port applies them at.
+    """
+
+    import math
+
+    from qiskit.circuit.library import (  # type: ignore[import-not-found]
+        CXGate,
+        CYGate,
+        CZGate,
+        RXXGate,
+        RYYGate,
+        RZZGate,
+    )
+
+    builders = {
+        "cx": CXGate,
+        "cz": CZGate,
+        "cy": CYGate,
+        "rzz": lambda: RZZGate(math.pi / 2),
+        "rxx": lambda: RXXGate(math.pi / 2),
+        "ryy": lambda: RYYGate(math.pi / 2),
+    }
+    return tuple((name, builders[name]()) for name in SUPERCONTROLLED_ENTANGLERS)
+
+
 def _qiskit_anchor() -> dict[str, Any]:
     """The same reach and cost from Qiskit, when Qiskit is importable.
 
@@ -581,8 +623,6 @@ def _qiskit_anchor() -> dict[str, Any]:
 
     try:
         import numpy as np
-        from qiskit.circuit.library import CXGate, CZGate  # type: ignore[import-not-found]
-        from qiskit.quantum_info import Operator  # type: ignore[import-not-found]
         from qiskit.synthesis.two_qubit import (  # type: ignore[import-not-found]
             TwoQubitBasisDecomposer,
         )
@@ -594,7 +634,7 @@ def _qiskit_anchor() -> dict[str, Any]:
     )
     rows: list[dict[str, Any]] = []
     mismatches: list[dict[str, Any]] = []
-    for entangler, gate in (("cx", CXGate()), ("cz", CZGate())):
+    for entangler, gate in _reference_entanglers():
         decomposer = TwoQubitBasisDecomposer(
             gate, euler_basis="ZSX", pulse_optimize=False
         )
@@ -639,7 +679,8 @@ def _qiskit_anchor() -> dict[str, Any]:
                 mismatches.append(row)
     return {
         "available": True,
-        "decomposer": "TwoQubitBasisDecomposer(CXGate()/CZGate(), euler_basis='ZSX')",
+        "decomposer": "TwoQubitBasisDecomposer(gate, euler_basis='ZSX')",
+        "reference_entanglers": [name for name, _ in _reference_entanglers()],
         "compared_case_count": len(rows),
         "entangler_count_agreement_count": sum(
             1 for row in rows if row.get("entangler_count_agrees")
