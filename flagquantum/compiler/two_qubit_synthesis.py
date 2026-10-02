@@ -1,15 +1,25 @@
 """Two-qubit unitary synthesis by KAK decomposition over a published entangler.
 
 `gates.native` publishes the gates a target can execute. A supercontrolled
-entangler -- `cx` or `cz`, whose Weyl point `(a, b, c)` has `a == pi/4` and
-`c == 0` -- together with a z-rotation and a pi/2 x-rotation reaches *every*
-two-qubit unitary, and the zero-, one-, two- and three-entangler closed forms are
-exact for all of them. This module owns that synthesis:
+entangler -- one whose Weyl point `(a, b, c)` has `a == pi/4` and `c == 0` --
+together with a z-rotation and a pi/2 x-rotation reaches *every* two-qubit
+unitary, and the zero-, one-, two- and three-entangler closed forms are exact for
+all of them. This module owns that synthesis:
 
     `U = e^{i phase} (K1l (x) K1r) Ud(a,b,c) (K2l (x) K2r)`
 
 with the local factors fed to `one_qubit_synthesis`, so the leaves are the same
 z-rotation plus pulse form the one-qubit path already emits.
+
+**Which entanglers count.** `SUPERCONTROLLED_ENTANGLERS` lists every declared
+arity-2 opcode that reaches a supercontrolled Weyl point, together with the angle
+it has to be applied at. `cx`, `cz` and `cy` are that point as they stand; `rzz`,
+`ryy` and `rxx` reach it at an angle of pi/2 and sit a quarter-turn away from it
+at every other angle. `cphase` is deliberately absent: its only supercontrolled
+angle is pi, where it *is* `cz`, so it would add a spelling rather than reach.
+Listing `rzz` matters because a trapped-ion or flux-tunable-coupler target
+publishes a rotation and no `cx` at all, and refusing it would leave those bases
+unsynthesizable.
 
 **Index convention.** Every 4x4 matrix here is read with ``index = 2 * bit(wire
 of wires[0]) + bit(wire of wires[1])``: ``wires[0]`` is the most significant
@@ -63,6 +73,7 @@ import cmath
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import Instruction
@@ -86,10 +97,37 @@ _TWO_PI = 2.0 * _PI
 _IM = 1j
 _FRAC_1_SQRT_2 = 1.0 / math.sqrt(2.0)
 
-#: The entangler opcodes this module can synthesize over. Both are
-#: "supercontrolled": their Weyl point has ``a == pi/4`` and ``c == 0``, which is
-#: what makes the zero- to three-entangler closed forms exact for every target.
-SUPERCONTROLLED_ENTANGLERS: tuple[str, ...] = ("cx", "cz")
+#: The entangler spellings this module can synthesize over, in preference order,
+#: mapped to the angle each one has to be applied at. A value of None means the
+#: opcode carries no parameter. An entangler is usable when its Weyl point has
+#: ``a == pi/4`` and ``c == 0``:
+#:
+#: * ``cx``, ``cz`` and ``cy`` are that point as they stand;
+#: * ``rzz``, ``ryy`` and ``rxx`` reach it at an angle of pi/2, and are a
+#:   quarter-turn away from it at every other angle.
+#:
+#: `cphase` is absent on purpose: its only supercontrolled angle is pi, where it
+#: *is* `cz`, so listing it would add a spelling rather than reach. An entangler
+#: that a target publishes under a name is a basis-translation question, not a
+#: Weyl question.
+#:
+#: The parameter-free spellings come first so that a target publishing one of
+#: them never gains a parameter it does not need, and the rotation family follows
+#: in decreasing order of how hardware publishes it: `rzz` is the native
+#: interaction of both flux-tunable transmons and trapped ions, `rxx` the
+#: published form on several ion and superconducting targets, and `ryy` the
+#: remainder. The order is fixed rather than taken from a set, so the same target
+#: always yields the same program.
+SUPERCONTROLLED_ENTANGLERS: Mapping[str, float | None] = MappingProxyType(
+    {
+        "cx": None,
+        "cz": None,
+        "cy": None,
+        "rzz": _PI2,
+        "rxx": _PI2,
+        "ryy": _PI2,
+    }
+)
 
 #: A matrix is accepted as a unitary within this absolute tolerance.
 _UNITARY_ATOL = 1.0e-9
@@ -106,23 +144,6 @@ _M2_FIRST_TRIAL = (1.2602066112249388, 0.22317849046722027)
 
 #: Golden-angle step for the retry sweep, in radians.
 _M2_RETRY_STEP = 2.399963229728653
-
-# The entanglers with the control on the *low* index bit, which is the
-# convention the algebra below is derived in. `cz` is symmetric, so its two
-# orders coincide.
-_CX_LOW_CONTROL: Matrix = [
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 0.0, 0.0, 1.0],
-    [0.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0],
-]
-_CZ: Matrix = [
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, -1.0],
-]
-_ALGORITHM_ENTANGLERS: Mapping[str, Matrix] = {"cx": _CX_LOW_CONTROL, "cz": _CZ}
 
 #: Swaps the two index bits, i.e. conjugates a matrix by the wire exchange.
 _SWAP_INDEX = (0, 2, 1, 3)
@@ -185,6 +206,86 @@ def _swap_register(matrix: Matrix) -> Matrix:
     return [
         [matrix[_SWAP_INDEX[row]][_SWAP_INDEX[column]] for column in range(4)]
         for row in range(4)
+    ]
+
+
+def _named_entangler_matrix(opcode: str) -> Matrix:
+    """The basis matrix of ``opcode`` at its supercontrolled angle.
+
+    Read with ``wires[0]`` on the most significant index bit, then exchanged into
+    the low-control convention the algebra below is derived in -- the same
+    exchange `_weyl_decomposition` applies to the target. The parameter-free
+    opcodes are written out because their entries are small exact integers or
+    ``i``; the rotation family is built from its closed form so that no entry is
+    a rounded decimal.
+
+    The compiler layer may not import the runtime's gate matrix table, so these
+    are the only gate matrices this module owns, and they are pinned entry-by-
+    entry against that table by
+    `tests/unit/test_compilation_two_qubit_synthesis.py`.
+    """
+
+    angle = SUPERCONTROLLED_ENTANGLERS[opcode]
+    if opcode == "cx":
+        native: Matrix = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0, 0.0],
+        ]
+    elif opcode == "cz":
+        native = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, -1.0],
+        ]
+    elif opcode == "cy":
+        native = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, -_IM],
+            [0.0, 0.0, _IM, 0.0],
+        ]
+    elif opcode in ("rxx", "ryy", "rzz"):
+        # A rotation entangler with no angle in the table would be a table edit
+        # that silently changed which gate this module decomposes over.
+        if angle is None:  # pragma: no cover - guarded by the mapping above
+            raise AssertionError(f"{opcode!r} needs an angle to be a basis gate")
+        native = _rotation_entangler_matrix(opcode, angle)
+    else:  # pragma: no cover - guarded by the mapping above
+        raise ValueError(f"{opcode!r} is not a supercontrolled entangler")
+    return _swap_register(native)
+
+
+def _rotation_entangler_matrix(opcode: str, angle: float) -> Matrix:
+    """``exp(-i * angle/2 * P)`` for ``P`` one of ``XX``, ``YY``, ``ZZ``.
+
+    `rzz` is diagonal. `rxx` and `ryy` differ only in the relative sign of the
+    two off-diagonal blocks, because `YY` is `XX` with the second wire
+    conjugated by `Z`.
+    """
+
+    cosine = math.cos(0.5 * angle)
+    sine = math.sin(0.5 * angle)
+    if opcode == "rzz":
+        diagonal = (cosine - 1j * sine, cosine + 1j * sine)
+        return [
+            [diagonal[0], 0j, 0j, 0j],
+            [0j, diagonal[1], 0j, 0j],
+            [0j, 0j, diagonal[1], 0j],
+            [0j, 0j, 0j, diagonal[0]],
+        ]
+    # `rxx` is `exp(-i*angle/2 * XX)` and `ryy` is `exp(-i*angle/2 * YY)`. The two
+    # differ only in the relative sign of their off-diagonal blocks, because `YY`
+    # is `XX` with the second wire conjugated by `Z`.
+    off_diagonal = 1j * sine if opcode == "ryy" else -1j * sine
+    second_block = -off_diagonal if opcode == "ryy" else off_diagonal
+    return [
+        [cosine, 0j, 0j, off_diagonal],
+        [0j, cosine, second_block, 0j],
+        [0j, second_block, cosine, 0j],
+        [off_diagonal, 0j, 0j, cosine],
     ]
 
 
@@ -523,10 +624,11 @@ class _BasisDecomposer:
     """
 
     def __init__(self, entangler: str) -> None:
-        if entangler not in _ALGORITHM_ENTANGLERS:
+        if entangler not in SUPERCONTROLLED_ENTANGLERS:
             raise ValueError(f"{entangler!r} is not a supercontrolled entangler")
         self.entangler = entangler
-        self.basis = _weyl_decomposition(_ALGORITHM_ENTANGLERS[entangler])
+        self.angle = SUPERCONTROLLED_ENTANGLERS[entangler]
+        self.basis = _weyl_decomposition(_named_entangler_matrix(entangler))
         if not (
             math.isclose(self.basis.a, _PI4, rel_tol=1.0e-9)
             and math.isclose(self.basis.c, 0.0, rel_tol=1.0e-9, abs_tol=1.0e-12)
@@ -767,6 +869,9 @@ def synthesize_two_qubit(
 
     left_wire, right_wire = wire_list
     annotations: Mapping[str, Any] = {} if metadata is None else metadata
+    entangler_params: Mapping[str, Any] = (
+        {} if decomposer.angle is None else {"theta": decomposer.angle}
+    )
     leaves: list[Instruction] = []
     for index in range(count):
         leaves.extend(
@@ -788,7 +893,12 @@ def synthesize_two_qubit(
             )
         )
         leaves.append(
-            Instruction(entangler, (left_wire, right_wire), metadata=annotations)
+            Instruction(
+                entangler,
+                (left_wire, right_wire),
+                params=entangler_params,
+                metadata=annotations,
+            )
         )
     leaves.extend(
         _local_leaves(

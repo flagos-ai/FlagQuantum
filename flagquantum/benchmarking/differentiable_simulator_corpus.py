@@ -30,6 +30,7 @@ from .contract import runtime_metadata, write_json_atomic
 from .differentiable_adjoint_report import render_adjoint_markdown
 from .differentiable_engines import (
     ADJOINT_ENGINE_NAMES,
+    ADJOINT_ROLLBACK_OPTIONS,
     ALL_ENGINE_NAMES,
     ENGINE_NAMES,
     EngineName,
@@ -207,6 +208,7 @@ def _flagquantum_executor(
     compact_cx_index: bool | None = None,
     saved_parameter_revalidation: bool | None = None,
     fine_grain_parallelism: bool | None = None,
+    euler_post_reduction: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -238,6 +240,7 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_COMPACT_CX_INDEX": compact_cx_index,
                 "FQ_STATEVECTOR_ADJOINT_REVALIDATE_SAVED_PARAMETERS": saved_parameter_revalidation,
                 "FQ_NATIVE_CPU_ADJOINT_FINE_GRAIN": fine_grain_parallelism,
+                "FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION": euler_post_reduction,
             }
         ):
             forward_started = time.perf_counter()
@@ -462,13 +465,7 @@ def _engine_callable(
             native_cpu_adjoint=True,
             terminal_no_restore=False,
         )
-    rollback_options: dict[str, bool] | None = None
-    if engine == "flagquantum_adjoint_compact_cx_index_rollback":
-        rollback_options = {"compact_cx_index": False}
-    elif engine == "flagquantum_adjoint_saved_parameter_revalidation":
-        rollback_options = {"saved_parameter_revalidation": True}
-    elif engine == "flagquantum_adjoint_parallel_grain_rollback":
-        rollback_options = {"fine_grain_parallelism": False}
+    rollback_options = ADJOINT_ROLLBACK_OPTIONS.get(engine)
     if rollback_options is not None:
         return _flagquantum_executor(
             build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),

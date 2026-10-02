@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import cmath
+import math
 import random
 
 import pytest
@@ -49,6 +50,10 @@ def _source(name: str, angles: dict[str, float] | None = None) -> torch.Tensor:
 # The register order the emitted leaves are lifted into: `register[0]` is the
 # most significant index bit, exactly as `synthesize_two_qubit` reads `wires`.
 _DEFAULT_REGISTER = (0, 1)
+
+#: The angle at which the `rzz`/`rxx`/`ryy` family sits on its supercontrolled
+#: Weyl point.
+_ENTANGLER_ANGLE = math.pi / 2
 
 
 def _embed(instruction: Instruction, register: tuple[int, int]) -> torch.Tensor:
@@ -132,7 +137,48 @@ def test_the_declared_two_qubit_group_is_the_whole_arity_two_unitary_group() -> 
         "rzz",
         "swap",
     )
-    assert SUPERCONTROLLED_ENTANGLERS == ("cx", "cz")
+    assert dict(SUPERCONTROLLED_ENTANGLERS) == {
+        "cx": None,
+        "cz": None,
+        "cy": None,
+        "rzz": pytest.approx(_ENTANGLER_ANGLE),
+        "rxx": pytest.approx(_ENTANGLER_ANGLE),
+        "ryy": pytest.approx(_ENTANGLER_ANGLE),
+    }
+    # The parameter-free spellings come first so a target that publishes one of
+    # them never gains a parameter it does not need, and `cphase` is absent
+    # because its only supercontrolled angle is pi, where it *is* `cz`.
+    assert list(SUPERCONTROLLED_ENTANGLERS)[:3] == ["cx", "cz", "cy"]
+    assert "cphase" not in SUPERCONTROLLED_ENTANGLERS
+
+
+def test_every_entangler_matrix_agrees_with_the_authoritative_gate_matrix() -> None:
+    """The local entangler matrices are pinned against the runtime's own table.
+
+    The compiler layer may not import `flagquantum.simulation`, so this module
+    carries the three parameter-free entangler matrices and the closed form of
+    the rotation family itself. That is only safe while the two agree exactly,
+    which is what this test checks; it is the reason the copy is allowed to
+    exist at all.
+    """
+
+    import flagquantum.compiler.two_qubit_synthesis as module
+
+    for entangler, angle in SUPERCONTROLLED_ENTANGLERS.items():
+        params = {} if angle is None else {"theta": angle}
+        authoritative = _matrix(Instruction(entangler, (0, 1), params=params))
+        local = torch.tensor(
+            module._named_entangler_matrix(entangler), dtype=torch.complex128
+        )
+        # The local copy is written in the low-control kron convention, so it is
+        # compared against the wire-exchanged authoritative matrix.
+        assert torch.allclose(
+            local,
+            torch.tensor(
+                module._swap_register(authoritative.tolist()), dtype=torch.complex128
+            ),
+            atol=0.0,
+        ), entangler
 
 
 @pytest.mark.parametrize("entangler", SUPERCONTROLLED_ENTANGLERS)
@@ -261,8 +307,16 @@ def test_reversing_the_wires_mirrors_the_entangler() -> None:
 
 
 def test_an_unsupported_entangler_is_refused() -> None:
+    """Refused because it is not supercontrolled, not because it is unfamiliar.
+
+    `cphase` is the near miss: it *is* supercontrolled, but only at an angle of
+    pi, where it is `cz` under another name. `crx` is the other near miss: it is
+    a controlled rotation whose Weyl point moves with its angle and never reaches
+    `pi/4`. `swap` is supercontrolled nowhere.
+    """
+
     source = _source("swap").tolist()
-    for entangler in ("rzz", "ecr", "swap", ""):
+    for entangler in ("cphase", "crx", "cry", "crz", "ecr", "swap", "rz", ""):
         assert (
             synthesize_two_qubit(
                 source, wires=(0, 1), entangler=entangler, z_rotation="rz"
@@ -318,7 +372,16 @@ def test_the_synthesis_is_deterministic() -> None:
 
 
 def test_the_module_carries_no_second_source_of_truth_for_gate_matrices() -> None:
-    """The synthesizer takes a matrix; it does not own a gate matrix table."""
+    """The synthesizer takes a matrix; it does not reach into the runtime.
+
+    The module does hold the three parameter-free entangler matrices and the
+    closed form of the rotation family, because the compiler layer may not import
+    `flagquantum.simulation`. That copy is bounded to the entanglers and is
+    pinned entry-by-entry against the authoritative table by
+    `test_every_entangler_matrix_agrees_with_the_authoritative_gate_matrix`, so
+    it cannot drift; what this test forbids is the general gate table and the
+    numeric dependency that would let one appear here.
+    """
 
     import flagquantum.compiler.two_qubit_synthesis as module
 
