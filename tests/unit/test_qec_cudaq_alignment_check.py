@@ -285,7 +285,18 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
     (
         "drop the next_action from a partial row",
         "next_action is empty",
-        lambda t: set_key(t, "qec_dem_merge", "next_action", 'next_action = ""'),
+        lambda t: set_key(
+            t, "qec_stim_sampling_join", "next_action", 'next_action = ""'
+        ),
+    ),
+    (
+        # An aligned row's bar is the presence of something to point at, and a
+        # row that clears the bar for every other status must still be rejected
+        # when it names nothing. This is the only mutation that reaches the
+        # aligned branch, so it is also the evidence that the branch exists.
+        "claim alignment while pointing at nothing",
+        "an `aligned` row must name at least one symbols_present entry",
+        lambda t: set_key(t, "qec_dem_merge", "symbols_present", None),
     ),
     (
         "leave a partial row with nothing present",
@@ -353,6 +364,30 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
             "dem_canonicalize",
             "flagquantum_symbol",
             'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel"',
+        ),
+    ),
+    (
+        # A diff row that names a real definition under the wrong owner is the
+        # tempting way to claim a merge surface this repository does not have:
+        # the last segment is a name the tree defines, so only following the
+        # dotted path to its owner separates a claim from a wish.
+        "point a diff row at a real name under the wrong owner",
+        "'DemMergeRule' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "dem_merge_operation",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.DemMergeRule"',
+        ),
+    ),
+    (
+        "keep a negative_search proof for a gap the tree has closed",
+        "now resolves -- the diff is stale",
+        lambda t: append_to_list(
+            t,
+            "dem_merge_operation",
+            "negative_search",
+            "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms",
         ),
     ),
 ]
