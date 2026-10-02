@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import typing
 from pathlib import Path
 
 import pytest
@@ -23,17 +24,18 @@ def _contract() -> dict[str, object]:
 
 
 def _protocol_members(protocol: type) -> set[str]:
-    """The names a `Protocol` declares, on every Python this project supports.
+    """The names `typing` counts as members of a `Protocol`.
 
-    `typing` publishes the set as `__protocol_attrs__` from 3.12 and keeps it on
-    the private `_get_protocol_attrs` before that; the private helper is gone
-    once the public attribute exists, so exactly one of the two answers.
+    From 3.12 the set is published on the class as `__protocol_attrs__`. Before
+    that the same set is returned by the module-level `typing._get_protocol_attrs`,
+    which is what the runtime check consults there: the private name is not an
+    attribute of the protocol class on any interpreter.
     """
 
-    published = getattr(protocol, "__protocol_attrs__", None)
-    if published is not None:
-        return set(published)
-    return set(protocol._get_protocol_attrs())
+    try:
+        return set(protocol.__protocol_attrs__)
+    except AttributeError:
+        return set(typing._get_protocol_attrs(protocol))
 
 
 def test_the_contract_names_only_existing_authorities() -> None:
