@@ -167,7 +167,16 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     arithmetic are imported from the implementation so that this oracle differs
     from the code under test in exactly one respect: the reverse list scan that
     the wire index replaced. If the two ever disagree, the index is wrong.
+
+    `cancel_commuting_self_inverse` is called from both sides in the same position
+    so that property survives. It is a pass of its own with its own tests, and
+    re-deriving its rule source here -- which reads the runtime's gate matrices --
+    would change what this oracle is measuring, not strengthen it.
     """
+
+    from flagquantum.compiler.commutation_cancellation import (
+        cancel_commuting_self_inverse,
+    )
 
     ir = ensure_circuit_ir(circuit_or_ir)
     for _ in range(len(ir) + 1):
@@ -175,6 +184,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = _reference_remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
         ir = _reference_merge_adjacent_rotations(ir)
+        ir = cancel_commuting_self_inverse(ir)
         ir = _reference_remove_identity_gates(ir)
         if len(ir) == previous_count:
             return ir
