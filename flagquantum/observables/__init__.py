@@ -47,7 +47,7 @@ class Observable:
                 left_wires = {wire for wire, _ in left.factors}
                 right_wires = {wire for wire, _ in right.factors}
                 if left_wires & right_wires:
-                    raise ValueError("Pauli tensor products require disjoint wires")
+                    raise ValueError("Pauli tensor products require disjoint qubits")
                 factors = tuple(sorted((*left.factors, *right.factors)))
                 products.append(
                     _PauliTerm(left.coefficient * right.coefficient, factors)
@@ -97,7 +97,7 @@ class OutputRequest:
         if self.kind not in {"counts", "expectation", "probabilities", "samples"}:
             raise ValueError(f"unsupported output kind {self.kind!r}")
         object.__setattr__(
-            self, "wires", _wires(self.wires, owner=f"{self.kind} output")
+            self, "wires", _qubits(self.wires, owner=f"{self.kind} output")
         )
         if self.name is not None and (
             not isinstance(self.name, str) or not self.name.strip()
@@ -120,8 +120,8 @@ def _real_scalar(value: object) -> float | None:
     return result
 
 
-def _wire(owner: str, value: Any) -> int:
-    """Read one wire label without quietly rewriting or iterating the caller's value.
+def _qubit(owner: str, value: Any) -> int:
+    """Read one qubit label without quietly rewriting or iterating the caller's value.
 
     A label is an integer, read through the interpreter's own ``__index__`` protocol,
     which admits NumPy integers and zero-dimensional torch integer tensors while refusing
@@ -132,18 +132,18 @@ def _wire(owner: str, value: Any) -> int:
     """
 
     if isinstance(value, bool):
-        raise TypeError(f"{owner} wire must be an integer, got {value!r}")
+        raise TypeError(f"{owner} qubit must be an integer, got {value!r}")
     try:
         label = operator.index(value)
     except TypeError:
-        raise TypeError(f"{owner} wire must be an integer, got {value!r}") from None
+        raise TypeError(f"{owner} qubit must be an integer, got {value!r}") from None
     if label < 0:
-        raise ValueError(f"{owner} wire must be a non-negative integer")
+        raise ValueError(f"{owner} qubit must be a non-negative integer")
     return label
 
 
-def _wires(wires: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
-    """Read a selection of wire labels, one label at a time.
+def _qubits(qubits: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
+    """Read a selection of qubit labels, one label at a time.
 
     A single label and a sequence of labels are both accepted, and the order matters: a
     label is tried first, so a bare zero-dimensional tensor is read as the label it
@@ -154,59 +154,96 @@ def _wires(wires: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
     """
 
     normalized: tuple[int, ...]
-    if isinstance(wires, (str, bytes)):
-        normalized = (_wire(owner, wires),)
+    if isinstance(qubits, (str, bytes)):
+        normalized = (_qubit(owner, qubits),)
     else:
         try:
-            normalized = (_wire(owner, wires),)
+            normalized = (_qubit(owner, qubits),)
         except TypeError as scalar_error:
-            if not hasattr(wires, "__iter__"):
+            if not hasattr(qubits, "__iter__"):
                 raise
             try:
-                items = tuple(cast("Iterable[int]", wires))
+                items = tuple(cast("Iterable[int]", qubits))
             except TypeError:
                 # An iterable that refuses to be iterated as a sequence -- a
                 # zero-dimensional tensor is the case that occurs -- is a bad label, not
                 # a bad sequence, so the scalar refusal is the true one.
                 raise scalar_error from None
-            normalized = tuple(_wire(owner, wire) for wire in items)
+            normalized = tuple(_qubit(owner, qubit) for qubit in items)
     if len(set(normalized)) != len(normalized):
-        raise ValueError("output wires must be unique")
+        raise ValueError("output qubits must be unique")
     return normalized
 
 
-def _pauli(axis: str, wire: int) -> Observable:
-    return Observable((_PauliTerm(1.0, ((_wire("observable", wire), axis),)),))
+def _pauli(axis: str, qubit: int) -> Observable:
+    return Observable((_PauliTerm(1.0, ((_qubit("observable", qubit), axis),)),))
 
 
-def I(wire: int | None = None) -> Observable:
-    """Return the identity observable.
+def _selected_qubit(
+    qubit: int | None | Omitted, wire: int | None | Omitted, *, owner: str
+) -> int | None:
+    """Resolve the canonical ``qubit`` argument against the deprecated ``wire`` alias.
 
-    ``wire`` may be supplied for readable Hamiltonian notation but does not
-    affect the mathematical value.
+    Supplying both spellings is an error rather than a precedence rule, matching the
+    selection rule the count outputs already use.  ``None`` stays meaningful for the
+    identity observable, so a resolved ``None`` is returned rather than treated as
+    missing.
     """
 
-    if wire is not None:
-        _wire("observable", wire)
+    if not isinstance(wire, Omitted):
+        if not isinstance(qubit, Omitted):
+            raise TypeError(f"pass {owner} qubit or deprecated wire, not both")
+        warn_qubit_alias("wire", "qubit", stacklevel=4)
+        return wire
+    return None if isinstance(qubit, Omitted) else qubit
+
+
+def _required_qubit(
+    qubit: int | None | Omitted, wire: int | None | Omitted, *, owner: str
+) -> int:
+    selected = _selected_qubit(qubit, wire, owner=owner)
+    if selected is None:
+        raise TypeError(f"{owner} requires a qubit")
+    return selected
+
+
+def I(
+    qubit: int | None | Omitted = OMITTED, *, wire: int | None | Omitted = OMITTED
+) -> Observable:
+    """Return the identity observable.
+
+    ``qubit`` may be supplied for readable Hamiltonian notation but does not affect the
+    mathematical value.
+    """
+
+    selected = _selected_qubit(qubit, wire, owner="observable")
+    if selected is not None:
+        _qubit("observable", selected)
     return Observable((_PauliTerm(1.0, ()),))
 
 
-def X(wire: int) -> Observable:
-    """Return the Pauli-X observable on ``wire``."""
+def X(
+    qubit: int | None | Omitted = OMITTED, *, wire: int | None | Omitted = OMITTED
+) -> Observable:
+    """Return the Pauli-X observable on ``qubit``."""
 
-    return _pauli("x", wire)
-
-
-def Y(wire: int) -> Observable:
-    """Return the Pauli-Y observable on ``wire``."""
-
-    return _pauli("y", wire)
+    return _pauli("x", _required_qubit(qubit, wire, owner="observable"))
 
 
-def Z(wire: int) -> Observable:
-    """Return the Pauli-Z observable on ``wire``."""
+def Y(
+    qubit: int | None | Omitted = OMITTED, *, wire: int | None | Omitted = OMITTED
+) -> Observable:
+    """Return the Pauli-Y observable on ``qubit``."""
 
-    return _pauli("z", wire)
+    return _pauli("y", _required_qubit(qubit, wire, owner="observable"))
+
+
+def Z(
+    qubit: int | None | Omitted = OMITTED, *, wire: int | None | Omitted = OMITTED
+) -> Observable:
+    """Return the Pauli-Z observable on ``qubit``."""
+
+    return _pauli("z", _required_qubit(qubit, wire, owner="observable"))
 
 
 def expectation(observable: Observable, *, name: str | None = None) -> OutputRequest:
@@ -245,7 +282,7 @@ def probabilities(
     if isinstance(selected, Observable):
         raise TypeError("probabilities requires qubit indices, not an Observable")
     return OutputRequest(
-        "probabilities", _optional_wires(selected, kind="probabilities"), name=name
+        "probabilities", _optional_qubits(selected, kind="probabilities"), name=name
     )
 
 
@@ -260,7 +297,7 @@ def samples(
     if isinstance(selected, Observable):
         return OutputRequest("samples", observable=selected, name=name)
     return OutputRequest(
-        "samples", _optional_wires(selected, kind="samples"), name=name
+        "samples", _optional_qubits(selected, kind="samples"), name=name
     )
 
 
@@ -274,13 +311,15 @@ def counts(
     selected = _selection_alias(qubits, wires)
     if isinstance(selected, Observable):
         return OutputRequest("counts", observable=selected, name=name)
-    return OutputRequest("counts", _optional_wires(selected, kind="counts"), name=name)
+    return OutputRequest("counts", _optional_qubits(selected, kind="counts"), name=name)
 
 
-def _optional_wires(wires: Iterable[int] | int | None, *, kind: str) -> tuple[int, ...]:
-    if wires is None:
+def _optional_qubits(
+    qubits: Iterable[int] | int | None, *, kind: str
+) -> tuple[int, ...]:
+    if qubits is None:
         return ()
-    return _wires(wires, owner=f"{kind} output")
+    return _qubits(qubits, owner=f"{kind} output")
 
 
 def _sampled_pauli_term(observable: Observable) -> _PauliTerm:
