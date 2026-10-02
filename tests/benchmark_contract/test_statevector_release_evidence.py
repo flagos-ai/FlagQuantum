@@ -166,6 +166,122 @@ def test_capacity_completion_payload_clears_the_distributed_claim_audit(world, l
     assert artifact["evidence"]["release_gate_allowed"] is True
 
 
+def test_a_matched_speed_payload_states_the_capacity_premise_it_rests_on(tmp_path):
+    """A release payload has to name the premise, not describe another workload.
+
+    The matched-speed workload fits on one device by design, so a payload that
+    described its own workload under ``capacity_failure_reason`` would claim a
+    capacity failure that never happened. The premise is the frozen capacity
+    workload, and the payload has to say so.
+    """
+
+    manifest = load_manifest()
+    premise = manifest["capacity_workload"]["workload_sha256"]
+    artifact = _speed_summary(tmp_path)
+    evidence = artifact["evidence"]
+
+    assert evidence["acceptance_case"] == "matched_speed"
+    assert evidence["single_gpu_expected_oom"] is True
+    assert evidence["capacity_premise_workload_sha256"] == premise
+    assert premise in evidence["capacity_failure_reason"]
+    assert evidence["workload_sha256"] != premise
+    assert validate_distributed_claim_evidence(evidence).release_gate_allowed is True
+
+
+def test_a_capacity_completion_payload_names_the_same_premise() -> None:
+    """Both payload kinds name one premise, so the release reads consistently."""
+
+    manifest = load_manifest()
+    evidence = _capacity_completion(4, 2)
+
+    assert evidence["capacity_premise_workload_sha256"] == (
+        manifest["capacity_workload"]["workload_sha256"]
+    )
+    assert evidence["workload_sha256"] == evidence["capacity_premise_workload_sha256"]
+
+
+def test_a_matched_speed_payload_reports_the_communication_its_call_measured(
+    tmp_path,
+):
+    """The bytes are read back from the timed call, not restated as a constant."""
+
+    manifest = load_manifest()
+    acceptance = manifest["speed_workload"]["acceptance_configuration"]
+    evidence = _speed_summary(tmp_path)["evidence"]
+
+    assert evidence["communication_bytes"] > 0
+    assert len(evidence["communication_bytes_by_rank"]) == evidence["world_size"]
+    assert evidence["communication_bytes"] == max(
+        evidence["communication_bytes_by_rank"]
+    )
+    assert "rank-local collective total" in evidence["communication_scope"]
+    assert evidence["configurations"][-1]["name"] == acceptance
+
+
+def test_a_matched_speed_leg_that_measured_no_communication_reports_none(tmp_path):
+    """A leg with no measured counter reports zero instead of a placeholder.
+
+    The transport audit asks whether communication evidence was *reported*
+    rather than how much of it there was, so this honesty lives in the producer:
+    the payload must not carry a byte count that no timed call produced.
+    """
+
+    manifest = load_manifest()
+    configurations = [
+        {
+            "name": manifest["speed_workload"]["acceptance_configuration"],
+            "n_wires": 24,
+            "depth": 8,
+            "steps": 4,
+            "parameter_count": 192,
+            "seconds": [0.4, 0.42, 0.44, 0.46, 0.48],
+            "minimum_seconds": 0.4,
+            "median_seconds": 0.44,
+        }
+    ]
+    sharded = {
+        "world_size": 2,
+        "local_world_size": 1,
+        "node_count": 2,
+        "commit": "a" * 40,
+        "device_name": DEVICE,
+        "warmup": manifest["speed_workload"]["warmup_steps"],
+        "iterations": manifest["speed_workload"]["measured_steps"],
+        "workload_sha256": manifest["speed_workload"]["workload_sha256"],
+        "software": {"torch": "2.13.0", "cuda": "13.0", "python": "3.12"},
+        "ranks": [
+            {"measured_peak_memory_bytes": 4 * 1024**3, "timings": [0.1]},
+            {"measured_peak_memory_bytes": 4 * 1024**3, "timings": [0.1]},
+        ],
+        "measurements": {"configurations": configurations},
+    }
+    baseline = copy.deepcopy(sharded)
+    baseline["world_size"] = 1
+    baseline["node_count"] = 1
+    baseline["ranks"] = [sharded["ranks"][0]]
+    for item in baseline["measurements"]["configurations"]:
+        item["seconds"] = [value * 2 for value in item["seconds"]]
+        item["median_seconds"] *= 2
+    args = SimpleNamespace(
+        role="speed-summary",
+        release_manifest=Path("benchmarks/manifests/statevector_release_v2.json"),
+        baseline=_write_leg(tmp_path, "baseline", baseline),
+        sharded=_write_leg(tmp_path, "sharded", sharded),
+        measurements=tmp_path / "summary.json",
+    )
+
+    assert _role_speed_summary(args) == 0
+    document = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    measurements = document["measurements"]
+
+    assert document["world_size"] == 2
+    assert measurements["communication_bytes"] == 0
+    assert measurements["communication_bytes_by_rank"] == [0, 0]
+    assert measurements["local_state_bytes_by_rank"] == [0, 0]
+    assert measurements["inter_node_communication_bytes"] == 0
+    assert measurements["communication_fraction"] == 0.0
+
+
 def test_payload_without_a_multi_node_route_is_not_a_release_payload():
     """Declaring node_count is not transport evidence; the route has to be shown."""
 
@@ -250,6 +366,12 @@ def _speed_summary(tmp_path: Path) -> dict:
             "seconds": [0.4, 0.42, 0.44, 0.46, 0.48],
             "minimum_seconds": 0.4,
             "median_seconds": 0.44,
+            "communication_bytes": 4096 * (index + 1),
+            "communication_events": 8,
+            "completed_steps": 4,
+            "local_state_bytes": 8 * 2**24 // 2,
+            "communication_fraction": (4096 * (index + 1))
+            / (4096 * (index + 1) + 8 * 2**24 // 2),
         }
         for index in range(3)
     ]
@@ -268,6 +390,7 @@ def _speed_summary(tmp_path: Path) -> dict:
             {
                 "measured_peak_memory_bytes": 4 * 1024**3,
                 "timings": [0.1, 0.11, 0.12],
+                "measurements": {"configurations": copy.deepcopy(configurations)},
             }
             for _ in range(2)
         ],

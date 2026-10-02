@@ -122,6 +122,10 @@ class ShardedTrainingResult:
     peak_memory_bytes: int
     communication_events: int
     communication_bytes: int
+    #: Amplitudes this rank holds after sharding, from the same estimate the
+    #: memory preflight uses. Reported so a payload can state what fraction of
+    #: the rank's data movement went to collectives instead of to its own state.
+    local_state_bytes: int
     checkpoint_files: tuple[str, ...]
     #: Which collective left the gradients where they are. The value comes from
     #: the backward that ran, so an owner-sharded result is one whose backward
@@ -166,6 +170,9 @@ class ShardedTrainingResult:
             "communication_events": self.communication_events,
             "communication_bytes": self.communication_bytes,
             "peak_memory_bytes": self.peak_memory_bytes,
+            "local_state_bytes": self.local_state_bytes,
+            "communication_fraction": self.communication_bytes
+            / max(1, self.communication_bytes + self.local_state_bytes),
             "checkpoint_files": self.checkpoint_files,
             "distribution_semantics": (
                 "sharded_across_ranks"
@@ -594,6 +601,7 @@ class _ShardedTrainingSweep:
         local_state_bytes = (
             (2**self.ir.n_wires // self.world_size) * batch_size * complex_bytes
         )
+        self.local_state_bytes = int(local_state_bytes)
         # Forward state, reverse adjoint/rematerialization and communication/output
         # buffers can coexist. Keep this preflight deliberately conservative.
         estimated_local_state = 4 * local_state_bytes
@@ -916,6 +924,7 @@ class _ShardedTrainingSweep:
             peak_memory_bytes=peak_memory,
             communication_events=self.communication_events,
             communication_bytes=self.communication_bytes,
+            local_state_bytes=self.local_state_bytes,
             checkpoint_files=tuple(self.checkpoint_files),
             gradient_reduction_scheme=self.gradient_reduction_scheme,
         )

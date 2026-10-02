@@ -11,6 +11,14 @@ from benchmarks.internal.evidence.statevector_release_gate import (
     evaluate_issue044_release,
     load_manifest,
 )
+from benchmarks.internal.evidence.statevector_release_gate import main as gate_main
+from flagquantum.runtime.observability.evidence import (
+    ArtifactClass,
+    EvidenceScope,
+    RuntimeProvenance,
+    create_evidence_artifact,
+)
+from tools.promote_release_candidates import main as promote_main
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 
@@ -235,3 +243,125 @@ def test_malformed_numeric_measurements_fail_closed_without_crashing():
     assert passed is False
     assert "missing_statistically_significant_speedup_artifact" in blockers
     assert "missing_multi_gpu_capacity_completion_artifact" in blockers
+
+
+_KEYS = b"issue-044-promotion-test-key"
+
+
+def _signed(artifact: dict, *, key: bytes = _KEYS) -> dict:
+    # The scope an artifact declares has to match the number of devices the
+    # provenance lists, so the world size picks it rather than the fixture.
+    world_size = int(artifact["evidence"]["world_size"])
+    scope = "one_gpu_local" if world_size == 1 else "scheduled_4_8_gpu_scale"
+    if world_size == 2:
+        scope = "two_gpu_semantic_regression"
+    return create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope(scope),
+        provenance=RuntimeProvenance(**artifact["provenance"]),
+        evidence=artifact["evidence"],
+        signing_key=key,
+    ).summary()
+
+
+def _write_candidates(directory: Path, artifacts: list[dict]) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    for index, artifact in enumerate(artifacts):
+        (directory / f"candidate-{index}.json").write_text(
+            json.dumps(_signed(artifact)), encoding="utf-8"
+        )
+    return directory
+
+
+def _last_report(capsys) -> dict:
+    return json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+
+
+def test_the_gate_can_evaluate_a_candidate_set_before_promotion(
+    tmp_path, capsys, monkeypatch
+):
+    """Sealing stages into a candidate directory, so the gate has to read one.
+
+    The strict promotion audit refuses to seal while the release directory holds
+    promoted JSON, which is exactly why the campaign is staged elsewhere first.
+    """
+
+    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
+
+    gate_main(["--candidate", str(candidates)])
+
+    report = _last_report(capsys)
+    assert report["passed"] is True
+    assert report["artifact_count"] == 4
+    assert str(candidates) in report["evaluated"]
+
+
+def test_the_gate_rejects_a_candidate_set_that_is_not_release_grade(
+    tmp_path, capsys, monkeypatch
+):
+    artifacts = [
+        item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4
+    ]
+    candidates = _write_candidates(tmp_path / "candidates", artifacts)
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
+
+    with pytest.raises(SystemExit) as excinfo:
+        gate_main(["--candidate", str(candidates)])
+
+    assert excinfo.value.code == 2
+    assert "missing_release_world_sizes" in _last_report(capsys)["blockers"]
+
+
+def test_a_failing_candidate_set_is_reported_rather_than_promoted(
+    tmp_path, capsys, monkeypatch
+):
+    artifacts = [
+        item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4
+    ]
+    candidates = _write_candidates(tmp_path / "candidates", artifacts)
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
+    release = tmp_path / "release"
+
+    with pytest.raises(SystemExit) as excinfo:
+        promote_main(
+            ["--candidate", str(candidates), "--release-directory", str(release)]
+        )
+
+    assert "missing_release_world_sizes" in str(excinfo.value)
+    assert not release.exists()
+
+
+def test_an_unsigned_candidate_set_is_never_promoted(tmp_path, monkeypatch):
+    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    monkeypatch.delenv("FQ_EVIDENCE_SIGNING_KEY", raising=False)
+    release = tmp_path / "release"
+
+    with pytest.raises(SystemExit) as excinfo:
+        promote_main(
+            ["--candidate", str(candidates), "--release-directory", str(release)]
+        )
+
+    assert "FQ_EVIDENCE_SIGNING_KEY is required" in str(excinfo.value)
+    assert not release.exists()
+
+
+def test_promotion_moves_a_passing_candidate_set_into_the_release_directory(
+    tmp_path, monkeypatch
+):
+    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
+    release = tmp_path / "release"
+
+    assert (
+        promote_main(
+            ["--candidate", str(candidates), "--release-directory", str(release)]
+        )
+        == 0
+    )
+
+    assert sorted(path.name for path in release.glob("*.json")) == [
+        f"candidate-{index}.json" for index in range(4)
+    ]
+    # Moved rather than copied: a candidate that stayed put could be promoted twice.
+    assert list(candidates.glob("*.json")) == []

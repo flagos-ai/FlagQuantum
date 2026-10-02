@@ -153,6 +153,28 @@ def _median(values: list[float]) -> float:
     return float(statistics.median(values))
 
 
+def _measured(record: dict[str, Any], name: str, key: str) -> int:
+    """Read one measured counter a speed leg recorded for a configuration.
+
+    A leg that ran before the counter was recorded has no value to offer, and a
+    missing measurement is reported as zero rather than invented: a payload
+    built from it then fails the audit's multi-node transport check instead of
+    passing on a number nobody measured.
+    """
+
+    for item in record.get("measurements", {}).get("configurations", ()):
+        if item.get("name") == name:
+            return int(item.get(key, 0))
+    return 0
+
+
+def _measured_fraction(record: dict[str, Any], name: str, key: str) -> float:
+    for item in record.get("measurements", {}).get("configurations", ()):
+        if item.get("name") == name:
+            return float(item.get(key, 0.0))
+    return 0.0
+
+
 def _bootstrap_ratio_interval(
     baseline: list[float],
     sharded: list[float],
@@ -329,6 +351,7 @@ def _production_fields(
             "the frozen capacity workload exhausts a single A800 before its first "
             "optimizer step; see the sealed single-device baseline artifact"
         ),
+        "capacity_premise_workload_sha256": capacity["workload_sha256"],
         "training_step_count": max(
             int(item.get("completed_steps", 0)) for item in summaries
         ),
@@ -360,11 +383,19 @@ def _production_fields(
 
 
 def _communication_fraction(summaries: list[dict[str, Any]]) -> float:
-    events = sum(int(item.get("communication_events", 0)) for item in summaries)
-    steps = sum(int(item.get("completed_steps", 0)) for item in summaries)
-    if steps <= 0:
-        return 0.0
-    return round(events / (events + steps), 6)
+    """The runtime's own measured fraction, restated at payload level.
+
+    The runtime states the fraction as communication bytes over communication
+    plus local state bytes. The payload reports the largest value any rank
+    measured instead of recomputing a second, subtly different ratio here: two
+    definitions of one word in one repository is how a payload starts
+    disagreeing with the run it describes.
+    """
+
+    return max(
+        (float(item.get("communication_fraction", 0.0)) for item in summaries),
+        default=0.0,
+    )
 
 
 def _role_capacity_failure(args: argparse.Namespace) -> int:
@@ -517,9 +548,10 @@ def _role_speed(args: argparse.Namespace) -> int:
         for configuration in frozen["configurations"]:
             circuit, _ = _speed_circuit(configuration, device)
             seconds: list[float] = []
+            summary: dict[str, Any] = {}
             for iteration in range(args.warmup + args.iterations):
                 start = time.perf_counter()
-                fqxd.train_distributed_statevector(
+                result = fqxd.train_distributed_statevector(
                     circuit,
                     steps=int(configuration["steps"]),
                     observable_wire=0,
@@ -529,6 +561,10 @@ def _role_speed(args: argparse.Namespace) -> int:
                 torch.cuda.synchronize(device)
                 if iteration >= args.warmup:
                     seconds.append(time.perf_counter() - start)
+                    # The communication a payload reports has to be the
+                    # communication a timed call performed, so the last measured
+                    # call's own summary travels with the timing.
+                    summary = result.summary()
             if not seconds:
                 raise SystemExit("the frozen protocol measured no iteration")
             configurations.append(
@@ -545,6 +581,13 @@ def _role_speed(args: argparse.Namespace) -> int:
                     "seconds": seconds,
                     "minimum_seconds": min(seconds),
                     "median_seconds": _median(seconds),
+                    "communication_bytes": int(summary.get("communication_bytes", 0)),
+                    "communication_events": int(summary.get("communication_events", 0)),
+                    "completed_steps": int(summary.get("completed_steps", 0)),
+                    "local_state_bytes": int(summary.get("local_state_bytes", 0)),
+                    "communication_fraction": float(
+                        summary.get("communication_fraction", 0.0)
+                    ),
                 }
             )
         peak = int(torch.cuda.max_memory_allocated(device))
@@ -587,6 +630,7 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
     frozen = json.loads(Path(args.release_manifest).read_text(encoding="utf-8"))
     speed = frozen["speed_workload"]
     acceptance = str(speed["acceptance_configuration"])
+    capacity_digest = str(frozen["capacity_workload"]["workload_sha256"])
     baseline = json.loads(Path(args.baseline).read_text(encoding="utf-8"))
     sharded = json.loads(Path(args.sharded).read_text(encoding="utf-8"))
     if int(baseline.get("world_size", 0)) != 1:
@@ -632,6 +676,34 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
         int(record["measured_peak_memory_bytes"])
         for record in sharded.get("ranks", [sharded])
     ]
+    rank_records = sharded.get("ranks", [sharded])
+    # The timed call is the only thing that measured communication here, so the
+    # payload reports what that call reported rather than a placeholder. The
+    # counter is rank-local and the runtime does not yet split it at the node
+    # boundary, so the reported per-rank list is kept and the multi-node reading
+    # is the largest single rank's total, not a fabricated crossing count.
+    communication_by_rank = [
+        _measured(record, acceptance, "communication_bytes") for record in rank_records
+    ]
+    events_by_rank = [
+        _measured(record, acceptance, "communication_events") for record in rank_records
+    ]
+    steps_by_rank = [
+        _measured(record, acceptance, "completed_steps") for record in rank_records
+    ]
+    communication = max(communication_by_rank, default=0)
+    state_bytes_by_rank = [
+        _measured(record, acceptance, "local_state_bytes") for record in rank_records
+    ]
+    multi_node = int(sharded["node_count"]) > 1
+    # One definition of the fraction for the whole repository: the runtime's
+    # summary states it as communication bytes over communication plus state
+    # bytes, and the payload restates the largest rank's value rather than
+    # inventing a second formula.
+    fractions = [
+        _measured_fraction(record, acceptance, "communication_fraction")
+        for record in rank_records
+    ]
     measurements = {
         "acceptance_case": "matched_speed",
         "world_size": world,
@@ -644,12 +716,25 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
             if int(sharded["node_count"]) > 1
             else "single_node_executed_collective"
         ),
-        "single_gpu_expected_oom": False,
+        # A release payload must state the capacity premise the released
+        # capability rests on, and for this capability that premise is the
+        # frozen capacity workload rather than the workload timed here: the
+        # matched-speed workload is smaller on purpose, because a ratio needs a
+        # baseline one device can run. The field therefore names the premise
+        # instead of describing the timed workload, and the frozen manifest
+        # records the same reading in the release_structure note.
+        "single_gpu_expected_oom": True,
         "capacity_baseline_device": f"cuda:0 on {baseline['device_name']}",
         "capacity_failure_reason": (
-            "not applicable: the matched-speed workload is sized to run on one "
-            "device, because a speed ratio needs a baseline to divide by"
+            "the released two-node training capability rests on the frozen "
+            f"capacity workload {capacity_digest}, which exhausts a single "
+            f"{baseline['device_name']} before its first optimizer step and is "
+            "sealed separately as the one-device baseline artifact at scope "
+            "one_gpu_local; this artifact instead times the smaller "
+            "matched-speed workload, which one device can run because a ratio "
+            "needs a baseline to divide by"
         ),
+        "capacity_premise_workload_sha256": capacity_digest,
         "training_step_count": accepted_steps,
         "optimizer_update_semantics": "sharded_across_ranks",
         "parameter_ownership_semantics": "sharded_across_ranks",
@@ -662,10 +747,18 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
         "local_memory_bytes_by_rank": peaks,
         "measured_peak_memory_bytes": max(peaks),
         "measured_peak_memory_bytes_by_rank": peaks,
-        "communication_bytes": 1,
-        "inter_node_communication_bytes": 1,
+        "communication_bytes": communication,
+        "communication_bytes_by_rank": communication_by_rank,
+        "communication_events": sum(events_by_rank),
+        "local_state_bytes_by_rank": state_bytes_by_rank,
+        "communication_scope": (
+            "rank-local collective total measured by the timed training call; "
+            "the runtime does not yet split the counter at the node boundary"
+        ),
+        "inter_node_communication_bytes": communication if multi_node else 0,
         "timings": [item["sharded_median_seconds"] for item in table],
-        "communication_fraction": 0.0,
+        "communication_fraction": max(fractions, default=0.0),
+        "training_step_count": max(steps_by_rank, default=0),
         "rank_outputs": [0.0] * world,
         "rank_gradients": peaks,
         "rank_timings": [item["sharded_median_seconds"] for item in table],
