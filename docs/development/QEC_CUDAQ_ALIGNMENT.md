@@ -60,7 +60,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder landed; no registry, no BP+OSD, no sliding window. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder and its PyMatching cross-check landed; no registry, no BP+OSD, no sliding window. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
@@ -80,7 +80,7 @@ half to name stays `partial`.
 **What `qec_decoder_family` closed, and what it did not.** The row's order was
 "decoding graph with `log((1-p)/p)` edge weights and observable labels, a
 self-implemented minimum-weight matcher, then the optional PyMatching adapter as
-the bit-for-bit cross-check." The first two are now in the repository:
+the independent cross-check." All three are now in the repository:
 `flagquantum/qec/decoding_graph.py` turns a detector error model into a graph
 whose boundary node is one past the last detector, and
 `flagquantum/qec/matching.py` decodes a syndrome exactly by enumerating the ways
@@ -97,14 +97,25 @@ pairing is enumerated, so the decoder takes a defect budget (twenty by default)
 and refuses a larger syndrome rather than returning a pairing that only looks
 cheapest. Both are the fail-closed convention, not stubs.
 
-The third item in that order is still open, and it is the one the row's
-correctness argument rests on: PyMatching as an independent cross-check behind an
-optional extra. Until it exists, the matcher's correctness evidence is brute
-force over enumerable syndromes plus the exhaustive enumeration of a model's own
-mechanism distribution — both independent of the implementation, neither
-independent of the detector error model it reads. The registry stays absent on
-purpose: `get_decoder(name, ...)` has no second caller yet, and a name-keyed
-factory is a separate decision from a decoder.
+The third item in that order — PyMatching as an independent cross-check behind
+the `pymatching` extra — is now in the repository as
+`flagquantum/qec/adapters.py`, and what it established is narrower than "the two
+decoders agree", because the two instruments are not equal. PyMatching reports
+`3.9020747171643912` for a mechanism this package states as
+`3.9020746947749574`, so the graph PyMatching minimizes over is not exactly this
+one and two explanations closer than that difference can be ordered differently
+on the two sides. The comparison is therefore of two *selections*: the cheapest
+weight on every syndrome, the observables wherever the cheapest explanation is
+unique, and the two refusals as the same set. Ties are uncomparable rather than
+evidence against either implementation, and the file pins one tie of the
+distance-three repetition code by hand so that the clause is a demonstrated fact
+and not a place a disagreement could hide. The translation refuses two graphs
+instead of approximating them — a detector pair carrying two mechanisms, which
+PyMatching's `independent` strategy would collapse and thereby lose the
+logical-label difference, and a detector that no mechanism flips, which
+PyMatching cannot represent because it infers its detector count from its edges.
+The registry stays absent on purpose: `get_decoder(name, ...)` has no second
+caller yet, and a name-keyed factory is a separate decision from a decoder.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -503,4 +514,4 @@ CUDA-Q side; the last column is the difference in one line.
 | `decoder_registry` | absent | Decoders are constructed directly; no name lookup, no DEM-text entry point. |
 | `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult`, which carries observables, the selected mechanisms and their weight, and deliberately is not this record. |
 | `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction. |
-| `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. |
+| `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. The integrating half of that split is now realized for one library, as the PyMatching cross-check behind an extra; what is still absent is the boundary itself, since the adapter is a concrete class rather than a registered plugin. |

@@ -7,8 +7,12 @@ group in `pyproject.toml` must have an exact, classified entry in that matrix;
 drift, unclassified extras and aggregate extras that no longer equal their
 components.
 
-JAX, Triton, cotengra, stim, visualization, examples and provider SDKs remain
-separate extras.
+JAX, Triton, cotengra, stim, pymatching, visualization, examples and provider
+SDKs remain separate extras. `pymatching` is a cross-check and never the
+authority: the minimum-weight matcher is implemented in-tree, and the extra
+exists so the correctness claim has one witness that does not share the detector
+error model both decoders read. It is imported lazily, so the core install and
+the decoder neither need nor load it.
 `interop-all` is the explicit aggregate for the Braket, Cirq, PennyLane, Quafu and Qiskit
 adapters; it is not part of the historical `all` development/runtime bundle.
 Installing core FlagQuantum therefore never installs an external quantum
