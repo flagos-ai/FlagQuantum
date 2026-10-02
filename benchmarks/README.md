@@ -154,6 +154,16 @@ These end-to-end timings include external conversion and backend preparation;
 they answer the user-facing workload comparison question, not isolated kernel
 throughput.
 
+The focused native-adjoint follow-up in
+[`NATIVE_CPU_ADJOINT_SAVED_PARAMETER_VALIDATION_CPU_ARM64_20261002.md`](results/comparison/NATIVE_CPU_ADJOINT_SAVED_PARAMETER_VALIDATION_CPU_ARM64_20261002.md)
+removes redundant validation of tensors already checked and saved by the
+forward custom-autograd context. It includes the exact rollback, 10–22-qubit
+timings, correctness and stability evidence, a prominent method-matched
+PennyLane Lightning comparison, the public API example, and reproduction
+command. Framework-observed backward callbacks are deliberately not ranked
+across frameworks because Lightning may perform derivative work during value
+evaluation; the report ranks complete value plus gradient instead.
+
 ### Batched exact-statevector throughput
 
 Measure one user task that evaluates the same circuit structure for independent

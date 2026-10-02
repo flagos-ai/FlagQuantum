@@ -50,7 +50,6 @@ SCHEMA = "flagquantum.differentiable_simulator_corpus.v1"
 RUNNER = "differentiable_simulator_corpus"
 _ABSOLUTE_TOLERANCE = 1e-9
 _STABILITY_THRESHOLD = 0.20
-
 WorkloadName = Literal["hardware_efficient_vqe", "qaoa_path_maxcut"]
 
 WORKLOAD_NAMES: tuple[WorkloadName, ...] = (
@@ -206,6 +205,7 @@ def _flagquantum_executor(
     cx_rotation_fusion: bool | None = None,
     terminal_no_restore: bool | None = None,
     compact_cx_index: bool | None = None,
+    saved_parameter_revalidation: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -235,6 +235,7 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION": cx_rotation_fusion,
                 "FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE": terminal_no_restore,
                 "FQ_NATIVE_CPU_COMPACT_CX_INDEX": compact_cx_index,
+                "FQ_STATEVECTOR_ADJOINT_REVALIDATE_SAVED_PARAMETERS": saved_parameter_revalidation,
             }
         ):
             forward_started = time.perf_counter()
@@ -468,6 +469,14 @@ def _engine_callable(
             cpu_direct=True,
             native_cpu_adjoint=True,
             compact_cx_index=False,
+        )
+    if engine == "flagquantum_adjoint_saved_parameter_revalidation":
+        return _flagquantum_executor(
+            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            differentiation="adjoint",
+            cpu_direct=True,
+            native_cpu_adjoint=True,
+            saved_parameter_revalidation=True,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(

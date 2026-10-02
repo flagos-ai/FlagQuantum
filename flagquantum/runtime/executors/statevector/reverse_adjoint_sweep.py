@@ -56,6 +56,7 @@ from .reverse_observable import prepare_observable_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
+    _bind_saved_parameters,
     _compact_reverse_global_indices,
     _gradient_bucketing_enabled,
     _gradient_reduction_overlap_enabled,
@@ -275,7 +276,7 @@ class _ReversibleAdjointSweep:
         self.base_parameters = tuple(
             value.detach().to(self.device) for value in self.saved_parameters
         )
-        self.bound = _bind_parameters(self.ir, self.slots, self.base_parameters)
+        self.bound = _bind_saved_parameters(self.ir, self.slots, self.base_parameters)
         self.local_world_size = resolve_local_world_size(
             self.world_size, subgroup=self.process_group is not None
         )

@@ -402,6 +402,66 @@ def test_cached_adjoint_template_revalidates_updated_parameter_value():
         execute_torch_distributed_statevector_reverse(circuit)
 
 
+def test_adjoint_backward_skips_revalidating_saved_parameters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.runtime.executors.statevector import reverse_support
+
+    calls = 0
+    original = reverse_support._normalize_angle
+
+    def counting_normalize_angle(value, *, opcode, parameter):
+        nonlocal calls
+        calls += 1
+        return original(value, opcode=opcode, parameter=parameter)
+
+    monkeypatch.setattr(reverse_support, "_normalize_angle", counting_normalize_angle)
+    theta = torch.tensor((0.23, -0.41), dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, theta[0]).rz(1, theta[1])
+
+    result = execute_torch_distributed_statevector_reverse(circuit)
+    assert calls == 2
+    result.backward()
+
+    assert calls == 2
+
+
+def test_adjoint_saved_parameter_revalidation_has_a_complete_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.runtime.executors.statevector import reverse_support
+
+    calls = 0
+    original = reverse_support._normalize_angle
+
+    def counting_normalize_angle(value, *, opcode, parameter):
+        nonlocal calls
+        calls += 1
+        return original(value, opcode=opcode, parameter=parameter)
+
+    monkeypatch.setattr(reverse_support, "_normalize_angle", counting_normalize_angle)
+    monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_REVALIDATE_SAVED_PARAMETERS", "1")
+    theta = torch.tensor((0.23, -0.41), dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, theta[0]).rz(1, theta[1])
+
+    result = execute_torch_distributed_statevector_reverse(circuit)
+    result.backward()
+
+    assert calls == 4
+
+
+def test_adjoint_saved_parameter_version_check_precedes_backward_binding() -> None:
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta)
+    result = execute_torch_distributed_statevector_reverse(circuit)
+
+    with torch.no_grad():
+        theta.add_(0.1)
+
+    with pytest.raises(RuntimeError, match="modified by an inplace operation"):
+        result.backward()
+
+
 def test_cpu_direct_adjoint_gate_has_explicit_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
