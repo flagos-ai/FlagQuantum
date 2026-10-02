@@ -58,6 +58,15 @@ behind the front layer, so it cannot be routed at all on part of the workload.
 [benchmarks/compiler_lookahead_swap.py](../../benchmarks/compiler_lookahead_swap.py)
 holds the measurement and the commands that reproduce it.
 
+Routing moves two-wire operations onto device edges by inserting SWAPs. No
+strategy here synthesizes an operation that touches three or more wires, so such
+an operation is carried through unchanged, and only when the device already
+carries the couplings its operands interact over; it is refused otherwise.
+Decomposing it is a caller or native-gate step.
+[test_multi_wire_routing_locality.py](../../tests/team/compiler/test_multi_wire_routing_locality.py)
+holds that boundary, including the case where a chosen layout would move a
+legal multi-wire operation onto non-adjacent physical wires.
+
 A placement is a tuple of physical wires, one per logical wire: the argument
 `route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a

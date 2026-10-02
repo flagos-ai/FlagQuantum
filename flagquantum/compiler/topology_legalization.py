@@ -88,7 +88,12 @@ def legalize_circuit_topology(
     max_added_operations: int = 256,
     initial_layout: tuple[int, ...] | None = None,
 ) -> TopologyLegalizationResult:
-    """Route two-wire instructions and prove the resulting edge legality."""
+    """Route two-wire instructions and prove the resulting edge legality.
+
+    The proof is total over wire count: two-wire instructions are checked onto
+    edges here, and a multi-wire instruction is only carried through the router
+    when the device already carries the couplings its operands interact over.
+    """
 
     source = ensure_circuit_ir(program)
     if not isinstance(coupling_map, (CouplingMap, DirectedCouplingMap)):

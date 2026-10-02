@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .routing import _require_multi_wire_device_local
 
 
 @dataclass(frozen=True)
@@ -213,6 +214,10 @@ def route_to_directed_topology(
                 mapped_wires = tuple(
                     logical_to_physical[wire] for wire in instruction.wires
                 )
+        else:
+            _require_multi_wire_device_local(
+                instruction, mapped_wires, coupling_map.has_weak_edge
+            )
         routed.append(
             _mapped_instruction(
                 instruction,
@@ -373,6 +378,10 @@ def _route_with_physical_workspace(
                 mapped_wires = tuple(
                     logical_to_physical[wire] for wire in instruction.wires
                 )
+        else:
+            _require_multi_wire_device_local(
+                instruction, mapped_wires, coupling_map.has_weak_edge
+            )
         routed.append(
             _mapped_instruction(
                 instruction,
