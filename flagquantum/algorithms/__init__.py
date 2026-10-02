@@ -10,6 +10,7 @@ from . import pca as pca
 from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
+from . import spsa as spsa
 from . import svd as svd
 from .core import (
     AdaptVQEIteration,
@@ -50,6 +51,7 @@ from .optimization import (
     OptimizationStage,
     optimize_hybrid,
 )
+from .spsa import SPSAOptimizer
 
 __all__ = [
     "AdaptVQEIteration",
@@ -62,6 +64,7 @@ __all__ = [
     "OptimizerFactory",
     "OptimizationRecord",
     "OptimizationStage",
+    "SPSAOptimizer",
     "VQEResult",
     "ZneMeasurement",
     "ZneResult",
@@ -91,6 +94,7 @@ __all__ = [
     "run_adapt_vqe",
     "run_zne",
     "scale_noise_model",
+    "spsa",
     "svd",
     "transverse_field_ising",
     "vqe_loss",

@@ -41,6 +41,8 @@ executed by `tests/test_algorithm_examples.py`.
   Demonstration scale: the distance table is classical and the search is bound
   at three register wires.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
+  These take a PyTorch optimizer or one of the staged methods below; `spsa.py` is
+  the gradient-free member of the same surface and takes a plain callable instead.
 - `pca.py`: quantum PCA — the eigenvalue readout of a data matrix's density
   matrix, by phase estimation over its exponential. Demonstration scale: the
   density matrix and its exponential are formed classically.
@@ -58,6 +60,13 @@ executed by `tests/test_algorithm_examples.py`.
   Demonstration scale: the matrix, its embedding, the embedding's exponential and
   the input state are all formed classically, the input state from the matrix's
   own singular vectors.
+- `spsa.py`: simultaneous perturbation stochastic approximation — a gradient-free
+  optimizer for objectives whose only accessible value is a sample, at two
+  evaluations per step whatever the parameter count. **The estimate is biased for
+  every finite perturbation and is not a gradient**: an objective with an exact
+  gradient is served more cheaply and exactly by autograd or parameter shift, and
+  the reason to use this unit is its evaluation cost. Demonstration scale: the
+  perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

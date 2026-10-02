@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.compiler import Layout
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
@@ -43,6 +44,7 @@ ENTRIES = (
     run_cirq,
     run_pennylane,
     run_qiskit,
+    SPSAOptimizer,
 )
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
