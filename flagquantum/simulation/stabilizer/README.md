@@ -5,20 +5,31 @@ normalize the Pauli group have a tableau representation whose storage grows
 quadratically with the wire count, so the wire counts this package reaches are
 the ones no amplitude store can hold.
 
-- Start in `engine.py`. It owns the two things this package does: translating
-  validated Circuit IR into the engine's circuit form, and sampling measurement
-  outcomes for a requested wire list.
+- Start in `engine.py`. It owns the three things this package does: translating
+  validated Circuit IR into the engine's circuit form, sampling measurement
+  outcomes for a requested wire list, and sampling measurement outcomes from a
+  circuit that already carries noise channels at explicit positions.
 - Call `sample_stabilizer(program, shots=..., wires=..., seed=...)`. It accepts
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
   `(shots, len(wires))`.
+- Call `sample_noisy_measurements(program, shots=..., terminal_wires=..., seed=...)`
+  when the caller has placed noise itself. It executes a bit-flip channel at the
+  position it finds it, which means the *caller* owns the Pauli-frame attribution
+  and this entry point owns only the execution; the recorded measurement columns
+  come back in program order and the terminal wires are appended in the order the
+  caller names them. It is deliberately not reachable from the planner or the
+  executor, so `mode='stabilizer'` keeps refusing a noisy program.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
   replacement Clifford kernel replaces, and keeping it in one place is what
   makes that replacement a local change.
 - The accepted gates are `CLIFFORD_GATE_NAMES`. Everything else - a
-  parameterized rotation, a noise channel, `t`, `ccx`, `cswap` - is refused with
-  `CapabilityError` naming the accepted set. Nothing is approximated and nothing
-  falls back.
-- Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py -q`
+  parameterized rotation, `t`, `ccx`, `cswap` - is refused with `CapabilityError`
+  naming the accepted set. Nothing is approximated and nothing falls back. Noise
+  is the one exception and it is a narrow one: `sample_stabilizer` still refuses
+  every channel, while `sample_noisy_measurements` accepts exactly the two-element
+  bit-flip pair and refuses any other channel, any lowered measurement node, and
+  any non-Clifford opcode by name.
+- Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
 
 ## What this package must not own
@@ -44,8 +55,10 @@ replacement interface, and an exit plan. Here they are:
 - Licence and supply chain: Stim is Apache-2.0 and imports no accelerator
   vendor component, so it belongs to the open-neutral dependency class rather
   than the class this project exists to replace.
-- Replacement interface and exit plan: `sample_stabilizer` is the seam.
-  `CLIFFORD_GATE_NAMES` is the contract a replacement satisfies. A future
+- Replacement interface and exit plan: `sample_stabilizer` and
+  `sample_noisy_measurements` are the seam. `CLIFFORD_GATE_NAMES` is the contract
+  a replacement satisfies, and the positioned-noise entry point adds only the
+  channel placement, which a replacement kernel would inherit unchanged. A future
   first-party or FlagOS Clifford kernel replaces the body without changing a
   caller, and the extra can then be dropped. That work is scheduled separately
   rather than scaffolded here.

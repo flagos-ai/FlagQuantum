@@ -6,7 +6,7 @@ open. The TOML is the checklist; the Python tool is the check that it still
 describes a real repository; this document is the part a person reads once.
 
 ```
-python tools/check_qec_cudaq_alignment.py        # 299 checks, exit 0 or 1
+python tools/check_qec_cudaq_alignment.py        # 306 checks, exit 0 or 1
 python -m pytest tests/unit/test_qec_cudaq_alignment_check.py -q
 ```
 
@@ -53,13 +53,13 @@ from the matrix's `priority`, the row states why.
 | --- | --- | --- | --- | --- |
 | `qec_code_record` | partial | now | `qec_code_library` | Two families declared, no matrix-level record, no Steane/colour/qLDPC. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
-| `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Matrix fix landed. |
+| `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Route named after cudaq-qec's own. |
 | `qec_dem_construction` | partial | now | — | Construction exists and is exact; no CSS-matrix entry point, no context object. |
 | `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches; no error ids, no rates vector. |
 | `qec_dem_merge` | absent | now | — | Merging is implicit and parity-only; upstream has two stated modes. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; input end is narrow. |
-| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The stabilizer engine refuses noise channels, so circuit→DEM→decoder has no sampling join. |
+| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder landed; no registry, no BP+OSD, no sliding window. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
@@ -100,6 +100,49 @@ mechanism distribution — both independent of the implementation, neither
 independent of the detector error model it reads. The registry stays absent on
 purpose: `get_decoder(name, ...)` has no second caller yet, and a name-keyed
 factory is a separate decision from a decoder.
+
+**What `qec_stim_sampling_join` closed, and what it did not.** The row said the
+join was the gap: the stabilizer engine executed noiseless Clifford programs and
+refused a noise channel, so detection events could only be sampled from the
+model, and every rate it produced had to stay labelled DEM-sampled. The join is
+now in the repository as `flagquantum/qec/sample_memory_circuit`, which lowers a
+memory circuit once, places each noise location the phenomenological record names
+at the instruction it belongs to, executes the result on the stabilizer engine,
+and reads the detection events and observable flips off the recorded bits.
+
+The placement is the whole content of the join, and it is derived rather than
+asserted. A data error is a round-boundary error and goes *before* the round's
+first gate, so it opens the frame the round's detectors compare against; a
+measurement error goes immediately *before* the readout of the check it corrupts.
+Neither position exists in the source, because the bounded hybrid capture refuses
+a channel call outright, so the module derives both from the lowered program and
+checks the property the derivation rests on: the syndrome loop has to lower to
+`rounds` identical blocks, each measuring every check once in the code's declared
+order. A program that lowers to anything else is refused, because a placement
+derived from it would attribute a mechanism to the wrong round.
+
+Two things keep the join from being a rewrite of the model in a second place. The
+model derives each mechanism's signature from the source; the sampler derives
+each mechanism's instruction position from the lowered program; and the tests pin
+the two to each other rather than letting one call the other. At probability one
+the agreement is exact — every mechanism fires on every shot, so the shot is
+fully determined and the comparison is arithmetic rather than statistical — and
+at the rate level the two agree within four sigma over 400,000 shots on both the
+repetition and the rotated surface code. The join then decodes: a
+`MinimumWeightMatchingDecoder` built from the same circuit's model decodes the
+sampled events, and the residual logical-failure rate falls below the raw
+observable-flip rate and below its own value at the next distance up.
+
+What the row did not close is the noise grammar. The record names two
+mechanisms, so there are two placement classes; a depolarizing or damping channel
+placed after a named gate has no location here and is declined. The baseline's
+`x_` and `z_` variants have no counterpart either, because the code record is a
+Z-memory record. The row stays `partial` on that scope, not on the connection.
+One placement is worth recording because it is invisible to any parity
+comparison: the code gadgets prepare their ancilla with the CNOTs immediately
+preceding the readout, so moving a measurement channel one instruction earlier
+still reads the same parity. That position is pinned by the instruction index
+rather than by a rate, which is where a caller relies on the position.
 
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
@@ -182,7 +225,13 @@ refuses.
    `surface_ownership` entry owned by `cudaq-logical-preview`, whose consequence
    records that aligning to that layer would not deliver a detector error model
    and that the layer is therefore a second target with a different deliverable,
-   not a second baseline for this domain.
+   not a second baseline for this domain. **Also landed**, later and in the other
+   direction: the checklist row's `symbols_absent` list named
+   `sample_memory_circuit` as a name this repository did not have, and the join
+   implemented it under exactly that name, so the row turned red and was
+   rewritten rather than exempted. That is the decision the row was opened to
+   force: this repository is on cudaq-qec's route, and the extraction entry point
+   is named for what it does because that is what cudaq-qec calls it.
 
 3. **No `for-stim-users` page exists for cudaq-qec.** The only such page is
    *CUDA-Q Logical for Stim users*, in the preview layer, with a companion *Stim
@@ -209,7 +258,12 @@ refuses.
    `maturity_refs_rule` states that a row uses one form or the other and never
    both. The override reason this checklist previously carried on
    `qec_dem_text_interchange` is gone, because it recorded the drift rather than
-   the fix.
+   the fix. The row now names **three** entries, because the join between the two
+   halves became a capability of its own: `qec_memory_circuit_sampling`. That is
+   the same argument one step further on, and it is why the plural form was the
+   right repair — the row had two halves and no connection, then two halves and
+   one connection, and a two-entry plural would have had to be reopened to say
+   so.
 
 5. **The version pin does not reach the upstream source.** The matrix pins CUDA-Q
    0.15.1 and 0.16.0.post1; cudaq-qec's release line runs 0.1.0 to 0.8.0 and

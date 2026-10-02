@@ -133,16 +133,25 @@ dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
 baseline = "The quantum_error_correction domain's recorded CUDA-Q surface lists extract_syndrome. The confirmed owner of that name is cudaq.logical.extract_syndrome in the CUDA-Q Logical preview, which states it does not simulate, sample or decode and emits no detector error models. CUDA-Q QEC's own extraction routes are sample_memory_circuit / x_sample_memory_circuit / z_sample_memory_circuit and the decoder_context_from_memory_circuit helper; a cudaq-qec function named extract_syndrome was not found. UNVERIFIED at the pinned 0.16.0.post1 install."
 target = "A syndrome-extraction route named for what it does, and a parity matrix whose surface item names the right owner."
-symbols_present = ["flagquantum.qec.run_repetition_memory_experiment"]
-symbols_absent = ["extract_syndrome", "sample_memory_circuit", "decoder_context_from_memory_circuit"]
+symbols_present = [
+    "flagquantum.qec.sample_memory_circuit",
+    "flagquantum.qec.run_repetition_memory_experiment",
+]
+symbols_absent = [
+    "extract_syndrome",
+    "x_sample_memory_circuit",
+    "z_sample_memory_circuit",
+    "decoder_context_from_memory_circuit",
+]
 evidence = [
+    "flagquantum/qec/sampling.py",
     "flagquantum/qec/repetition.py",
     "flagquantum/qec/noise.py",
     "contracts/cudaq-parity-matrix.toml",
 ]
 provenance_unverified = true
-next_action = "Re-point the matrix's surface item at sample_memory_circuit and the decoder-context helper, or at cudaq.logical.extract_syndrome if the logical layer is the real target, and record which. Do this before building anything named extract_syndrome here, because the name would otherwise imply a CUDA-Q QEC function that does not exist."
-fail_closed = "The row asserts the correction in prose and marks itself UNVERIFIED; the row turns red if any of the three names appears in the tree, so a future implementation of an extraction helper has to revisit the claim instead of inheriting it."
+next_action = "The fork this row was opened on is decided, and it was decided the way the row's own next_action asked: the extraction route here is named `sample_memory_circuit`, which is cudaq-qec's name for it, so this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`. What remains is one half of the pair and one inventory edit, neither of which this row owns. The decoder-context helper is absent and is tracked by `qec_dem_construction`; and the matrix's surface item still reads `extract_syndrome` in the inventory, which is correct as a record of what a live CUDA-Q install lists and is explained by the `extract_syndrome` entry in `baseline.surface_ownership` rather than repaired here."
+fail_closed = "The row asserts the correction in prose and marks itself UNVERIFIED; the row turns red if any of the four remaining names appears in the tree, so a future implementation under one of them has to revisit the claim instead of inheriting it. `sample_memory_circuit` left that list the day it was implemented, which is the row working as intended rather than a claim that drifted."
 
 [[rows]]
 id = "qec_dem_construction"
@@ -283,21 +292,25 @@ floor = "now"
 domain_row = "qec_stim_integration"
 domain_items = ["Stim integration"]
 dependency_class = "B_open_neutral"
-maturity_ref = "stabilizer_sampling"
+maturity_ref = "qec_memory_circuit_sampling"
 baseline = "Sampling from a circuit that carries detector annotations, and sampling from a detector error model, from the same distribution: cudaq-qec's sample_memory_circuit / x_ and z_ variants over (code, statePrep, nShots, nRounds, noise), and dem_sampling over a check matrix and error probabilities."
 target = "A noisy Clifford circuit sampled into detection events, joined to the DEM built from the same circuit, so a decoding claim has a sampling route that does not depend on the statevector ceiling."
 symbols_present = [
+    "flagquantum.qec.sample_memory_circuit",
+    "flagquantum.simulation.stabilizer.sample_noisy_measurements",
     "flagquantum.simulation.stabilizer.engine.sample_stabilizer",
     "flagquantum.simulation.stabilizer.engine.require_clifford_program",
     "flagquantum.qec.DetectorErrorModel.dem_sampling",
 ]
 evidence = [
+    "flagquantum/qec/sampling.py",
     "flagquantum/simulation/stabilizer/engine.py",
     "flagquantum/qec/dem.py",
-    "tests/integration/test_stabilizer_execution_mode.py",
+    "tests/qec/test_sampling_memory_circuit.py",
+    "tests/team/simulation/test_stabilizer_positioned_noise.py",
 ]
-next_action = "The join is the gap: the stabilizer engine executes noiseless Clifford programs and refuses an instruction that is a noise channel, so a noisy circuit is declined rather than tracked through a Pauli frame. Until that refusal becomes a frame-tracking path, detection events can only be sampled from the DEM, and every such rate must stay labelled DEM-sampled. Upstream reaches the same place from the other side: its circuit sampling carries a noise model and its DEM sampling does not, which is why the two are two functions there as well."
-fail_closed = "The refusal is a CapabilityError with a stated reason rather than a silent approximation, so the join cannot appear without someone deliberately implementing frame tracking; the DEM-sampled label is required wherever such a rate is reported."
+next_action = "The join is present for one channel and one code grammar, and the row stays partial on scope rather than on correctness. A noise location is a data flip at a round boundary or a measurement flip at a check's readout, which is exactly the two mechanisms PhenomenologicalNoise names; a depolarizing or damping channel placed after a gate has no location here, so an arbitrary annotated circuit is still declined rather than sampled. The baseline's x_ and z_ variants have no counterpart either, because the code record is a Z-memory record and the sampler inherits that refusal. The remaining work is therefore a location grammar that reads its placements off generic circuit structure rather than off the memory-circuit round loop, which is what a channel after a named gate would need."
+fail_closed = "A program that is not `rounds` identical blocks measuring each check once in the declared order is refused with a stated reason rather than sampled, so a misattributed mechanism cannot be returned as a plausible rate; the engine refuses any channel other than the bit-flip pair, a lowered measurement node, and a non-Clifford opcode by name. The join is a distinct entry point from the model, and the tests assert that the model's own sampler and this one are reached independently, so a sampled rate can never be silently relabelled as the model's."
 
 [[rows]]
 id = "qec_decoder_family"
