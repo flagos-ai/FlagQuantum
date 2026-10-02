@@ -65,7 +65,10 @@ anything, and it does not read arbitrary third-party OpenQASM.
 `openqasm_gates.py` holds the gate spellings both directions read. `openqasm.py`
 emits, `openqasm_import.py` parses, and `target_conformance.py` checks an
 emission against an expected program; the three share one table, so a spelling
-one direction accepts and the other writes cannot appear.
+one direction accepts and the other writes cannot appear. `tools/check_openqasm_import_contract.py`
+reads [openqasm-import-v1-candidate.json](../../contracts/openqasm-import-v1-candidate.json)
+against the shipped importer: the refusal vocabulary, the version lanes, the
+exposed signature, the root additions, and a reader for every declared rule.
 
 A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded

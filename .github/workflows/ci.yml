@@ -113,6 +113,8 @@ jobs:
         run: python tools/check_pennylane_interop_contract.py
       - name: Verify interoperability capability-gap matrix
         run: python tools/check_interop_capability_gap_matrix.py
+      - name: Verify OpenQASM import contract
+        run: python tools/check_openqasm_import_contract.py
       - name: Verify CUDA-Q parity matrix and its generated scoreboard
         run: python tools/parity_matrix.py --check
       - name: Verify the CUDA-Q QEC alignment checklist against this checkout

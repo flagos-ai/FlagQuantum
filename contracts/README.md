@@ -39,6 +39,11 @@ Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract
 and must not be regenerated merely to make a check pass.
 
+An authorized contract is read by a gate of its own, so a claim with no consumer
+is a defect rather than decoration. `tools/check_openqasm_import_contract.py`
+reads `openqasm-import-v1-candidate.json` against the shipped importer and
+requires each of its declared rules to name an existing check or witness test.
+
 The v1 candidate remains a proposal until API Change Proposal 001 is approved.
 Candidate validation does not authorize changing the current public API.
 

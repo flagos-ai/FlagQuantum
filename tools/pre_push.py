@@ -112,6 +112,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_interop_capability_gap_matrix.py"),
         ),
         Check(
+            "OpenQASM import contract",
+            (python_executable, "tools/check_openqasm_import_contract.py"),
+        ),
+        Check(
             "Double-Single FP32 contract",
             (python_executable, "tools/check_double_single_contract.py"),
         ),
