@@ -301,6 +301,7 @@
         "complex128"
       ],
       "opcode": "i",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -318,6 +319,7 @@
         "complex128"
       ],
       "opcode": "x",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -335,6 +337,7 @@
         "complex128"
       ],
       "opcode": "y",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -352,6 +355,7 @@
         "complex128"
       ],
       "opcode": "z",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -371,6 +375,7 @@
         "complex128"
       ],
       "opcode": "h",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -388,6 +393,7 @@
         "complex128"
       ],
       "opcode": "s",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -407,6 +413,7 @@
         "complex128"
       ],
       "opcode": "sdg",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -424,6 +431,7 @@
         "complex128"
       ],
       "opcode": "t",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -443,6 +451,7 @@
         "complex128"
       ],
       "opcode": "tdg",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -460,6 +469,7 @@
         "complex128"
       ],
       "opcode": "sx",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -477,6 +487,7 @@
         "complex128"
       ],
       "opcode": "sxdg",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -494,6 +505,11 @@
         "complex128"
       ],
       "opcode": "rx",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -513,6 +529,11 @@
         "complex128"
       ],
       "opcode": "ry",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -532,6 +553,11 @@
         "complex128"
       ],
       "opcode": "rz",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -553,6 +579,11 @@
         "complex128"
       ],
       "opcode": "phase",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -572,6 +603,11 @@
         "complex128"
       ],
       "opcode": "u1",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -591,6 +627,14 @@
         "complex128"
       ],
       "opcode": "u2",
+      "parameter_frequencies": [
+        [
+          1.0
+        ],
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "phi",
         "lbd"
@@ -613,6 +657,17 @@
         "complex128"
       ],
       "opcode": "u3",
+      "parameter_frequencies": [
+        [
+          1.0
+        ],
+        [
+          1.0
+        ],
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta",
         "phi",
@@ -636,6 +691,7 @@
         "complex128"
       ],
       "opcode": "cx",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -654,6 +710,7 @@
         "complex128"
       ],
       "opcode": "cy",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -672,6 +729,7 @@
         "complex128"
       ],
       "opcode": "cz",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -690,6 +748,7 @@
         "complex128"
       ],
       "opcode": "swap",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -708,6 +767,12 @@
         "complex128"
       ],
       "opcode": "crx",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -728,6 +793,12 @@
         "complex128"
       ],
       "opcode": "cry",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -748,6 +819,12 @@
         "complex128"
       ],
       "opcode": "crz",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -768,6 +845,11 @@
         "complex128"
       ],
       "opcode": "cphase",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -788,6 +870,11 @@
         "complex128"
       ],
       "opcode": "rxx",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -808,6 +895,11 @@
         "complex128"
       ],
       "opcode": "ryy",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -828,6 +920,11 @@
         "complex128"
       ],
       "opcode": "rzz",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
@@ -851,6 +948,7 @@
         "complex128"
       ],
       "opcode": "ccx",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -872,6 +970,7 @@
         "complex128"
       ],
       "opcode": "cswap",
+      "parameter_frequencies": [],
       "parameters": [],
       "semantic_kind": "unitary",
       "wire_convention": [
@@ -891,6 +990,7 @@
         "complex128"
       ],
       "opcode": "bit_flip",
+      "parameter_frequencies": [],
       "parameters": [
         "probability"
       ],
@@ -910,6 +1010,7 @@
         "complex128"
       ],
       "opcode": "phase_flip",
+      "parameter_frequencies": [],
       "parameters": [
         "probability"
       ],
@@ -929,6 +1030,7 @@
         "complex128"
       ],
       "opcode": "depolarizing",
+      "parameter_frequencies": [],
       "parameters": [
         "probability"
       ],
@@ -948,6 +1050,7 @@
         "complex128"
       ],
       "opcode": "amplitude_damping",
+      "parameter_frequencies": [],
       "parameters": [
         "gamma"
       ],
