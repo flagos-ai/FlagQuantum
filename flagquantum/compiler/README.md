@@ -31,6 +31,7 @@ Use `optimize(program)` for target-independent optimization and
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
+| Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
@@ -75,16 +76,36 @@ measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
 
+A *named* gate has no matrix on this layer, so it can only leave a program for
+a basis that does not carry it through a closed identity.
+[basis_translation.py](basis_translation.py) is that table, plus the
+deterministic search that composes it, and it is the Compiler-layer counterpart
+of the equivalence library and basis search Qiskit ships. Each rule is an exact
+closed form that forwards the source instruction's own parameter objects and
+metadata, so a trainable angle stays in the autograd graph; no rule introduces an
+angle the caller did not write; and the search branches on opcode names only,
+never on a value. Fifteen of the sixteen entries reproduce their source exactly
+and `cphase` is equal to it up to one global phase, which FlagQuantum IR has no
+field to record. The table stores the shortest statement of each identity rather
+than its closure, so the search expands each rule's leaves through the table
+again: a `cz` basis plus a z-rotation reaches all eleven declared two-qubit
+opcodes by name, where the four hand-written rules this replaced reached two of
+them. `ion-trap-rz-rx-rzz` is the recorded gap -- every rule routes down to `cx`
+or `cz`, and that basis publishes neither.
+[benchmarks/compiler_basis_translation.py](../../benchmarks/compiler_basis_translation.py)
+holds the per-rule fidelity, the per-basis reach, and the difference from Qiskit's
+`BasisTranslator` on the same target bases.
+
 Native-gate legalization rewrites one-qubit instructions by Euler synthesis
 whenever the target publishes a z-rotation and a pi/2 x-rotation: every declared
 single-qubit unitary becomes z-rotations plus `sx`, or plus `rx` at a fixed
-`pi/2` when the basis publishes `rx` instead. Exact hand-written rewrites are
-tried first, so a basis that can carry a gate exactly keeps its exact form. Such
-a basis cannot carry the global phase of `h`, `s`, or `t`, and FlagQuantum IR has
-no field for it, so those rewrites are equal up to one global phase -- the same
-contract every `U3`-based hardware basis publishes. A consumer that compares raw
-statevectors instead of measurement statistics has to know that; flag records of
-it belong in the capability registry, which `capability-maturity.toml` owns.
+`pi/2` when the basis publishes `rx` instead. An exact identity is tried first, so
+a basis that can carry a gate exactly keeps its exact form. Such a basis cannot
+carry the global phase of `h`, `s`, or `t`, and FlagQuantum IR has no field for
+it, so those rewrites are equal up to one global phase -- the same contract every
+`U3`-based hardware basis publishes. A consumer that compares raw statevectors
+instead of measurement statistics has to know that; flag records of it belong in
+the capability registry, which `capability-maturity.toml` owns.
 
 Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
 wires, over any supercontrolled entangler the basis publishes. Six declared
@@ -94,14 +115,11 @@ purpose -- its only supercontrolled angle is `pi`, where it is `cz`, so it would
 add a spelling rather than reach. Carrying the interaction rotations is what
 opens a trapped-ion or flux-tunable-coupler basis, whose only two-qubit gate is a
 rotation and which publishes no `cx` at all; such a basis now reaches all eleven
-declared two-qubit unitaries where it previously reached one. A matrix is the
-only input the synthesis accepts: turning a *named* two-qubit gate into the
-entangler basis would need that gate's matrix, which belongs to
-`flagquantum.simulation`, so the named path keeps its hand-written rules only and
-fails closed beyond them. The cost is one entangler for `cx`, `cz`, and `cy`, two
-for the controllized rotations, and three for `swap`, which is the far corner of
-the Weyl chamber; all eleven declared two-qubit unitaries reproduce their source
-to within `1.1e-15` over any of the six entanglers, up to one global phase.
+declared two-qubit unitaries where it previously reached one. The cost is one
+entangler for `cx`, `cz`, and `cy`, two for the controllized rotations, and three
+for `swap`, which is the far corner of the Weyl chamber; all eleven declared
+two-qubit unitaries reproduce their source to within `1.1e-15` over any of the six
+entanglers, up to one global phase.
 [benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
 holds the reach, cost, and phase measurement, and cross-checks the entangler
 count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.

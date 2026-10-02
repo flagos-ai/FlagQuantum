@@ -49,6 +49,13 @@ routing result to hand back to legalization.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`basis_translation.py` owns the equivalence table and the deterministic search
+behind the named-instruction path of those decompositions: it holds sixteen
+exact identities from named opcodes to named opcodes, composes them so a rule
+whose leaves are themselves rewritable still resolves, and introduces no angle
+the source instruction did not carry. It is a private helper, not an
+expert-facing entry point, and it exists because a named gate has no matrix on
+this layer.
 `one_qubit_synthesis.py` owns the one-qubit Euler angles behind those
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
@@ -64,7 +71,9 @@ the matrix of a named two-qubit gate belongs to `flagquantum.simulation`, which
 this layer must not import. The three parameter-free entangler matrices and the
 closed form of the rotation family are the only gate matrices it holds, and
 `tests/unit/test_compilation_two_qubit_synthesis.py` pins them entry-by-entry
-against that table.
+against that table. Its input is a matrix, so a named two-qubit opcode reaches it
+only after `basis_translation.py` has rewritten it or has reported the gate the
+target is missing; the two paths are ordered, not alternative.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
@@ -115,6 +124,10 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change a named-opcode identity or the order the search tries them in
+  `basis_translation.py`; re-run
+  `tests/unit/test_compilation_basis_translation.py`, which pins every entry
+  against the runtime, before touching anything else.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
   `one_qubit_synthesis.py`.
 - Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in

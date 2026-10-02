@@ -48,15 +48,16 @@ import math
 import random
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 import torch
 
+from flagquantum.compiler.basis_translation import translate
 from flagquantum.compiler.native_gate_legalization import (
     NativeGateLegalizationError,
     _native_descriptors,
-    _specialized_replacement,
     _supports,
     legalize_native_gates,
 )
@@ -273,14 +274,24 @@ def legalize(program: CircuitIR, basis: Basis):
         return str(error)
 
 
-def baseline_reach(basis: Basis) -> dict[str, Any]:
-    """The reach with only the hand-written rewrites, no KAK synthesis.
+#: The only arity-2 opcode the legalizer had a rule for before the equivalence
+#: table replaced those rules at W8-04. That rule is still in the table verbatim,
+#: so replaying the named path with the table restricted to this opcode measures
+#: the pre-W8-04 reach from the same descriptors instead of quoting it.
+_PRE_TABLE_NAMED_OPCODES = frozenset({"swap"})
 
-    Replays the decision the legalizer made before `two_qubit_synthesis` existed,
-    for a **named** gate: the basis supports it directly, or one of the four
-    hand-written rules rewrites it into gates the basis supports. A matrix-carrying
-    instruction had no path at all, which is recorded separately below rather than
-    folded into this count.
+
+def baseline_reach(
+    basis: Basis, *, opcodes: frozenset[str] | None = None
+) -> dict[str, Any]:
+    """How far the named path reaches through the equivalence table, no synthesis.
+
+    With ``opcodes`` the table is restricted to that set, which replays an
+    earlier version of the table rather than the current one; the default is the
+    whole table. Called once with ``_PRE_TABLE_NAMED_OPCODES`` for the before
+    count and once unrestricted for what the table reaches on its own. A
+    matrix-carrying instruction has no path here at all, which
+    ``legalized_by_matrix_count`` records separately.
     """
 
     descriptors = _native_descriptors(snapshot(basis), evaluated_at=_NOW)
@@ -290,7 +301,9 @@ def baseline_reach(basis: Basis) -> dict[str, Any]:
         if _supports(descriptors, instruction):
             legalized.append(opcode)
             continue
-        replacement = _specialized_replacement(instruction)
+        if opcodes is not None and opcode not in opcodes:
+            continue
+        replacement = translate(instruction, can_run=partial(_supports, descriptors))
         if replacement is not None and all(
             _supports(descriptors, leaf) for leaf in replacement
         ):
@@ -339,7 +352,8 @@ def reach(basis: Basis) -> dict[str, Any]:
         entanglers[opcode] = sum(
             1 for item in carrying.program.instructions if item.name == basis.entangler
         )
-    before = baseline_reach(basis)
+    before = baseline_reach(basis, opcodes=_PRE_TABLE_NAMED_OPCODES)
+    table = baseline_reach(basis)
     return {
         "label": basis.label,
         "declared_opcode_count": len(TWO_QUBIT_OPCODES),
@@ -357,8 +371,10 @@ def reach(basis: Basis) -> dict[str, Any]:
             item.name if isinstance(item, str) else str(item["name"])
             for item in basis.gates
         ),
-        "rewrite_only_legalized_by_name_count": before["legalized_opcode_count"],
-        "rewrite_only_legalized_opcodes": before["legalized_opcodes"],
+        "hand_written_reach_count": before["legalized_opcode_count"],
+        "hand_written_reach_opcodes": before["legalized_opcodes"],
+        "identity_table_reach_count": table["legalized_opcode_count"],
+        "identity_table_reach_opcodes": table["legalized_opcodes"],
     }
 
 
@@ -701,7 +717,7 @@ def main() -> None:
         f"{declared} declared two-qubit unitary opcodes on {payload['basis_count']} bases"
     )
     print(
-        f"{'basis':28s} {'named':>7s} {'matrix':>7s} {'before':>7s} "
+        f"{'basis':28s} {'named':>7s} {'matrix':>7s} {'table':>7s} "
         f"{'entanglers':>11s} {'unresolved':>11s}"
     )
     for row in payload["reach"]:
@@ -709,7 +725,7 @@ def main() -> None:
             f"{row['label']:28s} "
             f"{row['legalized_by_name_count']:>3d}/{declared} "
             f"{row['legalized_by_matrix_count']:>3d}/{declared} "
-            f"{row['rewrite_only_legalized_by_name_count']:>3d}/{declared} "
+            f"{row['identity_table_reach_count']:>3d}/{declared} "
             f"{row['total_entangler_count']:>11d} "
             f"{row['unresolved_opcode_count']:>11d}"
         )

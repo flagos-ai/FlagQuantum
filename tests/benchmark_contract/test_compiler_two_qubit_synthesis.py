@@ -19,6 +19,7 @@ is reported as zero.
 import pytest
 
 from benchmarks.compiler_two_qubit_synthesis import (
+    _PRE_TABLE_NAMED_OPCODES,
     DEFAULT_BASES,
     RANDOM_CASE_COUNT,
     SUPERCONTROLLED_ENTANGLERS,
@@ -89,15 +90,30 @@ _TOTAL_ENTANGLERS = {
     "ion-trap-rz-rx-rzz": 19,
 }
 
-#: The named-gate reach each basis had before W8-02: `cx` alone in a `cx` basis,
-#: `cz` alone in a `cz` basis, and `swap` via the hand-written three-`cx` rule
-#: wherever `cx` is native. A matrix-carrying instruction had no path at all.
-_NAMED_BEFORE = {
+#: The named-gate reach each basis had before W8-04: the native gate itself, plus
+#: `swap` wherever `cx` is native, because `swap` was the only arity-2 opcode with
+#: a hand-written rule. That rule is still in the table verbatim, so the replay
+#: restricts the table to it and measures the before count from the same
+#: descriptors rather than quoting it.
+_HAND_WRITTEN_REACH = {
     "ibm-rz-sx-cx": 2,
     "ibm-heron-cz": 1,
     "rotational": 1,
     "ion-trap-rz-rx-rzz": 1,
     "clifford-t": 2,
+}
+
+#: What the equivalence table reaches on its own, with no synthesis. Reported
+#: beside the reach so the two contributions can be told apart: a `cx` basis with
+#: a z-rotation gets five names from the table and the remaining six from the
+#: Euler synthesis, while `clifford-t` gets all four of its names from the table
+#: alone because it publishes no z-rotation to synthesize against.
+_IDENTITY_TABLE_REACH = {
+    "ibm-rz-sx-cx": 5,
+    "ibm-heron-cz": 1,
+    "rotational": 1,
+    "ion-trap-rz-rx-rzz": 1,
+    "clifford-t": 4,
 }
 
 
@@ -172,26 +188,38 @@ def test_every_closed_basis_reaches_the_group_through_a_matrix() -> None:
         assert row["total_entangler_count"] == _TOTAL_ENTANGLERS[label]
         assert row["entangler_opcode"] in SUPERCONTROLLED_ENTANGLERS
         # The count this change replaced, computed from the same descriptors.
-        assert row["rewrite_only_legalized_by_name_count"] == _NAMED_BEFORE[label]
+        assert row["identity_table_reach_count"] == _IDENTITY_TABLE_REACH[label]
 
 
-def test_a_named_two_qubit_gate_still_stops_at_the_hand_written_rules() -> None:
-    """Only a matrix reaches KAK, and only from a caller that already has one.
+def test_a_named_two_qubit_gate_reaches_the_group_through_exact_identities() -> None:
+    """A named gate gets there without a matrix, so no layer is bypassed.
 
-    Turning a *named* two-qubit gate into the entangler basis needs its matrix,
-    and the matrix of a named gate belongs to `flagquantum.simulation`. A
-    compiler layer that imported it would take a dependency it must not have, so
-    the named path keeps its previous reach and fails closed beyond it.
+    Turning a *named* two-qubit gate into the entangler basis through KAK would
+    need that gate's matrix, and the matrix of a named gate belongs to
+    `flagquantum.simulation`, which the Compiler layer must not import. The
+    equivalence table is what closes the named path instead: a basis publishing
+    `cx` or `cz` plus a z-rotation now reaches all eleven declared opcodes by
+    name, where before this change it reached one or two.
     """
 
+    measured = {row["label"]: row for row in (reach(basis) for basis in DEFAULT_BASES)}
     for basis in DEFAULT_BASES:
-        row = reach(basis)
-        assert row["legalized_by_name_count"] == _NAMED_BEFORE[basis.label]
-    # `clifford-t` is the one basis where the named path reaches further than the
-    # matrix path: `swap` has a hand-written three-`cx` rule that needs no matrix,
-    # while `cx` is the only opcode whose own matrix is native there.
-    assert reach(_by_label("ibm-rz-sx-cx"))["legalized_by_name_count"] < 11
-    assert reach(_by_label("clifford-t"))["legalized_by_name_count"] == 2
+        row = measured[basis.label]
+        before = _HAND_WRITTEN_REACH[basis.label]
+        # Non-vacuity: the improvement is only a claim about the table if the
+        # before count it is compared against is really smaller.
+        assert before < 11, basis.label
+        assert row["legalized_by_name_count"] > before, basis.label
+    # A `cx` or `cz` basis with a z-rotation and a pi/2 pulse closes the group.
+    for label in ("ibm-rz-sx-cx", "ibm-heron-cz", "rotational"):
+        assert measured[label]["legalized_by_name_count"] == 11, label
+    # `clifford-t` publishes no z-rotation, so only the exact identities that
+    # need nothing else apply: `cz` and `cy` join `cx` and `swap`, and the other
+    # seven names need an interaction rotation to build from.
+    assert measured["clifford-t"]["legalized_by_name_count"] == 4
+    # `ion-trap-rz-rx-rzz` publishes no `cx`, `cz` or `cy`, so the three
+    # interaction rotations are the only names its `rzz` can carry.
+    assert measured["ion-trap-rz-rx-rzz"]["legalized_by_name_count"] == 3
 
 
 def test_a_basis_without_a_z_rotation_keeps_the_matrix_path_open_and_the_rest_shut() -> (
@@ -215,9 +243,15 @@ def test_a_basis_without_a_z_rotation_keeps_the_matrix_path_open_and_the_rest_sh
 
 def test_the_baseline_replay_agrees_with_the_pinned_before_counts() -> None:
     for basis in DEFAULT_BASES:
+        pre_table = baseline_reach(basis, opcodes=_PRE_TABLE_NAMED_OPCODES)
+        assert (
+            pre_table["legalized_opcode_count"] == _HAND_WRITTEN_REACH[basis.label]
+        ), basis.label
+        # And the table as it now stands, on its own, for both benchmarks to
+        # report the same quantity.
         assert (
             baseline_reach(basis)["legalized_opcode_count"]
-            == _NAMED_BEFORE[basis.label]
+            == _IDENTITY_TABLE_REACH[basis.label]
         ), basis.label
 
 
@@ -297,7 +331,7 @@ def test_a_seeded_population_that_is_not_a_named_gate_is_reached_too(
     payload: dict,
 ) -> None:
     measured = {row["label"]: row for row in payload["random_reach"]}
-    assert set(measured) == set(_NAMED_BEFORE)
+    assert set(measured) == set(_HAND_WRITTEN_REACH)
     for label in _CLOSED_BASES:
         row = measured[label]
         assert row["case_count"] == RANDOM_CASE_COUNT

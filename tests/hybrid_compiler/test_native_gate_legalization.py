@@ -403,13 +403,16 @@ def test_a_basis_without_a_z_rotation_keeps_the_old_behavior() -> None:
     with pytest.raises(NativeGateLegalizationError, match="no verified decomposition"):
         legalize_native_gates(source, snapshot=_snapshot(("h", "t")), evaluated_at=_NOW)
 
-    # A rotation reaches the hand-written rewrite, which then names the one gate
-    # the target is missing rather than silently synthesizing past it.
+    # A rotation reaches the equivalence table, which then names a gate the
+    # target is missing rather than silently synthesizing past it. The gate it
+    # names is the first unsupported *leaf*, not the source opcode: `ry` becomes
+    # `sdg h rz h s`, `sdg` itself expands to `s s s`, and `s` is the primitive
+    # this target does not publish.
     rotation = CircuitIR(
         1, (Instruction("ry", (0,), params={"theta": 0.4}),), dtype="complex128"
     )
     with pytest.raises(
-        NativeGateLegalizationError, match="requires unsupported native gate 'sdg'"
+        NativeGateLegalizationError, match="requires unsupported native gate 's'"
     ):
         legalize_native_gates(
             rotation, snapshot=_snapshot(("h", "t")), evaluated_at=_NOW
@@ -744,3 +747,140 @@ def test_a_rotation_entangler_declared_without_its_angle_fails_closed() -> None:
             snapshot=fixed,
             evaluated_at=_NOW,
         )
+
+
+def _named_two_qubit_group() -> tuple[Instruction, ...]:
+    """One **named** instruction per declared two-qubit unitary opcode.
+
+    No matrix: this is the caller that names a gate and has nothing else. It is
+    the path the equivalence table opens, and it must not need
+    `flagquantum.simulation` to be legalized.
+    """
+
+    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+
+    return tuple(
+        Instruction(
+            name,
+            (0, 1),
+            params=dict.fromkeys(schema.parameters, 0.7137),
+        )
+        for name, schema in sorted(OPERATOR_SCHEMAS.items())
+        if schema.unitary and schema.arity == 2
+    )
+
+
+def test_a_z_rotation_sx_and_cx_basis_reaches_the_named_two_qubit_group() -> None:
+    """Every declared two-qubit unitary reaches a `rz`/`sx`/`cx` target by name.
+
+    Before the equivalence table this basis legalized 2 of the 11 named
+    two-qubit opcodes -- `cx` itself, and `swap` through a hand-written rule --
+    and refused the other nine, because turning a named gate into the entangler
+    basis through KAK would have needed a matrix from `flagquantum.simulation`.
+    """
+
+    group = _named_two_qubit_group()
+    # Non-vacuity: this is a claim about the whole group, not a chosen subset.
+    assert len(group) == 11
+    assert all(item.matrix is None for item in group)
+    result = legalize_native_gates(
+        CircuitIR(2, group, dtype="complex128"),
+        snapshot=_z_sx_snapshot(
+            {"name": "x", "parameters": ()}, {"name": "cx", "parameters": ()}
+        ),
+        evaluated_at=_NOW,
+    )
+    assert len(result.decompositions) == 10
+    assert {item.source_opcode for item in result.decompositions} == {
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cy",
+        "cz",
+        "rxx",
+        "ryy",
+        "rzz",
+        "swap",
+    }
+    # No leaf may be a gate the basis never published, and nothing may survive
+    # with a matrix attached, which would mean the table was bypassed.
+    assert {item.name for item in result.program.instructions} <= {"rz", "sx", "cx"}
+    assert all(item.matrix is None for item in result.program.instructions)
+
+
+def test_every_named_two_qubit_translation_reproduces_its_state() -> None:
+    """The strongest check available: run both sides and compare the states.
+
+    Thirteen of the table's entries are exact and `cphase` is not, so the
+    comparison is up to one global phase for all of them. A mixed two-wire
+    program is used rather than the bare gate, because a single gate on `|00>`
+    would not exercise the entangling phase the equivalence is about.
+    """
+
+    basis = _z_sx_snapshot(
+        {"name": "x", "parameters": ()}, {"name": "cx", "parameters": ()}
+    )
+    for source in _named_two_qubit_group():
+        program = CircuitIR(
+            2,
+            (
+                Instruction("h", (0,)),
+                Instruction("x", (1,)),
+                Instruction(source.name, (0, 1), params=dict(source.params)),
+            ),
+            dtype="complex128",
+        )
+        result = legalize_native_gates(program, snapshot=basis, evaluated_at=_NOW)
+        assert result.changed is True, source.name
+        expected = _state(program)
+        actual = _state(result.program)
+        overlap = torch.vdot(expected.flatten(), actual.flatten())
+        assert abs(abs(overlap) - 1.0) < 1e-12, source.name
+        torch.testing.assert_close(
+            actual,
+            overlap * expected,
+            rtol=0.0,
+            atol=1e-12,
+        )
+
+
+def test_a_basis_without_a_z_rotation_reaches_only_the_identities() -> None:
+    """`clifford-t` publishes `h`, `s`, `t` and `cx`, so four names get through.
+
+    `cx` is native, `swap` is three `cx`, `cz` is a `cx` under two `h`, and `cy`
+    is `sdg cx s` whose `sdg` is `s s s`. Every other name needs a z-rotation to
+    build an interaction rotation from, and the refusal has to name a gate that
+    is really missing rather than the source opcode.
+
+    Qiskit's `BasisTranslator` reaches these same four names into this same
+    basis, and reaches `cy` through the same three-`s` expansion of `sdg`; see
+    `benchmarks/compiler_basis_translation.py` for the measured comparison.
+    """
+
+    group = _named_two_qubit_group()
+    basis = _snapshot(
+        (
+            {"name": "h", "parameters": ()},
+            {"name": "s", "parameters": ()},
+            {"name": "t", "parameters": ()},
+            {"name": "cx", "parameters": ()},
+        )
+    )
+    reached: list[str] = []
+    missing: dict[str, str] = {}
+    for item in group:
+        try:
+            legalize_native_gates(
+                CircuitIR(2, (item,), dtype="complex128"),
+                snapshot=basis,
+                evaluated_at=_NOW,
+            )
+        except NativeGateLegalizationError as error:
+            missing[item.name] = str(error)
+            continue
+        reached.append(item.name)
+    assert sorted(reached) == ["cx", "cy", "cz", "swap"]
+    assert len(missing) == 7
+    # A failure names the native gate the target is missing, not the source gate.
+    assert all("requires unsupported native gate" in text for text in missing.values())
