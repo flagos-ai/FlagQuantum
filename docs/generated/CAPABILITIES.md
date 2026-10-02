@@ -33,6 +33,9 @@ This catalog is generated from the machine-validated
 | Simulate a small or medium circuit exactly | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Train a parameterized quantum circuit | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Run local VQE and quantum machine learning | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
+| Differentiate a circuit without importing an internal gradient helper | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
+| Find out which gradient method a program can use | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
+| Train a circuit in statevector, MPS, or tensor-network mode | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
 | Train one statevector workload across multiple ranks | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Plan distributed statevector ownership | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Inspect communication and sharding semantics | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
@@ -259,6 +262,20 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 - **Start:** [quick example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py)
 - **Documentation:** [guide](../../examples/single_machine_quantum_ai/README.md)
 - **Known boundary:** Capacity is bounded by one device; distributed capacity claims use the sharded capability.
+
+### One gradient entry point with a reported method
+
+Differentiate a parameterized circuit through any exact execution mode without choosing an executor-specific route, and read which method produced the derivative.
+
+- **Maturity:** Production supported
+- **Public API:** `fq.gradient`
+- **Runtime modes:** `statevector`, `mps`, `tensor_network`
+- **Hardware:** `cpu`, `single_gpu`
+- **Gradient support:** `exact`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/gradient_methods/README.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
+- **Known boundary:** Only statevector, MPS, and tensor-network mode can serve the expectation value a differentiable program needs; stabilizer mode samples outcomes and fails closed instead. method='autograd' and method='parameter_shift' are exact; method='finite_difference' and method='spsa' are declared approximations whose result reports exact=False together with the displacement actually used. method='adjoint' is refused, because FlagQuantum has no standalone adjoint entry point: the reversible sweep is reachable only as the backward pass behind PyTorch autograd, and no result reports whether backward used adjoint replay. method='auto' measures the program rather than declaring a route, so it probes for an autograd graph before it resorts to a shift rule or a difference.
 
 ### FlagOS local statevector CUDA reference
 

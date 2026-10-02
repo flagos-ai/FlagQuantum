@@ -35,6 +35,7 @@ OBSERVABLE_OUTPUTS_CONTRACT = (
     ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 )
 TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
+GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -199,6 +200,7 @@ def validate() -> tuple[str, ...]:
         (ROOT / "contracts/remote-jobs-v1-candidate.json").read_text()
     )
     twin_contract = json.loads(TWIN_CONTRACT.read_text(encoding="utf-8"))
+    gradient_contract = json.loads(GRADIENT_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -248,6 +250,9 @@ def validate() -> tuple[str, ...]:
         and twin_contract.get("root_manifest_authorized") is True
     ):
         authorized_changes.add(str(twin_contract["root_addition"]))
+    if gradient_contract.get("implementation_authorized") is True:
+        authorized_changes.update(gradient_contract.get("root_additions", ()))
+        authorized_changes.update(gradient_contract.get("root_removals", ()))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -293,6 +298,8 @@ def validate() -> tuple[str, ...]:
             extension_protocol_contract.get("root_signatures", {})
         )
     expected_signatures.update(observable_outputs_contract.get("signatures", {}))
+    if gradient_contract.get("implementation_authorized") is True:
+        expected_signatures.update(gradient_contract.get("signatures", {}))
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -385,6 +392,7 @@ def _validate_authorized_execution_options(
         "compile": fq.compile,
         "counts": fq.counts,
         "expectation": fq.expectation,
+        "gradient": fq.gradient,
         "probabilities": fq.probabilities,
         "samples": fq.samples,
         "train": fq.train,

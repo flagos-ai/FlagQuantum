@@ -36,6 +36,7 @@
       "counts",
       "expectation",
       "experimental",
+      "gradient",
       "plan",
       "probabilities",
       "restore_job",
@@ -166,6 +167,7 @@
     "Z",
     "counts",
     "expectation",
+    "gradient",
     "probabilities",
     "samples",
     "twin"
@@ -217,7 +219,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 34,
+    "root_export_budget": 35,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,

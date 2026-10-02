@@ -26,6 +26,7 @@ ENTRIES = (
     fq.Observable,
     fq.compile,
     fq.expectation,
+    fq.gradient,
     fq.plan,
     fq.run,
     fq.train,

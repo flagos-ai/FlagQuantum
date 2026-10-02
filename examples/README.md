@@ -128,6 +128,7 @@ boundaries are listed in the capability catalog.
 | Run one quantum algorithm unit end to end | [Algorithm examples](algorithms/README.md) and the [algorithms guide](../docs/guides/ALGORITHMS.md) | Demonstration-scale units, subpackage surface |
 | Verify the local CPU or one-GPU path | [Single-machine quantum AI](single_machine_quantum_ai/README.md) | Supported local workflows |
 | Train a local statevector VQE | [`01_vqe_statevector.py`](single_machine_quantum_ai/01_vqe_statevector.py) | Exact differentiable simulation |
+| Compare gradient methods and read the one that ran | [Gradient methods](gradient_methods/README.md) | One entry point, reported method |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |

@@ -24,6 +24,19 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
+  step=None, directions=1, generator=None)` entry point, which returns the
+  detached derivative together with the method that produced it, whether that
+  method is exact, and the displacement an approximation used. `method="auto"`
+  probes the program instead of declaring a route, so it reports `autograd` when
+  the program carries a graph, `parameter_shift` when the circuit behind the loss
+  is available, and `finite_difference` otherwise. `method="adjoint"` is refused
+  with a `CapabilityError` because FlagQuantum has no standalone adjoint entry
+  point; the reversible sweep is the backward pass behind PyTorch autograd and no
+  result reports whether backward replayed it. See
+  [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
+  [gradient methods example](../../examples/gradient_methods/README.md).
+
 - Added the experimental
   `flagquantum.experimental.distributed.train_distributed_tensor_network`
   workflow, which slices one logical tensor-network contraction across ranks and

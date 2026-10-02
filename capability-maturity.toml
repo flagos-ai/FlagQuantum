@@ -99,6 +99,26 @@ integration_tests = "tests/test_backends.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
 
+[capabilities.gradient_methods]
+title = "One gradient entry point with a reported method"
+summary = "Differentiate a parameterized circuit through any exact execution mode without choosing an executor-specific route, and read which method produced the derivative."
+category = "simulation_and_training"
+user_goals = ["Differentiate a circuit without importing an internal gradient helper", "Find out which gradient method a program can use", "Train a circuit in statevector, MPS, or tensor-network mode"]
+public_apis = ["gradient"]
+runtime_modes = ["statevector", "mps", "tensor_network"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/gradient_methods/README.md"
+documentation = "docs/reference/API.md"
+level = "production_supported"
+owner = "PyTorch runtime maintainers"
+limitations = "Only statevector, MPS, and tensor-network mode can serve the expectation value a differentiable program needs; stabilizer mode samples outcomes and fails closed instead. method='autograd' and method='parameter_shift' are exact; method='finite_difference' and method='spsa' are declared approximations whose result reports exact=False together with the displacement actually used. method='adjoint' is refused, because FlagQuantum has no standalone adjoint entry point: the reversible sweep is reachable only as the backward pass behind PyTorch autograd, and no result reports whether backward used adjoint replay. method='auto' measures the program rather than declaring a route, so it probes for an autograd graph before it resorts to a shift rule or a difference."
+focused_tests = "tests/test_gradient_api.py"
+integration_tests = "tests/integration/test_gradient_modes.py"
+hardware_evidence = "not_applicable_reuses_the_existing_statevector_mps_and_tensor_network_paths"
+operational_runbook = "docs/reference/API.md"
+
 [capabilities.sharded_statevector_training]
 title = "Sharded statevector training"
 summary = "Partition one logical statevector workload across ranks while preserving differentiable training semantics."

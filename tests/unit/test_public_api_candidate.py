@@ -24,6 +24,7 @@ EXTENSION_PROTOCOL = ROOT / "contracts" / "extension-protocol-v1-candidate.json"
 REMOTE_JOBS = ROOT / "contracts" / "remote-jobs-v1-candidate.json"
 OBSERVABLE_OUTPUTS = ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 TWIN = ROOT / "contracts" / "twin-v1-candidate.json"
+GRADIENT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -186,7 +187,11 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     twin_contract = _load(TWIN)
     assert twin_contract["root_manifest_authorized"] is True
     assert twin_contract["root_addition"] in final_core
-    assert len(final_core) == 34
+    gradient_contract = _load(GRADIENT)
+    assert gradient_contract["implementation_authorized"] is True
+    assert set(gradient_contract["root_additions"]) == {"gradient"}
+    assert set(gradient_contract["root_additions"]) <= final_core
+    assert len(final_core) == 35
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core
