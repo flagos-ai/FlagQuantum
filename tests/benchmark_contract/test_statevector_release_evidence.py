@@ -26,6 +26,7 @@ from benchmarks.internal.evidence.statevector_release_gate import (
 from benchmarks.statevector_release_evidence import (
     _bootstrap_ratio_interval,
     _capacity_circuit,
+    _gather,
     _production_fields,
     _role_speed_summary,
 )
@@ -340,6 +341,34 @@ def test_bootstrap_interval_orders_the_paired_legs():
 
     assert 0.4 < lower < 0.6
     assert 0.4 < upper < 0.6
+
+
+def test_a_non_zero_rank_gathers_nothing_and_contributes_its_record(monkeypatch):
+    """Only rank 0 writes a document; the others must return an empty result."""
+
+    contributed: list[object] = []
+    monkeypatch.setenv("RANK", "3")
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.gather_object",
+        lambda record, buffer, dst: contributed.append((record, buffer, dst)),
+    )
+
+    assert _gather({"rank": 3}, 8) == []
+    assert contributed == [({"rank": 3}, None, 0)]
+
+
+def test_rank_zero_returns_every_rank_it_gathered(monkeypatch):
+    records = [{"rank": index} for index in range(4)]
+
+    def gather(record, buffer, dst):
+        buffer[:] = records
+
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.gather_object", gather
+    )
+
+    assert _gather({"rank": 0}, 4) == records
 
 
 def test_the_frozen_capacity_workload_is_the_one_the_runner_builds():

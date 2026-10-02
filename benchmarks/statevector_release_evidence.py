@@ -249,14 +249,20 @@ def _rank_record(
 
 
 def _gather(record: dict[str, Any], world: int) -> list[dict[str, Any]]:
-    gathered: list[Any] | None = (
-        [None] * world if int(os.environ.get("RANK", "0")) == 0 else None
-    )
-    if world > 1:
-        dist.gather_object(record, gathered, dst=0)
-    else:
-        gathered = [record]
-    assert gathered is not None
+    """Collect every rank's record onto rank 0, and nothing onto the others.
+
+    A non-zero rank has no records to write: it contributes its own record to
+    rank 0's gather buffer and then returns an empty list, so the caller can
+    return early instead of writing a second, partial document.
+    """
+
+    if world <= 1:
+        return [record]
+    if int(os.environ.get("RANK", "0")) != 0:
+        dist.gather_object(record, None, dst=0)
+        return []
+    gathered: list[Any] = [None] * world
+    dist.gather_object(record, gathered, dst=0)
     return [item for item in gathered if isinstance(item, dict)]
 
 
