@@ -70,7 +70,7 @@ def test_mps_environment_rollout_defaults_on_and_supports_kill_switch(
 ) -> None:
     monkeypatch.delenv("FQ_TRITON_MPS_ENVIRONMENT", raising=False)
     assert _mps_environment_transfer_rollout_enabled()
-    assert not _mps_environment_channels_rollout_enabled()
+    assert _mps_environment_channels_rollout_enabled()
 
     monkeypatch.setenv("FQ_TRITON_MPS_ENVIRONMENT", disabled)
     assert not _mps_environment_transfer_rollout_enabled()

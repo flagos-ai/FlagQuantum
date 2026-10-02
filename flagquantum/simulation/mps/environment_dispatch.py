@@ -34,10 +34,10 @@ def _mps_environment_transfer_rollout_enabled() -> bool:
 
 
 def _mps_environment_channels_rollout_enabled() -> bool:
-    """Return whether the still-experimental MPS-005 route is opted in."""
+    """Return whether the evidenced MPS-005 default route is enabled."""
 
     return (
-        os.getenv("FQ_TRITON_MPS_ENVIRONMENT", "0").strip().lower()
+        os.getenv("FQ_TRITON_MPS_ENVIRONMENT", "1").strip().lower()
         not in _DISABLED_VALUES
     )
 
