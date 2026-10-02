@@ -199,12 +199,13 @@ is bounded development hardware evidence, not a release gate or scalability
 claim. Reproduce or validate it with
 [`benchmarks/mps_projected_two_site_dispatch.py`](../../benchmarks/mps_projected_two_site_dispatch.py).
 
-The MPS-003 one-site gate route is opt-in through
-`FQ_TRITON_MPS_ONE_SITE=1`. Compiled site buckets authorize the exact catalog
-entry for contiguous CUDA `complex64` tensors and batched two-by-two gates once
-the flattened batch-by-bond contraction contains at least `2**12` elements.
-The custom autograd boundary preserves tensor and gate gradients; other calls
-retain the existing eager or compiled real/imaginary PyTorch contraction.
+The MPS-003 one-site gate route is enabled by default inside its measured
+support window. Set `FQ_TRITON_MPS_ONE_SITE=0` to disable it explicitly. Direct
+single-site calls and compiled site buckets authorize the exact catalog entry
+for contiguous CUDA `complex64` tensors and two-by-two gates once the flattened
+batch-by-bond contraction contains at least `2**12` elements. The custom
+autograd boundary preserves tensor and gate gradients; disabled or unsupported
+calls retain the existing eager or compiled real/imaginary PyTorch contraction.
 
 The checked-in
 [`mps_one_site_dispatch_a800.json`](../../benchmarks/results/local/mps_one_site_dispatch_a800.json)
@@ -220,10 +221,11 @@ direct wrapper ranges from `0.55x` to `5.25x` for forward and `0.88x` to
 `1.13x` for forward plus backward, so the artifact does not claim a direct
 microbenchmark win on every shape. The canonical aggregate nevertheless
 records `eligible_for_default` because the complete public path wins in both
-directions against both public baselines; this authorizes a separate dispatch
-promotion review but does not itself change the opt-in policy. The result is
-bounded development hardware evidence, not a release gate or scalability
-claim. Reproduce or validate it with
+directions against both public baselines. MPS-003 is therefore the first
+`provisional` catalog implementation and uses default dispatch within the
+measured support window, with the explicit environment kill switch above. The
+result is bounded development hardware evidence, not a release gate or
+scalability claim. Reproduce or validate it with
 [`benchmarks/mps_one_site_dispatch.py`](../../benchmarks/mps_one_site_dispatch.py).
 
 The MPS-004 identity/Pauli-Z environment-transfer route is opt-in through
@@ -423,9 +425,10 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 25 implementations are implemented and
-experimental. The rest of the 100/800 portfolio is planned or candidate work,
-not shipped capability.
+The current 23 semantics and 25 implementations are implemented. MPS-003 is
+provisional after its evidenced default-dispatch promotion; the other 24
+implementations remain experimental. The rest of the 100/800 portfolio is
+planned or candidate work, not shipped capability.
 
 ## Validation contract
 

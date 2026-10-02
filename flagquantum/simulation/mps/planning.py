@@ -16,6 +16,7 @@ from .models import (
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
 )
+from .one_site_dispatch import _mps_one_site_rollout_enabled
 
 
 class MPSPlanningMixin(ABC):
@@ -282,10 +283,7 @@ class MPSPlanningMixin(ABC):
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),
-            "triton_mps_one_site_enabled": os.getenv("FQ_TRITON_MPS_ONE_SITE", "0")
-            .strip()
-            .lower()
-            not in {"0", "false", "off", "no"},
+            "triton_mps_one_site_enabled": _mps_one_site_rollout_enabled(),
             "triton_mps_one_site_regions": self.triton_one_site_regions,
             "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "0")
             .strip()
