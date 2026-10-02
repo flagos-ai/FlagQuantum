@@ -228,12 +228,13 @@ result is bounded development hardware evidence, not a release gate or
 scalability claim. Reproduce or validate it with
 [`benchmarks/mps_one_site_dispatch.py`](../../benchmarks/mps_one_site_dispatch.py).
 
-The MPS-004 identity/Pauli-Z environment-transfer route is opt-in through
-`FQ_TRITON_MPS_ENVIRONMENT=1`. Dispatch authorizes the exact catalog entry
-before importing Triton and selects it only for contiguous CUDA `complex64`
-forward inputs without gradients, bond dimensions at most 32, and contraction
-work at most `2**22`. Other inputs remain on the existing PyTorch eager or
-compiled path, and route counts are exposed through `site_kernel_stats()`.
+The MPS-004 identity/Pauli-Z environment-transfer route is enabled by default
+inside its measured support window. Set `FQ_TRITON_MPS_ENVIRONMENT=0` to disable
+it explicitly. Dispatch authorizes the exact catalog entry before importing
+Triton and selects it only for contiguous CUDA `complex64` forward inputs
+without gradients, bond dimensions at most 32, and contraction work at most
+`2**22`. Other inputs remain on the existing PyTorch eager or compiled path,
+and route counts are exposed through `site_kernel_stats()`.
 
 The checked-in
 [`mps_environment_dispatch_a800.json`](../../benchmarks/results/local/mps_environment_dispatch_a800.json)
@@ -243,11 +244,11 @@ and FlagTree 0.7.0. Across the fixed eight-case support matrix, the direct
 kernel wrapper is `1.39x` to `8.90x` faster than the equivalent PyTorch einsum.
 The complete public dispatch path is `3.08x` to `10.60x` faster than the eager
 reference and `2.09x` to `7.09x` faster than its warm compiled reference, with
-maximum absolute error `2.53e-8`. The canonical aggregate therefore records
-`eligible_for_default`; this authorizes a separate dispatch-promotion review
-but does not itself change the opt-in policy. The result is bounded development
-hardware evidence, not a release gate or scalability claim. Reproduce or
-validate it with
+maximum absolute error `2.53e-8`. The canonical aggregate records
+`eligible_for_default`, and MPS-004 is now a `provisional` implementation with
+default dispatch inside the measured window and the explicit kill switch above.
+The result is bounded development hardware evidence, not a release gate or
+scalability claim. Reproduce or validate it with
 [`benchmarks/mps_environment_dispatch.py`](../../benchmarks/mps_environment_dispatch.py).
 
 MPS-005 groups as many as eight observable channels in each Triton program so
@@ -425,10 +426,10 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 25 implementations are implemented. MPS-003 is
-provisional after its evidenced default-dispatch promotion; the other 24
-implementations remain experimental. The rest of the 100/800 portfolio is
-planned or candidate work, not shipped capability.
+The current 23 semantics and 25 implementations are implemented. MPS-003 and
+MPS-004 are provisional after their evidenced default-dispatch promotions; the
+other 23 implementations remain experimental. The rest of the 100/800 portfolio
+is planned or candidate work, not shipped capability.
 
 ## Validation contract
 
