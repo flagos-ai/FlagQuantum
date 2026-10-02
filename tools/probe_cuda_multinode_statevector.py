@@ -101,7 +101,9 @@ MEASUREMENT_ITERATIONS = 5
 #: The staging audit profiles the steady state for the same reason the samples
 #: warm up: a circuit's first execution also does the planning it will not
 #: repeat, and that work is not what the interchange under audit consists of.
-HOST_STAGING_WARMUP_EXECUTIONS = 1
+#: The count is the sample's own, so the audited region and the measured region
+#: are the same region.
+HOST_STAGING_WARMUP_EXECUTIONS = MEASUREMENT_WARMUP_ITERATIONS
 
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:

@@ -116,6 +116,13 @@ MEASUREMENT = "sharded_mps_forward"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
 
+#: The staging audit profiles the steady state for the same reason the samples
+#: warm up: a circuit's first execution also does the planning it will not
+#: repeat, and that work is not what the interchange under audit consists of.
+#: The count is the sample's own, so the audited region and the measured region
+#: are the same region.
+HOST_STAGING_WARMUP_EXECUTIONS = MEASUREMENT_WARMUP_ITERATIONS
+
 #: The owned-site boundary at two ranks: rank 0 owns wires 0..2 and rank 1 owns
 #: wires 3..5, so this pair is the one adjacent gate that has to be exchanged.
 BOUNDARY_PAIR = (N_WIRES // 2 - 1, N_WIRES // 2)
@@ -494,6 +501,9 @@ def _host_staging_observation(*, device: torch.device) -> dict[str, Any]:
         }
 
     circuit = _forward_circuit()
+    for _ in range(HOST_STAGING_WARMUP_EXECUTIONS):
+        execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
+    _synchronize(device)
     with torch.profiler.profile(activities=_profiler_activities(device)) as profile:
         execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
         _synchronize(device)
@@ -516,6 +526,7 @@ def _host_staging_observation(*, device: torch.device) -> dict[str, Any]:
             str(activity) for activity in _profiler_activities(device)
         ],
         "profiled_workload": MEASUREMENT,
+        "profiled_warmup_executions": HOST_STAGING_WARMUP_EXECUTIONS,
         "profiler_event_count": len(events),
         "host_transfer_observed": bool(transfers),
         "host_transfer_events": transfers,

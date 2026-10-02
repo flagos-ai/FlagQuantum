@@ -115,6 +115,13 @@ MEASUREMENT = "sharded_tensor_network_amplitudes"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
 
+#: The staging audit profiles the steady state for the same reason the samples
+#: warm up: a circuit's first execution also does the planning it will not
+#: repeat, and that work is not what the interchange under audit consists of.
+#: The count is the sample's own, so the audited region and the measured region
+#: are the same region.
+HOST_STAGING_WARMUP_EXECUTIONS = MEASUREMENT_WARMUP_ITERATIONS
+
 #: A fixed rotation on wire 0, so the two trainable parameters act on a state
 #: that is not an eigenstate of the measured observable.
 PHASE_ROTATION = 0.6
@@ -429,6 +436,11 @@ def _host_staging_observation(
         }
 
     circuit = _forward_circuit(device=device)
+    for _ in range(HOST_STAGING_WARMUP_EXECUTIONS):
+        distributed_tensor_network_amplitudes(
+            circuit, list(CHECKED_BITSTRINGS), **arguments
+        )
+    _synchronize(device)
     with torch.profiler.profile(activities=_profiler_activities(device)) as profile:
         distributed_tensor_network_amplitudes(
             circuit, list(CHECKED_BITSTRINGS), **arguments
@@ -453,6 +465,7 @@ def _host_staging_observation(
             str(activity) for activity in _profiler_activities(device)
         ],
         "profiled_workload": MEASUREMENT,
+        "profiled_warmup_executions": HOST_STAGING_WARMUP_EXECUTIONS,
         "profiler_event_count": len(events),
         "host_transfer_observed": bool(transfers),
         "host_transfer_events": transfers,
