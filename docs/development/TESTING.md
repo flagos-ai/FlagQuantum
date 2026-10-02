@@ -195,6 +195,8 @@ push leaves the machine, the push gate runs:
 - all normal pre-commit quality and source-of-truth checks;
 - the strict type check of the whole package, and of the CI tooling;
 - capability maturity, required-check policy, and lazy-import validation;
+- evidence revision provenance: the revisions the walked evidence artifacts
+  record, against the declaration in `evidence-revision-origins.toml`;
 - multi-team ownership: the policy, and the classification of every path the
   branch changes relative to `origin/main`;
 - `pr-default`, `pr-runtime`, and `pr-distributed`.
