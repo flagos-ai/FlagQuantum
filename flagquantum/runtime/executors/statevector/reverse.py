@@ -22,6 +22,7 @@ from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout
 from .forward_executor import execute_torch_distributed_statevector
+from .gradient_reduction import OWNER_SHARDED_REDUCE_SCATTER, REPLICATED_ALL_REDUCE
 from .layout import (
     schedule_statevector_dependency_dag,
 )
@@ -172,10 +173,27 @@ class TorchDistributedStatevectorGradientResult:
             if ready and self.world_size > 1
             else "single_device_fast_path" if ready else self.backward_evidence.status
         )
+        # The gradient scheme is read from what the reduction actually did, so a
+        # replicated all-reduce and an owner-sharded reduce-scatter cannot be
+        # reported as one another by a literal beside them.
+        scheme = self.backward_evidence.gradient_reduction_scheme
+        replicated = scheme == REPLICATED_ALL_REDUCE
+        if not ready:
+            gradient_distribution = "pending"
+            gradient_reduction = "pending"
+        elif self.world_size == 1:
+            gradient_distribution = "local"
+            gradient_reduction = "local"
+        elif replicated:
+            gradient_distribution = "replicated_after_all_reduce"
+            gradient_reduction = "all_reduce_sum"
+        else:
+            gradient_distribution = "owner_sharded_reduce_scatter"
+            gradient_reduction = "reduce_scatter_sum"
         ownership = tuple(
             {
                 "parameter": item.parameter,
-                "owner_rank": None,
+                "owner_rank": item.owner_rank,
                 "occurrence_count": item.occurrence_count,
                 "reduction": item.reduction if ready else "pending",
                 "reduction_count": (
@@ -184,11 +202,7 @@ class TorchDistributedStatevectorGradientResult:
                 "participating_ranks": (
                     self.backward_evidence.participating_ranks if ready else ()
                 ),
-                "distribution": (
-                    "replicated_after_all_reduce"
-                    if ready and self.world_size > 1
-                    else "local" if ready else "pending"
-                ),
+                "distribution": item.distribution if ready else "pending",
             }
             for index, item in enumerate(self.ownership)
         )
@@ -231,16 +245,18 @@ class TorchDistributedStatevectorGradientResult:
             "backward_status": self.backward_evidence.status,
             "backward_error": self.backward_evidence.error,
             "parameter_gradient_ready": ready,
-            "gradient_distribution": (
-                "replicated_after_all_reduce"
-                if ready and self.world_size > 1
-                else "local" if ready else "pending"
+            "gradient_ownership_semantics": (
+                "sharded_across_ranks"
+                if ready and not replicated and self.world_size > 1
+                else (
+                    "reduced_across_ranks"
+                    if ready and self.world_size > 1
+                    else "local" if ready else "pending"
+                )
             ),
-            "gradient_reduction": (
-                "all_reduce_sum"
-                if ready and self.world_size > 1
-                else "local" if ready else "pending"
-            ),
+            "gradient_reduction_scheme": scheme,
+            "gradient_distribution": gradient_distribution,
+            "gradient_reduction": gradient_reduction,
             "parameter_ownership": ownership,
             "checkpoint_policy": self.checkpoint_policy.__dict__,
             "local_state_bytes": self.local_amplitudes * self.value.element_size() * 2,
@@ -335,6 +351,7 @@ class _ShardedAutogradContext(Protocol):
     forward_shard_state: StatevectorShardState | None
     forward_observable_weights: torch.Tensor | None
     forward_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...]
+    owners: Sequence[int] | None
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -355,6 +372,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         device: torch.device,
         process_group: Any | None,
         evidence: BackwardExecutionEvidence,
+        owners: Sequence[int] | None,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
         from .reverse_adjoint import _local_expectation_z_hamiltonian_and_weights
@@ -365,6 +383,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         ctx.device = device
         ctx.process_group = process_group
         ctx.evidence = evidence
+        ctx.owners = None if owners is None else tuple(int(item) for item in owners)
         ctx.save_for_backward(*parameters)
         bound = _bind_parameters(ir, slots, parameters)
         # Retain the parameter-free template; backward binds only saved tensors into
@@ -475,6 +494,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                     saved_inter_node_ket_checkpoints=(
                         ctx.forward_inter_node_ket_checkpoints
                     ),
+                    owners=ctx.owners,
                 )
             ctx.forward_shard_state = None
             ctx.forward_observable_weights = None
@@ -497,12 +517,26 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
             else:
                 evidence.participating_ranks = (0,)
             scaled = tuple(item * grad_output.to(item.device) for item in gradients)
+            # One place labels every gradient from the scheme the reduction
+            # recorded, so the per-parameter distribution cannot disagree with
+            # the collective that produced it.
             for item in evidence.ownership:
-                item.reduction = "all_reduce_sum" if world_size > 1 else "local"
                 item.participating_ranks = evidence.participating_ranks
-                item.distribution = (
-                    "replicated_after_all_reduce" if world_size > 1 else "local"
-                )
+                if world_size == 1:
+                    item.reduction = "local"
+                    item.distribution = "local"
+                elif evidence.gradient_reduction_scheme == (
+                    OWNER_SHARDED_REDUCE_SCATTER
+                ):
+                    item.reduction = "reduce_scatter_sum"
+                    item.distribution = (
+                        "owner_sharded_across_ranks"
+                        if item.owner_rank == rank
+                        else "reduced_away_to_owner_rank"
+                    )
+                else:
+                    item.reduction = "all_reduce_sum"
+                    item.distribution = "replicated_after_all_reduce"
             evidence.status = "completed"
         except Exception as error:
             evidence.status = "failed"
@@ -511,7 +545,9 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                 item.reduction = "failed"
                 item.distribution = "failed"
             raise
-        return (None, None, None, None, None, None, None, *scaled)
+        # One gradient slot per forward argument: the seven non-tensor
+        # arguments passed before the parameters, then the parameters.
+        return (None, None, None, None, None, None, None, None, *scaled)
 
 
 def execute_torch_distributed_statevector_reverse(
@@ -523,8 +559,20 @@ def execute_torch_distributed_statevector_reverse(
     checkpoint_policy: StatevectorCheckpointPolicy | None = None,
     device: torch.device | str | None = None,
     process_group: Any | None = None,
+    owners: Sequence[int] | None = None,
 ) -> TorchDistributedStatevectorGradientResult:
-    """Return a differentiable weighted Z/ZZ expectation."""
+    """Return a differentiable weighted Z/ZZ expectation.
+
+    Args:
+        owners: One owner rank per parameter, or ``None`` for the default
+            replicated reduction. With owners declared, gradients are reduced
+            onto the rank that owns them and every other rank's local buffer is
+            zeroed, so the backward reports owner-sharded gradient ownership
+            because that is the collective that ran.
+
+    Raises:
+        ValueError: ``owners`` does not name exactly one rank per parameter.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
     if observable_terms is None:
@@ -613,10 +661,15 @@ def execute_torch_distributed_statevector_reverse(
             else 0
         ),
     )
+    if owners is not None and len(owners) != len(parameters):
+        raise ValueError(
+            "owner-sharded backward needs one owner per parameter, "
+            f"received {len(owners)} owners for {len(parameters)} parameters"
+        )
     ownership = tuple(
         ParameterGradientOwnership(
             parameter=f"parameter:{index}",
-            owner_rank=None,
+            owner_rank=None if owners is None else int(owners[index]),
             occurrence_count=occurrences[index],
             reduction="pending",
             participating_ranks=(),
@@ -642,6 +695,7 @@ def execute_torch_distributed_statevector_reverse(
         resolved_device,
         process_group,
         evidence,
+        owners,
         *parameters,
     )
     if not isinstance(value, torch.Tensor):

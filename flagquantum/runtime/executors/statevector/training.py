@@ -23,6 +23,7 @@ from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import ensure_circuit_ir
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from ...distributed.context import resolve_local_world_size, resolve_node_count
+from .gradient_reduction import OWNER_SHARDED_REDUCE_SCATTER, REPLICATED_ALL_REDUCE
 from .reverse import (
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
@@ -122,11 +123,27 @@ class ShardedTrainingResult:
     communication_events: int
     communication_bytes: int
     checkpoint_files: tuple[str, ...]
+    #: Which collective left the gradients where they are. The value comes from
+    #: the backward that ran, so an owner-sharded result is one whose backward
+    #: reduced each gradient onto its owner rank.
+    gradient_reduction_scheme: str = REPLICATED_ALL_REDUCE
 
     def summary(self) -> dict[str, Any]:
         ownership_semantics = (
             "sharded_across_ranks" if self.world_size > 1 else "single_device_fast_path"
         )
+        sharded_gradients = (
+            self.gradient_reduction_scheme == OWNER_SHARDED_REDUCE_SCATTER
+        )
+        if self.world_size == 1:
+            gradient_semantics = "local"
+            gradient_reduction = "local"
+        elif sharded_gradients:
+            gradient_semantics = "sharded_across_ranks"
+            gradient_reduction = "reduce_scatter_sum"
+        else:
+            gradient_semantics = "reduced_across_ranks"
+            gradient_reduction = "all_reduce_sum"
         return {
             "executor": "pytorch_native_sharded_statevector_training_v1",
             "rank": self.rank,
@@ -138,9 +155,9 @@ class ShardedTrainingResult:
             "losses": self.losses,
             "optimizer": self.optimizer,
             "parameter_ownership_semantics": ownership_semantics,
-            "gradient_ownership_semantics": (
-                "reduced_across_ranks" if self.world_size > 1 else "local"
-            ),
+            "gradient_ownership_semantics": gradient_semantics,
+            "gradient_reduction": gradient_reduction,
+            "gradient_reduction_scheme": self.gradient_reduction_scheme,
             "optimizer_state_ownership_semantics": ownership_semantics,
             "optimizer_update_ownership_semantics": ownership_semantics,
             "optimizer_update_semantics": ownership_semantics,
@@ -596,6 +613,8 @@ class _ShardedTrainingSweep:
             )
 
         self.start_step = 0
+        #: Replaced by the scheme the backward reports once a step has run.
+        self.gradient_reduction_scheme = REPLICATED_ALL_REDUCE
         self.root = (
             Path(self.checkpoint_dir) if self.checkpoint_dir is not None else None
         )
@@ -767,6 +786,7 @@ class _ShardedTrainingSweep:
                 observable_wire=self.observable_wire,
                 checkpoint_policy=policy,
                 device=self.device,
+                owners=self.owners,
             )
             for parameter in self.parameters:
                 parameter.grad = None
@@ -783,6 +803,9 @@ class _ShardedTrainingSweep:
                 ) from error
             self.emit(step, "backward_segment", "parameter_vjp_complete", step + 1)
             reverse_summary = reverse.summary()
+            self.gradient_reduction_scheme = str(
+                reverse_summary["gradient_reduction_scheme"]
+            )
             self.communication_events += int(
                 reverse_summary["backward_communication_count"]
             )
@@ -860,7 +883,16 @@ class _ShardedTrainingSweep:
             OptimizerOwnership(
                 parameter=f"parameter:{index}",
                 owner_rank=owner,
-                gradient_reduction="all_reduce_sum" if self.world_size > 1 else "local",
+                gradient_reduction=(
+                    "local"
+                    if self.world_size == 1
+                    else (
+                        "reduce_scatter_sum"
+                        if self.gradient_reduction_scheme
+                        == OWNER_SHARDED_REDUCE_SCATTER
+                        else "all_reduce_sum"
+                    )
+                ),
                 optimizer_state_local=owner == self.rank,
                 update_route=(
                     "owner_step_then_broadcast" if self.world_size > 1 else "local_step"
@@ -885,6 +917,7 @@ class _ShardedTrainingSweep:
             communication_events=self.communication_events,
             communication_bytes=self.communication_bytes,
             checkpoint_files=tuple(self.checkpoint_files),
+            gradient_reduction_scheme=self.gradient_reduction_scheme,
         )
 
 

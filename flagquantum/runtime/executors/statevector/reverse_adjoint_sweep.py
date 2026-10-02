@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
@@ -25,7 +26,6 @@ from ....simulation.statevector.adjoint import (
 from ....simulation.statevector.adjoint import (
     real_conjugate_inner_sum as _real_conjugate_inner_sum,
 )
-from ....simulation.statevector.adjoint import z_hamiltonian_chunk
 from ....simulation.statevector.operations import (
     _apply_matrix,
     _instruction_matrix,
@@ -33,7 +33,7 @@ from ....simulation.statevector.operations import (
 from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
-from .forward import StatevectorExchangeWorkspace, _storage_global_indices
+from .forward import StatevectorExchangeWorkspace
 from .gradient_dispatch import (
     _triton_adjoint_vjp_tensor_decision,
     _triton_local_reversible_vjp_tensor_decision,
@@ -52,7 +52,7 @@ from .reverse_adjoint_kernels import (
     _MatrixJVP,
 )
 from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
-from .reverse_observable import prepare_observable_adjoint
+from .reverse_observable import hamiltonian_adjoint_seed, prepare_observable_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
@@ -65,31 +65,6 @@ from .reverse_support import (
     _reverse_chunk_amplitudes,
     _reverse_exchange_workspace_enabled,
 )
-
-
-def _local_expectation_z_hamiltonian_adjoint(
-    shard_state: Any,
-    *,
-    plan: Any,
-    n_wires: int,
-    terms: tuple[tuple[float, tuple[int, ...]], ...],
-) -> torch.Tensor:
-    """Construct one adjoint seed for a weighted Z/ZZ Hamiltonian."""
-
-    adjoint = torch.zeros_like(shard_state.amplitudes)
-    local_count = shard_state.shard.local_amplitudes
-    with torch.no_grad():
-        for start in range(0, local_count, _reverse_chunk_amplitudes()):
-            end = min(local_count, start + _reverse_chunk_amplitudes())
-            indices = _storage_global_indices(shard_state, start, end, plan=plan)
-            _, chunk = z_hamiltonian_chunk(
-                shard_state.amplitudes[:, start:end],
-                indices,
-                n_wires=n_wires,
-                terms=terms,
-            )
-            adjoint[:, start:end].copy_(chunk)
-    return adjoint
 
 
 class _ReversibleAdjointSweep:
@@ -109,6 +84,7 @@ class _ReversibleAdjointSweep:
         saved_final_state: Any | None,
         saved_observable_weights: torch.Tensor | None,
         saved_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...],
+        owners: Sequence[int] | None = None,
     ) -> None:
         self.ir = ir
         self.slots = slots
@@ -121,6 +97,7 @@ class _ReversibleAdjointSweep:
         self.saved_final_state = saved_final_state
         self.saved_observable_weights = saved_observable_weights
         self.saved_inter_node_ket_checkpoints = saved_inter_node_ket_checkpoints
+        self.owners = None if owners is None else tuple(int(item) for item in owners)
 
     def run(self) -> tuple[torch.Tensor, ...]:
         """Run the reverse sweep and return one gradient per parameter."""
@@ -422,7 +399,7 @@ class _ReversibleAdjointSweep:
         )
         self.pending_observable_weights: torch.Tensor | None = None
         if self.saved_observable_weights is None:
-            self.adjoint = _local_expectation_z_hamiltonian_adjoint(
+            self.adjoint = hamiltonian_adjoint_seed(
                 final_state,
                 plan=self.plan,
                 n_wires=self.ir.n_wires,
@@ -494,9 +471,12 @@ class _ReversibleAdjointSweep:
                 self.accumulated,
                 process_group=self.process_group,
                 evidence=self.evidence,
+                owners=self.owners,
                 max_parameters=(None if _gradient_bucketing_enabled() else 1),
                 max_bytes=(None if _gradient_bucketing_enabled() else 1),
-                async_op=_gradient_reduction_overlap_enabled(),
+                async_op=(
+                    _gradient_reduction_overlap_enabled() and self.owners is None
+                ),
             )
             if self.world_size > 1
             else None
