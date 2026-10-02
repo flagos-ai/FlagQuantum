@@ -496,4 +496,3 @@ Implemented under this authorization so far, by row number:
 Every other row is unimplemented. A row is only "landed" when its
 *Acceptance Tests* line passes in the same change, which is why rows 1-10 and
 13-22 carry no entry yet.
-

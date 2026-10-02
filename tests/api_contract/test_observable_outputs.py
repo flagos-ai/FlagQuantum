@@ -236,7 +236,9 @@ def test_an_observable_wire_is_read_by_the_same_rule() -> None:
         fq.X(0.5)
     with pytest.raises(TypeError, match="observable qubit must be an integer, got '0'"):
         fq.Z("0")
-    with pytest.raises(TypeError, match="observable qubit must be an integer, got True"):
+    with pytest.raises(
+        TypeError, match="observable qubit must be an integer, got True"
+    ):
         fq.Y(True)
     with pytest.raises(ValueError, match="observable qubit must be a non-negative"):
         fq.X(-1)
