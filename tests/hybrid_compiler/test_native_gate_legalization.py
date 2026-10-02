@@ -21,6 +21,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.local import run_local_statevector
 
 pytestmark = pytest.mark.integration
@@ -412,3 +413,203 @@ def test_a_basis_without_a_z_rotation_keeps_the_old_behavior() -> None:
         legalize_native_gates(
             rotation, snapshot=_snapshot(("h", "t")), evaluated_at=_NOW
         )
+
+
+def _two_qubit_group() -> tuple[Instruction, ...]:
+    """One matrix-carrying instruction per declared two-qubit unitary opcode.
+
+    A named two-qubit gate that is not native cannot be legalized here, because
+    its matrix would have to come from `flagquantum.simulation`. A caller that
+    holds the matrix already, which is what a two-qubit synthesis pass produces,
+    can be legalized.
+    """
+
+    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+
+    angles = {"theta": 0.7137}
+    group: list[Instruction] = []
+    for name, schema in sorted(OPERATOR_SCHEMAS.items()):
+        if not schema.unitary or schema.arity != 2:
+            continue
+        params = {item: angles[item] for item in schema.parameters}
+        probe = Instruction(name, (0, 1), params=params)
+        matrix = gate_matrix(
+            probe, bsz=1, device=torch.device("cpu"), dtype=torch.complex128
+        ).reshape(-1, 4, 4)[0]
+        group.append(
+            Instruction(
+                name,
+                (0, 1),
+                params=params,
+                matrix=matrix.tolist(),
+                metadata={"conditions": ((0, 1),)},
+            )
+        )
+    return tuple(group)
+
+
+def test_a_z_rotation_sx_and_cx_basis_reaches_the_whole_two_qubit_group() -> None:
+    """Every declared two-qubit unitary reaches a `rz`/`sx`/`cx` target.
+
+    Before KAK synthesis this basis legalized 1 of the 11 declared two-qubit
+    unitary opcodes, and only when the source carried no matrix at all.
+    """
+
+    group = _two_qubit_group()
+    source = CircuitIR(2, group, dtype="complex128")
+    result = legalize_native_gates(
+        source,
+        snapshot=_z_sx_snapshot({"name": "cx", "parameters": ()}),
+        evaluated_at=_NOW,
+    )
+
+    # Non-vacuity: 11 declared arity-2 unitaries, one of which is `cx` itself.
+    assert len(group) == 11
+    assert {item.name for item in group} == {
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cx",
+        "cy",
+        "cz",
+        "rxx",
+        "ryy",
+        "rzz",
+        "swap",
+    }
+    rewritten = {item.source_opcode for item in result.decompositions}
+    assert rewritten == {item.name for item in group} - {"cx"}
+    assert {item.name for item in result.program.instructions} <= {"rz", "sx", "cx"}
+    assert result.program.instructions[0].metadata == {"conditions": ((0, 1),)}
+
+    # The pinned entangler cost of each source opcode. `cx`, `cz`, and `cy` are
+    # controlled gates, locally equivalent to the entangler; `swap` is the most
+    # expensive point in the chamber; the remaining seven are controllizations
+    # of a rotation.
+    per_opcode = {
+        item.source_opcode: sum(1 for name in item.replacement_opcodes if name == "cx")
+        for item in result.decompositions
+    }
+    assert per_opcode == {
+        "cphase": 2,
+        "crx": 2,
+        "cry": 2,
+        "crz": 2,
+        "cy": 1,
+        "cz": 1,
+        "rxx": 2,
+        "ryy": 2,
+        "rzz": 2,
+        "swap": 3,
+    }
+    assert sum(per_opcode.values()) == 19
+
+
+def test_the_two_qubit_legalized_state_matches_up_to_one_global_phase() -> None:
+    """The entangler basis cannot carry the phase of an arbitrary unitary."""
+
+    probe = CircuitIR(
+        2,
+        (Instruction("swap", (0, 1)), Instruction("h", (0,))),
+        dtype="complex128",
+    )
+    matrix = gate_matrix(
+        Instruction("swap", (0, 1)),
+        bsz=1,
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+    ).reshape(4, 4)
+    with_matrix = CircuitIR(
+        2,
+        (
+            Instruction("swap", (0, 1), matrix=matrix.tolist()),
+            Instruction("h", (0,)),
+        ),
+        dtype="complex128",
+    )
+    snapshot = _z_sx_snapshot({"name": "cx", "parameters": ()})
+    result = legalize_native_gates(with_matrix, snapshot=snapshot, evaluated_at=_NOW)
+
+    assert all(item.matrix is None for item in result.program.instructions)
+    # `swap` is the KAK record; `h` is not native in this basis either, so it is
+    # rewritten by one-qubit synthesis. Both are needed to produce a phase.
+    assert [item.source_opcode for item in result.decompositions] == ["swap", "h"]
+    entanglers = [
+        name for name in result.decompositions[0].replacement_opcodes if name == "cx"
+    ]
+    assert len(entanglers) == 3, "`swap` is the far corner of the Weyl chamber"
+
+    before = _state(probe)
+    after = _state(result.program)
+    overlap = torch.vdot(before.reshape(-1), after.reshape(-1))
+    assert float(torch.abs(overlap)) == pytest.approx(1.0, abs=1e-12)
+    assert float(torch.max(torch.abs(before - after))) > 0.5
+
+
+def test_a_matrix_too_wide_for_the_entangler_basis_fails_closed() -> None:
+    """Three wires need a decomposition this module does not have."""
+
+    matrix = torch.eye(8, dtype=torch.complex128).tolist()
+    source = CircuitIR(
+        3,
+        (Instruction("blob", (0, 1, 2), matrix=matrix),),
+        dtype="complex128",
+    )
+    with pytest.raises(NativeGateLegalizationError, match="has no native contract"):
+        legalize_native_gates(
+            source,
+            snapshot=_z_sx_snapshot({"name": "cx", "parameters": ()}),
+            evaluated_at=_NOW,
+        )
+
+
+def test_a_matrix_without_an_entangler_in_the_basis_fails_closed() -> None:
+    """No entangler, no two-qubit synthesis: the previous refusal stands."""
+
+    matrix = gate_matrix(
+        Instruction("cz", (0, 1)),
+        bsz=1,
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+    ).reshape(4, 4)
+    source = CircuitIR(
+        2,
+        (Instruction("cz", (0, 1), matrix=matrix.tolist()),),
+        dtype="complex128",
+    )
+
+    # `rz` and `sx` but no `cx` or `cz`.
+    with pytest.raises(NativeGateLegalizationError, match="has no native contract"):
+        legalize_native_gates(source, snapshot=_z_sx_snapshot(), evaluated_at=_NOW)
+    # `cx` but no z-rotation.
+    with pytest.raises(NativeGateLegalizationError, match="has no native contract"):
+        legalize_native_gates(
+            source,
+            snapshot=_snapshot(("h", "t", {"name": "cx", "parameters": ()})),
+            evaluated_at=_NOW,
+        )
+
+
+def test_a_two_wire_matrix_keeps_the_hand_written_rules_out_of_its_way() -> None:
+    """A matrix on `cx` is not native work; a matrix on `swap` is KAK work."""
+
+    cx_matrix = gate_matrix(
+        Instruction("cx", (0, 1)),
+        bsz=1,
+        device=torch.device("cpu"),
+        dtype=torch.complex128,
+    ).reshape(4, 4)
+    source = CircuitIR(
+        2,
+        (Instruction("cx", (0, 1), matrix=cx_matrix.tolist()),),
+        dtype="complex128",
+    )
+    snapshot = _z_sx_snapshot({"name": "cx", "parameters": ()})
+    result = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+
+    # `cx` is native, so the matrix-carrying instruction is kept untouched
+    # rather than being re-synthesized into a longer form.
+    assert result.decompositions == ()
+    assert len(result.program.instructions) == 1
+    assert result.program.instructions[0].matrix is not None
