@@ -333,6 +333,43 @@ def test_barrier_and_reset_are_refused_because_they_are_not_opcodes() -> None:
         assert name in str(caught.value)
 
 
+def test_a_second_quantum_register_declaration_is_refused() -> None:
+    """A redefinition is refused as a redefinition, not as a bad operand.
+
+    Both dialects are checked, and the second register is never referenced.
+    Without the explicit declaration check the refusal that arrives names an
+    operand or an index, which describes what the redefinition broke rather
+    than the declaration that caused it.
+    """
+
+    for version, statement in ((2.0, "qreg r[2];"), (3.0, "qubit[2] r;")):
+        text = _source([statement, "x q[0];"], version=version, n_qubits=1, n_bits=1)
+        with pytest.raises(OpenQASMImportError) as caught:
+            fq.from_openqasm(text)
+        assert caught.value.issue_code == "malformed_statement"
+        assert "declares a second register" in str(caught.value)
+        assert statement in str(caught.value)
+
+
+def test_a_second_classical_register_declaration_is_refused() -> None:
+    for version, statement in ((2.0, "creg d[2];"), (3.0, "bit[2] d;")):
+        text = _source([statement, "x q[0];"], version=version, n_qubits=1, n_bits=1)
+        with pytest.raises(OpenQASMImportError) as caught:
+            fq.from_openqasm(text)
+        assert caught.value.issue_code == "malformed_statement"
+        assert "declares a second register" in str(caught.value)
+
+
+def test_redeclaring_the_first_register_is_refused_as_a_redefinition() -> None:
+    """The one-register rule is a rule, not a side effect of the size check."""
+
+    text = _source(["qreg q[4];", "x q[3];"], version=2.0, n_qubits=1, n_bits=1)
+    with pytest.raises(OpenQASMImportError) as caught:
+        fq.from_openqasm(text)
+    assert caught.value.issue_code == "malformed_statement"
+    assert "declares a second register" in str(caught.value)
+
+
 def test_arbitrary_power_of_a_gate_is_refused() -> None:
     text = "\n".join([*_header(3.0, 1, 1), "pow(-1) @ x q[0];", "c[0] = measure q[0];"])
     with pytest.raises(OpenQASMImportError) as caught:

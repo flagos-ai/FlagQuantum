@@ -208,9 +208,11 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_cpu_fallback_matches_autograd",
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_outside_window_uses_fallback",
             "tests/unit/test_mps_observable_adjoint_triton.py::test_fused_mps_hermitian_observable_adjoint_noncontiguous_uses_fallback",
+            "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_rollout_defaults_on_and_supports_kill_switch",
             "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_route_enforces_evidenced_window",
             "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_route_requires_hermitian_contract",
             "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_reference_path_reports_fallback",
+            "tests/unit/test_mps_observable_adjoint_catalog_dispatch.py::test_mps_observable_adjoint_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json",

@@ -13,6 +13,7 @@ from flagquantum.runtime.executors.mps.reverse_observables import (
 from flagquantum.runtime.executors.mps.state import RankOwnedMPSState
 from flagquantum.simulation.mps.models import MPSConfig
 from flagquantum.simulation.mps.observable_adjoint_dispatch import (
+    _mps_observable_adjoint_dispatch_enabled,
     _mps_observable_adjoint_kernel_enabled,
     _mps_observable_adjoint_kernel_match,
     _require_mps_observable_adjoint_kernel,
@@ -80,6 +81,7 @@ def test_mps_observable_adjoint_dispatch_binds_exact_catalog_implementation() ->
     assert implementation.implementation_id == "FQKI-TRITON-MPS-006-A"
     assert implementation.symbol == "fused_mps_hermitian_observable_adjoint"
     assert implementation.directions == ("vjp",)
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
@@ -112,8 +114,23 @@ def test_mps_observable_adjoint_dispatch_fails_closed() -> None:
         )
 
 
-def test_mps_observable_adjoint_route_rejects_cpu_when_enabled(monkeypatch) -> None:
+@pytest.mark.parametrize("disabled", ("0", "false", "off", "no", " FALSE "))
+def test_mps_observable_adjoint_rollout_defaults_on_and_supports_kill_switch(
+    monkeypatch: pytest.MonkeyPatch,
+    disabled: str,
+) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", raising=False)
+    assert _mps_observable_adjoint_dispatch_enabled()
+
+    monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", disabled)
+    assert not _mps_observable_adjoint_dispatch_enabled()
+
     monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "1")
+    assert _mps_observable_adjoint_dispatch_enabled()
+
+
+def test_mps_observable_adjoint_route_rejects_cpu_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", raising=False)
     inputs = _inputs(2, 4, 4, device="cpu")
 
     assert not _mps_observable_adjoint_kernel_enabled(*inputs, hermitian=True)
@@ -140,10 +157,11 @@ def test_mps_observable_adjoint_route_enforces_evidenced_window(monkeypatch) -> 
     inputs = _inputs(8, 16, 16, device="cuda")
 
     monkeypatch.delenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", raising=False)
-    assert not _mps_observable_adjoint_kernel_enabled(*inputs, hermitian=True)
-
-    monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "1")
     assert _mps_observable_adjoint_kernel_enabled(*inputs, hermitian=True)
+
+    monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "0")
+    assert not _mps_observable_adjoint_kernel_enabled(*inputs, hermitian=True)
+    monkeypatch.delenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", raising=False)
     tensor, left, right, operator, weights = inputs
     assert not _mps_observable_adjoint_kernel_enabled(
         tensor,
@@ -174,7 +192,7 @@ def test_mps_observable_adjoint_route_requires_hermitian_contract(monkeypatch) -
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 def test_mps_observable_adjoint_runtime_uses_catalog(monkeypatch) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "1")
+    monkeypatch.delenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", raising=False)
     monkeypatch.setattr(
         reverse_observables.dist,
         "broadcast",
@@ -242,3 +260,21 @@ def test_mps_observable_adjoint_runtime_uses_catalog(monkeypatch) -> None:
             "flagtree": "flagtree",
         }[distribution]
     )
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_mps_observable_adjoint_kill_switch_uses_reference(monkeypatch) -> None:
+    monkeypatch.setenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "0")
+    inputs = _inputs(8, 8, 8, device="cuda")
+    expected = _autograd_reference(inputs)
+    reset_site_kernel_stats(clear_cache=True)
+
+    actual = mps_local_observable_adjoint(*inputs, hermitian=True)
+
+    torch.testing.assert_close(actual, expected, rtol=2e-4, atol=1e-4)
+    stats = site_kernel_stats()
+    assert stats["triton_observable_adjoint_calls"] == 0
+    assert stats["observable_adjoint_fallback_calls"] == 1
+    assert site_kernel_cache_events() == ()

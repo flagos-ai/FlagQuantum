@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
   "implementation_commit": "7b588ea5",
+  "implementation_commit_full": "7b588ea530643d69d98c43d91a8040388e1d9bd0",
   "scope": "GPU-side probability and Pauli-expectation reduction through fq.run",
   "image": {
     "id": "8fd87714-92ac-4413-ad68-1e634a1e6671",

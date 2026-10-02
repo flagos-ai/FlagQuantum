@@ -1,18 +1,21 @@
 """Legalize CircuitIR instructions against an evidenced native gate set.
 
-A rewrite is chosen from three sources, most exact first: the hand-written rules
-in this module, then one-qubit Euler synthesis in `one_qubit_synthesis`, then
-two-qubit KAK synthesis in `two_qubit_synthesis`. The two syntheses apply to a
-matrix-carrying instruction, which no operator schema describes, and only when
-the target publishes the basis they need: a z-rotation and a pi/2 x-rotation for
-one wire, plus a supercontrolled entangler for two. A synthesized rewrite is
-equal to its source only up to one global phase, which FlagQuantum IR cannot
-record; see those modules for why, and why the exact rules stay ahead of them.
+A rewrite is chosen from two sources: the exact named-gate equivalences in
+`basis_translation`, composed recursively until every leaf is native, and the
+one-qubit Euler and two-qubit KAK syntheses for a matrix-carrying instruction,
+which no operator schema describes. A synthesis applies only when the target
+publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one wire,
+plus a supercontrolled entangler for two. Among the rewrites that reach the
+native set the shortest wins, so a basis that can carry a gate exactly keeps its
+exact form instead of paying for the general one. A synthesized rewrite is equal
+to its source only up to one global phase, which FlagQuantum IR cannot record;
+see those modules for why.
 
-A named two-qubit gate that is not native is still refused. Turning it into the
-entangler basis needs its matrix, and the matrix of a named gate belongs to
-`flagquantum.simulation`, which this layer must not import. Callers that need
-that path synthesize the matrix first, as `UnitarySynthesis` does in Qiskit.
+A named two-qubit gate that is not native is translated through the equivalence
+table rather than through a matrix decomposition, because the matrix of a named
+gate belongs to `flagquantum.simulation`, which this layer must not import. A
+named gate the table does not reach, and a matrix too wide for the entangler
+basis, are refused.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from functools import partial
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
@@ -39,10 +43,10 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
+from .basis_translation import translate
 from .one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
-    synthesize_one_qubit,
     synthesize_one_qubit_matrix,
 )
 from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubit
@@ -254,82 +258,6 @@ def _matrix_replacement(
     return None
 
 
-def _specialized_replacement(
-    instruction: Instruction,
-) -> tuple[Instruction, ...] | None:
-    metadata = instruction.metadata
-    wires = instruction.wires
-    if instruction.name == "x":
-        return (
-            Instruction("h", wires, metadata=metadata),
-            Instruction("z", wires, metadata=metadata),
-            Instruction("h", wires, metadata=metadata),
-        )
-    if instruction.name == "rx":
-        return (
-            Instruction("h", wires, metadata=metadata),
-            Instruction(
-                "rz",
-                wires,
-                params={"theta": instruction.params["theta"]},
-                metadata=metadata,
-            ),
-            Instruction("h", wires, metadata=metadata),
-        )
-    if instruction.name == "ry":
-        return (
-            Instruction("sdg", wires, metadata=metadata),
-            Instruction("h", wires, metadata=metadata),
-            Instruction(
-                "rz",
-                wires,
-                params={"theta": instruction.params["theta"]},
-                metadata=metadata,
-            ),
-            Instruction("h", wires, metadata=metadata),
-            Instruction("s", wires, metadata=metadata),
-        )
-    if instruction.name == "swap":
-        left, right = wires
-        return (
-            Instruction("cx", (left, right), metadata=metadata),
-            Instruction("cx", (right, left), metadata=metadata),
-            Instruction("cx", (left, right), metadata=metadata),
-        )
-    return None
-
-
-def _replacement(
-    instruction: Instruction,
-    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
-    *,
-    z_rotation: str | None,
-    pulse_opcode: str | None,
-) -> tuple[Instruction, ...] | None:
-    """Return the shortest verified rewrite whose gates are all native.
-
-    A target that publishes a z-rotation and a pi/2 x-rotation gains the general
-    one-qubit Euler synthesis. The hand-written rewrites stay first in line, so a
-    basis where a three-gate rewrite is already native keeps it instead of paying
-    five gates for the general form. When no rewrite is fully native the shortest
-    one is returned anyway, so the caller can name the gate the target is missing.
-    """
-    candidates: list[tuple[Instruction, ...]] = []
-    specialized = _specialized_replacement(instruction)
-    if specialized is not None:
-        candidates.append(specialized)
-    if z_rotation is not None and pulse_opcode is not None:
-        synthesized = synthesize_one_qubit(
-            instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode
-        )
-        if synthesized is not None:
-            candidates.append(synthesized)
-    for candidate in candidates:
-        if all(_supports(descriptors, item) for item in candidate):
-            return candidate
-    return candidates[0] if candidates else None
-
-
 def _identity(
     source: CircuitIR,
     result: CircuitIR,
@@ -393,9 +321,9 @@ def legalize_native_gates(
                     f"custom matrix instruction {instruction.name!r} has no native contract"
                 )
         else:
-            replacement = _replacement(
+            replacement = translate(
                 instruction,
-                descriptors,
+                can_run=partial(_supports, descriptors),
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
             )

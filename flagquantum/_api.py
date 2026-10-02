@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+from torch import Tensor
+
 if TYPE_CHECKING:
+    from torch import Generator
+
     from .circuit import Circuit
     from .core.ir import CircuitIR
+    from .gradients import GradientResult
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
@@ -239,6 +244,49 @@ def run(
         target=target,
         shots=shots,
         name=name,
+    )
+
+
+def gradient(
+    program: Callable[[Tensor], Any],
+    parameters: Tensor,
+    loss: Callable[[Any], Tensor] | None = None,
+    *,
+    method: str = "auto",
+    step: float | None = None,
+    directions: int = 1,
+    generator: Generator | None = None,
+) -> GradientResult:
+    """Differentiate one scalar loss with respect to circuit parameters.
+
+    ``method="auto"`` measures the program rather than trusting a declaration: it
+    uses reverse-mode PyTorch autograd when the loss at ``parameters`` carries a
+    graph, the exact per-opcode parameter-shift rule when a circuit is available,
+    and central finite differences otherwise. The resolved method is reported on
+    the result, so a fallback is never silent. ``method="adjoint"`` is refused,
+    because FlagQuantum has no standalone adjoint entry point.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> theta = torch.tensor([0.3], dtype=torch.float64)
+        >>> result = fq.gradient(
+        ...     lambda p: fq.Circuit(1).rx(0, theta=p[0]).expectation_z(0), theta
+        ... )
+        >>> result.method
+        'autograd'
+    """
+
+    from .gradients import gradient as differentiate
+
+    return differentiate(
+        program,
+        parameters,
+        loss,
+        method=method,
+        step=step,
+        directions=directions,
+        generator=generator,
     )
 
 

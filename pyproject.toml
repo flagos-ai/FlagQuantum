@@ -55,6 +55,18 @@ stim = [
     "stim>=1.16,<2",
 ]
 
+# The matcher this package implements is the authority for a decoded syndrome,
+# and its correctness evidence is deliberately independent of the implementation.
+# The one check that is independent of the detector error model both sides read is
+# a second decoder that reads the same model, and PyMatching is that second
+# decoder: Apache-2.0, the reference minimum-weight perfect matching
+# implementation of the detector error model ecosystem, and a cross-check that
+# never becomes the authority. It arrives behind this extra and is imported
+# lazily, so neither the core install nor the decoder needs or loads it.
+pymatching = [
+    "pymatching>=2.3,<3",
+]
+
 cuda = [
     "triton>=3.1,<4",
 ]

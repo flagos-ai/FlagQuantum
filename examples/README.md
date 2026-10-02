@@ -13,9 +13,10 @@ Examples driven by the root-level `fq` alias use:
 These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
-  `quantum_kernel.py`, `feature_selection.py`, `qarm.py` and `svd.py`, which
-  import the unit they demonstrate from the subpackage surface because
-  `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
+  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
+  `error_mitigation.py`, which import the unit they demonstrate from the
+  subpackage surface because `flagquantum.algorithms.<unit>` carries no
+  root-level `fq.` name.
   [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
   reference they follow, and the place each unit's advantage premise is recorded
   in full.
@@ -128,6 +129,7 @@ boundaries are listed in the capability catalog.
 | Run one quantum algorithm unit end to end | [Algorithm examples](algorithms/README.md) and the [algorithms guide](../docs/guides/ALGORITHMS.md) | Demonstration-scale units, subpackage surface |
 | Verify the local CPU or one-GPU path | [Single-machine quantum AI](single_machine_quantum_ai/README.md) | Supported local workflows |
 | Train a local statevector VQE | [`01_vqe_statevector.py`](single_machine_quantum_ai/01_vqe_statevector.py) | Exact differentiable simulation |
+| Compare gradient methods and read the one that ran | [Gradient methods](gradient_methods/README.md) | One entry point, reported method |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |

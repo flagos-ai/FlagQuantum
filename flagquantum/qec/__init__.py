@@ -1,5 +1,6 @@
 """Experimental quantum-error-correction domain."""
 
+from .adapters import MatchingDependencyError, PyMatchingDecoder
 from .circuit import (
     Detector,
     DetectorLayout,
@@ -60,6 +61,7 @@ __all__ = (
     "ErrorSchedule",
     "LogicalObservable",
     "MatchingDecodeResult",
+    "MatchingDependencyError",
     "MeasurementRef",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
@@ -68,6 +70,7 @@ __all__ = (
     "Pauli",
     "PauliFrame",
     "PhenomenologicalNoise",
+    "PyMatchingDecoder",
     "RepetitionCode",
     "RepetitionNoiseProfile",
     "RepetitionLookupDecoder",

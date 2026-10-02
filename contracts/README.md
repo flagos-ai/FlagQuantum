@@ -33,12 +33,18 @@ must validate the resulting behavior directly.
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
 | `legacy-root-api-test-debt.json` | Zero baseline preventing legacy root API references from returning to tests. |
+| `gradient-api-v1-candidate.json` | Authorized additive Stable Core contract for the `gradient` root export, its accepted method values, and the method it refuses. |
 | `openqasm-import-v1-candidate.json` | Authorized additive Stable Core contract for the `from_openqasm` root export, its refusal vocabulary, and the accepted OpenQASM versions. |
 | `execution-options-v1-candidate.json` | Proposed, not-yet-authorized Stable Core contract for `ExecutionOptions`. |
 
 Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract
 and must not be regenerated merely to make a check pass.
+
+An authorized contract is read by a gate of its own, so a claim with no consumer
+is a defect rather than decoration. `tools/check_openqasm_import_contract.py`
+reads `openqasm-import-v1-candidate.json` against the shipped importer and
+requires each of its declared rules to name an existing check or witness test.
 
 The v1 candidate remains a proposal until API Change Proposal 001 is approved.
 Candidate validation does not authorize changing the current public API.

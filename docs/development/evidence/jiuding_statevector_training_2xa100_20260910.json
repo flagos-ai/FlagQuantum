@@ -13,7 +13,8 @@
     "name": "flagquantum-runtime:v0.2.0-b30886cb-cu128-a100",
     "id": "77b1b518-cadc-42f6-9a42-6df33ebf3420",
     "runtime_source_commit": "b30886cb2ec81d59402a9aec0ae384f08eab9e2a",
-    "validation_driver_commit": "7592e06d"
+    "validation_driver_commit": "7592e06d",
+    "validation_driver_commit_full": "7592e06d7219ad3e57465ddfd1222cd9a08d6ccc"
   },
   "environment": {
     "gpu_model": "NVIDIA A100-SXM4-40GB",

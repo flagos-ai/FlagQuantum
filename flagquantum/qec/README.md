@@ -109,6 +109,56 @@ whose factor is that group's product and every rate is unchanged.
 `mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
 the refusal.
 
+## Cross-check the matcher against PyMatching
+
+The matcher is the authority, and its evidence cannot come from itself. Brute
+force over enumerable syndromes is independent of the implementation but not of
+the detector error model both read, so `adapters.py` adds the one check that is:
+a second decoder, over the same decoding graph, behind the optional `pymatching`
+extra.
+
+```bash
+pip install 'flagquantum[pymatching]'
+```
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    MinimumWeightMatchingDecoder,
+    PhenomenologicalNoise,
+    PyMatchingDecoder,
+    RepetitionCode,
+    build_memory_circuit,
+)
+
+model = DetectorErrorModel.from_memory_circuit(
+    build_memory_circuit(RepetitionCode(distance=3), rounds=3),
+    noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+)
+ours = MinimumWeightMatchingDecoder.from_detector_error_model(model)
+theirs = PyMatchingDecoder.from_detector_error_model(model)
+print(ours.decode([0, 1]).weight == theirs.decode([0, 1]).weight)
+```
+
+The two agree on the cheapest weight of every syndrome and on the observables
+wherever the cheapest explanation is unique, and a tie is uncomparable rather
+than a disagreement: two explanations of equal weight can flip different
+observables, and no tie-breaking rule is more correct than another. The
+comparison is also limited by PyMatching's arithmetic, which is narrower than
+this package's — it reports `3.9020747171643912` for a mechanism stated here as
+`3.9020746947749574` — so a caller compares weights with a tolerance of about one
+single-precision rounding per selected mechanism. Ties and tolerance are stated
+in the module docstring rather than hidden in a test.
+
+Translation is refused with a stated reason in two places, because a translation
+that is not faithful would make the comparison measure the translation. A
+detector pair carrying two mechanisms cannot be merged without losing a logical
+label, so it is refused rather than handed to PyMatching's `independent`
+strategy; and a detector that no mechanism flips is refused because PyMatching
+infers its detector count from its edges, so the syndrome vector would be
+renumbered. Both graphs are ones the matcher itself answers, so the cross-check's
+domain is narrower than the authority's and never the reverse.
+
 ## Build a model from matrices, without a circuit
 
 A code whose checks and logical operators are known as matrices needs no gadget
@@ -197,6 +247,7 @@ two to each other rather than letting either stand for the other.
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model decoder,
+[adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [circuit.py](circuit.py) for detector and observable layouts, and

@@ -122,8 +122,8 @@ so the check is per test rather than per file.
 | `azure` | The `azure` extra installed (`.[dev,azure]`); selected by the `azure-optional` job on the certified QDK 1.32.3 lane, outside the coverage expression. | The fake workspace and target provider path, the optional `qdk[azure]` import surface and its fail-closed diagnostics, and that the core import loads no part of the Azure stack. | An Azure credential or workspace, network submission, QPU behavior, or that QDK is a core dependency. |
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
-The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, `cotengra`, and
-`stim` because its marker
+The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, `cotengra`,
+`stim`, and `pymatching` because its marker
 expression selects their suites, and installs neither `qiskit` nor `triton`: the
 other two cannot be measured there.
 `cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
@@ -132,6 +132,12 @@ of its own and its tests are marked `unit` and `integration`, so the expression
 above already selects them; the extra appears on the install line because
 otherwise every one of those tests skips at import and `simulation.stabilizer`
 measures as uncovered rather than as untested.
+`pymatching` is named in the list for the same reason and carries no marker
+either: the adapter tests are `integration`, they skip at import without the
+extra, and the module they exercise would then measure as uncovered rather than
+as untested. The install line is what
+`tests/unit/test_lane_dependency_policy.py` reads when it asserts that a lane
+which selects a test installs what the test probes.
 Qiskit's native
 libraries cannot be loaded in that process at all — `qiskit/_accelerate.abi3.so`
 raises `ImportError: cannot allocate memory in static TLS block` once the rest of

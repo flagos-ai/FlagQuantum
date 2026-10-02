@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "status": "implementation_authorized",
+  "approval": {
+    "approved_at": "2026-10-02",
+    "approved_by": "API owner via explicit user directive",
+    "approval_record": "docs/api-changes/FQ-GRADIENT-API-20261002.md"
+  },
+  "implementation_authorized": true,
+  "root_additions": [
+    "gradient"
+  ],
+  "root_removals": [],
+  "signatures": {
+    "gradient": "(program: 'Callable[[Tensor], Any]', parameters: 'Tensor', loss: 'Callable[[Any], Tensor] | None' = None, *, method: 'str' = 'auto', step: 'float | None' = None, directions: 'int' = 1, generator: 'Generator | None' = None) -> 'GradientResult'"
+  },
+  "declared_methods": [
+    "auto",
+    "autograd",
+    "parameter_shift",
+    "finite_difference",
+    "spsa"
+  ],
+  "refused_methods": {
+    "adjoint": "no standalone adjoint entry point; the reversible sweep is reachable only as the backward pass behind PyTorch autograd, and no result reports whether backward used adjoint replay"
+  },
+  "documented_result_type": "flagquantum.gradients.GradientResult",
+  "documented_result_fields": [
+    "gradient",
+    "method",
+    "exact",
+    "step"
+  ],
+  "rules": {
+    "resolved_method_is_reported": true,
+    "approximation_is_reported_as_inexact": true,
+    "refused_method_names_the_supported_routes": true,
+    "result_is_detached": true,
+    "no_silent_fallback": true,
+    "result_type_is_not_a_root_export": true,
+    "result_type_is_not_a_stable_export": true,
+    "second_gradient_implementation": false
+  },
+  "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
+}

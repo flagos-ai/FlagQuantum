@@ -115,6 +115,8 @@ jobs:
         run: python tools/check_circuit_composition_contract.py
       - name: Verify interoperability capability-gap matrix
         run: python tools/check_interop_capability_gap_matrix.py
+      - name: Verify OpenQASM import contract
+        run: python tools/check_openqasm_import_contract.py
       - name: Verify CUDA-Q parity matrix and its generated scoreboard
         run: python tools/parity_matrix.py --check
       - name: Verify the CUDA-Q QEC alignment checklist against this checkout
@@ -568,7 +570,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim]'
+      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching]'
       - name: Run maintained-runtime tests with coverage on pull requests
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the

@@ -396,6 +396,7 @@
   "scalability_claim_allowed": false,
   "schema": "flagquantum.mps_workspace_pool_report.v1",
   "source_commit": "a9e9ec2",
+  "source_commit_full": "a9e9ec258b9a84be6d00ce93bc8cf04ba34583b6",
   "source_tree_dirty": false,
   "total_allocation_count": 104,
   "total_reuse_count": 56,

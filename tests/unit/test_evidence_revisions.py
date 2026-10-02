@@ -15,6 +15,17 @@ names a commit no reader can expand and no walk can find. Both halves are asked
 here, because widening the walked roots does not help an artifact that abbreviates
 what it records.
 
+That second half has an artifact-side form, and it is the third: a field named for
+a revision records the value the run was produced with, so a shortened one names a
+commit only if the artifact states the revision in full beside it or says where the
+value came from. Sixteen distinct values sat in thirty-three such fields across
+seventeen artifacts under the walked roots, in fields named `source_revision`,
+`base_commit`, `implementation_commit`, `host_commit` and
+`validation_driver_commit`. One value had already been answered -- the two CUDA-Q
+comparison records state `source_revision_full` beside `source_revision` -- and the
+other fifteen, in thirty-one fields across five benchmark artifacts and ten Jiuding
+records, were read by no check at all, because the walk reads full-length revisions.
+
 These tests build their own repository and artifacts rather than reading the
 ambient clone, so they state the gate's behaviour instead of the state of one
 checkout. The last three tests read the real tree, which is what makes the
@@ -25,6 +36,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -41,10 +53,14 @@ from tools.check_evidence_revisions import (
     EVIDENCE_ROOTS,
     ORIGIN_EXTERNAL_DEPENDENCY,
     ORIGIN_UNREFERENCED_OBJECT,
+    REVISION_FIELD_NAMES,
+    abbreviated_revisions,
     citation_errors,
     evidence_errors,
+    is_revision_named_field,
     recorded_origins,
     recorded_revisions,
+    revision_field_names,
 )
 from tools.evidence_provenance import (
     ORIGIN_PRODUCING_HOST_HISTORY,
@@ -72,18 +88,78 @@ FILLER_REVISION = "9" * 40
 #: read as a revision this repository records.
 CITED_REVISION = "0123456789abcdef" * 2 + "01234567"
 
+#: The prefix two revisions below share, as a synthetic abbreviation of a value
+#: that names two commits rather than one.
+SHARED_PREFIX = "cafebabe"
+
+#: Two full-length revisions that share :data:`SHARED_PREFIX`, so an abbreviation of
+#: that prefix names both and the check has to report it rather than pick one.
+AMBIGUOUS_REVISIONS = (SHARED_PREFIX + "0" * 32, SHARED_PREFIX + "1" * 32)
+
 #: The revisions the four Jiuding records under `docs/development/evidence/` write
-#: out in full. No ref of this repository reaches any of them, and the remote served
-#: each to `git fetch origin <revision>` on three counted fresh attempts -- counted
-#: under the method `evidence-revision-origins.toml` states, in which a failed fetch
-#: is discarded rather than read as a refusal -- which is what makes
-#: `unreferenced_object` the origin that accounts for them.
+#: out in full. No ref of this repository reaches any of them, and the public remote
+#: served each to three counted fresh `git fetch origin <revision>` attempts when that
+#: method still answered -- counted under the method
+#: `evidence-revision-origins.toml` states, in which a failed fetch is discarded rather
+#: than read as a refusal -- which is what makes `unreferenced_object` the origin that
+#: accounts for them.
 JIUDING_REVISIONS = (
     "0a13cfa2cac0e0f341def2cecb7b2fc4457956a6",
     "0a26c3643074b7ea83dcee1dd04a8879071cff25",
     "aec65643cf8d95e47094bd58840eb8b0053ed50f",
     "b30886cb2ec81d59402a9aec0ae384f08eab9e2a",
     "ecaf903c2dcb4596450b2f3f3367ba83f96adbf7",
+)
+
+#: The one abbreviated revision-named value under the walked roots that no
+#: measurement here expands, because the repository-scoped commit endpoint answers
+#: `404` for it. The artifact states the origin beside the value instead, which is the
+#: other answer the rule accepts.
+UNEXPANDABLE_ABBREVIATION = "699890e9"
+
+#: The revision the two CUDA-Q comparison records already accounted for before this
+#: change, by stating it in full beside the value the run recorded. It is in no
+#: repository: the runtime containers ship no git binary, so the two records state a
+#: null commit, the revision the comparison ran against, and the note explaining that.
+ALREADY_ANSWERED_REVISION = "6cfc4c3708227a4bb2c6e35c9f71e502239a2e63"
+
+#: Every revision-named field under the walked roots that holds fewer than forty
+#: characters, as the recorded value and the revision it names -- `None` where no
+#: measurement here produces that revision. Sixteen values in thirty-one fields: the
+#: fifteen this change reached, and the one the CUDA-Q comparison records had already
+#: answered. The mapping is exhaustive rather than a list of the values under test, so
+#: an artifact that records a new abbreviation fails here instead of passing unread.
+ABBREVIATIONS: dict[str, str | None] = {
+    "155c8c4ad": "155c8c4ad686287d29caaecce275ad0f55373c6b",
+    "24108fc21": "24108fc21b96eec85723e02ddc15841ce4138b95",
+    "59a517cd": "59a517cdcbdfbf10f4156767ce65dac8bd341164",
+    "699890e9": None,
+    "6cfc4c3": ALREADY_ANSWERED_REVISION,
+    "7592e06d": "7592e06d7219ad3e57465ddfd1222cd9a08d6ccc",
+    "7939533e": "7939533e392c43e3d57260665f2826a440ef19fb",
+    "7b588ea5": "7b588ea530643d69d98c43d91a8040388e1d9bd0",
+    "8f77d0c04": "8f77d0c044076dc5e25eb5128d64699ebfd69d92",
+    "9cd38efc": "9cd38efcd136abc9a705151be3378f9487d1064e",
+    "a9e9ec2": "a9e9ec258b9a84be6d00ce93bc8cf04ba34583b6",
+    "b2b734da": "b2b734dabf4b278cd3f9b1a580bb7ed7677f6f30",
+    "c997a2195": "c997a21955972f1255aa58ee26ba756aac7d3f7e",
+    "e30b1b0c": "e30b1b0cc999d3fe780fb3453fbf72587257df1b",
+    "ea7db394": "ea7db394520610d6aed623db277ecd8e355722a5",
+    "ef3affbd": "ef3affbd99cc5f0bbabc6ff6403ec1dbdfc48ddc",
+}
+
+#: The fourteen revisions that were recorded only in fewer than forty characters
+#: before this change, and that the field-name rule therefore read for the first time.
+#: Each is now written out in full beside the value it abbreviates, and each was
+#: measured against the repository-scoped commit endpoint the check's own table
+#: states: `gh api repos/flagos-ai/FlagQuantum/git/commits/<revision>` and
+#: `/commits/<revision>` both answered with the object, twice, while the private
+#: producing history answers `404`, which is what places the object in this
+#: repository's database rather than in a history outside it.
+ABBREVIATED_REVISIONS = tuple(
+    revision
+    for revision in ABBREVIATIONS.values()
+    if revision is not None and revision != ALREADY_ANSWERED_REVISION
 )
 
 DECLARATION_HEADER = 'schema = "flagquantum.evidence_revision_origins.v1"\n'
@@ -705,6 +781,350 @@ def test_every_undeclared_revision_is_named_in_the_failure(repository: Path) -> 
     assert len(errors) == 1
     assert OTHER_ABSENT_REVISION in errors[0]
     assert "runs[0].source_revision" in errors[0]
+
+
+def test_a_shortened_revision_named_field_fails(repository: Path) -> None:
+    # Red before this change: the walk reads full-length revisions, so a field
+    # named for a revision could hold eight hexadecimal characters that name no
+    # commit and be read by nothing. Five checked-in benchmark artifacts and ten
+    # Jiuding records did exactly that.
+    _with_filler(repository)
+    _write_artifact(repository, "short.json", {"source_revision": SHARED_PREFIX})
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1
+    assert "artifacts/short.json" in errors[0]
+    assert SHARED_PREFIX in errors[0]
+    assert "source_revision_full" in errors[0]
+
+
+def test_the_revision_stated_in_full_beside_the_shortened_field_passes(
+    repository: Path,
+) -> None:
+    # The convention the two CUDA-Q comparison records use: the abbreviated value is
+    # what the run recorded, and the full revision beside it is what makes the value
+    # checkable. Recorded output is evidence, so the check must not demand that the
+    # recorded value be rewritten.
+    _write_artifact(
+        repository,
+        "short.json",
+        {
+            "source_revision": CITED_REVISION[:7],
+            "source_revision_full": CITED_REVISION,
+        },
+    )
+    _with_filler(
+        repository,
+        _declaration(
+            "artifacts/short.json", CITED_REVISION, ORIGIN_PRODUCING_HOST_HISTORY
+        ),
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_an_origin_beside_the_shortened_field_passes(repository: Path) -> None:
+    # The other route, and the one the four benchmark artifacts take: no copy of the
+    # full value exists in the repository, so the artifact states where the value
+    # came from instead of the revision it names.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "short.json",
+        {
+            "source_revision": SHARED_PREFIX,
+            "source_revision_origin": ORIGIN_UNREFERENCED_OBJECT,
+        },
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_an_origin_beside_one_field_accounts_for_every_field_holding_the_value(
+    repository: Path,
+) -> None:
+    # The origin belongs to the revision and not to a repetition of it. An aggregate
+    # whose top-level `source_revision` is the merge of its runs' values holds a value
+    # the runs have already accounted for, and a reader who follows either copy
+    # reaches the same revision.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "aggregate.json",
+        {
+            "source_revision": SHARED_PREFIX,
+            "runs": [
+                {
+                    "source_revision": SHARED_PREFIX,
+                    "source_revision_origin": ORIGIN_UNREFERENCED_OBJECT,
+                },
+                {"source_revision": SHARED_PREFIX},
+            ],
+        },
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_an_origin_beside_a_different_value_does_not_account_for_the_abbreviation(
+    repository: Path,
+) -> None:
+    # The control for the test above: an origin accounts for the value it sits
+    # beside, not for every abbreviated value in the artifact. Reading it otherwise
+    # would let one disclosure cover a second revision nobody stated.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "two.json",
+        {
+            "runs": [
+                {
+                    "source_revision": SHARED_PREFIX,
+                    "source_revision_origin": ORIGIN_UNREFERENCED_OBJECT,
+                },
+                {"source_revision": CITED_REVISION[:8]},
+            ],
+        },
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1, errors
+    assert "runs[1].source_revision" in errors[0]
+
+
+def test_an_unsupported_origin_beside_the_shortened_field_fails(
+    repository: Path,
+) -> None:
+    # `repository_history` is the artifact-side default in
+    # `tools/evidence_provenance.py`, and it is the one origin that cannot be stated:
+    # a revision from this repository's history resolves, so a value that does not
+    # resolve is not one. The two vocabularies overlap in `producing_host_history`
+    # only, and the check reads the gate's vocabulary.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "short.json",
+        {
+            "source_revision": SHARED_PREFIX,
+            "source_revision_origin": "repository_history",
+        },
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1, errors
+    assert "not a supported origin" in errors[0]
+    assert ORIGIN_UNREFERENCED_OBJECT in errors[0]
+
+
+def test_an_abbreviation_that_names_two_stated_revisions_is_reported(
+    repository: Path,
+) -> None:
+    # A prefix that names two commits names neither, so the check reports rather
+    # than resolving it. It does not pick one by order, which would make the verdict
+    # depend on document order, and it does not expand from the object database,
+    # which would make it depend on the clone.
+    _write_artifact(
+        repository,
+        "ambiguous.json",
+        {
+            "source_revision": SHARED_PREFIX,
+            "candidates": list(AMBIGUOUS_REVISIONS),
+        },
+    )
+    _with_filler(
+        repository,
+        _declarations_for(
+            "artifacts/ambiguous.json",
+            AMBIGUOUS_REVISIONS,
+            ORIGIN_PRODUCING_HOST_HISTORY,
+        ),
+    )
+
+    errors = _errors(repository)
+
+    assert len(errors) == 1, errors
+    assert "the start of 2 revisions" in errors[0]
+    assert SHARED_PREFIX in errors[0]
+
+
+def test_hexadecimal_text_in_a_field_not_named_for_a_revision_is_ignored(
+    repository: Path,
+) -> None:
+    # The check is scoped by the field name rather than by the value, because
+    # hexadecimal-looking text that is not a revision is everywhere: task
+    # identifiers, digests, run identifiers. Reading the value alone would report
+    # all of them.
+    _with_filler(repository)
+    _write_artifact(
+        repository,
+        "identifiers.json",
+        {
+            "task_id": "2609091513234674683",
+            "host_label": SHARED_PREFIX,
+            "artifact_sha256": "deadbeef",
+        },
+    )
+
+    assert _errors(repository) == ()
+
+
+def test_the_null_commit_placeholder_in_a_revision_field_is_not_an_abbreviation(
+    repository: Path,
+) -> None:
+    # `.github/workflows/ci.yml` compares a base revision against the git zero-SHA
+    # placeholder. A revision field holding it records no commit rather than an
+    # abbreviation of one, so demanding a full value or an origin for it would ask
+    # the artifact to account for a value that names nothing.
+    _with_filler(repository)
+    _write_artifact(repository, "placeholder.json", {"base_commit": "0" * 8})
+
+    assert _errors(repository) == ()
+
+
+def test_the_rule_reads_every_declared_revision_field_name() -> None:
+    # The tuple and the suffix rule answer each other. The tuple is the reviewed
+    # vocabulary, and the rule is what makes an unreviewed name still read, so a new
+    # name cannot be added to the walk by adding it to an artifact. A name in the
+    # tuple that the rule does not recognise would be a declaration that never takes
+    # effect.
+    for name in REVISION_FIELD_NAMES:
+        assert is_revision_named_field(name), name
+
+
+def test_the_walked_artifacts_use_only_declared_revision_field_names() -> None:
+    # Asserted against the real tree, so the vocabulary cannot drift: a new artifact
+    # recording a revision under a name this module has not reviewed fails here, and
+    # the author adds the name deliberately. The comparison is an equality because a
+    # name nothing uses is a claim about a surface that does not exist.
+    observed: set[str] = set()
+    for evidence_root in EVIDENCE_ROOTS:
+        for path in sorted(evidence_root.rglob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            observed.update(revision_field_names(payload))
+
+    assert observed == set(REVISION_FIELD_NAMES)
+
+
+def _string_leaves(payload: Any) -> dict[str, str]:
+    """Map every dotted JSON path in ``payload`` holding a string to that string."""
+
+    leaves: dict[str, str] = {}
+
+    def walk(node: Any, path: str) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+        elif isinstance(node, str):
+            leaves[path] = node
+
+    walk(payload, "")
+    return leaves
+
+
+def test_the_abbreviated_revisions_written_out_in_full_are_declared_unreferenced() -> (
+    None
+):
+    # Red before this change: none of these fourteen revisions was in the tree at all,
+    # so the table could not have declared them and this is the assertion that fails
+    # when a value is written out in full without its measured origin. The origin is
+    # the measured one, not the one the abbreviation sat in: a value recorded in a
+    # field whose artifact had stated `producing_host_history` is `unreferenced_object`
+    # when a repository-scoped request for the commit object returns it.
+    declared = _checked_in_declarations()
+
+    assert len(ABBREVIATED_REVISIONS) == 14, ABBREVIATED_REVISIONS
+    for revision in ABBREVIATED_REVISIONS:
+        assert declared.get(revision) == ORIGIN_UNREFERENCED_OBJECT, revision
+
+
+def test_every_abbreviated_revision_named_field_answers_the_rule() -> None:
+    # Red before this change: the walk read a revision only when an artifact wrote all
+    # forty characters of it, so every abbreviated value below was read by no check at
+    # all. Each must now answer one of the rule's two questions -- the revision stated
+    # in full in the same artifact, or the origin that accounts for it -- which is what
+    # makes a pin in a revision-named field checkable rather than merely present. The
+    # revision is read from the artifact the value sits in, because the origin belongs
+    # to the revision rather than to a repetition of it: an aggregate repeats its runs'
+    # `source_revision` once beside each run, and the revision written out once
+    # anywhere in that artifact accounts for every repetition.
+    observed: set[str] = set()
+    for evidence_root in EVIDENCE_ROOTS:
+        for path in sorted(evidence_root.rglob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            stated = _string_leaves(payload)
+            for field, value in abbreviated_revisions(payload):
+                assert value in ABBREVIATIONS, (path, field, value)
+                observed.add(value)
+                full = ABBREVIATIONS[value]
+                if full is None:
+                    assert value == UNEXPANDABLE_ABBREVIATION
+                    assert (
+                        stated.get(f"{field}_origin") == ORIGIN_PRODUCING_HOST_HISTORY
+                    ), (path, field)
+                else:
+                    assert full in stated.values(), (path, field, value)
+
+    # Equality in both directions: an abbreviation this mapping names but the tree no
+    # longer records is a stale claim about the tree, and an abbreviation the tree
+    # records but this mapping does not name would have been read by no check.
+    assert observed == set(ABBREVIATIONS)
+
+
+def test_the_unexpandable_abbreviated_revision_states_the_origin_beside_it() -> None:
+    # The other answer the rule accepts, and the only artifact under the walked roots
+    # that needs it: no measurement here produces this value's full revision, so the
+    # artifact states the origin and keeps the value as the run recorded it. Asserted
+    # rather than described, so a later change cannot drop the statement and leave the
+    # abbreviation unaccounted for without a failure.
+    credentials = (
+        ROOT
+        / "docs"
+        / "development"
+        / "evidence"
+        / "jiuding_workspace_credentials_20260910.json"
+    )
+    payload = json.loads(credentials.read_text(encoding="utf-8"))
+    leaves = _string_leaves(payload)
+
+    assert leaves["host_commit"] == UNEXPANDABLE_ABBREVIATION
+    assert leaves["host_commit_origin"] == ORIGIN_PRODUCING_HOST_HISTORY
+    assert "host_commit_full" not in leaves
+
+
+def test_the_example_asset_manifest_stays_outside_the_walk() -> None:
+    # `examples/assets/manifest.json` records a third-party checkpoint revision --
+    # a value of `google-bert/bert-base-uncased`, the project the example downloads
+    # from -- and no FlagQuantum repository contains it or should. The decision to
+    # leave that root out is asserted rather than described, so a later change that
+    # walked it would have to state an origin for a commit of another project.
+    manifest = ROOT / "examples" / "assets" / "manifest.json"
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    revisions = [asset["revision"] for asset in payload["assets"]]
+    full = {revision for revision in revisions if len(revision) == 40}
+
+    assert len(full) == 1, full
+    assert revisions.count(next(iter(full))) == 2, revisions
+    for root in (*EVIDENCE_ROOTS, *CITATION_ROOTS):
+        assert not manifest.is_relative_to(root), root
+
+
+def _declarations_for(path: str, revisions: Sequence[str], origin: str) -> str:
+    """Return a declaration block naming several revisions of one artifact."""
+
+    lines = ["[[artifact]]", f'path = "{path}"']
+    for revision in revisions:
+        lines += [
+            "[[artifact.revision]]",
+            f'value = "{revision}"',
+            f'origin = "{origin}"',
+        ]
+    return "\n".join(lines) + "\n"
 
 
 def _citation_note(tmp_path: Path, text: str) -> Path:

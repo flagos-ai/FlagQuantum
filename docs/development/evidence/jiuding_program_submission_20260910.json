@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-10",
   "implementation_commit": "7939533e",
+  "implementation_commit_full": "7939533e392c43e3d57260665f2826a440ef19fb",
   "scope": "Direct Circuit submission as an isolated single-GPU Jiuding Job",
   "experimentId": "95a65e28-3509-4b5f-bc6a-dca25d8cf4e7",
   "jobId": "2528141e-dc83-4f65-851e-8c9b79bd99d8",

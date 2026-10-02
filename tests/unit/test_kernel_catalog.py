@@ -62,6 +62,7 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     assert maturity_by_id["FQKI-TRITON-MPS-003-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-004-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-005-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MPS-006-A"] == "provisional"
     assert set(maturity_by_id.values()) == {"experimental", "provisional"}
 
 

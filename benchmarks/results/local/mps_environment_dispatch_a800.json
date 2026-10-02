@@ -1666,7 +1666,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_dispatch.v1",
       "semantic_id": "mps.environment.transfer_identity_z",
-      "source_revision": "24108fc21"
+      "source_revision": "24108fc21",
+      "source_revision_full": "24108fc21b96eec85723e02ddc15841ce4138b95"
     },
     {
       "cases": [
@@ -3312,7 +3313,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_dispatch.v1",
       "semantic_id": "mps.environment.transfer_identity_z",
-      "source_revision": "24108fc21"
+      "source_revision": "24108fc21",
+      "source_revision_full": "24108fc21b96eec85723e02ddc15841ce4138b95"
     },
     {
       "cases": [
@@ -4958,7 +4960,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_dispatch.v1",
       "semantic_id": "mps.environment.transfer_identity_z",
-      "source_revision": "24108fc21"
+      "source_revision": "24108fc21",
+      "source_revision_full": "24108fc21b96eec85723e02ddc15841ce4138b95"
     },
     {
       "cases": [
@@ -6604,7 +6607,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_environment_dispatch.v1",
       "semantic_id": "mps.environment.transfer_identity_z",
-      "source_revision": "24108fc21"
+      "source_revision": "24108fc21",
+      "source_revision_full": "24108fc21b96eec85723e02ddc15841ce4138b95"
     }
   ],
   "scalability_blockers": [

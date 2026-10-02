@@ -1230,7 +1230,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v1",
       "semantic_id": "mps.contract.two_site_gate_projected",
-      "source_revision": "c997a2195"
+      "source_revision": "c997a2195",
+      "source_revision_full": "c997a21955972f1255aa58ee26ba756aac7d3f7e"
     },
     {
       "cases": [
@@ -2426,7 +2427,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v1",
       "semantic_id": "mps.contract.two_site_gate_projected",
-      "source_revision": "c997a2195"
+      "source_revision": "c997a2195",
+      "source_revision_full": "c997a21955972f1255aa58ee26ba756aac7d3f7e"
     },
     {
       "cases": [
@@ -3622,7 +3624,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v1",
       "semantic_id": "mps.contract.two_site_gate_projected",
-      "source_revision": "c997a2195"
+      "source_revision": "c997a2195",
+      "source_revision_full": "c997a21955972f1255aa58ee26ba756aac7d3f7e"
     },
     {
       "cases": [
@@ -4818,7 +4821,8 @@
       "scalability_claim_allowed": false,
       "schema": "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v1",
       "semantic_id": "mps.contract.two_site_gate_projected",
-      "source_revision": "c997a2195"
+      "source_revision": "c997a2195",
+      "source_revision_full": "c997a21955972f1255aa58ee26ba756aac7d3f7e"
     }
   ],
   "scalability_blockers": [

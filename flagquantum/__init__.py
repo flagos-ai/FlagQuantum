@@ -35,6 +35,7 @@ __all__ = (
     "counts",
     "expectation",
     "from_openqasm",
+    "gradient",
     "plan",
     "probabilities",
     "run",
@@ -90,7 +91,7 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module(".observables", __name__), name)
     if name in {"submit", "restore_job"}:
         return getattr(import_module(".remote.jobs", __name__), name)
-    if name in {"compile", "from_openqasm", "plan", "run"}:
+    if name in {"compile", "from_openqasm", "gradient", "plan", "run"}:
         return getattr(import_module("._api", __name__), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

@@ -31,6 +31,7 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.expectation` | Stable | executable contract |
 | `fq.experimental` | Stable | executable contract |
 | `fq.from_openqasm` | Stable | executable contract |
+| `fq.gradient` | Stable | executable contract |
 | `fq.plan` | Stable | executable contract |
 | `fq.probabilities` | Stable | executable contract |
 | `fq.restore_job` | Stable | executable contract |

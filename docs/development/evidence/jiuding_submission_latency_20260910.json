@@ -3,6 +3,7 @@
   "version": "1.0",
   "date": "2026-09-10",
   "implementation_commit": "ea7db394",
+  "implementation_commit_full": "ea7db394520610d6aed623db277ecd8e355722a5",
   "workspace": "example-resident-a100",
   "target": "jiuding:gpu",
   "image": "flagquantum-runtime:v0.2.0-cu128-a100",
