@@ -45,6 +45,7 @@ SCRIPTS = (
     "qarm",
     "svd",
     "error_mitigation",
+    "spsa_optimizer",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -99,6 +100,15 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "error_mitigation": (
         "not checkable from the measurements",
         "no measured uncertainty",
+    ),
+    # Two halves. "the estimate is an estimate rather than a gradient" is the
+    # estimator's bias, and "an objective with an exact gradient is served
+    # cheaper and exact without it" is what that bias costs. Pinning only the
+    # first would leave the recommendation deletable, which is the half that
+    # keeps this unit from being read as a preferred optimizer.
+    "spsa_optimizer": (
+        "an estimate rather than a gradient",
+        "cheaper and exact without it",
     ),
 }
 
@@ -304,6 +314,25 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
         "the noise model declares a readout rule"
     )
     _assert_premise("error_mitigation", output)
+    assert "take away" in output
+
+
+def test_spsa_example_measures_its_cost_and_converges() -> None:
+    output = _run("spsa_optimizer")
+
+    assert "SPSA optimization -- flagquantum.algorithms.spsa" in output
+    assert _labelled(output, "parameter shift") == "4 circuit evaluations"
+    assert _labelled(output, "SPSA") == "2 circuit evaluations"
+    assert _labelled(output, "exact gradient") == "[-0.374048, -0.63987]"
+    assert _labelled(output, "initial energy") == "-1.769414"
+    assert _labelled(output, "final energy") == "-1.999686"
+    assert _labelled(output, "final parameters") == "[0.004207, 0.024341]"
+    assert _labelled(output, "objective calls") == "240"
+    assert _labelled(output, "sampled calls") == "401"
+    assert _labelled(output, "in-place write").startswith(
+        "the objective modified the tensor it was given"
+    )
+    _assert_premise("spsa_optimizer", output)
     assert "take away" in output
 
 
