@@ -65,6 +65,13 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # thirty-one files that record the same run state. Declaring an origin for a
 # revision a clone obtains fails the gate, so this table cannot be used to hide a
 # checkable pin behind a claim.
+#
+# An artifact may account for its own revisions instead, by stating
+# `<field>_origin` beside any field that records one -- `source.revision_origin`
+# beside `source.revision`, `base_commit_origin` beside `base_commit`. Six
+# artifacts under `artifacts/` do, and appear below as well. Both records are read,
+# and a revision whose two records disagree fails the gate, so this table is one of
+# two records of the same fact rather than a replacement for the other.
 
 
 [[artifact]]
