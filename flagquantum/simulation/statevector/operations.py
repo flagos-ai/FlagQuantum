@@ -258,6 +258,7 @@ def _compile_statevector_program(
     enable_cpu_native_clifford_matching: bool = False,
     enable_cpu_native_fixed_one_qubit_layer: bool = False,
     enable_cpu_native_parameterized_one_qubit_layer: bool = False,
+    enable_cpu_native_fused_rotation_layer: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -273,7 +274,10 @@ def _compile_statevector_program(
     if enable_cpu_native_fixed_one_qubit_layer:
         optimized = fuse_native_fixed_one_qubit_layers(optimized)
     if enable_cpu_native_parameterized_one_qubit_layer:
-        optimized = fuse_native_parameterized_one_qubit_layers(optimized)
+        optimized = fuse_native_parameterized_one_qubit_layers(
+            optimized,
+            include_terminal_fused_regions=enable_cpu_native_fused_rotation_layer,
+        )
     if enable_cpu_native_clifford_matching:
         optimized = fuse_native_disjoint_clifford_matchings(optimized)
     if enable_cpu_controlled_phase_graph:

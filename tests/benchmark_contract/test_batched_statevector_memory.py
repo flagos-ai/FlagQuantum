@@ -185,6 +185,59 @@ def test_checked_in_dense_width_artifact_records_speed_memory_and_framework() ->
     )
 
 
+def test_checked_in_terminal_fused_rotation_artifact_is_complete() -> None:
+    comparison = REPOSITORY_ROOT / "benchmarks" / "results" / "comparison"
+    path = (
+        comparison
+        / "batched_statevector_terminal_fused_rotation_cpu_arm64_20261002.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    generated = (
+        comparison / "BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002.md"
+    )
+    scorecard = (
+        comparison
+        / "BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md"
+    )
+
+    assert payload["hostname"] == "redacted"
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert len(payload["cases"]) == 1
+    engines = payload["cases"][0]["engines"]
+    assert set(engines) == {
+        "flagquantum_native_batch",
+        "flagquantum_native_fused_rotation_layer_rollback",
+        "pennylane_lightning_native_batch",
+    }
+    optimized = engines["flagquantum_native_batch"]
+    rollback = engines["flagquantum_native_fused_rotation_layer_rollback"]
+    lightning = engines["pennylane_lightning_native_batch"]
+    assert optimized["batch_total"]["sample_count"] == 21
+    assert rollback["batch_total"]["sample_count"] == 21
+    assert lightning["batch_total"]["sample_count"] == 21
+    assert optimized["isolated_memory"]["sample_count"] == 3
+    assert (
+        optimized["batch_total"]["median_seconds"]
+        < rollback["batch_total"]["median_seconds"]
+    )
+    assert (
+        optimized["batch_total"]["median_seconds"]
+        < lightning["batch_total"]["median_seconds"]
+    )
+    assert (
+        optimized["isolated_memory"]["peak_rss_bytes"]
+        < rollback["isolated_memory"]["peak_rss_bytes"]
+    )
+    assert generated.read_text(encoding="utf-8") == render_markdown(
+        payload, artifact_name=path.name
+    )
+    scorecard_text = scorecard.read_text(encoding="utf-8")
+    assert "PennyLane Lightning native batch" in scorecard_text
+    assert "1.128x" in scorecard_text
+    assert "2.161x" in scorecard_text
+
+
 def test_checked_in_pennylane_native_batch_artifact_is_fair_and_complete() -> None:
     comparison = REPOSITORY_ROOT / "benchmarks" / "results" / "comparison"
     path = (

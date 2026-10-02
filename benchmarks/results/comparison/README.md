@@ -35,6 +35,12 @@ public broadcast expansion and the repeated single-item FlagQuantum bridge. It
 records exact times, speedups, correctness, peak RSS, baseline-adjusted execution
 growth, example code, reproduction steps, and the remaining memory gap.
 
+[`BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md`](BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md)
+records the exact rollback A/B for routing terminal same-wire fused rotations
+through the native CPU layer kernel. It includes the rejected broad-routing
+experiment, same-run PennyLane Lightning native-batch comparison, exact times,
+memory, correctness, example code, limitations, and reproduction steps.
+
 The differentiable simulator corpus adds matched exact expectation-value and
 full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
 default.qubit backprop. Its generated Markdown report contains the workload meaning,

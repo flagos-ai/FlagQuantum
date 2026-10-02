@@ -246,6 +246,12 @@ It selects six-wire dense groups for complex128 batches at 18–19 qubits,
 records a 1.379x focused rollback speedup on local brickwork, and measures
 FlagQuantum 1.241x faster than the same-run PennyLane Lightning bridge while
 retaining the explicit four-wire rollback and applicability boundary.
+The terminal fused-rotation follow-up is documented in
+[`BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md).
+It records a 1.128x focused rollback speedup on the 18-qubit, batch-32 Dense
+nonlocal task and measures FlagQuantum 2.161x faster than same-run PennyLane
+Lightning native batch. The report also preserves the rejected broader policy,
+exact timings, memory results, limitations, example, and reproduction command.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a
