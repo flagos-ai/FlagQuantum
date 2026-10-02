@@ -25,6 +25,16 @@ replacement at search depth and width one, but no objective of it beats
 `sabre_layout`, and the objective Qiskit documents fails closed on programs where
 one operation stays stranded. `benchmarks/compiler_lookahead_swap.py` holds that
 measurement, so the search does not need to be rebuilt to re-test the decision.
+The randomized layer-permutation search Qiskit shipped as `StochasticSwap` and
+removed in 2.0 was ported and measured the same way, and rejected on cost too. It
+is a correct planner -- the placements it records are the replay of its own SWAPs,
+and every two-wire operation it places sits on a device edge -- but it retains
+1.617 times the SWAPs `sabre_layout` retains and beats that strategy on none of the
+140 measured programs. Raising the trial count does not close the gap, and
+Qiskit's own compiled implementation of the same algorithm retains 0.5% fewer
+SWAPs on the same basis -- effectively the same count -- so the shortfall belongs
+to the algorithm rather than to the port. `benchmarks/compiler_stochastic_swap.py` holds that measurement, including
+the independent replay of every plan it produces.
 `layout.py` owns the logical-to-physical `Layout` value and the two
 transformations over it: applying a layout to a program by relabelling its wires,
 and removing the trailing restore SWAPs a routed program ends with. A routing
@@ -39,6 +49,10 @@ routing result to hand back to legalization.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`one_qubit_synthesis.py` owns the one-qubit Euler angles behind those
+decompositions: it turns any declared single-qubit unitary into z-rotations plus
+a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
+expert-facing entry point.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
@@ -89,6 +103,8 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
+  `one_qubit_synthesis.py`.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in

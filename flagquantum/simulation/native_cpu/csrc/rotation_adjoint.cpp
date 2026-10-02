@@ -1077,6 +1077,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     int64_t n_wires,
     bool aggregate_shared_parameter,
     int64_t max_tile_wires,
+    int64_t parallel_grain,
     bool enable_pair_fast_path,
     bool enable_flat_pair_simd,
     bool restore_state,
@@ -1102,6 +1103,9 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
   TORCH_CHECK(angles.dim() == 1, "angles must be one-dimensional");
   TORCH_CHECK(gate_kinds.dim() == 1, "gate kinds must be one-dimensional");
   TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  TORCH_CHECK(
+      parallel_grain >= 0,
+      "parallel grain must be zero (adaptive) or positive");
   TORCH_CHECK(gate_kinds.scalar_type() == at::kLong, "gate kinds must be int64");
   TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
   TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
@@ -1379,7 +1383,17 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
       }
       const int64_t blocks_per_row = amplitudes >> unique_count;
       const int64_t item_count = ket.size(0) * blocks_per_row;
-      at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
+      const int64_t effective_parallel_grain =
+          parallel_grain == 0
+          ? (item_count >= 1024
+                 ? 128
+                 : std::max<int64_t>(1, item_count / (4 * thread_count)))
+          : parallel_grain;
+      at::parallel_for(
+          int64_t{0},
+          item_count,
+          effective_parallel_grain,
+          [&](int64_t begin, int64_t end) {
         std::array<scalar_t, 2048> ket_values{};
         std::array<scalar_t, 2048> adjoint_values{};
         real_t* local_gradients =
@@ -1841,6 +1855,7 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
       "bool aggregate_shared_parameter, int max_tile_wires, "
+      "int parallel_grain, "
       "bool enable_pair_fast_path, bool enable_flat_pair_simd, bool restore_state, "
       "bool fuse_preceding_hadamards, "
       "Tensor? rzz_angles=None, "

@@ -239,6 +239,23 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "export": {
+            "measurement": _MODULE.EXPORT_MEASUREMENT,
+            "product": "full_amplitude_vector",
+            "result": {
+                "full_state_materialization": True,
+                "amplitude_basis_order": "canonical_logical",
+                "distribution_semantics": "replicated_per_rank",
+            },
+            "gather": {
+                "measured": True,
+                "synchronized": True,
+                "measurement": _MODULE.EXPORT_MEASUREMENT,
+                "warmup_iterations": _MODULE.EXPORT_WARMUP_ITERATIONS,
+                "measured_iterations": _MODULE.EXPORT_ITERATIONS,
+                "seconds": [0.002, 0.0021, 0.0019, 0.002, 0.0022],
+            },
+        },
         "world_size": 2,
         "local_world_size": 1,
     }
@@ -263,17 +280,51 @@ def test_every_retracted_blocker_needs_its_own_observation(
     assert {
         "two_node_pair_only_no_wider_topology",
         "toy_circuit_parameters_only",
-        "validation_only_tiny_full_state_gather",
     } <= complete
     assert (
         complete
         - {
             "two_node_pair_only_no_wider_topology",
             "toy_circuit_parameters_only",
-            "validation_only_tiny_full_state_gather",
         }
         == set()
     )
+
+    # The full-state gather blocker turns on whether a materialization the
+    # workload needs was recorded. A validation gather is not one, so an absent
+    # export leaves the blocker; so does an export that did not materialize the
+    # whole vector, one left in the internal basis order, and one whose product
+    # was a shard rather than the state. Each of those is a real way the leg
+    # could fail to be the product the blocker is about.
+    full_state = {
+        "result": {
+            "full_state_materialization": True,
+            "amplitude_basis_order": "canonical_logical",
+        }
+    }
+    assert "validation_only_tiny_full_state_gather" in blockers(export=None)
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={**full_state, "product": "shard_state"}
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": "full_amplitude_vector",
+            "result": {
+                "full_state_materialization": False,
+                "amplitude_basis_order": "canonical_logical",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": "full_amplitude_vector",
+            "result": {
+                "full_state_materialization": True,
+                "amplitude_basis_order": "internal_physical_requires_mapping",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_state_gather" not in complete
 
     # A socket run, and a run with no debug log to read, both leave the fabric
     # untested: the route cannot be asserted from the configuration alone.

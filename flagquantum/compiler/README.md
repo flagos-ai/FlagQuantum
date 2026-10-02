@@ -31,6 +31,7 @@ Use `optimize(program)` for target-independent optimization and
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
+| One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
@@ -39,6 +40,17 @@ A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
+
+Native-gate legalization rewrites one-qubit instructions by Euler synthesis
+whenever the target publishes a z-rotation and a pi/2 x-rotation: every declared
+single-qubit unitary becomes z-rotations plus `sx`, or plus `rx` at a fixed
+`pi/2` when the basis publishes `rx` instead. Exact hand-written rewrites are
+tried first, so a basis that can carry a gate exactly keeps its exact form. Such
+a basis cannot carry the global phase of `h`, `s`, or `t`, and FlagQuantum IR has
+no field for it, so those rewrites are equal up to one global phase -- the same
+contract every `U3`-based hardware basis publishes. A consumer that compares raw
+statevectors instead of measurement statistics has to know that; flag records of
+it belong in the capability registry, which `capability-maturity.toml` owns.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
@@ -57,6 +69,18 @@ Qiskit documents fails closed on programs where one operation stays stranded
 behind the front layer, so it cannot be routed at all on part of the workload.
 [benchmarks/compiler_lookahead_swap.py](../../benchmarks/compiler_lookahead_swap.py)
 holds the measurement and the commands that reproduce it.
+
+The randomized layer-permutation search Qiskit shipped as `StochasticSwap` was
+measured the same way, and rejected on cost as well. Its plan is sound: the
+placements it records are the replay of its own SWAPs, and every two-wire
+operation it places sits on a device edge. It still retains 1.617 times the SWAPs
+`sabre_layout` retains and beats that strategy on none of the 140 measured
+programs, and Qiskit's own compiled implementation of the same algorithm retains
+0.5% fewer SWAPs on the same basis -- effectively the same count -- so the
+shortfall is the algorithm rather than the port. [benchmarks/compiler_stochastic_swap.py](../../benchmarks/compiler_stochastic_swap.py)
+holds the measurement and the commands that reproduce it. The checked-in port is
+also the only runnable form of the algorithm left to this repository, because
+Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
 
 Routing moves two-wire operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more wires, so such

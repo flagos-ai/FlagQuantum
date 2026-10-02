@@ -6,9 +6,12 @@ from importlib import import_module
 from typing import Any
 
 __all__ = (
+    "BLOCKER_FULL_STATE_GATHER_IS_NOT_A_SCALING_RESULT",
     "BatchedStatevectorTrajectoryResult",
     "merge_noisy_statevector_results",
+    "DistributedStatevectorGatherResult",
     "execute_torch_distributed_statevector",
+    "gather_distributed_statevector",
     "execute_torch_distributed_statevector_reverse",
     "initialize_statevector_shard",
     "plan_distributed_statevector",
@@ -285,6 +288,18 @@ _EXPORTS = {
     "execute_torch_distributed_statevector": (
         "flagquantum.runtime.executors.statevector.forward_executor",
         "execute_torch_distributed_statevector",
+    ),
+    "BLOCKER_FULL_STATE_GATHER_IS_NOT_A_SCALING_RESULT": (
+        "flagquantum.runtime.executors.statevector.gather",
+        "BLOCKER_FULL_STATE_GATHER_IS_NOT_A_SCALING_RESULT",
+    ),
+    "DistributedStatevectorGatherResult": (
+        "flagquantum.runtime.executors.statevector.gather",
+        "DistributedStatevectorGatherResult",
+    ),
+    "gather_distributed_statevector": (
+        "flagquantum.runtime.executors.statevector.gather",
+        "gather_distributed_statevector",
     ),
     "initialize_statevector_shard": (
         "flagquantum.runtime.executors.statevector.local_execution",

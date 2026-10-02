@@ -51,7 +51,7 @@ def test_fixed_rank_two_site_range_qr_shapes_and_gradient():
 @pytest.mark.gpu
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
-def test_fixed_rank_two_site_routes_inference_but_preserves_training_fallback(
+def test_fixed_rank_two_site_opt_in_routes_inference_but_preserves_training_fallback(
     monkeypatch,
 ) -> None:
     catalog_routes = []
@@ -74,6 +74,13 @@ def test_fixed_rank_two_site_routes_inference_but_preserves_training_fallback(
     gate = torch.randn(2, 4, 4, device="cuda", dtype=torch.complex64)
     right = torch.randn(2, 5, 2, 4, device="cuda", dtype=torch.complex64)
 
+    default_left, default_right = fixed_rank_two_site_range_qr(left, gate, right, 4)
+
+    assert default_left.shape == (2, 3, 2, 4)
+    assert default_right.shape == (2, 4, 2, 4)
+    assert catalog_routes == []
+
+    monkeypatch.setenv("FQ_TRITON_MPS_PROJECTED_TWO_SITE", "1")
     left_out, right_out = fixed_rank_two_site_range_qr(left, gate, right, 4)
 
     assert left_out.shape == (2, 3, 2, 4)

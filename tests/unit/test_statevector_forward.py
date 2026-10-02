@@ -20,6 +20,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
     _vectorized_cross_shard_cx,
+    _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
     _wait_for_exchange,
     communication_aware_wire_layout,
@@ -1079,3 +1080,66 @@ def test_peer_to_peer_pair_exchange_counts_one_peer_buffer(
     assert peak > per_rank
     if workspace is not None:
         assert workspace.reserved_bytes == per_rank
+
+
+# A rank-local gate reads and writes exactly the amplitudes it owns, and the
+# sweep walks that set in disjoint chunks, so the state buffer can be its own
+# output buffer. It must only be invited to do so when nothing else needs the
+# pre-gate amplitudes, because the backward pass of a training program does.
+# These three tests pin the invitation, its effect on the buffer, and the
+# decision that withholds it.
+def test_rank_local_gate_writes_into_the_caller_buffer_when_invited():
+    plan = _pair_exchange_plan(world_size=2, local_amplitudes=8)
+    amplitudes = torch.arange(8, dtype=torch.float32).to(torch.complex64).reshape(1, 8)
+    # An X on wire 0 pairs each local address with the one that differs in that
+    # wire's bit. The bit is taken from the plan rather than written out, so the
+    # expectation follows the addressing instead of restating it.
+    swap = 1 << (plan.n_wires - 1 - 0 - len(plan.sharded_wires))
+    indices = torch.arange(amplitudes.shape[1])
+    expected = amplitudes[:, indices ^ swap].clone()
+
+    returned, _ = _vectorized_local_gate(
+        _pair_exchange_state(plan, amplitudes),
+        torch.tensor(((0, 1), (1, 0)), dtype=torch.complex64),
+        (0,),
+        plan=plan,
+        chunk_amplitudes=2,
+        output=amplitudes,
+    )
+
+    assert returned.amplitudes is amplitudes
+    assert torch.equal(amplitudes, expected)
+
+
+def test_rank_local_gate_keeps_the_caller_buffer_without_an_invitation():
+    plan = _pair_exchange_plan(world_size=2, local_amplitudes=8)
+    amplitudes = torch.arange(8, dtype=torch.float32).to(torch.complex64).reshape(1, 8)
+    untouched = amplitudes.clone()
+
+    returned, _ = _vectorized_local_gate(
+        _pair_exchange_state(plan, amplitudes),
+        torch.tensor(((0, 1), (1, 0)), dtype=torch.complex64),
+        (0,),
+        plan=plan,
+        chunk_amplitudes=2,
+    )
+
+    assert returned.amplitudes is not amplitudes
+    assert torch.equal(amplitudes, untouched)
+    assert not torch.equal(returned.amplitudes, untouched)
+
+
+def test_a_program_that_trains_keeps_a_separate_output_buffer():
+    """The decision follows the gradient requirement, not the rank count."""
+
+    parameter = torch.tensor(0.43, requires_grad=True)
+    trained = _ShardedForwardSweep(
+        fq.Circuit(3).h(0).cx(0, 2).ry(1, parameter), device=torch.device("cpu")
+    )
+    inferred = _ShardedForwardSweep(
+        fq.Circuit(3).h(0).cx(0, 2).ry(1, 0.43), device=torch.device("cpu")
+    )
+
+    assert any(matrix.requires_grad for matrix in trained.matrices)
+    assert trained.local_output_in_place is False
+    assert inferred.local_output_in_place is True

@@ -583,6 +583,24 @@ def _wait_for_exchange(request: Any, device: torch.device) -> None:
     request.wait()
 
 
+def _seeded_output(
+    amplitudes: torch.Tensor, output: torch.Tensor | None
+) -> torch.Tensor:
+    """Return the buffer a partially-covering gate writes, seeded with its input.
+
+    Both a rank-local gate and an exchange gate touch every amplitude they own,
+    so their output buffer can be the input buffer itself. A gate that leaves
+    some amplitudes alone still needs the untouched values present, which is
+    what the seed provides, and a separate buffer keeps them.
+    """
+
+    if output is None:
+        return amplitudes.clone()
+    if output.data_ptr() != amplitudes.data_ptr():
+        output.copy_(amplitudes)
+    return output
+
+
 def _vectorized_local_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
@@ -902,11 +920,7 @@ def _vectorized_cross_shard_cx(
         rank_shift = len(plan.sharded_wires) - position - 1
         rank_control = (shard_state.rank >> rank_shift) & 1
         if rank_control == 0:
-            amplitudes = (
-                shard_state.amplitudes.clone()
-                if output is None
-                else output.copy_(shard_state.amplitudes)
-            )
+            amplitudes = _seeded_output(shard_state.amplitudes, output)
             return (
                 replace(shard_state, amplitudes=amplitudes),
                 0,
@@ -934,11 +948,7 @@ def _vectorized_cross_shard_cx(
     global_peer = (
         dist.get_global_rank(process_group, peer) if process_group is not None else peer
     )
-    out = (
-        shard_state.amplitudes.clone()
-        if output is None
-        else output.copy_(shard_state.amplitudes)
-    )
+    out = _seeded_output(shard_state.amplitudes, output)
     output_bytes = out.numel() * out.element_size()
     rank_bits = len(plan.sharded_wires)
     control_position = plan.n_wires - control - 1 - rank_bits

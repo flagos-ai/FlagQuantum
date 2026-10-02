@@ -125,6 +125,18 @@ per check measurement per round, minus the locations whose probability is zero,
 with the mechanisms that flip the same detectors and observables merged. The
 model is exact for Pauli noise in the reference gate set.
 
+Merging is also an operation a caller asks for, not only a step construction
+performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every
+shared signature one prior, `DemMergeRule` states the two rules by what they
+compute — `INDEPENDENT_PARITY` for mechanisms that are independent and coincide,
+`CLAMPED_LINEAR_SUM` for the sum of the group clamped at one — and
+`mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
+the refusal. The default parity rule is exact rather than tidy: a detector's rate
+is a product of `1 - 2p` factors over the mechanisms touching it, and a group's
+combined prior is the single `p` whose factor is that product, so regrouping the
+factors leaves every detector rate and every observable rate unchanged. The sum
+rule does not preserve them, and is offered for the caller who means it.
+
 Construction is exact and does not sample. Each mechanism's signature comes from
 one forced execution: the single error is injected into the circuit source, the
 source is lowered and executed twice, and the two shots must agree before the
@@ -338,6 +350,28 @@ Two mechanisms that share a detector pair but disagree on their observable label
 stay two edges. Merging them would either lose a logical flip or average two
 probabilities into a weight neither mechanism has, and the graph is an exact
 statement of the model rather than a summary of it.
+
+Two mechanisms that agree on *both* their detectors and their observables are the
+different case, and it is where the merge operation becomes load-bearing. Such a
+pair is one fault stated twice, so a matcher that must explain that detector's
+defect would charge the cheaper of the two parallel edges — for mechanisms of
+`0.1` and `0.2` that is `log 4`, or `1.386` — for a fault whose combined parity
+`0.26` has weight `log(0.74 / 0.26)`, or `1.046`. The charge is larger than the
+fault's own weight, so a matcher would prefer a longer chain of other mechanisms
+over the mechanism that actually fired. The graph is right to keep the two edges
+apart, because it has no rule for combining them, so
+`from_detector_error_model` calls `require_unique_mechanisms()` before it weights
+anything and refuses a model that states one signature twice, naming both
+mechanisms and the merge that resolves it. `DecodingGraph.from_detector_error_model`
+keeps its parallel edges, which is what makes the refusal a decoder decision
+rather than a representation one; a caller who wants the model decoded merges it
+first, and `merge_duplicate_mechanisms()` is the operation that does so.
+`tests/qec/test_dem_merge.py` pins both halves: the two rules against their
+closed forms, the exact preservation of every detector and observable rate under
+the parity rule and its denial under the sum rule, idempotence and order
+independence, the weight a duplicate would have been matched at against the
+fault's own weight, and the decoder's refusal of a split fault followed by the
+same syndrome predictions once that fault is merged back.
 
 Nothing about a code, a distance, a round count, or a check layout enters the
 graph. Whatever the model states is what the graph holds, so the decoder inherits
