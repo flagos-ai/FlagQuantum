@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -22,6 +24,15 @@ from benchmarks.mps_projected_two_site_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _REPOSITORY_ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "mps_projected_two_site_dispatch_a800.json"
+)
 
 
 def _result(multiplier: float = 1.0) -> dict[str, object]:
@@ -261,3 +272,18 @@ def test_aggregate_validation_rejects_noncanonical_decision() -> None:
 
     with pytest.raises(ValueError, match="canonical merge"):
         validate_evidence(changed)
+
+
+def test_checked_in_a800_evidence_is_canonical_and_retains_opt_in() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert not payload["direct_win_over_projected_eager_on_all_cases"]
+    assert not payload["direct_win_over_materialized_pytorch_on_all_cases"]
+    assert not payload["catalog_win_over_projected_eager_on_all_cases"]
+    assert not payload["catalog_win_over_compiled_projected_on_all_cases"]
+    assert not payload["public_factorization_win_over_eager_on_all_cases"]
+    assert payload["direct_memory_win_over_projected_eager_on_all_cases"]
+    assert payload["direct_memory_win_over_materialized_pytorch_on_all_cases"]
+    assert payload["projected_kernel_dispatch_decision"] == "retain_opt_in"
+    assert payload["fixed_rank_rollout_decision"] == "retain_opt_in"

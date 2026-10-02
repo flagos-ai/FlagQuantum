@@ -51,7 +51,7 @@ def test_fixed_rank_two_site_range_qr_shapes_and_gradient():
 @pytest.mark.gpu
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
-def test_fixed_rank_two_site_routes_inference_but_preserves_training_fallback(
+def test_fixed_rank_two_site_opt_in_routes_inference_but_preserves_training_fallback(
     monkeypatch,
 ) -> None:
     catalog_routes = []
