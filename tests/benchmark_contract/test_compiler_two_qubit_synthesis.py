@@ -1,11 +1,14 @@
-"""Contract for the two-qubit KAK synthesis measurement W8-02 records.
+"""Contract for the two-qubit KAK synthesis measurements W8-02 and W8-03 record.
 
 The benchmark module answers one question: how much of the declared two-qubit
 unitary group does native-gate legalization reach once it can decompose a unitary
-over a supercontrolled entangler? The recorded answer is that every basis which
-publishes a z-rotation, a pi/2 x-rotation, and ``cx`` or ``cz`` now reaches all 11
-declared opcodes through an explicit matrix, up from none at all, at an entangler
-cost of 1, 2, or 3.
+over a supercontrolled entangler? The answer W8-02 recorded is that every basis
+which publishes a z-rotation, a pi/2 x-rotation, and ``cx`` or ``cz`` reaches all
+11 declared opcodes through an explicit matrix, up from none at all, at an
+entangler cost of 1, 2, or 3. W8-03 extended the entangler table to every
+supercontrolled spelling -- adding ``cy``, and the interaction rotations ``rzz``,
+``rxx`` and ``ryy`` at an angle of pi/2 -- which is what opens a basis whose only
+two-qubit gate is a rotation.
 
 These tests hold that evidence in place. They fail if a basis stops being fully
 reachable, if the entangler cost of any opcode drifts, if the synthesized program
@@ -23,17 +26,32 @@ from benchmarks.compiler_two_qubit_synthesis import (
     baseline_reach,
     reach,
     run_benchmark,
+    two_qubit_instruction,
 )
+from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
 
 pytestmark = pytest.mark.benchmark_contract
+
+#: The entanglers whose own matrix is the basis, so a target equal to one of them
+#: is emitted as a single instruction rather than rebuilt. The rotation family is
+#: applied at pi/2 and is therefore never this case.
+_PARAMETER_FREE = ("cx", "cz", "cy")
 
 # Bases whose two-qubit group is now closed by matrix, and the count each one
 # reached by name before the KAK synthesis existed. Both numbers are pinned so a
 # regression that silently drops an opcode cannot pass as "still reachable".
-_CLOSED_BASES = ("ibm-rz-sx-cx", "ibm-heron-cz", "rotational")
+_CLOSED_BASES = (
+    "ibm-rz-sx-cx",
+    "ibm-heron-cz",
+    "rotational",
+    "ion-trap-rz-rx-rzz",
+)
 
-#: The entangler cost of every declared arity-2 unitary opcode, pinned per
-#: opcode rather than as a total so one opcode drifting cannot hide in the sum.
+#: The entangler cost of every declared arity-2 unitary opcode over an entangler
+#: the basis has to synthesize, pinned per opcode rather than as a total so one
+#: opcode drifting cannot hide in the sum. A basis that already publishes its own
+#: entangler keeps that instruction instead, so its count is one; see
+#: `_NATIVE_TWO_QUBIT`.
 _ENTANGLER_COST = {
     "cphase": 2,
     "crx": 2,
@@ -48,10 +66,51 @@ _ENTANGLER_COST = {
     "swap": 3,
 }
 
+#: The one arity-2 opcode each basis publishes natively. In every basis here it is
+#: also the entangler the basis is built around, which is asserted rather than
+#: assumed so a basis whose native two-qubit gate is not its entangler cannot be
+#: added without revisiting the cost accounting.
+_NATIVE_TWO_QUBIT = {
+    "ibm-rz-sx-cx": "cx",
+    "ibm-heron-cz": "cz",
+    "rotational": "cz",
+    "ion-trap-rz-rx-rzz": "rzz",
+    "clifford-t": "cx",
+}
+
+#: The entangler count each closed basis emits over the whole group: the sum of
+#: `_ENTANGLER_COST`, minus the difference for the opcode the basis keeps instead
+#: of synthesizing. `ion-trap-rz-rx-rzz` is one lower because its own `rzz` is
+#: kept as a single instruction where the decomposition would have paid two.
+_TOTAL_ENTANGLERS = {
+    "ibm-rz-sx-cx": 20,
+    "ibm-heron-cz": 20,
+    "rotational": 20,
+    "ion-trap-rz-rx-rzz": 19,
+}
+
 #: The named-gate reach each basis had before W8-02: `cx` alone in a `cx` basis,
 #: `cz` alone in a `cz` basis, and `swap` via the hand-written three-`cx` rule
 #: wherever `cx` is native. A matrix-carrying instruction had no path at all.
-_NAMED_BEFORE = {"ibm-rz-sx-cx": 2, "ibm-heron-cz": 1, "rotational": 1, "clifford-t": 2}
+_NAMED_BEFORE = {
+    "ibm-rz-sx-cx": 2,
+    "ibm-heron-cz": 1,
+    "rotational": 1,
+    "ion-trap-rz-rx-rzz": 1,
+    "clifford-t": 2,
+}
+
+
+def _by_label(name: str):
+    return next(basis for basis in DEFAULT_BASES if basis.label == name)
+
+
+def _expected_entangler_counts(label: str) -> dict[str, int]:
+    native = _NATIVE_TWO_QUBIT[label]
+    return {
+        opcode: 1 if opcode == native else _ENTANGLER_COST[opcode]
+        for opcode in TWO_QUBIT_OPCODES
+    }
 
 
 @pytest.fixture(scope="module")
@@ -85,7 +144,17 @@ def test_the_declared_two_qubit_group_is_the_whole_arity_two_group() -> None:
         "rzz",
         "swap",
     )
-    assert SUPERCONTROLLED_ENTANGLERS == ("cx", "cz")
+    assert dict(SUPERCONTROLLED_ENTANGLERS) == {
+        "cx": None,
+        "cz": None,
+        "cy": None,
+        "rzz": pytest.approx(1.5707963267948966),
+        "rxx": pytest.approx(1.5707963267948966),
+        "ryy": pytest.approx(1.5707963267948966),
+    }
+    # `cphase` is supercontrolled only at an angle of pi, where it is `cz` under
+    # another name, so it adds a spelling rather than reach.
+    assert "cphase" not in SUPERCONTROLLED_ENTANGLERS
 
 
 def test_every_closed_basis_reaches_the_group_through_a_matrix() -> None:
@@ -93,10 +162,14 @@ def test_every_closed_basis_reaches_the_group_through_a_matrix() -> None:
     assert set(measured) == set(_CLOSED_BASES) | {"clifford-t"}
     for label in _CLOSED_BASES:
         row = measured[label]
+        native = _NATIVE_TWO_QUBIT[label]
+        assert native == row["entangler_opcode"], label
+        expected = _expected_entangler_counts(label)
         assert row["legalized_by_matrix_count"] == 11, row["unresolved_errors"]
         assert row["unresolved_opcode_count"] == 0
-        assert row["entangler_count_by_opcode"] == _ENTANGLER_COST
-        assert row["total_entangler_count"] == sum(_ENTANGLER_COST.values()) == 20
+        assert row["entangler_count_by_opcode"] == expected
+        assert sum(expected.values()) == _TOTAL_ENTANGLERS[label]
+        assert row["total_entangler_count"] == _TOTAL_ENTANGLERS[label]
         assert row["entangler_opcode"] in SUPERCONTROLLED_ENTANGLERS
         # The count this change replaced, computed from the same descriptors.
         assert row["rewrite_only_legalized_by_name_count"] == _NAMED_BEFORE[label]
@@ -117,8 +190,8 @@ def test_a_named_two_qubit_gate_still_stops_at_the_hand_written_rules() -> None:
     # `clifford-t` is the one basis where the named path reaches further than the
     # matrix path: `swap` has a hand-written three-`cx` rule that needs no matrix,
     # while `cx` is the only opcode whose own matrix is native there.
-    assert reach(DEFAULT_BASES[0])["legalized_by_name_count"] < 11
-    assert reach(DEFAULT_BASES[3])["legalized_by_name_count"] == 2
+    assert reach(_by_label("ibm-rz-sx-cx"))["legalized_by_name_count"] < 11
+    assert reach(_by_label("clifford-t"))["legalized_by_name_count"] == 2
 
 
 def test_a_basis_without_a_z_rotation_keeps_the_matrix_path_open_and_the_rest_shut() -> (
@@ -162,9 +235,11 @@ def test_the_entangler_cost_is_pinned_per_opcode_and_entangler(payload: dict) ->
         assert len(row["leaf_opcodes"]) == row["leaf_count"]
         assert set(row["leaf_opcodes"]) <= {"rz", "sx", row["entangler"]}
         assert row["leaf_opcodes"].count(row["entangler"]) == row["entangler_count"]
-        if row["opcode"] == row["entangler"]:
-            # `cx` over `cx` and `cz` over `cz` are already in the entangler
-            # class, so this one is the entangler and nothing else.
+        if row["opcode"] == row["entangler"] and row["entangler"] in _PARAMETER_FREE:
+            # `cx` over `cx`, `cz` over `cz` and `cy` over `cy` are already in
+            # the entangler class, so this one is the entangler and nothing else.
+            # The rotation entanglers are *not* in this case: they are applied at
+            # pi/2, so a target rotation at another angle still has to be built.
             assert row["leaf_opcodes"] == [row["entangler"]]
             assert row["entangler_count"] == 1
         else:
@@ -177,15 +252,45 @@ def test_the_entangler_cost_is_pinned_per_opcode_and_entangler(payload: dict) ->
     }
 
 
-def test_the_two_entanglers_cost_the_same_for_every_opcode(payload: dict) -> None:
-    """`cx` and `cz` are locally equivalent, so the cost may not depend on one."""
+def test_the_rotation_entangler_is_applied_at_the_supercontrolled_angle() -> None:
+    """The emitted instruction carries `pi/2`, and only for the rotation family.
+
+    A parameter-free entangler must not acquire a parameter it does not have, and
+    a rotation entangler must not be emitted without one.
+    """
+
+    for entangler, angle in SUPERCONTROLLED_ENTANGLERS.items():
+        emitted = synthesize_two_qubit(
+            two_qubit_instruction("swap", matrix=True).matrix,
+            wires=(0, 1),
+            entangler=entangler,
+            z_rotation="rz",
+        )
+        assert emitted is not None
+        for leaf in emitted:
+            if leaf.name != entangler:
+                continue
+            assert set(leaf.params) == (
+                set() if angle is None else {"theta"}
+            ), entangler
+            if angle is not None:
+                assert leaf.params["theta"] == pytest.approx(angle)
+        assert sum(1 for leaf in emitted if leaf.name == entangler) >= 1
+
+
+def test_every_entangler_costs_the_same_for_every_opcode(payload: dict) -> None:
+    """`cx`, `cz`, `cy`, `rxx`, `ryy` and `rzz` are all locally equivalent to
+    `cx` up to a local factor, so the cost may not depend on the spelling."""
 
     by_key = {
         (row["opcode"], row["entangler"]): row["entangler_count"]
         for row in payload["entangler_cost"]
     }
     for opcode in TWO_QUBIT_OPCODES:
-        assert by_key[(opcode, "cx")] == by_key[(opcode, "cz")], opcode
+        costs = {
+            by_key[(opcode, entangler)] for entangler in SUPERCONTROLLED_ENTANGLERS
+        }
+        assert costs == {_ENTANGLER_COST[opcode]}, (opcode, costs)
 
 
 def test_a_seeded_population_that_is_not_a_named_gate_is_reached_too(
@@ -231,6 +336,11 @@ def test_the_qiskit_anchor_agrees_on_the_entangler_count(payload: dict) -> None:
     a local benchmark and CI does not install Qiskit for it. Only the entangler
     count is compared. The two sides choose different Euler bases, so their raw
     instruction lists are different presentations of the same cost.
+
+    The anchor spans the port's whole entangler table, including the three
+    spellings Qiskit's own chooser does not list, so this is a check that each
+    table entry really is supercontrolled rather than a check that the two tables
+    agree.
     """
 
     anchor = payload["reference_anchor"]
@@ -240,5 +350,6 @@ def test_the_qiskit_anchor_agrees_on_the_entangler_count(payload: dict) -> None:
     assert anchor["compared_case_count"] == expected
     assert anchor["mismatches"] == []
     assert anchor["entangler_count_agreement_count"] == expected
+    assert anchor["reference_entanglers"] == list(SUPERCONTROLLED_ENTANGLERS)
     for row in anchor["rows"]:
         assert row["port_entangler_count"] == _ENTANGLER_COST[row["opcode"]], row

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -613,3 +614,133 @@ def test_a_two_wire_matrix_keeps_the_hand_written_rules_out_of_its_way() -> None
     assert result.decompositions == ()
     assert len(result.program.instructions) == 1
     assert result.program.instructions[0].matrix is not None
+
+
+def test_a_target_whose_only_two_qubit_gate_is_a_rotation_reaches_the_group() -> None:
+    """An ion-trap shape: `rz`, `rx`, and `rzz` at pi/2 and nothing else.
+
+    This is the basis W8-03 opens. It publishes no controlled gate at all, so
+    before the entangler table carried the interaction rotations it legalized one
+    of the eleven declared two-qubit unitaries. The rotation is applied at pi/2,
+    which is the only angle at which the family sits on its supercontrolled Weyl
+    point.
+    """
+
+    rotation_only = _snapshot(
+        (
+            {"name": "rz", "parameters": ("theta",)},
+            {"name": "rx", "parameters": ("theta",)},
+            {"name": "rzz", "parameters": ("theta",)},
+        )
+    )
+    group = _two_qubit_group()
+    source = CircuitIR(2, group, dtype="complex128")
+    result = legalize_native_gates(source, snapshot=rotation_only, evaluated_at=_NOW)
+
+    assert len(group) == 11
+    # Non-vacuity: this basis really has no controlled gate and no `sx`.
+    assert {item.name for item in result.program.instructions} <= {"rz", "rx", "rzz"}
+    assert "cx" not in {item.name for item in result.program.instructions}
+    assert {item.source_opcode for item in result.decompositions} == {
+        item.name for item in group
+    } - {"rzz"}
+
+    per_opcode = {
+        item.source_opcode: sum(1 for name in item.replacement_opcodes if name == "rzz")
+        for item in result.decompositions
+    }
+    assert per_opcode == {
+        "cphase": 2,
+        "crx": 2,
+        "cry": 2,
+        "crz": 2,
+        "cx": 1,
+        "cy": 1,
+        "cz": 1,
+        "rxx": 2,
+        "ryy": 2,
+        "swap": 3,
+    }
+    # One fewer than the 20 the whole group costs over an entangler the basis has
+    # to synthesize: `rzz` is native here, so it is kept instead of decomposed and
+    # produces no record at all. The count above is therefore over ten opcodes,
+    # which is why it is pinned as a literal rather than derived from the sum.
+    assert sum(per_opcode.values()) == 18
+    assert len(result.decompositions) == 10
+
+    # Every entangler the synthesis emits carries the pi/2 angle, and every other
+    # gate it emits is a rotation the target published. `rzz` is dropped from the
+    # source first, because the basis publishes `rzz` natively and keeps it, so
+    # its own 0.7137 would otherwise be read as a synthesized angle.
+    without_rzz = tuple(item for item in group if item.name != "rzz")
+    synthesized = legalize_native_gates(
+        CircuitIR(2, without_rzz, dtype="complex128"),
+        snapshot=rotation_only,
+        evaluated_at=_NOW,
+    )
+    entanglers = 0
+    for instruction in synthesized.program.instructions:
+        if instruction.name == "rzz":
+            entanglers += 1
+            assert instruction.params["theta"] == pytest.approx(math.pi / 2)
+        else:
+            assert instruction.name in {"rz", "rx"}
+        assert instruction.matrix is None
+        assert len(instruction.wires) == 1 or instruction.name == "rzz"
+    assert entanglers == sum(per_opcode.values()) == 18
+
+
+def test_a_rotation_entangler_is_preferred_only_when_no_cheaper_one_exists() -> None:
+    """A target publishing both `cx` and `rzz` keeps `cx`.
+
+    The entangler table is ordered so the choice is a fixed function of the
+    published gate set rather than of a dictionary order, and a parameter-free
+    entangler always wins over one that has to be applied at an angle.
+    """
+
+    both = _snapshot(
+        (
+            {"name": "rz", "parameters": ("theta",)},
+            {"name": "rx", "parameters": ("theta",)},
+            {"name": "cx", "parameters": ()},
+            {"name": "rzz", "parameters": ("theta",)},
+        )
+    )
+    result = legalize_native_gates(
+        CircuitIR(2, _two_qubit_group(), dtype="complex128"),
+        snapshot=both,
+        evaluated_at=_NOW,
+    )
+    emitted = {
+        name for item in result.decompositions for name in item.replacement_opcodes
+    }
+    assert "cx" in emitted
+    # `rzz` does appear in the program, but only as the source `rzz` the basis
+    # publishes natively; the synthesis never reaches for it.
+    assert "rzz" not in emitted
+
+
+def test_a_rotation_entangler_declared_without_its_angle_fails_closed() -> None:
+    """A target that publishes `rzz` as a fixed gate is refused, not miscompiled.
+
+    The descriptor language can say which parameter names a target accepts but
+    not which angle it applies, so a target that accepts no `theta` cannot
+    receive the pi/2 rotation the synthesis needs. The legalizer must name the
+    gate it cannot emit rather than emit an instruction the target never offered.
+    """
+
+    fixed = _snapshot(
+        (
+            {"name": "rz", "parameters": ("theta",)},
+            {"name": "rx", "parameters": ("theta",)},
+            {"name": "rzz", "parameters": ()},
+        )
+    )
+    with pytest.raises(
+        NativeGateLegalizationError, match="requires unsupported native gate 'rzz'"
+    ):
+        legalize_native_gates(
+            CircuitIR(2, _two_qubit_group(), dtype="complex128"),
+            snapshot=fixed,
+            evaluated_at=_NOW,
+        )
