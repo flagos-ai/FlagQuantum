@@ -265,7 +265,10 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
     assert (
         "zero-noise extrapolation -- flagquantum.algorithms.error_mitigation" in output
     )
-    assert _labelled(output, "noiseless value") == "0.99999994039535522"
+    # The reference is measured at the runs' own dtype, so the distances below are
+    # distances at one precision rather than a complex64 floor reported as a
+    # complex128 extrapolation error.
+    assert _labelled(output, "noiseless value") == "0.99999999999999978"
     assert _labelled(output, "scale factors") == "(1.0, 3.0, 5.0, 7.0)"
     # The four ordinates, read off the exact noise-scaled curve.
     assert _labelled(output, "scale 1") == "0.871111109257"
@@ -279,7 +282,9 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
     assert "max residual 4.1723e-09" in output
     assert "max residual none: the fit interpolates" in output
     assert _labelled(output, "unmitigated value") == "0.871111109257"
-    assert _labelled(output, "degree 2 improved by") == "2.058e+06x"
+    # Distance from the same-dtype noiseless read: 0.1288888907432557 unmitigated
+    # against 3.0299036613001817e-09 extrapolated.
+    assert _labelled(output, "degree 2 improved by") == "4.254e+07x"
     assert _labelled(output, "degree 1 improved by") == "2.636e+00x"
     # The declared scaling refuses a channel whose parameter is an angle, and the
     # caller's own scaling keeps a residual two orders above the floor.

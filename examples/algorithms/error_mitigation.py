@@ -54,6 +54,9 @@ from flagquantum.noise import (
 )
 
 SCALE_FACTORS = (1.0, 3.0, 5.0, 7.0)
+# A degree-one fit needs two points, so the empty-model reference is measured at
+# the fewest scale factors run_zne accepts.
+REFERENCE_SCALE_FACTORS = (1.0, 3.0)
 DEPOLARIZING_PROBABILITY = 0.05
 OVREROTATION_ANGLE = 0.15
 DTYPE = torch.complex128
@@ -103,7 +106,25 @@ def main() -> None:
 
     circuit = bell_pair()
     observable = zz_observable()
-    noiseless = float(observable.expectation(circuit.density_matrix()))
+    # The reference is the same observable measured with an empty noise model at
+    # the dtype the fits below run at, through run_zne itself. Both points of an
+    # empty model read the same value, so the scale-factor-1.0 measurement is the
+    # noiseless read and the comparison never leaves the path the estimate took.
+    # Circuit.density_matrix() takes no dtype and returns the runtime's default
+    # precision, so a distance taken from it would report the complex64 rounding
+    # floor as the extrapolation's error.
+    noiseless = float(
+        run_zne(
+            circuit,
+            observable,
+            noise_model=NoiseModel(),
+            scale_factors=REFERENCE_SCALE_FACTORS,
+            order=1,
+            dtype=DTYPE,
+        )
+        .measurements[0]
+        .expectation
+    )
     model = NoiseModel().add(
         "cx", depolarizing_channel(DEPOLARIZING_PROBABILITY, dtype=DTYPE)
     )

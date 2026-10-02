@@ -1112,10 +1112,11 @@ is all-or-nothing over the model rather than leaving it partly scaled.
 **Not here:** probabilistic error cancellation, Clifford data regression, circuit folding,
 gate-folding scale factors, shot-based execution, and readout-error mitigation.
 
-**Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose noiseless value is
-`0.9999999403953552`, and with depolarizing noise at `p = 0.05` on the `cx`, the four scale
-factors `1, 3, 5, 7` give the exact curve `0.871111109257`, `0.639999987284`,
-`0.444444444444`, `0.284444452922`:
+**Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose value is
+analytically `1.0` and whose exactly simulated noiseless read is `0.9999999999999998` in
+`complex128` and `0.9999999403953552` in the runtime's default single precision, and with
+depolarizing noise at `p = 0.05` on the `cx`, the four scale factors `1, 3, 5, 7` give the
+exact curve `0.871111109257`, `0.639999987284`, `0.444444444444`, `0.284444452922`:
 
 ```python
 import torch
@@ -1160,10 +1161,20 @@ redundant degree-two one — estimate `1.000000021110` at a variance amplificati
 `11.390625`, with `max_residual` absent because the fit interpolates. The degree is chosen
 by residual and not by ambition: degree three is 3.87x more costly here and an order of
 magnitude less accurate, because the exact curve is degree two and the extra freedom
-interpolates rounding rather than signal. In the runtime's default single precision the same
-degree-two run reaches `1.3e-7` from the noiseless value at a residual of `6.3e-8`, so the
-unmitigated distance of `1.288888907432559e-01` is still improved by a factor of `1.0e6`;
-precision moves the floor, not the conclusion.
+interpolates rounding rather than signal. Precision moves the floor, not the conclusion. In the
+runtime's default single precision the same degree-two run reaches `1.3e-7` from the analytic
+value `1.0` and `6.8e-8` from the exactly simulated noiseless read `0.9999999403953552`, at a
+residual of `6.3e-8`; its unmitigated measurement `0.871110976` sits `1.288890243e-01` from
+`1.0`, an improvement of `1.01e6`. The double-precision run above reaches `3.0e-9` from the
+same analytic value at a residual of `4.2e-9`, and `3.0e-9` from its own noiseless read
+`0.9999999999999998`; its unmitigated measurement `0.871111109` sits `1.288888907e-01` away,
+an improvement of `4.25e7`.
+
+The reference matters as much as the precision, which is why every distance above names what
+it is measured from. The default-precision noiseless read is itself `6.0e-8` away from the
+analytic `1.0`, so a distance taken against it is dominated by that offset and cannot be read
+as the extrapolation's accuracy; the example takes its reference at the dtype its fits run at
+for this reason.
 
 **A wrong assumption stays visible.** Under a coherent over-rotation of `0.15` on the `cx`,
 the declared scaling refuses the channel by name, and a caller-supplied callable that grows
