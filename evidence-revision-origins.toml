@@ -3,8 +3,9 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # Every revision a checked-in evidence artifact records that a reader of this
 # repository cannot obtain, with the origin that accounts for it.
 #
-# `tools/check_evidence_revisions.py` walks `artifacts/` and `benchmarks/results/`
-# and requires each of these revisions to be listed here. It asks two questions
+# `tools/check_evidence_revisions.py` walks `artifacts/`, `benchmarks/results/` and
+# `docs/development/evidence/`, and requires each of these revisions to be listed
+# here. It asks two questions
 # about every full-length revision a walked artifact records, at any depth and
 # under any field name: whether this repository holds the commit, and whether a ref
 # of this repository reaches it. A reader obtains a revision only when both answers
@@ -15,19 +16,35 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision this repository does not contain, and thirteen of them said nothing
 # about it. No validator read `benchmarks/results/` at all, which is where seventeen
 # further revisions and the fifty-one artifacts recording them were found.
+# `docs/development/evidence/` was found by asking which tracked JSON outside those
+# two roots records a revision at all, rather than by waiting for a claim about it:
+# four of the records there held five revisions between them, which are the evidence
+# `docs/guides/JIUDING.md` and the release notes cite. Three more records under that
+# root were reached only because this change writes their citations out in full, so
+# the walk now asks about seven records rather than four and about the same five
+# revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Forty-one distinct revisions are recorded under the two walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other forty appear below in one of
-# three states.
+# Forty-seven distinct revisions are recorded under the three walked roots, and one of
+# them -- a commit on `main` -- is obtainable. The other forty-six appear below in
+# one of three states.
 #
-# `unreferenced_object` (eighteen revisions) means no branch and no tag reaches the
-# commit, so a clone or a plain fetch does not obtain it. This is the state a check
+# `unreferenced_object` (twenty-four revisions) means no branch and no tag reaches
+# the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote
-# does serve all eighteen to `git fetch origin <revision>` by name today, but
-# retaining an unreferenced object is server policy rather than a promise, and one
-# of the eighteen is the head of a closed pull request.
+# does serve all twenty-four to `git fetch origin <revision>` by name, each
+# confirmed over three fresh fetches, but retaining an unreferenced object is server
+# policy rather than a promise, and one of the twenty-four is the head of a closed
+# pull request. No ref of this repository reaches any of the twenty-four, so a
+# complete clone obtains none of them; twenty are absent from this checkout's object
+# database as well, and the remaining four linger here without a ref, which is what an
+# answer read from the checkout rather than from the declaration would depend on. The
+# twenty-fourth is
+# `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered this table only after
+# the citation that named it was written out in full: the Quafu artifact recorded it
+# as `5cfcd765`, which is too short for the gate to read as a revision, so an
+# unobtainable pin sat inside a walked artifact unasked.
 #
 # `producing_host_history` (eighteen revisions) means the run happened in a history
 # this repository does not contain. Seventeen are commits of
@@ -72,6 +89,35 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # artifacts under `artifacts/` do, and appear below as well. Both records are read,
 # and a revision whose two records disagree fails the gate, so this table is one of
 # two records of the same fact rather than a replacement for the other.
+#
+# The walk reads a revision only when the artifact writes all forty characters of it,
+# so a shortened citation is invisible to it however large the roots become. The same
+# run therefore asks, of the roots that cite a revision as the grounds for a claim,
+# whether a shortened hexadecimal run names exactly one revision this repository gives
+# in full and whether the file citing it gives that revision in full too. Eighteen
+# citations failed the second question -- one in the Quafu artifact, nine in three
+# Jiuding records, one in a CUDA-Q comparison record, one in the Quafu
+# live-execution document, one in the split real/imag contract, and five in
+# `docs/roadmap/CAPABILITY_MATURITY.md` -- and each was completed
+# rather than the question relaxed. The rule is what makes a citation checkable by a
+# reader: a prefix is obtainable only if the reader can expand it, and a revision a
+# reader cannot name is one a reader cannot fetch. The null-commit placeholder is
+# exempt because it names no commit at all, and a run that prefixes no revision this
+# repository records is left alone, which is why task identifiers and dates beside a
+# real revision do not trip it.
+#
+# That rule reports only a prefix this repository can expand, so it states a limit as
+# well as a check: a shortened value nothing here spells out is invisible to both
+# halves of the gate. Counting every JSON string scalar of 7 to 39 hexadecimal
+# characters under the three walked roots gives 969, mostly digests and task or
+# container identifiers, of which 14 sit in a field named for a revision -- such as
+# `base_commit`, `host_commit` or `implementation_commit` -- that nothing in the
+# repository expands. Completing those needs the full revision read out of a clone
+# that holds the commit, which is the declared-revision-field work rather than this
+# change. The two CUDA-Q comparison records show the convention the check accepts
+# instead: `source_revision` records what the run wrote and `source_revision_full`
+# beside it gives the revision, so the citation is checkable without editing recorded
+# output.
 
 
 [[artifact]]
@@ -100,6 +146,19 @@ repository = "BAQIS-Quantum/qsteed"
 
 [[artifact.revision]]
 value = "9f1b0d113c647d564ac74f22beede55efbdb33bd"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "a5142274c6730e718e56708e7cfe9165cb6f6485"
+origin = "external_dependency"
+repository = "FlagQuantum/FlagQuantum-Compiler-QSteed"
+
+
+[[artifact]]
+path = "artifacts/development/quafu_explicit_mapping_dongling_20260909.json"
+
+[[artifact.revision]]
+value = "5cfcd765a72bb8007b5c6f07e9adc4337fc63b10"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
@@ -434,4 +493,28 @@ origin = "unreferenced_object"
 
 [[artifact.revision]]
 value = "f4901792d7c8a12faa5d7487a248e101e3cd0f06"
+origin = "unreferenced_object"
+
+
+[[artifact]]
+path = "docs/development/evidence"
+
+[[artifact.revision]]
+value = "0a13cfa2cac0e0f341def2cecb7b2fc4457956a6"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "0a26c3643074b7ea83dcee1dd04a8879071cff25"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "aec65643cf8d95e47094bd58840eb8b0053ed50f"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "b30886cb2ec81d59402a9aec0ae384f08eab9e2a"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "ecaf903c2dcb4596450b2f3f3367ba83f96adbf7"
 origin = "unreferenced_object"

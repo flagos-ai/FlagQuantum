@@ -17,6 +17,25 @@ reader can obtain the revision from. An undeclared revision that is not obtainab
 fails the gate, so recording a pin and saying nothing about it is no longer a way
 to pass.
 
+A root is listed when its JSON is evidence for a checked-in claim, and three are:
+``artifacts/``, ``benchmarks/results/`` and ``docs/development/evidence/``. The
+third was found by asking which tracked JSON outside the first two records a
+revision at all, rather than by waiting for a claim to be made about it. Two
+directories that question also names are deliberately left out, and the reason is
+in the comment on :data:`EVIDENCE_ROOTS`: ``ci/`` holds a lock file its validators
+read as input rather than a record of what a run produced, and
+``examples/assets/manifest.json`` records the revision of a third-party checkpoint.
+Listing either would have the gate demand that this repository account for a value
+it never produced.
+
+The gate answers the presence question from the checkout it runs in, and that
+answer is not the same in every checkout. A revision absent here may still be an
+unreferenced object this repository's remote serves by name, which is exactly the
+state :data:`ORIGIN_UNREFERENCED_OBJECT` records. Because telling that state from a
+commit no repository serves needs the network, and this gate is a static check, it
+does not guess: it reports that the checkout does not hold the revision and leaves
+the choice of origin to the declaration, which states how the origin was verified.
+
 Obtainable means both answers are yes. Presence alone is not enough: a commit that
 only a deleted branch pointed at stays in the object database of the checkout that
 produced it, so a pin measured against that checkout resolves while every clone
@@ -50,6 +69,18 @@ asserts equality
 inserting a provenance key inside them would change what those artifacts must
 contain. An origin stated in either place accounts for the revision, and neither is
 required for a revision this repository obtains.
+
+The third question is how the artifact writes the revision down, and it is asked of
+the roots that cite evidence as grounds for a claim. A shortened hexadecimal run
+names a commit only if the reader can expand it, so a file citing one has to give the
+full value too; otherwise the citation points at a revision that cannot be named and
+so cannot be obtained. This is the same question as the first two asked one level
+down: an artifact whose pin cannot be checked out and a citation whose pin cannot be
+identified both leave the claim resting on a revision the reader does not have. The
+gate finds the shortened runs that name exactly one revision this repository gives in
+full, because that is what distinguishes a citation from the other
+hexadecimal-looking text a file can carry, and it skips the null-commit placeholder,
+which names no commit by construction.
 """
 
 from __future__ import annotations
@@ -91,12 +122,71 @@ DECLARATIONS = ROOT / "evidence-revision-origins.toml"
 SCHEMA = "flagquantum.evidence_revision_origins.v1"
 
 #: Directories whose JSON artifacts are walked. A directory is listed when its
-#: JSON files are evidence for a checked-in claim rather than a tool's output.
-EVIDENCE_ROOTS = (ROOT / "artifacts", ROOT / "benchmarks" / "results")
+#: JSON files are evidence for a checked-in claim rather than a tool's output or a
+#: tool's input. ``docs/development/evidence/`` is listed because the Jiuding
+#: hardware records there are what ``docs/guides/JIUDING.md``,
+#: ``docs/reference/KNOWN_LIMITATIONS.md`` and the release notes cite as their
+#: evidence. ``ci/`` is not listed: its JSON is read *by* the validators as an
+#: input, so a lock file there is not a record of what a run produced.
+#: ``examples/assets/`` is not listed either: that manifest records the revision of
+#: a third-party checkpoint, which this repository cannot be asked to account for.
+EVIDENCE_ROOTS = (
+    ROOT / "artifacts",
+    ROOT / "benchmarks" / "results",
+    ROOT / "docs" / "development" / "evidence",
+)
 
-#: The revision names a commit this repository holds as an unreachable object.
-#: No ref reaches it, so a clone or a plain fetch does not obtain it, and it
-#: survives only while the remote retains unreferenced objects.
+#: Roots whose citations of a revision must be complete. This answers a different
+#: question from :data:`EVIDENCE_ROOTS`, so it is a different tuple: these are the
+#: roots that cite a revision as the grounds for a checked-in claim, so a reader who
+#: follows a citation from one of them has to be able to obtain what it names. A
+#: shortened revision is obtainable only when the file that cites it also gives the
+#: full value, because nothing else tells the reader which commit the prefix names.
+CITATION_ROOTS = (
+    ROOT / "artifacts",
+    ROOT / "benchmarks" / "results",
+    ROOT / "docs" / "development" / "evidence",
+    ROOT / "docs" / "reference",
+    ROOT / "docs" / "roadmap",
+)
+
+#: File types that can carry a citation of a revision.
+CITATION_SUFFIXES = frozenset(
+    {".json", ".md", ".markdown", ".rst", ".toml", ".txt", ".yaml", ".yml"}
+)
+
+#: Directories never descended into while looking for the revisions a repository
+#: cites. A full-length revision under one of these is not a citation a reader
+#: follows, and ``.git`` in particular holds an object database rather than text.
+CITATION_SKIP_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        "__pycache__",
+        "build",
+        "dist",
+        "node_modules",
+    }
+)
+
+#: A full-length revision, not part of a longer hexadecimal run.
+_FULL_REVISION_PATTERN = re.compile(r"(?<![0-9a-fA-F])([0-9a-fA-F]{40})(?![0-9a-fA-F])")
+
+#: A hexadecimal run too short to be the revision itself, given in full elsewhere.
+_SHORT_REVISION_PATTERN = re.compile(
+    r"(?<![0-9a-fA-F])([0-9a-fA-F]{7,39})(?![0-9a-fA-F])"
+)
+
+#: The revision names a commit that no ref of this repository reaches, so neither a
+#: clone nor a plain fetch obtains it. The remote does serve the object to
+#: ``git fetch origin <revision>``, which is the only route to it and one that lasts
+#: only while the remote retains unreferenced objects. Whether the checkout running
+#: this gate also holds the object depends on that checkout and not on the remote, so
+#: the gate cannot tell this origin from a commit no repository serves; the
+#: declaration is verified by fetching the revision from the remote by name.
 ORIGIN_UNREFERENCED_OBJECT = "unreferenced_object"
 
 #: The revision names a commit of an external dependency recorded beside it.
@@ -453,10 +543,14 @@ def _artifact_errors(
             )
             continue
         errors.append(
-            f"{artifact} records {revision} ({where}), which names no commit in this "
-            f"repository; declare it in {DECLARATIONS.name} with origin "
-            f"{ORIGIN_PRODUCING_HOST_HISTORY!r} or {ORIGIN_EXTERNAL_DEPENDENCY!r}, or "
-            f"state {paths[0]}_origin beside the field that records it"
+            f"{artifact} records {revision} ({where}), which this checkout does not "
+            f"hold; declare it in {DECLARATIONS.name} with the origin that accounts "
+            f"for it -- {ORIGIN_UNREFERENCED_OBJECT!r} when the remote still serves "
+            f"the object by name, {ORIGIN_PRODUCING_HOST_HISTORY!r} when the run "
+            f"happened in a history this repository does not contain, or "
+            f"{ORIGIN_EXTERNAL_DEPENDENCY!r} when the revision is a commit of a "
+            f"dependency -- or state {paths[0]}_origin beside the field that records "
+            "it"
         )
     return tuple(errors)
 
@@ -550,6 +644,77 @@ def evidence_errors(
     return tuple(errors)
 
 
+def citation_errors(
+    *,
+    root: Path = ROOT,
+    citation_roots: Sequence[Path] = CITATION_ROOTS,
+) -> tuple[str, ...]:
+    """Return every revision cited in a form a reader cannot expand.
+
+    A shortened hexadecimal run is reported when it names exactly one revision the
+    repository gives in full somewhere and the file citing it does not give that
+    revision in full itself. The first condition is what separates a citation from
+    the other hexadecimal-looking text a file can hold -- a task identifier, a date,
+    a digest -- since such text prefixes no recorded revision. The second is the
+    defect: a reader who follows the citation has no way to learn which commit the
+    prefix names, and a revision that cannot be named cannot be obtained.
+
+    A run of zeros is skipped. The null-commit placeholder is hexadecimal and names
+    no commit by construction, so it is not a citation a reader could expand.
+    """
+
+    complete = _revisions_given_in_full(root)
+    errors: list[str] = []
+    for citation_root in citation_roots:
+        for path in sorted(citation_root.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in CITATION_SUFFIXES:
+                continue
+            if any(part in CITATION_SKIP_DIRECTORIES for part in path.parts):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            local = {
+                match.group(1).lower()
+                for match in _FULL_REVISION_PATTERN.finditer(text)
+            }
+            for match in _SHORT_REVISION_PATTERN.finditer(text):
+                cited = match.group(1).lower()
+                if set(cited) == {"0"}:
+                    continue
+                targets = [value for value in complete if value.startswith(cited)]
+                if len(targets) != 1 or targets[0] in local:
+                    continue
+                artifact = _relative(path, root)
+                line = text.count("\n", 0, match.start()) + 1
+                errors.append(
+                    f"{artifact}:{line} cites {cited}, which names {targets[0]} in "
+                    f"this repository; give that revision in full here, because a "
+                    f"reader cannot obtain a revision the citation does not name"
+                )
+    return tuple(errors)
+
+
+def _revisions_given_in_full(root: Path) -> frozenset[str]:
+    """Return every revision the repository gives in full, at any length of file."""
+
+    complete: set[str] = set()
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in CITATION_SUFFIXES:
+            continue
+        if any(part in CITATION_SKIP_DIRECTORIES for part in path.parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        complete.update(
+            match.group(1).lower() for match in _FULL_REVISION_PATTERN.finditer(text)
+        )
+    return frozenset(complete)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--declarations", type=Path, default=DECLARATIONS)
@@ -559,6 +724,7 @@ def main(argv: list[str] | None = None) -> int:
     except ProvenanceUnavailableError as error:
         print(f"evidence revision origins could not be checked: {error}")
         return 1
+    errors += citation_errors()
     if errors:
         print("\n".join(errors))
         return 1

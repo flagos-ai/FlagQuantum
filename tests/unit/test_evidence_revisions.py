@@ -9,10 +9,16 @@ reader depends on: whether this repository holds the commit, and whether a ref o
 this repository reaches it. `evidence-revision-origins.toml` records the origin of
 every revision the answer is no for.
 
+A revision the gate cannot read is not asked about either, which is the second
+half of the same defect: a citation that writes only a prefix of the revision
+names a commit no reader can expand and no walk can find. Both halves are asked
+here, because widening the walked roots does not help an artifact that abbreviates
+what it records.
+
 These tests build their own repository and artifacts rather than reading the
 ambient clone, so they state the gate's behaviour instead of the state of one
-checkout. The last test reads the real tree, which is what makes the checked-in
-disclosure a checked fact rather than a claim in a pull request.
+checkout. The last three tests read the real tree, which is what makes the
+checked-in disclosure a checked fact rather than a claim in a pull request.
 """
 
 from __future__ import annotations
@@ -23,11 +29,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import tomllib
 
 from tools.check_evidence_revisions import (
+    CITATION_ROOTS,
+    DECLARATIONS,
     EVIDENCE_ROOTS,
     ORIGIN_EXTERNAL_DEPENDENCY,
     ORIGIN_UNREFERENCED_OBJECT,
+    citation_errors,
     evidence_errors,
     recorded_origins,
     recorded_revisions,
@@ -51,6 +61,24 @@ OTHER_ABSENT_REVISION = "1" * 40
 
 #: The revision `_with_filler` declares, which no case under test mentions.
 FILLER_REVISION = "9" * 40
+
+#: A revision a synthetic citation may abbreviate, and its full form. Written as a
+#: repeated fragment like the placeholders above, so the module holds no literal
+#: forty-character hexadecimal run that a repository-wide pin count would have to
+#: read as a revision this repository records.
+CITED_REVISION = "0123456789abcdef" * 2 + "01234567"
+
+#: The revisions the four Jiuding records under `docs/development/evidence/` write
+#: out in full. No ref of this repository reaches any of them, and the remote served
+#: each to `git fetch origin <revision>` on three fresh attempts, which is what makes
+#: `unreferenced_object` the origin that accounts for them.
+JIUDING_REVISIONS = (
+    "0a13cfa2cac0e0f341def2cecb7b2fc4457956a6",
+    "0a26c3643074b7ea83dcee1dd04a8879071cff25",
+    "aec65643cf8d95e47094bd58840eb8b0053ed50f",
+    "b30886cb2ec81d59402a9aec0ae384f08eab9e2a",
+    "ecaf903c2dcb4596450b2f3f3367ba83f96adbf7",
+)
 
 DECLARATION_HEADER = 'schema = "flagquantum.evidence_revision_origins.v1"\n'
 
@@ -435,7 +463,13 @@ def test_unsupported_origin_stated_inside_the_artifact_is_rejected(
 
     assert len(errors) == 2
     assert any("is not a supported origin" in error for error in errors), errors
-    assert any("names no commit" in error for error in errors), errors
+    # The revision stays unaccounted for, and the failure reports what the checkout
+    # can see rather than what no repository may hold: the object is absent here,
+    # which is a fact about this checkout and not about the remote.
+    assert any(
+        ABSENT_REVISION in error and "this checkout does not hold" in error
+        for error in errors
+    ), errors
 
 
 def test_directory_declaration_covers_every_artifact_below_it(repository: Path) -> None:
@@ -511,7 +545,8 @@ def test_declaring_a_revision_the_artifact_does_not_record_fails(
     assert len(errors) == 2
     assert any("does not record the declared revision" in error for error in errors)
     assert any(
-        ABSENT_REVISION in error and "names no commit" in error for error in errors
+        ABSENT_REVISION in error and "this checkout does not hold" in error
+        for error in errors
     )
 
 
@@ -666,6 +701,116 @@ def test_every_undeclared_revision_is_named_in_the_failure(repository: Path) -> 
     assert "runs[0].source_revision" in errors[0]
 
 
+def _citation_note(tmp_path: Path, text: str) -> Path:
+    """Write one citable document beside a record of the full revision it cites."""
+
+    docs = tmp_path / "docs"
+    docs.mkdir(exist_ok=True)
+    (docs / "record.json").write_text(
+        json.dumps({"source_revision": CITED_REVISION}) + "\n", encoding="utf-8"
+    )
+    note = docs / "note.md"
+    note.write_text(text, encoding="utf-8")
+    return note
+
+
+def test_shortened_citation_of_a_recorded_revision_fails(tmp_path: Path) -> None:
+    # Red before this change: no check compared a citation against the revisions
+    # the repository records, so a document could point a reader at a commit it
+    # never named and pass every gate. This is the class of citation the Quafu
+    # evidence document carried, where a reader could not obtain what it cited.
+    _citation_note(tmp_path, f"The run used revision `{CITED_REVISION[:7]}`.\n")
+
+    errors = citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",))
+
+    assert len(errors) == 1
+    assert "docs/note.md:1" in errors[0]
+    assert CITED_REVISION[:7] in errors[0]
+    assert CITED_REVISION in errors[0]
+
+
+def test_shortened_citation_given_in_full_in_the_same_file_passes(
+    tmp_path: Path,
+) -> None:
+    # The control for the test above: a reader can expand the prefix when the file
+    # also writes the revision out, which is the only condition the gate requires.
+    # Nothing about the abbreviation itself is a defect.
+    _citation_note(
+        tmp_path,
+        f"The run used revision `{CITED_REVISION[:7]}`, that is `{CITED_REVISION}`.\n",
+    )
+
+    assert citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",)) == ()
+
+
+def test_a_json_record_that_states_the_full_revision_beside_the_short_one_passes(
+    tmp_path: Path,
+) -> None:
+    # The convention the two CUDA-Q comparison records use: the abbreviated value is
+    # what the run recorded, and `source_revision_full` beside it is what makes the
+    # citation checkable. A reader who follows the citation obtains the commit, so
+    # the record is correct and the check must not demand that the recorded value be
+    # edited -- recorded output is evidence, and rewriting it is the defect.
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "record.json").write_text(
+        json.dumps(
+            {
+                "source_revision": CITED_REVISION[:7],
+                "source_revision_full": CITED_REVISION,
+                "source_revision_note": "the container carries no git binary",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",)) == ()
+
+
+def test_hexadecimal_text_that_prefixes_no_recorded_revision_is_ignored(
+    tmp_path: Path,
+) -> None:
+    # Hexadecimal-looking text is not a citation. A task identifier and a date must
+    # not be read as revisions, or the check would demand a full-length value for
+    # prose that records nothing of the kind -- the same false positive that keeps
+    # `examples/` outside the walked roots.
+    _citation_note(
+        tmp_path, "Task 2609091513234674683 finished at 2026-09-09 15:13:25.\n"
+    )
+
+    assert citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",)) == ()
+
+
+def test_the_null_commit_placeholder_is_not_a_citation(tmp_path: Path) -> None:
+    # `.github/workflows/ci.yml` compares a base revision against the git zero-SHA
+    # placeholder. The placeholder is hexadecimal and names no commit by
+    # construction, so it is not a citation a reader could expand even in
+    # principle.
+    _citation_note(
+        tmp_path, f"if [ \"$BASE_SHA\" = \"{'0' * 40}\" ]; then exit 0; fi\n"
+    )
+
+    assert citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",)) == ()
+
+
+def test_a_shortened_citation_outside_the_declared_roots_is_not_reported(
+    tmp_path: Path,
+) -> None:
+    # The check is scoped, and the scope is declared rather than implied: text
+    # outside the citation roots is not asked, so a file that abbreviates a
+    # revision while making no claim on it is left alone.
+    (tmp_path / "notes").mkdir()
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "record.json").write_text(
+        json.dumps({"source_revision": CITED_REVISION}) + "\n", encoding="utf-8"
+    )
+    (tmp_path / "notes" / "scratch.md").write_text(
+        f"work in progress on {CITED_REVISION[:7]}\n", encoding="utf-8"
+    )
+
+    assert citation_errors(root=tmp_path, citation_roots=(tmp_path / "docs",)) == ()
+
+
 def test_checked_in_evidence_accounts_for_every_recorded_revision() -> None:
     # The green-after state of this change, asserted against the real tree: every
     # full-length revision recorded under `artifacts/` or `benchmarks/results/` is
@@ -679,6 +824,56 @@ def test_checked_in_evidence_accounts_for_every_recorded_revision() -> None:
         pytest.skip(f"this checkout cannot resolve revisions: {error}")
 
     assert errors == ()
+
+
+def test_the_walked_roots_include_the_jiuding_evidence_directory() -> None:
+    # Red before this change: the roots were `artifacts/` and
+    # `benchmarks/results/`, so the four Jiuding records under
+    # `docs/development/evidence/` were read by no check at all -- even though
+    # `docs/guides/JIUDING.md` and the release notes cite them as the hardware
+    # evidence for the claims they make. The root is asserted rather than assumed,
+    # because a root deleted from the tuple would leave the gate passing while
+    # reading less.
+    assert ROOT / "docs" / "development" / "evidence" in EVIDENCE_ROOTS
+
+
+def test_every_walked_root_is_also_asked_about_its_citations() -> None:
+    # The two tuples answer different questions, but they must not drift apart: a
+    # root whose artifacts are walked for revisions and never asked about the
+    # citations in them would leave a shortened pin unread in the very directory
+    # this change added, which is how the Jiuding records escaped the walk.
+    for evidence_root in EVIDENCE_ROOTS:
+        assert evidence_root in CITATION_ROOTS, evidence_root
+
+
+def test_the_declarations_cover_the_revisions_the_jiuding_records_record() -> None:
+    # Red before this change: these five revisions were declared nowhere, so the
+    # table did not yet state how a reader obtains them. All five are unreferenced
+    # objects -- the remote serves each by name while no ref reaches any -- which is
+    # the class whose declaration is what makes the verdict the same in every clone.
+    declared = _checked_in_declarations()
+
+    for revision in JIUDING_REVISIONS:
+        assert declared.get(revision) == ORIGIN_UNREFERENCED_OBJECT, revision
+
+
+def test_checked_in_citations_name_the_revision_they_cite() -> None:
+    # The green-after state of the citation half, asserted against the real tree:
+    # every shortened hexadecimal run under a citation root either prefixes no
+    # revision this repository records, or is given in full in the file citing it.
+    # Fourteen citations failed this when the check was added.
+    assert citation_errors() == ()
+
+
+def _checked_in_declarations() -> dict[str, str]:
+    """Return the origin the checked-in table states for each revision."""
+
+    document = tomllib.loads(DECLARATIONS.read_text(encoding="utf-8"))
+    return {
+        entry["value"]: entry["origin"]
+        for artifact in document["artifact"]
+        for entry in artifact["revision"]
+    }
 
 
 def test_checked_in_artifacts_state_origins_the_gate_reads() -> None:

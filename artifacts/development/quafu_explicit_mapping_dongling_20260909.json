@@ -3,10 +3,10 @@
   "evidence_class": "development_evidence",
   "non_release_evidence": true,
   "release_gate_allowed": false,
-  "source_revision": "5cfcd765",
+  "source_revision": "5cfcd765a72bb8007b5c6f07e9adc4337fc63b10",
   "compiler_plugin": {
     "distribution": "flagquantum-compiler-qsteed",
-    "revision": "a514227"
+    "revision": "a5142274c6730e718e56708e7cfe9165cb6f6485"
   },
   "provider": "quafu",
   "backend": "Dongling",

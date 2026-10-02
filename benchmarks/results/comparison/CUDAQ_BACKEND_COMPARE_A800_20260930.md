@@ -17,10 +17,10 @@ FlagQuantum image, so the runtime was assembled from a bare
 0.10.2, `cuda-quantum-cu13`). Both pulled CUDA-Q from the Tsinghua mirror, because
 the public PyPI index measured 0.01 MB/s from these hosts.
 
-Both ran revision `6cfc4c3`. Neither runtime image ships a `git` binary, so no
-probe could record a revision itself; the link to the revision is the SHA-256 of
-`benchmarks/cudaq_backend_compare.py`, recorded as `runner_sha256` and read back
-with `sha256sum` inside each container.
+Both ran revision `6cfc4c3708227a4bb2c6e35c9f71e502239a2e63`. Neither runtime
+image ships a `git` binary, so no probe could record a revision itself; the link
+to the revision is the SHA-256 of `benchmarks/cudaq_backend_compare.py`, recorded
+as `runner_sha256` and read back with `sha256sum` inside each container.
 
 ## What was measured
 
