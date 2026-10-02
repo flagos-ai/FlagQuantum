@@ -31,6 +31,7 @@ ENTRIES = (
     fq.compile,
     fq.expectation,
     fq.from_openqasm,
+    fq.gradient,
     fq.plan,
     fq.run,
     fq.train,

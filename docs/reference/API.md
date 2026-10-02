@@ -24,6 +24,7 @@ tests, and rendered in the
 | Execute locally or remotely | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
+| Differentiate a program and report the method | `fq.gradient` | Derivative, method, exactness, step |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -298,6 +299,71 @@ sections may grow compatibly. `TrainingResult.final_loss` and its versioned
 
 The [examples index](../../examples/README.md) provides runnable statevector,
 MPS, JAX, distributed, and deployment workflows.
+
+## Differentiate a program
+
+`fq.train` covers a training loop. When the derivative itself is the question,
+`fq.gradient` takes the same program and parameter tensor and reports both the
+derivative and how it was obtained:
+
+```python
+import flagquantum as fq
+import torch
+
+def build_circuit(parameters):
+    return fq.Circuit(1).ry(0, theta=parameters[0])
+
+def loss(circuit):
+    return fq.run(circuit, outputs=fq.expectation(fq.Z(0))).expectations[0]
+
+parameters = torch.tensor([0.3], dtype=torch.float64)
+result = fq.gradient(build_circuit, parameters, loss)
+```
+
+`result.gradient` is detached, so it can be fed to an optimizer or a report
+without extending the autograd tape. `result.method` names the route that ran,
+`result.exact` says whether that route is exact or a declared approximation, and
+`result.step` records the displacement an approximation actually used.
+
+Accepted `method` values are `"auto"`, `"autograd"`, `"parameter_shift"`,
+`"finite_difference"`, and `"spsa"`. `"auto"` measures the program instead of
+declaring a route: it probes for an autograd graph, and only falls back to the
+shift rule or to a numerical difference when there is none. A program that
+cannot use a route is not silently rerouted, so read `result.method` rather than
+assuming the route that was requested.
+
+`"autograd"` and `"parameter_shift"` are exact. `"finite_difference"` and
+`"spsa"` are approximations that need a positive finite `step`; `"spsa"` also
+takes `directions` and `generator` and is the only method that does. Passing
+`step` to an exact method is refused rather than ignored.
+
+`method="adjoint"` is refused. FlagQuantum has no standalone adjoint entry
+point: the reversible adjoint sweep is the backward pass behind PyTorch
+autograd, and no result reports whether backward used it. Use `"autograd"` and
+read the execution mode instead.
+
+Differentiation needs an expectation value, which the stabilizer mode cannot
+serve. `"statevector"`, `"mps"`, and `"tensor_network"` all work and agree,
+because the mode selects how amplitudes are stored and not what the derivative
+is:
+
+```python
+def loss_in(mode):
+    def loss(circuit):
+        result = fq.run(
+            circuit,
+            options=fq.ExecutionOptions(mode=mode),
+            outputs=fq.expectation(fq.Z(0)),
+        )
+        return result.expectations[0]
+
+    return loss
+
+assert torch.allclose(
+    fq.gradient(build_circuit, parameters, loss_in("mps")).gradient,
+    fq.gradient(build_circuit, parameters, loss_in("statevector")).gradient,
+)
+```
 
 ## Errors
 

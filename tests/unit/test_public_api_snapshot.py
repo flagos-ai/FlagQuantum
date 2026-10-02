@@ -59,6 +59,11 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
         and twin["root_manifest_authorized"] is True
     ):
         authorized_additions.add(twin["root_addition"])
+    gradient = json.loads(
+        (ROOT / "contracts/gradient-api-v1-candidate.json").read_text()
+    )
+    if gradient["implementation_authorized"] is True:
+        authorized_additions.update(gradient["root_additions"])
     openqasm_import = json.loads(
         (ROOT / "contracts/openqasm-import-v1-candidate.json").read_text()
     )

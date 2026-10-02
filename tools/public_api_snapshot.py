@@ -35,6 +35,7 @@ OBSERVABLE_OUTPUTS_CONTRACT = (
     ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 )
 TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
+GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 OPENQASM_IMPORT_CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
@@ -200,6 +201,7 @@ def validate() -> tuple[str, ...]:
         (ROOT / "contracts/remote-jobs-v1-candidate.json").read_text()
     )
     twin_contract = json.loads(TWIN_CONTRACT.read_text(encoding="utf-8"))
+    gradient_contract = json.loads(GRADIENT_CONTRACT.read_text(encoding="utf-8"))
     openqasm_import_contract = json.loads(
         OPENQASM_IMPORT_CONTRACT.read_text(encoding="utf-8")
     )
@@ -252,6 +254,9 @@ def validate() -> tuple[str, ...]:
         and twin_contract.get("root_manifest_authorized") is True
     ):
         authorized_changes.add(str(twin_contract["root_addition"]))
+    if gradient_contract.get("implementation_authorized") is True:
+        authorized_changes.update(gradient_contract.get("root_additions", ()))
+        authorized_changes.update(gradient_contract.get("root_removals", ()))
     if openqasm_import_contract.get("implementation_authorized") is True:
         authorized_changes.update(openqasm_import_contract.get("root_additions", ()))
         authorized_changes.update(openqasm_import_contract.get("root_removals", ()))
@@ -300,6 +305,8 @@ def validate() -> tuple[str, ...]:
             extension_protocol_contract.get("root_signatures", {})
         )
     expected_signatures.update(observable_outputs_contract.get("signatures", {}))
+    if gradient_contract.get("implementation_authorized") is True:
+        expected_signatures.update(gradient_contract.get("signatures", {}))
     if openqasm_import_contract.get("implementation_authorized") is True:
         expected_signatures.update(openqasm_import_contract.get("signatures", {}))
     errors.extend(
@@ -395,6 +402,7 @@ def _validate_authorized_execution_options(
         "counts": fq.counts,
         "expectation": fq.expectation,
         "from_openqasm": fq.from_openqasm,
+        "gradient": fq.gradient,
         "probabilities": fq.probabilities,
         "samples": fq.samples,
         "train": fq.train,
