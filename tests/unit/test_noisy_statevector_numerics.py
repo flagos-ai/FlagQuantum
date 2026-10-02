@@ -24,7 +24,14 @@ def _generators(count: int) -> list[torch.Generator]:
 def test_trajectory_batch_rejects_noise_channel_without_kraus_matrices() -> None:
     ir = CircuitIR(
         n_wires=1,
-        instructions=(Instruction("bit_flip", (0,), metadata={"is_channel": True}),),
+        instructions=(
+            Instruction(
+                "bit_flip",
+                (0,),
+                params={"probability": 0.5},
+                metadata={"is_channel": True},
+            ),
+        ),
     )
     initial = torch.tensor([[1.0, 0.0]], dtype=torch.complex64)
 

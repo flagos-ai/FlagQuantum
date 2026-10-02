@@ -1077,8 +1077,10 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     int64_t n_wires,
     bool aggregate_shared_parameter,
     int64_t max_tile_wires,
+    int64_t parallel_grain,
     bool enable_pair_fast_path,
     bool enable_flat_pair_simd,
+    bool enable_euler_post_reduction,
     bool restore_state,
     bool fuse_preceding_hadamards,
     const c10::optional<at::Tensor>& rzz_angles,
@@ -1102,6 +1104,9 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
   TORCH_CHECK(angles.dim() == 1, "angles must be one-dimensional");
   TORCH_CHECK(gate_kinds.dim() == 1, "gate kinds must be one-dimensional");
   TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  TORCH_CHECK(
+      parallel_grain >= 0,
+      "parallel grain must be zero (adaptive) or positive");
   TORCH_CHECK(gate_kinds.scalar_type() == at::kLong, "gate kinds must be int64");
   TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
   TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
@@ -1379,7 +1384,17 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
       }
       const int64_t blocks_per_row = amplitudes >> unique_count;
       const int64_t item_count = ket.size(0) * blocks_per_row;
-      at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
+      const int64_t effective_parallel_grain =
+          parallel_grain == 0
+          ? (item_count >= 1024
+                 ? 128
+                 : std::max<int64_t>(1, item_count / (4 * thread_count)))
+          : parallel_grain;
+      at::parallel_for(
+          int64_t{0},
+          item_count,
+          effective_parallel_grain,
+          [&](int64_t begin, int64_t end) {
         std::array<scalar_t, 2048> ket_values{};
         std::array<scalar_t, 2048> adjoint_values{};
         real_t* local_gradients =
@@ -1438,44 +1453,96 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               real_t gradient_rx = real_t{0};
               const int64_t local_block = local_mask << 1;
               if (enable_flat_pair_simd) {
-                _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
-                for (int64_t pair = 0; pair < local_size / 2; ++pair) {
-                  const int64_t local = (pair & (local_mask - 1)) |
-                      ((pair & ~(local_mask - 1)) << 1);
-                  const int64_t one = local + local_mask;
-                  scalar_t ket_zero = ket_values[local];
-                  scalar_t ket_one = ket_values[one];
-                  scalar_t adjoint_zero = adjoint_values[local];
-                  scalar_t adjoint_one = adjoint_values[one];
-                  real_t gradient_x;
-                  real_t gradient_y;
-                  real_t gradient_z;
-                  rotation_pair_gradients(
-                      ket_zero,
-                      ket_one,
-                      adjoint_zero,
-                      adjoint_one,
-                      gradient_x,
-                      gradient_y,
-                      gradient_z);
-                  gradient_rz += gradient_z;
-                  gradient_ry +=
-                      -full_sines[gate] * gradient_x +
-                      full_cosines[gate] * gradient_y;
-                  gradient_rx +=
-                      full_cosines[gate + 1] * full_cosines[gate] * gradient_x +
-                      full_cosines[gate + 1] * full_sines[gate] * gradient_y -
-                      full_sines[gate + 1] * gradient_z;
-                  if (restore_state) {
-                    const scalar_t* inverse = euler_inverses.data() + gate * 4;
-                    ket_values[local] =
-                        inverse[0] * ket_zero + inverse[1] * ket_one;
-                    ket_values[one] =
-                        inverse[2] * ket_zero + inverse[3] * ket_one;
-                    adjoint_values[local] =
-                        inverse[0] * adjoint_zero + inverse[1] * adjoint_one;
-                    adjoint_values[one] =
-                        inverse[2] * adjoint_zero + inverse[3] * adjoint_one;
+                if (enable_euler_post_reduction) {
+                  real_t raw_gradient_x = real_t{0};
+                  real_t raw_gradient_y = real_t{0};
+                  real_t raw_gradient_z = real_t{0};
+                  _Pragma("omp simd reduction(+:raw_gradient_x,raw_gradient_y,raw_gradient_z)")
+                  for (int64_t pair = 0; pair < local_size / 2; ++pair) {
+                    const int64_t local = (pair & (local_mask - 1)) |
+                        ((pair & ~(local_mask - 1)) << 1);
+                    const int64_t one = local + local_mask;
+                    scalar_t ket_zero = ket_values[local];
+                    scalar_t ket_one = ket_values[one];
+                    scalar_t adjoint_zero = adjoint_values[local];
+                    scalar_t adjoint_one = adjoint_values[one];
+                    real_t pair_gradient_x;
+                    real_t pair_gradient_y;
+                    real_t pair_gradient_z;
+                    rotation_pair_gradients(
+                        ket_zero,
+                        ket_one,
+                        adjoint_zero,
+                        adjoint_one,
+                        pair_gradient_x,
+                        pair_gradient_y,
+                        pair_gradient_z);
+                    raw_gradient_x += pair_gradient_x;
+                    raw_gradient_y += pair_gradient_y;
+                    raw_gradient_z += pair_gradient_z;
+                    if (restore_state) {
+                      const scalar_t* inverse = euler_inverses.data() + gate * 4;
+                      ket_values[local] =
+                          inverse[0] * ket_zero + inverse[1] * ket_one;
+                      ket_values[one] =
+                          inverse[2] * ket_zero + inverse[3] * ket_one;
+                      adjoint_values[local] =
+                          inverse[0] * adjoint_zero + inverse[1] * adjoint_one;
+                      adjoint_values[one] =
+                          inverse[2] * adjoint_zero + inverse[3] * adjoint_one;
+                    }
+                  }
+                  gradient_rz = raw_gradient_z;
+                  gradient_ry =
+                      -full_sines[gate] * raw_gradient_x +
+                      full_cosines[gate] * raw_gradient_y;
+                  gradient_rx =
+                      full_cosines[gate + 1] * full_cosines[gate] *
+                          raw_gradient_x +
+                      full_cosines[gate + 1] * full_sines[gate] *
+                          raw_gradient_y -
+                      full_sines[gate + 1] * raw_gradient_z;
+                } else {
+                  _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                  for (int64_t pair = 0; pair < local_size / 2; ++pair) {
+                    const int64_t local = (pair & (local_mask - 1)) |
+                        ((pair & ~(local_mask - 1)) << 1);
+                    const int64_t one = local + local_mask;
+                    scalar_t ket_zero = ket_values[local];
+                    scalar_t ket_one = ket_values[one];
+                    scalar_t adjoint_zero = adjoint_values[local];
+                    scalar_t adjoint_one = adjoint_values[one];
+                    real_t gradient_x;
+                    real_t gradient_y;
+                    real_t gradient_z;
+                    rotation_pair_gradients(
+                        ket_zero,
+                        ket_one,
+                        adjoint_zero,
+                        adjoint_one,
+                        gradient_x,
+                        gradient_y,
+                        gradient_z);
+                    gradient_rz += gradient_z;
+                    gradient_ry +=
+                        -full_sines[gate] * gradient_x +
+                        full_cosines[gate] * gradient_y;
+                    gradient_rx +=
+                        full_cosines[gate + 1] * full_cosines[gate] *
+                            gradient_x +
+                        full_cosines[gate + 1] * full_sines[gate] * gradient_y -
+                        full_sines[gate + 1] * gradient_z;
+                    if (restore_state) {
+                      const scalar_t* inverse = euler_inverses.data() + gate * 4;
+                      ket_values[local] =
+                          inverse[0] * ket_zero + inverse[1] * ket_one;
+                      ket_values[one] =
+                          inverse[2] * ket_zero + inverse[3] * ket_one;
+                      adjoint_values[local] =
+                          inverse[0] * adjoint_zero + inverse[1] * adjoint_one;
+                      adjoint_values[one] =
+                          inverse[2] * adjoint_zero + inverse[3] * adjoint_one;
+                    }
                   }
                 }
               } else {
@@ -1841,7 +1908,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_segment_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor angles, Tensor gate_kinds, Tensor wires, int n_wires, "
       "bool aggregate_shared_parameter, int max_tile_wires, "
-      "bool enable_pair_fast_path, bool enable_flat_pair_simd, bool restore_state, "
+      "int parallel_grain, "
+      "bool enable_pair_fast_path, bool enable_flat_pair_simd, "
+      "bool enable_euler_post_reduction, bool restore_state, "
       "bool fuse_preceding_hadamards, "
       "Tensor? rzz_angles=None, "
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "

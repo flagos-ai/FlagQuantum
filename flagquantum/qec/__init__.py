@@ -18,7 +18,7 @@ from .decoders import (
     StreamingDecoder,
 )
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
-from .dem import DemError, DemSample, DetectorErrorModel
+from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
@@ -49,6 +49,7 @@ __all__ = (
     "DecodingGraph",
     "DecodingGraphEdge",
     "DemError",
+    "DemMergeRule",
     "DemSample",
     "DetectionEvent",
     "Detector",

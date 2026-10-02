@@ -9,6 +9,15 @@ model that way: it enumerates the noise locations a ``PhenomenologicalNoise``
 record configures, drops the ones that flip nothing at all, and merges the ones
 that flip the same detectors and observables.
 
+A model may also arrive with two mechanisms on one signature, because stim's
+text format allows it and this reader preserves what the text states. Merging is
+therefore available to the caller as well, as
+``DetectorErrorModel.merge_duplicate_mechanisms`` under a stated
+``DemMergeRule``; construction states the same rule by default. The model's own
+shape never depends on how many mechanisms a signature has, and the decoder is
+what refuses to read an unmerged duplicate rather than quietly weighting a fault
+by the cheaper of its parts.
+
 The model is defined for Pauli noise only. It is built on the memory circuit
 *without* in-circuit feedback, because the model describes the physical
 noise-to-detection mapping that a decoder inverts; the compiled feedback layer
@@ -26,6 +35,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from enum import Enum
 from numbers import Integral, Real
 from typing import Literal
 
@@ -39,6 +49,51 @@ from .noise import PhenomenologicalNoise
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
 _SEPARATOR = "^"
+
+
+class DemMergeRule(str, Enum):
+    """The rule that gives one prior to mechanisms sharing a signature.
+
+    Two mechanisms are one fault to a decoder, which sees only whether their
+    shared signature flipped and not how many mechanisms produced it. Which
+    single prior stands for the pair is a modelling decision, so the caller
+    states it rather than the merge assuming one.
+
+    Attributes:
+        INDEPENDENT_PARITY: The mechanisms are independent faults, so a shot
+            flips the signature exactly when an odd number of them fire and the
+            combined prior is the probability of that event. For two priors it
+            is ``p1 + p2 - 2 * p1 * p2``, and the values fold left to right so a
+            group of any size reduces the same way. This is the rule
+            construction uses, it is exact, and it is closed on ``[0, 1/2)``:
+            combining any number of mechanisms each below one half stays below
+            one half, so a merged mechanism still has a finite matching weight.
+        CLAMPED_LINEAR_SUM: The priors add and the total saturates at one,
+            ``min(1, sum(p))``. This is a small-prior approximation for a caller
+            combining priors that are already marginal, not the probability of
+            any event: at ``0.1`` and ``0.2`` it gives ``0.3`` where the parity
+            rule gives ``0.26``. It is not closed on ``[0, 1/2)``, so a merged
+            prior may be one that no minimum-weight decoder can weight, and the
+            merge does not hide that by clamping below the boundary.
+    """
+
+    INDEPENDENT_PARITY = "independent_parity"
+    CLAMPED_LINEAR_SUM = "clamped_linear_sum"
+
+
+def _combine_two(previous: float, probability: float, *, rule: DemMergeRule) -> float:
+    """Fold one more prior into a signature's accumulated prior.
+
+    The arithmetic of both rules lives here and nowhere else, so construction
+    and :meth:`DetectorErrorModel.merge_duplicate_mechanisms` cannot drift apart
+    on the formula. Each caller supplies its own fold order, which neither rule
+    depends on: both are associative and commutative, so the orders agree up to
+    floating-point rounding.
+    """
+
+    if rule is DemMergeRule.INDEPENDENT_PARITY:
+        return previous * (1.0 - probability) + probability * (1.0 - previous)
+    return min(1.0, previous + probability)
 
 
 def _probability(value: float, *, name: str) -> float:
@@ -423,6 +478,106 @@ class DetectorErrorModel:
                         f"observable index {index} is outside the model shape"
                     )
 
+    def mechanisms_are_unique(self) -> bool:
+        """Return whether no two mechanisms share a detector and observable pair.
+
+        A mechanism's signature is the pair of its detector indices and its
+        observable indices, each already normalized to ascending distinct
+        indices by construction, so this is a comparison over the same GF(2)
+        support a decoder reads. Two mechanisms with one signature are one fault
+        to a decoder and two columns here.
+        """
+
+        signatures = [(error.detectors, error.observables) for error in self.errors]
+        return len(set(signatures)) == len(signatures)
+
+    def require_unique_mechanisms(self) -> None:
+        """Fail unless every mechanism has a signature of its own.
+
+        A decoder reads whether a signature flipped, not how many mechanisms
+        produced it, so a model that keeps two mechanisms on one signature lets
+        a caller state a fault twice and then weight it by whichever part it
+        prefers. This is the check that turns that into a refusal a caller can
+        act on.
+
+        Raises:
+            ValueError: Two mechanisms flip the same detectors and observables,
+                naming the pair and the operation that resolves it.
+        """
+
+        seen: dict[tuple[tuple[int, ...], tuple[int, ...]], int] = {}
+        for position, error in enumerate(self.errors):
+            signature = (error.detectors, error.observables)
+            first = seen.setdefault(signature, position)
+            if first != position:
+                targets = " ".join(
+                    [f"{_DETECTOR_PREFIX}{index}" for index in signature[0]]
+                    + [f"{_OBSERVABLE_PREFIX}{index}" for index in signature[1]]
+                )
+                raise ValueError(
+                    f"mechanisms {first} and {position} both flip {targets}; "
+                    "merge_duplicate_mechanisms() states one prior for a shared "
+                    "signature and is what a decoder needs"
+                )
+
+    def merge_duplicate_mechanisms(
+        self, *, rule: DemMergeRule | str = DemMergeRule.INDEPENDENT_PARITY
+    ) -> DetectorErrorModel:
+        """Return the model with one mechanism per detector and observable pair.
+
+        The merge is what makes a model a decoder can weight: the result states
+        one prior for each signature, so no fault is represented twice. It is a
+        merge and not a filter, so every signature the model holds survives and
+        the model's shape is unchanged; only the number of mechanisms falls. A
+        model that is already unique comes back equal to this one, and a
+        mechanism alone on its signature keeps its probability bit for bit
+        rather than being passed through the arithmetic. Merging is therefore
+        idempotent, and because the model stores its mechanisms sorted the
+        result does not depend on the order the mechanisms arrived in.
+
+        Under the default rule the merge is marginal-preserving, not merely
+        tidy: a detector's rate is ``(1 - prod(1 - 2p)) / 2`` over the
+        mechanisms that touch it, and a merged group's prior is exactly the
+        single ``p`` whose ``1 - 2p`` is that group's product, so every detector
+        rate and every observable rate is unchanged. Sampling one merged
+        mechanism is therefore the same distribution as sampling the group
+        independently and asking whether an odd number fired. Under
+        :attr:`DemMergeRule.CLAMPED_LINEAR_SUM` the rates do change, which is
+        what makes that rule an approximation rather than another spelling of
+        this one. What changes under either rule is the number of mechanisms
+        and, for a caller that reads one weight per signature, those weights.
+
+        Args:
+            rule: The rule that gives one prior to a shared signature. The
+                default, :attr:`DemMergeRule.INDEPENDENT_PARITY`, is the exact
+                probability that an odd number of the mechanisms fire.
+
+        Returns:
+            A model over the same shape with unique signatures.
+
+        Raises:
+            ValueError: ``rule`` is not one of the two stated rules.
+        """
+
+        selected = DemMergeRule(rule)
+        accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
+        for error in self.errors:
+            signature = (error.detectors, error.observables)
+            previous = accumulated.get(signature)
+            accumulated[signature] = (
+                error.probability
+                if previous is None
+                else _combine_two(previous, error.probability, rule=selected)
+            )
+        return DetectorErrorModel(
+            num_detectors=self.num_detectors,
+            num_observables=self.num_observables,
+            errors=tuple(
+                DemError(probability=probability, detectors=key[0], observables=key[1])
+                for key, probability in accumulated.items()
+            ),
+        )
+
     def detector_error_matrix(self) -> torch.Tensor:
         """Return the ``(num_detectors, num_errors)`` parity matrix.
 
@@ -585,11 +740,19 @@ class DetectorErrorModel:
 
         Two mechanisms that flip the same detectors and the same observables are
         one mechanism to a decoder, which sees only their combined parity, so
-        their probabilities combine by ``p1 * (1 - p2) + p2 * (1 - p1)``. An
-        entry whose signature is empty flips nothing at all, so it becomes no
-        mechanism and is dropped here. Nothing counts the dropped entries: the
-        model has no field for that count, and its shape comes from the caller's
-        counts and from nowhere else.
+        their probabilities combine by
+        :attr:`DemMergeRule.INDEPENDENT_PARITY`. An entry whose signature is
+        empty flips nothing at all, so it becomes no mechanism and is dropped
+        here; a mechanism has to flip something to be one at all, so it could
+        not be stored. Nothing counts the dropped entries: the model has no
+        field for that count, and its shape comes from the caller's counts and
+        from nowhere else.
+
+        The fold runs over the caller's entries in the order given. Both rules
+        are associative and commutative, so that order reaches the result only
+        as floating-point rounding; the model then stores its mechanisms sorted
+        by signature and probability, so the model a caller reads back does not
+        depend on the order of the entries at all.
         """
 
         accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
@@ -604,7 +767,9 @@ class DetectorErrorModel:
             accumulated[signature] = (
                 probability
                 if previous is None
-                else previous * (1.0 - probability) + probability * (1.0 - previous)
+                else _combine_two(
+                    previous, probability, rule=DemMergeRule.INDEPENDENT_PARITY
+                )
             )
         errors = tuple(
             DemError(probability=value, detectors=key[0], observables=key[1])

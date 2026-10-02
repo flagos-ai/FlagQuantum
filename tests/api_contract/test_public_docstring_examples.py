@@ -17,6 +17,7 @@ from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
 from flagquantum.runtime import planner
+from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 
 pytestmark = pytest.mark.unit
 
@@ -33,6 +34,7 @@ ENTRIES = (
     fq.plan,
     fq.run,
     fq.train,
+    gather_distributed_statevector,
     import_openqasm,
     import_openqasm_to_ir,
     planner.plan,

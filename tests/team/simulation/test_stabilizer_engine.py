@@ -330,7 +330,7 @@ def test_a_noise_channel_is_refused_rather_than_sampled_as_a_unitary() -> None:
     """A channel would return shots from a different circuit, so it fails closed."""
 
     with pytest.raises(CapabilityError, match="noise channel"):
-        sample_stabilizer(fq.Circuit(2).h(0).depolarizing(1), shots=2, seed=1)
+        sample_stabilizer(fq.Circuit(2).h(0).depolarizing(1, 0.1), shots=2, seed=1)
 
 
 def test_a_program_carrying_lowered_measurement_nodes_is_refused() -> None:

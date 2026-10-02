@@ -30,6 +30,7 @@ from .contract import runtime_metadata, write_json_atomic
 from .differentiable_adjoint_report import render_adjoint_markdown
 from .differentiable_engines import (
     ADJOINT_ENGINE_NAMES,
+    ADJOINT_ROLLBACK_OPTIONS,
     ALL_ENGINE_NAMES,
     ENGINE_NAMES,
     EngineName,
@@ -50,7 +51,6 @@ SCHEMA = "flagquantum.differentiable_simulator_corpus.v1"
 RUNNER = "differentiable_simulator_corpus"
 _ABSOLUTE_TOLERANCE = 1e-9
 _STABILITY_THRESHOLD = 0.20
-
 WorkloadName = Literal["hardware_efficient_vqe", "qaoa_path_maxcut"]
 
 WORKLOAD_NAMES: tuple[WorkloadName, ...] = (
@@ -206,6 +206,9 @@ def _flagquantum_executor(
     cx_rotation_fusion: bool | None = None,
     terminal_no_restore: bool | None = None,
     compact_cx_index: bool | None = None,
+    saved_parameter_revalidation: bool | None = None,
+    fine_grain_parallelism: bool | None = None,
+    euler_post_reduction: bool | None = None,
 ) -> Callable[[], _Execution]:
     parameters = workload.parameters
 
@@ -235,16 +238,17 @@ def _flagquantum_executor(
                 "FQ_NATIVE_CPU_ADJOINT_CX_ROTATION_FUSION": cx_rotation_fusion,
                 "FQ_NATIVE_CPU_ADJOINT_TERMINAL_NO_RESTORE": terminal_no_restore,
                 "FQ_NATIVE_CPU_COMPACT_CX_INDEX": compact_cx_index,
+                "FQ_STATEVECTOR_ADJOINT_REVALIDATE_SAVED_PARAMETERS": saved_parameter_revalidation,
+                "FQ_NATIVE_CPU_ADJOINT_FINE_GRAIN": fine_grain_parallelism,
+                "FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION": euler_post_reduction,
             }
         ):
             forward_started = time.perf_counter()
             if differentiation == "adjoint":
-                loss = (
-                    workload.hamiltonian.expectation(
-                        workload.circuit, differentiation="adjoint"
-                    )
-                    + workload.constant
+                loss = workload.hamiltonian.expectation(
+                    workload.circuit, differentiation="adjoint"
                 )
+                loss = loss + workload.constant
             else:
                 state = workload.circuit.state(refresh=True)
                 loss = workload.hamiltonian.expectation(state).sum() + workload.constant
@@ -461,13 +465,14 @@ def _engine_callable(
             native_cpu_adjoint=True,
             terminal_no_restore=False,
         )
-    if engine == "flagquantum_adjoint_compact_cx_index_rollback":
+    rollback_options = ADJOINT_ROLLBACK_OPTIONS.get(engine)
+    if rollback_options is not None:
         return _flagquantum_executor(
             build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
-            compact_cx_index=False,
+            **rollback_options,
         )
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(

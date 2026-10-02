@@ -55,6 +55,13 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
         "numerics",
         "statevector",
     }
+    maturity_by_id = {
+        implementation.implementation_id: implementation.maturity
+        for implementation in IMPLEMENTATIONS
+    }
+    assert maturity_by_id["FQKI-TRITON-MPS-003-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MPS-004-A"] == "provisional"
+    assert set(maturity_by_id.values()) == {"experimental", "provisional"}
 
 
 def test_cataloged_implementation_symbols_exist_without_importing_providers() -> None:

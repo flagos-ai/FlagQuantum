@@ -50,6 +50,7 @@ from .operator_schema import (
     gate_info,
     get_operator_schema,
     operator_manifest,
+    parameter_shift_rule,
 )
 from .parameters import (
     Parameter,
@@ -102,6 +103,7 @@ __all__ = [
     "get_operator_schema",
     "gate_info",
     "operator_manifest",
+    "parameter_shift_rule",
     "RUNTIME_CONFIG_VERSION",
     "RuntimeConfig",
     "get_runtime_config",

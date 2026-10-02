@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -17,8 +18,32 @@ class OperatorSchema:
     semantic_kind: str
     adjoint: str
     decomposition: tuple[str, ...]
-    differentiable: bool
     wire_convention: tuple[str, ...]
+    parameter_frequencies: tuple[tuple[float, ...], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.parameter_frequencies:
+            return
+        if self.semantic_kind != "unitary":
+            raise ValueError(
+                f"opcode {self.opcode!r} is a {self.semantic_kind} and cannot "
+                "declare parameter frequencies"
+            )
+        if len(self.parameter_frequencies) != len(self.parameters):
+            raise ValueError(
+                f"opcode {self.opcode!r} declares {len(self.parameters)} "
+                f"parameter(s) {self.parameters} but "
+                f"{len(self.parameter_frequencies)} frequency set(s)"
+            )
+        for name, frequencies in zip(
+            self.parameters, self.parameter_frequencies, strict=True
+        ):
+            try:
+                parameter_shift_rule(frequencies)
+            except ValueError as error:
+                raise ValueError(
+                    f"opcode {self.opcode!r} parameter {name!r}: {error}"
+                ) from error
 
     @property
     def unitary(self) -> bool:
@@ -27,6 +52,87 @@ class OperatorSchema:
     @property
     def channel(self) -> bool:
         return self.semantic_kind == "channel"
+
+    @property
+    def differentiable(self) -> bool:
+        """Whether a derivative can be returned for this opcode.
+
+        This is read from the declared frequency sets rather than stored, so
+        "the executor can differentiate this" and "the derivative rule is known"
+        cannot drift apart.
+        """
+
+        return bool(self.parameter_frequencies)
+
+    def shift_rule(self, parameter: str) -> tuple[tuple[float, float], ...]:
+        """Coefficients and shifts that differentiate ``parameter``.
+
+        The rule follows from the gate's declared frequencies, so an executor
+        that can already compute an expectation value can also differentiate the
+        gate, with no second place to record which gates are differentiable.
+
+        Raises:
+            ValueError: If the opcode is a channel, does not declare this
+                parameter, or declares no frequencies for it.
+        """
+
+        if self.channel or parameter not in self.parameters:
+            raise ValueError(
+                f"opcode {self.opcode!r} does not declare a differentiable "
+                f"parameter {parameter!r}"
+            )
+        return parameter_shift_rule(
+            self.parameter_frequencies[self.parameters.index(parameter)]
+        )
+
+
+def parameter_shift_rule(
+    frequencies: Sequence[float],
+) -> tuple[tuple[float, float], ...]:
+    """Coefficients and shifts that differentiate one declared frequency set.
+
+    A parameterized gate whose generator has frequencies
+    ``{f_1, ..., f_n}`` has an expectation value that is a trigonometric
+    polynomial in those frequencies, so its derivative is a fixed linear
+    combination of ``2n`` evaluations at shifted parameter values. This returns
+    those ``(coefficient, shift)`` pairs.
+
+    Only equidistant frequencies are supported, which is what every built-in
+    opcode declares. A non-equidistant set is rejected rather than silently
+    differentiated with the wrong coefficients.
+
+    Raises:
+        ValueError: If ``frequencies`` is empty, holds non-positive or repeated
+            values, or is not equidistant.
+    """
+
+    declared = tuple(float(value) for value in frequencies)
+    if not declared:
+        raise ValueError("parameter shift requires at least one frequency")
+    if any(value <= 0 for value in declared):
+        raise ValueError(f"frequencies must be positive, got {declared}")
+    ordered = tuple(sorted(declared))
+    if len(set(ordered)) != len(ordered):
+        raise ValueError(f"frequencies must be unique, got {declared}")
+    if len(ordered) > 1:
+        gaps = {round(b - a, 10) for a, b in zip(ordered, ordered[1:], strict=False)}
+        if len(gaps) != 1:
+            raise ValueError(
+                f"only equidistant frequencies are supported, got {declared}"
+            )
+    count = len(ordered)
+    lowest = ordered[0]
+    rule = []
+    for index in range(1, count + 1):
+        shift = (2 * index - 1) * math.pi / (2 * count * lowest)
+        coefficient = (
+            lowest
+            * (-1) ** (index - 1)
+            / (4 * count * math.sin(math.pi * (2 * index - 1) / (4 * count)) ** 2)
+        )
+        rule.append((coefficient, shift))
+        rule.append((-coefficient, -shift))
+    return tuple(rule)
 
 
 @dataclass(frozen=True)
@@ -40,6 +146,7 @@ class GateInfo:
     parameter_shapes: Mapping[str, tuple[int, ...]]
     differentiable: bool
     semantic_kind: str
+    parameter_frequencies: tuple[tuple[float, ...], ...] = ()
 
     @property
     def n_parameters(self) -> int:
@@ -52,6 +159,7 @@ def _unitary(
     *,
     aliases: tuple[str, ...] = (),
     parameters: tuple[str, ...] = (),
+    frequencies: tuple[tuple[float, ...], ...] = (),
     adjoint: str = "matrix_adjoint",
     decomposition: tuple[str, ...] = (),
 ) -> OperatorSchema:
@@ -69,22 +177,35 @@ def _unitary(
         semantic_kind="unitary",
         adjoint=adjoint,
         decomposition=decomposition,
-        differentiable=bool(parameters),
         wire_convention=wire_names,
+        parameter_frequencies=frequencies,
     )
 
 
-def _channel(opcode: str) -> OperatorSchema:
+def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
+    """Declare a channel and the probability or rate names it accepts.
+
+    ``parameters`` is keyword-only so that a channel cannot be added without
+    stating them: an opcode whose probability exists only inside its Kraus
+    operators is one a reader of the lowered program cannot map, which is what
+    kept the four channels out of every interop contract.
+
+    ``differentiable`` ends up ``False`` for every channel even when
+    ``parameters`` is non-empty, because a channel declares no parameter
+    frequencies: the derived flag states whether a derivative rule is known for
+    the opcode, and a channel is sampled rather than differentiated. Declaring a
+    number and being able to differentiate it are two separate claims.
+    """
+
     return OperatorSchema(
         opcode=opcode,
         aliases=(),
         arity=1,
-        parameters=(),
+        parameters=parameters,
         dtype_policy=("complex64", "complex128"),
         semantic_kind="channel",
         adjoint="not_applicable",
         decomposition=(),
-        differentiable=False,
         wire_convention=("target",),
     )
 
@@ -101,30 +222,42 @@ _SCHEMAS = (
     _unitary("tdg", 1, aliases=("td",)),
     _unitary("sx", 1),
     _unitary("sxdg", 1),
-    _unitary("rx", 1, parameters=("theta",)),
-    _unitary("ry", 1, parameters=("theta",)),
-    _unitary("rz", 1, parameters=("theta",)),
-    _unitary("phase", 1, aliases=("p",), parameters=("theta",)),
-    _unitary("u1", 1, parameters=("theta",)),
-    _unitary("u2", 1, parameters=("phi", "lbd")),
-    _unitary("u3", 1, aliases=("u",), parameters=("theta", "phi", "lbd")),
+    _unitary("rx", 1, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("ry", 1, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("rz", 1, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary(
+        "phase",
+        1,
+        aliases=("p",),
+        parameters=("theta",),
+        frequencies=((1.0,),),
+    ),
+    _unitary("u1", 1, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("u2", 1, parameters=("phi", "lbd"), frequencies=((1.0,), (1.0,))),
+    _unitary(
+        "u3",
+        1,
+        aliases=("u",),
+        parameters=("theta", "phi", "lbd"),
+        frequencies=((1.0,), (1.0,), (1.0,)),
+    ),
     _unitary("cx", 2, aliases=("cnot",), adjoint="self_inverse"),
     _unitary("cy", 2, adjoint="self_inverse"),
     _unitary("cz", 2, adjoint="self_inverse"),
     _unitary("swap", 2, adjoint="self_inverse"),
-    _unitary("crx", 2, parameters=("theta",)),
-    _unitary("cry", 2, parameters=("theta",)),
-    _unitary("crz", 2, parameters=("theta",)),
-    _unitary("cphase", 2, parameters=("theta",)),
-    _unitary("rxx", 2, parameters=("theta",)),
-    _unitary("ryy", 2, parameters=("theta",)),
-    _unitary("rzz", 2, parameters=("theta",)),
+    _unitary("crx", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
+    _unitary("cry", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
+    _unitary("crz", 2, parameters=("theta",), frequencies=((0.5, 1.0),)),
+    _unitary("cphase", 2, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("rxx", 2, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("ryy", 2, parameters=("theta",), frequencies=((1.0,),)),
+    _unitary("rzz", 2, parameters=("theta",), frequencies=((1.0,),)),
     _unitary("ccx", 3, aliases=("ccnot", "toffoli"), adjoint="self_inverse"),
     _unitary("cswap", 3, aliases=("fredkin",), adjoint="self_inverse"),
-    _channel("bit_flip"),
-    _channel("phase_flip"),
-    _channel("depolarizing"),
-    _channel("amplitude_damping"),
+    _channel("bit_flip", parameters=("probability",)),
+    _channel("phase_flip", parameters=("probability",)),
+    _channel("depolarizing", parameters=("probability",)),
+    _channel("amplitude_damping", parameters=("gamma",)),
 )
 
 OPERATOR_SCHEMAS: Mapping[str, OperatorSchema] = MappingProxyType(
@@ -158,6 +291,7 @@ def gate_info(name: str) -> GateInfo:
         parameter_shapes=MappingProxyType(dict.fromkeys(schema.parameters, ())),
         differentiable=schema.differentiable,
         semantic_kind=schema.semantic_kind,
+        parameter_frequencies=schema.parameter_frequencies,
     )
 
 
@@ -174,6 +308,7 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
             "decomposition": schema.decomposition,
             "differentiable": schema.differentiable,
             "wire_convention": schema.wire_convention,
+            "parameter_frequencies": schema.parameter_frequencies,
         }
         for schema in OPERATOR_SCHEMAS.values()
     )
@@ -188,4 +323,5 @@ __all__ = [
     "get_operator_schema",
     "gate_info",
     "operator_manifest",
+    "parameter_shift_rule",
 ]

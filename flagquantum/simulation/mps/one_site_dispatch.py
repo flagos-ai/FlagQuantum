@@ -16,20 +16,23 @@ from ..kernel_dispatch import _require_cataloged_kernel
 from ..real_imag_kernels import complex_einsum_pair
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MPS-003-A"
+_DISABLED_VALUES = frozenset({"0", "false", "off", "no"})
+
+
+def _mps_one_site_rollout_enabled() -> bool:
+    """Return whether the default MPS-003 route has not been disabled."""
+
+    return os.getenv("FQ_TRITON_MPS_ONE_SITE", "1").strip().lower() not in (
+        _DISABLED_VALUES
+    )
 
 
 def _mps_one_site_kernel_enabled(tensor: torch.Tensor, gate: torch.Tensor) -> bool:
-    """Return whether the opt-in route supports this exact tensor pair."""
+    """Return whether the default route supports this exact tensor pair."""
 
-    enabled = os.getenv("FQ_TRITON_MPS_ONE_SITE", "0").strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
     contraction_volume = int(tensor.shape[0] * tensor.shape[1] * tensor.shape[3])
     return bool(
-        enabled
+        _mps_one_site_rollout_enabled()
         and tensor.is_cuda
         and tensor.dtype == torch.complex64
         and gate.dtype == torch.complex64
@@ -83,7 +86,7 @@ def _apply_cataloged_mps_one_site(
 def _apply_mps_one_site(
     tensor: torch.Tensor, gate: torch.Tensor
 ) -> tuple[torch.Tensor, bool]:
-    """Select the cataloged path only inside its evidenced opt-in window."""
+    """Select the cataloged path only inside its evidenced default window."""
 
     if _mps_one_site_kernel_enabled(tensor, gate):
         return _apply_cataloged_mps_one_site(tensor, gate), True
@@ -116,6 +119,7 @@ __all__ = (
     "_apply_mps_one_site",
     "_mps_one_site_kernel_match",
     "_mps_one_site_kernel_enabled",
+    "_mps_one_site_rollout_enabled",
     "_require_mps_one_site_kernel",
     "_try_apply_cataloged_mps_one_site_bucket",
 )

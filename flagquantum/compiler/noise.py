@@ -26,6 +26,10 @@ def _encode_channel_instruction(
     return Instruction(
         name=channel.name,
         wires=tuple(int(wire) for wire in wires),
+        # A channel opcode declares its parameters, so the lowered instruction
+        # states the probability it was built with instead of leaving a reader to
+        # invert it out of the Kraus operators.
+        params=dict(channel.parameters),
         matrix=channel.kraus,
         metadata={"is_channel": True, **dict(metadata or {})},
     )

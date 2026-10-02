@@ -5,8 +5,10 @@ import torch
 
 import flagquantum.simulation.mps.one_site_dispatch as one_site_dispatch
 from flagquantum.simulation.mps.one_site_dispatch import (
+    _apply_mps_one_site,
     _mps_one_site_kernel_enabled,
     _mps_one_site_kernel_match,
+    _mps_one_site_rollout_enabled,
     _require_mps_one_site_kernel,
 )
 from flagquantum.simulation.mps.site_kernels import (
@@ -29,6 +31,7 @@ def test_mps_one_site_dispatch_binds_exact_catalog_implementation() -> None:
     assert implementation.implementation_id == "FQKI-TRITON-MPS-003-A"
     assert implementation.symbol == "fused_mps_one_site"
     assert implementation.directions == ("forward", "backward")
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
@@ -55,8 +58,17 @@ def test_mps_one_site_dispatch_fails_closed_on_unsupported_input() -> None:
         _require_mps_one_site_kernel(device_type="cuda", dtype="complex128")
 
 
-def test_mps_one_site_route_rejects_cpu_bucket_even_when_enabled(monkeypatch) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", "1")
+def test_mps_one_site_rollout_defaults_on_and_supports_kill_switch(monkeypatch) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_ONE_SITE", raising=False)
+    assert _mps_one_site_rollout_enabled()
+
+    for value in ("0", "false", "OFF", "No"):
+        monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", value)
+        assert not _mps_one_site_rollout_enabled()
+
+
+def test_mps_one_site_route_rejects_cpu_bucket_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_ONE_SITE", raising=False)
     tensor = torch.randn(2, 2, 64, 2, 64, dtype=torch.complex64)
     gate = torch.randn(2, 2, 2, 2, dtype=torch.complex64)
 
@@ -65,11 +77,35 @@ def test_mps_one_site_route_rejects_cpu_bucket_even_when_enabled(monkeypatch) ->
     )
 
 
+def test_mps_summary_reports_default_and_disabled_rollout(monkeypatch) -> None:
+    state = MPSState((torch.tensor([[[[1.0 + 0.0j], [0.0j]]]], dtype=torch.complex64),))
+    monkeypatch.delenv("FQ_TRITON_MPS_ONE_SITE", raising=False)
+    assert state.summary()["triton_mps_one_site_enabled"] is True
+
+    monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", "0")
+    assert state.summary()["triton_mps_one_site_enabled"] is False
+
+
 @pytest.mark.gpu
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
-def test_mps_state_apply_one_uses_catalog(monkeypatch) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", "1")
+def test_mps_one_site_kill_switch_uses_reference(monkeypatch) -> None:
+    monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", "0")
+    tensor = torch.randn(1, 64, 2, 64, device="cuda", dtype=torch.complex64)
+    gate = torch.randn(2, 2, device="cuda", dtype=torch.complex64)
+    expected = torch.einsum("pq,blqr->blpr", gate, tensor)
+
+    actual, routed = _apply_mps_one_site(tensor, gate)
+
+    assert not routed
+    assert torch.allclose(actual, expected)
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_mps_state_apply_one_uses_catalog_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_ONE_SITE", raising=False)
     catalog_routes = []
     require_cataloged_kernel = one_site_dispatch._require_mps_one_site_kernel
 
@@ -105,8 +141,10 @@ def test_mps_state_apply_one_uses_catalog(monkeypatch) -> None:
 @pytest.mark.gpu
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
-def test_mps_one_site_bucket_uses_catalog_and_preserves_gradients(monkeypatch) -> None:
-    monkeypatch.setenv("FQ_TRITON_MPS_ONE_SITE", "1")
+def test_mps_one_site_bucket_uses_catalog_by_default_and_preserves_gradients(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("FQ_TRITON_MPS_ONE_SITE", raising=False)
     catalog_routes = []
     require_cataloged_kernel = one_site_dispatch._require_mps_one_site_kernel
 

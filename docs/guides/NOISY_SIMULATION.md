@@ -463,6 +463,68 @@ exited all ranks without a collective hang. Raw evidence is
 The complete executable version is
 [`examples/noisy_simulation_v1.py`](../../examples/noisy_simulation_v1.py).
 
+## Channels written into the circuit
+
+Four channel opcodes declare the scalar they are defined by, so they can be
+written into a program directly instead of attached to a gate name:
+
+| Opcode | Parameter |
+| --- | --- |
+| `bit_flip` | `probability` |
+| `phase_flip` | `probability` |
+| `depolarizing` | `probability` |
+| `amplitude_damping` | `gamma` |
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(2).h(0).cx(0, 1).depolarizing(0, 0.01).amplitude_damping(1, 0.02)
+
+result = fq.run(circuit, outputs=fq.expectation(fq.Z(0) + fq.Z(1)))
+```
+
+The value is accepted positionally or by its declared name, so
+`depolarizing(0, 0.01)` and `depolarizing(0, probability=0.01)` are the same
+instruction. A name the channel does not declare, a missing value, a value
+outside `[0, 1]`, and a value that is not a real number are all refused before
+execution. Passing `matrix=` for a channel is refused too, because the declared
+parameters are what define its Kraus operators.
+
+`flagquantum.noise.channel_from_parameters(name, parameters)` builds the same
+`KrausChannel` the opcode would, which is the route to use when the parameters
+come from configuration rather than from source:
+
+```python
+import flagquantum.noise as fqn
+
+channel = fqn.channel_from_parameters("amplitude_damping", {"gamma": 0.02})
+```
+
+A program is treated as noisy because it carries a channel, not because a
+`NoiseModel` was passed, so the inline form is planned exactly like the model
+form and the two agree numerically. The consequence is a fail-closed route
+selection: the exact density-matrix path and the planner's automatic choice
+execute the program, while `mode="mps"`, `mode="tensor_network"`, and
+`mode="statevector"` refuse it, because a representation that holds amplitudes
+cannot apply Kraus operators. Selecting `mode="stabilizer"` reports the
+stabilizer engine's own reason instead. Before this, `mode="mps"` returned the
+noiseless number and `mode="statevector"` failed inside a kernel.
+
+The automatic choice with `allow_approximate=True` and a memory limit the density
+matrix cannot meet runs the MPS trajectory representation, and an inline channel
+takes that route too. The same question decides it in every place that asks:
+`fq.plan` and `fq.run` read the program, and a plan saved with `plan_to_json` and
+read back with `plan_from_dict` restores the trajectory representation rather
+than reverting to a noiseless run.
+
+A model rule and an inline channel are equivalent only when they produce the same
+instructions. `NoiseModel.add(name, channel)` applies the channel after *every*
+instruction with that name, so `add("cx", ...)` on a ladder of CNOTs is a
+different program from one inline channel placed once, and the two correctly give
+different numbers. Compare the instruction sequences, which
+`fq.plan(...).program.instructions` and
+`flagquantum.compiler.lower_noise_model(...)` both expose, rather than the source.
+
 ## Built-in channels
 
 The current built-ins are:

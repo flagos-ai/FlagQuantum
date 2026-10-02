@@ -574,7 +574,9 @@ def test_scratch_accounting_does_not_count_aliasing_chunk_storage():
 def test_unsupported_gate_fails_before_state_initialization(monkeypatch):
     ir = CircuitIR(
         n_wires=1,
-        instructions=(Instruction(name="bit_flip", wires=(0,)),),
+        instructions=(
+            Instruction(name="bit_flip", wires=(0,), params={"probability": 0.5}),
+        ),
     )
     initialized = False
 

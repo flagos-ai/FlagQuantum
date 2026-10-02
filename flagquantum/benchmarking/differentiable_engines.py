@@ -23,6 +23,9 @@ EngineName = Literal[
     "flagquantum_adjoint_cx_rotation_fusion_rollback",
     "flagquantum_adjoint_terminal_no_restore_rollback",
     "flagquantum_adjoint_compact_cx_index_rollback",
+    "flagquantum_adjoint_saved_parameter_revalidation",
+    "flagquantum_adjoint_parallel_grain_rollback",
+    "flagquantum_adjoint_euler_post_reduction_rollback",
     "pennylane_lightning_adjoint",
 ]
 
@@ -53,5 +56,19 @@ ALL_ENGINE_NAMES = (
         "flagquantum_adjoint_cx_rotation_fusion_rollback",
         "flagquantum_adjoint_terminal_no_restore_rollback",
         "flagquantum_adjoint_compact_cx_index_rollback",
+        "flagquantum_adjoint_saved_parameter_revalidation",
+        "flagquantum_adjoint_parallel_grain_rollback",
+        "flagquantum_adjoint_euler_post_reduction_rollback",
     )
 )
+
+ADJOINT_ROLLBACK_OPTIONS: dict[EngineName, dict[str, bool]] = {
+    "flagquantum_adjoint_compact_cx_index_rollback": {"compact_cx_index": False},
+    "flagquantum_adjoint_saved_parameter_revalidation": {
+        "saved_parameter_revalidation": True
+    },
+    "flagquantum_adjoint_parallel_grain_rollback": {"fine_grain_parallelism": False},
+    "flagquantum_adjoint_euler_post_reduction_rollback": {
+        "euler_post_reduction": False
+    },
+}

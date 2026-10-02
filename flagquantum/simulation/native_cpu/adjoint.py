@@ -46,6 +46,15 @@ def _rotation_segment_tile_wires() -> int:
     return 11 if _wide_rotation_tiles_enabled() else 2
 
 
+def _rotation_segment_parallel_grain() -> int:
+    """Return zero for adaptive scheduling or the legacy rollback grain."""
+
+    enabled = os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_FINE_GRAIN", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+    return 0 if enabled else 128
+
+
 def _rotation_pair_fast_path_enabled() -> bool:
     return os.getenv(
         "FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "1"
@@ -60,6 +69,12 @@ def _rotation_pair_fast_path_enabled() -> bool:
 def _flat_rotation_pair_simd_enabled() -> bool:
     return os.getenv(
         "FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def _euler_post_reduction_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "1"
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
@@ -386,8 +401,10 @@ def _fused_rotation_segment_adjoint_result(
                 n_wires,
                 aggregate_shared_parameter,
                 _rotation_segment_tile_wires(),
+                _rotation_segment_parallel_grain(),
                 _rotation_pair_fast_path_enabled(),
                 _flat_rotation_pair_simd_enabled(),
+                _euler_post_reduction_enabled(),
                 restore_state,
                 fuse_preceding_hadamards
                 and native_cpu_adjoint_rzz_h_fusion_available(),

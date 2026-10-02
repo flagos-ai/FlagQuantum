@@ -74,7 +74,9 @@ CITED_REVISION = "0123456789abcdef" * 2 + "01234567"
 
 #: The revisions the four Jiuding records under `docs/development/evidence/` write
 #: out in full. No ref of this repository reaches any of them, and the remote served
-#: each to `git fetch origin <revision>` on three fresh attempts, which is what makes
+#: each to `git fetch origin <revision>` on three counted fresh attempts -- counted
+#: under the method `evidence-revision-origins.toml` states, in which a failed fetch
+#: is discarded rather than read as a refusal -- which is what makes
 #: `unreferenced_object` the origin that accounts for them.
 JIUDING_REVISIONS = (
     "0a13cfa2cac0e0f341def2cecb7b2fc4457956a6",

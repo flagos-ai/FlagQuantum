@@ -9,6 +9,7 @@ from typing import Any
 import torch
 
 from .core.ir import ensure_circuit_ir
+from .core.operator_schema import OPERATOR_SCHEMAS
 
 CircuitBuilder = Callable[[torch.Tensor], Any]
 LossFunction = Callable[[Any], torch.Tensor]
@@ -16,14 +17,13 @@ BatchLossFunction = Callable[[tuple[Any, ...]], Sequence[torch.Tensor] | torch.T
 
 _BATCH_PARAMETER_SHIFT_GATES = frozenset({"h", "x", "rx", "ry", "rz", "cx"})
 _PARAMETER_SHIFT_GATES = frozenset({"rx", "ry", "rz"})
+_PROBE_DISPLACEMENT = 1.0
 
 
 def parameter_shift_gradient(
     circuit_builder: CircuitBuilder,
     parameters: torch.Tensor,
     loss_fn: LossFunction,
-    *,
-    shift: float = torch.pi / 2,
 ) -> torch.Tensor:
     """Estimate circuit-parameter gradients with the parameter-shift rule.
 
@@ -32,24 +32,123 @@ def parameter_shift_gradient(
     a scalar tensor. The method is backend-agnostic and works for native
     simulators, distributed modes, shot-based cloud execution wrappers, and
     hardware-style inference paths where autograd is not available.
+
+    Each parameter is differentiated with the rule its gate declares in
+    ``OPERATOR_SCHEMAS``. ``RX``, ``RY``, and ``RZ`` need one shifted pair;
+    ``CRX``, ``CRY``, and ``CRZ`` need two, so a fixed coefficient of one half
+    would overstate their derivative by a factor of ``sqrt(2)``.
+
+    Raises:
+        TypeError: If ``circuit_builder`` does not return a circuit or IR.
+        ValueError: If a parameter does not control exactly one declared gate
+            parameter, or its opcode declares no derivative rule.
     """
 
     base = parameters.detach()
     flat = base.reshape(-1)
+    profile = _circuit_profile_of(circuit_builder(base))
     grads = []
     for index in range(flat.numel()):
-        plus = flat.clone()
-        minus = flat.clone()
-        plus[index] = plus[index] + shift
-        minus[index] = minus[index] - shift
-        plus_loss = loss_fn(circuit_builder(plus.reshape_as(base)))
-        minus_loss = loss_fn(circuit_builder(minus.reshape_as(base)))
-        grads.append(0.5 * (plus_loss - minus_loss))
+        rule = _occurrence_shift_rule(
+            profile,
+            circuit_builder,
+            base,
+            flat,
+            index,
+        )
+        terms = []
+        for coefficient, shift in rule:
+            shifted = flat.clone()
+            shifted[index] += shift
+            terms.append(
+                coefficient * loss_fn(circuit_builder(shifted.reshape_as(base)))
+            )
+        # A one-pair rule is summed with a single tensor so no extra zero enters
+        # the graph; every evaluated term carries the caller's loss gradient.
+        grads.append(terms[0] if len(terms) == 1 else torch.stack(terms).sum())
     return (
         torch.stack(grads)
         .reshape_as(base)
         .to(device=parameters.device, dtype=parameters.dtype)
     )
+
+
+def _occurrence_shift_rule(
+    profile: tuple[tuple[Any, ...], tuple[Any, ...]],
+    circuit_builder: CircuitBuilder,
+    base: torch.Tensor,
+    flat: torch.Tensor,
+    index: int,
+) -> tuple[tuple[float, float], ...]:
+    """Find the gate parameter one flat parameter index controls, then its rule."""
+
+    probes = []
+    for displacement in (_PROBE_DISPLACEMENT, -_PROBE_DISPLACEMENT):
+        probed = flat.clone()
+        probed[index] += displacement
+        probes.append(_circuit_profile_of(circuit_builder(probed.reshape_as(base))))
+    occurrence = _changed_occurrence(profile, probes, parameter_index=index)
+    opcode, name = occurrence
+    schema = OPERATOR_SCHEMAS.get(opcode)
+    if schema is None:
+        raise ValueError(
+            f"parameter {index} controls unknown opcode {opcode!r}, which "
+            "declares no derivative rule"
+        )
+    try:
+        return schema.shift_rule(name)
+    except ValueError as error:
+        raise ValueError(
+            f"parameter {index} controls {opcode}.{name}, which cannot be "
+            f"differentiated: {error}"
+        ) from error
+
+
+def _changed_occurrence(
+    base: tuple[tuple[Any, ...], tuple[Any, ...]],
+    probes: Sequence[tuple[tuple[Any, ...], tuple[Any, ...]]],
+    *,
+    parameter_index: int,
+) -> tuple[str, str]:
+    """Return the gate angle a probe pair moved by the probe displacement.
+
+    The shift rule is applied to the gate's angle, so a user parameter has to be
+    that angle. A parameter that scales its gate -- ``rx(0, theta=2 * scale)`` --
+    moves the angle by twice the probe displacement, and shifting the *user*
+    parameter by the rule's shift would then differentiate at the wrong point.
+    That is refused instead of being answered with the angle's derivative.
+    """
+
+    base_structure, base_values = base
+    if any(structure != base_structure for structure, _ in probes):
+        raise ValueError(
+            f"parameter {parameter_index} changes circuit structure; parameter "
+            "shift requires a static circuit"
+        )
+    changed = [
+        (base_item, probed_items)
+        for base_item, *probed_items in zip(
+            base_values, *(values for _, values in probes), strict=True
+        )
+        if any(probed != base_item for probed in probed_items)
+    ]
+    if len(changed) != 1:
+        raise ValueError(
+            f"parameter {parameter_index} must control exactly one gate "
+            f"parameter; found {len(changed)}"
+        )
+    (opcode, name, value), probed_values = changed[0]
+    displacements = [float(probed[2]) - float(value) for probed in probed_values]
+    if not all(
+        math.isclose(abs(displacement), _PROBE_DISPLACEMENT, rel_tol=1e-4)
+        for displacement in displacements
+    ):
+        raise ValueError(
+            f"parameter {parameter_index} does not enter {opcode}.{name} as its "
+            f"angle: a probe of {_PROBE_DISPLACEMENT} moved the angle by "
+            f"{displacements}; enter its gate angle directly"
+        )
+    return opcode, name
 
 
 def batched_parameter_shift_gradient(
@@ -122,6 +221,24 @@ def _validated_parameters(parameters: torch.Tensor, *, shift: float) -> torch.Te
     return parameters.detach()
 
 
+def _circuit_profile_of(program: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
+    """Describe a program as its static structure plus its scalar parameters."""
+
+    ir = ensure_circuit_ir(program)
+    if any(item.matrix is not None for item in ir.instructions):
+        raise ValueError("parameter shift does not support custom matrices")
+    structure = (
+        ir.n_wires,
+        tuple((item.name, item.wires, tuple(item.params)) for item in ir.instructions),
+    )
+    values = tuple(
+        (item.name, name, _scalar_parameter(value))
+        for item in ir.instructions
+        for name, value in item.params.items()
+    )
+    return structure, values
+
+
 def _circuit_profile(program: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
     ir = ensure_circuit_ir(program)
     unsupported = sorted(
@@ -134,16 +251,7 @@ def _circuit_profile(program: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
         )
     if any(item.matrix is not None for item in ir.instructions):
         raise ValueError("batched parameter shift does not support custom matrices")
-    structure = (
-        ir.n_wires,
-        tuple((item.name, item.wires, tuple(item.params)) for item in ir.instructions),
-    )
-    values = tuple(
-        (item.name, name, _scalar_parameter(value))
-        for item in ir.instructions
-        for name, value in item.params.items()
-    )
-    return structure, values
+    return _circuit_profile_of(ir)
 
 
 def _validate_shift_pair(
