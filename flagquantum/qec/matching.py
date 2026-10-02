@@ -150,12 +150,22 @@ class MinimumWeightMatchingDecoder:
     ) -> MinimumWeightMatchingDecoder:
         """Build the decoder for the graph a detector error model defines.
 
+        A matcher weighs each fault by how much evidence one edge carries, and
+        two mechanisms that share a signature are one fault carrying two
+        weights. The model is therefore required to state each signature once,
+        and `DetectorErrorModel.merge_duplicate_mechanisms` is the operation
+        that gets it there; this decoder refuses the unmerged model rather than
+        silently matching against whichever of the two weights it prefers.
+
         Raises:
             CapabilityError: The model is not graphlike, so this decoder cannot
                 represent it.
             ValueError: A mechanism's probability has no finite non-negative
-                edge weight.
+                edge weight, or two mechanisms flip the same detectors and
+                observables.
         """
+
+        model.require_unique_mechanisms()
 
         return cls(
             graph=DecodingGraph.from_detector_error_model(model),
