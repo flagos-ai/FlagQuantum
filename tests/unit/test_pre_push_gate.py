@@ -75,6 +75,26 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         assert ("python", "tools/ci_tier.py", tier) in commands
 
 
+def test_pre_push_gate_checks_ownership_of_the_changed_paths() -> None:
+    """The gate must classify changes, not only validate the policy file.
+
+    `--validate` reads `team-ownership.toml` and never resolves a path, so a
+    branch that adds an unowned file passes it. The CI quality job runs the
+    classification step as well; the local gate has to run both, or the failure
+    is only discovered after the push.
+    """
+
+    commands = {check.command for check in checks("python")}
+    assert ("python", "tools/check_team_scope.py", "--validate") in commands
+    assert (
+        "python",
+        "tools/check_team_scope.py",
+        "--require-classified",
+        "--base",
+        "origin/main",
+    ) in commands
+
+
 def test_pre_push_gate_resolves_tools_next_to_active_python(tmp_path: Path) -> None:
     python = tmp_path / "bin" / "python"
     mypy = tmp_path / "bin" / "mypy"

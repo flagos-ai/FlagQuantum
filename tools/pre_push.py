@@ -198,6 +198,26 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/validate_required_checks.py"),
         ),
         Check(
+            "multi-team ownership policy",
+            (python_executable, "tools/check_team_scope.py", "--validate"),
+        ),
+        Check(
+            "ownership of every path this branch changes",
+            # `--validate` above only reads the policy; it never resolves a
+            # path, so a change that adds a file no rule covers passes it. This
+            # step is the local half of the CI classification step, and it
+            # fails closed: `origin/main` is the base every ordinary branch is
+            # cut from, and an unfetched or renamed remote reports that the base
+            # revision could not be resolved rather than reading as a pass.
+            (
+                python_executable,
+                "tools/check_team_scope.py",
+                "--require-classified",
+                "--base",
+                "origin/main",
+            ),
+        ),
+        Check(
             "lazy import budget",
             (python_executable, "tools/check_import_time.py"),
         ),
