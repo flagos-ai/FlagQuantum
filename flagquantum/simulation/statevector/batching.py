@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from numbers import Number
 from typing import TYPE_CHECKING
 
 import torch
 
 from ...core.ir import Instruction
+from ..gate_matrix import _parameter_batch_window
 from .operations import _environment_flag, _gate_parameter_tensor
 from .program import _StatevectorFusedGateStep
 
@@ -37,6 +38,55 @@ def _cpu_statevector_batch_bounded_initial_state_enabled() -> bool:
             "FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE", default=True
         )
     )
+
+
+def _cpu_statevector_batch_preallocated_assembly_enabled() -> bool:
+    """Whether inference windows write directly into their final result."""
+
+    return bool(
+        _environment_flag(
+            "FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY", default=True
+        )
+    )
+
+
+def _execute_statevector_batch_windows(
+    output: torch.Tensor,
+    *,
+    batch_size: int,
+    chunk_size: int,
+    bounded_zero_state: bool,
+    preallocate: bool,
+    execute: Callable[[torch.Tensor], torch.Tensor],
+) -> tuple[torch.Tensor, str]:
+    """Execute bounded windows and avoid retaining them before final assembly."""
+
+    chunks: list[torch.Tensor] = []
+    assembled: torch.Tensor | None = None
+    for start in range(0, batch_size, chunk_size):
+        stop = min(start + chunk_size, batch_size)
+        with _parameter_batch_window(start, stop, batch_size):
+            chunk = execute(
+                output[: stop - start] if bounded_zero_state else output[start:stop]
+            )
+        if assembled is None and not chunks:
+            if (
+                preallocate
+                and _cpu_statevector_batch_preallocated_assembly_enabled()
+                and not chunk.requires_grad
+            ):
+                assembled = torch.empty(
+                    (batch_size, *chunk.shape[1:]),
+                    dtype=chunk.dtype,
+                    device=chunk.device,
+                )
+        if assembled is None:
+            chunks.append(chunk)
+        else:
+            assembled[start:stop].copy_(chunk)
+    if assembled is None:
+        return torch.cat(chunks, dim=0), "functional_cat"
+    return assembled, "preallocated_copy"
 
 
 def _cpu_statevector_batch_chunk_size_for(

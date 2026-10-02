@@ -5,7 +5,13 @@ import torch
 
 import flagquantum as fq
 import flagquantum.simulation.statevector.batching as statevector_batching
+from flagquantum.core.ir import Instruction
 from flagquantum.errors import ValidationError
+from flagquantum.simulation.statevector.program import (
+    _preallocated_batch_assembly_beneficial,
+    _StatevectorCliffordMatchingStep,
+    _StatevectorFusedGateStep,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -34,6 +40,24 @@ def test_cpu_batch_chunk_size_respects_logical_state_budget(
     assert statevector_batching._cpu_statevector_batch_chunk_size(state) == 2
     monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_CHUNKING", "0")
     assert statevector_batching._cpu_statevector_batch_chunk_size(state) == 5
+
+
+def test_preallocated_assembly_avoids_mixed_rotation_clifford_workspace() -> None:
+    rotation = _StatevectorFusedGateStep(
+        instructions=(
+            Instruction("ry", (0,), {"theta": 0.1}),
+            Instruction("rz", (0,), {"theta": 0.2}),
+        ),
+        wires=(0,),
+        layout=((0,), (1,)),
+    )
+    matching = _StatevectorCliffordMatchingStep(
+        controls=(0,), targets=(1,), cz_edges=()
+    )
+
+    assert _preallocated_batch_assembly_beneficial((rotation,)) is True
+    assert _preallocated_batch_assembly_beneficial((matching,)) is True
+    assert _preallocated_batch_assembly_beneficial((rotation, matching)) is False
 
 
 def test_chunked_batch_matches_monolithic_execution(
@@ -121,6 +145,27 @@ def test_chunked_inference_bounds_the_zero_state_workspace(
     torch.testing.assert_close(actual, expected, rtol=0, atol=0)
     assert (
         circuit._last_statevector_runtime["statevector_batch_assembly"]
+        == "preallocated_copy"
+    )
+
+
+def test_chunked_inference_preallocated_assembly_has_a_complete_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    theta = torch.tensor([0.1, -0.4, 0.7, 1.1, -0.9], dtype=torch.float64)
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**3) * torch.empty((), dtype=torch.complex128).element_size(),
+    )
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY", "0")
+    circuit = _circuit(theta)
+
+    result = circuit.state()
+
+    torch.testing.assert_close(result, _circuit(theta).state(), rtol=0, atol=0)
+    assert (
+        circuit._last_statevector_runtime["statevector_batch_assembly"]
         == "functional_cat"
     )
 
@@ -144,7 +189,7 @@ def test_chunked_bounded_initial_state_has_a_complete_rollback(
     assert circuit._initial_state_batch_window_workspace is None
     assert (
         circuit._last_statevector_runtime["statevector_batch_assembly"]
-        == "functional_cat"
+        == "preallocated_copy"
     )
 
 

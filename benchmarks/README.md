@@ -252,6 +252,12 @@ It records a 1.128x focused rollback speedup on the 18-qubit, batch-32 Dense
 nonlocal task and measures FlagQuantum 2.161x faster than same-run PennyLane
 Lightning native batch. The report also preserves the rejected broader policy,
 exact timings, memory results, limitations, example, and reproduction command.
+The bounded-assembly follow-up is documented in
+[`BATCHED_STATEVECTOR_PREALLOCATED_ASSEMBLY_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_PREALLOCATED_ASSEMBLY_CPU_ARM64_20261002_SCORECARD.md).
+It writes inference windows directly into the final tensor when the compiled
+program has a measured-safe workspace shape, reducing execution RSS growth by
+3.9%–22.8% on four applicable tasks while retaining functional autograd assembly
+and the mixed local-brickwork rollback.
 
 Gate a fresh run against that maintained batch profile without confusing a
 different machine, runtime family, timing scope, or memory API for a pass or a

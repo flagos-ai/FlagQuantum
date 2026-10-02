@@ -15,13 +15,13 @@ import torch
 from ...core.ir import CircuitIR
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
-from ..gate_matrix import _parameter_batch_window
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .batching import (
     _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
     _cpu_statevector_batch_chunk_size,
+    _execute_statevector_batch_windows,
     _gate_parameters,
     _rotation_region_angles,
     _statevector_batch_input,
@@ -88,6 +88,7 @@ from .product_state import (
     product_state_execution_is_beneficial,
 )
 from .program import (
+    _preallocated_batch_assembly_beneficial,
     _StatevectorCliffordMatchingStep,
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
@@ -1095,26 +1096,17 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 parameter_bindings,
             )
         else:
-            chunks = []
-            for start in range(0, batch_size, batch_chunk_size):
-                stop = min(start + batch_chunk_size, batch_size)
-                with _parameter_batch_window(start, stop, batch_size):
-                    chunks.append(
-                        _execute_statevector_program(
-                            circuit,
-                            program,
-                            (
-                                output[: stop - start]
-                                if uses_bounded_zero_state
-                                else output[start:stop]
-                            ),
-                            parameter_bindings,
-                        )
-                    )
-            circuit._last_statevector_runtime["statevector_batch_assembly"] = (
-                "functional_cat"
+            output, assembly = _execute_statevector_batch_windows(
+                output,
+                batch_size=batch_size,
+                chunk_size=batch_chunk_size,
+                bounded_zero_state=uses_bounded_zero_state,
+                preallocate=_preallocated_batch_assembly_beneficial(program),
+                execute=lambda window: _execute_statevector_program(
+                    circuit, program, window, parameter_bindings
+                ),
             )
-            output = torch.cat(chunks, dim=0)
+            circuit._last_statevector_runtime["statevector_batch_assembly"] = assembly
     circuit._state_cache = output
     return output
 
