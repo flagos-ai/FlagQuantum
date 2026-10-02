@@ -32,10 +32,8 @@ import math
 import sys
 from dataclasses import dataclass, replace
 
-import numpy as np
 import pytest
 import torch
-from numpy.typing import NDArray
 
 from flagquantum.qec import (
     DetectorErrorModel,
@@ -54,8 +52,12 @@ from flagquantum.simulation.stabilizer import StabilizerDependencyError
 
 # Sampling executes the program through the stabilizer engine, which is an
 # optional distribution, so the file skips rather than failing to import when it
-# is absent.
+# is absent. NumPy arrives with stim and the statistics below are written in it,
+# so it is imported under the same guard, and neither is imported before it.
 pytest.importorskip("stim")
+
+import numpy as np
+from numpy.typing import NDArray
 
 pytestmark = pytest.mark.integration
 
