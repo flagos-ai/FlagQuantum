@@ -223,6 +223,65 @@ def test_batched_gate_treats_memory_method_changes_as_incomparable() -> None:
     assert "memory_scope" in report["profile_differences"]
 
 
+def test_batched_gate_can_lock_a_framework_comparison() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    case = current["cases"][0]
+    case["engines"]["pennylane_lightning_bridge"] = {
+        "batch_total": {"median_seconds": 1.25, "sample_count": 11}
+    }
+    case["correctness"]["engines"]["pennylane_lightning_bridge"] = {"passed": True}
+    case["stability"]["engines"]["pennylane_lightning_bridge"] = True
+
+    report = evaluate(
+        baseline,
+        current,
+        comparison_engine="pennylane_lightning_bridge",
+        max_native_over_comparison=1.0,
+    )
+
+    comparison = report["cases"][0]["metrics"]["comparison"]
+    assert report["verdict"] == "pass"
+    assert comparison["native_over_comparison"] == 0.8
+    assert comparison["passed"] is True
+
+
+def test_batched_framework_gate_fails_closed() -> None:
+    baseline = _batched_payload()
+    current = copy.deepcopy(baseline)
+    case = current["cases"][0]
+    case["engines"]["pennylane_lightning_bridge"] = {
+        "batch_total": {"median_seconds": 0.8, "sample_count": 4}
+    }
+    case["correctness"]["engines"]["pennylane_lightning_bridge"] = {"passed": True}
+    case["stability"]["engines"]["pennylane_lightning_bridge"] = False
+
+    report = evaluate(
+        baseline,
+        current,
+        comparison_engine="pennylane_lightning_bridge",
+    )
+
+    failures = "\n".join(report["failures"])
+    assert report["verdict"] == "fail"
+    assert "has 4 samples; requires 5" in failures
+    assert "comparison measurement stability failed" in failures
+    assert "native/comparison ratio 1.250 exceeds 1.000" in failures
+
+
+def test_framework_gate_rejects_missing_or_inapplicable_comparison() -> None:
+    report = evaluate(
+        _batched_payload(),
+        _batched_payload(),
+        comparison_engine="pennylane_lightning_bridge",
+    )
+    assert report["verdict"] == "fail"
+    assert "comparison engine missing" in report["failures"][0]
+
+    with pytest.raises(ValueError, match="only for batched statevectors"):
+        evaluate(_payload(), _payload(), comparison_engine="external")
+
+
 def test_gate_fails_closed_on_regression_correctness_stability_and_samples() -> None:
     baseline = _payload()
     current = copy.deepcopy(baseline)
@@ -335,3 +394,36 @@ def test_checked_in_cpu_scorecard_is_reproducible(
     assert expected == regenerated
     assert regenerated["verdict"] == "pass"
     assert len(regenerated["cases"]) == case_count
+
+
+def test_checked_in_framework_floor_is_reproducible() -> None:
+    baseline = json.loads(
+        (
+            RESULTS
+            / "batched_statevector_framework_gate_baseline_cpu_arm64_20261002.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected = json.loads(
+        (
+            RESULTS / "batched_statevector_framework_gate_cpu_arm64_20261002.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    regenerated = evaluate(
+        baseline,
+        baseline,
+        max_slowdown=1.10,
+        max_memory_growth=1.10,
+        minimum_samples=5,
+        minimum_memory_probes=3,
+        comparison_engine="pennylane_lightning_bridge",
+        max_native_over_comparison=0.90,
+    )
+
+    assert regenerated == expected
+    assert regenerated["verdict"] == "pass"
+    assert len(regenerated["cases"]) == 2
+    assert all(
+        case["metrics"]["comparison"]["native_over_comparison"] <= 0.90
+        for case in regenerated["cases"]
+    )
