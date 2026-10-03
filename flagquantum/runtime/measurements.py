@@ -268,6 +268,15 @@ def _joint_marginal_probabilities(
         and output.ndim == 2
         and output.shape[-1] == 2**n_wires
     ):
+        if wires == tuple(range(n_wires)):
+            from .statevector_probability_dispatch import (
+                _try_apply_cataloged_statevector_probabilities,
+            )
+
+            full = _try_apply_cataloged_statevector_probabilities(output)
+            if full is not None:
+                return _normalize_joint_marginal(full)
+
         from .statevector_measurement_dispatch import (
             _try_apply_cataloged_statevector_marginal,
         )
