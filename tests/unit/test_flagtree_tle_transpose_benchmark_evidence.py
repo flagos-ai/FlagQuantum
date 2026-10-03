@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -21,6 +23,15 @@ from benchmarks.flagtree_tle_transpose_1q import (
 )
 
 pytestmark = pytest.mark.unit
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _REPOSITORY_ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "flagtree_tle_transpose_1q_a800.json"
+)
 
 
 def _run(host: str, *, tle_speedup: float = 0.9) -> dict[str, object]:
@@ -154,3 +165,11 @@ def test_aggregate_allows_a_cross_matrix_win_to_enter_dispatch_study() -> None:
     validate_evidence(payload)
     assert payload["tle_win_over_shared_triton_on_all_cases"]
     assert payload["provider_selection_decision"] == "eligible_for_dispatch_study"
+
+
+def test_checked_in_a800_evidence_is_canonical_and_retains_explicit_path() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert not payload["tle_win_over_shared_triton_on_all_cases"]
+    assert payload["provider_selection_decision"] == "retain_explicit"

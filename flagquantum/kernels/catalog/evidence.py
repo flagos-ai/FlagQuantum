@@ -274,6 +274,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_flagtree_tle_provider.py::test_tle_transpose_1q_rejects_cpu_before_capability_probe",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_transpose_1q_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-FLAGTREE-SV-007-A",
