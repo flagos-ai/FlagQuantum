@@ -38,7 +38,17 @@ def _statevector_marginal_kernel_enabled(
 ) -> bool:
     """Return whether MEAS-003 supports this exact runtime request."""
 
-    if not _statevector_marginal_dispatch_enabled() or state.ndim != 2:
+    if (
+        state.ndim != 2
+        or tuple(state.shape)
+        != (
+            _DISPATCH_BATCH,
+            _DISPATCH_AMPLITUDES_PER_STATE,
+        )
+        or len(qubits) != _DISPATCH_SELECTED_QUBITS
+    ):
+        return False
+    if not _statevector_marginal_dispatch_enabled():
         return False
     amplitudes = int(state.shape[1])
     n_qubits = amplitudes.bit_length() - 1
@@ -48,11 +58,8 @@ def _statevector_marginal_kernel_enabled(
         and state.is_contiguous()
         and not state.is_conj()
         and not state.is_neg()
-        and int(state.shape[0]) == _DISPATCH_BATCH
         and 2**n_qubits == amplitudes
         and n_qubits <= _MAX_QUBITS
-        and len(qubits) == _DISPATCH_SELECTED_QUBITS
-        and amplitudes == _DISPATCH_AMPLITUDES_PER_STATE
     )
 
 
