@@ -108,7 +108,41 @@ def test_artifact_classes_are_immutable_and_scopes_are_distinct():
         "one_gpu_local",
         "two_gpu_semantic_regression",
         "scheduled_4_8_gpu_scale",
+        "multi_node_16_gpu_scale",
     }
+
+
+def test_multi_node_scale_carries_sixteen_devices_and_nothing_nearer():
+    """The widest scope states the one device count it was added to carry.
+
+    Sixteen devices is two full hosts of the measured cluster, and it is the
+    smallest world in which the frozen MPS capacity workload fits. The scope
+    must therefore accept exactly that count and refuse its neighbours, so a
+    fifteen- or seventeen-device provenance record cannot be sealed as if it had
+    crossed the node boundary at the frozen topology.
+    """
+
+    artifact = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.MULTI_NODE_SCALE,
+        provenance=_provenance(16),
+        evidence=_measured_payload(),
+        signing_key=KEY,
+    )
+    payload = artifact.summary()
+    assert payload["evidence_scope"] == "multi_node_16_gpu_scale"
+    assert len(payload["provenance"]["devices"]) == 16
+    assert verify_evidence_artifact(payload, signing_key=KEY) == (True, ())
+
+    for device_count in (1, 2, 4, 8, 15, 17):
+        with pytest.raises(ValueError, match="requires device count"):
+            create_evidence_artifact(
+                artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+                evidence_scope=EvidenceScope.MULTI_NODE_SCALE,
+                provenance=_provenance(device_count),
+                evidence=_measured_payload(),
+                signing_key=KEY,
+            )
 
 
 @pytest.mark.parametrize(

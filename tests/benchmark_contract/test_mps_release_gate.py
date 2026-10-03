@@ -17,7 +17,7 @@ import ast
 import copy
 import hashlib
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
@@ -43,11 +43,11 @@ from tools.promote_release_candidates import main as promote_main
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 
 KEYS = b"mps-release-contract-test-key"
-# A world of two ranks, one device per host, is the widest topology whose payload
-# the evidence envelope can actually seal, so the end-to-end tests below force
-# the topology to it. This is not a release topology: the frozen one is sixteen
-# ranks over two hosts, and the gate's refusal to pretend otherwise is asserted
-# separately.
+# A world of two ranks, one device per host, is the narrowest multi-node topology
+# the evidence envelope can seal, so most end-to-end tests below force the
+# topology to it and exercise the contract's checks without spending sixteen
+# devices on every case. The frozen release world is asserted against its own
+# scope separately, and one test runs the contract at that world itself.
 SEALABLE_TOPOLOGY = {
     "devices_per_node": 1,
     "local_world_size": 1,
@@ -62,6 +62,7 @@ SCOPE_BY_DEVICE_COUNT = {
     2: EvidenceScope.TWO_GPU_SEMANTIC,
     4: EvidenceScope.SCHEDULED_SCALE,
     8: EvidenceScope.SCHEDULED_SCALE,
+    16: EvidenceScope.MULTI_NODE_SCALE,
 }
 
 
@@ -323,9 +324,9 @@ def _envelope(payload: dict[str, Any]) -> dict[str, Any]:
 
     The gate reads evidence out of an envelope and verifies the signature only
     when a key is supplied, which is what lets a contract test exercise the
-    contract without a cluster. The frozen sixteen-rank world cannot be sealed by
-    any scope, so a test that needs a *signed* envelope forces a sealable topology
-    and the tests that read the frozen contract use this shape.
+    contract without a cluster. Tests that are about the contract's checks use
+    this shape; tests that are about the envelope's own binding use ``_signed``,
+    so the two concerns stay separable.
     """
 
     return {
@@ -378,8 +379,8 @@ def _candidate_set(root: Path, manifest: dict[str, Any]) -> tuple[Path, Path, Pa
     into its own declared provenance directory, because one device has no ranks to
     shard across and can never be release evidence. The manifest is written beside
     them because the gate reads the frozen document from a path. A topology whose
-    world no evidence scope carries cannot be sealed, so its candidate set is
-    staged as the unsigned shape the gate reads instead.
+    world no evidence scope carries is staged as the unsigned shape the gate reads
+    instead, so that the same helper serves a manifest that cannot be sealed.
     """
 
     payloads = _payloads(manifest)
@@ -639,15 +640,18 @@ ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
 
 
 def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly four named reasons.
+    """The checked-in state fails the gate for exactly three named reasons.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains are the four things the frozen document itself
+    satisfied. What remains are the three things the frozen document itself
     discloses: the capacity premise is unestablished, the provenance it cites for
-    that premise is not re-verifiable, no MPS speed configuration has been chosen
-    or timed, and the sixteen-rank release world is wider than any evidence scope
-    can carry. Asserting the exact tuple means a fifth blocker appearing here
-    would have to be explained rather than absorbed.
+    that premise is not re-verifiable, and no MPS speed configuration has been
+    chosen or timed. The sixteen-rank release world used to appear here as well,
+    because no evidence scope could carry it; API change proposal 065 added
+    ``MULTI_NODE_SCALE`` and this contract was re-frozen against it, so the
+    world is now sealable and its absence from this tuple is the change rather
+    than an omission. Asserting the exact tuple means a fourth blocker appearing
+    here would have to be explained rather than absorbed.
     """
 
     manifest = load_manifest()
@@ -655,7 +659,6 @@ def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
 
     assert passed is False
     assert blockers == (
-        "release_world_size_not_carriable_by_evidence_envelope",
         "speed_configuration_ladder_not_frozen",
         "capacity_premise_not_established",
         "capacity_premise_evidence_not_verifiable",
@@ -679,13 +682,16 @@ def test_a_complete_release_set_satisfies_the_contract() -> None:
     assert passed is True
 
 
-def test_the_frozen_release_world_cannot_be_sealed_by_the_evidence_envelope() -> None:
-    """The contract's widest dependency is stated rather than discovered late.
+def test_the_frozen_release_world_is_carriable_by_the_evidence_envelope() -> None:
+    """The contract's widest dependency is sealed, not merely declared.
 
-    The frozen world is sixteen ranks, and no evidence scope carries more than
-    eight devices, so no sealed artifact can describe it. The gate names that
-    capability gap instead of reporting a missing run, and the manifest discloses
-    the same bound so that a campaign can read it before spending the cluster.
+    The frozen world is sixteen ranks, eight devices on each of two hosts. The
+    first evidence-scope vocabulary stopped at eight, which is exactly one host
+    here, so the contract could be evaluated and never satisfied. API change
+    proposal 065 added ``MULTI_NODE_SCALE``, and this test holds the manifest's
+    disclosure to the envelope that actually enforces it: the envelope is asked
+    for a sixteen-device provenance record rather than being told the answer, so
+    the two can only agree by both being right.
     """
 
     frozen = load_manifest()
@@ -694,14 +700,62 @@ def test_the_frozen_release_world_cannot_be_sealed_by_the_evidence_envelope() ->
     assert envelope_carries_world(1) is True
     assert envelope_carries_world(2) is True
     assert envelope_carries_world(8) is True
-    assert envelope_carries_world(16) is False
-    assert frozen["release_payload_envelope"]["carriable"] is False
-    assert frozen["release_payload_envelope"]["device_counts_by_scope"] != {}
-    with pytest.raises(ValueError, match="requires device count"):
-        _signed(_sharded_evidence(frozen, acceptance_case="matched_speed"))
+    assert envelope_carries_world(16) is True
+    assert frozen["release_payload_envelope"]["carriable"] is True
+    counts = frozen["release_payload_envelope"]["device_counts_by_scope"]
+    assert counts["multi_node_16_gpu_scale"] == [16]
+    # The narrower scopes keep their own device counts, so adding the wide scope
+    # widened the vocabulary without moving any payload that already fit.
+    assert counts["one_gpu_local"] == [1]
+    assert counts["two_gpu_semantic_regression"] == [2]
+    assert counts["scheduled_4_8_gpu_scale"] == [4, 8]
+    # A scope that carries sixteen devices is not a scope that carries anything:
+    # the nearest widths still refuse, so the new member is bounded rather than
+    # permissive.
+    payload = _sharded_evidence(frozen, acceptance_case="matched_speed")
+    for near in (15, 17):
+        with pytest.raises(ValueError, match="requires device count"):
+            create_evidence_artifact(
+                artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+                evidence_scope=EvidenceScope.MULTI_NODE_SCALE,
+                provenance=replace(
+                    _provenance(payload),
+                    devices=tuple(f"GPU-{rank}" for rank in range(near)),
+                ),
+                evidence=payload,
+                signing_key=KEYS,
+            )
     passed, blockers = _read(frozen)
     assert passed is False
-    assert "release_world_size_not_carriable_by_evidence_envelope" in blockers
+    assert "release_world_size_not_carriable_by_evidence_envelope" not in blockers
+
+
+def test_the_frozen_release_world_is_accepted_when_its_payloads_are_sealed() -> None:
+    """The frozen world satisfies the contract end to end, at its own width.
+
+    Every other end-to-end test narrows the topology to two ranks so that a
+    signed envelope is cheap to build. This one keeps the frozen sixteen-rank
+    topology, freezes the two disclosures that are the manifest's own state
+    rather than a payload's shortcoming, seals every payload at the frozen width,
+    and asserts the gate accepts the set. It is the test that would have failed
+    before the sixteen-device scope existed.
+    """
+
+    manifest = _sealable_topology_manifest()
+    manifest["topologies"] = copy.deepcopy(load_manifest()["topologies"])
+
+    payloads = _payloads(manifest)
+    assert {int(payload["world_size"]) for payload in payloads} == {1, 16}
+    # The unsigned shape is not enough here: the point of the test is that the
+    # envelope can carry the frozen world, so every payload goes through the same
+    # signing call the sealer uses, including the single-device baseline at
+    # ``one_gpu_local``.
+    sealed = [_signed(payload) for payload in payloads]
+
+    passed, blockers = evaluate_mps_release(sealed, manifest)
+
+    assert blockers == ()
+    assert passed is True
 
 
 def test_flat_unsigned_production_payload_is_rejected() -> None:
@@ -789,10 +843,22 @@ def test_every_manifest_state_blocker_is_reachable() -> None:
     ) -> tuple[str, ...]:
         return _read(manifest, payloads)[1]
 
-    # A world wider than the envelope can carry is reported by the gate and not
-    # left for the sealer to discover.
+    # A world wider than any evidence scope can carry is reported by the gate and
+    # not left for the sealer to discover. The checked-in manifest no longer
+    # reaches this: it declares sixteen ranks and the envelope now carries them.
+    # The blocker still has to be reachable, so it is reached by declaring a world
+    # the envelope genuinely refuses, which is what a future manifest widening the
+    # release topology without widening the vocabulary would do.
+    uncarriable = _sealable_topology_manifest()
+    uncarriable["topologies"] = {
+        **copy.deepcopy(frozen["topologies"]),
+        "release_world_sizes": [15],
+    }
+    wide = copy.deepcopy(_payloads(uncarriable))
+    wide[1]["world_size"] = 15
+    wide[2]["world_size"] = 15
     assert "release_world_size_not_carriable_by_evidence_envelope" in blockers_for(
-        frozen, _payloads(frozen)
+        uncarriable, wide
     )
     # No sealed payload at all: the release world size is the manifest's.
     assert "missing_release_world_sizes" in blockers_for(

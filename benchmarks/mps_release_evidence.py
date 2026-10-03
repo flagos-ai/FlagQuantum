@@ -30,10 +30,11 @@ source of truth for the site count, the bond schedule and the rank boundaries.
 
 The producer measures and reports; it does not seal. Sealing is
 ``tools/seal_runtime_evidence.py``, and the frozen release world of sixteen ranks
-is wider than any evidence scope the envelope defines, so the completion role
-warns that its payload cannot be sealed yet. The measurement is still taken
-because it is the evidence the contract is about, and because the warning is
-about the envelope rather than about the run.
+is carried by ``EvidenceScope.MULTI_NODE_SCALE`` since API change proposal 065, so
+a completed sixteen-rank payload can be sealed. The completion role still checks
+carriability before it measures and warns if the manifest it was pointed at names
+a world the envelope refuses, because that is a property of the frozen document
+rather than of this script.
 """
 
 from __future__ import annotations
@@ -1056,6 +1057,9 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
             f"host; a launch over {node_count} host(s) measured a single-node run"
         )
     if not envelope_carries_world(world):
+        # The frozen sixteen-rank world is carriable since API change proposal
+        # 065 added EvidenceScope.MULTI_NODE_SCALE, so this branch is reached only
+        # by a manifest that names a release world the vocabulary still refuses.
         # The measurement is still worth taking and the payload is still worth
         # reviewing, but the sealer cannot wrap it, so the operator is told here
         # rather than after the run has been sealed against a refusal.

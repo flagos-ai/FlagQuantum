@@ -14,6 +14,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from flagquantum.runtime.observability.evidence import EvidenceScope
+
 
 def _output(command: Sequence[str]) -> str:
     try:
@@ -76,11 +78,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--world-size", type=int)
     parser.add_argument(
         "--evidence-scope",
-        choices=(
-            "one_gpu_local",
-            "two_gpu_semantic_regression",
-            "scheduled_4_8_gpu_scale",
-        ),
+        choices=tuple(scope.value for scope in EvidenceScope),
         required=True,
     )
     args = parser.parse_args(argv)

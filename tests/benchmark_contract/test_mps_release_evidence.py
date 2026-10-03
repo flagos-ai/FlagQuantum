@@ -619,15 +619,20 @@ def test_the_baseline_role_records_one_device_and_nothing_else(
         )
 
 
-@pytest.mark.skipif(
-    torch.cuda.is_available(), reason="this host has a device, so the refusal is moot"
-)
 def test_the_baseline_role_refuses_to_report_a_run_without_the_measured_device(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A baseline from a host with no accelerator measured no exhaustion."""
+    """A baseline from a host with no accelerator measured no exhaustion.
+
+    The accelerator check is forced to fail rather than being skipped on, so the
+    refusal is stated on every host instead of only on a host that happens to
+    have no device. An inverted `skipif` would have made this the one test in the
+    tree that a device lane could never reach, and a guard that skips when the
+    hardware is present reads exactly like a pass.
+    """
 
     monkeypatch.setenv("WORLD_SIZE", "1")
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
 
     with pytest.raises(SystemExit, match="needs the measured device"):
         producer.main(
@@ -659,20 +664,24 @@ def test_the_completion_role_refuses_a_world_that_does_not_span_hosts(
         )
 
 
-def test_the_completion_role_discloses_the_world_the_envelope_cannot_carry(
+def test_the_completion_role_discloses_a_release_world_the_envelope_cannot_carry(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """The release world is wider than any evidence scope, and that is said here.
+    """A world the envelope cannot describe is disclosed before it is measured.
 
-    The measurement is still worth taking, so the role warns before it measures
-    rather than letting the campaign discover after the run that the payload
-    cannot be sealed. The accelerator check is forced to fail so that the test
-    stops at the warning on any host instead of entering a distributed launch.
+    The frozen sixteen-rank world is carriable since API change proposal 065
+    added `EvidenceScope.MULTI_NODE_SCALE`, so the predicate is forced false here:
+    the branch is a live invariant over a derived question, not a statement about
+    the checked-in manifest, and the value of the warning is that an operator
+    learns before spending the cluster that the payload cannot be sealed. The
+    accelerator check is forced to fail too, so the test stops at the warning on
+    any host instead of entering a distributed launch.
     """
 
     monkeypatch.setenv("WORLD_SIZE", str(CAPACITY["target_world_size"]))
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(producer, "envelope_carries_world", lambda world: False)
 
     with pytest.raises(SystemExit, match="needs the measured devices"):
         producer.main(

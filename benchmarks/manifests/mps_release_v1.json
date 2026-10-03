@@ -120,8 +120,11 @@
   "frozen_before_release_run": true,
   "release_payload_envelope": {
     "artifact_class": "measured_production_run",
-    "carriable": false,
+    "carriable": true,
     "device_counts_by_scope": {
+      "multi_node_16_gpu_scale": [
+        16
+      ],
       "one_gpu_local": [
         1
       ],
@@ -134,7 +137,7 @@
       ]
     },
     "frozen_release_world_size": 16,
-    "note": "The frozen MPS release world is 16 ranks, eight devices on each of two hosts, but every scope the evidence envelope defines carries at most eight devices, and the envelope enforces that bound both when a payload is sealed and when it is verified. No signed measured_production_run artifact can therefore describe this release world today: the sealer refuses a 16-device provenance record and the verifier rejects one, so the contract can be evaluated but not satisfied. The gate reports release_world_size_not_carriable_by_evidence_envelope rather than a missing artifact, because the missing thing is a capability of the envelope and not of the run. Widening the scope vocabulary is owned by flagquantum/runtime/observability/evidence.py, which this contract does not modify: a 16-device scope is a change to a shared release-evidence surface, so it lands as its own integration change with its own tests. The bound is stated here as three lists of numbers rather than derived at read time because a manifest is a frozen document; the gate derives the same bound by asking the envelope, and a disagreement means this note must be re-frozen.",
+    "note": "The frozen MPS release world is 16 ranks, eight devices on each of two hosts, and the envelope enforces that bound both when a payload is sealed and when it is verified, so the contract can be satisfied only by a scope whose device counts include 16. The first frozen vocabulary had no such scope: SCHEDULED_SCALE stops at eight devices, which is one full host here, so this world was unsealable rather than merely unmeasured. API change proposal 065 added EvidenceScope.MULTI_NODE_SCALE, which carries exactly sixteen devices, and this contract was re-frozen against it. carriable is true because the envelope can now describe the frozen world, not because any run has satisfied it: no MPS measured_production_run artifact exists yet, and the gate still reports every other missing or unestablished element. The bound is stated here as four lists of numbers rather than derived at read time because a manifest is a frozen document; the gate derives the same bound by asking the envelope, and a disagreement means this note must be re-frozen.",
     "scope_vocabulary": "flagquantum.runtime.observability.evidence.EvidenceScope",
     "sealer": "tools/seal_runtime_evidence.py --release-payload"
   },
@@ -239,7 +242,7 @@
     "local_world_size": 8,
     "minimum_multi_node_count": 2,
     "multi_node_required": true,
-    "note": "The measured cluster is one pair of hosts with eight A800 devices each, so the release topology is 16 ranks: eight per host, one rank per device, distributed across both hosts. The frozen capacity workload fixes its 15 rank boundaries for that world size, so a different world size computes a different boundary set and a different topology fingerprint. No third host exists here, which is why the frozen topology is a pair of hosts rather than a ladder, and why the pair-only boundary is disclosed as a permanent limitation of the capability rather than as a stage of its measurement.",
+    "note": "The measured cluster is one pair of hosts with eight A800 devices each, so the release topology is 16 ranks: eight per host, one rank per device, distributed across both hosts. Sixteen is not a preference but a floor for this contract: the frozen capacity workload holds 1,236,780,012,864 bytes of MPS state, which is 72.0 GiB on each of sixteen ranks against 79.25 GiB of usable device memory, and 144.0 GiB on each of eight, so eight ranks cannot hold the frozen shape at all. The frozen capacity workload fixes its 15 rank boundaries for that world size, so a different world size computes a different boundary set and a different topology fingerprint, and shrinking the world to fit a narrower evidence scope would mean shrinking the frozen workload, which would retire the capacity claim rather than certify it. No third host exists here, which is why the frozen topology is a pair of hosts rather than a ladder, and why the pair-only boundary is disclosed as a permanent limitation of the capability rather than as a stage of its measurement. The evidence envelope carries this world through EvidenceScope.MULTI_NODE_SCALE, added by API change proposal 065, so the topology is now sealable as well as frozen.",
     "release_world_sizes": [
       16
     ]
