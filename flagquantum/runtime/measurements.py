@@ -211,7 +211,17 @@ def _reduced_joint_marginal(
         marginal = marginal.permute(permutation)
     marginal = marginal.reshape(probabilities.shape[0], 2 ** len(wires))
 
+    return _normalize_joint_marginal(marginal)
+
+
+def _normalize_joint_marginal(marginal: torch.Tensor) -> torch.Tensor:
+    """Preserve the dense-result normalization contract for either route."""
+
     total = marginal.sum(dim=-1, keepdim=True)
+    if marginal.is_cuda:
+        normalize = ((total - 1).abs() > _TRACE_TOLERANCE).any() & (total > 0).all()
+        denominator = torch.where(normalize, total, torch.ones_like(total))
+        return marginal / denominator
     if bool(((total - 1).abs() > _TRACE_TOLERANCE).any()) and bool((total > 0).all()):
         marginal = marginal / total
     return marginal
@@ -250,6 +260,21 @@ def _joint_marginal_probabilities(
     noise_model: Any | None,
 ) -> torch.Tensor | None:
     """Reduce a dense result to one joint marginal, or ``None`` if it is not one."""
+
+    if (
+        noise_model is None
+        and isinstance(output, torch.Tensor)
+        and output.is_complex()
+        and output.ndim == 2
+        and output.shape[-1] == 2**n_wires
+    ):
+        from .statevector_measurement_dispatch import (
+            _try_apply_cataloged_statevector_marginal,
+        )
+
+        direct = _try_apply_cataloged_statevector_marginal(output, wires)
+        if direct is not None:
+            return _normalize_joint_marginal(direct)
 
     probabilities = _ideal_probabilities(output, n_wires)
     if probabilities is None:
