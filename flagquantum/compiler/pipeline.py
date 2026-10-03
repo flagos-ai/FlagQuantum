@@ -223,10 +223,11 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 
 
 def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
-    # Imported here rather than at module scope: `inverse_cancellation` reads
-    # `_WireLocalProgram` from this layer, so a module-level import in this
-    # direction would be circular.
+    # Imported here rather than at module scope: both passes read this layer
+    # (`_WireLocalProgram`, the Euler tables, `_is_zero`), so a module-level
+    # import in this direction would be circular.
     from .inverse_cancellation import merge_inverse_pairs
+    from .one_qubit_optimization import collapse_one_qubit_runs
 
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
@@ -237,6 +238,7 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         ir = merge_inverse_pairs(ir)
         ir = merge_adjacent_rotations(ir)
         ir = remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")

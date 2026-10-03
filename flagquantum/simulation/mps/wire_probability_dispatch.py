@@ -28,7 +28,9 @@ _MAX_SITE_ELEMENTS = 1 << 12
 
 
 def _mps_wire_probability_dispatch_enabled() -> bool:
-    return os.getenv("FQ_TRITON_MPS_WIRE_PROBABILITIES", "0").strip().lower() not in {
+    """Return whether the evidenced MPS-007 rollout is enabled."""
+
+    return os.getenv("FQ_TRITON_MPS_WIRE_PROBABILITIES", "1").strip().lower() not in {
         "0",
         "false",
         "off",

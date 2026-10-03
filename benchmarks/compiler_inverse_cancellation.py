@@ -24,7 +24,16 @@ This module measures four things and refuses to measure a fifth.
   table states by how much.
 * **The pipeline delta.** On seeded populations the source circuit is measured
   through the whole pipeline with and without the new pass, and every removed
-  instruction is checked against an execution of the circuit.
+  instruction is checked against an execution of the circuit. The pipeline also
+  carries a same-wire single-qubit fold, `collapse_one_qubit_runs`, which reaches
+  most of the shapes that motivated this pass. That fold is part of the baseline
+  the delta is measured against rather than a pass this module may quietly omit,
+  so what the delta reports is this pass's *marginal* reach and not a comparison
+  against a pipeline that no longer exists. Two of the populations frame a pair
+  inside a half-pi pulse, because that is where the two passes do not subsume each
+  other: folding a framed pair and cancelling the pair first are different answers,
+  and the table reports which is shorter on each shape instead of claiming that one
+  order dominates.
 * **Where the pass stops, and why.** A gap that is empty and a gap whose operator
   merely *commutes* with the pair are different problems. This pass solves only the
   first. The shape table drives every pair through ten gaps and measures two things
@@ -35,7 +44,23 @@ This module measures four things and refuses to measure a fifth.
   gap does commute and was not crossed is reach left on the table, counted as a
   number rather than promised. The one gap whose operator is not a declared gate
   reports `None` in both columns and is counted separately, because a question that
-  cannot be asked is not an answer of "no".
+  cannot be asked is not an answer of "no". These columns are read off the pass
+  itself rather than off the pipeline, because a pass can only be answerable for
+  what it decides; the pipeline's own removals on these rows are a different
+  question, answered by the delta above.
+
+* **What the delta is measured in.** An instruction count is not the number that
+  decides whether a compiler change is worth having, so each population is also
+  lowered into one declared native basis (`rz` plus the half-pi pulse) and counted
+  there. The two counts disagree in sign, and on the same shape: `sx s sdg` reaches
+  `u3 rz` -- 2 instructions, 6 native gates -- without this pass and `sx` -- 1
+  instruction, 1 native gate -- with it, while `sx s sdg sx` reaches one `u3` (4
+  native gates) without the pass and `sx sx` (2 native gates) with it, which is a
+  *longer* compiler program and a shorter native one. Both numbers are reported for
+  that reason. A population the declared basis cannot express reports an absent count
+  rather than a zero, and the table also re-runs the pass ahead of the one-qubit fold
+  so the order chosen in `pipeline._optimize_to_fixed_point` is measured rather than
+  assumed.
 
 * **What it does not measure:** a gate-count parity claim against Qiskit. The shape
   table feeds both implementations the identical circuit and reports both counts.
@@ -54,13 +79,19 @@ from __future__ import annotations
 import argparse
 import json
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import torch
 
-from flagquantum.compiler.inverse_cancellation import inverse_pairs
+from flagquantum.compiler.inverse_cancellation import inverse_pairs, merge_inverse_pairs
+from flagquantum.compiler.native_gate_legalization import (
+    NativeGateLegalizationError,
+    legalize_native_gates,
+)
+from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
+from flagquantum.compiler.one_qubit_synthesis import HALF_PI_PULSE_OPCODES
 from flagquantum.compiler.pipeline import (
     _SELF_INVERSE,
     _optimize_to_fixed_point,
@@ -74,6 +105,17 @@ from flagquantum.core.operator_schema import (
     canonical_opcode,
     get_operator_schema,
     inverse_operator,
+)
+from flagquantum.core.target_capabilities import (
+    CapabilityFact,
+    CapabilityScope,
+    EvidenceLevel,
+    EvidenceReference,
+    FactExposure,
+    FactSource,
+    SupportStatus,
+    TargetCapabilitySnapshot,
+    TargetIdentity,
 )
 from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.local import run_local_statevector
@@ -100,6 +142,102 @@ _DRAW_COUNT = 20
 
 #: The opcodes the pass can act on, read from the pass rather than restated.
 _PAIRS = dict(inverse_pairs())
+
+#: The half-pi pulse a transcompiled run is written in, and the frame the two
+#: populations below use to separate this pass's reach from the one-qubit fold's.
+#: Read from the fold's own declaration rather than restated: the fold declines a
+#: run already spelled in this vocabulary, so which opcode it is decides the shapes
+#: below, and a second copy here could disagree with the pass being measured.
+_PULSE = HALF_PI_PULSE_OPCODES[0]
+
+#: The one target basis the native-gate column is measured in: a z-rotation and the
+#: same half-pi pulse. It is the basis the two pulse populations are written in, so
+#: a program this pass leaves alone is already native there, and it is declared here
+#: rather than discovered because a gate count without its basis is not a number.
+_NATIVE_Z_ROTATION = "rz"
+_NATIVE_BASIS = (
+    {"name": _NATIVE_Z_ROTATION, "parameters": ("theta",)},
+    {"name": _PULSE, "parameters": ()},
+)
+_NATIVE_TARGET_ID = "inverse-cancellation-benchmark-target"
+
+
+def _native_basis_snapshot() -> TargetCapabilitySnapshot:
+    """A synthetic declared target whose only native gates are the measured basis.
+
+    Synthetic because this module measures a compiler rewriting, not a device: the
+    facts are declared and marked as such, and no provider is contacted.
+    """
+
+    scope = CapabilityScope(device_ids=(f"{_NATIVE_TARGET_ID}:0",))
+    return TargetCapabilitySnapshot(
+        target_identity=TargetIdentity(
+            target_id=_NATIVE_TARGET_ID,
+            target_class="benchmark",
+            provider="flagquantum.benchmark",
+            provider_version="1",
+            target_revision="1",
+            environment_id="inverse-cancellation-benchmark",
+        ),
+        scope=scope,
+        captured_at=_NOW.isoformat(),
+        valid_until=(_NOW + timedelta(hours=1)).isoformat(),
+        facts=(
+            CapabilityFact(
+                name="gates.native",
+                value=_NATIVE_BASIS,
+                support_status=SupportStatus.VERIFIED,
+                fact_exposure=FactExposure.DECLARED,
+                source=FactSource(kind="benchmark", ref="inverse-cancellation-basis"),
+            ),
+        ),
+        evidence_refs=(
+            EvidenceReference(
+                evidence_id="inverse-cancellation-basis",
+                sha256="c" * 64,
+                level=EvidenceLevel.BASIC,
+                scope=scope,
+            ),
+        ),
+    )
+
+
+def _native_gate_count(ir: CircuitIR) -> int | None:
+    """``ir``'s length after lowering into the declared basis, or None.
+
+    None means the declared basis cannot express the program -- a `measure` is the
+    case in these populations -- so the count is absent rather than zero. A zero
+    would read as "this basis needs no gates for it", which is a different claim.
+    """
+
+    try:
+        return len(
+            legalize_native_gates(
+                ir, snapshot=_native_basis_snapshot(), evaluated_at=_NOW
+            ).program
+        )
+    except NativeGateLegalizationError:
+        return None
+
+
+def _native_column(count: int | None) -> str:
+    """A native gate count for the printed table; an absent count stays visible."""
+
+    return "n/a" if count is None else str(count)
+
+
+def _add_native_count(total: int | None, ir: CircuitIR) -> int | None:
+    """``total`` plus ``ir``'s native gate count, staying None once it is None.
+
+    A population sums to None as soon as one of its circuits cannot be expressed in
+    the declared basis, so the table never reports a partial total as if it were the
+    population's own number.
+    """
+
+    if total is None:
+        return None
+    counted = _native_gate_count(ir)
+    return None if counted is None else total + counted
 
 
 def _instruction(opcode: str, wires: tuple[int, ...], angle: float) -> Instruction:
@@ -317,8 +455,14 @@ def identity_proof() -> dict[str, Any]:
     }
 
 
-def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
-    """The pipeline with this pass removed, and nothing else changed."""
+def _pipeline_without_this_pass(ir: CircuitIR) -> CircuitIR:
+    """The pipeline with this pass removed, and nothing else changed.
+
+    Every other pass in `pipeline._optimize_to_fixed_point` is applied, in its
+    pipeline order, including `collapse_one_qubit_runs`. Leaving the fold out would
+    have measured this pass against a pipeline the project no longer ships, and the
+    delta would have credited it with removals the fold already performs on its own.
+    """
 
     for _ in range(len(ir) + 1):
         previous = len(ir)
@@ -326,9 +470,31 @@ def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
         ir = merge_self_inverse(ir)
         ir = merge_adjacent_rotations(ir)
         ir = remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous:
             return ir
-    raise AssertionError("the legacy pipeline did not reach a fixed point")
+    raise AssertionError("the pipeline without this pass did not reach a fixed point")
+
+
+def _pass_first_fixed_point(ir: CircuitIR) -> CircuitIR:
+    """The same pipeline with this pass ahead of `merge_adjacent_rotations`.
+
+    The alternative order, measured rather than argued about: it is the order in
+    which this pass sees a run before the fold does, so a shape where the two
+    disagree is decided by this pass instead.
+    """
+
+    for _ in range(len(ir) + 1):
+        previous = len(ir)
+        ir = remove_identity_gates(ir)
+        ir = merge_self_inverse(ir)
+        ir = merge_inverse_pairs(ir)
+        ir = merge_adjacent_rotations(ir)
+        ir = remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
+        if len(ir) == previous:
+            return ir
+    raise AssertionError("the pass-first pipeline did not reach a fixed point")
 
 
 def _executable(ir: CircuitIR) -> bool:
@@ -429,8 +595,56 @@ def _barrier_pair(seed: random.Random) -> CircuitIR:
     )
 
 
+def _pulse_framed_pair(seed: random.Random) -> CircuitIR:
+    """A pair behind one half-pi pulse on its own wire.
+
+    `collapse_one_qubit_runs` emits its own vocabulary and declines a run already
+    written in the pulse basis, so a pair framed by a pulse is the shape where the
+    fold and this pass disagree: folding the run and cancelling the pair first are
+    different programs, and which is shorter is measured rather than assumed.
+    """
+
+    opcode = seed.choice(sorted(_PAIRS))
+    qubit = seed.randrange(_REGISTER_WIDTH)
+    return CircuitIR(
+        _REGISTER_WIDTH,
+        (
+            Instruction(_PULSE, (qubit,)),
+            Instruction(opcode, (qubit,)),
+            Instruction(_PAIRS[opcode], (qubit,)),
+        ),
+    )
+
+
+def _pulse_framed_pair_both_sides(seed: random.Random) -> CircuitIR:
+    """The same pair with a pulse on *each* side, so the run's frame is closed."""
+
+    opcode = seed.choice(sorted(_PAIRS))
+    qubit = seed.randrange(_REGISTER_WIDTH)
+    return CircuitIR(
+        _REGISTER_WIDTH,
+        (
+            Instruction(_PULSE, (qubit,)),
+            Instruction(opcode, (qubit,)),
+            Instruction(_PAIRS[opcode], (qubit,)),
+            Instruction(_PULSE, (qubit,)),
+        ),
+    )
+
+
 def pipeline_delta() -> list[dict[str, Any]]:
-    """The pipeline's own reach on the seeded populations, with and without the pass."""
+    """The pipeline's own reach on the seeded populations, with and without the pass.
+
+    ``removed_by_declared_inverse_pass`` is the shipped pipeline minus the pipeline
+    without this pass: the marginal instruction count this pass contributes to the
+    whole pipeline, not the count it would contribute to a pipeline that lacked the
+    one-qubit fold. A negative value is a population where the shipped order reaches
+    a *longer* compiler program than the fold alone; ``native_gate_count_with_pass``
+    and ``native_gate_count_without_pass`` are what say whether that also costs
+    gates once the program is lowered into one declared basis, and
+    ``removed_by_declared_inverse_pass_pass_first`` is the same delta under the
+    opposite order, so the order itself is measured rather than asserted.
+    """
 
     seed = random.Random(_CIRCUIT_SEED)
     populations: list[tuple[str, list[CircuitIR]]] = [
@@ -453,31 +667,52 @@ def pipeline_delta() -> list[dict[str, Any]]:
             "pair_across_a_declared_barrier",
             [_prepared(_barrier_pair(seed).instructions) for _ in range(60)],
         ),
+        (
+            "pair_behind_a_half_pi_pulse",
+            [_pulse_framed_pair(seed) for _ in range(60)],
+        ),
+        (
+            "pair_between_two_half_pi_pulses",
+            [_pulse_framed_pair_both_sides(seed) for _ in range(60)],
+        ),
     ]
 
     rows = []
     for label, circuits in populations:
-        source = legacy = optimized = 0
+        source = without_pass = with_pass = pass_first = 0
+        native_without_pass: int | None = 0
+        native_with_pass: int | None = 0
+        native_pass_first: int | None = 0
         changed = 0
         executed = 0
         worst = 0.0
         for ir in circuits:
             source += len(ir)
-            legacy_ir = _legacy_fixed_point(ir)
-            optimized_ir = _optimize_to_fixed_point(ir)
-            legacy += len(legacy_ir)
-            optimized += len(optimized_ir)
+            without_pass_ir = _pipeline_without_this_pass(ir)
+            with_pass_ir = _optimize_to_fixed_point(ir)
+            pass_first_ir = _pass_first_fixed_point(ir)
+            without_pass += len(without_pass_ir)
+            with_pass += len(with_pass_ir)
+            pass_first += len(pass_first_ir)
+            # The native counts are summed only while every circuit in the
+            # population has one: a partial sum would be a number for a population
+            # the basis cannot express, and None keeps that visible.
+            native_without_pass = _add_native_count(
+                native_without_pass, without_pass_ir
+            )
+            native_with_pass = _add_native_count(native_with_pass, with_pass_ir)
+            native_pass_first = _add_native_count(native_pass_first, pass_first_ir)
             # The soundness check runs on every circuit and not only the changed
             # ones: a pass that removed nothing cannot be caught by comparing states.
             # It runs only where the program is gate-only, and the count of those is
             # reported, so a population that silently stopped being executable would
             # show up as a shrinking denominator rather than as a quiet pass.
-            if _executable(ir) and _executable(optimized_ir):
+            if _executable(ir) and _executable(with_pass_ir):
                 executed += 1
                 worst = max(
-                    worst, float((_state(optimized_ir) - _state(ir)).abs().max())
+                    worst, float((_state(with_pass_ir) - _state(ir)).abs().max())
                 )
-            if len(optimized_ir) != len(legacy_ir):
+            if len(with_pass_ir) != len(without_pass_ir):
                 changed += 1
                 if label == "pair_across_a_declared_barrier":
                     raise AssertionError("a declared barrier must stop the pass")
@@ -486,10 +721,16 @@ def pipeline_delta() -> list[dict[str, Any]]:
                 "label": label,
                 "circuit_count": len(circuits),
                 "source_instruction_count": source,
-                "legacy_instruction_count": legacy,
-                "optimized_instruction_count": optimized,
-                "removed_by_legacy": source - legacy,
-                "removed_by_declared_inverse_pass": legacy - optimized,
+                "without_pass_instruction_count": without_pass,
+                "with_pass_instruction_count": with_pass,
+                "removed_by_rest_of_pipeline": source - without_pass,
+                "removed_by_declared_inverse_pass": without_pass - with_pass,
+                "pass_first_instruction_count": pass_first,
+                "removed_by_declared_inverse_pass_pass_first": without_pass
+                - pass_first,
+                "native_gate_count_without_pass": native_without_pass,
+                "native_gate_count_with_pass": native_with_pass,
+                "native_gate_count_with_pass_pass_first": native_pass_first,
                 "changed_circuit_count": changed,
                 "executed_circuit_count": executed,
                 "max_state_difference": worst,
@@ -651,6 +892,13 @@ def _gap_commutes_with_member(ir: CircuitIR, opcode: str, qubit: int) -> bool | 
 def shape_table() -> dict[str, Any]:
     """One row per pair and gap, with both implementations and the measured truth.
 
+    ``removed`` is read off ``merge_inverse_pairs`` directly and not off
+    `pipeline.optimize`. The question this table asks is where *this pass* stops, and
+    only the pass can answer it: the pipeline's one-qubit fold also removes
+    instructions on these shapes, and counting those here would credit this pass
+    with reach the fold owns -- and, on the rows the fold does touch, would turn a
+    deliberate decline into a removal.
+
     Two columns are measured rather than inferred. ``removable_in_fact`` strips the
     pair and compares the two whole-register operators -- an operator comparison and
     not a statevector comparison, because several of these gates act trivially on
@@ -673,10 +921,10 @@ def shape_table() -> dict[str, Any]:
         for label in _GAPS:
             ir = _shape_circuit(label, opcode, qubit)
             circuits[f"{opcode}|{label}"] = ir
-            optimized = _optimize_to_fixed_point(ir)
+            optimized = merge_inverse_pairs(ir)
             stripped = CircuitIR(_REGISTER_WIDTH, ir.instructions[1:-1])
             removable = None
-            if optimized == ir:
+            if optimized is ir:
                 whole = _unitary(ir, _REGISTER_WIDTH)
                 without = _unitary(stripped, _REGISTER_WIDTH)
                 if whole is not None and without is not None:
@@ -693,7 +941,7 @@ def shape_table() -> dict[str, Any]:
                         ir, opcode, qubit
                     ),
                     "source_instruction_count": len(ir),
-                    "optimized_instruction_count": len(optimized),
+                    "pass_instruction_count": len(optimized),
                     "removed": len(ir) - len(optimized),
                     "removable_in_fact": removable,
                 }
@@ -813,19 +1061,39 @@ def main() -> None:
     )
     print()
     print(
-        f"{'population':32s} {'circuits':>8s} {'source':>7s} {'legacy':>7s} "
-        f"{'now':>7s} {'via pass':>9s} {'changed':>8s} {'exec':>5s} {'max diff':>10s}"
+        f"{'population':32s} {'circuits':>8s} {'source':>7s} {'w/o pass':>8s} "
+        f"{'with pass':>9s} {'delta':>6s} {'native w/o':>10s} {'native with':>11s} "
+        f"{'changed':>8s} {'exec':>5s} {'max diff':>10s}"
     )
     for row in payload["pipeline_delta"]:
         print(
             f"{row['label']:32s} {row['circuit_count']:>8d} "
             f"{row['source_instruction_count']:>7d} "
-            f"{row['legacy_instruction_count']:>7d} "
-            f"{row['optimized_instruction_count']:>7d} "
-            f"{row['removed_by_declared_inverse_pass']:>9d} "
+            f"{row['without_pass_instruction_count']:>8d} "
+            f"{row['with_pass_instruction_count']:>9d} "
+            f"{row['removed_by_declared_inverse_pass']:>6d} "
+            f"{_native_column(row['native_gate_count_without_pass']):>10s} "
+            f"{_native_column(row['native_gate_count_with_pass']):>11s} "
             f"{row['changed_circuit_count']:>8d} "
             f"{row['executed_circuit_count']:>5d} "
             f"{row['max_state_difference']:>10.3e}"
+        )
+    print()
+    print(
+        "the same pass moved ahead of `merge_adjacent_rotations`, marginal to the "
+        "pipeline without it:"
+    )
+    print(
+        f"{'population':32s} {'delta shipped':>13s} {'delta pass first':>17s} "
+        f"{'native shipped':>15s} {'native pass first':>18s}"
+    )
+    for row in payload["pipeline_delta"]:
+        print(
+            f"{row['label']:32s} "
+            f"{row['removed_by_declared_inverse_pass']:>13d} "
+            f"{row['removed_by_declared_inverse_pass_pass_first']:>17d} "
+            f"{_native_column(row['native_gate_count_with_pass']):>15s} "
+            f"{_native_column(row['native_gate_count_with_pass_pass_first']):>18s}"
         )
     shapes = payload["shape_table"]
     print()

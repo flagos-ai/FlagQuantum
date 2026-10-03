@@ -11,17 +11,23 @@ The recorded answers are that the rule is the ``OperatorSchema.adjoint``
 declaration ``Circuit.adjoint`` already consumes, held by **6** opcodes in **3**
 mutually-declaring pairs and disjoint from the pipeline's own self-inverse set;
 that all **31** declared unitaries invert exactly, with a worst residual of
-**3.14e-16** and a smallest wrong-partner residual of **1.22**; that the pass
-removes **840** instructions on seeded populations where the pipeline without it
-removes **0**; and that on 60 pair/gap rows it crosses an empty or provably
-commuting gap **12** times, declines **20** rows that were in fact removable, and
-never crosses a gap that does not commute.
+**2.22e-16** and a smallest wrong-partner residual of **1.22**; that the pipeline
+the branch merges into carries a same-wire one-qubit fold which reaches the
+adjacent pairs on its own, so this pass's **marginal** compiler delta is **0** on
+those populations and **+60** / **-60** on the two populations that frame a pair
+inside the half-pi pulse basis, where it reaches **300** and **120** fewer native
+gates than the fold alone although one of the two is a *longer* compiler program;
+and that on 60 pair/gap rows it crosses an empty or provably commuting gap **12**
+times, declines **20** rows that were in fact removable, and never crosses a gap
+that does not commute.
 
 These tests hold that evidence in place. They fail if the declaration stops being
 read from the schema, if a wrong partner starts looking like an inverse, if the
 pass starts or stops removing on a population, if a removal is no longer checked
-against an execution, or if the refused rows stop being split into "correctness"
-and "deferred reach" and are reported as one number.
+against an execution, if the comparison pipeline stops being the shipped pipeline
+minus this pass, if the native column stops being attributable, or if the refused
+rows stop being split into "correctness" and "deferred reach" and are reported as
+one number.
 """
 
 import pytest
@@ -57,49 +63,107 @@ _DECLARATION = {
 #: sets are not the same set, and the difference is stated instead of implied.
 _PIPELINE_SELF_INVERSE_GAP = ["i"]
 
-#: Per-population instruction counts. ``removed_by_legacy`` is what the pipeline
-#: removes with this pass taken out of it, so it must be zero on every population
-#: that isolates the new rule; ``removed_by_declared_inverse_pass`` is the delta.
+#: Per-population instruction counts. The comparison pipeline is the shipped
+#: pipeline with this pass removed, so ``removed_by_rest_of_pipeline`` is the
+#: one-qubit fold's own reach and ``removed_by_declared_inverse_pass`` is the
+#: marginal delta this pass contributes on top of it -- zero on the four populations
+#: the fold already reaches, and the only nonzero rows are the two that frame a pair
+#: in the half-pi pulse basis. ``removed_by_declared_inverse_pass_pass_first`` is the
+#: same delta with this pass moved ahead of the fold. The native counts are the two
+#: programs lowered into one declared basis (`rz` plus the half-pi pulse), which is
+#: where the pass is visible even on the rows whose compiler delta is zero; the
+#: barrier population's counts are ``None`` because a `measure` cannot be lowered
+#: into that basis at all.
 _DELTA = {
     "adjacent_pair_members": {
         "circuit_count": 60,
         "source_instruction_count": 480,
-        "legacy_instruction_count": 480,
-        "optimized_instruction_count": 0,
-        "removed_by_declared_inverse_pass": 480,
-        "removed_by_legacy": 0,
-        "changed_circuit_count": 60,
+        "without_pass_instruction_count": 0,
+        "with_pass_instruction_count": 0,
+        "removed_by_rest_of_pipeline": 480,
+        "removed_by_declared_inverse_pass": 0,
+        "pass_first_instruction_count": 0,
+        "removed_by_declared_inverse_pass_pass_first": 0,
+        "native_gate_count_without_pass": 0,
+        "native_gate_count_with_pass": 0,
+        "native_gate_count_with_pass_pass_first": 0,
+        "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
     "pair_across_another_qubit": {
         "circuit_count": 60,
         "source_instruction_count": 360,
-        "legacy_instruction_count": 360,
-        "optimized_instruction_count": 240,
-        "removed_by_declared_inverse_pass": 120,
-        "removed_by_legacy": 0,
-        "changed_circuit_count": 60,
+        "without_pass_instruction_count": 180,
+        "with_pass_instruction_count": 180,
+        "removed_by_rest_of_pipeline": 180,
+        "removed_by_declared_inverse_pass": 0,
+        "pass_first_instruction_count": 180,
+        "removed_by_declared_inverse_pass_pass_first": 0,
+        "native_gate_count_without_pass": 690,
+        "native_gate_count_with_pass": 600,
+        "native_gate_count_with_pass_pass_first": 600,
+        "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
     "interleaved_pairs": {
         "circuit_count": 60,
         "source_instruction_count": 420,
-        "legacy_instruction_count": 420,
-        "optimized_instruction_count": 180,
-        "removed_by_declared_inverse_pass": 240,
-        "removed_by_legacy": 0,
-        "changed_circuit_count": 60,
+        "without_pass_instruction_count": 180,
+        "with_pass_instruction_count": 180,
+        "removed_by_rest_of_pipeline": 240,
+        "removed_by_declared_inverse_pass": 0,
+        "pass_first_instruction_count": 180,
+        "removed_by_declared_inverse_pass_pass_first": 0,
+        "native_gate_count_without_pass": 736,
+        "native_gate_count_with_pass": 540,
+        "native_gate_count_with_pass_pass_first": 540,
+        "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
     "pair_across_a_declared_barrier": {
         "circuit_count": 60,
         "source_instruction_count": 360,
-        "legacy_instruction_count": 360,
-        "optimized_instruction_count": 360,
+        "without_pass_instruction_count": 300,
+        "with_pass_instruction_count": 300,
+        "removed_by_rest_of_pipeline": 60,
         "removed_by_declared_inverse_pass": 0,
-        "removed_by_legacy": 0,
+        "pass_first_instruction_count": 300,
+        "removed_by_declared_inverse_pass_pass_first": 0,
+        "native_gate_count_without_pass": None,
+        "native_gate_count_with_pass": None,
+        "native_gate_count_with_pass_pass_first": None,
         "changed_circuit_count": 0,
         "executed_circuit_count": 0,
+    },
+    "pair_behind_a_half_pi_pulse": {
+        "circuit_count": 60,
+        "source_instruction_count": 180,
+        "without_pass_instruction_count": 120,
+        "with_pass_instruction_count": 60,
+        "removed_by_rest_of_pipeline": 60,
+        "removed_by_declared_inverse_pass": 60,
+        "pass_first_instruction_count": 60,
+        "removed_by_declared_inverse_pass_pass_first": 60,
+        "native_gate_count_without_pass": 360,
+        "native_gate_count_with_pass": 60,
+        "native_gate_count_with_pass_pass_first": 60,
+        "changed_circuit_count": 60,
+        "executed_circuit_count": 60,
+    },
+    "pair_between_two_half_pi_pulses": {
+        "circuit_count": 60,
+        "source_instruction_count": 240,
+        "without_pass_instruction_count": 60,
+        "with_pass_instruction_count": 120,
+        "removed_by_rest_of_pipeline": 180,
+        "removed_by_declared_inverse_pass": -60,
+        "pass_first_instruction_count": 120,
+        "removed_by_declared_inverse_pass_pass_first": -60,
+        "native_gate_count_without_pass": 240,
+        "native_gate_count_with_pass": 120,
+        "native_gate_count_with_pass_pass_first": 120,
+        "changed_circuit_count": 60,
+        "executed_circuit_count": 60,
     },
 }
 
@@ -290,47 +354,128 @@ def test_the_delta_belongs_to_this_pass_and_not_to_the_pipeline(payload: dict) -
     """The control that makes the delta attributable.
 
     The comparison pipeline is the real one with this pass removed and nothing else
-    changed, so ``removed_by_legacy`` is a measurement of the rest of the pipeline
-    and not an assumption about it. It is zero everywhere here, which is what makes
-    the whole delta the new rule's.
+    changed, and ``removed_by_rest_of_pipeline`` shows it is not the source circuit:
+    the one-qubit fold the branch merged into reaches 480, 180, 240, 60, 60 and 180
+    instructions on the six populations on its own. Every delta below is therefore
+    measured against that pipeline and not against an unoptimized program, which is
+    what makes a zero delta a finding -- the fold already reaches those shapes -- and
+    a negative one a real outcome rather than an arithmetic slip.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
     for label, row in rows.items():
-        assert row["removed_by_legacy"] == 0, label
-        assert row["source_instruction_count"] == row["legacy_instruction_count"], label
-        assert row["removed_by_declared_inverse_pass"] == (
-            row["legacy_instruction_count"] - row["optimized_instruction_count"]
+        assert row["removed_by_rest_of_pipeline"] == (
+            row["source_instruction_count"] - row["without_pass_instruction_count"]
         ), label
-    total = sum(row["removed_by_declared_inverse_pass"] for row in rows.values())
-    assert total == 840
+        assert row["removed_by_declared_inverse_pass"] == (
+            row["without_pass_instruction_count"] - row["with_pass_instruction_count"]
+        ), label
+    assert sum(row["removed_by_rest_of_pipeline"] for row in rows.values()) > 0
+    assert sum(row["removed_by_declared_inverse_pass"] for row in rows.values()) == 0
+    assert rows["adjacent_pair_members"]["removed_by_declared_inverse_pass"] == 0
+    assert (
+        rows["pair_between_two_half_pi_pulses"]["removed_by_declared_inverse_pass"] < 0
+    )
+
+
+def test_the_native_column_is_attributable_to_this_pass(payload: dict) -> None:
+    """The pass is visible in native gates on rows where it is invisible in order.
+
+    An instruction count measured before lowering is not the number a user pays, so
+    both programs are also lowered into one declared basis and counted. On the two
+    populations whose compiler delta is zero the pass still changes which program the
+    fold reaches, and the native counts show it: 690 to 600 and 736 to 540. A count
+    the declared basis cannot express is reported as ``None`` and never as zero, and
+    the pass must not make the native program longer on any gate-only population.
+    """
+
+    rows = {row["label"]: row for row in payload["pipeline_delta"]}
+    assert rows["pair_across_a_declared_barrier"]["native_gate_count_without_pass"] is (
+        None
+    )
+    assert rows["pair_across_a_declared_barrier"]["native_gate_count_with_pass"] is None
+    for label, row in rows.items():
+        without = row["native_gate_count_without_pass"]
+        with_pass = row["native_gate_count_with_pass"]
+        if without is None:
+            assert with_pass is None, label
+            assert row["executed_circuit_count"] == 0, label
+            continue
+        assert with_pass is not None, label
+        # A population that still has instructions cannot lower to zero gates, so a
+        # zero beside a non-empty program would mean the column was skipped.
+        if row["with_pass_instruction_count"]:
+            assert with_pass > 0, label
+        assert with_pass <= without, label
+    assert rows["pair_across_another_qubit"]["native_gate_count_without_pass"] == 690
+    assert rows["pair_across_another_qubit"]["native_gate_count_with_pass"] == 600
+    assert rows["pair_behind_a_half_pi_pulse"]["native_gate_count_without_pass"] == 360
+    assert rows["pair_behind_a_half_pi_pulse"]["native_gate_count_with_pass"] == 60
+
+
+def test_the_two_orders_of_the_two_passes_agree_on_every_driven_population(
+    payload: dict,
+) -> None:
+    """The order this branch chose is measured, and here it is not load-bearing.
+
+    ``pipeline._optimize_to_fixed_point`` calls this pass before
+    ``merge_adjacent_rotations`` and the fold last. The delta and the native count of
+    the opposite order -- this pass ahead of the fold -- are recorded as well, and on
+    all six populations they come out equal, because both run to a fixed point and the
+    fold is reached again on the next round either way. This is a measurement of these
+    shapes, not a guarantee: if a later round makes the two orders disagree, this is
+    the row that has to move and say so.
+    """
+
+    rows = {row["label"]: row for row in payload["pipeline_delta"]}
+    for label, row in rows.items():
+        assert row["removed_by_declared_inverse_pass_pass_first"] == (
+            row["without_pass_instruction_count"] - row["pass_first_instruction_count"]
+        ), label
+        assert (
+            row["removed_by_declared_inverse_pass_pass_first"]
+            == row["removed_by_declared_inverse_pass"]
+        ), label
+        assert (
+            row["native_gate_count_with_pass_pass_first"]
+            == row["native_gate_count_with_pass"]
+        ), label
 
 
 def test_removing_every_instruction_preserved_the_program(payload: dict) -> None:
     """Every removed instruction was paid for with an execution.
 
-    The three gate-only populations are exact, and the count of circuits actually
-    executed is reported alongside the count of circuits that changed. A population
-    that quietly stopped being executable would show up as a shrinking denominator
-    rather than as a pass -- the barrier population is that case, honestly at zero,
-    because a declared barrier makes the circuit unexecutable as a gate-only program
-    and there is nothing there to check.
+    Five of the six populations are gate-only and every circuit in them is executed
+    and compared against the source program; the barrier population is that case
+    honestly at zero, because a declared barrier makes the circuit unexecutable as a
+    gate-only program and there is nothing there to check. It is also why the
+    comparison is against the pipeline without this pass rather than against the
+    source: the barrier population still loses 60 instructions to the one-qubit fold,
+    and a comparison against 360 would have attributed those to this pass. The
+    difference is no longer exactly zero on the populations where the pass changes the
+    program: the two programs are different instruction sequences, so the statevector
+    contraction rounds differently, and 1e-16 is the size of that rounding rather than
+    a tolerance chosen to make an inequality hold.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
-    for label in (
-        "adjacent_pair_members",
-        "pair_across_another_qubit",
-        "interleaved_pairs",
-    ):
+    gate_only = [label for label in rows if label != "pair_across_a_declared_barrier"]
+    assert len(gate_only) == 5
+    for label in gate_only:
         row = rows[label]
-        assert row["changed_circuit_count"] == row["circuit_count"], label
         assert row["executed_circuit_count"] == row["circuit_count"], label
-        assert row["max_state_difference"] == 0.0, label
+        assert row["max_state_difference"] < 1.0e-12, label
     barrier = rows["pair_across_a_declared_barrier"]
     assert barrier["changed_circuit_count"] == 0
     assert barrier["executed_circuit_count"] == 0
-    assert barrier["optimized_instruction_count"] == barrier["source_instruction_count"]
+    assert barrier["with_pass_instruction_count"] == (
+        barrier["without_pass_instruction_count"]
+    )
+    assert barrier["with_pass_instruction_count"] < barrier["source_instruction_count"]
+    # And the check is not vacuous: the populations where the pass changes the
+    # program are the ones that carry the nonzero rounding.
+    assert rows["pair_behind_a_half_pi_pulse"]["changed_circuit_count"] == 60
+    assert rows["pair_behind_a_half_pi_pulse"]["max_state_difference"] > 0.0
 
 
 def test_the_shape_census_is_the_one_the_pass_currently_produces(payload: dict) -> None:
@@ -440,7 +585,7 @@ def test_the_adjacent_gap_is_removed_for_every_pair_in_both_orders(
         for gap in _ADJACENT_GAPS:
             row = rows[(opcode, gap)]
             assert row["removed"] == 2, (opcode, gap)
-            assert row["optimized_instruction_count"] == (
+            assert row["pass_instruction_count"] == (
                 row["source_instruction_count"] - 2
             ), (opcode, gap)
             assert row["gap_commutes_with_member"] is True, (opcode, gap)

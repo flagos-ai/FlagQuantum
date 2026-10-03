@@ -389,7 +389,10 @@ def test_a_declined_cancellation_is_real_and_the_decline_is_the_passs_scope() ->
         ),
     )
     assert merge_inverse_pairs(declared_pair) is declared_pair
-    assert _names(optimize(declared_pair)) == ["s", "rz", "sdg"]
+    # The pipeline does still reach the bare rotation, but through its one-qubit
+    # fold and not through this pass: the fold is the pass that reads an angle, and
+    # this one holds no rule that could have reached across the rotation.
+    assert _names(optimize(declared_pair)) == ["rz"]
     bare_rotation = CircuitIR(1, (Instruction("rz", (0,), params={"theta": 0.4}),))
     assert torch.allclose(
         _state(declared_pair), _state(bare_rotation), atol=_ATOL, rtol=0
@@ -425,14 +428,29 @@ def test_an_odd_run_keeps_exactly_one_member_where_it_was() -> None:
 
 
 def test_a_different_opcode_between_a_pair_blocks_it() -> None:
-    """`s t sdg` is carried by `t`, so the pair across it is not adjacent."""
+    """`s t sdg` is carried by `t`, so the pair across it is not adjacent.
+
+    The shape is a real refusal and not a lost opportunity: `s t sdg` equals `t`, so
+    the two members were removable in fact, and this pass still declines them because
+    it proves nothing about the gate between them. The pipeline's one-qubit fold
+    reaches the same answer by reading the angle instead, and the two assertions are
+    kept apart so that the refusal stays this pass's and the reach stays the fold's.
+    """
 
     ir = CircuitIR(
         1,
         (Instruction("s", (0,)), Instruction("t", (0,)), Instruction("sdg", (0,))),
     )
     assert merge_inverse_pairs(ir) is ir
-    assert _names(optimize(ir)) == ["s", "t", "sdg"]
+    assert _names(merge_inverse_pairs(ir)) == ["s", "t", "sdg"]
+    # The pipeline reaches one instruction, and that is the one-qubit fold re-spelling
+    # the whole run as the rotation it equals -- `s t sdg` really is `t`. Which pass
+    # reaches it matters: this pass must leave all three standing, so the assertion
+    # above is the one that would move if the pair were cancelled across `t`.
+    optimized = optimize(ir)
+    assert _names(optimized) == ["phase"]
+    assert len(optimized) < len(ir)
+    assert torch.allclose(_state(optimized), _state(ir), atol=_ATOL, rtol=0)
 
 
 def test_two_interleaved_pairs_on_different_wires_both_cancel() -> None:

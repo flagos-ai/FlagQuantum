@@ -221,10 +221,15 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-007-A",
         "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_cuda_matches_reference",
+        "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_runtime_uses_catalog",
         capability_tests=(
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_cpu_fallback_matches_reference",
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_unsupported_input_uses_fallback",
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_validates_input",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_reference_path_reports_fallback",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_route_enforces_evidenced_window",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_wire_probability_dispatch_a800.json",
