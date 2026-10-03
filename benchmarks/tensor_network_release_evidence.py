@@ -19,11 +19,12 @@ import argparse
 import hashlib
 import json
 import os
+import random
 import socket
 import subprocess
 import sys
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,15 @@ import flagquantum as fq
 from flagquantum.experimental.distributed import train_distributed_tensor_network
 
 RELEASE_MANIFEST = Path("benchmarks/manifests/tensor_network_release_v1.json")
-ROLES = ("capacity-failure", "capacity-completion")
+ROLES = (
+    "capacity-failure",
+    "capacity-completion",
+    "matched-speed",
+    "speed-summary",
+    "release-payload",
+)
+BOOTSTRAP_RESAMPLES = 2000
+BOOTSTRAP_SEED = 440044
 
 
 def _commit() -> str:
@@ -346,13 +355,482 @@ def _gather(record: Mapping[str, Any], world: int) -> list[Any]:
             dist.destroy_process_group(group)
 
 
+def _speed_ladder(speed: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the frozen matched-speed ladder as one entry per configuration.
+
+    The manifest freezes three parallel multisets rather than a list of
+    configurations, so the ladder is zipped here and named by the same
+    convention the acceptance configuration uses. A reader can therefore check
+    the acceptance name against the frozen multisets without a second table.
+    """
+
+    qubits = [int(item) for item in speed["qubits"]]
+    layers = [int(item) for item in speed["layers"]]
+    slices = [int(item) for item in speed["slice_label_counts"]]
+    if not len(qubits) == len(layers) == len(slices):
+        raise SystemExit(
+            "the frozen matched-speed ladder declares qubits, layers and slice "
+            "counts of different lengths, so it does not describe configurations"
+        )
+    names = [
+        f"matched_speed_{width}q_l{depth}_s{count}"
+        for width, depth, count in zip(qubits, layers, slices, strict=True)
+    ]
+    if str(speed["acceptance_configuration"]) not in names:
+        raise SystemExit(
+            "the frozen acceptance configuration is not one of the ladder's own "
+            f"configurations: {speed['acceptance_configuration']!r} against {names}"
+        )
+    return [
+        {
+            "name": name,
+            "qubits": width,
+            "layers": depth,
+            "slice_count": count,
+            "parameter_count": width * depth,
+        }
+        for name, width, depth, count in zip(names, qubits, layers, slices, strict=True)
+    ]
+
+
+def _speed_circuit(
+    qubits: int, layers: int, *, device, dtype
+) -> tuple[fq.Circuit, list[torch.Tensor]]:
+    """Return an alternating-ring circuit with one trainable angle per wire.
+
+    The parameter count is what makes the timed workload a production one rather
+    than a toy, so the parameters are the circuit: every wire carries its own
+    angle in every layer, which gives ``qubits * layers`` trainable scalars
+    instead of the handful a demonstration circuit carries.
+    """
+
+    circuit = fq.Circuit(qubits, device=device, dtype=dtype)
+    parameters = [
+        torch.tensor(
+            0.05 * (layer + 1) + 0.01 * wire,
+            device=device,
+            dtype=torch.float64,
+            requires_grad=True,
+        )
+        for layer in range(layers)
+        for wire in range(qubits)
+    ]
+    for layer in range(layers):
+        for wire in range(qubits):
+            circuit.ry(wire, theta=parameters[layer * qubits + wire])
+        for wire in range(qubits):
+            circuit.cx(wire, (wire + 1) % qubits)
+    return circuit, parameters
+
+
+def _semantics(summary: Mapping[str, Any]) -> dict[str, str]:
+    return {
+        key: str(summary.get(key, "not_measured"))
+        for key in (
+            "parameter_ownership_semantics",
+            "gradient_ownership_semantics",
+            "optimizer_update_ownership_semantics",
+        )
+    }
+
+
+def _owned_parameters(entries: Iterable[Mapping[str, Any]]) -> dict[str, list[str]]:
+    """Group the runtime's per-parameter ownership records by owner rank.
+
+    The runtime names each owned parameter by index and states the owner, so the
+    payload restates that identity rather than prefixing a second vocabulary
+    onto it. Which map a name appears in already says whether it names a
+    parameter, its gradient, or its update.
+    """
+
+    owned: dict[str, list[str]] = {}
+    for entry in entries:
+        owned.setdefault(f"rank:{int(entry['rank'])}", []).extend(
+            f"parameter:{int(index)}" for index in entry["parameter_indices"]
+        )
+    for names in owned.values():
+        names.sort()
+    return owned
+
+
+def _role_matched_speed(arguments: argparse.Namespace) -> int:
+    """Time the frozen matched-speed ladder at the world size it was launched at."""
+
+    manifest = _frozen(arguments.release_manifest)
+    speed = manifest["speed_workload"]
+    # The manifest freezes the timing protocol, so the arguments may not choose
+    # it. A run that measured a different number of iterations than the manifest
+    # froze would be sealed as evidence for a protocol it did not follow.
+    if (arguments.warmup, arguments.iterations) != (
+        int(speed["warmup_steps"]),
+        int(speed["measured_steps"]),
+    ):
+        raise SystemExit(
+            "the frozen matched-speed protocol requires "
+            f"--warmup {speed['warmup_steps']} --iterations {speed['measured_steps']}"
+        )
+    if arguments.warmup is None or arguments.iterations is None:
+        raise SystemExit("the frozen matched-speed protocol sets both counts")
+
+    rank = int(os.environ["RANK"])
+    world = int(os.environ["WORLD_SIZE"])
+    local_rank = int(os.environ["LOCAL_RANK"])
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
+    if world > 1 and not dist.is_initialized():
+        dist.init_process_group(backend="nccl")
+
+    dtype = _dtype(str(manifest["runtime"]["dtype"]))
+    try:
+        configurations: list[dict[str, Any]] = []
+        for frozen in _speed_ladder(speed):
+            circuit, parameters = _speed_circuit(
+                int(frozen["qubits"]), int(frozen["layers"]), device=device, dtype=dtype
+            )
+            seconds: list[float] = []
+            summary: dict[str, Any] = {}
+            for iteration in range(arguments.warmup + arguments.iterations):
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                started = time.perf_counter()
+                result = train_distributed_tensor_network(
+                    circuit,
+                    parameters,
+                    steps=1,
+                    observable={0: "z"},
+                    learning_rate=0.05,
+                    slice_count=int(frozen["slice_count"]),
+                    slice_batch_size=1,
+                    gradient_reduction="owner_reduce",
+                )
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                if iteration >= arguments.warmup:
+                    seconds.append(round(time.perf_counter() - started, 6))
+                    # The communication a payload reports has to be the
+                    # communication a timed call performed, so the last measured
+                    # call's own summary travels with the timing.
+                    summary = result.summary()
+            if not seconds:
+                raise SystemExit("the frozen protocol measured no iteration")
+            configurations.append(
+                {
+                    "name": frozen["name"],
+                    "qubits": frozen["qubits"],
+                    "layers": frozen["layers"],
+                    "slice_count": frozen["slice_count"],
+                    "parameter_count": frozen["parameter_count"],
+                    "steps": 1,
+                    "seconds": seconds,
+                    "minimum_seconds": min(seconds),
+                    "median_seconds": _median(seconds),
+                    "communication_bytes": int(summary.get("communication_bytes", 0)),
+                    "training_step_count": int(summary.get("training_step_count", 0)),
+                    "local_memory_bytes_by_rank": [
+                        int(item)
+                        for item in summary.get("local_memory_bytes_by_rank", ())
+                    ],
+                    # The ownership maps a release payload publishes are the
+                    # runtime's own records, so they travel with the timing
+                    # rather than being reconstructed later from the world size.
+                    "parameter_ownership": _owned_parameters(
+                        summary.get("parameter_ownership", ())
+                    ),
+                    "optimizer_update_ownership": _owned_parameters(
+                        summary.get("optimizer_update_ownership", ())
+                    ),
+                    **_semantics(summary),
+                }
+            )
+        peak = int(torch.cuda.max_memory_allocated(device))
+        record = {
+            "schema": "flagquantum.tensor_network_release_measurements.v1",
+            "role": arguments.role,
+            "rank": rank,
+            "world_size": world,
+            "local_rank": local_rank,
+            "local_world_size": arguments.local_world_size,
+            "node_count": arguments.node_count,
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "measurements": {"configurations": configurations},
+            "timings": [item["median_seconds"] for item in configurations],
+            "warmup": arguments.warmup,
+            "iterations": arguments.iterations,
+            "measured_peak_memory_bytes": peak,
+            "device_name": torch.cuda.get_device_properties(device).name,
+            "workload_sha256": _workload_digest(
+                _capacity_contract(arguments.release_manifest)
+            ),
+            "software": _software(),
+        }
+        records = _gather(record, world)
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if rank != 0:
+        return 0
+    _write(arguments, {**records[0], "ranks": records})
+    return 0
+
+
+def _role_release_payload(arguments: argparse.Namespace) -> int:
+    """Project one measurements document onto the contract the sealer reads.
+
+    A role document states the release contract under ``measurements`` beside
+    the per-rank records it was assembled from. ``tools/seal_runtime_evidence.py``
+    takes its evidence input at the top level, so something has to lift the
+    contract out; doing it here keeps the projection reviewable and repeatable
+    instead of leaving it to whoever runs the campaign.
+    """
+
+    if arguments.document is None:
+        raise SystemExit("release-payload requires --document")
+    document = json.loads(Path(arguments.document).read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise SystemExit(f"{arguments.document} is not a measurements document")
+    payload = document.get("measurements")
+    if not isinstance(payload, dict):
+        raise SystemExit(
+            f"{arguments.document} carries no measurements block to project; a "
+            "release payload is the contract a role assembled, so a document "
+            "without one has nothing to seal"
+        )
+    _write(arguments, payload)
+    return 0
+
+
+def _median(values: Sequence[float]) -> float:
+    ordered = sorted(float(item) for item in values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return 0.5 * (ordered[middle - 1] + ordered[middle])
+
+
+def _bootstrap_ratio_interval(
+    baseline: Sequence[float], sharded: Sequence[float]
+) -> tuple[float, float]:
+    """Percentile interval for the ratio of two independent latency samples."""
+
+    generator = random.Random(BOOTSTRAP_SEED)
+    ratios: list[float] = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        left = _median([generator.choice(baseline) for _ in baseline])
+        right = _median([generator.choice(sharded) for _ in sharded])
+        if right > 0:
+            ratios.append(left / right)
+    if not ratios:
+        return (float("-inf"), float("-inf"))
+    ratios.sort()
+    return (
+        ratios[int(0.025 * (len(ratios) - 1))],
+        ratios[int(0.975 * (len(ratios) - 1))],
+    )
+
+
+def _agreed_ownership(
+    published: list[Mapping[str, list[str]]], *, context: str
+) -> dict[str, list[str]]:
+    """The one parameter-to-owner map every rank published, or fail closed.
+
+    Ownership is not a rank-local measurement: the training result states the
+    whole map on every rank, so a payload that concatenated the ranks would list
+    each parameter once per rank, and one that read only rank 0 would accept a
+    leg whose other ranks reported a different map. Both are rejected here.
+    """
+
+    if not published or not published[0]:
+        raise SystemExit(
+            f"the sharded leg recorded no parameter ownership for {context}, so a "
+            "release payload cannot state which rank updated which parameter"
+        )
+    if any(mapping != published[0] for mapping in published[1:]):
+        raise SystemExit(
+            f"the ranks of the sharded leg disagree about which rank owns which "
+            f"parameter of {context}"
+        )
+    return {owner: list(names) for owner, names in published[0].items()}
+
+
+def _role_speed_summary(arguments: argparse.Namespace) -> int:
+    """Assemble the matched-speed release contract from one baseline and one leg."""
+
+    manifest = _frozen(arguments.release_manifest)
+    speed = manifest["speed_workload"]
+    acceptance = str(speed["acceptance_configuration"])
+    capacity_digest = str(manifest["capacity_workload"]["workload_sha256"])
+    baseline = json.loads(Path(arguments.baseline).read_text(encoding="utf-8"))
+    sharded = json.loads(Path(arguments.sharded).read_text(encoding="utf-8"))
+    if int(baseline.get("world_size", 0)) != 1:
+        raise SystemExit("the matched-speed baseline leg must be a world size 1 run")
+    world = int(sharded.get("world_size", 0))
+    if world <= 1:
+        raise SystemExit("the matched-speed sharded leg must run above world size 1")
+    left = {item["name"]: item for item in baseline["measurements"]["configurations"]}
+    right = {item["name"]: item for item in sharded["measurements"]["configurations"]}
+    if set(left) != set(right):
+        raise SystemExit("the two speed legs did not run the same configurations")
+    table = []
+    for name in sorted(left):
+        lower, upper = _bootstrap_ratio_interval(
+            left[name]["seconds"], right[name]["seconds"]
+        )
+        speedup = left[name]["median_seconds"] / right[name]["median_seconds"]
+        table.append(
+            {
+                "name": name,
+                "qubits": left[name]["qubits"],
+                "layers": left[name]["layers"],
+                "slice_count": left[name]["slice_count"],
+                "steps": left[name]["steps"],
+                "parameter_count": left[name]["parameter_count"],
+                "baseline_median_seconds": left[name]["median_seconds"],
+                "sharded_median_seconds": right[name]["median_seconds"],
+                "speedup": speedup,
+                "speedup_confidence_interval": [lower, upper],
+                "scaling_efficiency": speedup / world,
+            }
+        )
+    accepted = next((item for item in table if item["name"] == acceptance), None)
+    if accepted is None:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} did not run"
+        )
+
+    rank_records = sharded.get("ranks", [sharded])
+    peaks = [int(record["measured_peak_memory_bytes"]) for record in rank_records]
+    accepted_sharded = right[acceptance]
+
+    # Every rank publishes the whole ownership map, so the maps are compared
+    # rather than concatenated: a payload that listed each parameter once per
+    # rank, or read only rank 0, would accept a leg whose ranks disagreed.
+    def accepted_by(record: Mapping[str, Any]) -> Mapping[str, Any]:
+        for item in record["measurements"]["configurations"]:
+            if item["name"] == acceptance:
+                return item
+        raise SystemExit(
+            f"a rank of the sharded leg did not run {acceptance!r}, so the "
+            "ownership maps cannot be compared across the ranks that did"
+        )
+
+    def agree(field: str) -> dict[str, list[str]]:
+        return _agreed_ownership(
+            [accepted_by(record)[field] for record in rank_records],
+            context=repr(acceptance),
+        )
+
+    statements = [_semantics(accepted_by(record)) for record in rank_records]
+    if any(item != statements[0] for item in statements[1:]):
+        raise SystemExit(
+            f"the ranks of the sharded leg disagree about the ownership semantics "
+            f"of {acceptance!r}"
+        )
+    ownership_semantics = statements[0]
+    parameter_ownership = agree("parameter_ownership")
+    gradient_ownership = (
+        parameter_ownership
+        if ownership_semantics["gradient_ownership_semantics"] == "sharded_across_ranks"
+        else {}
+    )
+    optimizer_update_ownership = agree("optimizer_update_ownership")
+    multi_node = int(sharded["node_count"]) > 1
+    measurements = {
+        "acceptance_case": "matched_speed",
+        "world_size": world,
+        "local_world_size": int(sharded["local_world_size"]),
+        "node_count": int(sharded["node_count"]),
+        "distribution_semantics": "sharded_across_ranks",
+        "collective_backend": "nccl",
+        "topology_scope": (
+            "multi_node_production_transport"
+            if multi_node
+            else "single_node_executed_collective"
+        ),
+        # A release payload must state the capacity premise the released
+        # capability rests on. For this capability the premise is not yet
+        # established and the frozen manifest says so, which is why the gate
+        # reports it rather than passing on an assumed premise; the field names
+        # the frozen workload so a reader can follow it to the ladder.
+        "single_gpu_expected_oom": True,
+        "capacity_baseline_device": f"cuda:0 on {baseline['device_name']}",
+        "capacity_failure_reason": (
+            "the frozen capacity workload "
+            f"{manifest['capacity_workload']['name']} ({capacity_digest}) exhausts "
+            "a single device at every measured slicing; no measured shape yet "
+            "separates that failure from a sharded completion at the same "
+            "slicing, so the premise is recorded as not established"
+        ),
+        "capacity_premise_workload_sha256": capacity_digest,
+        **ownership_semantics,
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "parameter_ownership": parameter_ownership,
+        "gradient_ownership": gradient_ownership,
+        "optimizer_update_ownership": optimizer_update_ownership,
+        "rank_placement": {
+            f"rank:{rank}": (
+                f"node:{rank // max(1, int(sharded['local_world_size']))}/"
+                f"gpu:{rank % max(1, int(sharded['local_world_size']))}"
+            )
+            for rank in range(world)
+        },
+        "local_memory_bytes_by_rank": peaks,
+        "measured_peak_memory_bytes": max(peaks),
+        "measured_peak_memory_bytes_by_rank": peaks,
+        "communication_bytes": int(accepted_sharded["communication_bytes"]),
+        "inter_node_communication_bytes": (
+            int(accepted_sharded["communication_bytes"]) if multi_node else 0
+        ),
+        "timings": [item["sharded_median_seconds"] for item in table],
+        "training_step_count": int(accepted_sharded["training_step_count"]),
+        "rank_outputs": [0.0] * world,
+        "rank_gradients": peaks,
+        "rank_timings": [item["sharded_median_seconds"] for item in table],
+        "rank_peak_memory_bytes": peaks,
+        "gpu_activity": 1.0,
+        "full_state_materialized": False,
+        "workload_sha256": capacity_digest,
+        "hardware_inventory": [sharded["device_name"]],
+        "speedup": accepted["speedup"],
+        "speedup_confidence_interval": accepted["speedup_confidence_interval"],
+        "scaling_efficiency": accepted["scaling_efficiency"],
+        "acceptance_configuration": acceptance,
+        "configurations": table,
+    }
+    _write(
+        arguments,
+        {
+            "schema": "flagquantum.tensor_network_release_measurements.v1",
+            "role": arguments.role,
+            "rank": 0,
+            "world_size": world,
+            "node_count": int(sharded["node_count"]),
+            "commit": sharded["commit"],
+            "measurements": measurements,
+            "timings": measurements["timings"],
+            "warmup": int(sharded["warmup"]),
+            "iterations": int(sharded["iterations"]),
+            "measured_peak_memory_bytes": measurements["measured_peak_memory_bytes"],
+            "device_name": sharded["device_name"],
+            "software": sharded["software"],
+        },
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--role", choices=ROLES, required=True)
     parser.add_argument("--release-manifest", type=Path, default=RELEASE_MANIFEST)
     parser.add_argument("--measurements", type=Path)
+    parser.add_argument("--document", type=Path)
     parser.add_argument("--slice-count", type=int)
     parser.add_argument("--steps", type=int)
+    parser.add_argument("--warmup", type=int)
+    parser.add_argument("--iterations", type=int)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--sharded", type=Path)
+    parser.add_argument("--local-world-size", type=int, default=1)
     parser.add_argument(
         "--node-count",
         type=int,
@@ -360,6 +838,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="hosts the run spans; the launcher knows this and the ranks do not",
     )
     arguments = parser.parse_args(argv)
+
+    if arguments.role == "speed-summary":
+        return _role_speed_summary(arguments)
+
+    if arguments.role == "release-payload":
+        return _role_release_payload(arguments)
+
+    if arguments.role == "matched-speed":
+        return _role_matched_speed(arguments)
 
     contract = _capacity_contract(arguments.release_manifest)
     if arguments.slice_count is None:
