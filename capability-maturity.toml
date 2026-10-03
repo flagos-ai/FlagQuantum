@@ -1507,3 +1507,75 @@ limitations = "A count over a program's operation sequence and a footprint over 
 focused_tests = "tests/unit/test_logical_resources.py"
 integration_tests = "tests/test_algorithm_examples.py"
 development_artifact = "flagquantum/algorithms/README.md"
+
+[capabilities.observables_fermion_operator_algebra]
+title = "Fermionic operator algebra and its Jordan-Wigner image"
+summary = "Build and combine second-quantised fermionic operators with the canonical anticommutation relations applied at construction, and map a Hermitian operator to the Pauli Observable the existing execution path already measures."
+category = "simulation_and_training"
+user_goals = ["Build excitation, de-excitation, and number operators over named spin orbitals", "Add, scale, multiply, and conjugate fermionic operators and keep the result canonical", "Take a commutator or an anticommutator without hand-applying the anticommutation relations", "Test Hermiticity structurally rather than within a tolerance", "Map a Hermitian fermionic operator to a Pauli Observable the statevector path measures"]
+public_apis = ["flagquantum.observables.fermion", "flagquantum.observables.fermion.FermionOperator", "flagquantum.observables.fermion.FermionTerm", "flagquantum.observables.fermion.create", "flagquantum.observables.fermion.annihilate", "flagquantum.observables.fermion.number", "flagquantum.observables.fermion.jordan_wigner"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/observables/README.md"
+documentation = "flagquantum/observables/README.md"
+level = "development_evidence"
+owner = "FlagQuantum core maintainers"
+limitations = "A symbolic algebra and one transform, and nothing that executes on its own. One fermion-to-qubit transform ships, Jordan-Wigner, which the docstring states runs the Z string over the modes strictly below a factor's mode; Bravyi-Kitaev, parity, and ternary-tree encodings are absent, and so is any reduction in the Pauli weight of the image, which is the whole reason those encodings exist. The transform takes the mode count as an argument rather than inferring it, so a caller who names fewer modes than the operator addresses is the caller's error and is refused rather than silently widened. Operators are stored normal-ordered against the vacuum, so equality is structural and a Hermiticity test is exact rather than a tolerance; the consequence is that two operators equal as matrices but not as canonical sums compare unequal, which is the documented boundary rather than a bug. The image of a structurally Hermitian operator has real dyadic coefficients and the imaginary part is checked against a fail-closed bound of 1e-9 rather than a tuned threshold, so a coefficient outside it is reported instead of having its imaginary part dropped, and no input this algebra builds needs the bound. There is no matrix form of a fermionic operator: the only numerical value is the Pauli image, which exists at the sizes the statevector path simulates. There is no circuit-level exponential of a fermionic operator, no molecular Hamiltonian assembly, no integral handling, and no sparse or dense second-quantised Hamiltonian; expectation values, sampling, and gradients follow from the image and the existing Observable path rather than from this module, which therefore makes no claim of its own about any of them. Nothing here executes, allocates a device buffer, or reads a runtime option, so the runtime mode named is the path its image feeds rather than a mode this unit runs."
+focused_tests = "tests/unit/test_observables_fermion.py"
+development_artifact = "flagquantum/observables/README.md"
+
+[capabilities.observables_boson_operator_algebra]
+title = "Bosonic operator algebra and its dense value on a truncated Fock space"
+summary = "Build and combine second-quantised bosonic operators with the canonical commutation relations applied at construction, and evaluate one as a dense matrix over a Fock space whose truncation dimension the caller names."
+category = "simulation_and_training"
+user_goals = ["Build creation, annihilation, number, position, and momentum operators over named modes", "Add, scale, multiply, and conjugate bosonic operators and keep the result in the Poincare-Birkhoff-Witt basis", "Take a commutator or an anticommutator without hand-applying the commutation relations", "Evaluate an operator as a dense matrix at a truncation the caller chooses"]
+public_apis = ["flagquantum.observables.boson", "flagquantum.observables.boson.BosonOperator", "flagquantum.observables.boson.BosonTerm", "flagquantum.observables.boson.create", "flagquantum.observables.boson.annihilate", "flagquantum.observables.boson.number", "flagquantum.observables.boson.position", "flagquantum.observables.boson.momentum", "flagquantum.observables.boson.identity", "flagquantum.observables.boson.DEFAULT_DENSE_MATRIX_BYTES"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/observables/README.md"
+documentation = "flagquantum/observables/README.md"
+level = "development_evidence"
+owner = "FlagQuantum core maintainers"
+limitations = "A symbolic algebra and a dense reference value, and no execution path at all. There is no bosonic or photonic backend, no continuous-variable simulator, no Gaussian or phase-space representation, no squeezing, displacement, or beamsplitter primitive beyond what the ladder operators compose to, and no fock-space state, sampler, or gradient. The dense form is a reference and a test oracle rather than a production path: it builds the Kronecker product over every mode and is refused above a byte ceiling of DEFAULT_DENSE_MATRIX_BYTES, which admits ten degrees at two levels each and refuses the eleventh. The truncation dimension is the caller's and is taken as a parameter rather than assumed, because the algebra has no finite matrix representation of its own: every creation operator raises the occupation without limit, so the commutation relations are applied here to untruncated monomials and the commutator of two truncated ladder matrices differs from the identity at the top level of every degree. Both statements are true of different operators, and only the explicit dimension says which one a caller's numbers describe. Two factors of the same kind and degree are a power rather than zero, so a monomial has no bounded length and the stored form is the Poincare-Birkhoff-Witt basis; equality is therefore structural rather than a tolerance, and two operators equal as matrices but not as canonical sums compare unequal. Exactly one transform to a qubit register ships, which is no transform: a bosonic operator is never an Observable, so nothing here is measurable by the existing execution path. Nothing here executes, allocates a device buffer, or reads a runtime option."
+focused_tests = "tests/unit/test_observables_boson.py"
+development_artifact = "flagquantum/observables/README.md"
+
+[capabilities.algorithms_chemistry_ansatz]
+title = "Chemistry ansatz construction over the fermionic algebra"
+summary = "Turn an electron count and a spin-orbital count into the UCCSD excitation list, the fermionic generator each excitation evolves, the exact circuit that realizes that exponential, and the Trotterized product that is UCCSD, beside a hardware-efficient and a coupler variant."
+category = "simulation_and_training"
+user_goals = ["Enumerate the single and double excitations of an electron count in a spin-orbital count", "Build the fermionic generator of one excitation and the exact circuit that realizes its exponential", "Assemble the complete UCCSD circuit as a product of excitation circuits", "Build a hardware-efficient or coupler hardware-efficient ansatz with a known parameter count", "Screen excitation angles as differentiable tensor values"]
+public_apis = ["flagquantum.algorithms.chemistry", "flagquantum.algorithms.chemistry.uccsd_excitations", "flagquantum.algorithms.chemistry.UCCSDExcitations", "flagquantum.algorithms.chemistry.excitation_operator", "flagquantum.algorithms.chemistry.single_excitation", "flagquantum.algorithms.chemistry.double_excitation", "flagquantum.algorithms.chemistry.uccsd_ansatz", "flagquantum.algorithms.chemistry.uccsd_factors", "flagquantum.algorithms.chemistry.coupler_hardware_efficient_ansatz", "flagquantum.algorithms.chemistry.coupler_hardware_efficient_parameter_count"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/algorithms/README.md"
+documentation = "flagquantum/algorithms/README.md"
+level = "development_evidence"
+owner = "Algorithms maintainers"
+limitations = "The ansatz half of a chemistry workload and not the integrals half. This module does not read molecular integrals, drive a chemistry package, solve a Hartree-Fock problem, choose a basis set, select an active space, or taper a symmetry; a caller supplies the integrals or the Hamiltonian and this unit supplies the state-preparation circuits. There is no PySCF or other driver dependency, so no molecular Hamiltonian, no orbital ordering convention, and no energy reference arrives from here. The gate sequences are the ones CUDA-Q's singleExcitation, doubleExcitation, uccsd, and hwe kernels apply, so a workload built around them transfers, and two divergences are deliberate and stated rather than silent. Every excitation requires its occupied indices to sit below its virtual ones, which is the only arrangement the UCCSD excitation lists produce; CUDA-Q accepts the opposite order and emits a circuit whose conditional ladders are empty, so it becomes a local rotation rather than an excitation, and this unit refuses that input instead. And uccsd_excitations fills the lowest n_electrons spin orbitals for every electron count, while CUDA-Q's get_uccsd_excitations divides by two before rounding up, so the two agree when the electron count is even and CUDA-Q places an occupied index above a virtual one when it is odd. Angles are Python numbers or scalar tensors that keep their graph, so a caller screens gradients, but no gradient is computed here and no optimizer is supplied. The Trotterized product is the algorithms package's own product formula, so the composition order and the two orders available are that unit's, no error bound is reported, and a product formula is exact only when the generators commute. Nothing here executes a circuit, allocates a device buffer, or reads a runtime option; the runtime mode named is the path the returned Circuit is run on."
+focused_tests = "tests/unit/test_algorithms_chemistry.py"
+development_artifact = "flagquantum/algorithms/README.md"
+
+[capabilities.compiler_resource_estimation]
+title = "Static resource estimation over a program's instruction sequence"
+summary = "Report the operations, the schedule depth, the per-wire depth, the T family, and the widest operation of a static program by running the compiler's own scheduler over its instruction sequence."
+category = "build_and_compile"
+user_goals = ["Count a program's operations by opcode without running it", "Read the schedule depth and the per-wire depth the compiler's own scheduler produces", "Read the T family and the T depth a fault-tolerant cost is built on", "Find the widest operation a program applies", "See which instruction made a program unestimatable instead of a wrong number"]
+public_apis = ["flagquantum.compiler.resource_estimation", "flagquantum.compiler.resource_estimation.estimate_resources", "flagquantum.compiler.resource_estimation.ResourceEstimate", "flagquantum.compiler.resource_estimation.ESTIMATE_BASIS"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/compiler/README.md"
+documentation = "flagquantum/compiler/README.md"
+level = "development_evidence"
+owner = "compiler maintainers"
+limitations = "A count over a straight-line instruction sequence, and the basis is named in the record rather than left to the reader: ESTIMATE_BASIS is static_instruction_sequence. A program whose instruction sequence has data dependence is refused rather than estimated, and the refusal names the instruction index and the reason, so a rejected call reports why instead of returning a number for a program whose control flow was not modelled; the loop and function bounds that CUDA-Q estimates from the internal levels are therefore absent, because a straight-line instruction list has no loop bound to estimate and that needs ProgramIR. The depth is the compiler's own list schedule and not a latency: it is an as-soon-as-possible packing of the declared dependencies with no device timing, no gate duration, no connectivity, and no routing overhead, so it is a lower bound for a real device rather than a duration. No wall-clock time, resident memory, allocation, or fidelity is reported and none is measured. No basis conversion runs, so the counts are of the opcodes the caller wrote rather than of a lowered basis, and no T-count is produced for a program containing a gate whose T-cost is its decomposition's. The T family is the module's own table of t and tdg. Channels are counted rather than costed, and a noise model is not read. The unit executes nothing and adds no target, runtime option, result field, or execution mode, so no runtime or distributed semantics follow from this entry, and no Stable Core export follows either."
+focused_tests = "tests/unit/test_resource_estimation.py"
+development_artifact = "flagquantum/compiler/README.md"

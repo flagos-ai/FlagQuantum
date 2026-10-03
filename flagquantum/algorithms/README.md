@@ -21,6 +21,18 @@ executed by `tests/test_algorithm_examples.py`.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `chemistry.py`: the ansatz half of a chemistry workload — `uccsd_excitations`
+  enumerates the single and double excitations of an electron count in a
+  spin-orbital count, `excitation_operator` builds the fermionic generator of one
+  of them, `single_excitation` and `double_excitation` emit the exact circuit that
+  realizes its exponential, and `uccsd_ansatz` composes them into the complete
+  UCCSD circuit. `coupler_hardware_efficient_ansatz` and its parameter count cover
+  the coupler variant. The gate sequences are the ones CUDA-Q's `singleExcitation`,
+  `doubleExcitation`, `uccsd`, and `hwe` kernels apply. No integrals are read, no
+  chemistry package is driven, and no Hartree-Fock problem is solved: a caller
+  supplies the Hamiltonian and this unit supplies the state preparation. Every
+  excitation requires its occupied indices below its virtual ones rather than
+  emitting the empty ladders the opposite order would produce.
 - `error_mitigation.py`: zero-noise extrapolation — one observable measured at
   several error strengths by scaling the single error-probability parameter each
   noise channel declares, then continued to zero by polynomial least squares or

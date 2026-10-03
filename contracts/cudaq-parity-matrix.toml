@@ -362,11 +362,12 @@ reason = "An OpenQASM emitter exists. The emitter set is narrower than the CUDA-
 [[domains.capabilities]]
 id = "resource_estimation"
 cudaq = "estimate_resources reporting gate counts, depth, width, and qubit peak"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "none"
-maturity_ref = "ir"
-reason = "Absent, and it cannot be made correct for loops and functions until ProgramIR exists, because a straight-line instruction list has no loop bound to estimate."
+maturity_ref = "compiler_resource_estimation"
+reason = "The static half exists. `flagquantum/compiler/resource_estimation.py` reports the operation count per opcode, the schedule depth, the per-wire depth, the widest operation, the T family and its depth, the channel count, and the declared register width, over the instruction sequence the caller wrote, with the basis named in the record as `static_instruction_sequence`. It refuses a program whose sequence has data dependence, naming the instruction index, and that refusal is what the row now turns on: a straight-line list has no loop bound, so loops and functions stay unestimatable until ProgramIR exists, exactly as this row recorded before any of the rest was built. The estimate is also not a latency and not a device cost -- no gate duration, connectivity, or routing overhead enters it -- and no basis conversion runs, so the counts are of the opcodes the caller wrote rather than of a lowered basis. Qubit peak is not a separate field; the register width and the used wires are. The fault-tolerant layer above the tally landed separately, as `flagquantum.algorithms.logical_resources` charging the tally on a rotated surface code."
+evidence = ["flagquantum/compiler/resource_estimation.py", "flagquantum/algorithms/logical_resources.py", "search:no loop or function bound because ProgramIR does not exist, no basis conversion, and no device timing"]
 
 [[domains.capabilities]]
 id = "compiler_plugin_ecosystem"
@@ -607,19 +608,22 @@ reason = "Pauli observables exist. Operator arithmetics for products, sums, scal
 [[domains.capabilities]]
 id = "fermion_operator_algebra"
 cudaq = "FermionOperator with Jordan-Wigner and related mappings"
-status = "unsupported"
-priority = "now"
+status = "partial"
+priority = "next"
 dependency_class = "none"
-reason = "Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction."
-evidence = ["flagquantum/observables"]
+maturity_ref = "observables_fermion_operator_algebra"
+reason = "The algebra and one mapping exist. `flagquantum/observables/fermion.py` builds a normal-ordered sum over spin orbitals with `create`, `annihilate`, and `number`; addition, subtraction, unary negation, scalar multiplication, `*`, `dagger`, `commutator`, and `anticommutator` are all present, so a chemistry workload's generator is an expression rather than a hand-applied relation, and equality is structural, which makes `is_hermitian` exact rather than a tolerance test. `jordan_wigner` maps a Hermitian operator to the Pauli `Observable` the existing statevector path already measures, which is how a fermionic observable acquires a value. What is absent is the rest of the mapping family this row's own wording names: Bravyi-Kitaev, parity, and ternary-tree encodings do not exist, and neither does any reduction in the Pauli weight of the image, which is the reason those encodings exist at all. The mode count is an argument rather than inferred, and no matrix form of a fermionic operator ships."
+evidence = ["flagquantum/observables/fermion.py", "tests/unit/test_observables_fermion.py", "search:Jordan-Wigner only, with no Bravyi-Kitaev, parity, or ternary-tree encoding"]
 
 [[domains.capabilities]]
 id = "boson_operator_algebra"
 cudaq = "BosonOperator algebra"
-status = "unsupported"
+status = "partial"
 priority = "later"
 dependency_class = "none"
-reason = "Absent, and it has no consumer until a bosonic or photonic workload exists."
+maturity_ref = "observables_boson_operator_algebra"
+reason = "The algebra exists. `flagquantum/observables/boson.py` builds normal-ordered operators over modes of unbounded occupation in the Poincare-Birkhoff-Witt basis, with `create`, `annihilate`, `number`, `position`, `momentum`, and `identity`, the same arithmetic surface as the fermionic algebra, and `to_matrix` evaluates one as a dense matrix over a Fock space whose truncation dimension the caller names, refused above a byte ceiling. The row stays partial because the algebra still has no consumer and no execution path: there is no bosonic or photonic backend, no Fock-space state, no expectation value, and no qubit mapping for a bosonic operator, so the dense form is a reference and a test oracle rather than a production route. The truncation dimension is the caller's because the commutation relations live on untruncated monomials -- the commutator of two truncated ladder matrices differs from the identity at the top level -- and only the explicit dimension says which operator a caller's numbers describe."
+evidence = ["flagquantum/observables/boson.py", "tests/unit/test_observables_boson.py", "search:no bosonic backend, no Fock-space state, and no qubit mapping for a bosonic operator"]
 
 [[domains.capabilities]]
 id = "super_operator_algebra"
@@ -652,11 +656,12 @@ evidence = ["flagquantum/simulation/pauli.py", "search:no circuit-level exponent
 [[domains.capabilities]]
 id = "chemistry_domain_library"
 cudaq = "PySCF driver, UCCSD, and hardware-efficient ansatz libraries"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral."
-evidence = ["flagquantum/algorithms"]
+maturity_ref = "algorithms_chemistry_ansatz"
+reason = "The ansatz half exists and the integrals half does not. `flagquantum/algorithms/chemistry.py` enumerates the single and double excitations of an electron count in a spin-orbital count, builds the fermionic generator of one, emits the exact circuit that realizes its exponential, composes them into the UCCSD circuit, and covers a hardware-efficient and a coupler hardware-efficient ansatz with a parameter count; the gate sequences are the ones CUDA-Q's own kernels apply, so a workload built around them transfers. What is absent is the first entry point this row names: there is no PySCF or other driver dependency, so no molecular Hamiltonian, no basis set, no active space, no Hartree-Fock solve, and no energy reference arrives from here. Two divergences from the baseline are deliberate and stated rather than silent: an occupied index above a virtual one is refused instead of emitting an empty ladder that would be a local rotation rather than an excitation, and `uccsd_excitations` fills the lowest n_electrons spin orbitals where CUDA-Q's `get_uccsd_excitations` divides by two before rounding up, so the two agree on even electron counts only."
+evidence = ["flagquantum/algorithms/chemistry.py", "flagquantum/observables/fermion.py", "tests/unit/test_algorithms_chemistry.py", "search:no integral driver, no basis-set or active-space selection, and no Hartree-Fock solve"]
 
 [[domains.capabilities]]
 id = "rydberg_analog_hamiltonian"

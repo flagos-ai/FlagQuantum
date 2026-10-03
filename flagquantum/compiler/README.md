@@ -44,6 +44,30 @@ Use `optimize(program)` for target-independent optimization and
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+| Static resource estimation | [resource_estimation.py](resource_estimation.py) |
+
+## Cost a static program
+
+`estimate_resources(program)` reports what a program contains and how its
+dependencies pack, without running or lowering it: the operation count per
+opcode, the schedule depth, the per-wire depth, the widest operation, the T
+family (`t` and `tdg`) and its depth, and the channel count. The basis is named
+in the record -- `ESTIMATE_BASIS` is `static_instruction_sequence` -- because
+every figure is a property of the instruction sequence the caller wrote rather
+than of a lowered basis.
+
+The depth is the compiler's own list schedule over the declared dependencies, so
+it is a lower bound for a real device rather than a duration: no gate timing,
+connectivity, or routing overhead enters it. A program whose instruction
+sequence has data dependence is refused with a `CapabilityError` naming the
+instruction index and the reason, because a straight-line list has no loop bound
+to estimate. Fault-tolerant costing is layered above this unit rather than
+folded into it; `flagquantum.algorithms.logical_resources` charges the tally and
+the depth on a rotated surface code.
+
+```bash
+pytest tests/unit/test_resource_estimation.py
+```
 
 ## Save and load OpenQASM
 

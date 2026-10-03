@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 45 |
-| `unsupported` | 40 |
+| `partial` | 49 |
+| `unsupported` | 36 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -85,6 +85,25 @@ timing property are not. The row is deliberately not `supported`: the dispatcher
 the ring buffer, and the host entry points that launch through them are absent by
 design, and the three `A_nvidia_proprietary` rows beside it stay `unsupported` so
 a protocol that measures nothing cannot be read as a transport.
+
+Four rows moved from `unsupported` to `partial` in wave 6, when the matrix and
+the registry were reconciled against the tree and four modules that already
+existed turned out to have no entry and no row: `fermion_operator_algebra` now
+names [fermion.py](../../flagquantum/observables/fermion.py), whose Jordan-Wigner
+image is the `Observable` the existing execution path measures, with the
+Bravyi-Kitaev, parity, and ternary-tree encodings still absent;
+`boson_operator_algebra` now names
+[boson.py](../../flagquantum/observables/boson.py), whose dense value is a
+reference with no bosonic backend behind it; `chemistry_domain_library` now names
+[chemistry.py](../../flagquantum/algorithms/chemistry.py), which is the ansatz
+half of the row and none of the integral driver; and `resource_estimation` now
+names
+[resource_estimation.py](../../flagquantum/compiler/resource_estimation.py),
+which reports the tally, the schedule depth, and the T family over a
+straight-line sequence and refuses a data-dependent program, so loops and
+functions stay unestimatable exactly as that row always said. All four were
+registered in `capability-maturity.toml` at `development_evidence` in the same
+change, because a row cannot be closed by evidence that no entry carries.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -128,7 +147,7 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 8 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 7 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by integration rather than by
 research: a C++ front end and an MLIR dialect stack, Clifford+T and angle
 synthesis, QIR code generation, a chemistry domain library, a QEC dialect, and
@@ -321,7 +340,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 40 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 36 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a
