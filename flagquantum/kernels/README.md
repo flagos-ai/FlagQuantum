@@ -61,13 +61,13 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The initial catalog describes the code that already exists. It contains 23
-semantics and 25 Triton implementation entry points; no planned kernel appears
-as an empty machine record.
+The catalog describes the code that already exists. It contains 23 semantics,
+25 Triton implementation entry points, and one FlagTree TLE implementation
+entry point; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
 | --- | --- | --- |
-| FQK-SV-001 | `statevector.apply.matrix_1q.local` | `apply_complex64_local_1q`, `single_qubit_matrix` |
+| FQK-SV-001 | `statevector.apply.matrix_1q.local` | `apply_complex64_local_1q`, `single_qubit_matrix`, `apply_complex64_local_1q_tle` (FlagTree TLE) |
 | FQK-SV-002 | `statevector.apply.cnot.local` | `apply_complex64_local_cx_inplace` |
 | FQK-SV-003 | `statevector.apply.cnot_sequence.local` | `apply_complex64_local_cx_segment`, `cx_sequence` |
 | FQK-SV-004 | `statevector.apply.ry_rz_pair.local` | `ry_rz_pair` |
@@ -104,8 +104,8 @@ The provider field records execution ownership, not semantic ownership:
 - **Triton** is the direct in-repository GPU implementation line. It can evolve
   without waiting for another project and is the primary path for
   quantum-specific fusion and layout work.
-- **FlagTree** is a future shared compiler/kernel provider for operations that
-  are useful across FlagOS projects and can satisfy the same semantic contract.
+- **FlagTree** is the shared compiler/kernel provider for operations that are
+  useful across FlagOS projects and can satisfy the same semantic contract.
 - **Torch-FL** may remain an auxiliary integration route, but it is not required
   between FlagQuantum and FlagTree. A direct provider adapter can implement the
   same catalog contract.
@@ -123,6 +123,30 @@ support matrix. The real-device compatibility lane in
 [`tests/gpu/flagtree/`](../../tests/gpu/flagtree/) verifies distribution
 ownership, active CUDA backend identity, dispatch provenance, and all current
 shared Triton kernel families under FlagTree.
+
+`FQKI-FLAGTREE-SV-001-A` is the first provider-owned FlagTree record. It reuses
+the `statevector.apply.matrix_1q.local` semantic but requires FlagTree 0.7.0's
+TLE `load` primitive. Vector state loads use TLE async annotations; the eight
+matrix scalars deliberately use ordinary `tl.load`, because FlagTree 0.7.0's
+NVIDIA lowering crashes when a scalar load is marked async. The wrapper verifies
+that the installed `flagtree` distribution owns the `triton` namespace and maps
+the CUDA runtime target to FlagTree's `nvidia` TLE whitelist before importing or
+launching the extension. It is an explicit internal entry point and is not
+selected by the default runtime.
+
+The checked-in
+[`flagtree_tle_local_1q_a800.json`](../../benchmarks/results/local/flagtree_tle_local_1q_a800.json)
+artifact records 30 synchronized groups of 10 invocations for four fixed
+complex64 state sizes on `jp-a800-171` and `jp-a800-172` with FlagTree 0.7.0.
+The TLE wrapper reaches `0.866x` to `0.942x` the speed of the same gate using
+shared Triton source, while reaching `1.016x` to `11.536x` the speed of the
+PyTorch reference. Maximum absolute and relative L2 errors are `9.84e-7` and
+`3.92e-8`. The canonical decision is `retain_explicit`: this proves a direct
+FlagTree-owned provider slice and its fail-closed capability boundary, but does
+not authorize default dispatch. It is bounded single-device development
+evidence, not a release gate or scalability claim. Reproduce or validate it
+with
+[`benchmarks/flagtree_tle_local_1q.py`](../../benchmarks/flagtree_tle_local_1q.py).
 
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
@@ -475,9 +499,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 25 implementations are implemented. MPS-003
+The current 23 semantics and 26 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 20 implementations remain experimental. The rest of the
+promotions; the other 21 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
@@ -550,7 +574,8 @@ The next development sequence is:
 1. keep this catalog synchronized with the existing Triton entry points;
 2. attach each implementation to its correctness and benchmark evidence;
 3. introduce capability-based dispatch without changing user-facing APIs;
-4. add direct FlagTree implementations for semantics with cross-project value;
+4. expand direct FlagTree implementations only where TLE or FlagTree-owned
+   source provides cross-project value;
 5. expand foundation semantics from measured workload traces;
 6. promote recurring application structures only after end-to-end evidence.
 

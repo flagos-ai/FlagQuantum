@@ -3,6 +3,7 @@
 -p
 no:cacheprovider
 tests/gpu/test_flagtree_kernel_provider.py
+tests/gpu/test_flagtree_tle_statevector.py
 tests/test_statevector_triton_gates.py
 tests/unit/test_hva_forward_tangent_triton.py
 tests/unit/test_mps_environment_catalog_dispatch.py
