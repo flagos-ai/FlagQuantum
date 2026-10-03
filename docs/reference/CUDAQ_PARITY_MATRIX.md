@@ -88,11 +88,11 @@ No row in this document is a performance comparison or a scalability claim.
 | algorithm_layer | 1 | 5 | 3 | 0 | 9 |
 | quantum_error_correction | 0 | 4 | 3 | 0 | 7 |
 | logical_and_ftqc_layer | 0 | 0 | 5 | 0 | 5 |
-| hardware_and_cloud_targets | 2 | 1 | 3 | 0 | 6 |
+| hardware_and_cloud_targets | 3 | 1 | 2 | 0 | 6 |
 | realtime_control | 0 | 0 | 4 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 9 | 41 | 45 | 0 | 95 |
+| **Total** | 10 | 41 | 44 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -103,7 +103,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 | A_nvidia_proprietary | 8 | 1 | 9 |
 | B_open_neutral | 16 | 0 | 16 |
 | C_flagos_replacement | 2 | 1 | 3 |
-| none | 60 | 7 | 67 |
+| none | 59 | 8 | 67 |
 
 ### Next work, by priority
 
@@ -143,7 +143,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `large_scale_statevector` (performance_and_scalability): The measured FlagQuantum point is a 32-qubit complex128 forward pass on one eight-accelerator node, which is a development-evidence result and is not comparable to the baseline scale. No row here is a performance claim.
 - `production_sharded_statevector` (performance_and_scalability): The registered level is below production, so the sharded path cannot support a capacity-expansion claim yet.
 
-**next** (33 open)
+**next** (32 open)
 
 - `runtime_qubit_allocation` (language_and_programming_model): Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented.
 - `pauli_tracking_sbe` (language_and_programming_model): The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state.
@@ -173,7 +173,6 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `qec_stim_user_migration` (quantum_error_correction): Absent, and its upstream counterpart is not where the surface list implies. cudaq-qec publishes no for-Stim-users page: the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. So the document cannot be translated from that page, and reading the row's name as pointing at it would aim a `next`-priority capability at a component that produces no detector error model. The counterpart is cudaq-qec's own Stim surface: reading Stim detector error model text through dem_from_stim_text, sampling a model through dem_sampling, and decoding from a Stim DEM through the decoder framework. The document is conformance work rather than a new implementation, so it is still sequenced after the Stim integration row's halves are joined; until then a migration guide would describe a route that stops at the join.
 - `logical_resource_estimation` (logical_and_ftqc_layer): Absent as a domain. Qualtran carries the same mathematics under an Apache-2.0 licence, so the planned route is adaptation into a FlagQuantum-owned report format aligned with capability-maturity.toml evidence.
 - `runtime_endpoint` (hardware_and_cloud_targets): Absent as a named contract. FlagQuantum has remote adapters and a deployment surface, but no provider-neutral endpoint object.
-- `local_emulation` (hardware_and_cloud_targets): Absent as a target-directed entry point. The noisy simulation it would build on exists.
 - `realtime_feedback_loop` (realtime_control): Absent. This is the one capability that cannot be closed by software alone: it needs an FPGA and a remote-direct-memory-access capable network interface, so it requires a hardware partner.
 - `realtime_transport` (realtime_control): Absent. The software side can define a vendor-neutral messaging protocol and device-call abstraction before hardware exists, and that is the part worth doing first.
 - `realtime_host_api` (realtime_control): Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against.
@@ -442,7 +441,7 @@ CUDA-Q surface: IonQ, Quantinuum, IQM, neutral atom, photonic, quantum control s
 | --- | --- | --- | --- | --- | --- | --- |
 | `third_party_target_sdk` | _experimental.CustomTarget letting a third party define and register a target | unsupported | now | none | none | Absent, and it is the ecosystem entry point. Without it a provider can only be added by changing FlagQuantum. |
 | `runtime_endpoint` | RuntimeEndpoint for a remote execution service | unsupported | next | none | `cloud_deployment` | Absent as a named contract. FlagQuantum has remote adapters and a deployment surface, but no provider-neutral endpoint object. |
-| `local_emulation` | emulate local noisy emulation of a target | unsupported | next | none | `noisy_simulation` | Absent as a target-directed entry point. The noisy simulation it would build on exists. |
+| `local_emulation` | emulate local noisy emulation of a target | supported | now | none | `target_emulation` | Implemented as `flagquantum.remote.emulation.emulate`, a target-directed local entry point that contacts no provider. A declared profile becomes a capability snapshot whose device kind and precision are observed on the local CPU while the qubit capacity, native gates, result formats, and limits stay declared facts, and the snapshot is legalized, routed, emitted, re-parsed, and executed locally. The noiseless record is the compiled program's own execution; passing a `noise_model` or a target `device_profile` adds a second record that names where its channels came from, the representation the planner chose, and whether the channel evolution is exact. |
 | `provider_roster_breadth` | IonQ, Quantinuum, IQM, neutral-atom, photonic, and control-system providers plus Braket, Scaleway, and qBraid | partial | now | none | `cloud_deployment` | FlagQuantum has fewer providers. The architectural requirement is a registration point a third party can use, which is why third_party_target_sdk is the higher-priority row. |
 | `domestic_accelerator_path` | No equivalent; the CUDA-Q accelerator path is NVIDIA-only | supported | now | C_flagos_replacement | `flagos_statevector_reference` | FlagQuantum advantage, not parity. A domestic-accelerator and FlagOS path exists and is registered with its own maturity levels. <br><br>Narrower scope at this status: The registered FlagOS reference level is development evidence. This row asserts that a domestic-accelerator path exists, not that it reaches parity performance. |
 | `existing_remote_providers` | Comparable provider coverage for the providers FlagQuantum already supports | supported | now | none | `cloud_deployment` | FlagQuantum reaches its supported providers through registered adapters. This row asserts only that the adapters exist, not that coverage matches the baseline. <br><br>Narrower scope at this status: The registered deployment level is development evidence. This row asserts that adapters exist, not that coverage matches the vendor roster. |

@@ -105,6 +105,9 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
+| Read what a target's passes do to a program before submitting | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
+| Execute a target-compiled program locally | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
+| Compare a noiseless run against a caller model or a device calibration | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
 | Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
 | Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
 | Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
@@ -933,6 +936,20 @@ Package trained circuits, export provider formats, and route them through deploy
 - **Start:** [quick example](../../examples/train_parameterized_circuit_then_deploy.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix.
+
+### Target-directed local emulation
+
+Compile a program for a declared third-party target and execute the compiled program locally, with the target's own compilation evidence and no submission.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.remote.emulation.emulate`
+- **Runtime modes:** `statevector`, `density_matrix`, `mps`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/remote/emulate_local_target.py)
+- **Documentation:** [guide](../../flagquantum/remote/README.md)
+- **Known boundary:** A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade.
 
 ### Evidence-qualified QPU digital twins
 

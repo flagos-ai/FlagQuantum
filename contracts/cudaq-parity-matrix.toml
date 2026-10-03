@@ -901,11 +901,11 @@ reason = "Absent as a named contract. FlagQuantum has remote adapters and a depl
 [[domains.capabilities]]
 id = "local_emulation"
 cudaq = "emulate local noisy emulation of a target"
-status = "unsupported"
-priority = "next"
+status = "supported"
+priority = "now"
 dependency_class = "none"
-maturity_ref = "noisy_simulation"
-reason = "Absent as a target-directed entry point. The noisy simulation it would build on exists."
+maturity_ref = "target_emulation"
+reason = "Implemented as `flagquantum.remote.emulation.emulate`, a target-directed local entry point that contacts no provider. A declared profile becomes a capability snapshot whose device kind and precision are observed on the local CPU while the qubit capacity, native gates, result formats, and limits stay declared facts, and the snapshot is legalized, routed, emitted, re-parsed, and executed locally. The noiseless record is the compiled program's own execution; passing a `noise_model` or a target `device_profile` adds a second record that names where its channels came from, the representation the planner chose, and whether the channel evolution is exact."
 
 [[domains.capabilities]]
 id = "provider_roster_breadth"

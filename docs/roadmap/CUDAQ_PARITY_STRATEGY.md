@@ -58,9 +58,15 @@ captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
-| `supported` | 9 |
+| `supported` | 10 |
 | `partial` | 41 |
-| `unsupported` | 45 |
+| `unsupported` | 44 |
+
+`local_emulation` moved from `unsupported` to `supported` in wave 6, when
+`flagquantum.remote.emulation.emulate` landed as a target-directed local entry
+point. Its registry entry stays at its own level, which is the point of the
+distinction above: a row closed by implementation does not raise the maturity of
+the capability it names.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -279,7 +285,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 45 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 44 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

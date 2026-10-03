@@ -780,6 +780,25 @@ limitations = "Provider support and credential/runtime behavior vary; no provide
 focused_tests = "tests/test_deployment.py"
 development_artifact = "flagquantum/deployment"
 
+[capabilities.target_emulation]
+title = "Target-directed local emulation"
+summary = "Compile a program for a declared third-party target and execute the compiled program locally, with the target's own compilation evidence and no submission."
+category = "deployment_and_extension"
+user_goals = ["Read what a target's passes do to a program before submitting", "Execute a target-compiled program locally", "Compare a noiseless run against a caller model or a device calibration"]
+public_apis = ["flagquantum.remote.emulation.emulate"]
+runtime_modes = ["statevector", "density_matrix", "mps"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/remote/emulate_local_target.py"
+documentation = "flagquantum/remote/README.md"
+level = "experimental"
+owner = "remote maintainers"
+limitations = "A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade."
+focused_tests = "tests/unit/test_local_target_emulation.py"
+integration_tests = "tests/integration/test_local_target_emulation.py"
+development_artifact = "flagquantum/remote/emulation.py"
+
 [capabilities.qpu_digital_twin]
 title = "Evidence-qualified QPU digital twins"
 summary = "Predict calibration-conditioned measurement distributions, prospectively validate fixed and held-out regional suites, and align comparable evidence over time."

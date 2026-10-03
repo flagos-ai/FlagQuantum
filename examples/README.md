@@ -147,6 +147,22 @@ boundaries are listed in the capability catalog.
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.
 
+## Emulate a target without submitting
+
+Compile a program for a declared third-party target and run the compiled program
+on this machine before spending anything on a submission:
+
+```bash
+python -m examples.remote.emulate_local_target
+```
+
+The example declares a provider listing, reads what the target's own passes
+changed -- routing, native-gate decompositions, the emitted payload -- and then
+executes the compiled program locally. It contacts no provider and needs no
+credentials. The local device, the precision, and the result are the machine's;
+the qubit capacity, native gate set, and program limits are the profile's
+declaration, and the record keeps those two sources apart.
+
 ## Run on remote resources
 
 After completing the local examples, use the provider-specific golden paths:
