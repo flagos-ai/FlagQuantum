@@ -42,9 +42,13 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # paragraph below states, but retaining an unreferenced object is server
 # policy rather than a promise, and one of the forty-one is the head of a closed
 # pull request. No ref of this repository reaches any of the forty-one, so a
-# complete clone obtains none of them; thirty-two are absent from this checkout's object
-# database as well, and the remaining nine linger here without a ref, which is what an
-# answer read from the checkout rather than from the declaration would depend on.
+# complete clone obtains none of them. How many of the forty-one a given *working
+# copy* can still resolve is a reading of that working copy rather than of the
+# repository, and it moves: a fetch brings an unreferenced object in and a `gc` takes
+# it out again. This paragraph used to pin that split, and the split it pinned had
+# already moved by the time anyone read it -- the checkout this revision was measured
+# in resolves none of the forty-one. What a clone obtains is the count that follows
+# from the definition, and it is the one stated here.
 #
 # Fourteen of the forty-one entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
@@ -95,11 +99,26 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # repository reaches it, which is `unreferenced_object` for the same reason as the rest
 # of the class.
 #
-# The forty-first, `a28d9e1d0540a92743c9fcf6163578c57400c6d5`, is recorded by
-# `benchmarks/results/local/tn_layout_contraction_a800.json`. The artifact entered on
-# `main` after this table was last updated. Both repository-scoped commit API paths
-# serve the object by its full name, while no branch or tag reaches it, so it is an
-# `unreferenced_object` under the same rule as the preceding revisions.
+# The forty-first is recorded by
+# `benchmarks/results/local/tn_layout_contraction_a800.json`, and it has been two
+# revisions. The artifact first recorded `a28d9e1d0540a92743c9fcf6163578c57400c6d5`
+# and declared it here. Then `#425` re-ran the artifact on its own branch and
+# re-recorded all five of the fields that name a revision -- `source_revision` and
+# `runs[0..3].source_revision` -- with `c0243cfdb7d8e1409a2fb655acada5528d2bb5a0`, the
+# head of the branch the run happened on, so the displaced revision is now recorded
+# by nothing under the walked roots and its declaration is withdrawn with it.
+#
+# The replacement is an `unreferenced_object` under the same rule as the rest of the
+# class, and the rule is worth reading off this revision because it is the state the
+# check cannot see. `#425` squash-merged, so the branch it ran on,
+# `perf/num-layout-dispatch-window`, is deleted and the commit sits on no branch and
+# no tag: a fresh fetch prunes the remote-tracking ref and a clone obtains nothing.
+# A checkout that fetched the branch while it existed still resolves the object, and
+# a remote-tracking ref left over from that fetch still *names* it -- which is why
+# the flags for this row are not reachability, which a stale ref answers wrongly,
+# but the two repository-scoped commit API paths. Both serve the object by its full
+# name, so the public remote still holds it and the class is unchanged at
+# forty-one revisions.
 #
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -573,7 +592,7 @@ value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
 origin = "producing_host_history"
 
 [[artifact.revision]]
-value = "a28d9e1d0540a92743c9fcf6163578c57400c6d5"
+value = "c0243cfdb7d8e1409a2fb655acada5528d2bb5a0"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
