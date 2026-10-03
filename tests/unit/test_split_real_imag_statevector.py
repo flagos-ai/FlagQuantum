@@ -74,7 +74,7 @@ def test_simulation_pauli_term_kernel_uses_split_tensors_directly() -> None:
         imag,
         ((0, "x"),),
         0.5,
-        n_wires=1,
+        n_qubits=1,
     )
 
     torch.testing.assert_close(value, torch.tensor(0.5), atol=2e-6, rtol=2e-6)
@@ -90,7 +90,7 @@ def test_simulation_double_single_pauli_reduction_uses_split_tensors() -> None:
         imag,
         ((0, "x"),),
         0.5,
-        n_wires=1,
+        n_qubits=1,
     )
 
     torch.testing.assert_close(

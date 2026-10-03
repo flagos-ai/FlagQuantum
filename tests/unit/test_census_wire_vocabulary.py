@@ -174,15 +174,16 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    # The scan is live, not frozen: the first five slices renamed 131 of the 341
-    # baseline sites, so 210 wire-named parameters are still on screen. The
+    # The scan is live, not frozen: the first six slices renamed 208 of the 341
+    # baseline sites, so 133 wire-named parameters are still on screen. The
     # frozen number lives in the contract's `[ledger]`, and the two agree through
     # `[retirement]`.
-    assert len(scanned.canonical) == 210
+    assert len(scanned.canonical) == 133
     assert len(scanned.aliases) == 11
-    # The private bucket moves only as a side effect: `WQ-5` renamed the 41
-    # `wire`-named parameters of its own private helpers, which no ledger counts.
-    assert len(scanned.internal) == 331
+    # The private bucket moves only as a side effect: `WQ-5` renamed the 41 and
+    # `WQ-6` the 23 `wire`-named parameters of their own private helpers, which
+    # no ledger counts.
+    assert len(scanned.internal) == 308
     assert scanned.canonical and scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"
@@ -387,12 +388,12 @@ def test_a_class_name_alone_is_not_evidence_of_containment(tmp_path: Path) -> No
 
 def test_the_repository_split_accounts_for_every_wire_named_attribute() -> None:
     scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
-    # Live, like the parameter scan: the first five slices retired 83 of the 122
-    # ledgered names and kept 3 of them as deprecated forwarders, so 39 are still
+    # Live, like the parameter scan: the first six slices retired 84 of the 122
+    # ledgered names and kept 3 of them as deprecated forwarders, so 38 are still
     # on screen.
-    assert len(scanned.ledgered) == 39
+    assert len(scanned.ledgered) == 38
     assert len(scanned.excluded) == 22
-    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 61
+    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 60
     assert _CENSUS.public_attribute_names(_ROOT / "flagquantum") == tuple(
         sorted(site.identifier for site in (*scanned.ledgered, *scanned.excluded))
     )

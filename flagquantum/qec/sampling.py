@@ -338,7 +338,7 @@ def sample_memory_circuit(
     program = _noisy_program(plan, locations, noise)
     data_wires = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
-        program, shots=shots, terminal_wires=data_wires, seed=seed
+        program, shots=shots, terminal_qubits=data_wires, seed=seed
     )
     detectors, observables = _recorded_bits(circuit, plan, record)
     return DemSample(detectors=detectors, observables=observables)

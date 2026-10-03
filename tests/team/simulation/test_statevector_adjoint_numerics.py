@@ -38,8 +38,8 @@ def test_z_expectation_chunk_and_adjoint_share_wire_semantics():
     amplitudes = torch.tensor([[0.5 + 0.5j, 0.5 - 0.5j]], dtype=torch.complex64)
     indices = torch.tensor([0, 2])
 
-    expectation = z_expectation_chunk(amplitudes, indices, n_wires=2, wire=0)
-    adjoint = z_expectation_adjoint_chunk(amplitudes, indices, n_wires=2, wire=0)
+    expectation = z_expectation_chunk(amplitudes, indices, n_qubits=2, qubit=0)
+    adjoint = z_expectation_adjoint_chunk(amplitudes, indices, n_qubits=2, qubit=0)
 
     torch.testing.assert_close(expectation, torch.tensor(0.0))
     torch.testing.assert_close(
@@ -58,7 +58,7 @@ def test_z_hamiltonian_chunk_matches_dense_diagonal(dtype):
     indices = torch.tensor([0, 2, 5, 7])
     terms = ((0.7, (0, 1)), (0.2, (0,)), (-0.3, (1, 2)))
 
-    value, adjoint = z_hamiltonian_chunk(amplitudes, indices, n_wires=3, terms=terms)
+    value, adjoint = z_hamiltonian_chunk(amplitudes, indices, n_qubits=3, terms=terms)
 
     weights = torch.tensor(
         [

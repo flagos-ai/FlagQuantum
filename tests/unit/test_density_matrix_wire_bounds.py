@@ -66,7 +66,7 @@ OPERATIONS: tuple[tuple[str, Operation], ...] = (
 def test_wire_outside_the_hilbert_space_is_refused(
     operation: str, run: Operation, wire: int
 ) -> None:
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         run(wire)
 
 
@@ -81,7 +81,7 @@ def test_a_negative_wire_no_longer_reaches_the_last_wire() -> None:
     requested_wire = N_WIRES - 1
     legitimate = _apply_unitary_density(requested_wire)
 
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         _apply_unitary_density(-1)
 
     # The legitimate call is unaffected by the refused one.
@@ -114,5 +114,5 @@ def test_two_wire_operator_still_expands() -> None:
         dtype=torch.complex64,
     )
     assert density_matrix_module.expand_operator(cx, [0, 1], N_WIRES).shape == (8, 8)
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         density_matrix_module.expand_operator(cx, [0, 1], 1)

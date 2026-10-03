@@ -23,7 +23,7 @@ from ....simulation.native_cpu import (
     native_cpu_one_qubit_layer_available,
     use_compact_cpu_cx_mapping,
 )
-from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_wires
+from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_qubits
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
     _compose_gate_matrices,
@@ -540,7 +540,7 @@ class _ShardedForwardSweep:
         generic_layer = native_cpu_one_qubit_layer_available()
         if not generic_layer and instruction.name not in {"rx", "ry", "rz"}:
             return None
-        max_block_wires = native_cpu_forward_rotation_tile_wires(self.plan.n_qubits)
+        max_block_wires = native_cpu_forward_rotation_tile_qubits(self.plan.n_qubits)
         cursor = index
         active_wire: int | None = None
         while cursor < len(self.ir.instructions):
@@ -578,7 +578,7 @@ class _ShardedForwardSweep:
             self.shard_state.amplitudes,
             matrices,
             wires,
-            n_wires=self.plan.n_qubits,
+            n_qubits=self.plan.n_qubits,
         ):
             return None
         self.local_count += cursor - index

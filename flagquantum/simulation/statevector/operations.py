@@ -676,7 +676,7 @@ def _apply_matrix(
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
-                state, matrix, wire=wires[0], n_wires=n_wires
+                state, matrix, qubit=wires[0], n_qubits=n_wires
             )
         if (
             len(wires) == 2

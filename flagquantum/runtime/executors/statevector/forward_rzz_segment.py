@@ -12,7 +12,7 @@ from ....simulation.native_cpu import (
     fused_rzz_segment_forward_,
     native_cpu_shared_rzz_forward_fusion_available,
 )
-from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_wires
+from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_qubits
 
 
 def _following_rotation_block(
@@ -43,7 +43,7 @@ def _following_rotation_block(
             block_matrices[-1] = sweep.matrices[cursor] @ block_matrices[-1]
         else:
             if wire in block_wires or len(block_wires) == (
-                native_cpu_forward_rotation_tile_wires(sweep.plan.n_qubits)
+                native_cpu_forward_rotation_tile_qubits(sweep.plan.n_qubits)
             ):
                 break
             block_wires.append(wire)
@@ -123,10 +123,10 @@ def apply_native_rzz_segment(
             sweep.shard_state.amplitudes,
             matrices,
             wires,
-            n_wires=sweep.plan.n_qubits,
+            n_qubits=sweep.plan.n_qubits,
             rzz_angles=angles,
-            rzz_first_wires=first,
-            rzz_second_wires=second,
+            rzz_first_qubits=first,
+            rzz_second_qubits=second,
         ):
             sweep.local_count += len(indices) + rotation_count
             sweep.local_diagonal_count += len(indices)
@@ -143,7 +143,7 @@ def apply_native_rzz_segment(
         angles,
         first,
         second,
-        n_wires=sweep.plan.n_qubits,
+        n_qubits=sweep.plan.n_qubits,
     ):
         return None
     sweep.local_count += len(indices)

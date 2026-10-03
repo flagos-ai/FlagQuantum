@@ -14,7 +14,7 @@ from ....simulation.native_cpu import (
     native_cpu_adjoint_rzz_h_fusion_available,
     native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
-    native_cpu_rotation_tile_wires,
+    native_cpu_rotation_tile_qubits,
     native_cpu_shared_rotation_gradient_available,
     native_cpu_terminal_adjoint_no_restore_available,
 )
@@ -211,7 +211,7 @@ def _apply_local_rotation_segment(
         len({active[0] for active in active_by_gate}) == 1
         and native_cpu_shared_rotation_gradient_available()
     )
-    tile_wires = native_cpu_rotation_tile_wires()
+    tile_wires = native_cpu_rotation_tile_qubits()
     final_tile_start = ((len(block_wires) - 1) // tile_wires) * tile_wires
     final_tile_wires = frozenset(block_wires[final_tile_start:])
     rzz_layer = _fusable_rzz_layer(sweep, cursor, real_dtype, final_tile_wires)
@@ -242,7 +242,7 @@ def _apply_local_rotation_segment(
             angle_tensor,
             kind_tensor,
             wire_tensor,
-            n_wires=sweep.plan.n_qubits,
+            n_qubits=sweep.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter,
             observable_weights=sweep.pending_observable_weights,
             cx_images=pending_cx_images,
@@ -267,11 +267,11 @@ def _apply_local_rotation_segment(
             angle_tensor,
             kind_tensor,
             wire_tensor,
-            n_wires=sweep.plan.n_qubits,
+            n_qubits=sweep.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter,
             rzz_angles=None if rzz_layer is None else rzz_layer[2],
-            rzz_first_wires=None if rzz_layer is None else rzz_layer[3],
-            rzz_second_wires=None if rzz_layer is None else rzz_layer[4],
+            rzz_first_qubits=None if rzz_layer is None else rzz_layer[3],
+            rzz_second_qubits=None if rzz_layer is None else rzz_layer[4],
             fuse_preceding_hadamards=bool(rzz_layer and rzz_layer[5]),
             observable_weights=sweep.pending_observable_weights,
             restore_state=not terminal_euler_layer,

@@ -736,7 +736,7 @@ def _execute_statevector_program(
             native_output, clifford_scratch = apply_native_clifford_matching(
                 step,
                 output,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 scratch=clifford_scratch,
                 reuse_output=reuse_clifford_output,
                 owns_state=owns_output,
@@ -789,7 +789,7 @@ def _execute_statevector_program(
             native_output = apply_native_fixed_one_qubit_layer(
                 step,
                 output,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 owns_state=owns_output,
                 parameter_bindings=parameter_bindings,
                 matrix_builder=lambda region, state: _dense_region_matrix(
@@ -952,7 +952,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         ):
             output = execute_product_state_program(
                 product_program,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 device=device,
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,

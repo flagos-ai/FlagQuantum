@@ -100,16 +100,16 @@ def test_physical_scaling_leaves_populations_invariant() -> None:
 def test_json_native_request_and_plan_use_the_public_contract() -> None:
     request = {
         "hamiltonian": [
-            {"pauli": "X", "coefficient": 0.5, "wires": [0]},
-            {"pauli": "Z", "coefficient": 0.1, "wires": [0]},
+            {"pauli": "X", "coefficient": 0.5, "qubits": [0]},
+            {"pauli": "Z", "coefficient": 0.1, "qubits": [0]},
         ],
         "initial_state": "1",
-        "n_wires": 1,
+        "n_qubits": 1,
         "times": [0.0, 0.05, 0.1],
         "collapse_operators": [
-            {"operator": "amplitude_damping", "rate": 0.1, "wire": 0}
+            {"operator": "amplitude_damping", "rate": 0.1, "qubit": 0}
         ],
-        "observables": [{"name": "z", "pauli": "Z", "wires": [0]}],
+        "observables": [{"name": "z", "pauli": "Z", "qubits": [0]}],
         "return_density_matrices": True,
     }
 
@@ -126,9 +126,9 @@ def test_python_sdk_accepts_observable_algebra_and_typed_collapse() -> None:
     result = evolve_density_matrix(
         0.5 * fq.X(0) + 0.1 * fq.Z(0),
         initial_state="1",
-        n_wires=1,
+        n_qubits=1,
         times=torch.linspace(0.0, 8.0, 161, dtype=torch.float64),
-        collapse_operators=[amplitude_damping(rate=0.1, wire=0)],
+        collapse_operators=[amplitude_damping(rate=0.1, qubit=0)],
         observables={"z": fq.Z(0)},
     )
 
@@ -251,7 +251,7 @@ def test_invalid_inputs_have_structured_errors(
     inputs: dict[str, object] = {
         "hamiltonian": X,
         "initial_state": EXCITED,
-        "n_wires": 1,
+        "n_qubits": 1,
         "times": [0.0, 0.5, 1.0],
     }
     inputs.update(overrides)
