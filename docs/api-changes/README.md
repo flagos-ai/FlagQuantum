@@ -19,6 +19,7 @@ process.
 - [Qubit terminology migration](FQ-QUBIT-NAMING-20260913.md)
 - [Complete the qubit terminology migration on the public surface](FQ-QUBIT-TERMINOLOGY-COMPLETION-20261002.md)
 - [One word for a qubit, across the whole package](FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md)
+- [The other two doors: attribute names and definition names](FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)

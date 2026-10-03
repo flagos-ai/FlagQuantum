@@ -29,3 +29,29 @@ likewise delegates to `list_devices(n_qubits=...)` with a deprecation warning.
 The affected candidate signatures
 are updated for this explicitly requested migration; the historical baseline
 and checker remain unchanged.
+
+## Scope of the rename
+
+The migration covers four surfaces, all measured by
+`tools/census_wire_vocabulary.py` and reconciled against
+`contracts/qubit-vocabulary-contract.toml` on every run:
+
+| Surface | Count | Disposition |
+|---|---:|---|
+| parameters on the public function surface | 341 | renamed; 11 are already deprecated aliases and are deleted at 0.4.0 |
+| public attribute and property names | 144 | 122 renamed, 22 excluded as payload keys |
+| module-level public definition names | 10 | renamed |
+| string literals | 1291 | reported only, never ledgered |
+
+An attribute is renamed whether it is a field, a property or method
+(`Circuit.n_wires`), or an instance attribute assigned in a method
+(`TextDrawer().wire_order`). It is excluded only when its spelling reaches a
+payload, and each exclusion names the class or method that witnesses it plus the
+schema event that retires it — `IR_VERSION` for the IR keys, or the owning payload
+schema's own version bump. See
+[the attributes authorization](../api-changes/FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md)
+and [its decision record](../development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_ATTRIBUTES.md).
+
+Aliases are owed only where the name is reachable from `fq.*`. On the attribute
+surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`, and
+`fq.OutputRequest.wires`; everything else is renamed in place in the same release.

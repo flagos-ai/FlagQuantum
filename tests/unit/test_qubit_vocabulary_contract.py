@@ -17,6 +17,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -91,6 +92,34 @@ def test_the_gate_reports_progress_per_slice() -> None:
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
     assert all(retired == 0 for _, retired, _ in rows)
     assert sum(remaining for _, _, remaining in rows) == 341
+
+
+def test_the_gate_reports_attribute_progress_per_slice() -> None:
+    """The parameter count alone would call the migration finished too early.
+
+    `MeasurementResult.wires` is on the user's screen and is not a parameter, so
+    the gate reports a second total; the migration is finished only when both
+    reach zero.
+    """
+
+    rows = _GATE.slice_progress(_contract(), "attribute")
+    assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
+    assert all(retired == 0 for _, retired, _ in rows)
+    assert sum(remaining for _, _, remaining in rows) == 122
+
+
+def test_the_gate_reports_definition_progress_per_slice() -> None:
+    """A renamed parameter inside `infer_n_wires_from_dense_state` is not done.
+
+    The name of a module-level public function or class is the third door: it is
+    neither a parameter nor a class attribute, so without this surface the gate
+    would report a finished migration while ten public names still say wire.
+    """
+
+    rows = _GATE.slice_progress(_contract(), "definition")
+    assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
+    assert all(retired == 0 for _, retired, _ in rows)
+    assert sum(remaining for _, _, remaining in rows) == 10
 
 
 def test_the_gate_is_wired_into_ci_and_pre_push() -> None:
@@ -393,8 +422,493 @@ def test_a_forbidden_alternative_spelling_is_reported(tmp_path: Path) -> None:
     _one(errors, "forbids the alternative spelling")
 
 
+def test_a_forbidden_alternative_as_an_attribute_name_is_reported(
+    tmp_path: Path,
+) -> None:
+    """A parameter scan cannot see a class field, so the rule is checked twice."""
+
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "def amplitude_estimation_circuit(n_counting_wires):\n"
+                "    return n_counting_wires\n"
+            ),
+            "flagquantum/runtime/result.py": (
+                "class MeasurementResult:\n    qubit_indices: tuple = ()\n"
+            ),
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    _one(errors, "forbids the alternative spelling")
+
+
 def test_the_forbidden_list_is_not_empty() -> None:
     assert _contract()["naming"]["forbidden"]
+
+
+# ------------------------------------------------------------- attribute rules
+
+
+def _attribute_rows(contract: dict[str, Any]) -> list[dict[str, Any]]:
+    """The live exclusion list, so removing a row really removes it."""
+
+    return contract["attribute_exclusions"]["sites"]
+
+
+@lru_cache(maxsize=1)
+def _declarations() -> dict[str, str]:
+    """Each attribute's declaration kind, measured once for the whole file.
+
+    The field/member split is recorded per slice and checked against the live
+    scan, so a mutation that moves a name between lists has to keep those counts
+    truthful. The kind does not change when a name moves, so it is read from the
+    package once rather than re-derived per test.
+    """
+
+    scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
+    return {
+        site.identifier: site.declaration
+        for site in (*scanned.ledgered, *scanned.excluded)
+    }
+
+
+def _recount_attributes(contract: dict[str, Any]) -> None:
+    """Re-derive the per-slice attribute counts after a mutation."""
+
+    names = [str(entry) for entry in contract["attribute_ledger"]["canonical"]]
+    sites = [str(row["site"]) for row in _attribute_rows(contract)]
+    declarations = _declarations()
+    for entry in contract["slices"]:
+        files = set(entry["files"])
+        owned = [name for name in names if name.split("::", 1)[0] in files]
+        entry["attribute_count"] = len(owned)
+        for kind in _CENSUS.DECLARATION_KINDS:
+            entry[f"attribute_{kind}_count"] = sum(
+                1 for name in owned if declarations.get(name) == kind
+            )
+        entry["persisted_attribute_count"] = sum(
+            1 for site in sites if site.split("::", 1)[0] in files
+        )
+
+
+def test_an_attribute_ledger_that_disagrees_with_the_measured_total_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["attribute_ledger"]["measured_canonical"] = 80
+    _one(_errors(contract), "attribute_ledger.measured_canonical")
+
+
+def test_a_deleted_attribute_exclusion_is_reported() -> None:
+    """The rule that pins the exact split, not only its size.
+
+    Removing an exclusion also changes the size, so the assertion names the rule
+    that owns the decision: the name now claims to be renameable while the code
+    still writes it into a payload.
+    """
+
+    contract = _contract()
+    removed = _attribute_rows(contract).pop(0)["site"]
+    _recount_attributes(contract)
+    errors = _errors(contract)
+    _some(errors, "not excluded by name")
+    _some(errors, removed)
+
+
+def test_a_promoted_exclusion_is_reported() -> None:
+    """Moving a payload key into the renameable list is the failure that matters.
+
+    This is the shape of the real defect: a slice renames a field, the payload
+    key changes, and every consumer of the serialized form breaks silently. The
+    gate has to call it out at the moment the ledger stops excluding it.
+    """
+
+    contract = _contract()
+    row = _attribute_rows(contract).pop(0)
+    contract["attribute_ledger"]["canonical"].append(row["site"])
+    contract["attribute_ledger"]["measured_canonical"] += 1
+    contract["attribute_exclusions"]["measured_persisted"] -= 1
+    contract["other_surfaces"]["public_attribute_ledgered"] += 1
+    contract["other_surfaces"]["public_attribute_persisted"] -= 1
+    _recount_attributes(contract)
+    errors = _errors(contract)
+    _some(errors, "neither live nor retired")
+    _some(errors, row["site"])
+
+
+def test_an_attribute_split_that_loses_a_name_is_reported() -> None:
+    contract = _contract()
+    contract["other_surfaces"]["public_attribute_persisted"] = 20
+    _one(_errors(contract), "public_attribute_persisted")
+
+
+def test_an_exclusion_for_a_class_that_stopped_serializing_is_reported(
+    tmp_path: Path,
+) -> None:
+    """Exclusions are pinned from both sides, so a rule change cannot hide.
+
+    The fixture keeps `Instruction` wire-named but removes the `asdict` call
+    that made it a payload, so its exclusion is now stale and its field is a
+    rename again. A gate that only checked "is the name still in the code" would
+    see nothing wrong here.
+    """
+
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "def amplitude_estimation_circuit(n_counting_wires):\n"
+                "    return n_counting_wires\n"
+            ),
+            "flagquantum/core/ir.py": (
+                "from dataclasses import dataclass\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class Instruction:\n"
+                "    wires: tuple = ()\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class CircuitIR:\n"
+                "    n_wires: int = 0\n"
+                "    instructions: tuple[Instruction, ...] = ()\n"
+            ),
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    _some(errors, "core/ir.py::CircuitIR::n_wires is stale")
+    _some(errors, "outside the ledger")
+
+
+def test_an_exclusion_for_a_class_that_still_serializes_is_not_reported(
+    tmp_path: Path,
+) -> None:
+    """The other half of the same rule, so the previous test proves something.
+
+    With `asdict(self)` present, the same two names are live payload keys, their
+    exclusions match the scan, and the gate says nothing about them -- which is
+    what makes the stale report in the previous test a real finding rather than a
+    property of every fixture.
+    """
+
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "def amplitude_estimation_circuit(n_counting_wires):\n"
+                "    return n_counting_wires\n"
+            ),
+            "flagquantum/core/ir.py": (
+                "from dataclasses import asdict, dataclass\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class Instruction:\n"
+                "    wires: tuple = ()\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class CircuitIR:\n"
+                "    n_wires: int = 0\n"
+                "    instructions: tuple[Instruction, ...] = ()\n"
+                "\n"
+                "    def to_dict(self):\n"
+                "        return asdict(self)\n"
+            ),
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    assert not [
+        message
+        for message in errors
+        if "core/ir.py::CircuitIR::n_wires is stale" in message
+        or "core/ir.py::Instruction::wires is stale" in message
+        or "core/ir.py::Instruction::wires" in message
+    ], errors
+
+
+def test_an_exclusion_whose_witness_changed_is_reported() -> None:
+    """The reason has to stay true, not merely present."""
+
+    contract = _contract()
+    row = next(
+        entry
+        for entry in _attribute_rows(contract)
+        if entry["site"].endswith("::Instruction::wires")
+    )
+    row["witness"] = "SomeOtherContract"
+    _some(_errors(contract), "no longer matches the scan")
+
+
+def test_an_attribute_rename_without_a_retirement_entry_is_reported(
+    tmp_path: Path,
+) -> None:
+    """A rename is not done until the ledger records it.
+
+    The report truncates its list of sites, so the fixture renames the
+    alphabetically first ledgered attribute -- the one the truncation is
+    guaranteed to name -- and asserts on it by name.
+    """
+
+    first = min(_contract()["attribute_ledger"]["canonical"])
+    assert first == (
+        "flagquantum/algorithms/amplitude_estimation.py"
+        "::AmplitudeEstimationResult::n_counting_wires"
+    )
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "from dataclasses import dataclass\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class AmplitudeEstimationResult:\n"
+                "    n_counting_qubits: int = 0\n"
+            )
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    _some(errors, "neither live nor retired")
+    _some(errors, first)
+
+
+def test_a_retired_attribute_is_reported_when_it_still_reaches_a_payload() -> None:
+    contract = _contract()
+    row = _attribute_rows(_contract())[0]
+    contract["attribute_retirement"] = {"sites": [row["site"]]}
+    _some(_errors(contract), "still reaches a payload")
+
+
+def test_an_attribute_retirement_outside_the_baseline_is_reported() -> None:
+    contract = _contract()
+    contract["attribute_retirement"] = {
+        "sites": ["flagquantum/nowhere.py::Absent::wires"]
+    }
+    _one(_errors(contract), "outside the baseline")
+
+
+def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["slices"][0]["attribute_count"] += 1
+    _one(_errors(contract), "attribute_count")
+
+
+def test_a_slice_field_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    """The split by declaration kind is a recorded count, not a derived one.
+
+    A field and a member carry different obligations: a field's name can only be
+    a payload key through `asdict`, while a member's cannot be one that way at
+    all. If the two were merged into one number, converting a field into a
+    property would move the obligation without changing any count.
+    """
+
+    contract = _contract()
+    contract["slices"][0]["attribute_field_count"] += 1
+    _one(_errors(contract), "attribute_field_count")
+
+
+def test_a_slice_member_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["slices"][0]["attribute_member_count"] += 1
+    _one(_errors(contract), "attribute_member_count")
+
+
+def test_a_slice_instance_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    """`self.name = ...` is a user-visible name, so it is a counted site.
+
+    Without this count a slice could rename its fields, leave every
+    `TextDrawer().wire_order` untouched, and still look finished: the field count
+    would balance and nothing would name the instance attributes.
+    """
+
+    contract = _contract()
+    contract["slices"][0]["attribute_instance_count"] += 1
+    _one(_errors(contract), "attribute_instance_count")
+
+
+def test_an_exclusion_without_a_declaration_kind_is_reported() -> None:
+    contract = _contract()
+    _attribute_rows(contract)[0]["declaration"] = ""
+    _some(_errors(contract), "declaration")
+
+
+def test_an_exclusion_whose_declaration_kind_changed_is_reported() -> None:
+    """A field that becomes a property is not the same obligation any more."""
+
+    contract = _contract()
+    row = next(
+        entry
+        for entry in _attribute_rows(contract)
+        if entry["site"].endswith("::Instruction::wires")
+    )
+    row["declaration"] = "member"
+    _some(_errors(contract), "no longer matches the scan")
+
+
+def test_a_slice_persisted_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["slices"][0]["persisted_attribute_count"] += 1
+    _one(_errors(contract), "persisted_attribute_count")
+
+
+def test_a_slice_definition_count_that_disagrees_with_the_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["slices"][0]["definition_count"] += 1
+    _one(_errors(contract), "definition_count")
+
+
+def test_an_exclusion_without_a_reason_is_reported() -> None:
+    contract = _contract()
+    _attribute_rows(contract)[0]["reason"] = ""
+    _some(_errors(contract), "reason")
+
+
+def test_an_exclusion_without_a_removal_condition_is_reported() -> None:
+    contract = _contract()
+    _attribute_rows(contract)[0]["removal_condition"] = ""
+    _some(_errors(contract), "removal_condition")
+
+
+# ------------------------------------------------------------ definition rules
+
+
+def _definition_rows(contract: dict[str, Any]) -> list[dict[str, Any]]:
+    return contract["definition_ledger"]["sites"]
+
+
+def test_a_missing_definition_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["definition_ledger"]["sites"] = []
+    _some(_errors(contract), "must ledger its definition names")
+
+
+def test_a_definition_ledger_that_disagrees_with_the_measured_total_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["definition_ledger"]["measured_canonical"] = 9
+    _one(_errors(contract), "definition_ledger.measured_canonical")
+
+
+def test_a_definition_total_that_disagrees_with_the_ledger_is_reported() -> None:
+    contract = _contract()
+    contract["other_surfaces"]["public_definition_names"] = 9
+    _one(_errors(contract), "public_definition_names")
+
+
+def test_a_duplicated_definition_entry_is_reported() -> None:
+    contract = _contract()
+    rows = _definition_rows(contract)
+    rows.append(dict(rows[0]))
+    contract["definition_ledger"]["measured_canonical"] += 1
+    _some(_errors(contract), "definition ledger repeats")
+
+
+def test_a_new_wire_named_public_definition_outside_the_ledger_is_reported(
+    tmp_path: Path,
+) -> None:
+    """A function whose own name says wire is a site, not a parameter.
+
+    The fixture declares a name the ledger does not contain. Neither the
+    parameter ledger nor the attribute ledger can see it, so without this
+    surface the gate would pass while the spelling is on the user's screen.
+    """
+
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "def amplitude_estimation_circuit(n_counting_wires):\n"
+                "    return n_counting_wires\n"
+            ),
+            "flagquantum/simulation/pauli.py": (
+                "def count_wires_from_dense_state(state):\n" "    return state\n"
+            ),
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    _some(errors, "public definitions outside the ledger")
+    _some(errors, "count_wires_from_dense_state")
+
+
+def test_a_definition_rename_without_a_retirement_entry_is_reported(
+    tmp_path: Path,
+) -> None:
+    """A rename is not done until the ledger records it.
+
+    The fixture renames the alphabetically first definition name in the ledger.
+    The live scan no longer sees the old spelling, so the entry is neither live
+    nor retired -- which is what stops a slice from renaming the code and editing
+    the ledger away in the same commit.
+    """
+
+    first = min(str(row["site"]) for row in _definition_rows(_contract()))
+    assert first == (
+        "flagquantum/benchmarking/statevector_cpu_paths.py"
+        "::build_two_wire_diagonal_chain"
+    )
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "def amplitude_estimation_circuit(n_counting_wires):\n"
+                "    return n_counting_wires\n"
+            ),
+            "flagquantum/benchmarking/statevector_cpu_paths.py": (
+                "def build_two_qubit_diagonal_chain(qubits):\n" "    return qubits\n"
+            ),
+        },
+    )
+    errors = _GATE.contract_errors(_contract(), package_root=package)
+    _some(errors, "neither live nor retired")
+    _some(errors, first)
+
+
+def test_a_fabricated_definition_retirement_is_reported() -> None:
+    """The other direction: claiming a rename that the code does not show."""
+
+    contract = _contract()
+    live = min(str(row["site"]) for row in _definition_rows(contract))
+    contract["definition_retirement"] = {"sites": [live]}
+    errors = _errors(contract)
+    _some(errors, "still exist")
+    _some(errors, live)
+
+
+def test_a_definition_retirement_outside_the_baseline_is_reported() -> None:
+    contract = _contract()
+    contract["definition_retirement"] = {
+        "sites": ["flagquantum/nowhere.py::absent_wires"]
+    }
+    _one(_errors(contract), "outside the baseline")
+
+
+def test_a_definition_rename_that_disagrees_with_the_rule_is_reported() -> None:
+    contract = _contract()
+    row = next(
+        entry
+        for entry in _definition_rows(contract)
+        if entry["site"].endswith("::rank_for_wire")
+    )
+    row["replacement"] = "rank_for_qubit_indices"
+    _some(_errors(contract), "must be replaced by")
+
+
+def test_a_definition_without_a_kind_is_reported() -> None:
+    contract = _contract()
+    _definition_rows(contract)[0]["kind"] = ""
+    _some(_errors(contract), "kind")
+
+
+def test_the_definition_ledger_is_the_scanner_output_at_the_baseline() -> None:
+    contract = _contract()
+    scanned = _CENSUS.definition_census(_ROOT / "flagquantum")
+    assert {
+        str(row["site"]): str(row["replacement"]) for row in _definition_rows(contract)
+    } == {site.identifier: site.replacement for site in scanned.ledgered}
 
 
 # --------------------------------------------------------------------- live facts

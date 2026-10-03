@@ -1,13 +1,26 @@
-"""Count the wire-named parameters declared by the package's functions.
+"""Count the wire-named vocabulary the package exposes to its users.
 
-The count this script prints is the progress ledger for the qubit-vocabulary
-migration: `contracts/qubit-vocabulary-contract.toml` records the same sites, a
-migration slice moves them from `baseline` to `retired`, and
-`tools/check_qubit_vocabulary.py` fails if a baseline site disappears without
-being retired or if a wire-named parameter appears outside the ledger.
+Four surfaces are scanned, and the reason each needs its own walk is stated once
+here rather than rediscovered per slice:
 
-Both decisions that make the count reproducible were measured wrong first, so
-they are stated here once:
+- **Parameters** (`census`) are the migration ledger: every `wire`-named
+  parameter on the public function surface is a site a slice must retire.
+- **Attribute names** (`attribute_census`) are the same rename reached through a
+  different door: `result.wires` is on the user's screen but is not a parameter,
+  so the parameter ledger cannot see it. An attribute is a *persisted key* rather
+  than a name when its spelling reaches a payload, which is decided structurally
+  below. Three declaration kinds count: a `field` (annotation or assignment in the
+  class body), a `member` (a property or method, so `fq.Circuit.n_wires` is on the
+  ledger too), and an `instance` attribute (`self.name = ...` inside a method, so
+  `TextDrawer().wire_order` is on the ledger too).
+- **Definition names** (`definition_census`) are the third door: a module-level
+  public function or class whose own name contains `wire`, such as
+  `flagquantum/simulation/pauli.py::infer_n_wires_from_dense_state`. Renaming the
+  parameter and leaving the name would not finish the migration.
+- **Message strings** (`message_strings`) are reported and never ledgered.
+
+Both decisions that make the parameter count reproducible were measured wrong
+first, so they are stated here once:
 
 - **Every parameter kind counts.** Reading only `posonlyargs + args + kwonlyargs`
   misses `Circuit.any(*wires, unitary=...)` and its deprecated `Circuit.unitary`
@@ -21,17 +34,64 @@ they are stated here once:
   is everything nested inside it — an earlier scan reported methods of private
   classes as if they were module-level public functions, which inflated the count
   by 16 sites.
+- **A dunder is public.** `_is_private_name` treats `__init__` as a user entry
+  point, because `fq.Circuit(n_wires=3)` is the single most user-visible call in
+  the package. An underscore-only rule filed every public constructor under
+  private code and hid twelve canonical sites and three aliases.
 
 A wire-named parameter is a **deprecated alias** exactly when the same signature
 also declares its qubit-named replacement (`wire` next to `qubit`, `wires` next
 to `qubits`). That is machine-decidable and matches how
 `flagquantum/core/_qubit_aliases.py` implements the alias, so the ledger never
 has to be re-tabulated by inspection.
+
+Deciding the same question for an attribute was measured wrong first as well, and
+the correction matters because it reverses the direction of the error. The first
+rule was the natural one -- an attribute whose spelling appears as a string
+literal is a payload key -- and it was reported as finding **zero** of the 102
+attribute names. That number is an artifact of the ruler, not a fact about the
+package: the census wrote identifiers as `path::Qualname.::attr` and the
+classifier split on the last `.`, so it searched the literal table for
+`"::n_wires"`, a spelling that cannot occur.
+
+Split on the census separator instead, and the same rule over-reaches badly: it
+finds 20 of the 21 payload keys, but it also marks 85 of the 102 names as
+persisted, which would freeze 65 attributes that carry no payload obligation at
+all. Both failure modes are disqualifying, and the first one hid the second.
+
+The rule implemented in `_payload_index` is therefore structural rather than
+textual: an attribute's spelling is a payload key when its owning class declares
+a serialization method or calls `asdict(self)` (`serialization_method`), when the
+class is a field type of such a class so `asdict` recurses into it (`contained`),
+or when the class is named inside such a method's body (`nested`).
+
+That structural rule is correct for a **field** and wrong for a **member** or an
+**instance attribute**, which is why the kinds are separated and carry different
+witnesses. `asdict` walks a dataclass's fields, so it can never turn a property's
+name into a key: `KrausChannel.n_wires` and `MPSState.n_wires` were both marked
+persisted by the class-level rule although neither spelling can leave the process,
+and `MPSState` is not even a dataclass. An instance attribute is in the same
+position -- `TextDrawer().wire_order` is not a field of a dataclass either. So for
+both of those kinds the spelling is a payload name only when one of the *owning
+class's own serialization methods* contains it as a string literal
+(`payload_literal`), because that method's contract is the cross-process one. Under
+that rule exactly one member is excluded, `RuntimePolicy.observable_wires`, whose
+`from_dict` still accepts the legacy key -- and `Circuit.n_wires`, whose spelling
+appears in the in-process `circuit_param` dict, is correctly *not* excluded, since
+no serializer of `Circuit` emits it.
+
+A definition name needs no exclusion rule at all. It is reachable only as a Python
+identifier, and the four places the package spells one as a literal were checked by
+hand: `kernels/catalog/implementations.py` and `kernels/triton/*.py` declare it as
+a source-level catalog `symbol` (the stable kernel identity is the `FQKI-*` id),
+and `simulation/native_cpu/__init__.py` and `simulation/pauli.py` list it in
+`__all__`. The same rename updates all four.
 """
 
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -43,6 +103,37 @@ DEFAULT_PACKAGE_ROOT = REPOSITORY_ROOT / "flagquantum"
 PUBLIC_SURFACE = "canonical"
 DEPRECATED_ALIAS = "deprecated_alias"
 PRIVATE_CODE = "internal"
+
+LEDGERED_ATTRIBUTE = "canonical"
+PERSISTED_ATTRIBUTE = "serialized_key"
+
+DECLARED_FIELD = "field"
+DECLARED_MEMBER = "member"
+DECLARED_INSTANCE = "instance"
+DECLARATION_KINDS = (DECLARED_FIELD, DECLARED_MEMBER, DECLARED_INSTANCE)
+
+SERIALIZATION_METHODS = frozenset(
+    {
+        "as_dict",
+        "asdict",
+        "deserialize",
+        "dump",
+        "from_dict",
+        "from_json",
+        "from_payload",
+        "from_record",
+        "from_toml",
+        "load",
+        "serialize",
+        "to_dict",
+        "to_json",
+        "to_payload",
+        "to_record",
+        "to_toml",
+        "to_plan_dict",
+        "from_plan_dict",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -91,6 +182,112 @@ class Census:
         grouped: dict[str, list[str]] = {}
         for site in sites:
             grouped.setdefault(site.path, []).append(site.file_entry)
+        return tuple(
+            (path, tuple(sorted(entries))) for path, entries in sorted(grouped.items())
+        )
+
+
+@dataclass(frozen=True)
+class AttributeSite:
+    """One wire-named class attribute on the public surface."""
+
+    path: str
+    owner: str
+    attribute: str
+    declaration: str
+    verdict: str
+    evidence: str
+    witness: str
+
+    @property
+    def identifier(self) -> str:
+        """A ledger key in the same shape as a parameter site's."""
+
+        return f"{self.path}::{self.owner}::{self.attribute}"
+
+    @property
+    def replacement(self) -> str:
+        return replacement_name(self.attribute)
+
+    @property
+    def reason(self) -> str:
+        """Why the spelling cannot move yet, phrased so a reader can check it."""
+
+        if not self.witness:
+            return ""
+        if self.evidence == "payload_literal":
+            return (
+                f"`{self.witness}` reads the spelling as an input key, so "
+                f"`{self.attribute}` is still part of the `{self.owner}` payload "
+                "contract"
+            )
+        if self.evidence == "serialization_method":
+            return (
+                f"`{self.witness}` builds its payload from its own field names, so "
+                f"`{self.attribute}` is a key in the `{self.witness}` payload"
+            )
+        return (
+            f"`{self.witness}` builds its payload with `dataclasses.asdict`, which "
+            f"recurses into this class, so `{self.attribute}` is a key in the "
+            f"`{self.witness}` payload"
+        )
+
+    @property
+    def removal_condition(self) -> str:
+        """The event that retires the exclusion; never a date and never 'later'."""
+
+        if not self.witness:
+            return ""
+        if self.evidence == "payload_literal":
+            return f"the `{self.owner}` payload schema is versioned and migrated"
+        if self.witness == "CircuitIR":
+            return "`IR_VERSION` is raised and the payload migrates in the same release"
+        return f"the `{self.witness}` payload schema is versioned and migrated"
+
+
+@dataclass(frozen=True)
+class DefinitionSite:
+    """One wire-named module-level public function or class."""
+
+    path: str
+    name: str
+    kind: str
+
+    @property
+    def identifier(self) -> str:
+        return f"{self.path}::{self.name}"
+
+    @property
+    def replacement(self) -> str:
+        return replacement_name(self.name)
+
+
+@dataclass(frozen=True)
+class DefinitionCensus:
+    """Every wire-named module-level public definition name."""
+
+    ledgered: tuple[DefinitionSite, ...]
+
+    def by_file(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        grouped: dict[str, list[str]] = {}
+        for site in self.ledgered:
+            grouped.setdefault(site.path, []).append(site.identifier)
+        return tuple(
+            (path, tuple(sorted(entries))) for path, entries in sorted(grouped.items())
+        )
+
+
+@dataclass(frozen=True)
+class AttributeCensus:
+    """Every wire-named attribute, split by whether its spelling is a payload key."""
+
+    ledgered: tuple[AttributeSite, ...]
+    excluded: tuple[AttributeSite, ...]
+
+    def by_file(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        grouped: dict[str, list[str]] = {}
+        for site in self.ledgered:
+            grouped.setdefault(site.path, []).append(site.identifier)
         return tuple(
             (path, tuple(sorted(entries))) for path, entries in sorted(grouped.items())
         )
@@ -198,14 +395,25 @@ def _declared_functions(
 
 def _declared_attributes(
     body: list[ast.stmt], prefix: str, private: bool
-) -> list[tuple[str, str]]:
-    """Class attributes declared by annotation or assignment, with their owner."""
+) -> list[tuple[str, str, str]]:
+    """Public class names with their owner, as (owner, name, declaration kind).
 
-    found: list[tuple[str, str]] = []
+    Three doors count, because a class can put a name on the user's screen in
+    three ways and each needs a different check. A **field** is an annotation or
+    an assignment in the class body. A **member** is a property or method
+    definition, because `fq.Circuit.n_wires` is reachable by every user even
+    though no assignment declares it. An **instance attribute** is a
+    `self.name = ...` assignment inside a method: `TextDrawer().wire_order` and
+    `ShardedMPSState().n_wires` are read by callers, and neither of the other two
+    doors sees them.
+    """
+
+    found: list[tuple[str, str, str]] = []
     for statement in body:
         if isinstance(statement, ast.ClassDef):
             nested_private = private or _is_private_name(statement.name)
             nested_prefix = f"{prefix}{statement.name}."
+            seen: set[tuple[str, str]] = set()
             for member in statement.body:
                 targets: list[ast.expr] = []
                 if isinstance(member, ast.AnnAssign):
@@ -214,8 +422,29 @@ def _declared_attributes(
                     targets = list(member.targets)
                 for target in targets:
                     if isinstance(target, ast.Name) and not _is_private_name(target.id):
-                        if not nested_private:
-                            found.append((nested_prefix, target.id))
+                        if (
+                            not nested_private
+                            and (target.id, DECLARED_FIELD) not in seen
+                        ):
+                            seen.add((target.id, DECLARED_FIELD))
+                            found.append((nested_prefix, target.id, DECLARED_FIELD))
+                if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    if not nested_private and not _is_private_name(member.name):
+                        key = (member.name, DECLARED_MEMBER)
+                        if key not in seen:
+                            seen.add(key)
+                            found.append((nested_prefix, member.name, DECLARED_MEMBER))
+                    if not nested_private:
+                        for node in ast.walk(member):
+                            assigned = _self_assigned_name(node)
+                            if assigned is None or _is_private_name(assigned):
+                                continue
+                            key = (assigned, DECLARED_INSTANCE)
+                            if key not in seen:
+                                seen.add(key)
+                                found.append(
+                                    (nested_prefix, assigned, DECLARED_INSTANCE)
+                                )
             found.extend(
                 _declared_attributes(statement.body, nested_prefix, nested_private)
             )
@@ -223,6 +452,35 @@ def _declared_attributes(
             found.extend(
                 _declared_attributes(getattr(statement, "body", []), prefix, private)
             )
+    return found
+
+
+def _self_assigned_name(node: ast.AST) -> str | None:
+    """The name in a `self.name = ...` assignment, if that is what `node` is."""
+
+    if not isinstance(node, ast.Attribute) or not isinstance(node.ctx, ast.Store):
+        return None
+    if not isinstance(node.value, ast.Name) or node.value.id != "self":
+        return None
+    return node.attr
+
+
+def _declared_definitions(
+    body: list[ast.stmt], prefix: str, private: bool
+) -> list[tuple[str, str, str]]:
+    """Public module-level function and class names, as (qualname, name, kind).
+
+    Only names declared at module scope count: a definition nested inside a
+    private class or function is not reachable without going through that owner,
+    which the attribute surface already covers.
+    """
+
+    found: list[tuple[str, str, str]] = []
+    for statement in body:
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            kind = "class" if isinstance(statement, ast.ClassDef) else "function"
+            if not private and not _is_private_name(statement.name):
+                found.append((f"{prefix}{statement.name}", statement.name, kind))
     return found
 
 
@@ -277,27 +535,275 @@ def public_parameter_names(package_root: Path | None = None) -> frozenset[str]:
     return frozenset(names)
 
 
-def public_attribute_names(package_root: Path | None = None) -> tuple[str, ...]:
-    """Annotated or assigned class attributes on the public surface that say wire.
+def _attribute_sites(root: Path) -> list[tuple[str, str, str, str]]:
+    """Every public class name, as (module, owner, name, declaration kind).
 
-    A second surface, measured but not ledgered: the same rename has to reach
-    `MeasurementResult.wires` and `ExecutionPlan.shardable_wires`, and the
-    parameter ledger cannot see either. Reporting the count keeps the gap a
-    number rather than an impression, and names the slice that must extend the
-    gate before it lands.
+    One walk shared by the total, the forbidden-namespace check, and the split, so
+    the three cannot disagree about what the surface contains or how it is spelled.
     """
 
-    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
-    found: list[str] = []
+    found: list[tuple[str, str, str, str]] = []
     for path in sorted(root.rglob("*.py")):
         if not is_public_module(path, root):
             continue
         relative = path.relative_to(root.parent).as_posix()
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        for qualname, attribute in _declared_attributes(tree.body, "", False):
-            if "wire" in attribute:
-                found.append(f"{relative}::{qualname}::{attribute}")
-    return tuple(sorted(found))
+        for qualname, name, declaration in _declared_attributes(tree.body, "", False):
+            found.append((relative, qualname.rstrip("."), name, declaration))
+    return found
+
+
+def public_attribute_names(package_root: Path | None = None) -> tuple[str, ...]:
+    """Public class attributes and members that say wire.
+
+    A second surface: the same rename has to reach `MeasurementResult.wires`,
+    `ExecutionPlan.shardable_wires`, and `Circuit.n_wires`, and the parameter
+    ledger cannot see any of them. `attribute_census` splits this list into the
+    names a slice may rename and the spellings that are payload keys; this function
+    stays as the total, so the split can be reconciled against it.
+    """
+
+    return tuple(
+        identifier
+        for identifier in all_public_attribute_names(package_root)
+        if "wire" in identifier.rsplit("::", 1)[1]
+    )
+
+
+def all_public_attribute_names(package_root: Path | None = None) -> tuple[str, ...]:
+    """Every public class name, wire-named or not.
+
+    The forbidden-alternative rule needs the whole namespace: `qubit_indices`
+    contains no `wire`, so a scan that looks for `wire` never sees the spelling a
+    rule forbids.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    return tuple(
+        sorted(
+            f"{path}::{owner}::{name}"
+            for path, owner, name, _ in _attribute_sites(root)
+        )
+    )
+
+
+def _definition_sites(root: Path) -> list[tuple[str, str, str]]:
+    """Every module-level public definition, as (module, name, kind)."""
+
+    found: list[tuple[str, str, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        if not is_public_module(path, root):
+            continue
+        relative = path.relative_to(root.parent).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        for _, name, kind in _declared_definitions(tree.body, "", False):
+            found.append((relative, name, kind))
+    return found
+
+
+def definition_census(package_root: Path | None = None) -> DefinitionCensus:
+    """Every wire-named module-level public function or class name.
+
+    Renaming a parameter without renaming the function that declares it leaves the
+    spelling on the user's screen, and no other surface sees it: `infer_n_wires_from_dense_state`
+    is a name, not a parameter and not a class attribute. No name is excluded --
+    see the module docstring for the four literal sites that were checked by hand.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    ledgered = [
+        DefinitionSite(path, name, kind)
+        for path, name, kind in _definition_sites(root)
+        if "wire" in name
+    ]
+    return DefinitionCensus(tuple(ledgered))
+
+
+@dataclass(frozen=True)
+class _PayloadIndex:
+    """Why an attribute's spelling reaches a payload, and which class proves it.
+
+    The witness is not decoration. An exclusion has to be argued for by name
+    ("a key of the `ExecutionPlan` payload"), not by a rule ("looks serialized"),
+    because the reader has to be able to check it and to know what event would
+    retire it.
+    """
+
+    witnesses: dict[str, tuple[str, str]]
+
+    def evidence(self, owner: str) -> tuple[str, str]:
+        """The kind of evidence for `owner` and the class that witnesses it."""
+
+        return self.witnesses.get(owner, ("", ""))
+
+
+def _annotation_names(annotation: ast.expr) -> tuple[str, ...]:
+    """Every identifier an annotation mentions, including inside a string form."""
+
+    names: list[str] = []
+    for part in ast.walk(annotation):
+        if isinstance(part, ast.Name):
+            names.append(part.id)
+        elif isinstance(part, ast.Constant) and isinstance(part.value, str):
+            names.extend(re.findall(r"[A-Za-z_][A-Za-z_0-9]*", part.value))
+    return tuple(names)
+
+
+def _is_serialization_method(member: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Whether a class member is one of the class's own payload entry points.
+
+    A method counts when its name is a known serializer, or when it calls
+    `asdict(self)`, which builds a payload keyed by the class's field names.
+    """
+
+    if member.name in SERIALIZATION_METHODS:
+        return True
+    for call in ast.walk(member):
+        if not (
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "asdict"
+        ):
+            continue
+        if any(
+            isinstance(argument, ast.Name) and argument.id == "self"
+            for argument in call.args
+        ):
+            return True
+    return False
+
+
+def _payload_index(root: Path) -> _PayloadIndex:
+    """Build the structural evidence for which attribute spellings become keys.
+
+    This exists because the obvious rule does not work: a scan for string
+    literals finds zero of the attribute names, since `dataclasses.asdict` turns
+    each field name into a key without any literal appearing in the source.
+    """
+
+    trees: dict[str, ast.Module] = {}
+    for path in sorted(root.rglob("*.py")):
+        if is_public_module(path, root):
+            trees[path.relative_to(root.parent).as_posix()] = ast.parse(
+                path.read_text(encoding="utf-8"), filename=path.name
+            )
+
+    serializing: set[str] = set()
+    nested: dict[str, str] = {}
+    field_types: dict[str, set[str]] = {}
+    for tree in trees.values():
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            field_types.setdefault(node.name, set())
+            for member in node.body:
+                if isinstance(member, ast.AnnAssign):
+                    field_types[node.name].update(_annotation_names(member.annotation))
+                elif isinstance(member, ast.Assign) and member.value is not None:
+                    field_types[node.name].update(_annotation_names(member.value))
+                if not isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if _is_serialization_method(member):
+                    serializing.add(node.name)
+                for call in ast.walk(member):
+                    if not (
+                        isinstance(call, ast.Call)
+                        and isinstance(call.func, ast.Name)
+                        and call.func.id == "asdict"
+                    ):
+                        continue
+                    for argument in (*call.args, *(kw.value for kw in call.keywords)):
+                        if argument is None:
+                            continue
+                        for part in ast.walk(argument):
+                            if isinstance(part, ast.Name) and part.id != "self":
+                                nested.setdefault(part.id, node.name)
+
+    witnesses: dict[str, tuple[str, str]] = {}
+    for witness in sorted(serializing):
+        witnesses.setdefault(witness, ("serialization_method", witness))
+    for witness in sorted(serializing):
+        for owner in sorted(field_types.get(witness, ())):
+            if owner != witness:
+                witnesses.setdefault(owner, ("contained", witness))
+    for owner, witness in sorted(nested.items()):
+        witnesses.setdefault(owner, ("nested", witness))
+    return _PayloadIndex(witnesses)
+
+
+def _member_literal_index(root: Path) -> dict[str, str]:
+    """Which member or instance spellings a class's own serialization methods use.
+
+    A member needs its own evidence rule because the field rule is wrong for it:
+    `dataclasses.asdict` walks fields, so it can never emit a property's name, and
+    applying the class-level `serialization_method` witness to members excluded
+    `KrausChannel.n_wires` and `MPSState.n_wires`, neither of which can leave the
+    process. An instance attribute (`TextDrawer().wire_order`) is in the same
+    position for the same reason: it is not a dataclass field. Scoping the literal
+    scan to the owning class's serialization methods is what makes it exact:
+    `RuntimePolicy.from_dict` accepts `observable_wires`, so that spelling is an
+    input key, while `Circuit.circuit_param` -- the one case that made a
+    class-wide literal scan look attractive -- is an in-process dict that no
+    serializer emits.
+    """
+
+    index: dict[str, str] = {}
+    for path in sorted(root.rglob("*.py")):
+        if not is_public_module(path, root):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=path.name)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            for member in node.body:
+                if not isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not _is_serialization_method(member):
+                    continue
+                for part in ast.walk(member):
+                    if isinstance(part, ast.Constant) and isinstance(part.value, str):
+                        index.setdefault(
+                            f"{node.name}::{part.value}", f"{node.name}.{member.name}"
+                        )
+    return index
+
+
+def attribute_census(package_root: Path | None = None) -> AttributeCensus:
+    """Split wire-named attributes by whether their spelling is a payload key.
+
+    The split is the whole point. A `wire`-named attribute is either a name the
+    migration will rename or a spelling that already leaves the process as a
+    serialized key, and the cheap way to tell them apart -- look for the name as
+    a string literal -- gets it wrong in both directions: one payload key here is
+    produced by `dataclasses.asdict` and therefore has no literal to find, and 65
+    names that are merely attribute accesses inherit a literal from an unrelated
+    use of the same word. See the module docstring for the measurement.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    index = _payload_index(root)
+    ledgered: list[AttributeSite] = []
+    excluded: list[AttributeSite] = []
+    literals = _member_literal_index(root)
+    for path, owner, attribute, declaration in _attribute_sites(root):
+        if "wire" not in attribute:
+            continue
+        if declaration in (DECLARED_MEMBER, DECLARED_INSTANCE):
+            witness = literals.get(f"{owner}::{attribute}", "")
+            evidence = "payload_literal" if witness else ""
+        else:
+            evidence, witness = index.evidence(owner)
+        site = AttributeSite(
+            path,
+            owner,
+            attribute,
+            declaration,
+            PERSISTED_ATTRIBUTE if evidence else LEDGERED_ATTRIBUTE,
+            evidence,
+            witness,
+        )
+        (excluded if evidence else ledgered).append(site)
+    return AttributeCensus(tuple(ledgered), tuple(excluded))
 
 
 def message_strings(package_root: Path | None = None) -> tuple[str, ...]:
@@ -335,8 +841,28 @@ def main() -> int:
     print("deprecated aliases:")
     for site in scanned.aliases:
         print(f"  {site.identifier} -> {site.replacement}")
-    print("measured but not ledgered:")
-    print(f"  {len(public_attribute_names()):4d}  public attribute names")
+    attributes = attribute_census()
+    fields = sum(1 for site in attributes.ledgered if site.declaration == "field")
+    members = sum(1 for site in attributes.ledgered if site.declaration == "member")
+    print(
+        "attribute surface: "
+        f"{len(attributes.ledgered)} canonical names to rename "
+        f"({fields} fields and {members} members) and "
+        f"{len(attributes.excluded)} persisted keys to leave alone"
+    )
+    for site in attributes.excluded:
+        print(
+            f"  persisted  {site.identifier}  ({site.evidence} by {site.witness}) "
+            f"-> {site.replacement}"
+        )
+    definitions = definition_census()
+    print(
+        "definition surface: "
+        f"{len(definitions.ledgered)} module-level public names to rename"
+    )
+    for site in definitions.ledgered:
+        print(f"  {site.kind:8} {site.identifier} -> {site.replacement}")
+    print("reported but not ledgered:")
     print(f"  {len(message_strings()):4d}  string literals")
     return 0
 
