@@ -47,7 +47,7 @@ import torch
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from .circuit import MeasurementRef, MemoryCircuit
-from .codes import StabilizerCode
+from .codes import CodeCheck, StabilizerCode
 from .noise import PhenomenologicalNoise
 
 __all__ = ("CssCodeMatrices", "css_code_matrices")
@@ -169,17 +169,22 @@ def _code_matrix_entries(
 
     Every data qubit the noise reaches contributes one mechanism per round per
     fault family, and every check the noise reaches contributes one measurement
-    mechanism per round. An entry that flips nothing at all -- a qubit outside
-    every check and outside every logical operator -- is not a mechanism a model
-    can store, and an entry whose signature another entry already has is one fault
-    to a decoder. Both are resolved where every construction route resolves them,
-    in ``DetectorErrorModel._merge_mechanisms``, by the independent-parity rule.
+    mechanism per round, where "reaches" is the element's own effective rate: a
+    per-qubit or per-check vector states one rate per location, and a location
+    whose rate is zero is not enumerated at all. An entry that flips nothing at
+    all -- a qubit outside every check and outside every logical operator -- is
+    not a mechanism a model can store, and an entry whose signature another entry
+    already has is one fault to a decoder. Both are resolved where every
+    construction route resolves them, in ``DetectorErrorModel._merge_mechanisms``,
+    by the independent-parity rule.
 
     Raises:
         TypeError: If ``noise`` is not a
             :class:`~flagquantum.qec.PhenomenologicalNoise`.
-        ValueError: If ``num_rounds`` is below one, or if the matrices declare no
-            check -- a model needs at least one detector.
+        ValueError: If ``num_rounds`` is below one, if the matrices declare no
+            check -- a model needs at least one detector -- or if a per-element
+            rate vector the noise states does not name every data qubit or every
+            check the matrices declare.
     """
 
     if isinstance(num_rounds, bool) or not isinstance(num_rounds, Integral):
@@ -205,6 +210,14 @@ def _code_matrix_entries(
         )
     num_z_logicals = matrices.num_z_logicals
 
+    # A vector's length is stated against the code, and the matrices are the
+    # code here: one column per data qubit and one row per check, Z-type checks
+    # first, which is the order `measurement_flip_per_check` is indexed in.
+    data_flip_rates = noise.data_flip_rates(num_qubits=num_qubits)
+    phase_flip_rates = noise.phase_flip_rates(num_qubits=num_qubits)
+    both_flip_rates = noise.both_flip_rates(num_qubits=num_qubits)
+    measurement_flip_rates = noise.measurement_flip_rates(num_checks=num_checks)
+
     hz_columns = _column_supports(matrices.hz, num_qubits)
     hx_columns = _column_supports(matrices.hx, num_qubits)
     lz_columns = _column_supports(matrices.lz, num_qubits)
@@ -215,6 +228,13 @@ def _code_matrix_entries(
         following = band + num_checks
         has_next = round_index + 1 < rounds
         for qubit in range(num_qubits):
+            data_rate = data_flip_rates[qubit]
+            phase_rate = phase_flip_rates[qubit]
+            both_rate = both_flip_rates[qubit]
+            if not (data_rate or phase_rate or both_rate):
+                # A location that cannot fire is not a mechanism, so it is not
+                # enumerated and does not become a zero-rate column.
+                continue
             # An X fault reaches the Z-type checks, an X-type check being blind to
             # it, and the same for the Z fault and the X-type checks. A Y fault is
             # the two of them at once and therefore reaches both blocks.
@@ -227,24 +247,26 @@ def _code_matrix_entries(
                 )
             z_logicals = lz_columns[qubit]
             x_logicals = tuple(num_z_logicals + row for row in lx_columns[qubit])
-            if noise.data_flip:
-                entries.append((noise.data_flip, tuple(z_block), tuple(z_logicals)))
-            if noise.phase_flip:
-                entries.append((noise.phase_flip, tuple(x_block), tuple(x_logicals)))
-            if noise.both_flip:
+            if data_rate:
+                entries.append((data_rate, tuple(z_block), tuple(z_logicals)))
+            if phase_rate:
+                entries.append((phase_rate, tuple(x_block), tuple(x_logicals)))
+            if both_rate:
                 entries.append(
                     (
-                        noise.both_flip,
+                        both_rate,
                         tuple(z_block) + tuple(x_block),
                         tuple(z_logicals) + tuple(x_logicals),
                     )
                 )
-        if noise.measurement_flip:
-            for check in range(num_checks):
-                detectors = [band + check]
-                if has_next:
-                    detectors.append(following + check)
-                entries.append((noise.measurement_flip, tuple(detectors), ()))
+        for check in range(num_checks):
+            measurement_rate = measurement_flip_rates[check]
+            if not measurement_rate:
+                continue
+            detectors = [band + check]
+            if has_next:
+                detectors.append(following + check)
+            entries.append((measurement_rate, tuple(detectors), ()))
     return rounds * num_checks, matrices.num_observables, tuple(entries)
 
 
@@ -469,6 +491,33 @@ class _Mechanism:
     probability: float
 
 
+def _check_rate_order(checks: tuple[CodeCheck, ...]) -> tuple[int, ...]:
+    """Return each declared check's index in the matrix row order.
+
+    ``measurement_flip_per_check`` is indexed the way upstream's ``pm_per_check``
+    is and the way :func:`css_code_matrices` builds its rows: every Z-type check
+    first, in declaration order, and then every X-type check. A code is free to
+    declare its checks in any order -- the rotated surface code declares them in
+    lattice order, which interleaves the two types -- so the position a check has
+    in that declaration is not the index its rate is stated at, and this is the
+    translation between the two. The two lists partition the checks rather than
+    overlapping: :class:`~flagquantum.qec.CodeCheck` refuses a stabilizer that is
+    neither pure X-type nor pure Z-type, so every check lands in exactly one of
+    them and no check is left without a row.
+    """
+
+    z_positions = [
+        position for position, check in enumerate(checks) if check.stabilizer.z_wires
+    ]
+    x_positions = [
+        position for position, check in enumerate(checks) if check.stabilizer.x_wires
+    ]
+    order = [0] * len(checks)
+    for row, position in enumerate((*z_positions, *x_positions)):
+        order[position] = row
+    return tuple(order)
+
+
 def _mechanisms(
     circuit: MemoryCircuit, noise: PhenomenologicalNoise
 ) -> tuple[_Mechanism, ...]:
@@ -477,8 +526,17 @@ def _mechanisms(
     Data flips come first — one per round per data wire — and measurement flips
     second, one per round per check. Both loops walk the code's own tuples in
     order, which is the order the emitted program measures in. A location whose
-    probability is zero cannot flip anything, so it is not enumerated at all: a
-    caller that counts mechanisms then counts exactly what can happen.
+    **own** probability is zero cannot flip anything, so it is not enumerated at
+    all: a caller that counts mechanisms then counts exactly what can happen, and
+    a per-element vector is how a caller states that one location is quiet while
+    its neighbours are not.
+
+    The probability a location is enumerated with is the element of the vector
+    that names it, or the scalar when no vector is stated, and the element is
+    resolved through the same accessors the matrix route uses, so the two routes
+    cannot read one vector two ways. The per-check vector is indexed in the matrix
+    row order rather than in the code's declaration order, which is what
+    :func:`_check_rate_order` translates.
 
     A code that declares a data wire twice is refused rather than enumerated
     twice. Its second copy would be the same physical location as the first
@@ -492,6 +550,10 @@ def _mechanisms(
     anchor is the measurement line, so a model built from data flips alone never
     reaches it — which is why the refusal is stated here, before any mechanism
     is enumerated.
+
+    Raises:
+        ValueError: If a per-element rate vector the noise states does not name
+            every data wire or every check the code declares.
     """
 
     data_wires = circuit.code.data_wires
@@ -500,7 +562,8 @@ def _mechanisms(
             "the code declares a repeated data wire, so a mechanism at that "
             "location would be enumerated twice and merged with itself"
         )
-    ancilla_wires = [check.ancilla_wire for check in circuit.code.checks]
+    checks = tuple(circuit.code.checks)
+    ancilla_wires = [check.ancilla_wire for check in checks]
     if len(set(ancilla_wires)) != len(ancilla_wires):
         repeated = sorted(
             wire for wire in set(ancilla_wires) if ancilla_wires.count(wire) > 1
@@ -510,27 +573,32 @@ def _mechanisms(
             "two checks record one syndrome bit, so the model would read the "
             "same bit for both"
         )
+    data_flip_rates = noise.data_flip_rates(num_qubits=len(data_wires))
+    measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
+    rate_order = _check_rate_order(checks)
     mechanisms: list[_Mechanism] = []
-    if noise.data_flip:
-        for round_index in range(circuit.rounds):
-            for wire in data_wires:
+    for round_index in range(circuit.rounds):
+        for position, wire in enumerate(data_wires):
+            rate = data_flip_rates[position]
+            if rate:
                 mechanisms.append(
                     _Mechanism(
                         kind="data",
                         round_index=round_index,
                         wire=wire,
-                        probability=noise.data_flip,
+                        probability=rate,
                     )
                 )
-    if noise.measurement_flip:
-        for round_index in range(circuit.rounds):
-            for check in circuit.code.checks:
+    for round_index in range(circuit.rounds):
+        for position, check in enumerate(checks):
+            rate = measurement_flip_rates[rate_order[position]]
+            if rate:
                 mechanisms.append(
                     _Mechanism(
                         kind="measurement",
                         round_index=round_index,
                         wire=check.ancilla_wire,
-                        probability=noise.measurement_flip,
+                        probability=rate,
                     )
                 )
     return tuple(mechanisms)

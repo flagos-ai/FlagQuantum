@@ -231,3 +231,35 @@ def test_checked_in_measurement_artifacts_are_complete() -> None:
     assert stability["correctness_passed"] is True
     assert stability["all_measurements_stable"] is True
     assert len(stability["cases"]) == 4
+
+
+def test_cpu_phase_closeout_is_stable_correct_and_keeps_framework_margin() -> None:
+    comparison = REPOSITORY_ROOT / "benchmarks" / "results" / "comparison"
+    payload = json.loads(
+        (
+            comparison
+            / "batched_statevector_cpu_phase_closeout_cpu_arm64_20261003.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert payload["schema"] == "flagquantum.batched_statevector_memory.v1"
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["scalability_claim_allowed"] is False
+    assert len(payload["cases"]) == 5
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        assert (
+            case["comparison"]["engine_over_flagquantum_batch_median"][
+                "pennylane_lightning_native_batch"
+            ]
+            >= 1.30
+        )
+        for engine in (
+            "flagquantum_native_batch",
+            "pennylane_lightning_native_batch",
+        ):
+            result = case["engines"][engine]
+            assert result["batch_total"]["sample_count"] == 11
+            assert result["isolated_memory"]["sample_count"] == 3

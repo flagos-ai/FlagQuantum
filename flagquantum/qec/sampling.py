@@ -43,6 +43,7 @@ from ..noise import bit_flip_channel
 from ..simulation.stabilizer import sample_noisy_measurements
 from .circuit import MeasurementRef, MemoryCircuit
 from .dem import DemSample
+from .dem_construction import _check_rate_order
 from .noise import PhenomenologicalNoise
 
 _MEASURE_OPCODE = "measure"
@@ -70,12 +71,19 @@ class _MeasurementPlan:
 
 @dataclass(frozen=True)
 class _NoiseLocation:
-    """One noise mechanism and the instruction it is placed before."""
+    """One noise mechanism, the instruction it is placed before, and its rate.
+
+    The rate is carried rather than looked up at placement because a per-element
+    vector gives every location its own: a location is built only where its own
+    effective rate is nonzero, and the channel placed there is that rate's
+    channel rather than the family's scalar.
+    """
 
     kind: Literal["data", "measurement"]
     round_index: int
     wire: int
     instruction_index: int
+    probability: float
 
 
 def _checked_shots(shots: int) -> int:
@@ -179,56 +187,73 @@ def _noise_locations(
 
     A data location sits before the round's first instruction for every data
     wire; a measurement location sits before the readout of the check it
-    corrupts. Both are dropped here rather than at placement when their
-    probability is zero, so the caller never pays for a channel that cannot
-    fire.
+    corrupts. Each location carries the rate that named it -- the element of the
+    vector, or the scalar when no vector is stated -- and a location whose own
+    rate is zero is dropped here rather than at placement, so the caller never
+    pays for a channel that cannot fire and a per-element vector is how one quiet
+    location between two noisy ones is stated.
+
+    The per-check vector is indexed in the matrix row order, Z-type checks first,
+    which is not the declaration order the plan's offsets are in; the two are
+    related by :func:`~flagquantum.qec.dem_construction._check_rate_order`, the
+    same translation the construction routes use, so a rate cannot name one check
+    here and another there.
+
+    Raises:
+        ValueError: If a per-element rate vector the noise states does not name
+            every data wire or every check the code declares.
     """
 
+    checks = tuple(memory.code.checks)
+    data_flip_rates = noise.data_flip_rates(num_qubits=len(memory.code.data_wires))
+    measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
+    rate_order = _check_rate_order(checks)
     locations: list[_NoiseLocation] = []
-    if noise.data_flip:
-        for round_index in range(memory.rounds):
-            start = round_index * plan.block
-            locations.extend(
-                _NoiseLocation("data", round_index, int(wire), start)
-                for wire in memory.code.data_wires
+    for round_index in range(memory.rounds):
+        start = round_index * plan.block
+        locations.extend(
+            _NoiseLocation(
+                "data", round_index, int(wire), start, data_flip_rates[position]
             )
-    if noise.measurement_flip:
-        for round_index in range(memory.rounds):
-            start = round_index * plan.block
-            locations.extend(
-                _NoiseLocation(
-                    "measurement",
-                    round_index,
-                    int(check.ancilla_wire),
-                    start + plan.measure_offsets[position],
-                )
-                for position, check in enumerate(memory.code.checks)
+            for position, wire in enumerate(memory.code.data_wires)
+            if data_flip_rates[position]
+        )
+    for round_index in range(memory.rounds):
+        start = round_index * plan.block
+        locations.extend(
+            _NoiseLocation(
+                "measurement",
+                round_index,
+                int(check.ancilla_wire),
+                start + plan.measure_offsets[position],
+                measurement_flip_rates[rate_order[position]],
             )
+            for position, check in enumerate(checks)
+            if measurement_flip_rates[rate_order[position]]
+        )
     return tuple(locations)
 
 
 def _noisy_program(
     plan: _MeasurementPlan,
     locations: Sequence[_NoiseLocation],
-    noise: PhenomenologicalNoise,
 ) -> CircuitIR:
     """Return the lowered program with one bit-flip channel per location.
 
     Locations are placed before the instruction they were derived for, which is
     what makes a data error a round-boundary error and a measurement error a
-    readout error. Every location handed in gets a channel: a family whose
-    probability is zero never produced a location, because
-    :func:`_noise_locations` drops it, and repeating that test here would only
-    hide which of the two is authoritative.
+    readout error. Every location handed in gets a channel at the rate that
+    location carries: a location whose effective rate is zero never produced one,
+    because :func:`_noise_locations` drops it, and the record is not consulted
+    here at all. Re-deriving the rate from the record would give two places that
+    decide what a location's rate is, and a per-element vector is exactly the
+    case where the two could answer differently.
     """
 
     by_index: dict[int, list[tuple[int, float]]] = {}
     for location in locations:
-        probability = (
-            noise.data_flip if location.kind == "data" else noise.measurement_flip
-        )
         by_index.setdefault(location.instruction_index, []).append(
-            (location.wire, float(probability))
+            (location.wire, float(location.probability))
         )
     instructions: list[Instruction] = []
     for index, instruction in enumerate(plan.program.instructions):
@@ -336,7 +361,7 @@ def sample_memory_circuit(
     seed = _checked_seed(seed)
     plan = _measurement_plan(circuit)
     locations = _noise_locations(circuit, plan, noise)
-    program = _noisy_program(plan, locations, noise)
+    program = _noisy_program(plan, locations)
     data_wires = tuple(circuit.code.data_wires)
     record = sample_noisy_measurements(
         program, shots=shots, terminal_wires=data_wires, seed=seed
