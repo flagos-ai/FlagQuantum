@@ -206,6 +206,27 @@ development evidence, not a multi-rank scalability or release claim. Reproduce
 or validate it with
 [`benchmarks/statevector_local_cx_segment_dispatch.py`](../../benchmarks/statevector_local_cx_segment_dispatch.py).
 
+`FQKI-TRITON-SV-004-A` fuses a local RY followed by RZ into one out-of-place
+statevector pass. Automatic dispatch is enabled only for contiguous CUDA
+`complex64` states with shape `(1, 2**20)` or `(1, 2**24)`. Set
+`FQ_TRITON_RY_RZ_PAIR=0` to disable it, or set it to `1` to opt into another
+supported shape.
+
+The checked-in
+[`statevector_ry_rz_pair_dispatch_a800.json`](../../benchmarks/results/local/statevector_ry_rz_pair_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations for three wire
+positions at `2**20` amplitudes and one at `2**24`, plus an excluded `2**8`
+boundary, on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and
+FlagTree 0.7.0. Maximum absolute error is below `5.4e-7`. The default window
+reaches `2.201x` to `11.896x` the speed of the same fused matrix through the
+PyTorch layout-and-batched-matmul path. The excluded boundary shows why
+dispatch is shape-gated: FlagTree reaches only `0.685x` to `0.694x` there.
+The runner rejects any default-eligible case below its `1.0x` floor, so SV-004-A
+is `provisional` inside this exact measured window. This is bounded
+single-device development evidence, not a multi-rank scalability or release
+claim. Reproduce or validate it with
+[`benchmarks/statevector_ry_rz_pair_dispatch.py`](../../benchmarks/statevector_ry_rz_pair_dispatch.py).
+
 `FQKI-FLAGTREE-SV-006-A` applies the same explicit provider boundary to the
 fused distributed transpose and one-qubit gate. TLE async annotations cover
 both the retained local half-shard and the received remote half-shard; matrix
@@ -746,9 +767,9 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. SV-001-A,
-SV-002-A, SV-003-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are
-provisional after their evidenced default-dispatch promotions; the other 22
-implementations remain experimental.
+SV-002-A, SV-003-A, SV-004-A, MPS-003 through MPS-007, and MEAS-001 through
+MEAS-003 are provisional after their evidenced default-dispatch promotions;
+the other 21 implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

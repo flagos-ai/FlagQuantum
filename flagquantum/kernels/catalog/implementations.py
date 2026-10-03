@@ -108,6 +108,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "ry_rz_pair",
         layouts=("flat_statevector",),
         directions=("forward",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-005-A",
