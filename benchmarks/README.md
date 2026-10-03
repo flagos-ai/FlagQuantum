@@ -518,3 +518,9 @@ capacity baseline in its own declared directory outside
 `benchmarks/results/scalability/`: the strict audit requires every file in the
 promoted directory to be release-grade sharded scalability evidence, and a
 one-device run never can be.
+
+Both entry points read that baseline from the manifest's declared path, so the
+four commands above need no extra argument. `--baseline-directory` overrides it
+for a set whose baseline was measured elsewhere, which is what the contract
+tests use to hold a self-contained candidate set; the baseline is evaluated with
+the candidates and never moved, because one device has no ranks to shard across.

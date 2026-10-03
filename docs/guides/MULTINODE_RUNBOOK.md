@@ -482,20 +482,35 @@ the amplitude-sharded statevector workload:
 - an owner-sharded optimizer step;
 - a checkpoint written by one run and resumed by a restarted one, with the
   resumed leg reproducing exactly the steps the uninterrupted run computed
-  after the checkpoint.
+  after the checkpoint;
+- a full-state export, which reassembles the amplitude shards through the
+  runtime's own `gather_distributed_statevector` and times that gather. The
+  exported state is the product, the gather is what produces it, and the leg
+  records the canonical logical basis order plus a per-iteration comparison
+  against the single-device reference, so the vector and its duration cannot come
+  from different calls. Its durations are never read as a speedup; an all-gather
+  has none to report.
 
 Every numerical metric in it is at round-off, both ranks own half the
 amplitudes, and the communication it reports is inter-node with none
 intra-node. Its route was read from the NCCL debug log as RoCE rather than the
 socket fallback, on the interface the plan was given, and it carries five
-synchronized forward samples taken after two warmups. It carries four blockers
--- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_state_gather` and
-`host_staging_in_measured_region` -- and reports `scalability_claim_allowed`
-and `release_gate_allowed` false. The last of those four is a finding rather
-than a gap: the staging audit ran and found host transfers inside the region it
-profiled, so part of each measured sample is host staging rather than device
-work.
+synchronized forward samples taken after two warmups. It carries two blockers
+-- `toy_circuit_parameters_only` and `two_node_pair_only_no_wider_topology` --
+and reports `scalability_claim_allowed` and `release_gate_allowed` false.
+
+Two blockers were retired by observation rather than by declaration. The staging
+audit now profiles the measured region and finds no explicit host transfer in
+it, so each sample is device work end to end. And the probe exports the whole
+amplitude vector as the product of a leg of its own: the amplitude shards are
+reassembled by the runtime's own gather, the leg records the canonical logical
+basis order and compares the assembled vector against the single-device
+reference as it is taken, and it times the gather so the vector and its duration
+cannot come from different calls. That is a materialization the workload needs,
+not a full-object gather taken to check an answer, so
+`validation_only_tiny_full_state_gather` is gone. The two blockers that remain
+are the pair's own scope and the circuit's own size; no measurement on this
+hardware can retract either.
 
 `artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json` covers the
 site-sharded MPS workload. Six wires at two ranks gives three owned sites per

@@ -68,6 +68,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help="where promoted release payloads live; defaults to the gate's own",
     )
+    parser.add_argument(
+        "--baseline-directory",
+        type=Path,
+        help=(
+            "provenance directory holding the single-device capacity baseline, "
+            "overriding the gate's declared path. The baseline is evaluated with "
+            "the candidates but is never moved: one device has no ranks to shard "
+            "across, so it can never be a release payload."
+        ),
+    )
     args = parser.parse_args(argv)
 
     gate, evaluate = _load_gate(args.gate)
@@ -84,7 +94,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     candidates = sorted(args.candidate.glob("*.json"))
     if not candidates:
         raise SystemExit(f"no candidate artifacts under {args.candidate}")
-    artifacts = [json.loads(path.read_text(encoding="utf-8")) for path in candidates]
+    # The gate reads two evidence roles: the release payloads being promoted and
+    # any provenance directory it declares, such as the single-device capacity
+    # baseline. That baseline can never be a release payload -- one device has no
+    # ranks to shard across -- so it is evaluated here, exactly as the gate's own
+    # entry point evaluates it, and left where it is when the payloads move.
+    provenance: list[Path] = []
+    declared_baseline = getattr(gate, "baseline_results", None)
+    if args.baseline_directory is not None:
+        if declared_baseline is None:
+            raise SystemExit(f"the {args.gate} gate reads no single-device baseline")
+        provenance = sorted(args.baseline_directory.glob("*.json"))
+    elif declared_baseline is not None:
+        directory = declared_baseline(manifest)
+        provenance = sorted(directory.glob("*.json"))
+    artifacts = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in [*provenance, *candidates]
+    ]
     passed, blockers = evaluate(artifacts, manifest, signing_key=signing_key)
     if not passed:
         raise SystemExit(

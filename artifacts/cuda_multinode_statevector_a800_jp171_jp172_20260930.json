@@ -1,36 +1,107 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T23:04:37.283693+00:00",
+    "captured_at": "2026-10-03T08:08:07.246608+00:00",
     "claim_blockers": [
-      "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
-      "two_node_pair_only_no_wider_topology",
-      "validation_only_tiny_full_state_gather"
+      "two_node_pair_only_no_wider_topology"
     ],
     "environment": {
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "591401fac230213aa73a3b253a89aa2ef919e510",
+      "source_revision": "e339c225bd1b246c63994bb17d015b36f0106908",
       "torch": "2.13.0+cu130"
     },
     "observations": {
+      "export": {
+        "amplitude_vector_sha256": "6528ae1e22ce1926e44a56d967062dcf3429534a237a310853888824419a2f08",
+        "gather": {
+          "maximum_seconds": 0.0002536233514547348,
+          "measured": true,
+          "measured_iterations": 5,
+          "measurement": "distributed_statevector_full_state_export",
+          "median_seconds": 0.0002458672970533371,
+          "minimum_seconds": 0.00023941881954669952,
+          "seconds": [
+            0.0002536233514547348,
+            0.00025001540780067444,
+            0.0002416130155324936,
+            0.0002458672970533371,
+            0.00023941881954669952
+          ],
+          "synchronized": true,
+          "warmup_iterations": 2
+        },
+        "gather_cost_semantics": "every_rank_receives_every_other_ranks_shard_and_keeps_the_whole_state",
+        "max_abs_error": 0.0,
+        "measurement": "distributed_statevector_full_state_export",
+        "operation": "all_gather",
+        "operation_semantics": "explicit_full_state_gather",
+        "product": "full_amplitude_vector",
+        "product_is_the_full_state": true,
+        "result": {
+          "amplitude_basis_order": "canonical_logical",
+          "blockers": [
+            "full_state_gather_is_not_a_scaling_result"
+          ],
+          "bsz": 1,
+          "claim_evidence_type": "production_runtime",
+          "distribution_semantics": "replicated_per_rank",
+          "executor": "distributed_statevector_full_state_gather_v1",
+          "full_state_bytes": 512,
+          "full_state_materialization": true,
+          "gather_bytes_per_rank": 256,
+          "gather_cost_semantics": "every_rank_receives_every_other_ranks_shard_and_keeps_the_whole_state",
+          "local_block_bytes": 256,
+          "local_world_size": 1,
+          "logical_to_physical_wires": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "n_wires": 5,
+          "node_count": 2,
+          "operation": "all_gather",
+          "operation_semantics": "explicit_full_state_gather",
+          "peak_resident_bytes_per_rank": 768,
+          "rank_global_index_map": [
+            {
+              "global_offset": 0,
+              "global_stride": 2,
+              "local_amplitudes": 16,
+              "placement": "strided_rank_address_bit",
+              "rank": 0
+            },
+            {
+              "global_offset": 1,
+              "global_stride": 2,
+              "local_amplitudes": 16,
+              "placement": "strided_rank_address_bit",
+              "rank": 1
+            }
+          ],
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "state_partition": "qubit_address_sharded",
+          "total_amplitudes": 32,
+          "total_gather_bytes": 512,
+          "wire_layout": "canonical",
+          "world_size": 2
+        }
+      },
       "host_staging": {
-        "host_transfer_events": [
-          {
-            "count": 10,
-            "direction": "host_to_device",
-            "name": "Memcpy HtoD (Pageable -> Device)"
-          }
-        ],
-        "host_transfer_observed": true,
+        "host_transfer_events": [],
+        "host_transfer_observed": false,
         "profiled": true,
         "profiled_activities": [
           "ProfilerActivity.CPU",
           "ProfilerActivity.CUDA"
         ],
+        "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_statevector_forward",
-        "profiler_event_count": 96
+        "profiler_event_count": 100
       },
       "network": {
         "backend": "nccl",
@@ -38,7 +109,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "3232c1dac6a10e9c65a86e87f59ccd7ba2f87e88fe2070acbc5445c8adc9548a",
+        "debug_log_sha256": "4f6649c9aa64c30242d1bffcfcde51b7a8a6f55a647f22b16442316914199f57",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -58,24 +129,24 @@
         "training_loss_decrease": 0.008632771508185422
       },
       "performance": {
-        "maximum_seconds": 0.003207152709364891,
+        "maximum_seconds": 0.003289375454187393,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_statevector_forward",
-        "median_seconds": 0.003187054768204689,
-        "minimum_seconds": 0.002975454553961754,
+        "median_seconds": 0.0032656826078891754,
+        "minimum_seconds": 0.0032597407698631287,
         "n_wires": 5,
         "seconds": [
-          0.002975454553961754,
-          0.003025006502866745,
-          0.003187054768204689,
-          0.003207152709364891,
-          0.003196079283952713
+          0.0032860394567251205,
+          0.0032656826078891754,
+          0.003289375454187393,
+          0.0032597407698631287,
+          0.003261357545852661
         ],
         "synchronized": true,
         "warmup_iterations": 2
       },
-      "production_full_state_materialization": false,
+      "production_full_state_materialization": true,
       "rank_records": [
         {
           "amplitude_basis_order": "canonical_logical",
@@ -129,7 +200,9 @@
             "gradient_collective_count": 1,
             "gradient_distribution": "replicated_after_all_reduce",
             "gradient_method": "statevector_adjoint",
+            "gradient_ownership_semantics": "reduced_across_ranks",
             "gradient_reduction": "all_reduce_sum",
+            "gradient_reduction_scheme": "replicated_all_reduce",
             "kernel_dispatch": {
               "decisions": [
                 {
@@ -409,15 +482,19 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
-              "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
+              "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt",
+              "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
+            "communication_fraction": 0.2727272727272727,
             "completed_steps": 2,
             "distribution_semantics": "sharded_across_ranks",
             "executor": "pytorch_native_sharded_statevector_training_v1",
-            "gradient_ownership_semantics": "reduced_across_ranks",
+            "gradient_ownership_semantics": "sharded_across_ranks",
+            "gradient_reduction": "reduce_scatter_sum",
+            "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+            "local_state_bytes": 256,
             "local_world_size": 1,
             "losses": [
               0.9077758055611574,
@@ -427,14 +504,14 @@
             "optimizer": "sgd",
             "optimizer_ownership": [
               {
-                "gradient_reduction": "all_reduce_sum",
+                "gradient_reduction": "reduce_scatter_sum",
                 "optimizer_state_local": true,
                 "owner_rank": 0,
                 "parameter": "parameter:0",
                 "update_route": "owner_step_then_broadcast"
               },
               {
-                "gradient_reduction": "all_reduce_sum",
+                "gradient_reduction": "reduce_scatter_sum",
                 "optimizer_state_local": false,
                 "owner_rank": 1,
                 "parameter": "parameter:1",
@@ -445,7 +522,7 @@
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_update_semantics": "sharded_across_ranks",
             "parameter_ownership_semantics": "sharded_across_ranks",
-            "peak_memory_bytes": 17056256,
+            "peak_memory_bytes": 17059328,
             "progress_event_count": 21,
             "rank": 0,
             "release_gate_allowed": false,
@@ -508,7 +585,9 @@
             "gradient_collective_count": 1,
             "gradient_distribution": "replicated_after_all_reduce",
             "gradient_method": "statevector_adjoint",
+            "gradient_ownership_semantics": "reduced_across_ranks",
             "gradient_reduction": "all_reduce_sum",
+            "gradient_reduction_scheme": "replicated_all_reduce",
             "kernel_dispatch": {
               "decisions": [
                 {
@@ -788,15 +867,19 @@
               "release_capacity_and_multinode_acceptance_pending"
             ],
             "checkpoint_files": [
-              "/nfs/fq-multinode-tier-checkpoints/rank-1.pt",
-              "/nfs/fq-multinode-tier-checkpoints/rank-1.pt"
+              "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-1.pt",
+              "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-1.pt"
             ],
             "communication_bytes": 96,
             "communication_events": 12,
+            "communication_fraction": 0.2727272727272727,
             "completed_steps": 2,
             "distribution_semantics": "sharded_across_ranks",
             "executor": "pytorch_native_sharded_statevector_training_v1",
-            "gradient_ownership_semantics": "reduced_across_ranks",
+            "gradient_ownership_semantics": "sharded_across_ranks",
+            "gradient_reduction": "reduce_scatter_sum",
+            "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+            "local_state_bytes": 256,
             "local_world_size": 1,
             "losses": [
               0.9077758055611574,
@@ -806,14 +889,14 @@
             "optimizer": "sgd",
             "optimizer_ownership": [
               {
-                "gradient_reduction": "all_reduce_sum",
+                "gradient_reduction": "reduce_scatter_sum",
                 "optimizer_state_local": false,
                 "owner_rank": 0,
                 "parameter": "parameter:0",
                 "update_route": "owner_step_then_broadcast"
               },
               {
-                "gradient_reduction": "all_reduce_sum",
+                "gradient_reduction": "reduce_scatter_sum",
                 "optimizer_state_local": true,
                 "owner_rank": 1,
                 "parameter": "parameter:1",
@@ -824,7 +907,7 @@
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_update_semantics": "sharded_across_ranks",
             "parameter_ownership_semantics": "sharded_across_ranks",
-            "peak_memory_bytes": 17056256,
+            "peak_memory_bytes": 17059328,
             "progress_event_count": 21,
             "rank": 1,
             "release_gate_allowed": false,
@@ -838,8 +921,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
-          "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
+          "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt",
+          "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt"
         ],
         "checkpoint_steps": 2,
         "first_leg_losses": [
@@ -851,15 +934,19 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
-            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt",
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
+          "communication_fraction": 0.2727272727272727,
           "completed_steps": 2,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
-          "gradient_ownership_semantics": "reduced_across_ranks",
+          "gradient_ownership_semantics": "sharded_across_ranks",
+          "gradient_reduction": "reduce_scatter_sum",
+          "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+          "local_state_bytes": 256,
           "local_world_size": 1,
           "losses": [
             0.9077758055611574,
@@ -869,14 +956,14 @@
           "optimizer": "sgd",
           "optimizer_ownership": [
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": true,
               "owner_rank": 0,
               "parameter": "parameter:0",
               "update_route": "owner_step_then_broadcast"
             },
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": false,
               "owner_rank": 1,
               "parameter": "parameter:1",
@@ -887,7 +974,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17056256,
+          "peak_memory_bytes": 17059328,
           "progress_event_count": 21,
           "rank": 0,
           "release_gate_allowed": false,
@@ -906,15 +993,19 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt",
-            "/nfs/fq-multinode-tier-checkpoints/rank-0.pt"
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt",
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/rank-0.pt"
           ],
           "communication_bytes": 96,
           "communication_events": 12,
+          "communication_fraction": 0.2727272727272727,
           "completed_steps": 4,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
-          "gradient_ownership_semantics": "reduced_across_ranks",
+          "gradient_ownership_semantics": "sharded_across_ranks",
+          "gradient_reduction": "reduce_scatter_sum",
+          "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+          "local_state_bytes": 256,
           "local_world_size": 1,
           "losses": [
             0.8897849593717055,
@@ -924,14 +1015,14 @@
           "optimizer": "sgd",
           "optimizer_ownership": [
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": true,
               "owner_rank": 0,
               "parameter": "parameter:0",
               "update_route": "owner_step_then_broadcast"
             },
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": false,
               "owner_rank": 1,
               "parameter": "parameter:1",
@@ -942,7 +1033,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17060352,
+          "peak_memory_bytes": 17063424,
           "progress_event_count": 21,
           "rank": 0,
           "release_gate_allowed": false,
@@ -963,17 +1054,21 @@
             "release_capacity_and_multinode_acceptance_pending"
           ],
           "checkpoint_files": [
-            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt",
-            "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0.pt"
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/uninterrupted/rank-0.pt",
+            "/nfs/fq-scratch/sv_lane/fq-multinode-sv-checkpoints/uninterrupted/rank-0.pt"
           ],
           "communication_bytes": 192,
           "communication_events": 24,
+          "communication_fraction": 0.42857142857142855,
           "completed_steps": 4,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
-          "gradient_ownership_semantics": "reduced_across_ranks",
+          "gradient_ownership_semantics": "sharded_across_ranks",
+          "gradient_reduction": "reduce_scatter_sum",
+          "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
+          "local_state_bytes": 256,
           "local_world_size": 1,
           "losses": [
             0.9077758055611574,
@@ -985,14 +1080,14 @@
           "optimizer": "sgd",
           "optimizer_ownership": [
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": true,
               "owner_rank": 0,
               "parameter": "parameter:0",
               "update_route": "owner_step_then_broadcast"
             },
             {
-              "gradient_reduction": "all_reduce_sum",
+              "gradient_reduction": "reduce_scatter_sum",
               "optimizer_state_local": false,
               "owner_rank": 1,
               "parameter": "parameter:1",
@@ -1003,7 +1098,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17058304,
+          "peak_memory_bytes": 17061376,
           "progress_event_count": 41,
           "rank": 0,
           "release_gate_allowed": false,
@@ -1021,7 +1116,8 @@
     "scope": {
       "distribution_semantics": "sharded_across_ranks",
       "dtype": "complex128",
-      "execution": "forward_backward_optimizer_and_checkpoint_resume",
+      "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+      "exported_product": "full_amplitude_vector",
       "local_world_size": 1,
       "n_wires": 5,
       "node_count": 2,
@@ -1029,6 +1125,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "6a23691f95b17e5c8a0b2917abeb104c0d159f01cb4ba945e3abf46bd63dca68",
+  "evidence_sha256": "b1d79187fa7c287284cae55079023eef9421f30d190218ce8c24d29b3ddd04a8",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }

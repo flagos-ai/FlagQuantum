@@ -236,9 +236,24 @@ def main(argv: Sequence[str] | None = None) -> None:
             "checked here first and promoted only once it passes."
         ),
     )
+    parser.add_argument(
+        "--baseline-directory",
+        type=Path,
+        default=None,
+        help=(
+            "directory holding the single-device capacity baseline, overriding "
+            "the manifest's declared path. A candidate set that carries its own "
+            "baseline names it here so the gate reads the baseline the set was "
+            "measured against rather than whichever one is checked in."
+        ),
+    )
     args = parser.parse_args(argv)
     manifest = load_manifest()
-    baseline = baseline_results(manifest)
+    baseline = (
+        args.baseline_directory
+        if args.baseline_directory is not None
+        else baseline_results(manifest)
+    )
     directories = (baseline, *args.candidate) if args.candidate else (RESULTS, baseline)
     artifacts = [
         json.loads(path.read_text(encoding="utf-8"))

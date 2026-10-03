@@ -84,7 +84,8 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert evidence["scope"] == {
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
-        "execution": "forward_backward_optimizer_and_checkpoint_resume",
+        "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+        "exported_product": "full_amplitude_vector",
         "local_world_size": 1,
         "n_wires": 5,
         "node_count": 2,
@@ -163,15 +164,16 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2
 
-    # The boundary is exactly these blockers. Each of the three the pair used
+    # The boundary is exactly these blockers. Each of the four the pair used
     # to carry -- an untested fabric, an unmeasured workload, an unaudited
-    # staging path -- is now retired by the observation that justifies it, so a
-    # reader cannot find it here and cannot find it silently missing either.
+    # staging path, and a full-state readout taken only to check an answer --
+    # is now retired by the observation that justifies it, so a reader cannot
+    # find it here and cannot find it silently missing either. What is left is
+    # the pair's own scope and the circuit's own size, neither of which any
+    # measurement on this hardware can retract.
     assert sorted(evidence["claim_blockers"]) == [
-        "host_staging_in_measured_region",
         "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_state_gather",
     ]
 
     # The measured leg, and the two properties that make it a measurement: the
@@ -192,15 +194,18 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert performance["minimum_seconds"] <= performance["median_seconds"]
     assert performance["median_seconds"] <= performance["maximum_seconds"]
 
-    # The staging audit ran, and it found transfers inside the region it
-    # profiled. That is a finding about the workload, so it keeps a blocker --
-    # but not the one that says nobody looked.
+    # The staging audit ran, and on this workload it found no explicit host
+    # transfer inside the region it profiled, so the blocker that said part of
+    # each sample was host staging is retired by that audit rather than by
+    # relabelling the region. The audit still has to have happened: an
+    # unprofiled or silently empty region would leave `hidden_host_staging_not_audited`
+    # in place, which the next test drives directly.
     staging = observations["host_staging"]
     assert staging["profiled"] is True
     assert staging["profiled_workload"] == _MODULE.MEASUREMENT
-    assert staging["host_transfer_observed"] is True
-    assert staging["host_transfer_events"]
-    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+    assert staging["profiler_event_count"] > 0
+    assert staging["host_transfer_observed"] is False
+    assert staging["host_transfer_events"] == []
     # The two blockers this probe exists to remove must be gone: a forward-only
     # artifact that still carried them would not support a training claim.
     assert "distributed_gradient_not_tested" not in evidence["claim_blockers"]

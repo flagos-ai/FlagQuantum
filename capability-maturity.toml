@@ -131,69 +131,98 @@ gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
 documentation = "docs/development/TESTING.md"
-level = "production_supported"
+level = "release_certified"
 owner = "PyTorch distributed maintainers"
-limitations = "Scope is the recorded pair: two A800 hosts with one device per host and one five-wire complex128 circuit. Inter-node shard exchange, the exact adjoint gradient, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with four blockers attached. The route was observed on the RoCE fabric, and the probe recorded five synchronized forward samples after two warmups, so the fabric and a repeated measurement are evidence rather than assumptions; congestion and capacity were still not measured. That measurement is of a five-wire circuit and therefore says nothing about production scale, which stays blocked as a toy circuit. The profiled measurement region contains explicit host transfers, which keeps a blocker of its own: part of each sample is host staging rather than device work. Topologies wider than one device per host run on the lane but are not recorded, and the tiny full state is gathered for validation only."
+limitations = "Certified scope is the recorded pair: two A800 hosts, up to four devices per host, and a matched statevector training workload of 22, 24 and 26 wires at depths 8, 12 and 16 with cross-shard gate fractions up to one half. The release gate evaluates the payloads promoted into benchmarks/results/scalability alongside the declared single-device baseline, and the checked-in result audit verifies their signatures and claim evidence; each promoted payload reports release_gate_allowed and scalability_claim_allowed true with an empty error list, and the matched pair leg reports a 5.73x speedup whose 0.95 confidence interval lies wholly above one. Inter-node shard exchange, the exact adjoint gradient, an owner-sharded optimizer step, a checkpoint resumed by a restarted run, and a full-state export all executed on that pair and are recorded by the hardware artifact. The whole amplitude vector is exported as the product of a leg of its own, reassembled by the runtime's own gather, so the readout is a materialization the workload needs rather than a gather taken to check an answer; that observation closed the validation-only full-state-gather blocker. The staging audit profiles the measured region and finds no explicit host transfer in it, which closed the host-staging blocker by measurement rather than by relabelling the region. What the certificate does not cover: the pair is the widest topology any measurement here reaches, and no third host was available, so two_node_pair_only_no_wider_topology stands as the pair's own scope and no measurement on this hardware can retract it; the hardware artifact's own latency leg remains a five-wire circuit and stays blocked as toy_circuit_parameters_only, so the toy-circuit blocker applies to that leg and not to the matched-speed payloads; and GPU clocks, power state, temperature, host memory and fabric congestion are unrecorded, so the numbers describe this pair at the recorded revision and nothing wider. The pair's release world sizes are two, four and eight, all single-host except the matched pair leg, so behaviour as further hosts are added is not established."
 focused_tests = "tests/unit/test_statevector_forward.py"
 integration_tests = "tests/team/runtime/test_cuda_multinode_statevector_probe.py"
 hardware_evidence = "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json"
 operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
+release_gate = "benchmarks/internal/evidence/statevector_release_gate.py"
+release_artifact = "benchmarks/results/scalability"
 
 [[capabilities.two_node_statevector_training.performance_claims]]
-id = "multinode-statevector-forward-latency-20261001"
-title = "Two-node statevector forward latency"
-artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
-artifact_sha256 = "22c88fa84b1e0518efa416da49e1187a01e447ef6886f133f5be60e5183f084e"
-code_version = "591401fac230213aa73a3b253a89aa2ef919e510"
-maturity = "production_supported"
+id = "multinode-statevector-matched-speed-release-20261003"
+title = "Two-node statevector matched-speed release"
+artifact = "benchmarks/results/scalability/statevector_matched_speed_pair.json"
+artifact_sha256 = "17c80b5b655c990c4fe7ff40fa54706c67a2d6b77a9f7a1a161b5b0a57d849a9"
+code_version = "e339c225bd1b246c63994bb17d015b36f0106908"
+maturity = "release_certified"
 
-scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
-environment_limitations = "The artifact records the accelerator, node count, world and local world size, dtype, route, NCCL, CUDA runtime, PyTorch and Python versions, and the per-sample latencies. It does not record GPU clocks, power state, temperature, host CPU or memory, fabric congestion, or the driver version, so the numbers describe this pair at the recorded revision and nothing wider."
+scope = "One logical sharded statevector training workload -- 26 wires, depth 16, one half of the gates crossing a shard boundary -- run as a matched pair on two A800 hosts with four devices per host, against the same workload on a single device. Speedup is the geometric mean over the matched configurations the manifest freezes, timed for one full forward-and-reverse training step, and the 0.95 confidence interval must exclude 1.0. The released set also carries world 2, world 4 and world 8 single-host legs and a capacity-completion leg; the declared single-device baseline is provenance for those legs and is never itself a release payload, because one device has no ranks to shard across."
+environment_limitations = "Each sealed payload records the revision it was produced from, the command, the rank-to-device mapping with device UUIDs, the collective backend, the topology fingerprint, the warmup and measured iteration counts, the seeds, the raw log digest and any fallback events, plus world, local world and node counts, per-rank ownership, memory and communication. It does not record GPU clocks, power state, temperature, host CPU or memory, fabric congestion, or the driver version. The recorded fabric is RoCE over mlx5_101 through mlx5_108 on ens22f0 with the NCCL backend, so the numbers describe this pair at this revision and nothing wider."
 
 [capabilities.two_node_statevector_training.performance_claims.evidence_checks]
-benchmark_evidence_class = "local_non_release"
-"distribution_semantics" = "sharded_across_ranks"
-"commit" = "591401fac230213aa73a3b253a89aa2ef919e510"
-"environment.route" = "infiniband"
-"environment.node_count" = 2
-"environment.world_size" = 2
-"environment.measured_workloads" = 3
-"scalability_claim_allowed" = false
-"release_gate_allowed" = false
+"evidence.distribution_semantics" = "sharded_across_ranks"
+"evidence.collective_backend" = "nccl"
+"evidence.topology_scope" = "multi_node_production_transport"
+"evidence.claim_evidence_type" = "production_training_benchmark"
+"evidence.release_payload" = true
+"evidence.release_gate_allowed" = true
+"evidence.scalability_claim_allowed" = true
+"evidence.single_gpu_expected_oom" = true
+"evidence.world_size" = 8
+"evidence.local_world_size" = 4
+"evidence.node_count" = 2
+"evidence.acceptance_case" = "matched_speed"
+"evidence.acceptance_configuration" = "matched_speed_26q_d16_x0.50"
+"evidence.workload_sha256" = "eb1693d360aefc0601b6b49449d3aca867655efeee7a9d9d7aee87d6ed9a3a66"
+"provenance.commit" = "e339c225bd1b246c63994bb17d015b36f0106908"
+"provenance.collective_backend" = "nccl"
+"provenance.warmup" = 5
+"provenance.iterations" = 30
+"artifact_class" = "measured_production_run"
+"evidence_scope" = "scheduled_4_8_gpu_scale"
 
 [[capabilities.two_node_statevector_training.performance_claims.metrics]]
-label = "Minimum forward latency (s)"
-selector = "latency_seconds.statevector_forward_minimum"
+label = "Geometric-mean speedup over the matched configurations"
+selector = "evidence.speedup"
 format = "scientific"
 
 [[capabilities.two_node_statevector_training.performance_claims.metrics]]
-label = "Median forward latency (s)"
-selector = "latency_seconds.statevector_forward_median"
+label = "Lower 0.95 confidence bound on the speedup"
+selector = "evidence.speedup_confidence_interval[]"
+aggregate = "min"
 format = "scientific"
 
 [[capabilities.two_node_statevector_training.performance_claims.metrics]]
-label = "Maximum forward latency (s)"
-selector = "latency_seconds.statevector_forward_maximum"
+label = "Scaling efficiency"
+selector = "evidence.scaling_efficiency"
+format = "scientific"
+
+[[capabilities.two_node_statevector_training.performance_claims.metrics]]
+label = "Fraction of the step spent in inter-node communication"
+selector = "evidence.communication_fraction"
 format = "scientific"
 
 [[capabilities.two_node_statevector_training.performance_claims.environment]]
-label = "Warmup iterations before sampling"
-selector = "environment.warmup_iterations"
+label = "Processes in the release workload"
+selector = "evidence.world_size"
 format = "integer"
 
 [[capabilities.two_node_statevector_training.performance_claims.environment]]
-label = "Synchronized samples"
-selector = "environment.sample_count_minimum"
+label = "Devices per host"
+selector = "evidence.local_world_size"
 format = "integer"
 
 [[capabilities.two_node_statevector_training.performance_claims.environment]]
-label = "Observed transport route"
-selector = "environment.route"
+label = "Hosts"
+selector = "evidence.node_count"
+format = "integer"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Collective backend"
+selector = "evidence.collective_backend"
 format = "string"
 
 [[capabilities.two_node_statevector_training.performance_claims.environment]]
-label = "Devices per node"
-selector = "environment.local_world_size"
+label = "Warmup iterations before sampling"
+selector = "provenance.warmup"
+format = "integer"
+
+[[capabilities.two_node_statevector_training.performance_claims.environment]]
+label = "Measured iterations"
+selector = "provenance.iterations"
 format = "integer"
 
 [capabilities.flagos_statevector_reference]
@@ -376,7 +405,7 @@ quick_start = "docs/guides/MULTINODE_RUNBOOK.md"
 documentation = "docs/development/TESTING.md"
 level = "production_supported"
 owner = "MPS maintainers"
-limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, and a bond limit that truncates nothing. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with four blockers attached. The route was observed on the RoCE fabric and five synchronized forward samples were recorded after two warmups, so the fabric and a repeated measurement are evidence rather than assumptions; congestion and capacity were still not measured. The cut width was swept rather than declared: the recorded workload's Schmidt profile is flat at rank two, so the sweep binds a circuit of its own whose profile is not, and re-runs the same reverse under every site plan the launched shape can hold with a boundary moved, comparing each leg with the exact complex128 expectation and gradient. At two ranks that is five placements across widths two and four, each of which carried bytes over the inter-node transport; at a wider shape the same leg walks each rank boundary in turn, but a plan at more than two ranks carries several boundaries at once and is named by the heaviest of them, so no wider shape is recorded here and no leg claims a bond it did not carry. The tiny full MPS is gathered for validation only, the profiled measurement region contains explicit host transfers that keep a blocker of their own, and topologies wider than one device per host run on the lane but are not recorded, so this evidence does not establish behaviour as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take, and the sweep therefore measures the compiled path."
+limitations = "Scope is the recorded pair: two A800 hosts with one device per host, one six-wire complex128 circuit, and a bond limit that truncates nothing. Site-boundary exchange, an exact reverse gradient with the layer halo prefetched over the inter-node transport, an owner-sharded optimizer step, and a checkpoint resumed by a restarted run all executed on that pair, and the run reports scalability_claim_allowed and release_gate_allowed false with three blockers attached. The route was observed on the RoCE fabric and five synchronized forward samples were recorded after two warmups, so the fabric and a repeated measurement are evidence rather than assumptions; congestion and capacity were still not measured. The cut width was swept rather than declared: the recorded workload's Schmidt profile is flat at rank two, so the sweep binds a circuit of its own whose profile is not, and re-runs the same reverse under every site plan the launched shape can hold with a boundary moved, comparing each leg with the exact complex128 expectation and gradient. At two ranks that is five placements across widths two and four, each of which carried bytes over the inter-node transport; at a wider shape the same leg walks each rank boundary in turn, but a plan at more than two ranks carries several boundaries at once and is named by the heaviest of them, so no wider shape is recorded here and no leg claims a bond it did not carry. The whole MPS is exported as the product of a leg of its own, through the runtime's own gather, and each gathered state is compared with the single-device reference as it is taken, so the export is a materialization the workload needs rather than a gather taken to check an answer; that observation closed the full-state-gather blocker. The profiled measurement region contains explicit host transfers that keep a blocker of their own, and topologies wider than one device per host run on the lane but are not recorded, so this evidence does not establish behaviour as nodes are added. The layer halo crosses the host boundary only on the compiled site-kernel path, which the checkpointed training legs deliberately do not take, and the sweep therefore measures the compiled path."
 focused_tests = "tests/unit/test_mps_reverse_contracts.py"
 integration_tests = "tests/team/runtime/test_cuda_multinode_mps_probe.py"
 hardware_evidence = "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json"

@@ -1,0 +1,187 @@
+{
+  "artifact_class": "measured_production_run",
+  "evidence": {
+    "acceptance_case": "multi_gpu_capacity_completion",
+    "capacity_baseline_device": "cuda:0 on NVIDIA A800-SXM4-80GB",
+    "capacity_failure_reason": "the frozen capacity workload exhausts a single A800 before its first optimizer step; see the sealed single-device baseline artifact",
+    "capacity_premise_workload_sha256": "f39cf4e334774e7791ba128d71ddf79918862b0e537eaf24ad3137ae2d6e6aa5",
+    "claim_evidence_type": "production_training_benchmark",
+    "collective_backend": "nccl",
+    "communication_bytes": 768,
+    "communication_fraction": 1.1175870770485654e-08,
+    "distribution_semantics": "sharded_across_ranks",
+    "full_state_materialized": false,
+    "gpu_activity": 1.0,
+    "gradient_ownership": {
+      "rank:0": [
+        "parameter:0"
+      ],
+      "rank:1": [
+        "parameter:1"
+      ]
+    },
+    "gradient_ownership_semantics": "sharded_across_ranks",
+    "hardware_inventory": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "inter_node_communication_bytes": 768,
+    "local_memory_bytes_by_rank": [
+      55885175808,
+      55885175808,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760
+    ],
+    "local_world_size": 4,
+    "measured_peak_memory_bytes": 55885175808,
+    "measured_peak_memory_bytes_by_rank": [
+      55885175808,
+      55885175808,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760
+    ],
+    "node_count": 2,
+    "optimizer_update_ownership": {
+      "rank:0": [
+        "parameter:0"
+      ],
+      "rank:1": [
+        "parameter:1"
+      ]
+    },
+    "optimizer_update_ownership_semantics": "sharded_across_ranks",
+    "optimizer_update_semantics": "sharded_across_ranks",
+    "parameter_ownership": {
+      "rank:0": [
+        "parameter:0"
+      ],
+      "rank:1": [
+        "parameter:1"
+      ]
+    },
+    "parameter_ownership_semantics": "sharded_across_ranks",
+    "rank_gradients": [
+      55885175808,
+      55885175808,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760
+    ],
+    "rank_outputs": [
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566,
+      0.3332601487636566
+    ],
+    "rank_peak_memory_bytes": [
+      55885175808,
+      55885175808,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760,
+      55885173760
+    ],
+    "rank_placement": {
+      "rank:0": "node:0/gpu:0",
+      "rank:1": "node:0/gpu:1",
+      "rank:2": "node:0/gpu:2",
+      "rank:3": "node:0/gpu:3",
+      "rank:4": "node:1/gpu:0",
+      "rank:5": "node:1/gpu:1",
+      "rank:6": "node:1/gpu:2",
+      "rank:7": "node:1/gpu:3"
+    },
+    "rank_timings": [
+      5.239594414830208,
+      5.241230309009552,
+      5.237306552007794,
+      5.235900159925222,
+      5.235431669279933,
+      5.2363981157541275,
+      5.237641707062721,
+      5.236738309264183
+    ],
+    "release_gate_allowed": true,
+    "release_payload": true,
+    "scalability_claim_allowed": true,
+    "single_gpu_expected_oom": true,
+    "timings": [
+      5.2345187440514565,
+      5.230316778644919,
+      5.230478039011359,
+      5.232262192294002,
+      5.239594414830208
+    ],
+    "topology_scope": "multi_node_production_transport",
+    "training_step_count": 2,
+    "workload_name": "issue044_single_node_capacity_v2",
+    "workload_sha256": "f39cf4e334774e7791ba128d71ddf79918862b0e537eaf24ad3137ae2d6e6aa5",
+    "world_size": 8
+  },
+  "evidence_scope": "scheduled_4_8_gpu_scale",
+  "integrity": {
+    "algorithm": "hmac-sha256",
+    "content_sha256": "a32fc83d7ddd8cb00917308656caefecdd8826b5f11cba8aeb5b3683bc4ae384",
+    "signature": "d17a9143ea3b48fcdc1524bd968dbcc44bf466989368f3a1862ca9277bab05b9"
+  },
+  "provenance": {
+    "collective_backend": "nccl",
+    "command": [
+      "torchrun --nnodes=2 --nproc_per_node=4 --node_rank=0 benchmarks/statevector_release_evidence.py --role capacity-completion --node-count 2 --local-world-size 4"
+    ],
+    "commit": "e339c225bd1b246c63994bb17d015b36f0106908",
+    "devices": [
+      "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
+      "GPU-443ad877-b56d-e051-955a-3696fdde6996",
+      "GPU-04773e19-49e0-8bb4-9db9-08a1578bab32",
+      "GPU-dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+      "GPU-d86297e1-24d6-9833-1caf-22d6b0badb63",
+      "GPU-8fbd86fe-b873-557d-bd88-369d63ffe37d",
+      "GPU-5f46d96f-f2b0-e24b-6f52-47c2c9ffbef8"
+    ],
+    "fallback_events": [],
+    "iterations": 3,
+    "rank_mapping": [
+      "rank=0:device_uuid=GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "rank=1:device_uuid=GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
+      "rank=2:device_uuid=GPU-443ad877-b56d-e051-955a-3696fdde6996",
+      "rank=3:device_uuid=GPU-04773e19-49e0-8bb4-9db9-08a1578bab32",
+      "rank=4:device_uuid=GPU-dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+      "rank=5:device_uuid=GPU-d86297e1-24d6-9833-1caf-22d6b0badb63",
+      "rank=6:device_uuid=GPU-8fbd86fe-b873-557d-bd88-369d63ffe37d",
+      "rank=7:device_uuid=GPU-5f46d96f-f2b0-e24b-6f52-47c2c9ffbef8"
+    ],
+    "raw_log_sha256": "2dd07fad74cf4db6ec2e77c31f695095ed67a9e294754192fc50f3d7ec2ad15c",
+    "seeds": [
+      440044
+    ],
+    "topology": "\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201",
+    "warmup": 1,
+    "workload_sha256": "f39cf4e334774e7791ba128d71ddf79918862b0e537eaf24ad3137ae2d6e6aa5"
+  },
+  "schema": "flagquantum_runtime_evidence_v1"
+}

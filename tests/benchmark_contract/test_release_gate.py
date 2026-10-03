@@ -273,6 +273,29 @@ def _write_candidates(directory: Path, artifacts: list[dict]) -> Path:
     return directory
 
 
+def _candidate_set(
+    root: Path, artifacts: list[dict] | None = None
+) -> tuple[Path, Path]:
+    """Split a candidate set into its payloads and its capacity baseline.
+
+    A campaign seals only sharded payloads into a candidate directory and leaves
+    the single-device baseline in a separate declared provenance directory,
+    because one device has no ranks to shard across and can never be release
+    evidence. These tests lay a set out the same way and name the baseline
+    explicitly, so the gate reads the baseline the set was measured against
+    rather than whichever one is checked in.
+    """
+
+    items = _passing_artifacts() if artifacts is None else artifacts
+    baseline = [item for item in items if item["evidence"]["world_size"] == 1]
+    payloads = [item for item in items if item["evidence"]["world_size"] != 1]
+    assert len(baseline) == 1
+    return (
+        _write_candidates(root / "candidates", payloads),
+        _write_candidates(root / "baseline", baseline),
+    )
+
+
 def _last_report(capsys) -> dict:
     return json.loads(capsys.readouterr().out.strip().splitlines()[-1])
 
@@ -286,46 +309,62 @@ def test_the_gate_can_evaluate_a_candidate_set_before_promotion(
     promoted JSON, which is exactly why the campaign is staged elsewhere first.
     """
 
-    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    candidates, baseline = _candidate_set(tmp_path)
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
 
-    gate_main(["--candidate", str(candidates)])
+    gate_main(["--candidate", str(candidates), "--baseline-directory", str(baseline)])
 
     report = _last_report(capsys)
     assert report["passed"] is True
     assert report["artifact_count"] == 4
     assert str(candidates) in report["evaluated"]
+    assert str(baseline) in report["evaluated"]
 
 
 def test_the_gate_rejects_a_candidate_set_that_is_not_release_grade(
     tmp_path, capsys, monkeypatch
 ):
-    artifacts = [
-        item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4
-    ]
-    candidates = _write_candidates(tmp_path / "candidates", artifacts)
+    candidates, baseline = _candidate_set(
+        tmp_path,
+        [item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4],
+    )
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
 
     with pytest.raises(SystemExit) as excinfo:
-        gate_main(["--candidate", str(candidates)])
+        gate_main(
+            ["--candidate", str(candidates), "--baseline-directory", str(baseline)]
+        )
 
     assert excinfo.value.code == 2
-    assert "missing_release_world_sizes" in _last_report(capsys)["blockers"]
+    # The set is rejected for exactly what removing a release world removes --
+    # that world size, and the capacity-completion case it carried -- and for
+    # nothing else: every other requirement is satisfied by the artifacts.
+    assert list(_last_report(capsys)["blockers"]) == [
+        "missing_release_world_sizes",
+        "missing_multi_gpu_capacity_completion_artifact",
+    ]
 
 
 def test_a_failing_candidate_set_is_reported_rather_than_promoted(
     tmp_path, capsys, monkeypatch
 ):
-    artifacts = [
-        item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4
-    ]
-    candidates = _write_candidates(tmp_path / "candidates", artifacts)
+    candidates, baseline = _candidate_set(
+        tmp_path,
+        [item for item in _passing_artifacts() if item["evidence"]["world_size"] != 4],
+    )
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
     release = tmp_path / "release"
 
     with pytest.raises(SystemExit) as excinfo:
         promote_main(
-            ["--candidate", str(candidates), "--release-directory", str(release)]
+            [
+                "--candidate",
+                str(candidates),
+                "--baseline-directory",
+                str(baseline),
+                "--release-directory",
+                str(release),
+            ]
         )
 
     assert "missing_release_world_sizes" in str(excinfo.value)
@@ -333,13 +372,20 @@ def test_a_failing_candidate_set_is_reported_rather_than_promoted(
 
 
 def test_an_unsigned_candidate_set_is_never_promoted(tmp_path, monkeypatch):
-    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    candidates, baseline = _candidate_set(tmp_path)
     monkeypatch.delenv("FQ_EVIDENCE_SIGNING_KEY", raising=False)
     release = tmp_path / "release"
 
     with pytest.raises(SystemExit) as excinfo:
         promote_main(
-            ["--candidate", str(candidates), "--release-directory", str(release)]
+            [
+                "--candidate",
+                str(candidates),
+                "--baseline-directory",
+                str(baseline),
+                "--release-directory",
+                str(release),
+            ]
         )
 
     assert "FQ_EVIDENCE_SIGNING_KEY is required" in str(excinfo.value)
@@ -349,19 +395,30 @@ def test_an_unsigned_candidate_set_is_never_promoted(tmp_path, monkeypatch):
 def test_promotion_moves_a_passing_candidate_set_into_the_release_directory(
     tmp_path, monkeypatch
 ):
-    candidates = _write_candidates(tmp_path / "candidates", _passing_artifacts())
+    candidates, baseline = _candidate_set(tmp_path)
+    promoted = sorted(path.name for path in candidates.glob("*.json"))
+    retained = sorted(path.name for path in baseline.glob("*.json"))
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", _KEYS.decode())
     release = tmp_path / "release"
 
     assert (
         promote_main(
-            ["--candidate", str(candidates), "--release-directory", str(release)]
+            [
+                "--candidate",
+                str(candidates),
+                "--baseline-directory",
+                str(baseline),
+                "--release-directory",
+                str(release),
+            ]
         )
         == 0
     )
 
-    assert sorted(path.name for path in release.glob("*.json")) == [
-        f"candidate-{index}.json" for index in range(4)
-    ]
+    assert promoted
+    assert sorted(path.name for path in release.glob("*.json")) == promoted
     # Moved rather than copied: a candidate that stayed put could be promoted twice.
     assert list(candidates.glob("*.json")) == []
+    # The baseline is provenance the gate reads, not a release payload: one
+    # device shards across nothing, so it stays in its declared directory.
+    assert sorted(path.name for path in baseline.glob("*.json")) == retained
