@@ -402,6 +402,49 @@ device is CUDA. Runtime policy may use matcher output as one input to provider
 selection, but loading, live availability checks, priorities, and fallback
 execution remain separate responsibilities.
 
+### Execution device axis
+
+The device axis is a closed vocabulary, declared once as `KernelDevice` in
+`schema.py` and re-exported as the runtime set `KERNEL_DEVICES`:
+
+| Device | Meaning |
+| --- | --- |
+| `cpu` | PyTorch CPU execution |
+| `cuda` | PyTorch CUDA execution |
+| `flagos` | Domestic-accelerator execution through the FlagOS platform runtime |
+
+The catalog declares this axis itself instead of importing
+`flagquantum.compute`, because the protected boundaries in `architecture.toml`
+forbid `flagquantum.kernels` from importing `compute` (`kernel_forbidden`
+includes `compute`). To keep the declaration from becoming a second source of
+truth, `tests/unit/test_kernel_catalog.py` asserts that `KERNEL_DEVICES` equals
+the device types reported by `flagquantum.compute.list_platform_status()`. A
+divergence fails the unit tier, so the duplicate cannot drift silently.
+
+Validation refuses an implementation record that declares an undeclared device.
+A request naming an undeclared device is a **malformed request** and raises at
+`KernelRequest` construction, which is deliberately different from the
+capability mismatch reported when a declared device simply has no implementation
+for the semantic:
+
+```python
+KernelRequest(semantic_id="statevector.apply.rx_rz_sequence.local", device="gpu", ...)
+# ValueError: undeclared kernel request device: gpu; declared devices are cpu, cuda, flagos
+
+KernelRequest(semantic_id="statevector.apply.rx_rz_sequence.local", device="cpu", ...)
+# constructs; matching then reports one rejection per CUDA implementation with code "device"
+```
+
+Without the closed axis the two cases are indistinguishable, so a misspelled
+device would read as an unsupported device — a silent degradation instead of a
+fail-closed refusal.
+
+> The axis currently has no `flagos` implementation record. That is the correct
+> representation: the catalog states what exists, and the FlagOS route to
+> statevector execution today lives in `flagquantum.runtime.execution`, not in
+> the catalog. Recording a device with no executable symbol would be a planning
+> item masquerading as a machine record.
+
 ## Target inventory: 100 semantics and 800 implementations
 
 The program target is **100 semantic families** represented by approximately

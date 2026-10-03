@@ -11,6 +11,7 @@ import pytest
 from flagquantum.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
+    KERNEL_DEVICES,
     SEMANTICS,
     validate_catalog,
 )
@@ -179,3 +180,68 @@ def test_validation_requires_evidence_for_internal_fallbacks() -> None:
             IMPLEMENTATIONS,
             (*EVIDENCE[:6], invalid, *EVIDENCE[7:]),
         )
+
+
+def test_catalog_refuses_an_undeclared_execution_device() -> None:
+    # "gpu" is _COMPONENT-shaped, so only the closed device vocabulary can
+    # distinguish a misspelling from a device that simply has no implementation.
+    invalid = replace(IMPLEMENTATIONS[0], devices=("gpu",))
+
+    with pytest.raises(ValueError, match="undeclared devices for FQKI-TRITON-SV-001-A"):
+        validate_catalog(SEMANTICS, (invalid, *IMPLEMENTATIONS[1:]), EVIDENCE)
+
+
+def test_declared_device_vocabulary_matches_the_platform_registry() -> None:
+    # flagquantum.kernels may not import flagquantum.compute: the protected
+    # architecture boundaries forbid it. The device axis is therefore declared
+    # twice by necessity, and this test is what keeps the duplicate honest.
+    # Importing compute inside the test rather than at module scope keeps
+    # test_catalog_import_is_accelerator_provider_free's subprocess clean.
+    from flagquantum.compute import list_platform_status
+
+    declared = set(KERNEL_DEVICES)
+    registry = {status["device_type"] for status in list_platform_status()}
+
+    assert registry == declared
+    used_devices = {
+        device
+        for implementation in IMPLEMENTATIONS
+        for device in implementation.devices
+    }
+    assert used_devices <= declared
+
+
+def test_a_non_cuda_provider_record_is_expressible() -> None:
+    # The axis is closed, not CUDA-only: a record that declares a portable
+    # provider on the CPU device must validate, so the catalog can describe the
+    # implementations a CPU-only machine actually runs. No such record is
+    # committed yet, so this one is declared here rather than invented as a
+    # machine record (see flagquantum/kernels/README.md).
+    implementation = replace(
+        IMPLEMENTATIONS[0],
+        implementation_id="FQKI-PYTORCH-SV-001-C",
+        provider="pytorch",
+        module="flagquantum.kernels.pytorch.statevector_gates",
+        symbol="apply_cpu",
+        devices=("cpu",),
+        maturity="experimental",
+        internal_fallback=False,
+    )
+    evidence = replace(
+        EVIDENCE[0],
+        evidence_id="FQKE-PYTORCH-SV-001-C",
+        implementation_id="FQKI-PYTORCH-SV-001-C",
+    )
+
+    # The named module is a placeholder, not an entry point: catalog validation
+    # checks the module prefix and the symbol shape, never importability, so a
+    # record stays declarative while the provider is unimplemented. Asserting
+    # the placeholder is absent keeps that reading honest.
+    module_path = _REPOSITORY_ROOT.joinpath(*implementation.module.split("."))
+    assert not module_path.with_suffix(".py").exists()
+
+    validate_catalog(
+        SEMANTICS,
+        (*IMPLEMENTATIONS, implementation),
+        (*EVIDENCE, evidence),
+    )

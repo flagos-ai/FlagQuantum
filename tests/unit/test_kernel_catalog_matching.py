@@ -7,6 +7,7 @@ import pytest
 
 from flagquantum.kernels.catalog import (
     EVIDENCE,
+    IMPLEMENTATIONS,
     KernelRequest,
     match_kernel_implementations,
 )
@@ -160,3 +161,66 @@ def test_request_rejects_duplicate_capability_filters() -> None:
 
     with pytest.raises(ValueError, match="addressing entries must be unique"):
         _request(addressing=("local", "local"))
+
+
+def test_undeclared_device_is_a_malformed_request_not_a_capability_mismatch() -> None:
+    # "gpu" and "flagos" are both outside the CUDA-only implementations, but only
+    # "flagos" is a declared device. The misspelling must not be readable as an
+    # unsupported device, so it fails at construction instead of matching.
+    with pytest.raises(ValueError, match="undeclared kernel request device: gpu"):
+        _request(device="gpu")
+
+    with pytest.raises(ValueError, match="undeclared kernel request device: CUDA"):
+        _request(device="CUDA")
+
+    declared_but_unimplemented = match_kernel_implementations(_request(device="flagos"))
+    assert declared_but_unimplemented.semantic_known is True
+    assert declared_but_unimplemented.matched is False
+    assert not declared_but_unimplemented.candidates
+    assert len(declared_but_unimplemented.rejections) == 2
+    assert all(
+        tuple(item.code for item in rejection.mismatches) == ("device",)
+        and item.requested == ("flagos",)
+        and item.available == ("cuda",)
+        for rejection in declared_but_unimplemented.rejections
+        for item in rejection.mismatches
+    )
+
+
+def test_a_declared_cpu_provider_is_selectable_without_hardware() -> None:
+    # Provider selection must consume declared capability evidence rather than
+    # infer support from a vendor name, and a CPU-only machine must have a
+    # candidate rather than only rejections. This declares the record the
+    # committed catalog does not carry yet and proves the matcher can reach it.
+    portable = replace(
+        IMPLEMENTATIONS[0],
+        implementation_id="FQKI-PYTORCH-SV-001-C",
+        provider="pytorch",
+        module="flagquantum.kernels.pytorch.statevector_gates",
+        symbol="apply_cpu",
+        devices=("cpu",),
+    )
+    portable_evidence = replace(
+        EVIDENCE[0],
+        evidence_id="FQKE-PYTORCH-SV-001-C",
+        implementation_id="FQKI-PYTORCH-SV-001-C",
+    )
+    request = _request(device="cpu", providers=("pytorch",))
+    committed = match_kernel_implementations(request)
+    declared = match_kernel_implementations(
+        request,
+        implementations=(*IMPLEMENTATIONS, portable),
+        evidence=(*EVIDENCE, portable_evidence),
+    )
+
+    assert not committed.candidates
+    assert tuple(
+        candidate.implementation.implementation_id for candidate in declared.candidates
+    ) == ("FQKI-PYTORCH-SV-001-C",)
+    assert tuple(
+        item.implementation.implementation_id for item in declared.rejections
+    ) == ("FQKI-TRITON-SV-001-A", "FQKI-TRITON-SV-001-B")
+    assert all(
+        tuple(item.code for item in rejection.mismatches) == ("provider", "device")
+        for rejection in declared.rejections
+    )
