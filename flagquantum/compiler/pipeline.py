@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from math import isclose
+from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
-from ..errors import CompilationError
+from .pass_manager import (
+    OPTIMIZATION_PIPELINE,
+    PassFunction,
+    PassManager,
+    PassRegistry,
+)
 from .routing import (
     CouplingMap,
     record_post_routing_optimization,
@@ -224,40 +230,63 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 
 
 def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
-    # Imported here rather than at module scope: these passes read this layer, so a
-    # module-level import in this direction would be circular.
-    # `commutation_cancellation` reads `_SELF_INVERSE`, `inverse_cancellation` reads
-    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
-    # `_is_zero`, and `diagonal_before_measure` reads one_qubit_synthesis.
-    from .commutation_cancellation import cancel_commuting_self_inverse
+    return PassManager(default_pass_registry()).to_fixed_point(
+        _as_ir(circuit_or_ir), OPTIMIZATION_PIPELINE
+    )
+
+
+# Four of the eight built-in passes live in their own module, and each of those
+# modules reads this one: `commutation_cancellation` reads `_SELF_INVERSE`,
+# `inverse_cancellation` reads `_WireLocalProgram`, `one_qubit_optimization` reads
+# the Euler tables and `_is_zero`, and `diagonal_before_measure` reads
+# one_qubit_synthesis. An eager import in this direction would therefore be a
+# cycle, so each is bound through a wrapper that imports it at call time. The four
+# remaining passes are defined here and need no wrapper.
+def _remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
+
+    return remove_diagonal_gates_before_measure(ir)
+
+
+def _merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
     from .inverse_cancellation import merge_inverse_pairs
+
+    return merge_inverse_pairs(ir)
+
+
+def _cancel_commuting_self_inverse(ir: CircuitIR) -> CircuitIR:
+    from .commutation_cancellation import cancel_commuting_self_inverse
+
+    return cancel_commuting_self_inverse(ir)
+
+
+def _collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     from .one_qubit_optimization import collapse_one_qubit_runs
 
-    ir = _as_ir(circuit_or_ir)
-    max_rounds = len(ir) + 1
-    for _ in range(max_rounds):
-        previous_count = len(ir)
-        # First, because a reset this pass can remove is removable whatever the passes
-        # below do, and removing it hands them a shorter program. The loop, not this
-        # ordering, is what earns the reach on a wire the passes below only empty out
-        # later: `x(0) x(0) reset(0)` needs a second round.
-        ir = remove_zero_state_resets(ir)
-        # Second, for the same reason: a diagonal gate read out only by measurements is
-        # unobservable whatever the passes below do to the rest of the program, and
-        # dropping it hands them a shorter one. Its own reach is what needs the loop --
-        # `x(0) x(0) z(0) measure(0)` only exposes `z` once the pair cancels.
-        ir = remove_diagonal_gates_before_measure(ir)
-        ir = remove_identity_gates(ir)
-        ir = merge_self_inverse(ir)
-        ir = merge_inverse_pairs(ir)
-        ir = merge_adjacent_rotations(ir)
-        ir = cancel_commuting_self_inverse(ir)
-        ir = remove_identity_gates(ir)
-        ir = collapse_one_qubit_runs(ir)
-        if len(ir) == previous_count:
-            return ir
-    raise CompilationError("compiler optimization passes did not reach a fixed point")
+    return collapse_one_qubit_runs(ir)
+
+
+# The built-in passes, bound to the functions that implement them, in the order and
+# with the calls the inline fixed-point loop used.
+BUILTIN_PASSES: Mapping[str, PassFunction] = MappingProxyType(
+    {
+        "remove_zero_state_resets": remove_zero_state_resets,
+        "remove_diagonal_gates_before_measure": (_remove_diagonal_gates_before_measure),
+        "remove_identity_gates": remove_identity_gates,
+        "merge_self_inverse": merge_self_inverse,
+        "merge_inverse_pairs": _merge_inverse_pairs,
+        "merge_adjacent_rotations": merge_adjacent_rotations,
+        "cancel_commuting_self_inverse": _cancel_commuting_self_inverse,
+        "collapse_one_qubit_runs": _collapse_one_qubit_runs,
+    }
+)
+"""Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it."""
+
+
+def default_pass_registry() -> PassRegistry:
+    """The registry that resolves exactly the built-in optimization passes."""
+
+    return PassRegistry(BUILTIN_PASSES)
 
 
 def optimize(circuit_or_ir: Any) -> CircuitIR:
@@ -310,8 +339,10 @@ def compile(
 
 
 __all__ = [
+    "BUILTIN_PASSES",
     "CouplingMap",
     "compile",
+    "default_pass_registry",
     "optimize",
     "route_to_topology",
     "schedule_layers",

@@ -282,9 +282,10 @@ cudaq = "A pass manager with an out-of-tree pass plugin interface"
 status = "partial"
 priority = "now"
 dependency_class = "none"
-maturity_ref = "interop_adapter_contract"
-reason = "The pass and analysis contracts and the CompilerPassExtension protocol are designed, and the ecosystem SDK exposes the extension kind, but no pass manager consumes the protocol and compilation paths remain fixed pipelines."
-evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/compiler"]
+maturity_ref = "program_compilation"
+reason = "The optimization pipeline is a named, ordered sequence behind an immutable pass registry, and the ecosystem admits a negotiated CompilerPassExtension as a registered pass, so an out-of-tree pass runs and a built-in name cannot be shadowed. What is missing is the analysis half: CUDA-Q separates analysis passes from transformation passes and carries pass dependencies and preservation metadata, while this registry resolves transformation names only, runs no analysis, and keeps the admitted pass out of the default compile pipeline."
+baseline_gap = "No analysis-pass concept, no pass dependency or preservation metadata, and no directed acyclic graph intermediate. The registry is Compiler-internal rather than public API, and an admitted pass is not added to the default pipeline."
+evidence = ["flagquantum/compiler/pass_manager.py", "flagquantum/ecosystem/extensions/pass_admission.py", "flagquantum/compiler/pipeline.py", "contracts/compiler-pass-admission-v1-candidate.json", "tests/unit/test_compiler_pass_manager.py", "tests/unit/test_compiler_pass_admission.py", "tests/unit/test_compiler_pass_admission_contract.py"]
 
 [[domains.capabilities]]
 id = "gate_decomposition_patterns"
@@ -385,7 +386,9 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "extension_sdk"
-reason = "The extension protocol and lifecycle exist, but no discovery path reaches compilation, so an out-of-tree pass cannot run."
+reason = "A discovered compiler_pass extension is negotiated, version-checked, started, and registered as a pass whose transform is reachable by name, and the registered name is host-built under an extension prefix so a plugin can never take a built-in pass name. The remaining gap is distribution rather than execution: the entry-point group resolves the pass, but no published out-of-tree pass package exists, there is no pass-level conformance runner, and no C ABI is offered."
+baseline_gap = "Reaches compilation, but no published third-party pass package, no pass conformance runner, and no C ABI."
+evidence = ["flagquantum/ecosystem/extensions/pass_admission.py", "flagquantum/ecosystem/extensions/sdk.py", "flagquantum/compiler/pass_manager.py", "docs/development/API_CHANGE_PROPOSAL_070_COMPILER_PASS_ADMISSION.md", "docs/reference/EXTENSION_SDK.md"]
 
 [[domains.capabilities]]
 id = "foreign_circuit_import"

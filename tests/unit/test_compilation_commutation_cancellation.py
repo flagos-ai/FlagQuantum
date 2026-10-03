@@ -381,7 +381,13 @@ def test_a_removal_that_another_removal_depends_on_is_still_sound() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """The pipeline has one place that composes optimization, and it uses it."""
+    """The pipeline has one place that names optimization order, and it uses it.
+
+    The order moved from inline calls into `OPTIMIZATION_PIPELINE`, so the
+    position claim is now a claim about that sequence: the pass occupies one slot,
+    after the rotation merge it depends on, and the registry binds the name to this
+    pass rather than to a look-alike.
+    """
 
     import ast
     import importlib
@@ -390,21 +396,35 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     assert module.__file__ is not None
     with open(module.__file__, encoding="utf-8") as handle:
         tree = ast.parse(handle.read())
-    loop = next(
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
-    )
-    calls = [
-        node.func.id
-        for node in ast.walk(loop)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-    ]
-    assert calls.count("cancel_commuting_self_inverse") == 1
-    assert calls.index("cancel_commuting_self_inverse") > calls.index(
+
+    pipeline = list(module.OPTIMIZATION_PIPELINE)
+    assert pipeline.count("cancel_commuting_self_inverse") == 1
+    assert pipeline.index("cancel_commuting_self_inverse") > pipeline.index(
         "merge_adjacent_rotations"
     )
-    # And nothing else in the pipeline reaches for the analysis directly.
+    assert [
+        name
+        for name, function in module.BUILTIN_PASSES.items()
+        if function is module._cancel_commuting_self_inverse
+    ] == ["cancel_commuting_self_inverse"]
+
+    probe = CircuitIR(
+        2,
+        (
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.4),
+            Instruction("cx", (0, 1)),
+            Instruction("cy", (0, 1)),
+            _rotation("rz", 0, 0.5),
+            Instruction("cy", (0, 1)),
+        ),
+    )
+    routed = module.default_pass_registry().resolve("cancel_commuting_self_inverse")
+    assert routed(probe) == cancel_commuting_self_inverse(probe)
+    # This pass alone frees the two rotations rather than merging them; the merge
+    # is `merge_adjacent_rotations`, which the sequence places after it.
+    assert _names(routed(probe)) == ["rz", "rz"]
+    # And the composition point still names no analysis directly: it resolves names.
     assert "analyze_commutation" not in ast.dump(tree)
 
 

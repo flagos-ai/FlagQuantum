@@ -545,24 +545,32 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """One call site, inside the loop, so the loop can use what it frees."""
+    """One binding and one sequence slot, so the loop can use what it frees.
 
-    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
-    calls = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "merge_inverse_pairs"
+    The loop itself no longer names the pass; it resolves names through the
+    registry, so the wiring claim is that exactly one registry binding answers for
+    this pass and its name occupies exactly one slot in the optimized order.
+    """
+
+    bound = [
+        name
+        for name, function in pipeline_module.BUILTIN_PASSES.items()
+        if function is pipeline_module._merge_inverse_pairs
     ]
-    assert len(calls) == 1
+    assert bound == ["merge_inverse_pairs"]
+    assert pipeline_module.OPTIMIZATION_PIPELINE.count("merge_inverse_pairs") == 1
 
-    loop = next(
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
+    probe = CircuitIR(
+        2,
+        (
+            Instruction("s", (0,)),
+            Instruction("sdg", (0,)),
+            Instruction("h", (1,)),
+        ),
     )
-    assert any(call in ast.walk(loop) for call in calls)
+    routed = pipeline_module.default_pass_registry().resolve("merge_inverse_pairs")
+    assert routed(probe) == merge_inverse_pairs(probe)
+    assert _names(routed(probe)) == ["h"]
 
 
 def test_random_runs_of_the_declared_pairs_preserve_the_state() -> None:

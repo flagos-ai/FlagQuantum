@@ -97,3 +97,33 @@ See [`API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md`](../development/AP
 and [`contracts/backend-execution-admission-v1-candidate.json`](../../contracts/backend-execution-admission-v1-candidate.json).
 `examples/extensions/reference_backend_extension.py` is a complete reference
 implementation that imports only the extension namespace.
+
+## Compiler pass admission
+
+A declared `compiler_pass` extension is admitted the same way, through
+`flagquantum.ecosystem.extensions.pass_admission`. The crossing validates the
+extension's `pass_name` declaration, negotiates `circuit_ir`, and registers the
+extension's `transform` under a name the host builds as
+`extension.<manifest-name>.<declared pass_name>`. No second registry, entry-point
+group, or manifest format is created, and the namespace above is not exported
+from `flagquantum.ecosystem.extensions`.
+
+The built-in optimization pass names are reserved. Because the host builds the
+registered name, no declared value can land on one, and the pass registry
+independently refuses a reserved name, so a plugin cannot change what
+`flagquantum.compiler.compile` does. An admitted pass runs only when a host names
+it, through `optimize_with_extension_pass`, which drives the built-in pipeline to
+its own fixed point and then runs the admitted pass once. The registered route
+closes over the extension handle, so a pass invoked after its extension closed
+fails closed rather than running through a lifecycle that already ended.
+
+An unusable declaration, a non-`compiler_pass` kind, a missing `transform`, a
+refused negotiation, an extension that declares no `circuit_ir` support, an SDK
+version mismatch, and a failed start all fail closed with a `CapabilityError`
+before the pass is registered.
+
+See [`API_CHANGE_PROPOSAL_070_COMPILER_PASS_ADMISSION.md`](../development/API_CHANGE_PROPOSAL_070_COMPILER_PASS_ADMISSION.md)
+and [`contracts/compiler-pass-admission-v1-candidate.json`](../../contracts/compiler-pass-admission-v1-candidate.json).
+`examples/extensions/reference_compiler_extension.py` implements the `compiler`
+kind; a pass-level example is not yet published, which the capability matrix
+records as an explicit gap.

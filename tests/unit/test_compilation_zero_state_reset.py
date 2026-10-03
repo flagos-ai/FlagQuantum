@@ -325,16 +325,25 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
-    calls = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "remove_zero_state_resets"
-    ]
+    """One binding, one pipeline slot, and the registry resolves that binding.
 
-    assert len(calls) == 1
+    The fixed-point loop no longer names each pass inline; it resolves a named
+    sequence through the pass registry. The wiring to check is therefore which
+    registry binding answers for the pass, and that its name occupies one slot in
+    the sequence, so a second binding or a duplicated slot fails here.
+    """
+
+    bound = [
+        name
+        for name, function in pipeline_module.BUILTIN_PASSES.items()
+        if function is remove_zero_state_resets
+    ]
+    assert bound == ["remove_zero_state_resets"]
+    assert pipeline_module.OPTIMIZATION_PIPELINE.count("remove_zero_state_resets") == 1
+    assert (
+        pipeline_module.default_pass_registry().resolve("remove_zero_state_resets")
+        is remove_zero_state_resets
+    )
 
 
 def test_a_removed_reset_leaves_the_statevector_identical() -> None:

@@ -114,3 +114,39 @@ This initial contract covers circuit-level transpilers. Pulse compilation,
 native binaries, and multi-stage MLIR/LLVM artifacts require their own
 FlagQuantum-owned artifact contracts and are intentionally not approximated by
 generic objects.
+
+## Smaller hook: compiler passes
+
+A package that supplies one transformation rather than a whole transpiler
+registers the `compiler_pass` kind instead. The manifest and the entry-point
+identity follow the same rules, and the extension implements `negotiate`,
+`start`, `transform`, and `close`:
+
+```python
+ExtensionManifest(
+    name="acme",
+    version="0.1.0",
+    kind="compiler_pass",
+    capabilities=frozenset({"circuit_ir"}),
+)
+```
+
+`transform` accepts a FlagQuantum `CircuitIR` and returns a FlagQuantum
+`CircuitIR`. The package declares the pass name it wants; the host registers it
+as `extension.acme.<declared pass_name>`, so two extensions cannot collide and no
+declared value can take a built-in pass name.
+
+```python
+from flagquantum.ecosystem.extensions.pass_admission import (
+    optimize_with_extension_pass,
+)
+
+# The built-in pipeline runs to its own fixed point, then the admitted pass runs
+# once. The pass is named explicitly; no installation changes fq.compile.
+optimized = optimize_with_extension_pass(source_ir, extension=create_extension())
+```
+
+There is no implicit pass selection, no fallback, and no way for an installed
+package to join the default optimization pipeline. An unusable declaration, a
+refused negotiation, an SDK mismatch, and a failed start are reported as
+extension boundary errors before the pass is registered.

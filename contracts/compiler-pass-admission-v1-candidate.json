@@ -1,0 +1,137 @@
+{
+  "schema": "flagquantum.compiler_pass_admission_contract",
+  "version": "1.0",
+  "status": "candidate",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_070_COMPILER_PASS_ADMISSION.md",
+  "owner": "compiler",
+  "public_api_change": false,
+  "stable_core_change": false,
+  "root_manifest_change": false,
+  "default_path_change": false,
+  "existing_authorities": {
+    "extension_discovery_and_negotiation": "flagquantum.ecosystem.extensions.ExtensionRegistry",
+    "extension_entry_point_group": "flagquantum.extensions",
+    "pass_kind_protocol": "flagquantum.ecosystem.extensions.CompilerPassExtension",
+    "pass_registry": "flagquantum.compiler.pass_manager.PassRegistry",
+    "optimization_pipeline": "flagquantum.compiler.pass_manager.OPTIMIZATION_PIPELINE",
+    "builtin_pass_bindings": "flagquantum.compiler.pipeline.BUILTIN_PASSES",
+    "compilation_entry": "flagquantum.compiler.pipeline.compile"
+  },
+  "admission": {
+    "crossing": "flagquantum.ecosystem.extensions.pass_admission.admit_pass_extension",
+    "declaration_member": "pass_name",
+    "registration_call": "flagquantum.compiler.pass_manager.PassRegistry.with_pass",
+    "second_registry_created": false,
+    "negotiation_per_compilation": false,
+    "version_check_per_compilation": false,
+    "admission_trigger": "explicit_call_only",
+    "sdk_version_check": "flagquantum.ecosystem.extensions.ExtensionRegistry.with_extension",
+    "re_admission_of_a_registered_name": "rejected_before_registration",
+    "re_admission_note": "PassRegistry.with_pass raises PassRegistryError for a name that is already registered, so a second admission of the same extension and pass fails before it can displace the first route.",
+    "host_side_module": "flagquantum.ecosystem.extensions.pass_admission",
+    "sdk_namespace_change": "none",
+    "sdk_namespace_change_note": "Admission is a host-side operation, so it is not added to flagquantum.ecosystem.extensions.__all__, which contracts/extension-protocol-v1-candidate.json pins as an exact set. That contract stays approved and unmodified."
+  },
+  "pass_route": {
+    "call": "transform(program: CircuitIR) -> CircuitIR",
+    "protocol_member_unchanged": "flagquantum.ecosystem.extensions.sdk.CompilerPassExtension already declares transform(self, program). The registered route calls the handle rather than the extension, so the protocol member is used as declared and the SDK protocol is unchanged.",
+    "lifecycle_bound": true,
+    "lifecycle_bound_note": "The route closes over the ExtensionHandle, so a pass invoked after its extension closed fails closed by raising ExtensionLifecycleError instead of running through a lifecycle that already ended.",
+    "return_contract": "The manager, not the crossing, checks that a pass returned a CircuitIR, and the error names the registered pass.",
+    "built_in_and_extension_passes_are_called_alike": true
+  },
+  "declaration": {
+    "shape": "non_empty_string",
+    "host_owned_keys": [
+      "name",
+      "transform",
+      "kind"
+    ],
+    "registered_name": "extension.<manifest-name>.<declared pass_name>",
+    "registered_name_builder": "flagquantum.compiler.pass_manager.extension_pass_name",
+    "period_in_either_component": "fail_closed",
+    "missing_declaration": "fail_closed",
+    "non_compiler_pass_kind": "fail_closed",
+    "reserved_built_in_name": "unreachable_by_construction",
+    "reserved_built_in_name_note": "The host builds the registered name, always under the extension prefix, so no value an extension declares lands on a built-in name. PassRegistry independently refuses a built-in name as a second, non-overlapping check."
+  },
+  "registry_facts": {
+    "immutable": true,
+    "additions_return_a_new_registry": true,
+    "built_in_names_reserved": true,
+    "reserved_names": "exactly the names in OPTIMIZATION_PIPELINE",
+    "sequence_resolved_before_first_pass": true,
+    "unknown_name_error": "PassRegistryError naming the registered passes",
+    "wrong_return_type_error": "CompilationError naming the pass and the returned type",
+    "fixed_point_round_limit_default": "len(program) + 1",
+    "fixed_point_test": "a round that removes no instruction is a fixed point"
+  },
+  "invariants": [
+    "the registered name of an admitted pass always starts with the extension prefix",
+    "no extension value can produce a registered name equal to a built-in pass name",
+    "PassRegistry refuses to shadow a registered name and refuses a reserved built-in name on an otherwise empty registry",
+    "default_pass_registry resolves exactly the built-in pipeline names and no extension name",
+    "the built-in pipeline names, their order, and the number of rounds the fixed-point loop runs are unchanged by the refactor",
+    "a sequence is resolved in full before the first pass runs, so an unknown name leaves the program untouched",
+    "optimize_with_extension_pass runs the built-in pipeline to its own fixed point and then the admitted pass exactly once",
+    "the extension handle is closed even when the admitted pass or the pipeline fails"
+  ],
+  "fail_closed": {
+    "unusable_declaration": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "non_compiler_pass_kind": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "missing_transform_member": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "refused_negotiation": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "extension_declaring_no_circuit_ir_support": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "failed_start": "flagquantum.ecosystem.extensions.pass_admission.PassAdmissionError",
+    "sdk_incompatible_extension": "flagquantum.ecosystem.extensions.ExtensionCompatibilityError",
+    "error_type_supertype": "flagquantum.errors.CapabilityError",
+    "conditions": {
+      "unusable_declaration": "the declared pass_name is absent, empty, or not a string",
+      "non_compiler_pass_kind": "the manifest kind is not compiler_pass",
+      "missing_transform_member": "the extension does not implement the transform member the protocol declares",
+      "refused_negotiation": "the extension reports blockers, and the error carries each one verbatim",
+      "extension_declaring_no_circuit_ir_support": "the negotiation response does not support circuit_ir",
+      "failed_start": "the extension raises while starting, and no route is left registered",
+      "sdk_incompatible_extension": "the manifest api_version does not match SDK_API_VERSION, and the refusal happens before activation"
+    },
+    "silent_fallback": false,
+    "automatic_extension_selection": false
+  },
+  "builtin_path": {
+    "what_compile_runs": "flagquantum.compiler.pipeline.default_pass_registry",
+    "extension_pass_in_the_default_registry": false,
+    "extension_lookup_on_the_default_path": false,
+    "negotiation_on_the_default_path": false,
+    "version_check_on_the_default_path": false,
+    "default_path_change": false,
+    "default_path_note": "fq.compile and fq.optimize resolve built-in names only. A third-party pass reaches compilation through optimize_with_extension_pass or through a caller that builds its own PassManager, never by mutating the pipeline compile is defined by."
+  },
+  "replacement_proof": {
+    "consumer_left_unmodified": [
+      "flagquantum.compiler.pipeline.optimize",
+      "flagquantum.compiler.pipeline.compile"
+    ],
+    "replaced_implementation": "the inline nine-call fixed-point loop that previously lived in flagquantum.compiler.pipeline._optimize_to_fixed_point",
+    "chain": [
+      "flagquantum.ecosystem.extensions.pass_admission.admit_pass_extension",
+      "flagquantum.compiler.pass_manager.PassRegistry.with_pass",
+      "flagquantum.compiler.pass_manager.PassManager.to_fixed_point",
+      "flagquantum.core.ir.CircuitIR"
+    ],
+    "second_implementation_required": true,
+    "scenario_test_required": true,
+    "result_unchanged_note": "The replaced loop and the manager produce the same program for the same input; the sequence is the same nine names in the same order and the round limit is the same expression."
+  },
+  "out_of_scope": {
+    "analysis_passes": "CUDA-Q separates analysis passes from transformation passes. This contract defines no analysis concept, because no FlagQuantum consumer needs one yet.",
+    "host_pass_manager_export": "There is no public fq.PassManager. The registry and manager are Compiler-internal, and the only host-facing reach is optimize_with_extension_pass.",
+    "pass_plugin_conformance_runner": "run_compiler_conformance covers the compiler kind. A pass-level conformance runner is not defined here.",
+    "sdk_namespace_addition": "No name is added to flagquantum.ecosystem.extensions.__all__."
+  },
+  "non_goals": [
+    "A second extension registry, entry-point group, or manifest format.",
+    "Per-compilation negotiation, version checks, or extension discovery.",
+    "Moving any built-in pass body into the pass manager or into the ecosystem package.",
+    "Any change to the Stable Core exports or to the serialized execution schemas."
+  ]
+}
