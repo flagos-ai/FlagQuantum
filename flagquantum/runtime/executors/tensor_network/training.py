@@ -350,12 +350,20 @@ def train_distributed_tensor_network(
     checkpoint_interval: int = 1,
     resume: bool = False,
     process_group: Any | None = None,
+    checkpoint_budget_bytes: int | None = None,
 ) -> ShardedTensorNetworkTrainingResult:
     """Train one rank-sliced tensor network with owner-sharded SGD.
 
     ``parameters`` are the tensors the caller bound into the circuit; each rank
     contracts only the slices it owns, and one owner rank consumes each reduced
     gradient. The caller owns process-group initialization and cleanup.
+
+    ``checkpoint_budget_bytes`` bounds how much of the reverse tape a step keeps.
+    Above the budget the step rematerializes forward values instead of retaining
+    them, so a workload whose lossless tape does not fit one device can still be
+    trained on it. It changes the step's memory profile, not its arithmetic: the
+    objective and every gradient are identical to the unbounded path. ``None``
+    retains the whole tape, which is cheaper whenever it fits.
 
     Returns the run's losses together with the placement, ownership, memory,
     communication and checkpoint evidence the run actually produced.
@@ -383,6 +391,8 @@ def train_distributed_tensor_network(
         raise ValueError("checkpoint_interval must be positive")
     if checkpoint_directory is None and resume:
         raise ValueError("resume requires a checkpoint_directory")
+    if checkpoint_budget_bytes is not None and checkpoint_budget_bytes < 0:
+        raise ValueError("checkpoint_budget_bytes must be non-negative")
 
     world_size = int(dist.get_world_size(group=process_group))
     rank = int(dist.get_rank(group=process_group))
@@ -452,6 +462,7 @@ def train_distributed_tensor_network(
             process_group=process_group,
             gradient_reduction=gradient_reduction,
             slice_batch_size=slice_batch_size,
+            checkpoint_budget_bytes=checkpoint_budget_bytes,
         )
         # The objective is the expectation value the reverse already produced;
         # no separate forward pass is taken, so the value and the gradients it
