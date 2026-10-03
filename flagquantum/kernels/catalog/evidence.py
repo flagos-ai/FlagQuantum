@@ -269,6 +269,16 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-FLAGTREE-SV-006-A",
+        "tests/gpu/test_flagtree_tle_statevector.py::test_flagtree_tle_transpose_1q_matches_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_transpose_1q_rejects_cpu_before_capability_probe",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_transpose_1q_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-FLAGTREE-SV-007-A",
         "tests/gpu/test_flagtree_tle_transport.py::test_flagtree_tle_control_pack_matches_index_reference",
         capability_tests=(

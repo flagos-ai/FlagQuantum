@@ -98,6 +98,58 @@ def apply_complex64_local_1q_tle(
     )
 
 
+def apply_complex64_transpose_1q_tle_inplace(
+    state: torch.Tensor,
+    received: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    bit_position: int,
+    exchanged_bit_value: int,
+) -> torch.Tensor:
+    """Fuse a received half-shard transpose and 1q gate with TLE loads."""
+
+    amplitude_count = state.shape[1] if state.ndim == 2 else 0
+    if (
+        state.device.type != "cuda"
+        or state.dtype != torch.complex64
+        or state.ndim != 2
+        or not state.is_contiguous()
+        or amplitude_count == 0
+        or amplitude_count & (amplitude_count - 1)
+        or received.device != state.device
+        or received.dtype != state.dtype
+        or received.shape != (state.shape[0], amplitude_count // 2)
+        or not received.is_contiguous()
+    ):
+        raise ValueError(
+            "FlagTree TLE transpose 1q requires matching contiguous CUDA "
+            "complex64 state and half-shard tensors"
+        )
+    if matrix.shape != (2, 2) or exchanged_bit_value not in {0, 1}:
+        raise ValueError(
+            "FlagTree TLE transpose 1q requires a 2x2 matrix and bit value"
+        )
+    if not 0 <= bit_position < amplitude_count.bit_length() - 1:
+        raise ValueError("bit_position is outside the local state address")
+
+    matrix = matrix.to(device=state.device, dtype=state.dtype).contiguous()
+    require_flagtree_tle_primitive("load", backend=state.device.type)
+    kernel: Any = import_module(
+        ".triton.extensions.tle.statevector_gates",
+        package=__package__,
+    )
+    return cast(
+        torch.Tensor,
+        kernel.launch_complex64_transpose_1q_tle(
+            state,
+            received,
+            matrix,
+            bit_position=bit_position,
+            exchanged_bit_value=exchanged_bit_value,
+        ),
+    )
+
+
 def pack_complex64_control_one_tle(
     state: torch.Tensor,
     *,
@@ -118,7 +170,7 @@ def pack_complex64_control_one_tle(
         or amplitude_count & (amplitude_count - 1)
     ):
         raise ValueError(
-            "FlagTree TLE control pack requires contiguous CUDA complex64 " "[B, 2**n]"
+            "FlagTree TLE control pack requires contiguous CUDA complex64 [B, 2**n]"
         )
     if not 0 <= bit_position < amplitude_count.bit_length() - 1:
         raise ValueError("bit_position is outside the local state address")
@@ -190,6 +242,7 @@ def unpack_complex64_control_one_tle(
 
 __all__ = (
     "apply_complex64_local_1q_tle",
+    "apply_complex64_transpose_1q_tle_inplace",
     "pack_complex64_control_one_tle",
     "require_flagtree_tle_primitive",
     "unpack_complex64_control_one_tle",

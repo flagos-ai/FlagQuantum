@@ -96,6 +96,26 @@ def test_tle_local_1q_rejects_cpu_before_import(monkeypatch) -> None:
         )
 
 
+def test_tle_transpose_1q_rejects_cpu_before_capability_probe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        provider,
+        "require_flagtree_tle_primitive",
+        lambda *args, **kwargs: pytest.fail("capability probe must not run"),
+    )
+    state = torch.zeros(1, 8, dtype=torch.complex64)
+    received = torch.zeros(1, 4, dtype=torch.complex64)
+    matrix = torch.eye(2, dtype=torch.complex64)
+
+    with pytest.raises(ValueError, match="matching contiguous CUDA complex64"):
+        provider.apply_complex64_transpose_1q_tle_inplace(
+            state,
+            received,
+            matrix,
+            bit_position=0,
+            exchanged_bit_value=0,
+        )
+
+
 def test_tle_control_pack_rejects_cpu_before_capability_probe(monkeypatch) -> None:
     monkeypatch.setattr(
         provider,
