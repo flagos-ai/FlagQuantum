@@ -627,6 +627,10 @@ value = "26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "3ca8d23ef910520ac533d470042a0ea5c9afa41f"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "57f40ee6bfd1318ac98ab2d801216c958c168efe"
 origin = "unreferenced_object"
 
