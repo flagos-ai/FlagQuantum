@@ -89,6 +89,21 @@ def _workload_digest(contract: Mapping[str, Any]) -> str:
     return hashlib.sha256(source.read_bytes()).hexdigest()
 
 
+def _protocol_digest(manifest_path: Path) -> str:
+    """Return the digest of the manifest that froze the matched-speed ladder.
+
+    The capacity role has a frozen workload file because a capacity premise is a
+    property of one circuit. The matched-speed role does not: its ladder is
+    three configurations the manifest freezes inline, and the producer builds
+    their circuits from those numbers rather than reading them, so the file that
+    identifies the timed protocol is the manifest itself. Naming it here keeps
+    one identity per frozen thing instead of hashing whatever happens to be
+    nearby.
+    """
+
+    return hashlib.sha256(Path(manifest_path).read_bytes()).hexdigest()
+
+
 def grid_circuit(rows: int, columns: int, cycles: int, *, device, dtype) -> fq.Circuit:
     """Return the alternating-grid circuit the capacity ladder measured.
 
@@ -559,9 +574,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
             "iterations": arguments.iterations,
             "measured_peak_memory_bytes": peak,
             "device_name": torch.cuda.get_device_properties(device).name,
-            "workload_sha256": _workload_digest(
-                _capacity_contract(arguments.release_manifest)
-            ),
+            "workload_sha256": _protocol_digest(arguments.release_manifest),
             "software": _software(),
         }
         records = _gather(record, world)
@@ -789,7 +802,7 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
         "rank_peak_memory_bytes": peaks,
         "gpu_activity": 1.0,
         "full_state_materialized": False,
-        "workload_sha256": capacity_digest,
+        "workload_sha256": _protocol_digest(arguments.release_manifest),
         "hardware_inventory": [sharded["device_name"]],
         "speedup": accepted["speedup"],
         "speedup_confidence_interval": accepted["speedup_confidence_interval"],

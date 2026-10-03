@@ -12,6 +12,7 @@ these wrong would seal a run as evidence for something it did not measure.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -181,3 +182,16 @@ def test_the_release_payload_role_lifts_the_contract_out_of_a_document(
                 str(tmp_path / "never.json"),
             ]
         )
+
+
+def test_the_protocol_digest_identifies_the_manifest_that_froze_the_ladder() -> None:
+    # The matched-speed ladder is frozen inline in the manifest, so the manifest
+    # is what identifies the timed protocol. Hashing the capacity workload here
+    # would attribute a speed run to a circuit the run never touched.
+    assert (
+        producer._protocol_digest(RELEASE_MANIFEST)
+        == hashlib.sha256(RELEASE_MANIFEST.read_bytes()).hexdigest()
+    )
+    assert producer._protocol_digest(RELEASE_MANIFEST) != producer._workload_digest(
+        FROZEN["capacity_workload"]
+    )
