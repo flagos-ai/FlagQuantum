@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from importlib import import_module
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -87,11 +87,14 @@ def apply_complex64_local_1q_tle(
         ".triton.extensions.tle.statevector_gates",
         package=__package__,
     )
-    return kernel.launch_complex64_local_1q_tle(
-        state,
-        matrix,
-        bit_position=bit_position,
-        output=output,
+    return cast(
+        torch.Tensor,
+        kernel.launch_complex64_local_1q_tle(
+            state,
+            matrix,
+            bit_position=bit_position,
+            output=output,
+        ),
     )
 
 
