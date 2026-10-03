@@ -249,11 +249,13 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     # module-level import in this direction would be circular.
     # `commutation_cancellation` reads `_SELF_INVERSE`, `inverse_cancellation` reads
     # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
-    # `_is_zero`, and `diagonal_before_measure` reads one_qubit_synthesis.
+    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
+    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
     from .commutation_cancellation import cancel_commuting_self_inverse
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
     from .inverse_cancellation import merge_inverse_pairs
     from .one_qubit_optimization import collapse_one_qubit_runs
+    from .two_qubit_optimization import collapse_two_qubit_runs
 
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
@@ -276,6 +278,12 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)
+        # Last, so that a run this pass composes is one the single-qubit passes have
+        # already had, and so that the single-qubit gates they leave behind on one of
+        # the pair's wires have already ended the run. Its own reach needs the loop:
+        # the `cz` that replaces `swap cz swap` is a gate the next round can then
+        # cancel against a neighbour.
+        ir = collapse_two_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")
