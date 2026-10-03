@@ -31,15 +31,27 @@ X-type logical operators, and a Y fault reaches both. Each data fault in round
 a measurement fault shows up in its own check's detector and in the next round's,
 which is the code-capacity experiment stated as detector differences.
 
-The circuit route states one of those families, the data bit flip, because a
-memory circuit measures the data qubits in the Z basis and its layouts are
-therefore Z memory. That is a property of the program, not a gap in the model.
+The circuit route enumerates the same four families -- the X, Z and Y data faults
+and the measurement fault -- and forces each one through the program instead of
+reading it off a matrix. The injection writes its guard into the experiment's own
+source, whose language carries ``h`` and ``x`` as its only single-qubit gates that
+take no parameter, so a Z fault is forced as the X fault conjugated by ``h`` and a
+Y fault as that Z fault followed by the X fault; both are exact gate identities
+rather than approximations. What a fault then flips is the program's answer rather
+than a plan's, and the Z-basis layout makes it a narrower answer than the matrix
+route's: a Z fault never flips the Z-type logical observable, and it reaches only
+the X-type checks, which have a detector for every round after the first. A Z
+fault at the round-zero boundary is therefore no mechanism at all on a Z-memory
+circuit -- the band it would flip has no reference to be compared against -- while
+the same fault one round later is one.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from numbers import Integral
+from types import MappingProxyType
 from typing import Literal
 
 import torch
@@ -53,6 +65,33 @@ from .noise import PhenomenologicalNoise
 __all__ = ("CssCodeMatrices", "css_code_matrices")
 
 Entry = tuple[float, tuple[int, ...], tuple[int, ...]]
+
+# One data fault's family, named by the field the noise record states it in. The
+# sampler needs the same three names, so this is a type rather than a comment.
+_DataFaultFamily = Literal["data", "phase", "both"]
+_MechanismKind = Literal["data", "phase", "both", "measurement"]
+
+
+def _data_family_rates(
+    noise: PhenomenologicalNoise, *, num_qubits: int
+) -> tuple[tuple[_DataFaultFamily, tuple[float, ...]], ...]:
+    """Return the three data families' rate vectors in the order both routes use.
+
+    The names are the noise record's own fields -- ``data_flip`` for an X fault,
+    ``phase_flip`` for a Z fault and ``both_flip`` for a Y fault -- and this is
+    the one place the order they are enumerated in is stated. The sampler
+    enumerates data locations from this same sequence, so a family cannot be
+    placed under one name there and recorded under another here, and a family
+    added to the record reaches both routes by being added here.
+    """
+
+    return (
+        ("data", noise.data_flip_rates(num_qubits=num_qubits)),
+        ("phase", noise.phase_flip_rates(num_qubits=num_qubits)),
+        ("both", noise.both_flip_rates(num_qubits=num_qubits)),
+    )
+
+
 # One mechanism: its rate, the detectors it flips, and the observables it flips.
 
 
@@ -79,11 +118,12 @@ def _memory_circuit_entries(
         raise TypeError("noise must be a PhenomenologicalNoise")
     entries: list[Entry] = []
     for mechanism in _mechanisms(circuit, noise):
-        if mechanism.kind == "data":
+        if mechanism.kind in _FAULT_GATES:
             source = _inject_data_flip(
                 circuit,
                 round_index=mechanism.round_index,
                 wire=mechanism.wire,
+                kind=mechanism.kind,
             )
         elif mechanism.kind == "measurement":
             source = _inject_measurement_flip(
@@ -469,6 +509,22 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
 _ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"
 _FLIP_INDENT = "        "
 
+# The gates a forced data fault is composed of, one entry per family the noise
+# record states. The injection writes into a source whose language carries `h` and
+# `x` as its only parameter-free single-qubit gates, so the two families that are
+# not a bit flip are built out of those: `h` conjugates the `x` into a `z`, and a
+# `y` is that `z` followed by the `x` again, since Z X = iY. Both are exact
+# identities, so a forced fault is the Pauli it is named for and not an
+# approximation of it; the global phase `i` cannot reach a flip set, which is what
+# the signature is read from.
+_FAULT_GATES: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        "data": ("X",),
+        "phase": ("H", "X", "H"),
+        "both": ("H", "X", "H", "X"),
+    }
+)
+
 
 @dataclass(frozen=True)
 class _Mechanism:
@@ -478,14 +534,15 @@ class _Mechanism:
     rendered source. A caller that fires a set of mechanisms at once has to
     re-inject them into the one program it executes, and it cannot rebuild a
     source from a string alone; carrying coordinates also keeps injection in
-    exactly one place. ``kind`` is ``"data"`` for a flip on a data wire, where
-    ``wire`` is that data wire, and ``"measurement"`` for a flip on a check's
-    syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
-    literal rather than a free string, so a caller that builds a record by hand
-    is told at the type checker which two flips exist.
+    exactly one place. ``kind`` names the noise record's own field: ``"data"``
+    for an X fault on a data wire, ``"phase"`` for a Z fault and ``"both"`` for a
+    Y fault, where ``wire`` is that data wire, and ``"measurement"`` for a fault
+    on a check's syndrome measurement, where ``wire`` is that check's ancilla. The
+    kind is a literal rather than a free string, so a caller that builds a record
+    by hand is told at the type checker which flips exist.
     """
 
-    kind: Literal["data", "measurement"]
+    kind: _MechanismKind
     round_index: int
     wire: int
     probability: float
@@ -523,13 +580,19 @@ def _mechanisms(
 ) -> tuple[_Mechanism, ...]:
     """Return every noise location a probability makes possible, in order.
 
-    Data flips come first — one per round per data wire — and measurement flips
-    second, one per round per check. Both loops walk the code's own tuples in
+    The three data faults come first — one per round per data wire per family,
+    the X family first and then the Z and Y families — and measurement faults
+    second, one per round per check. Every loop walks the code's own tuples in
     order, which is the order the emitted program measures in. A location whose
     **own** probability is zero cannot flip anything, so it is not enumerated at
     all: a caller that counts mechanisms then counts exactly what can happen, and
     a per-element vector is how a caller states that one location is quiet while
     its neighbours are not.
+
+    One wire can therefore carry up to three mechanisms in a round, one per
+    family, and the record states each family's rate separately: a wire that is
+    noisy in one Pauli and quiet in the others is enumerated once, which is what
+    makes a bit-flip-only profile cost one mechanism rather than three.
 
     The probability a location is enumerated with is the element of the vector
     that names it, or the scalar when no vector is stated, and the element is
@@ -573,22 +636,22 @@ def _mechanisms(
             "two checks record one syndrome bit, so the model would read the "
             "same bit for both"
         )
-    data_flip_rates = noise.data_flip_rates(num_qubits=len(data_wires))
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
     rate_order = _check_rate_order(checks)
     mechanisms: list[_Mechanism] = []
-    for round_index in range(circuit.rounds):
-        for position, wire in enumerate(data_wires):
-            rate = data_flip_rates[position]
-            if rate:
-                mechanisms.append(
-                    _Mechanism(
-                        kind="data",
-                        round_index=round_index,
-                        wire=wire,
-                        probability=rate,
+    for kind, rates in _data_family_rates(noise, num_qubits=len(data_wires)):
+        for round_index in range(circuit.rounds):
+            for position, wire in enumerate(data_wires):
+                rate = rates[position]
+                if rate:
+                    mechanisms.append(
+                        _Mechanism(
+                            kind=kind,
+                            round_index=round_index,
+                            wire=wire,
+                            probability=rate,
+                        )
                     )
-                )
     for round_index in range(circuit.rounds):
         for position, check in enumerate(checks):
             rate = measurement_flip_rates[rate_order[position]]
@@ -642,21 +705,42 @@ def _single_anchor(source: str, anchor: str, *, label: str) -> int:
     return source.index(anchor)
 
 
-def _forced_flip(round_index: int, wire: int) -> str:
-    """Return the guarded single-qubit ``X`` that forces one error."""
+def _forced_flip(round_index: int, wire: int, *, kind: str = "data") -> str:
+    """Return the guarded gates that force one error of ``kind`` on ``wire``.
 
-    return (
-        f"{_FLIP_INDENT}if round_index == {round_index}:\n"
-        f"{_FLIP_INDENT}    qp.X(wires={wire})\n"
+    The family's gates are :data:`_FAULT_GATES`, emitted in order inside the
+    round guard, so a Z or Y fault is the bit flip conjugated by ``h`` rather
+    than a second kind of injection. ``kind`` is checked here because the two
+    injectors and the callers that hand-build a :class:`_Mechanism` all reach
+    this one function, and a misspelled family has to be refused rather than
+    silently forced as the bit flip the default names.
+    """
+
+    gates = _FAULT_GATES.get(kind)
+    if gates is None:
+        raise ValueError(
+            f"unknown data-fault kind {kind!r}; the families are "
+            f"{sorted(_FAULT_GATES)}"
+        )
+    return "".join(
+        [
+            f"{_FLIP_INDENT}if round_index == {round_index}:\n",
+            *(f"{_FLIP_INDENT}    qp.{gate}(wires={wire})\n" for gate in gates),
+        ]
     )
 
 
-def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) -> str:
-    """Return ``circuit``'s source with one ``X`` forced on a data wire.
+def _inject_data_flip(
+    circuit: MemoryCircuit, *, round_index: int, wire: int, kind: str = "data"
+) -> str:
+    """Return ``circuit``'s source with one data fault forced on a data wire.
 
-    The flip is guarded by ``if round_index == <round_index>:`` and inserted at
+    The fault is guarded by ``if round_index == <round_index>:`` and inserted at
     the start of that round, before any of the round's CNOTs, so the error opens
-    the frame the round's detectors compare against.
+    the frame the round's detectors compare against. ``kind`` selects the Pauli
+    family, which is which gates :func:`_forced_flip` emits; the default is the
+    bit flip, so a caller that names no family is injecting the fault this
+    function was written for.
     """
 
     checked_round = _checked_round(circuit, round_index, label="data-flip round")
@@ -667,7 +751,7 @@ def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) ->
     end = offset + len(_ROUND_LOOP_ANCHOR)
     return (
         f"{circuit.source[:end]}"
-        f"{_forced_flip(checked_round, checked_wire)}"
+        f"{_forced_flip(checked_round, checked_wire, kind=kind)}"
         f"{circuit.source[end:]}"
     )
 

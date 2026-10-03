@@ -83,6 +83,7 @@ from flagquantum.qec.circuit import (
 from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
+    _FAULT_GATES,
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
@@ -139,22 +140,26 @@ def _injected_source(memory: MemoryCircuit, fired: Sequence[_Mechanism]) -> str:
     Each mechanism is injected by the Task 6 injector for its kind, into the
     *current* source rather than into the original one, because an injector
     rewrites one anchor and returns a new string. This helper only chains the
-    two injectors that exist; it is not a second injection implementation.
+    injectors that exist; it is not a second injection implementation.
     """
 
     current = memory
     for record in fired:
-        if record.kind == "data":
-            source = _inject_data_flip(
-                current, round_index=record.round_index, wire=record.wire
-            )
-        elif record.kind == "measurement":
+        if record.kind == "measurement":
             source = _inject_measurement_flip(
                 current, round_index=record.round_index, ancilla_wire=record.wire
             )
+        elif record.kind in _FAULT_GATES:
+            source = _inject_data_flip(
+                current,
+                round_index=record.round_index,
+                wire=record.wire,
+                kind=record.kind,
+            )
         else:
             # Unreachable through ``_mechanisms``; stated so a record whose kind
-            # is neither flip is refused here rather than injected as one.
+            # is neither a data family nor a measurement flip is refused here
+            # rather than injected as one.
             raise ValueError(f"unknown mechanism kind {record.kind!r}")
         current = replace(current, source=source)
     return current.source
