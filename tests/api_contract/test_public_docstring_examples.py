@@ -41,6 +41,7 @@ from flagquantum.qec import CssCodeMatrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
+from flagquantum.simulation.pauli import exponential_pauli_operator
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit
@@ -54,7 +55,9 @@ pytestmark = pytest.mark.unit
 # superoperator class documents its three constructors, its two views, and its
 # accumulation protocol in one example. The bosonic operator class and the
 # bosonic position operator are two more, and the position operator is listed
-# under a module-local name because `fq.position` does not exist. The chemistry
+# under a module-local name because `fq.position` does not exist. The exponential
+# of a Pauli product is the fourth entry from a module that is not a documented
+# workflow namespace. The chemistry
 # module contributes seven: the generator, the excitation census, the two
 # circuit builders, and the UCCSD and hardware-efficient products, each of which
 # documents a different workflow step.
@@ -67,6 +70,7 @@ ENTRIES = (
     SPSAOptimizer,
     boson_position,
     coupler_hardware_efficient_ansatz,
+    exponential_pauli_operator,
     double_excitation,
     estimate_resources,
     evolve_density_matrix,

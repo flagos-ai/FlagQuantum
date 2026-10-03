@@ -646,8 +646,8 @@ cudaq = "exp_pauli and pauli_word construction"
 status = "partial"
 priority = "next"
 dependency_class = "none"
-maturity_ref = "ir"
-reason = "Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent."
+reason = "The dense constructor exists: `flagquantum/simulation/pauli.py` reads a Pauli word and its targets positionally, so character `i` of the word acts on `targets[i]`, and returns the operator the pair denotes on a declared number of wires. A Pauli product squares to the identity, so the exponential is evaluated in closed form as `exp(-i theta P) = cos(theta) I - i sin(theta) P` rather than by exponentiating a matrix; the form is exact at every angle and is checked against an eigendecomposition of the product and against the defining series of the exponential. An `I` character consumes its target and contributes no support, so a word aligns with a wire list without dropping the wires it does not act on, and an all-identity word returns the global phase it denotes instead of the identity. A word whose length disagrees with the number of targets, a character outside `X`, `Y`, `Z` and `I`, a repeated target, a target outside the declared wires, and a non-finite angle are each refused. What is absent is the circuit-level form, and it is the whole of the row: no operation the IR carries and no compiler pattern decomposes it into single-qubit basis changes and a CNOT chain, so a circuit cannot contain an exponential of a Pauli product, no rotation parameter reaches it as a differentiable value, and `pauli_word` is not a value type a kernel parameter can be written with. The dense constructor is the operator those three would be built from."
+evidence = ["flagquantum/simulation/pauli.py", "search:no circuit-level exponential-of-Pauli operation: the IR carries no opcode for it, no compiler pattern decomposes it into single-qubit basis changes and a CNOT chain, and no pauli_word value type is available to a kernel parameter"]
 
 [[domains.capabilities]]
 id = "chemistry_domain_library"

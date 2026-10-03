@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import math
+import operator
 from collections.abc import Sequence
 
 import torch
 
+from ..errors import ValidationError
 from .matrices import GATE_MAT_DICT
 from .statevector.operations import _apply_matrix
 
 PauliProduct = Sequence[tuple[int, str]]
+
+_PAULI_WORD_CHARACTERS = frozenset({"I", "X", "Y", "Z"})
+"""The four characters a Pauli word is written with, in CUDA-Q's own spelling."""
 
 
 def infer_n_wires_from_dense_state(state: torch.Tensor) -> int:
@@ -86,7 +92,129 @@ def pauli_product_density_expectation(
     return torch.real(values)
 
 
+def _finite_angle(theta: float) -> float:
+    """Read one rotation angle, refusing a value that does not denote a number.
+
+    ``bool`` and ``str`` are refused although ``float`` reads both: a flag is not an
+    angle, and the text of a number is a mistyped value rather than the number.  An
+    infinite or NaN angle would be carried into a silently wrong unitary, so it is
+    refused here rather than at the arithmetic.
+    """
+
+    if isinstance(theta, (bool, str)):
+        raise ValidationError(f"theta must be a real number, got {theta!r}")
+    try:
+        angle = float(theta)
+    except (TypeError, ValueError):
+        raise ValidationError(f"theta must be a real number, got {theta!r}") from None
+    if not math.isfinite(angle):
+        raise ValidationError(f"theta must be finite, got {theta!r}")
+    return angle
+
+
+def _pauli_word_targets(targets: Sequence[int]) -> tuple[int, ...]:
+    """Read the targets of a Pauli word one label at a time.
+
+    A label is read through the interpreter's own ``__index__`` protocol, which admits
+    NumPy integers and zero-dimensional integer tensors while refusing floats and
+    strings.  ``bool`` is refused although it satisfies ``operator.index``: a flag is
+    not a wire, and reading it as one would address an operator nobody asked for.
+    """
+
+    labels: list[int] = []
+    for target in targets:
+        if isinstance(target, bool):
+            raise ValidationError(
+                f"Pauli word target must be an integer, got {target!r}"
+            )
+        try:
+            labels.append(operator.index(target))
+        except TypeError:
+            raise ValidationError(
+                f"Pauli word target must be an integer, got {target!r}"
+            ) from None
+    if any(label < 0 for label in labels):
+        raise ValidationError(
+            f"Pauli word targets must be non-negative, got {tuple(labels)}"
+        )
+    return tuple(labels)
+
+
+def _pauli_word_operators(
+    word: str,
+    targets: Sequence[int],
+) -> tuple[tuple[int, str], ...]:
+    """Read a Pauli word and its targets into the product form the kernels take.
+
+    The word is read the way CUDA-Q reads it: one character per target, in that order,
+    so ``"YX"`` beside ``(0, 2)`` is the product ``Y`` on wire 0 times ``X`` on wire 2.
+    An ``I`` consumes a target and contributes no support, which is what lets a caller
+    align a word with a wire list without dropping the wires it does not act on.  A
+    word and a target sequence of different lengths, a character outside ``X``, ``Y``,
+    ``Z`` and ``I``, and a repeated target are each refused, because none of them
+    denotes a Pauli product.
+    """
+
+    if not isinstance(word, str):
+        raise ValidationError(f"Pauli word must be a string, got {word!r}")
+    labels = _pauli_word_targets(targets)
+    if len(word) != len(labels):
+        raise ValidationError(
+            f"Pauli word {word!r} has {len(word)} characters for {len(labels)} "
+            "targets, and a word character acts on exactly one target"
+        )
+    unknown = sorted(set(word) - _PAULI_WORD_CHARACTERS)
+    if unknown:
+        raise ValidationError(
+            f"Pauli word {word!r} contains {unknown}, and every character must be "
+            "one of X, Y, Z, or I"
+        )
+    if len(set(labels)) != len(labels):
+        raise ValidationError(f"Pauli word targets must be unique, got {labels}")
+    return tuple(zip(labels, word, strict=True))
+
+
+def exponential_pauli_operator(
+    theta: float,
+    word: str,
+    targets: Sequence[int],
+    n_qubits: int,
+    *,
+    dtype: torch.dtype,
+    device: torch.device | str,
+) -> torch.Tensor:
+    """Materialize the dense unitary ``exp(-i * theta * P)`` of one Pauli word.
+
+    ``word`` and ``targets`` are read positionally, so character ``i`` of the word acts
+    on ``targets[i]`` and together they name the product ``P`` that is exponentiated.
+    The product is placed on ``n_qubits`` qubits, and an ``I`` character contributes no
+    support while still consuming its target.
+
+    A Pauli product squares to the identity, so the exponential is evaluated in closed
+    form rather than by exponentiating a matrix:
+    ``exp(-i * theta * P) = cos(theta) * I - i * sin(theta) * P``.  The expression is
+    exact for every angle, and an all-identity word therefore returns the global phase
+    ``exp(-i * theta) * I`` it denotes rather than the identity.
+
+    Examples:
+        >>> import torch
+        >>> from flagquantum.simulation.pauli import exponential_pauli_operator
+        >>> step = exponential_pauli_operator(
+        ...     1.0, "XX", (0, 1), 2, dtype=torch.complex128, device="cpu"
+        ... )
+        >>> float(step[0, 0].real)
+        0.5403023058681398
+    """
+
+    angle = _finite_angle(theta)
+    operators = _pauli_word_operators(word, targets)
+    identity = pauli_product_operator((), n_qubits, dtype=dtype, device=device)
+    product = pauli_product_operator(operators, n_qubits, dtype=dtype, device=device)
+    return math.cos(angle) * identity - 1j * math.sin(angle) * product
+
+
 __all__ = (
+    "exponential_pauli_operator",
     "infer_n_wires_from_dense_state",
     "pauli_product_density_expectation",
     "pauli_product_operator",
