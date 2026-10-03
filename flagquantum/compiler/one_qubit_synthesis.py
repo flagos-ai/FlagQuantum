@@ -397,6 +397,113 @@ def is_diagonal_one_qubit(instruction: Instruction) -> bool:
     return _polar_angle(angles[0]) == 0.0
 
 
+#: Above this magnitude an angle is not folded at all.
+#:
+#: A fold is only meaningful while a float64 can sit within the tolerance of a
+#: multiple of `4*pi` without *being* that multiple: past `4*pi * 512` the spacing
+#: of float64 exceeds the tolerance, so the only angle whose exact remainder
+#: vanishes is one already equal to `4*pi * k`, and such an angle is an arbitrary
+#: rotation rather than the identity. Folding there would compare rounded integers
+#: rather than angles and could only invent a removal.
+_MODULAR_FOLD_LIMIT = 2048.0 * math.pi
+
+#: The angle at which the `U3` family returns to the identity *exactly*, rather
+#: than to minus the identity.
+#:
+#: `U3(2*pi, 0, 0)` is `-I` and `U3(4*pi, 0, 0)` is `I`, so a rule that folded its
+#: angles modulo `2*pi` would call `rz(2*pi)` the identity and drop a sign the IR
+#: has nowhere to record: `CircuitIR` carries no global-phase field, so the
+#: statevector *is* the program's full output and a `-I` that disappears is a
+#: program that changed. Folding modulo `4*pi` costs the removals that are only
+#: correct up to a sign, which are named in `is_identity_one_qubit`, and in
+#: exchange every removal this rule makes leaves the statevector identical.
+_IDENTITY_PERIOD = 2.0 * _TWO_PI
+
+
+def _is_identity_angle(value: Any, atol: float = 1e-12) -> bool:
+    """Report whether one tabulated angle is an integer multiple of `4*pi`.
+
+    `math.remainder` returns `value - n * 4*pi` exactly, for the `n` nearest
+    `value / (4*pi)`, so the residue carries no rounding of its own and the same
+    `atol` `pipeline._is_zero` applies to a raw angle applies unchanged to the
+    folded one. A trainable value, a non-scalar, and a value outside the fold
+    limit all answer False, which keeps the removal fail-closed.
+    """
+
+    polar = _polar_angle(value)
+    if polar is None or abs(polar) > _MODULAR_FOLD_LIMIT:
+        return False
+    return _is_zero(math.remainder(polar, _IDENTITY_PERIOD), atol=atol)
+
+
+def is_identity_one_qubit(instruction: Instruction) -> bool:
+    """Report whether one instruction is exactly the identity operator.
+
+    `U3(theta, phi, lam)` is `[[cos(t/2), -exp(1j*lam) sin(t/2)],
+    [exp(1j*phi) sin(t/2), exp(1j*(phi+lam)) cos(t/2)]]` for `t = theta`, so its
+    off-diagonal entries vanish exactly where `sin(t/2)` does, and at those points
+    it is `cos(t/2) * diag(1, exp(1j*(phi+lam)))`. The matrix of `U3` alone is
+    therefore the identity exactly when `t` is a multiple of `4*pi` -- so that the
+    first diagonal entry is `+1` and not `-1` -- and `phi + lam` is a multiple of
+    `2*pi`. The declared triples are read through `canonical_euler_angles`, which
+    is the only place this module states those angles, so no opcode table and no
+    second angle table live here, an opcode the schema does not describe is never
+    removed, and a new opcode that tabulates `(0, 0, 0)` is classified rather than
+    declined.
+
+    The fold applied to `phi + lam` is `4*pi` as well, which is deliberately
+    stricter than `U3` alone requires, and the reason is that a triple does not
+    always name its opcode's matrix. `rz(theta)`, `phase(theta)` and `u1(theta)`
+    all tabulate `(0, 0, theta)`, and that triple is the matrix of `phase(theta)`;
+    the matrix of `rz(theta)` is `exp(-1j*theta/2)` times it. So `phase(2*pi)` *is*
+    the identity while `rz(2*pi)` is minus the identity, and no rule that reads
+    only the triple can tell them apart. FlagQuantum IR has no field in which to
+    record a global phase, so `optimize` has to leave the statevector identical --
+    a property `tests/unit/test_compilation_inverse_cancellation.py` asserts over
+    random programs -- and this module resolves the collision by declining all
+    three. Folding `phi + lam` by `2*pi` while folding `t` by `4*pi` would remove
+    `phase(2*pi)`, `u1(2*pi)` and `rz(2*pi)` alike and change the statevector of
+    the last.
+
+    Three reaches follow from the fold, and all three are refusals rather than
+    mistakes. `phase(2*pi)` and `u1(2*pi)` are the identity and are declined, for
+    the collision above. `u3(4*pi, phi, lam)` is declined when `phi + lam` is an
+    even multiple of `pi` that is not a multiple of `4*pi` -- `phi + lam = 2*pi`,
+    where the matrix *is* the identity -- even though `u3`'s triple names its own
+    matrix, because one fold is applied to the sum. And every two-wire rotation is
+    decided by the multi-wire branch of `remove_identity_gates`, not here, so this
+    module's whole reach is single-wire.
+
+    Only exact integer multiples are considered, within `_is_zero`'s own `1e-12`,
+    rather than a fidelity cutoff of the kind a target error rate would supply: a
+    false yes changes the program, and an angle merely near a multiple is a
+    rotation a target may well distinguish. `None` from `_polar_angle` on any of
+    the three angles -- a trainable one most of all -- refuses, so a rotation
+    initialized at zero is never detached from the autograd graph.
+
+    False for an instruction of another arity or one that is not a declared
+    unitary, including `measure`, `reset`, `barrier`, and an operation carrying
+    its own matrix. The matrix is refused rather than read: a caller who attached
+    one has said the opcode's name no longer describes the operator, so the angle
+    triple below is not evidence about it and this module declines rather than
+    guesses. `diagonal_before_measure._is_diagonal` refuses on the same ground.
+    """
+
+    if len(instruction.wires) != 1 or instruction.matrix is not None:
+        return False
+    angles = canonical_euler_angles(instruction)
+    if angles is None:
+        return False
+    theta, phi, lam = angles
+    if not _is_identity_angle(theta):
+        return False
+    phase_angle = _polar_angle(phi)
+    z_angle = _polar_angle(lam)
+    if phase_angle is None or z_angle is None:
+        return False
+    return _is_identity_angle(phase_angle + z_angle)
+
+
 def synthesize_one_qubit(
     instruction: Instruction,
     *,

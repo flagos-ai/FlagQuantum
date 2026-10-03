@@ -71,11 +71,32 @@ def _replace_param(instruction: Instruction, key: str, value: Any) -> Instructio
 
 
 def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
-    """Remove explicit identity gates and zero-angle rotations."""
+    """Remove every gate that is exactly the identity operator.
+
+    A single-wire instruction is decided by `is_identity_one_qubit`, which reads
+    the angle triple the operator schema declares rather than a table of opcode
+    names kept here: that deletes the explicit `i`/`id` set this pass used to
+    carry and admits `u3(0, phi, lam)` when `phi + lam` vanishes, a zero-angle
+    `rx`, `ry`, `rz`, `phase` or `u1`, and every full turn that returns to `+I`.
+    See that function for why a trainable angle refuses, why only exact multiples
+    are considered, and why the fold is modulo `4*pi` rather than `2*pi` -- the
+    shorter fold would remove `rz(2*pi)`, which is `-I`, and the IR has nowhere
+    to record the sign. The import is local because `one_qubit_synthesis` reads
+    `_is_zero` from this module.
+
+    A multi-wire instruction keeps the older rule, which reads the angle
+    parameter `_ROTATION_PARAM` names for its opcode, because
+    `canonical_euler_angles` describes the single-qubit group only. That leaves
+    the `crz(0)`, `rxx(0)`, `cphase(0)` and `rzz(0)` removals this pass already
+    performed untouched, and it declines a two-wire half turn for the same reason
+    the single-wire branch does: `rzz(2*pi)` is `-I`.
+    """
+
+    from .one_qubit_synthesis import is_identity_one_qubit
 
     instructions = []
     for instruction in ir:
-        if instruction.name in {"i", "id"}:
+        if is_identity_one_qubit(instruction):
             continue
         param_name = _ROTATION_PARAM.get(instruction.name)
         if param_name is not None and _is_zero(instruction.params.get(param_name)):

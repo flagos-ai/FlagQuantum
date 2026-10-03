@@ -100,18 +100,6 @@ def _reference_last_touching(
     return None
 
 
-def _reference_remove_identity_gates(ir: CircuitIR) -> CircuitIR:
-    out = []
-    for instruction in ir:
-        if instruction.name in {"i", "id"}:
-            continue
-        param_name = _ROTATION_PARAM.get(instruction.name)
-        if param_name is not None and _is_zero(instruction.params.get(param_name)):
-            continue
-        out.append(instruction)
-    return replace(ir, instructions=tuple(out))
-
-
 def _reference_merge_self_inverse(ir: CircuitIR) -> CircuitIR:
     out: list[Instruction] = []
     for instruction in ir:
@@ -170,16 +158,20 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     reverse list scan that the wire index replaced. If the two ever disagree, the
     index is wrong.
 
-    The five passes outside that traversal are called from both sides in the same
-    position rather than re-derived, because each is a different pass with its own
-    rule and not the subject of this oracle. ``remove_zero_state_resets`` reads the
-    register's initial state instead of an opcode table; ``merge_inverse_pairs``
-    reads the operator schema's own adjoint declaration, so re-deriving it here
-    would change what this oracle is measuring rather than strengthen it;
+    The remaining passes are called from both sides in the same position rather
+    than re-derived, because each is a different pass with its own rule and not the
+    subject of this oracle. ``remove_zero_state_resets`` reads the register's
+    initial state instead of an opcode table; ``merge_inverse_pairs`` reads the
+    operator schema's own adjoint declaration, so re-deriving it here would change
+    what this oracle is measuring rather than strengthen it;
     ``cancel_commuting_self_inverse`` reads the commutation rule source, which reads
     the runtime's gate matrices; ``remove_diagonal_gates_before_measure`` reads a
     measurement boundary and the Euler tables; ``collapse_one_qubit_runs`` has a
-    traversal of its own. All of them are in the loop because the loop has to be the
+    traversal of its own. ``remove_identity_gates`` is here for the narrower reason
+    that it has no traversal to re-derive at all: it is a flat filter over the
+    program whose rule is `one_qubit_synthesis.is_identity_one_qubit`, and a copy of
+    that filter here was a second statement of the identity rule rather than a second
+    statement of the scan. All of them are in the loop because the loop has to be the
     one the implementation runs for the round-by-round comparison to mean anything.
     """
 
@@ -190,6 +182,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         remove_diagonal_gates_before_measure,
     )
     from flagquantum.compiler.inverse_cancellation import merge_inverse_pairs
+    from flagquantum.compiler.pipeline import remove_identity_gates
     from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 
     ir = ensure_circuit_ir(circuit_or_ir)
@@ -197,12 +190,12 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         previous_count = len(ir)
         ir = remove_zero_state_resets(ir)
         ir = remove_diagonal_gates_before_measure(ir)
-        ir = _reference_remove_identity_gates(ir)
+        ir = remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)
         ir = _reference_merge_adjacent_rotations(ir)
         ir = cancel_commuting_self_inverse(ir)
-        ir = _reference_remove_identity_gates(ir)
+        ir = remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
