@@ -32,6 +32,7 @@ from benchmarks.compiler_two_qubit_optimization import (
     POPULATION_SEEDS,
     RUN_LENGTHS,
     _fold_patch,
+    _rotation_merge_patch,
     run_benchmark,
 )
 from flagquantum.compiler.pipeline import optimize
@@ -297,6 +298,14 @@ def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
     stays a statement about three rows rather than about the pipeline in general. If a
     later pass starts composing two-qubit runs the second assertion fails, which is
     where those pins would otherwise have to be re-derived by hand.
+
+    The commuting rotation merge landed after the fold and composes the same two
+    populations, so it is paused throughout. Without that pause these pins would be a
+    measurement of the fold *and* of whatever else composes those rows, and the
+    attribution would decay silently the next time a pass lands between them. The
+    newer rule's own effect on these same three rows is measured and pinned by
+    ``test_the_identity_rows_the_rotation_merge_moved_are_attributed`` in
+    ``test_compiler_commutation_cancellation.py``, which is the module that owns it.
     """
 
     #: ``population -> ((superseded rule, shipped rule) with the fold out, ... with it
@@ -317,7 +326,7 @@ def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
             factory(random.Random(seed)) for seed in range(IDENTITY_CIRCUIT_COUNT)
         ]
         for policy in ("off", "shipped"):
-            with _fold_patch(policy):
+            with _rotation_merge_patch(), _fold_patch(policy):
                 with _substituted_rule(_superseded_rule):
                     superseded = sum(len(optimize(circuit)) for circuit in circuits)
                 shipped = sum(len(optimize(circuit)) for circuit in circuits)

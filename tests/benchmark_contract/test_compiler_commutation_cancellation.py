@@ -21,6 +21,9 @@ stops being reported, or if the gate counts are presented as agreeing with
 Qiskit's when the two passes are measuring different sets.
 """
 
+import contextlib
+import random
+
 import pytest
 
 from benchmarks.compiler_commutation_cancellation import (
@@ -30,6 +33,21 @@ from benchmarks.compiler_commutation_cancellation import (
     _SWEEP_SEED,
     run_benchmark,
 )
+from benchmarks.compiler_identity_elimination import (
+    _CIRCUITS_PER_POPULATION as IDENTITY_CIRCUITS_PER_POPULATION,
+)
+from benchmarks.compiler_identity_elimination import (
+    _POPULATIONS as IDENTITY_POPULATIONS,
+)
+from benchmarks.compiler_identity_elimination import (
+    _substituted_rule,
+    _superseded_rule,
+)
+from benchmarks.compiler_two_qubit_optimization import (
+    _fold_patch,
+    _rotation_merge_patch,
+)
+from flagquantum.compiler.pipeline import optimize
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -545,22 +563,26 @@ def test_the_rotation_chain_populations_are_not_vacuous(payload: dict) -> None:
     assert delta["rotation_chain_mixed_placement"]["rotation_group_count"] == 97
 
 
-def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None:
-    """The second anchor shape is the one both implementations attempt.
+def test_the_anchor_reports_the_ports_own_column_without_qiskit(payload: dict) -> None:
+    """The port's half of the anchor, which no optional dependency may hide.
 
     `CommutativeCancellation` merges a run of z-rotations in the same call, so
-    ``rz(a) cx rz(b)`` on the control is a rewrite it tries as well. The port's own
-    column is pinned, because it is this pass's output and is checked everywhere
-    else in this file; Qiskit's column is reported and bounded rather than pinned to
-    a number, because the port cannot be executed on a machine without Qiskit and a
-    pinned number nobody can reproduce is exactly the kind of claim this repository
-    forbids. What is asserted about it is only what a merge can do: it never
-    lengthens the circuit and it never deletes it.
+    ``rz(a) cx rz(b)`` on the control is a rewrite both implementations attempt. The
+    port's column is a fact about this repository, so it is measured and pinned
+    whether or not Qiskit is importable, and the same rows carry Qiskit's column when
+    it is.
+
+    This split exists because of a measured defect, not for tidiness. The whole anchor
+    used to sit behind the import, so on the job that runs this contract -- which has
+    no Qiskit -- every number in it was skipped, and the one Qiskit job in CI does not
+    collect `tests/benchmark_contract/**` at all. A pinned total of the port's own
+    column therefore shipped this round that no job in the repository could falsify;
+    installing Qiskit and running the anchor by hand gave 14 where the pin said 15.
+    Anything a reader can reproduce without a second framework is now outside the
+    skip, and the skip covers exactly the column that genuinely needs Qiskit.
     """
 
     anchor = payload["reference_anchor"]
-    if not anchor["available"]:
-        pytest.skip(f"Qiskit not importable: {anchor['reason']}")
     rows = anchor["rotation_rows"]
     assert anchor["rotation_row_count"] == len(_QISKIT_SCOPE) * 2
     assert {(row["opcode"], row["wire_index"]) for row in rows} == {
@@ -570,11 +592,156 @@ def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None
         assert row["source_gate_count"] == 3, row
         merged = _MERGED_PLACEMENTS[row["opcode"]][row["wire_index"]]
         assert row["port_optimized_gate_count"] == (2 if merged else 3), row
-        assert 0 < row["qiskit_optimized_gate_count"] <= row["source_gate_count"], row
     assert anchor["rotation_source_gate_count"] == 3 * anchor["rotation_row_count"]
     assert anchor["rotation_port_optimized_gate_count"] == sum(
         row["port_optimized_gate_count"] for row in rows
     )
-    # The port merges on three of the six placements, which is the whole of what the
-    # rule source proves about a `cx`, `cy` or `cz` on two wires.
-    assert anchor["rotation_port_optimized_gate_count"] == 15
+    # The port merges on four of the six placements, which is the whole of what the
+    # rule source proves about a `cx`, `cy` or `cz` on two wires: both placements of
+    # `cz`, and the control of `cx` and of `cy`.
+    assert anchor["rotation_port_optimized_gate_count"] == 14
+    assert (
+        sum(merged for opcode in _QISKIT_SCOPE for merged in _MERGED_PLACEMENTS[opcode])
+        == 4
+    )
+
+
+def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None:
+    """Qiskit's half of the same rows, bounded rather than pinned.
+
+    Qiskit's column is reported and bounded rather than pinned to a number, because a
+    pinned number nobody can reproduce is exactly the kind of claim this repository
+    forbids, and the CI job that has Qiskit does not collect this directory. What is
+    asserted about it is only what a merge can do: it never lengthens the circuit and
+    it never deletes it.
+    """
+
+    anchor = payload["reference_anchor"]
+    if not anchor["available"]:
+        pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    rows = anchor["rotation_rows"]
+    for row in rows:
+        assert 0 < row["qiskit_optimized_gate_count"] <= row["source_gate_count"], row
+    assert anchor["rotation_qiskit_optimized_gate_count"] == sum(
+        row["qiskit_optimized_gate_count"] for row in rows
+    )
+
+
+#: The rotation merge's reach on the seven populations `compiler_identity_elimination`
+#: publishes. Each entry is ``label -> ((superseded identity rule, shipped identity
+#: rule) with the merge paused, ... with it active)``, and the two tables below are the
+#: same measurement with the fold out and with the fold in. Holding the fold in both
+#: positions is what keeps the two co-owners of these rows apart: the fold is the table
+#: and the rotation merge is the second element of each pair against the first.
+#:
+#: The rows are re-measured rather than read from the identity benchmark's payload,
+#: because that payload is the shipped pipeline in which both passes are active, and a
+#: single number cannot say which of them moved it. This is the same substitution
+#: instrument the two-qubit contract uses for the fold, pointed at the other pass.
+_ROTATION_MERGE_IDENTITY_REACH = {
+    "parameter_free_gates": ((167, 167), (167, 167)),
+    "zero_angle_rotations": ((162, 162), (162, 162)),
+    "full_turn_rotations": ((139, 150), (139, 150)),
+    "zero_polar_u3": ((176, 176), (176, 176)),
+    "two_wire_rotations": ((245, 245), (244, 244)),
+    "mixed": ((406, 391), (404, 390)),
+    "mixed_with_mid_circuit_measures": ((511, 498), (510, 497)),
+}
+#: The same seven rows with the fold as shipped, which is the pipeline those rows
+#: actually describe and therefore the pair of numbers the identity benchmark's own
+#: pins carry.
+_ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD = {
+    "parameter_free_gates": ((167, 167), (167, 167)),
+    "zero_angle_rotations": ((162, 162), (162, 162)),
+    "full_turn_rotations": ((139, 150), (139, 150)),
+    "zero_polar_u3": ((176, 176), (176, 176)),
+    "two_wire_rotations": ((201, 201), (200, 200)),
+    "mixed": ((398, 383), (396, 382)),
+    "mixed_with_mid_circuit_measures": ((505, 493), (504, 492)),
+}
+#: The rows this pass moves, which are exactly the three the fold also co-owns. That
+#: the sets coincide is the point rather than a coincidence of naming: both passes
+#: compose rotations, so both have reach in the populations built out of them.
+_ROTATION_MERGE_IDENTITY_ROWS_MOVED = (
+    "two_wire_rotations",
+    "mixed",
+    "mixed_with_mid_circuit_measures",
+)
+
+
+def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
+    """The second co-owner of the round 18 identity rows, measured on its own.
+
+    ``compiler_identity_elimination`` publishes seven populations measured through the
+    whole pipeline, so every pass landed after it owns a share of those numbers. The
+    fold's share is attributed by pausing the fold; this pass has no such test in its
+    own module, so without this one its contribution to those rows would be inferred
+    from arithmetic over two numbers, neither of which it owns.
+
+    Pausing it moves exactly the three rows the fold also moves, by the same amount in
+    both fold positions, one instruction off the optimized pipeline and never a
+    lengthening. Pinning the whole four-cell table rather than the delta alone is
+    deliberate: the delta is the claim, and the table is what keeps the claim auditable
+    when either pass changes.
+    """
+
+    measured: dict[str, dict[tuple[str, bool], tuple[int, int]]] = {}
+    for label, factory in IDENTITY_POPULATIONS:
+        circuits = [
+            factory(random.Random(seed))
+            for seed in range(IDENTITY_CIRCUITS_PER_POPULATION)
+        ]
+        for fold_policy in ("off", "shipped"):
+            for merge_paused in (True, False):
+                with contextlib.ExitStack() as stack:
+                    stack.enter_context(_fold_patch(fold_policy))
+                    if merge_paused:
+                        stack.enter_context(_rotation_merge_patch())
+                    with _substituted_rule(_superseded_rule):
+                        superseded = sum(len(optimize(circuit)) for circuit in circuits)
+                    shipped = sum(len(optimize(circuit)) for circuit in circuits)
+                measured.setdefault(label, {})[(fold_policy, merge_paused)] = (
+                    superseded,
+                    shipped,
+                )
+
+    for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH.items():
+        assert measured[label][("off", True)] == paused, label
+        assert measured[label][("off", False)] == active, label
+    for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD.items():
+        assert measured[label][("shipped", True)] == paused, label
+        assert measured[label][("shipped", False)] == active, label
+
+    moved = {
+        label
+        for label, (
+            paused,
+            active,
+        ) in _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD.items()
+        if paused != active
+    }
+    assert moved == set(_ROTATION_MERGE_IDENTITY_ROWS_MOVED)
+    # Under the fold out it is the same three rows, so the two passes are not silently
+    # trading the reach between them.
+    assert {
+        label
+        for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH.items()
+        if paused != active
+    } == moved
+    for label in moved:
+        for table in (
+            _ROTATION_MERGE_IDENTITY_REACH,
+            _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD,
+        ):
+            (paused_superseded, paused_shipped), (active_superseded, active_shipped) = (
+                table[label]
+            )
+            assert active_superseded <= paused_superseded, label
+            assert active_shipped <= paused_shipped, label
+            assert paused_shipped - active_shipped == 1, label
+            assert paused_superseded - active_superseded == (
+                2 if label == "mixed" else 1
+            ), label
+    # Non-vacuity: four of the seven rows are populations this pass cannot reach at
+    # all, so the table is not three measurements of one behaviour.
+    assert len(_ROTATION_MERGE_IDENTITY_REACH) - len(moved) == 4

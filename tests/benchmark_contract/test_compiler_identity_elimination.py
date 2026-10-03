@@ -326,22 +326,28 @@ _DELTA = {
         "net_instruction_delta_against_the_superseded_rule": 0,
         "changed_circuit_count": 5,
     },
-    # The next three rows are the only ones a later pass co-owns, and this is the
-    # population group where that pass has reach. `collapse_two_qubit_runs` landed
-    # after this rule and composes adjacent two-qubit rotations -- `rzz(a) rzz(b)`
-    # into `rzz(a + b)` -- inside *both* pipelines, so the two post-pipeline counts
+    # The next three rows are the only ones later passes co-own, and this is the
+    # population group where they have reach. `collapse_two_qubit_runs` composes
+    # adjacent two-qubit rotations -- `rzz(a) rzz(b)` into `rzz(a + b)` -- and
+    # `merge_commuting_rotations` adds two rotations of one opcode across a proven
+    # commuting gap. Both run inside *both* pipelines, so the two post-pipeline counts
     # move together while the source count and `removed_by_the_rule_alone`, which are
-    # properties of this rule alone, stay where they were. The pre-fold values are
-    # kept as literals in
-    # `test_compiler_two_qubit_optimization.py::test_the_fold_is_what_moved_the_round_18_pipeline_rows`,
-    # which re-measures the drop with the fold patched out and fails if any other
-    # pass starts moving these rows, so the move cannot go silent.
+    # properties of this rule alone, stay where they were.
+    #
+    # Each of the two co-owners is attributed by a test that pauses it and re-measures
+    # these same rows, so neither move can go silent and neither is inferred from the
+    # arithmetic:
+    # `test_compiler_two_qubit_optimization.py::test_the_fold_is_what_moved_the_round_18_pipeline_rows`
+    # holds this rule and the rotation merge fixed and moves only the fold, and
+    # `test_compiler_commutation_cancellation.py::test_the_identity_rows_the_rotation_merge_moved_are_attributed`
+    # holds this rule and the fold fixed and moves only the rotation merge. The literals
+    # below are the shipped pipeline, which is both co-owners active.
     "two_wire_rotations": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 322,
-        "superseded_rule_instruction_count": 201,
-        "optimized_instruction_count": 201,
+        "superseded_rule_instruction_count": 200,
+        "optimized_instruction_count": 200,
         "removed_by_the_rule_alone": 47,
         "removed_by_the_rule_in_the_pipeline": 0,
         "net_instruction_delta_against_the_superseded_rule": 0,
@@ -351,19 +357,19 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 678,
-        "superseded_rule_instruction_count": 398,
-        "optimized_instruction_count": 383,
+        "superseded_rule_instruction_count": 396,
+        "optimized_instruction_count": 382,
         "removed_by_the_rule_alone": 164,
-        "removed_by_the_rule_in_the_pipeline": 15,
-        "net_instruction_delta_against_the_superseded_rule": 15,
-        "changed_circuit_count": 16,
+        "removed_by_the_rule_in_the_pipeline": 14,
+        "net_instruction_delta_against_the_superseded_rule": 14,
+        "changed_circuit_count": 15,
     },
     "mixed_with_mid_circuit_measures": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 761,
-        "superseded_rule_instruction_count": 505,
-        "optimized_instruction_count": 493,
+        "superseded_rule_instruction_count": 504,
+        "optimized_instruction_count": 492,
         "removed_by_the_rule_alone": 159,
         # One lower than before the fold, and the clamped column is why: it is a sum
         # of per-circuit `max(0, legacy - shipped)`, so a fold that shrinks one

@@ -484,6 +484,32 @@ def _to_qiskit(ir: CircuitIR, circuit_type: Any) -> Any:
     return circuit
 
 
+def _rotation_rows() -> list[dict[str, Any]]:
+    """The one anchor shape both implementations attempt, measured on this side.
+
+    This is deliberately independent of whether Qiskit is importable. The port's own
+    column is a fact about this repository and is the only part of the comparison a
+    reader can reproduce without installing a second framework; leaving it inside the
+    optional branch is what made an earlier pin of it unfalsifiable, because the job
+    that runs the contract has no Qiskit and the job that has Qiskit does not collect
+    the contract.
+    """
+
+    rows = []
+    for opcode in _QISKIT_SCOPE:
+        for wire_index in range(OPERATOR_SCHEMAS[opcode].arity):
+            ir = _anchor_rotation_circuit(opcode, wire_index)
+            rows.append(
+                {
+                    "opcode": opcode,
+                    "wire_index": wire_index,
+                    "source_gate_count": len(ir),
+                    "port_optimized_gate_count": len(_optimize_to_fixed_point(ir)),
+                }
+            )
+    return rows
+
+
 def _qiskit_anchor() -> dict[str, Any]:
     """Qiskit's own cancellation on the same circuits, when Qiskit is importable.
 
@@ -506,6 +532,20 @@ def _qiskit_anchor() -> dict[str, Any]:
       matrices rather than from a hand-maintained list.
     """
 
+    # Measured first and unconditionally, so the port's own column and the totals
+    # over it exist in both branches of the import below.
+    rotation_rows = _rotation_rows()
+    rotation_totals: dict[str, Any] = {
+        "rotation_rows": rotation_rows,
+        "rotation_row_count": len(rotation_rows),
+        "rotation_source_gate_count": sum(
+            row["source_gate_count"] for row in rotation_rows
+        ),
+        "rotation_port_optimized_gate_count": sum(
+            row["port_optimized_gate_count"] for row in rotation_rows
+        ),
+    }
+
     try:
         from qiskit import QuantumCircuit  # type: ignore[import-not-found]
         from qiskit.transpiler import PassManager  # type: ignore[import-not-found]
@@ -514,7 +554,11 @@ def _qiskit_anchor() -> dict[str, Any]:
             CommutativeCancellation,
         )
     except Exception as error:  # pragma: no cover - the anchor is optional
-        return {"available": False, "reason": f"{type(error).__name__}: {error}"}
+        return {
+            "available": False,
+            "reason": f"{type(error).__name__}: {error}",
+            **rotation_totals,
+        }
 
     passes = PassManager([CommutationAnalysis(), CommutativeCancellation()])
     case_count = 20
@@ -546,28 +590,17 @@ def _qiskit_anchor() -> dict[str, Any]:
     # rule this round adds, and Qiskit's pass merges z-rotation runs in the same
     # call, so this is where the two implementations are actually attempting the
     # same rewrite. It is restricted to `_QISKIT_SCOPE` for the same reason the
-    # table above is split: outside it Qiskit is not attempting the question.
-    rotation_rows = []
-    for opcode in _QISKIT_SCOPE:
-        for wire_index in range(OPERATOR_SCHEMAS[opcode].arity):
-            ir = _anchor_rotation_circuit(opcode, wire_index)
-            qiskit_circuit = _to_qiskit(ir, QuantumCircuit)
-            reduced = passes.run(qiskit_circuit)
-            rotation_rows.append(
-                {
-                    "opcode": opcode,
-                    "wire_index": wire_index,
-                    "source_gate_count": len(ir),
-                    "port_optimized_gate_count": len(_optimize_to_fixed_point(ir)),
-                    "qiskit_optimized_gate_count": reduced.size(),
-                }
-            )
+    # table above is split: outside it Qiskit is not attempting the question. The
+    # port's column was measured above; only Qiskit's is added here.
+    for row in rotation_rows:
+        ir = _anchor_rotation_circuit(row["opcode"], row["wire_index"])
+        qiskit_circuit = _to_qiskit(ir, QuantumCircuit)
+        row["qiskit_optimized_gate_count"] = passes.run(qiskit_circuit).size()
     return {
         "available": True,
         "pass_name": "CommutationAnalysis + CommutativeCancellation",
         "qiskit_version": __import__("qiskit").__version__,
         "rows": rows,
-        "rotation_rows": rotation_rows,
         "in_scope_opcodes": list(_QISKIT_SCOPE),
         "in_scope_source_gate_count": sum(row["source_gate_count"] for row in in_scope),
         "in_scope_port_removed_count": sum(
@@ -579,13 +612,6 @@ def _qiskit_anchor() -> dict[str, Any]:
         "out_of_scope_port_removed_count": sum(
             row["port_removed_count"] for row in rows if not row["in_qiskit_scope"]
         ),
-        "rotation_row_count": len(rotation_rows),
-        "rotation_source_gate_count": sum(
-            row["source_gate_count"] for row in rotation_rows
-        ),
-        "rotation_port_optimized_gate_count": sum(
-            row["port_optimized_gate_count"] for row in rotation_rows
-        ),
         "rotation_qiskit_optimized_gate_count": sum(
             row["qiskit_optimized_gate_count"] for row in rotation_rows
         ),
@@ -593,6 +619,7 @@ def _qiskit_anchor() -> dict[str, Any]:
             "Compared per opcode, because Qiskit's cancellation set does not "
             "include swap, ccx or cswap; counts are reported, never asserted equal."
         ),
+        **rotation_totals,
     }
 
 
