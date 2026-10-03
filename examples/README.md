@@ -31,6 +31,10 @@ These examples do not use that alias:
   — a third-party execution backend that imports only
   `flagquantum.ecosystem.extensions`, so it demonstrates the published extension
   surface rather than the root alias.
+- [`extensions/reference_target_extension.py`](extensions/reference_target_extension.py)
+  — a third-party target declaration that imports the published extension
+  namespace and the Core capability vocabulary that describes evidence. It builds
+  no circuit, so it needs no root alias either.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
