@@ -67,6 +67,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "apply_complex64_local_1q",
         layouts=("flat_statevector",),
         directions=("forward",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-001-B",

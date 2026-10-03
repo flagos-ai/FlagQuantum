@@ -19,6 +19,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
+    _triton_local_1q_requested,
     _vectorized_cross_shard_cx,
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
@@ -1143,3 +1144,25 @@ def test_a_program_that_trains_keeps_a_separate_output_buffer():
     assert any(matrix.requires_grad for matrix in trained.matrices)
     assert trained.local_output_in_place is False
     assert inferred.local_output_in_place is True
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected"),
+    (
+        ((1, 1 << 10), True),
+        ((1, 1 << 16), True),
+        ((1, 1 << 20), True),
+        ((1, 1 << 24), True),
+        ((1, 1 << 12), False),
+        ((2, 1 << 20), False),
+    ),
+)
+def test_local_1q_default_window_and_override(monkeypatch, shape, expected):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", raising=False)
+    assert _triton_local_1q_requested(shape) is expected
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0")
+    assert not _triton_local_1q_requested(shape)
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
+    assert _triton_local_1q_requested(shape)

@@ -26,6 +26,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-001-A",
         "tests/unit/test_statevector_triton.py::test_generic_local_1q_matches_pytorch",
+        "tests/unit/test_statevector_forward.py::test_local_1q_triton_execution_records_catalog_identity",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_local_1q_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-001-B",
