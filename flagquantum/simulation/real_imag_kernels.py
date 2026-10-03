@@ -156,6 +156,12 @@ def _canonical_layout_pair(
     already separates the batch, free and contracted axes, so the same
     arithmetic is available as a batched matmul on rank-three operands without
     ever writing an equation over the network's full rank.
+
+    Grouping an operand that is contiguous in the source order is a view, so this
+    reaches every rank. Grouping one that must first be transposed materializes a
+    copy, which PyTorch performs through ``TensorIterator`` and bounds at
+    twenty-five dimensions; a pair that needs both a transposed grouped operand
+    and an operand above that bound stays out of reach of this helper.
     """
 
     (
