@@ -104,7 +104,7 @@ def test_adaptive_budget_is_limited_to_measured_preallocated_programs(
         == 32
     )
     assert (
-        statevector_batching._cpu_statevector_batch_budget_for_program((graph,)) == 64
+        statevector_batching._cpu_statevector_batch_budget_for_program((graph,)) == 32
     )
     assert (
         statevector_batching._cpu_statevector_batch_budget_for_program((cz_graph,))

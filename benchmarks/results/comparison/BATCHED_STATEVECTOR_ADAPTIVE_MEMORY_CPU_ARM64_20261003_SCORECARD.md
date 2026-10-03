@@ -1,5 +1,10 @@
 # CPU batched statevector adaptive-memory scorecard
 
+> Follow-up: the measured
+> [`BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md)
+> extends the selector to controlled-phase graphs. Statements below that QFT
+> retained 64 MiB describe this earlier measurement and its rollback snapshot.
+
 ## Conclusion
 
 FlagQuantum now selects a smaller logical-state execution window only for the

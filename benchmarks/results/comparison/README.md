@@ -140,6 +140,12 @@ records the program-class adaptive CPU batch-memory budget against its fixed
 times and RSS growth, speedups, correctness, the public usage path, exact
 selection and rollback boundaries, and the reproduction command.
 
+[`BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md)
+extends that measured policy to controlled-phase-graph programs and closes the
+remaining Truncated QFT batch-memory target. It reports absolute time, RSS,
+fixed-64 rollback and PennyLane Lightning comparisons, user code, limits, and
+the exact reproduction command.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
