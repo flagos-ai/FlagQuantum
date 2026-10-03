@@ -5,10 +5,12 @@ normalize the Pauli group have a tableau representation whose storage grows
 quadratically with the wire count, so the wire counts this package reaches are
 the ones no amplitude store can hold.
 
-- Start in `engine.py`. It owns the three things this package does: translating
+- Start in `engine.py`. It owns the four things this package does: translating
   validated Circuit IR into the engine's circuit form, sampling measurement
-  outcomes for a requested wire list, and sampling measurement outcomes from a
-  circuit that already carries noise channels at explicit positions.
+  outcomes for a requested wire list, sampling measurement outcomes from a
+  circuit that already carries noise channels at explicit positions, and
+  reporting what that second sampling route would make of a program without
+  executing it.
 - Call `sample_stabilizer(program, shots=..., wires=..., seed=...)`. It accepts
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
   `(shots, len(wires))`.
@@ -19,6 +21,14 @@ the ones no amplitude store can hold.
   in program order and the terminal wires are appended in the order the caller
   names them. It is deliberately not reachable from the planner or the executor,
   so `mode='stabilizer'` keeps refusing a noisy program.
+- Call `survey_stabilizer_program(program)` to ask that same question without
+  sampling. It returns a `StabilizerSurvey`: how many gates, resets, recorded
+  measurements, and noise instructions the program has, whether every channel in
+  it is a mixture of Pauli frames, and one blocker per instruction the sampling
+  route would refuse. It reads the IR and never imports the engine, so a caller
+  can decide between the stabilizer regime and a dense one before the optional
+  distribution is installed. It is a census rather than a promise: an empty
+  blocker list says every instruction translated, not that the samples are right.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
   replacement Clifford kernel replaces, and keeping it in one place is what
   makes that replacement a local change.
@@ -27,9 +37,16 @@ the ones no amplitude store can hold.
   naming the accepted set. Nothing is approximated and nothing falls back. Noise
   is the one exception and it is a class rather than a list: `sample_stabilizer`
   still refuses every channel, while `sample_noisy_measurements` accepts a
-  one- or two-wire channel whose Kraus operators are a mixture of Pauli operators
-  up to a global phase, and refuses every other channel, every lowered
-  measurement node, and every non-Clifford opcode by name.
+  channel whose Kraus operators are a mixture of Pauli operators up to a global
+  phase, on as many wires as the channel acts on, and refuses every other channel,
+  every lowered measurement node, and every non-Clifford opcode by name.
+- The engine names no channel instruction past two wires, so a frame wider than
+  that is spelled as a chain of correlated-error instructions instead - one term
+  per non-identity frame, with the identity being the chain falling through. A
+  chain term is conditional on no earlier term having fired, which is exactly the
+  shape of a Kraus mixture, so the translation divides each weight by the
+  probability the frames before it did not fire. Handing the engine the caller's
+  own weights would make every frame after the first too rare.
 - That class is decided by the operators, not by the instruction's name, and
   `flagquantum.noise.KrausChannel.unitary_mixture` is what decides it. A channel
   the engine cannot express is refused rather than approximated: a depolarizing

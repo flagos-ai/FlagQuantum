@@ -3,10 +3,13 @@
 `sample_stabilizer` measures a requested wire list once at the end of a noiseless
 circuit. This module checks the second entry point, which executes a program's
 own measurements in order and accepts positioned channels whose Kraus operators
-are a mixture of Pauli frames. Everything it asserts is about position or about
-classification: which instruction an error was placed before, which column a
-record lands in, which frames a channel's operators name, and which placements
-and which channels the entry point refuses rather than approximating.
+are a mixture of Pauli frames, and the third, which reports that same
+classification without executing anything. Everything it asserts is about
+position, about classification, or about the surface the two share: which
+instruction an error was placed before, which column a record lands in, which
+frames a channel's operators name, which placements and which channels the entry
+point refuses rather than approximating, whether the survey and the sampler agree
+about all of it, and which names the package publishes to a caller.
 
 The engine's own noiseless contract is in `test_stabilizer_engine.py`, and the
 distributional comparison of `sample_stabilizer` against the dense amplitude path
@@ -18,6 +21,8 @@ away by shot noise.
 from __future__ import annotations
 
 import builtins
+import importlib
+import math
 import sys
 
 import pytest
@@ -39,8 +44,10 @@ from flagquantum.noise import (
 )
 from flagquantum.simulation.stabilizer import (
     StabilizerDependencyError,
+    StabilizerSurvey,
     sample_noisy_measurements,
     sample_stabilizer,
+    survey_stabilizer_program,
 )
 
 # The engine is an optional distribution, so the file skips rather than failing
@@ -295,28 +302,406 @@ def test_a_unitary_that_is_not_a_pauli_is_refused() -> None:
         sample_noisy_measurements(program, shots=2, seed=1)
 
 
-def test_a_channel_on_more_than_two_wires_is_refused() -> None:
-    """The engine's frames are one- and two-wire frames, and it says so."""
+def _pauli_tensor(label: str) -> torch.Tensor:
+    """The tensor-product Pauli operator a frame label names, wire by wire."""
 
-    identity = torch.eye(8, dtype=torch.complex128)
-    flip_first_wire = torch.kron(PAULI_X, torch.eye(4, dtype=torch.complex128))
-    channel = KrausChannel(
-        "three_wire_flip",
-        (0.5**0.5 * identity, 0.5**0.5 * flip_first_wire),
-    )
-    program = _ir(
-        3,
+    matrix = _PAULI[label[0]]
+    for character in label[1:]:
+        matrix = torch.kron(matrix, _PAULI[character])
+    return matrix
+
+
+def _wide_mixture(name: str, weights: dict[str, float]) -> KrausChannel:
+    """A channel on ``len(label)`` wires with one Pauli frame per given label.
+
+    The identity takes the remainder, so the channel is trace preserving, and each
+    label is a Pauli on every wire - which is the whole frame vocabulary, on as
+    many wires as the label is long. A label given weight zero becomes a zero
+    operator, which is a legal branch carrying nothing.
+    """
+
+    width = len(next(iter(weights)))
+    operators = [
+        (1.0 - math.fsum(weights.values())) ** 0.5
+        * torch.eye(2**width, dtype=torch.complex128)
+    ]
+    operators += [
+        weight**0.5 * _pauli_tensor(label) for label, weight in weights.items()
+    ]
+    return KrausChannel(name, tuple(operators))
+
+
+def _wide_program(channel: KrausChannel, n_wires: int) -> CircuitIR:
+    """A program that applies ``channel`` to every wire and then reads each one."""
+
+    return _ir(
+        n_wires,
         Instruction(
             name=channel.name,
-            wires=(0, 1, 2),
+            wires=tuple(range(n_wires)),
             matrix=channel.kraus,
             metadata={"is_channel": True},
         ),
+        *(_measure(wire) for wire in range(n_wires)),
+    )
+
+
+def test_a_frame_wider_than_two_wires_is_executed_on_every_wire_it_names() -> None:
+    """A frame is a Pauli on a wire, and nothing about that stops at two.
+
+    A weight-three frame carries a Pauli on each of three wires, so a chain that
+    dropped a wire, repeated one, or read the label in the other direction would
+    report outcomes for a different frame. `X`, `Y`, and `Z` on `|000>` are
+    distinguishable one at a time - the first two flip their wire and the third
+    does not - so one record shows all three at once.
+    """
+
+    program = _wide_program(_wide_mixture("frame_XYZ", {"XYZ": 1.0}), 3)
+
+    assert (
+        sample_noisy_measurements(program, shots=4, seed=1).tolist() == [[1, 1, 0]] * 4
+    )
+
+
+def test_a_wide_frame_lands_on_the_wire_its_label_names() -> None:
+    """The label reads wire by wire in the instruction's own wire order.
+
+    A three-wire frame with a Pauli on the middle wire only is the case a
+    transposed or reversed label reaches: it flips wire 1 and leaves the outer two
+    alone.
+    """
+
+    program = _wide_program(_wide_mixture("frame_IXI", {"IXI": 1.0}), 3)
+
+    assert (
+        sample_noisy_measurements(program, shots=3, seed=5).tolist() == [[0, 1, 0]] * 3
+    )
+
+
+def test_a_wide_mixture_carries_the_probabilities_the_caller_built() -> None:
+    """The engine's chain is conditional, so the translation has to divide.
+
+    A correlated-error chain applies a term only when no earlier term fired, and
+    stops at the first that does. That is exactly the shape of a Kraus mixture -
+    one branch is what happened and the rest did not - so the chain reproduces the
+    channel rather than approximating it, and the conditionals are what make it
+    do so: handing the engine the caller's own weights would make every frame
+    after the first too rare, and wire 0 would flip at about 0.056 here rather
+    than 0.1.
+
+    The three frames act on three different wires, so the readout shows both
+    halves of the claim at once: each wire flips at its own frame's weight, and no
+    two wires ever flip together, because a mixture picks one branch. The identity
+    is what is left, so the all-zero record is the remainder of the distribution
+    rather than the product of three remainders.
+    """
+
+    weights = {"XII": 0.1, "IXI": 0.2, "IIX": 0.3}
+    program = _wide_program(_wide_mixture("three_wire_mixture", weights), 3)
+
+    samples = sample_noisy_measurements(program, shots=200_000, seed=7)
+
+    rates = samples.to(torch.float64).mean(dim=0)
+    for rate, weight in zip(rates.tolist(), (0.1, 0.2, 0.3), strict=True):
+        assert abs(rate - weight) < 0.005, (rates.tolist(), weights)
+
+    none_fired = float((samples == 0).all(dim=1).to(torch.float64).mean())
+    assert abs(none_fired - (1.0 - 0.1 - 0.2 - 0.3)) < 0.005
+    assert int(samples.sum(dim=1).max()) == 1
+
+
+def test_the_frame_order_decides_the_chain_not_the_caller_order() -> None:
+    """Two channels with the same weights are one channel however they were built.
+
+    A Kraus list is a set of branches and the frame vocabulary is the module's, so
+    a caller's insertion order is not part of the channel. A translation that
+    chained in operator order instead would give two calls holding the same
+    channel two different error rates, and a shared seed would hide that rather
+    than expose it, because both calls would still be reproducible.
+    """
+
+    forward = {"XII": 0.1, "IXI": 0.2, "IIX": 0.3}
+    reverse = {"IIX": 0.3, "IXI": 0.2, "XII": 0.1}
+
+    first = sample_noisy_measurements(
+        _wide_program(_wide_mixture("mixture", forward), 3), shots=64, seed=11
+    )
+    second = sample_noisy_measurements(
+        _wide_program(_wide_mixture("mixture", reverse), 3), shots=64, seed=11
+    )
+
+    assert torch.equal(first, second)
+
+
+def test_a_zero_weight_frame_does_not_consume_the_chains_remainder() -> None:
+    """A frame of weight nothing is not an event, so it gets no chain term.
+
+    A chain term is conditional on the frames before it not having fired, so a
+    term for a frame that never fires would spend the whole remainder on nothing
+    and leave the frame after it sampled at the wrong rate. The zero-weight frame
+    here comes first in the frame vocabulary, so a translation that emitted it
+    would clip the only frame that carries weight.
+    """
+
+    program = _wide_program(
+        _wide_mixture("one_real_frame", {"IIX": 0.0, "IXI": 0.4}), 3
+    )
+
+    rates = (
+        sample_noisy_measurements(program, shots=100_000, seed=13)
+        .to(torch.float64)
+        .mean(dim=0)
+    )
+
+    assert rates[0].item() == 0.0
+    assert rates[2].item() == 0.0
+    assert abs(rates[1].item() - 0.4) < 0.005
+
+
+def test_a_wide_mixture_that_overshoots_the_identity_is_refused() -> None:
+    """The chain terms are a distribution, and one is the ceiling.
+
+    The identity is what the chain takes when no term fires, so a channel whose
+    frames carry more than all of the probability has no translation: expressing it
+    would mean renormalising it, which is a different channel than the caller
+    built, and a frame sampled from it would be an error the circuit does not
+    have.
+    """
+
+    overshoot = 1.0 + 5e-7
+    channel = KrausChannel(
+        "overweight_wide",
+        (
+            0.6**0.5 * _pauli_tensor("XYZ"),
+            (overshoot - 0.6) ** 0.5 * _pauli_tensor("ZYX"),
+        ),
+    )
+
+    with pytest.raises(CapabilityError, match="identity as the remainder"):
+        sample_noisy_measurements(_wide_program(channel, 3), shots=2, seed=1)
+
+
+def test_the_survey_counts_what_the_sampler_would_execute() -> None:
+    """The survey is the sampler's own classification, taken without sampling.
+
+    A caller choosing between the stabilizer regime and a dense one reads the
+    census before committing to either: how many gates, how many readouts, and how
+    many frames. A count that disagreed with what the sampler executes would send
+    the caller to the wrong regime, so both read one translation and this pins the
+    numbers.
+    """
+
+    program = _ir(
+        3,
+        _gate("h", 0),
+        _gate("cx", 0, 1),
+        _reset(2),
+        _flip(1, 0.25),
+        _measure(0),
+        _measure(1),
+        _measure(2),
+    )
+
+    survey = survey_stabilizer_program(program)
+
+    assert survey == StabilizerSurvey(
+        n_wires=3,
+        clifford_gates=2,
+        resets=1,
+        recorded_measurements=3,
+        noise_instructions=1,
+        all_pauli_frames=True,
+        blockers=(),
+    )
+    assert survey.executable
+
+
+def test_the_survey_agrees_with_the_sampler_on_every_program_it_reports() -> None:
+    """A census that disagrees with the sampler is worse than no census at all.
+
+    The two read one translation, so the survey's verdict and the sampler's
+    outcome have to be the same statement: an executable survey means the sample
+    call returns a record of the width the census counted, and a blocker means it
+    refuses. The programs cover each way a program can be refused - a non-Clifford
+    gate, a channel with no frame, a measurement naming two wires - and one that is
+    accepted.
+    """
+
+    accepted = _ir(2, _gate("h", 0), _gate("cx", 0, 1), _measure(0), _measure(1))
+    non_clifford = _ir(
+        2, Instruction(name="t", wires=(0,), params={"theta": 0.3}), _measure(0)
+    )
+    frameless = _ir(
+        1,
+        _channel("amplitude_damping", amplitude_damping_channel(0.1).kraus),
+        _measure(0),
+    )
+    wide_measurement = _ir(
+        2, Instruction(name="measure", wires=(0, 1), metadata={"is_dynamic": True})
+    )
+
+    for program in (accepted, non_clifford, frameless, wide_measurement):
+        survey = survey_stabilizer_program(program)
+        if survey.executable:
+            samples = sample_noisy_measurements(program, shots=2, seed=1)
+            assert samples.shape[1] == survey.recorded_measurements
+        else:
+            with pytest.raises(CapabilityError):
+                sample_noisy_measurements(program, shots=2, seed=1)
+
+
+@pytest.mark.parametrize(
+    "channel",
+    [amplitude_damping_channel(0.1), coherent_overrotation_channel(0.3)],
+)
+def test_the_survey_separates_a_gate_that_leaves_the_group_from_an_error_with_no_frame(
+    channel: KrausChannel,
+) -> None:
+    """Two refusals, two regime questions, and two different answers.
+
+    `all_pauli_frames` is the question this engine exists to answer: whether every
+    error in the program is a frame a tableau absorbs. A non-Clifford gate is not
+    an error at all - it leaves the Clifford group, which is a different regime
+    with a different capacity curve - so it does not make the answer no. A channel
+    with no frame does, whether because it is not a mixture of unitaries at all or
+    because its branches are unitaries that no Pauli frame names.
+    """
+
+    non_clifford = survey_stabilizer_program(
+        _ir(1, Instruction(name="t", wires=(0,), params={"theta": 0.3}), _measure(0))
+    )
+    frameless = survey_stabilizer_program(
+        _ir(1, _channel(channel.name, channel.kraus), _measure(0))
+    )
+
+    assert not non_clifford.executable
+    assert non_clifford.all_pauli_frames
+    assert not frameless.executable
+    assert not frameless.all_pauli_frames
+
+
+def test_a_frame_wider_than_two_wires_is_still_a_frame_to_the_survey() -> None:
+    """Widening the frame set must not widen what counts as a frame.
+
+    The survey is what a caller reads to decide, so it has to classify a
+    three-wire mixture the way the sampler does - as one noise instruction whose
+    errors are all frames - rather than as three instructions or as a refusal.
+    """
+
+    survey = survey_stabilizer_program(
+        _wide_program(_wide_mixture("wide", {"XYZ": 0.3, "ZYX": 0.2}), 3)
+    )
+
+    assert survey.noise_instructions == 1
+    assert survey.all_pauli_frames
+    assert survey.executable
+
+
+def test_a_blocker_names_the_instruction_that_caused_it_and_the_survey_continues() -> (
+    None
+):
+    """A program can have more than one problem, and a caller needs all of them.
+
+    Stopping at the first refusal would make repairing a program an iterative
+    conversation with the tool. Each blocker carries the index and the opcode, so
+    the list is a work list rather than a single verdict, and the instructions
+    that did translate are still counted.
+    """
+
+    program = _ir(
+        2,
+        Instruction(name="t", wires=(0,), params={"theta": 0.3}),
+        _gate("h", 0),
+        Instruction(name="rz", wires=(1,), params={"theta": 0.4}),
         _measure(0),
     )
 
-    with pytest.raises(CapabilityError, match="one or two wires"):
+    survey = survey_stabilizer_program(program)
+
+    assert len(survey.blockers) == 2
+    assert survey.blockers[0].startswith("instruction 0 't'")
+    assert survey.blockers[1].startswith("instruction 2 'rz'")
+    assert survey.recorded_measurements == 1
+    assert survey.clifford_gates == 1
+
+
+def test_the_survey_reports_a_program_with_no_readout_rather_than_refusing_it() -> None:
+    """The census reports; it does not decide what the caller is allowed to ask.
+
+    A program with no measurement at all is a sampling request the sampler
+    refuses, and it is also a perfectly readable circuit. The survey says zero
+    recorded measurements and no blockers, because the two facts a caller needs
+    are separate: what the program is, and whether the call would be accepted.
+    """
+
+    program = _ir(2, _gate("h", 0))
+
+    survey = survey_stabilizer_program(program)
+
+    assert survey.recorded_measurements == 0
+    assert survey.executable
+    with pytest.raises(ValidationError, match="at least one recorded measurement"):
         sample_noisy_measurements(program, shots=2, seed=1)
+
+
+def test_the_survey_answers_without_the_sampling_engine(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The census is arithmetic over the IR, so it does not need the distribution.
+
+    Reading the census through the engine would make the question circular: a
+    caller asks whether the stabilizer regime is available to it, and the answer
+    must not require the regime to be installed. The blocked import is what a
+    caller without the extra actually sees.
+    """
+
+    real_import = builtins.__import__
+
+    def refuse(name: str, *args: object, **kwargs: object):
+        if name == "stim" or name.startswith("stim."):
+            raise ImportError("No module named 'stim'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "stim", raising=False)
+    monkeypatch.setattr(builtins, "__import__", refuse)
+
+    survey = survey_stabilizer_program(
+        _ir(2, _gate("h", 0), _flip(0, 0.1), _measure(0))
+    )
+
+    assert survey.executable
+    assert survey.recorded_measurements == 1
+    assert survey.noise_instructions == 1
+
+    with pytest.raises(StabilizerDependencyError):
+        sample_noisy_measurements(_ir(1, _measure(0)), shots=2, seed=1)
+
+
+def test_the_package_export_list_names_every_entry_point() -> None:
+    """The export list is the surface, and it is not the same thing as the names.
+
+    A name that is imported into the package still answers to an attribute
+    lookup, so no behaviour changes when it leaves `__all__` - but
+    `from flagquantum.simulation.stabilizer import *` silently loses it. The
+    list is asserted exactly, and each entry is checked to be the engine's own
+    object rather than a name that happens to resolve.
+    """
+
+    package = importlib.import_module("flagquantum.simulation.stabilizer")
+    engine = importlib.import_module("flagquantum.simulation.stabilizer.engine")
+
+    assert set(package.__all__) == {
+        "CLIFFORD_GATE_NAMES",
+        "StabilizerDependencyError",
+        "StabilizerSurvey",
+        "require_clifford_program",
+        "sample_noisy_measurements",
+        "sample_stabilizer",
+        "survey_stabilizer_program",
+    }
+    assert len(package.__all__) == len(set(package.__all__))
+    for name in package.__all__:
+        assert getattr(package, name) is getattr(engine, name), name
 
 
 @pytest.mark.parametrize("opcode", ["t", "tdg", "rx", "ry"])
@@ -375,6 +760,30 @@ def test_the_operators_decide_which_frame_executes(
     assert (
         sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[expected]] * 8
     )
+
+
+def test_a_declared_channel_opcode_is_a_channel_without_a_lowered_flag() -> None:
+    """A channel is the opcode's kind as well as a flag a lowering pass sets.
+
+    `fq.Circuit` marks a channel when it lowers one, but an IR written by hand -
+    by a pass, by a reader of a stored program - carries the opcode and the
+    operators and no flag. Only the opcode says which of the two it is, so a
+    translation that read the flag alone would call this instruction a gate and
+    refuse a channel that is a Pauli error with certainty.
+    """
+
+    program = _ir(
+        1,
+        Instruction(name="bit_flip", wires=(0,), matrix=bit_flip_channel(1.0).kraus),
+        _measure(0),
+    )
+
+    assert sample_noisy_measurements(program, shots=4, seed=1).tolist() == [[1]] * 4
+
+    survey = survey_stabilizer_program(program)
+    assert survey.noise_instructions == 1
+    assert survey.clifford_gates == 0
+    assert survey.executable
 
 
 @pytest.mark.parametrize("probability", [0.0, 1.0])
@@ -576,6 +985,24 @@ def test_the_pauli_vocabulary_separates_the_two_flipping_frames() -> None:
     )
 
     assert sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[0]] * 8
+
+
+def test_the_pauli_vocabulary_separates_y_from_z_in_the_argument_order() -> None:
+    """`X` and `Y` both flip a readout, so a swap between `Y` and `Z` hides there.
+
+    A bare readout of `|0>` separates `Y` from `Z` and not `X` from `Y`: `Y`
+    carries `|0>` to a definite one and `Z` leaves it where it was, while `X` and
+    `Y` are indistinguishable to that readout. So this pair is the one a frame
+    vocabulary ordered `I, X, Z, Y` would get wrong while the `X` probe above
+    still passed - the `Z` branch would be handed to the engine's `Y` argument and
+    the `Y` branch to its `Z` argument, and both records would be the wrong one.
+    """
+
+    flipped = _ir(1, _frame("Y"), _measure(0))
+    left = _ir(1, _frame("Z"), _measure(0))
+
+    assert sample_noisy_measurements(flipped, shots=8, seed=1).tolist() == [[1]] * 8
+    assert sample_noisy_measurements(left, shots=8, seed=1).tolist() == [[0]] * 8
 
 
 def test_a_branch_that_is_a_frame_times_a_global_phase_is_executed() -> None:

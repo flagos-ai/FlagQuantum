@@ -235,11 +235,13 @@ reason = "No qudit or photonic operation exists. Deferred as a distinct product 
 [[domains.capabilities]]
 id = "pauli_tracking_sbe"
 cudaq = "Pauli tracking stabilizer-basis expansion for noisy simulation"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "none"
-reason = "The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state."
-evidence = ["flagquantum/simulation/stabilizer/engine.py", "search:the sampling engine declines a noise instruction instead of tracking its frame"]
+maturity_ref = "stabilizer_sampling"
+reason = "A Pauli frame is now tracked through a noise instruction rather than refused, on as many wires as the channel acts on, so the refusal this row named is gone: a noisy Clifford program is sampled without a dense state, and a general channel is still refused instead of being sampled as its nearest Pauli approximation. What is missing is the expansion half of the name. Readout stays in the computational basis, because a frame is what the engine tracks and the sampled bits are what it reports, so a measurement is never expanded in a stabilizer basis. Expectation values, detection events and observable flips are absent from this route, and the trajectory selection and per-trajectory shot allocation that a stabilizer-basis sampler would be paired with are the subject of the trajectory row rather than of this one."
+baseline_gap = "Pauli tracking over any channel width, with no stabilizer-basis expansion of a readout and no expectation value or observable flip."
+evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/noise/channels.py", "flagquantum/simulation/stabilizer/__init__.py", "tests/team/simulation/test_stabilizer_positioned_noise.py", "search:a frame is tracked through a channel but a measurement is never expanded in a stabilizer basis"]
 
 [[domains.capabilities]]
 id = "asynchronous_execution"

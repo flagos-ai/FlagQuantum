@@ -9,13 +9,16 @@ asks -- what do the measurements read out.
 
 What this module owns
 ---------------------
-One conversion and two numeric entry points:
+One conversion and three entry points:
 
 - translating validated FlagQuantum IR into the engine's circuit form, refusing
   every instruction this engine cannot represent,
-- sampling measurement outcomes for a requested wire list, and
+- sampling measurement outcomes for a requested wire list,
 - sampling every measurement a Clifford program records when that program
-  carries positioned noise channels.
+  carries positioned noise channels, and
+- surveying what that second sampling route makes of a program, without running
+  it, so a caller can decide between the stabilizer regime and a dense one before
+  spending a dense state on the question.
 
 The second entry point exists because a detector error model is defined between
 syndrome rounds rather than at a named gate: quantum error correction places its
@@ -27,7 +30,9 @@ executes noiseless Clifford circuits.
 
 It owns no device selection, no shot policy, no seed stream, no dispatch, and no
 public result assembly. A caller that needs those goes through Runtime, which
-owns them.
+owns them. The survey is not a claim about a program: it reports which
+instructions the noise route would execute and which it would refuse, and it
+decides nothing on the caller's behalf.
 
 Why the engine is an external distribution
 ------------------------------------------
@@ -58,8 +63,9 @@ Fail-closed contract
 --------------------
 An instruction outside the Clifford gate set is refused with a named error
 naming the accepted set. The positioned-noise entry accepts one class of channel
-and one measurement shape: a one- or two-wire channel whose Kraus operators are a
-mixture of Pauli operators up to a global phase, and one wire per measurement.
+and one measurement shape: a channel whose Kraus operators are a mixture of Pauli
+operators up to a global phase, on as many wires as the channel acts on, and one
+wire per measurement.
 That class is not a list of names - it is decided by the operators the channel
 carries, through `KrausChannel.unitary_mixture` - and it is exactly the class a
 tableau absorbs, because sampling one branch of it moves the Pauli frame and
@@ -78,6 +84,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import dataclass
 from importlib import import_module
 from itertools import product
 from types import ModuleType
@@ -87,7 +94,7 @@ import torch
 
 from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
-from ...errors import CapabilityError, ValidationError
+from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
@@ -124,22 +131,37 @@ _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 # `stim` documents a seed as an integer in `range(2**64)`.
 _SEED_LIMIT = 2**64
 
-# The channel rule the positioned-noise entry translates by, and the engine's
-# names for the frames it tracks. A channel is executed exactly when its Kraus
-# operators are a mixture of Pauli unitaries, because a Pauli error is the one
-# error a stabilizer tableau absorbs: the frame moves and the tableau stays. A
-# general channel has no frame, and this engine refuses it rather than sampling
+# The channel this engine translates. A channel is executed exactly when its
+# Kraus operators are a mixture of Pauli unitaries, because a Pauli error is the
+# one error a stabilizer tableau absorbs: the frame moves and the tableau stays.
+# A general channel has no frame, and this engine refuses it rather than sampling
 # the nearest Pauli approximation.
 _MEASURE_OPCODE = "measure"
 _RESET_OPCODE = "reset"
 _MEASURE_ENGINE_NAME = "M"
 _RESET_ENGINE_NAME = "R"
 
-# The engine's Pauli-frame vocabulary, one instruction per wire count. The label
-# order is the engine's own argument order, and `_pauli_weight_table` is what
-# keeps the two in step: a wrong order here would mislabel every two-wire frame.
+# The engine spells one frame distribution two ways. On one or two wires it is a
+# single channel instruction whose arguments are the non-identity frames in
+# `_frame_labels` order, with the identity taking the remainder. On any number of
+# wires it is a chain of correlated-error instructions, one term per non-identity
+# frame, because the engine names no channel instruction past two wires and a
+# frame wider than that is still a frame. Both spellings read the same frame
+# order, so a frame's argument cannot drift away from the frame its position
+# names.
 _PAULI_ENGINE_NAMES: dict[int, str] = {1: "PAULI_CHANNEL_1", 2: "PAULI_CHANNEL_2"}
+_CORRELATED_ERROR_ENGINE_NAME = "E"
+_ELSE_CORRELATED_ERROR_ENGINE_NAME = "ELSE_CORRELATED_ERROR"
 _PAULI_LABELS = "IXYZ"
+
+# Every engine operation that carries a Pauli frame rather than a gate, a
+# reset, or a readout. A frame distribution is one of these however it was
+# spelled, so a reader of the translated program can tell a frame from an
+# operation by its name alone.
+_FRAME_OPERATION_NAMES = frozenset(_PAULI_ENGINE_NAMES.values()) | {
+    _CORRELATED_ERROR_ENGINE_NAME,
+    _ELSE_CORRELATED_ERROR_ENGINE_NAME,
+}
 _PAULI_MATRICES: dict[str, torch.Tensor] = {
     "I": torch.tensor(((1, 0), (0, 1)), dtype=torch.complex128),
     "X": torch.tensor(((0, 1), (1, 0)), dtype=torch.complex128),
@@ -150,6 +172,13 @@ _PAULI_MATRICES: dict[str, torch.Tensor] = {
 # A branch matrix comes from a channel the caller built, so it is compared against
 # a Pauli at the tolerance the channel class itself uses.
 _PAULI_TOLERANCE = 1e-6
+
+# One engine instruction: its name, its target list, and its arguments. A gate, a
+# reset, a measurement, and a channel instruction name wire indices as targets; a
+# correlated error names Pauli targets, which the engine builds from a frame
+# label, so the target list is the one part whose element type depends on the
+# instruction being built.
+_EngineOperation = tuple[str, tuple[Any, ...], float | tuple[float, ...] | None]
 
 _EXTRA_NAME = "stim"
 
@@ -392,28 +421,23 @@ def _frame_index(
     return None
 
 
-def _pauli_channel_operation(
+def _frame_weights(
     instruction: Any, index: int, wires: tuple[int, ...]
-) -> tuple[str, tuple[float, ...]]:
-    """Return the engine instruction for a positioned channel, or refuse it.
+) -> tuple[tuple[str, ...], tuple[float, ...]]:
+    """Return the non-identity frame labels and weights of a channel, or refuse it.
 
     The channel's operators decide, not its name: an instruction named for one
-    channel while carrying another executes as the channel it carries. Branches
-    that land on the same frame are added together, because a frame is one
-    argument however many branches reach it.
+    channel while carrying another is translated as the channel it carries.
+    Branches that land on the same frame are added together, because a frame is
+    one argument however many branches reach it. A branch that is the identity
+    contributes to no entry at all, so what comes back is the part of the channel
+    that has to be expressed and the caller reads the identity as the remainder.
 
-    A branch that is the identity contributes to no argument at all. The engine's
-    channel instructions take one argument per non-identity frame and sample the
-    identity with whatever probability is left over, so the identity's own weight
-    is what those arguments are checked against rather than an argument of its own.
+    This is the whole of the channel classification, and both the sampling route
+    and the survey read it, so a channel cannot be a frame for one and not for
+    the other.
     """
 
-    engine_name = _PAULI_ENGINE_NAMES.get(len(wires))
-    if engine_name is None:
-        raise CapabilityError(
-            f"instruction {index} {instruction.name!r} names {len(wires)} wire(s); "
-            "a Pauli frame is tracked on one or two wires"
-        )
     matrix = instruction.matrix
     operators = (
         matrix.kraus if isinstance(matrix, KrausChannel) else tuple(matrix or ())
@@ -465,12 +489,140 @@ def _pauli_channel_operation(
             f"{math.fsum(weights):.12g} of probability; the engine's channels take "
             "the identity as the remainder, so they cannot express it"
         )
-    return engine_name, tuple(weights)
+    return tuple(label for label, _ in frames[1:]), tuple(weights)
 
 
-def _noisy_operations(
-    ir: CircuitIR,
-) -> tuple[tuple[str, tuple[int, ...], float | tuple[float, ...] | None], ...]:
+def _frame_operations(
+    labels: tuple[str, ...],
+    weights: tuple[float, ...],
+    wires: tuple[int, ...],
+    index: int,
+    name: str,
+) -> tuple[_EngineOperation, ...]:
+    """Return the engine operations that carry one frame distribution.
+
+    Up to two wires the engine has a channel instruction whose arguments are the
+    non-identity frames in label order, so the distribution goes out as it is.
+    Past two wires it has none, and a frame is still a frame: the distribution
+    goes out as a chain of correlated errors instead, one term per non-identity
+    frame, and the identity is the chain falling through without a term firing.
+
+    A chain term is conditional on no earlier term having fired, so a caller's
+    weight for frame ``k`` becomes ``w_k / (1 - sum of the weights before it)``.
+    Emitting the caller's weights directly would make every term after the first
+    far more likely than the caller asked for, because the engine multiplies a
+    term by the probability that the frames before it did not fire. The
+    arithmetic is done here rather than left to the engine so that the
+    distribution the caller built is the distribution that is sampled.
+    """
+
+    engine_name = _PAULI_ENGINE_NAMES.get(len(wires))
+    if engine_name is not None:
+        return ((engine_name, wires, weights),)
+    operations: list[_EngineOperation] = []
+    previous = 0.0
+    for label, weight in zip(labels, weights, strict=True):
+        if weight <= 0.0:
+            # A zero-weight frame is not an event, and a chain term for it would
+            # consume the remainder that the frames after it have to chain
+            # against.
+            continue
+        remaining = 1.0 - previous
+        # A frame that takes the whole remainder is certain once the frames before
+        # it have not fired, and dividing would only reach the same one through a
+        # rounding error - and the engine refuses a probability it reads as above
+        # one, so rounding must not be allowed to decide that.
+        conditional = (
+            1.0 if remaining - weight <= _PAULI_TOLERANCE else weight / remaining
+        )
+        # A frame is a Pauli on the wires it acts on and nothing on the rest, and
+        # the engine's correlated error names only the wires it acts on. Carrying
+        # the identity wires into the target list would ask the engine for an
+        # identity Pauli target, which it does not have.
+        targets = tuple(
+            (wire, character)
+            for wire, character in zip(wires, label, strict=True)
+            if character != "I"
+        )
+        operations.append(
+            (
+                (
+                    _CORRELATED_ERROR_ENGINE_NAME
+                    if not operations
+                    else _ELSE_CORRELATED_ERROR_ENGINE_NAME
+                ),
+                targets,
+                conditional,
+            )
+        )
+        previous += weight
+    return tuple(operations)
+
+
+def _declares_channel(instruction: Any, schema: Any) -> bool:
+    """Whether an instruction is a channel: a declared opcode, or a lowered one.
+
+    A channel reaches the IR two ways: as an opcode the operator schema declares
+    as a channel, or as an instruction a noise model lowered. Only four opcodes
+    declare the channel kind, so the lowered flag is what keeps the rest - a
+    two-qubit depolarizing, a thermal relaxation - from being read as a gate and
+    refused for the wrong reason.
+    """
+
+    return bool(instruction.metadata.get("is_channel")) or (
+        schema is not None and schema.channel
+    )
+
+
+def _instruction_operations(
+    instruction: Any, index: int
+) -> tuple[_EngineOperation, ...]:
+    """Return the engine operations one instruction translates to, or refuse it.
+
+    A channel is one or more operations: one channel instruction up to two wires,
+    or a correlated-error chain past that. Every other instruction is one
+    operation, and an instruction that is none of the accepted forms is refused
+    where it stands, so the refusal names the instruction rather than the
+    program.
+    """
+
+    opcode = canonical_opcode(instruction.name)
+    schema = get_operator_schema(opcode)
+    wires = tuple(int(wire) for wire in instruction.wires)
+    if _declares_channel(instruction, schema):
+        labels, weights = _frame_weights(instruction, index, wires)
+        return _frame_operations(labels, weights, wires, index, instruction.name)
+    gate = _GATE_NAMES.get(opcode)
+    if gate is not None:
+        return ((gate, wires, None),)
+    if opcode == _MEASURE_OPCODE or opcode == _RESET_OPCODE:
+        if len(wires) != 1:
+            raise CapabilityError(
+                f"instruction {index} {opcode!r} names {len(wires)} wire(s); "
+                "stabilizer sampling records one bit per measurement, so a "
+                "measurement must name one wire"
+            )
+        return (
+            (
+                (
+                    _MEASURE_ENGINE_NAME
+                    if opcode == _MEASURE_OPCODE
+                    else _RESET_ENGINE_NAME
+                ),
+                wires,
+                None,
+            ),
+        )
+    raise CapabilityError(
+        f"instruction {index} {opcode!r} is not a Clifford gate, a reset, a "
+        "measurement, or a noise channel whose Kraus operators are a mixture "
+        f"of Pauli unitaries; stabilizer sampling accepts {_CLIFFORD_SET_TEXT}, "
+        f"{_MEASURE_OPCODE!r}, {_RESET_OPCODE!r}, and such a channel, and fails "
+        "closed rather than approximating"
+    )
+
+
+def _noisy_operations(ir: CircuitIR) -> tuple[_EngineOperation, ...]:
     """Return engine operations for a Clifford program with positioned noise.
 
     Gates, resets, measurements, and every channel whose Kraus operators are a
@@ -480,73 +632,149 @@ def _noisy_operations(
     data error at a round boundary or a measurement error at one readout.
     """
 
-    operations: list[tuple[str, tuple[int, ...], float | tuple[float, ...] | None]] = []
+    operations: list[_EngineOperation] = []
     for index, instruction in enumerate(ir.instructions):
-        opcode = canonical_opcode(instruction.name)
-        schema = get_operator_schema(opcode)
-        wires = tuple(int(wire) for wire in instruction.wires)
-        # A channel reaches the IR two ways: as a declared channel opcode, or as
-        # an instruction a noise model lowered. Only four opcodes declare the
-        # channel kind, so the lowered flag is what keeps the rest - a
-        # two-qubit depolarizing, a thermal relaxation - from being read as a
-        # gate and refused for the wrong reason.
-        if bool(instruction.metadata.get("is_channel")) or (
-            schema is not None and schema.channel
-        ):
-            engine_name, weights = _pauli_channel_operation(instruction, index, wires)
-            operations.append((engine_name, wires, weights))
-            continue
-        gate = _GATE_NAMES.get(opcode)
-        if gate is not None:
-            operations.append((gate, wires, None))
-            continue
-        if opcode == _MEASURE_OPCODE or opcode == _RESET_OPCODE:
-            if len(wires) != 1:
-                raise CapabilityError(
-                    f"instruction {index} {opcode!r} names {len(wires)} wire(s); "
-                    "stabilizer sampling records one bit per measurement, so a "
-                    "measurement must name one wire"
-                )
-            operations.append(
-                (
-                    (
-                        _MEASURE_ENGINE_NAME
-                        if opcode == _MEASURE_OPCODE
-                        else _RESET_ENGINE_NAME
-                    ),
-                    wires,
-                    None,
-                )
-            )
-            continue
-        raise CapabilityError(
-            f"instruction {index} {opcode!r} is not a Clifford gate, a reset, a "
-            "measurement, or a noise channel whose Kraus operators are a mixture "
-            f"of Pauli unitaries; stabilizer sampling accepts {_CLIFFORD_SET_TEXT}, "
-            f"{_MEASURE_OPCODE!r}, {_RESET_OPCODE!r}, and such a channel, and fails "
-            "closed rather than approximating"
-        )
+        operations.extend(_instruction_operations(instruction, index))
     return tuple(operations)
 
 
+def _engine_targets(stim: ModuleType, name: str, targets: tuple[Any, ...]) -> list[Any]:
+    """Return the engine's target list for one operation.
+
+    A gate, a reset, a measurement, and a channel instruction name wire indices.
+    A correlated error names Pauli targets instead, one per wire, because its
+    whole content is which Pauli the frame applies where; a chain term built as
+    plain wire indices would be refused by the engine rather than silently
+    mistranslated, but the two are different target kinds and are built apart.
+    """
+
+    if name not in (
+        _CORRELATED_ERROR_ENGINE_NAME,
+        _ELSE_CORRELATED_ERROR_ENGINE_NAME,
+    ):
+        return list(targets)
+    builder = {"X": stim.target_x, "Y": stim.target_y, "Z": stim.target_z}
+    return [builder[character](int(wire)) for wire, character in targets]
+
+
 def _noisy_engine_circuit(
-    operations: tuple[
-        tuple[str, tuple[int, ...], float | tuple[float, ...] | None], ...
-    ],
+    operations: tuple[_EngineOperation, ...],
     terminal_wires: tuple[int, ...],
 ) -> Any:
     """Build the engine circuit for positioned noise and interleaved readouts."""
 
     stim = _stim()
     circuit = stim.Circuit()
-    for name, wires, arguments in operations:
+    for name, targets, arguments in operations:
+        resolved = _engine_targets(stim, name, targets)
         if arguments is None:
-            circuit.append(name, list(wires))
+            circuit.append(name, resolved)
         else:
-            circuit.append(name, list(wires), arguments)
+            circuit.append(name, resolved, arguments)
     if terminal_wires:
         circuit.append(_MEASURE_ENGINE_NAME, list(terminal_wires))
     return circuit
+
+
+@dataclass(frozen=True, slots=True)
+class StabilizerSurvey:
+    """What the positioned-noise route makes of a program, without running it.
+
+    A stabilizer regime is worth choosing exactly when the program is one the
+    engine can execute, and the engine answers that question today by refusing to
+    run anything else. A caller that learns the answer from an exception has
+    already spent the attempt on it, and a caller holding a program whose channel
+    is not a Pauli frame would rather know that before placing it in a workflow
+    than after a round of sampling. This record is that same classification taken
+    first, read through the same translation the sampling route uses, so the two
+    cannot disagree about what a program is.
+
+    It is a census and not a promise. An empty ``blockers`` says every
+    instruction translated; it does not say the samples are right, that a dense
+    route would agree, or that the program is worth running in this regime.
+    """
+
+    n_wires: int
+    clifford_gates: int
+    resets: int
+    recorded_measurements: int
+    noise_instructions: int
+    all_pauli_frames: bool
+    blockers: tuple[str, ...]
+
+    @property
+    def executable(self) -> bool:
+        """Whether every instruction translated, rather than being refused."""
+
+        return not self.blockers
+
+
+def survey_stabilizer_program(program: Any) -> StabilizerSurvey:
+    """Report what :func:`sample_noisy_measurements` would make of ``program``.
+
+    Every instruction is put through the translation the sampling route uses and
+    the outcome is counted, so a refusal is collected as a blocker and named with
+    the instruction that caused it instead of stopping the survey. Nothing is
+    executed, no channel is approximated, and no instruction is dropped: a
+    program with a blocker is reported as one rather than repaired.
+
+    ``all_pauli_frames`` is the narrower question within that census, and it is
+    the one this engine exists to answer. It is true when every channel in the
+    program is a mixture of Pauli frames - the class a stabilizer tableau absorbs
+    - and false when a channel was refused for not being one. A program can have
+    blockers and still report ``all_pauli_frames`` when what it carries instead
+    is a non-Clifford gate, because a gate that leaves the Clifford group is a
+    different regime question than an error that has no frame.
+
+    Args:
+        program: A `~flagquantum.Circuit` or a validated
+            `~flagquantum.CircuitIR`.
+
+    Returns:
+        A `StabilizerSurvey` of the program's instruction census and its
+        refusals, each refusal naming the instruction index and opcode.
+
+    Raises:
+        ValidationError: The program is not a well-formed circuit and cannot be
+            read at all.
+    """
+
+    ir = ensure_circuit_ir(program)
+    gates = 0
+    resets = 0
+    measurements = 0
+    noise = 0
+    all_pauli_frames = True
+    blockers: list[str] = []
+    for index, instruction in enumerate(ir.instructions):
+        declares_channel = False
+        try:
+            schema = get_operator_schema(canonical_opcode(instruction.name))
+            declares_channel = _declares_channel(instruction, schema)
+            if declares_channel:
+                noise += 1
+            operations = _instruction_operations(instruction, index)
+        except FlagQuantumError as error:
+            blockers.append(f"instruction {index} {instruction.name!r}: {error}")
+            if declares_channel:
+                all_pauli_frames = False
+            continue
+        for name, _targets, _arguments in operations:
+            if name == _MEASURE_ENGINE_NAME:
+                measurements += 1
+            elif name == _RESET_ENGINE_NAME:
+                resets += 1
+            elif name not in _FRAME_OPERATION_NAMES:
+                gates += 1
+    return StabilizerSurvey(
+        n_wires=ir.n_wires,
+        clifford_gates=gates,
+        resets=resets,
+        recorded_measurements=measurements,
+        noise_instructions=noise,
+        all_pauli_frames=all_pauli_frames,
+        blockers=tuple(blockers),
+    )
 
 
 def sample_noisy_measurements(
@@ -569,7 +797,9 @@ def sample_noisy_measurements(
         program: A `~flagquantum.Circuit` or a validated `~flagquantum.CircuitIR`
             whose instructions are Clifford gates, single-wire resets,
             single-wire measurements, and noise channels whose Kraus operators
-            are a mixture of Pauli operators up to a global phase.
+            are a mixture of Pauli operators up to a global phase, on any number
+            of wires. `survey_stabilizer_program` reports the same classification
+            without sampling, which is the cheaper way to ask.
         shots: Positive number of sampling repetitions.
         terminal_wires: Wires to measure once after the program has run, in
             record order. Defaults to no terminal measurement.

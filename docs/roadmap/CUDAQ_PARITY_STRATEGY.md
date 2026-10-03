@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 54 |
-| `unsupported` | 31 |
+| `partial` | 55 |
+| `unsupported` | 30 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -210,6 +210,35 @@ effect token rather than a qubit, and nothing models a qubit, a register, or a v
 over one. `runtime_qubit_allocation` was left untouched on purpose: its claim that
 runtime allocation is not implemented is true, and only the name of the document
 describing it would have changed.
+
+The `pauli_tracking_sbe` row is the second reconciliation of this round, and it
+moved on one named refusal disappearing rather than on a family being finished.
+Its reason had already reduced its blocker to a single fact: the stabilizer engine
+declined a noise instruction instead of tracking a frame through it. That refusal
+is gone. A channel whose Kraus operators are a mixture of Pauli unitaries up to a
+global phase is now tracked on as many wires as the channel acts on, so a noisy
+Clifford program is sampled without a dense state, and a channel outside that
+class is still refused rather than sampled as its nearest Pauli approximation. The
+engine names no channel instruction wider than two wires, so a wider frame is
+spelled as a chain of correlated-error instructions, one term per non-identity
+frame, with each weight divided by the probability that the frames before it did
+not fire - a chain term is conditional on no earlier term having fired, which is
+the shape of a Kraus mixture, and emitting the caller's own weights would make
+every frame after the first too rare. The row did not go to `supported`, because
+only half of its name is delivered. The readout stays in the computational basis,
+since a frame is what the engine tracks and the sampled bits are what it reports,
+so a measurement is never expanded in a stabilizer basis; expectation values,
+detection events, and observable flips are absent from this route; and the
+trajectory selection and per-trajectory shot allocation that a stabilizer-basis
+sampler would be paired with belong to the trajectory row and are still open. The
+same change widened the package's public surface by one entry point:
+`survey_stabilizer_program` reports what the sampling route would make of a
+program without executing it, counting gates, resets, recorded measurements and
+noise instructions and collecting one blocker per refused instruction. It reads
+the IR and never imports the engine, so a caller decides between the stabilizer
+regime and a dense one without the optional distribution installed. That is a
+census and not a promise: an empty blocker list says every instruction
+translated, not that the samples are correct.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -446,7 +475,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 31 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 30 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

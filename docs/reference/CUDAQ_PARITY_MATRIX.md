@@ -80,7 +80,7 @@ No row in this document is a performance comparison or a scalability claim.
 
 | Domain | supported | partial | unsupported | out_of_scope | Total |
 | --- | --- | --- | --- | --- | --- |
-| language_and_programming_model | 0 | 6 | 7 | 0 | 13 |
+| language_and_programming_model | 0 | 7 | 6 | 0 | 13 |
 | compiler_and_ir | 0 | 10 | 4 | 0 | 14 |
 | simulation_backends | 4 | 6 | 4 | 0 | 14 |
 | noise_and_error_models | 0 | 6 | 0 | 0 | 6 |
@@ -92,7 +92,7 @@ No row in this document is a performance comparison or a scalability claim.
 | realtime_control | 0 | 1 | 3 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 10 | 54 | 31 | 0 | 95 |
+| **Total** | 10 | 55 | 30 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -145,7 +145,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 **next** (33 open)
 
 - `runtime_qubit_allocation` (language_and_programming_model): Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented.
-- `pauli_tracking_sbe` (language_and_programming_model): The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state.
+- `pauli_tracking_sbe` (language_and_programming_model): A Pauli frame is now tracked through a noise instruction rather than refused, on as many wires as the channel acts on, so the refusal this row named is gone: a noisy Clifford program is sampled without a dense state, and a general channel is still refused instead of being sampled as its nearest Pauli approximation. What is missing is the expansion half of the name. Readout stays in the computational basis, because a frame is what the engine tracks and the sampled bits are what it reports, so a measurement is never expanded in a stabilizer basis. Expectation values, detection events and observable flips are absent from this route, and the trajectory selection and per-trajectory shot allocation that a stabilizer-basis sampler would be paired with are the subject of the trajectory row rather than of this one.
 - `global_seed_control` (language_and_programming_model): Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session.
 - `gate_decomposition_patterns` (compiler_and_ir): Native gate legalization exists but there is no rule library, so a target basis outside the legalization table cannot be reached.
 - `basis_conversion` (compiler_and_ir): Partial coverage follows from the legalization table; there is no general conversion between two arbitrary named bases.
@@ -221,7 +221,7 @@ CUDA-Q surface: nvq++, @cudaq.kernel, kernel arguments, classical control flow, 
 | `dynamic_kernel_measurement_feedback` | Mid-circuit measurement and measurement-result-driven branching inside a kernel | partial | now | none | `dynamic_circuits` | FlagQuantum implements this through runtime/dynamic with a candidate-stable public namespace. The registered level is below production, and the surface is narrower than the CUDA-Q baseline. |
 | `custom_operation_registration` | register_operation for user-defined operations with backend capability negotiation | partial | now | none | none | Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation. |
 | `qudit_and_photonic_operations` | Qudit levels and photonic operations such as create, annihilate, and beam_splitter | unsupported | later | none | none | No qudit or photonic operation exists. Deferred as a distinct product line rather than a parity gap for the qubit runtime. |
-| `pauli_tracking_sbe` | Pauli tracking stabilizer-basis expansion for noisy simulation | unsupported | next | none | none | The sampling engine and the detector error model module both exist, so the condition this row was deferred on is met, and the row is now blocked on one narrower thing: the engine refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it. Pauli tracking is what would let a noisy Clifford circuit be sampled without a dense state. |
+| `pauli_tracking_sbe` | Pauli tracking stabilizer-basis expansion for noisy simulation | partial | next | none | `stabilizer_sampling` | A Pauli frame is now tracked through a noise instruction rather than refused, on as many wires as the channel acts on, so the refusal this row named is gone: a noisy Clifford program is sampled without a dense state, and a general channel is still refused instead of being sampled as its nearest Pauli approximation. What is missing is the expansion half of the name. Readout stays in the computational basis, because a frame is what the engine tracks and the sampled bits are what it reports, so a measurement is never expanded in a stabilizer basis. Expectation values, detection events and observable flips are absent from this route, and the trajectory selection and per-trajectory shot allocation that a stabilizer-basis sampler would be paired with are the subject of the trajectory row rather than of this one. <br><br>Narrower scope at this status: Pauli tracking over any channel width, with no stabilizer-basis expansion of a readout and no expectation value or observable flip. |
 | `asynchronous_execution` | run_async, sample_async, observe_async, and evolve_async with their result handles | unsupported | later | none | none | Absent. Every FlagQuantum entry point returns a completed result, so there is no handle an outer loop could poll and no overlap between host work and a device run. |
 | `global_seed_control` | set_random_seed for a process-wide sampling and noise seed | partial | next | none | none | Seeding is per call rather than process wide. `ExecutionOptions` carries a seed and the training path carries its own seeder, so a user reproduces a run by threading a seed through each entry point instead of stating one seed for the session. |
 
@@ -237,7 +237,7 @@ Evidence:
 - `control_adjoint_modifiers` override: `contracts/circuit-composition-contract.toml`, `tests/unit/test_circuit_composition_contract.py`
 - `type_system_qubit_register_view` override: `flagquantum/compiler/_hybrid/model.py`, `flagquantum/compiler/_hybrid/verifier.py`, `flagquantum/compiler/_hybrid/capture.py`, `flagquantum/core/ir.py`, `search:no qubit, register, qvector, or qview type and no aliasing or borrow rule`
 - `custom_operation_registration` override: `flagquantum/circuit.py`, `flagquantum/operators`
-- `pauli_tracking_sbe` override: `flagquantum/simulation/stabilizer/engine.py`, `search:the sampling engine declines a noise instruction instead of tracking its frame`
+- `pauli_tracking_sbe` override: `flagquantum/simulation/stabilizer/engine.py`, `flagquantum/noise/channels.py`, `flagquantum/simulation/stabilizer/__init__.py`, `tests/team/simulation/test_stabilizer_positioned_noise.py`, `search:a frame is tracked through a channel but a measurement is never expanded in a stabilizer basis`
 - `asynchronous_execution` override: `search:no asynchronous entry point and no in-flight result handle`
 - `global_seed_control` override: `flagquantum/runtime/options.py`, `flagquantum/runtime/training_state.py`, `search:no process-wide seed entry point`
 
