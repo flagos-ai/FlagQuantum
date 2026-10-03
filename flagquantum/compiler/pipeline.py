@@ -247,11 +247,15 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     # Imported here rather than at module scope: these passes read this layer, so a
     # module-level import in this direction would be circular.
-    # `commutation_cancellation` reads `_SELF_INVERSE`, `inverse_cancellation` reads
+    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
+    # parameter arithmetic below, `inverse_cancellation` reads
     # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
     # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
     # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
-    from .commutation_cancellation import cancel_commuting_self_inverse
+    from .commutation_cancellation import (
+        cancel_commuting_self_inverse,
+        merge_commuting_rotations,
+    )
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
     from .inverse_cancellation import merge_inverse_pairs
     from .one_qubit_optimization import collapse_one_qubit_runs
@@ -275,6 +279,9 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         ir = merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)
         ir = merge_adjacent_rotations(ir)
+        # Straight after the adjacent merge, because it is the same arithmetic on
+        # the same parameter and differs only in how far apart the halves may sit.
+        ir = merge_commuting_rotations(ir)
         ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)

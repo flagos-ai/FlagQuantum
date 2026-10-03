@@ -60,6 +60,7 @@ import json
 import math
 import random
 import unittest.mock
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -72,7 +73,7 @@ from benchmarks.compiler_two_qubit_synthesis import (
     Basis,
     snapshot,
 )
-from flagquantum.compiler import two_qubit_optimization
+from flagquantum.compiler import commutation_cancellation, two_qubit_optimization
 from flagquantum.compiler.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,
@@ -219,6 +220,25 @@ def population(kind: str, seed: int, count: int = CIRCUIT_COUNT) -> list[Circuit
             )
         circuits.append(CircuitIR(3, tuple(instructions)))
     return circuits
+
+
+@contextlib.contextmanager
+def _rotation_merge_patch() -> Iterator[None]:
+    """Pause the commuting rotation merge, which landed after the fold.
+
+    The fold's own attribution is a statement about *this* pass, and a second pass
+    that composes the same populations moves the same rows. Pausing it is what keeps
+    the pins below a measurement of the fold rather than of the sum, and it is
+    visible because `_optimize_to_fixed_point` imports the rule inside its body, so
+    the module attribute is read on every call.
+    """
+
+    original = commutation_cancellation.merge_commuting_rotations
+    commutation_cancellation.merge_commuting_rotations = lambda ir: ir
+    try:
+        yield
+    finally:
+        commutation_cancellation.merge_commuting_rotations = original
 
 
 def _fold_patch(policy: str) -> Any:
