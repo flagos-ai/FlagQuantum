@@ -131,7 +131,9 @@ class TwinEvidenceEnvelope:
         """Return whether a circuit remains inside the structural boundary."""
 
         return (
-            circuit.n_qubits == len(self.physical_qubits)
+            # ``CircuitIR.n_wires`` is a frozen payload key, so the program
+            # object keeps that spelling even though the count is a qubit count.
+            circuit.n_wires == len(self.physical_qubits)
             and len(circuit.instructions) <= self.maximum_instruction_count
             and all(
                 instruction.name in self.supported_operations

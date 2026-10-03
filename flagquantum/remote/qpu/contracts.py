@@ -101,7 +101,10 @@ class QuantumProvider:
     ) -> tuple[CloudBackendProfile, ...]:
         legacy_method = type(self).discover_backends
         if legacy_method is not QuantumProvider.discover_backends:
-            return legacy_method(self, n_qubits=n_qubits)
+            # An override is the deprecated spelling's own business; passing the
+            # count positionally keeps this call site from pinning a keyword
+            # that the base class and its overrides may name differently.
+            return legacy_method(self, n_qubits)
         raise NotImplementedError(f"{self.provider} list_devices is not implemented")
 
     def discover_backends(

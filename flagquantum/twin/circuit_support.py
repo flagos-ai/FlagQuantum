@@ -32,7 +32,8 @@ def _canonical(payload: Mapping[str, Any]) -> str:
 
 
 def _circuit_depth(circuit: CircuitIR) -> int:
-    wire_depths = [0] * circuit.n_qubits
+    # ``CircuitIR.n_wires`` is a frozen payload key.
+    wire_depths = [0] * circuit.n_wires
     for instruction in circuit.instructions:
         layer = max(wire_depths[wire] for wire in instruction.wires) + 1
         for wire in instruction.wires:
