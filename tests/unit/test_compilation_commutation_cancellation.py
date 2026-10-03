@@ -25,12 +25,16 @@ from flagquantum.compiler import optimize
 from flagquantum.compiler.commutation import analyze_commutation, commute
 from flagquantum.compiler.commutation_cancellation import (
     _is_cancellable,
+    _repeats_a_rotation,
     _repeats_an_opcode,
+    _rotation_param,
     cancel_commuting_self_inverse,
     cancellable_positions,
+    merge_commuting_rotations,
+    rotation_groups,
 )
 from flagquantum.compiler.pipeline import _SELF_INVERSE, _optimize_to_fixed_point
-from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -605,3 +609,279 @@ def test_the_pass_never_increases_the_instruction_count() -> None:
         if len(result) != len(ir):
             torch.testing.assert_close(_state(result), _state(ir), atol=1e-10, rtol=0)
         assert len(cancel_commuting_self_inverse(result)) <= len(result)
+
+
+# The second rule this module carries: two rotations of one opcode whose halves a
+# proven commuting gap separated add up into one. It shares the proof, the group
+# keying and the parameter arithmetic with the cancellation above, so what these
+# tests have to establish is the part that differs -- where the merged rotation is
+# written, and that nothing the adjacent merge refuses is admitted here.
+
+
+def test_a_rotation_pair_merges_across_a_control_side_gap() -> None:
+    """`rz(a) cx rz(b)` is `rz(a + b) cx`, and the adjacent merge cannot see it.
+
+    This is the shape the rule exists for. `merge_adjacent_rotations` asks whether
+    the latest writer of wire 0 is an `rz`, and between the two halves it is the
+    `cx`, so the adjacent pass declines; the gap is proven by the rule source, so
+    the two angles may be added anyway.
+    """
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.4),
+        ),
+    )
+    assert _names(merge_commuting_rotations(ir)) == ["rz", "cx"]
+    assert merge_commuting_rotations(ir).instructions[0].params[
+        "theta"
+    ] == pytest.approx(0.7)
+    assert _names(optimize(ir)) == ["rz", "cx"]
+    torch.testing.assert_close(_state(optimize(ir)), _state(ir), atol=1e-12, rtol=0)
+
+
+def test_the_merged_angle_is_written_where_the_earliest_half_was() -> None:
+    """Placement is a claim, not an implementation detail.
+
+    The block is applied where the first half already sat, which is what makes the
+    rewrite legal without moving anything: everything the group spans was proven to
+    commute with it, so the merged rotation may stay put. A rewrite that moved it
+    to the second half's position would need the same proof in the other direction
+    and would have to justify itself; this one does not.
+
+    The wire order is then read back from a mixed program, where only the position
+    of the merged rotation relative to the entangler is observable.
+    """
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.25),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.5),
+        ),
+    )
+    merged = merge_commuting_rotations(ir)
+    assert merged.instructions[0].name == "rz"
+    assert merged.instructions[1].name == "cx"
+    assert merged.instructions[0].params["theta"] == pytest.approx(0.75)
+
+
+def test_a_rotation_on_the_target_of_a_cx_is_not_merged() -> None:
+    """The control-side proof does not transfer to the target, for the same reason.
+
+    `rz` on the target applies in the `|1>` branch of the control only, so it does
+    not commute with `X` and no group forms. The second half shows that merging
+    anyway would have changed the program, which is why the refusal is worth
+    testing rather than assuming.
+    """
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 1, 0.3),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 1, 0.4),
+        ),
+    )
+    assert merge_commuting_rotations(ir) is ir
+    prepared = CircuitIR(2, (Instruction("x", (0,)), *ir.instructions))
+    mistaken = CircuitIR(2, (Instruction("x", (0,)), _rotation("rz", 1, 0.7)))
+    assert not torch.allclose(_state(mistaken), _state(prepared))
+
+
+def test_two_rotation_opcodes_are_never_added_together() -> None:
+    """`rz(a) cx u1(b)` stays as it is: the two are not one operator.
+
+    `merge_adjacent_rotations` requires the two instructions to share an opcode,
+    and this rule inherits that condition rather than relaxing it. `rz` and `u1`
+    differ by a global phase, so adding their angles would be wrong even where the
+    commutation proof holds.
+    """
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("cx", (0, 1)),
+            _rotation("u1", 0, 0.4),
+        ),
+    )
+    assert merge_commuting_rotations(ir) is ir
+
+
+def test_angles_that_add_to_zero_remove_both_halves() -> None:
+    """A vanished sum is a deletion, through the same ``_is_zero`` the merge uses."""
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.4),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, -0.4),
+        ),
+    )
+    assert _names(merge_commuting_rotations(ir)) == ["cx"]
+
+
+def test_a_trainable_angle_is_never_annihilated() -> None:
+    """A differentiable pair stays in the program, still differentiable.
+
+    `pipeline._is_zero` reads a tensor that requires grad as "not zero" on purpose,
+    so an exact cancelling pair of trainable rotations survives and the merged
+    angle is the sum the optimiser will differentiate through. Removing it would
+    take the parameters out of the autograd graph.
+    """
+
+    first = torch.tensor(0.4, requires_grad=True)
+    second = torch.tensor(-0.4, requires_grad=True)
+    ir = CircuitIR(
+        2,
+        (
+            Instruction("rz", (0,), params={"theta": first}),
+            Instruction("cx", (0, 1)),
+            Instruction("rz", (0,), params={"theta": second}),
+        ),
+    )
+    merged = merge_commuting_rotations(ir)
+    assert _names(merged) == ["rz", "cx"]
+    total = merged.instructions[0].params["theta"]
+    assert total.requires_grad
+    assert total.grad_fn is not None
+    total.backward()
+    assert first.grad is not None and second.grad is not None
+
+
+def test_a_matrix_override_is_not_second_guessed() -> None:
+    """A caller-supplied matrix ends the rule, exactly as the adjacent merge does."""
+
+    override = [[1.0, 0.0], [0.0, 1.0]]
+    assert (
+        _rotation_param(Instruction("rz", (0,), params={"theta": 0.3}, matrix=override))
+        is None
+    )
+    ir = CircuitIR(
+        2,
+        (
+            Instruction("rz", (0,), params={"theta": 0.3}, matrix=override),
+            Instruction("cx", (0, 1)),
+            Instruction("rz", (0,), params={"theta": 0.4}, matrix=override),
+        ),
+    )
+    assert merge_commuting_rotations(ir) is ir
+
+
+def test_a_rotation_without_its_declared_parameter_is_declined() -> None:
+    """The missing-parameter branch is a guard the IR has already made unreachable.
+
+    Every opcode `_ROTATION_PARAM` names declares `theta` as a required parameter,
+    so ``IRValidationError`` fires on construction before this rule is reached. The
+    branch is kept because `_rotation_param` reads a plain mapping rather than the
+    schema and a future opcode could name its angle differently; asserting the IR's
+    own refusal here is what stops that branch from being read as reachable code.
+    """
+
+    with pytest.raises(IRValidationError, match="missing parameter"):
+        Instruction("rz", (0,))
+    assert _rotation_param(_rotation("rz", 0, 0.3)) == "theta"
+    assert _rotation_param(Instruction("x", (0,))) is None
+
+
+def test_a_measurement_stops_the_merge() -> None:
+    """The rule source fails closed on a measurement, so no group spans one."""
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("measure", (0,), metadata={"is_dynamic": True}),
+            _rotation("rz", 0, 0.4),
+        ),
+    )
+    assert merge_commuting_rotations(ir) is ir
+
+
+def test_the_merge_is_idempotent() -> None:
+    """A second application changes nothing, which `_optimize_to_fixed_point` needs."""
+
+    ir = CircuitIR(
+        3,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.4),
+            Instruction("cz", (1, 2)),
+            _rotation("rz", 0, 0.5),
+        ),
+    )
+    once = merge_commuting_rotations(ir)
+    assert merge_commuting_rotations(once) is once
+
+
+def test_the_short_circuit_answers_a_weaker_question_than_the_pass() -> None:
+    """`_repeats_a_rotation` is permission to look, not a promise that something merges.
+
+    A repeat split across two commuting blocks still answers ``True`` here and is
+    then left standing by the pass, which is the direction the short circuit is
+    allowed to be wrong in. The other direction is the one that would cost a
+    merge: a circuit with no repeated rotation on any one set of wires has no
+    group of two, so ``False`` is final.
+    """
+
+    assert not _repeats_a_rotation((_rotation("rz", 0, 0.3),))
+    assert _repeats_a_rotation((_rotation("rz", 0, 0.3), _rotation("rz", 0, 0.4)))
+    blocked = CircuitIR(
+        1,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("h", (0,)),
+            _rotation("rz", 0, 0.4),
+        ),
+    )
+    assert _repeats_a_rotation(tuple(blocked))
+    assert merge_commuting_rotations(blocked) is blocked
+
+
+def test_the_rotation_groups_are_keyed_by_the_block_and_the_wires() -> None:
+    """The group a rotation lands in is the analysis's answer, not a second opinion."""
+
+    ir = CircuitIR(
+        2,
+        (
+            _rotation("rz", 0, 0.3),
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.4),
+        ),
+    )
+    groups = rotation_groups(tuple(ir), analyze_commutation(ir))
+    assert sum(len(positions) for positions in groups.values()) == 2
+    assert sum(1 for positions in groups.values() if len(positions) == 2) == 1
+    # The two halves have to commute with the gap for the group to form at all.
+    assert commute(ir.instructions[0], ir.instructions[1])
+    assert commute(ir.instructions[1], ir.instructions[2])
+
+
+def test_the_merge_never_changes_what_the_program_computes() -> None:
+    """A randomized sweep: every group the pass adds up preserves the state exactly."""
+
+    seed = random.Random(20261015)
+    opcodes = ("rx", "ry", "rz", "phase", "u1")
+    for _ in range(120):
+        instructions = []
+        for _ in range(10):
+            entangler = seed.choice(["cx", "cz", "swap", "cy"])
+            wires = tuple(seed.sample(range(3), 2))
+            instructions.append(Instruction(entangler, wires))
+            if seed.random() < 0.75:
+                opcode = seed.choice(opcodes)
+                qubit = seed.choice(wires)
+                instructions.append(_rotation(opcode, qubit, seed.uniform(-3.0, 3.0)))
+        ir = CircuitIR(3, tuple(instructions))
+        result = merge_commuting_rotations(ir)
+        assert len(result) <= len(ir)
+        if len(result) != len(ir):
+            torch.testing.assert_close(_state(result), _state(ir), atol=1e-10, rtol=0)
+        assert merge_commuting_rotations(result) is result

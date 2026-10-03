@@ -165,7 +165,10 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     operator schema's own adjoint declaration, so re-deriving it here would change
     what this oracle is measuring rather than strengthen it;
     ``cancel_commuting_self_inverse`` reads the commutation rule source, which reads
-    the runtime's gate matrices; ``remove_diagonal_gates_before_measure`` reads a
+    the runtime's gate matrices; ``merge_commuting_rotations`` reads the same source
+    and then the parameter arithmetic, so re-deriving it here would be a second
+    statement of the commutation proofs rather than a second statement of the scan;
+    ``remove_diagonal_gates_before_measure`` reads a
     measurement boundary and the Euler tables; ``collapse_one_qubit_runs`` has a
     traversal of its own. ``remove_identity_gates`` is here for the narrower reason
     that it has no traversal to re-derive at all: it is a flat filter over the
@@ -177,6 +180,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
 
     from flagquantum.compiler.commutation_cancellation import (
         cancel_commuting_self_inverse,
+        merge_commuting_rotations,
     )
     from flagquantum.compiler.diagonal_before_measure import (
         remove_diagonal_gates_before_measure,
@@ -194,6 +198,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = _reference_merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)
         ir = _reference_merge_adjacent_rotations(ir)
+        ir = merge_commuting_rotations(ir)
         ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)

@@ -83,6 +83,24 @@ _DELTA = {
         "removed_by_commutation": 495,
         "changed_circuit_count": 40,
     },
+    # The two populations added for the rotation merge. `removed_by_legacy` is zero
+    # in both, so everything the fixed point removes here is a commuting rule's work.
+    "rotation_chain_on_controls": {
+        "circuit_count": 40,
+        "source_instruction_count": 680,
+        "legacy_instruction_count": 680,
+        "optimized_instruction_count": 554,
+        "removed_by_commutation": 126,
+        "changed_circuit_count": 40,
+    },
+    "rotation_chain_mixed_placement": {
+        "circuit_count": 40,
+        "source_instruction_count": 680,
+        "legacy_instruction_count": 680,
+        "optimized_instruction_count": 561,
+        "removed_by_commutation": 119,
+        "changed_circuit_count": 40,
+    },
 }
 
 #: Where a diagonal single-qubit rotation commutes with each controlled gate,
@@ -183,11 +201,14 @@ def test_every_population_reports_its_own_removal_count(payload: dict) -> None:
 def test_removing_every_instruction_preserved_the_program(payload: dict) -> None:
     """Every changed circuit was executed, and the difference is reported.
 
-    Two of the four populations are exact: the removed gates are their own inverses
-    and the gap between them provably commutes, so the statevector is bit-identical
-    rather than merely close. The chained population composes rotations, which is
-    where the only nonzero difference comes from -- it is the rotation merge's
-    floating-point sum, not the removal.
+    Two of the four original populations are exact: the removed gates are their own
+    inverses and the gap between them provably commutes, so the statevector is
+    bit-identical rather than merely close. The chained population is the one with a
+    nonzero difference, and the substitution measurement in `rotation_merge_reach`
+    says it is not this rule's: the rotation merge removes nothing there. What the
+    difference is, is an angle sum -- once the pairs cancel, two `rz`s end up
+    adjacent and the adjacent merge adds their angles in floating point, where the
+    source applied them one after the other.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
@@ -315,3 +336,245 @@ def test_the_qiskit_anchor_compares_only_what_both_passes_attempt(
     assert anchor["in_scope_port_removed_count"] > 0
     assert anchor["in_scope_opcodes"] == list(_QISKIT_SCOPE)
     assert _REGISTER_WIDTH >= 3
+
+
+#: The rotation-merge table's pinned reading, placement by placement. `merged` and
+#: `commutes` are pinned together because the claim this round makes is that the
+#: pass takes the whole of the reach the rule source proves on this shape and none
+#: of the reach it does not; a row where the two disagree would be a wrong rewrite,
+#: which is why the contract pins the pairs rather than only the totals.
+_MERGED_PLACEMENTS = {
+    "cx": (True, False),
+    "cy": (True, False),
+    "cz": (True, True),
+    "swap": (False, False),
+    "ccx": (True, True, False),
+    "cswap": (True, False, False),
+}
+
+#: Where each rotation merges across each entangler. The diagonal opcodes reach
+#: every placement the rule source proves; `rx` and `ry` are in a Pauli family with
+#: exactly one entangler each (`cx` and `cy`), so they merge on that entangler's
+#: wire of the same family and nowhere else. A table that only reported the total
+#: would hide that boundary.
+_MERGED_BY_OPCODE = {"rx": 2, "ry": 1, "rz": 7, "phase": 7, "u1": 7}
+
+
+def test_the_rotation_merge_table_is_not_vacuous(payload: dict) -> None:
+    """A table of refusals would look as clean as a table of merges."""
+
+    merge = payload["rotation_merge_table"]
+    assert merge["rotation_opcodes"] == ["rx", "ry", "rz", "phase", "u1"]
+    assert merge["entangler_opcodes"] == list(_CONTROLLED)
+    assert merge["row_count"] == len(merge["rotation_opcodes"]) * sum(
+        len(_MERGED_PLACEMENTS[opcode]) for opcode in _CONTROLLED
+    )
+    assert merge["row_count"] == 70
+    assert merge["merged_count"] == 24
+    assert merge["merged_by_opcode"] == _MERGED_BY_OPCODE
+
+
+def test_no_rotation_is_merged_without_a_commutation_proof(payload: dict) -> None:
+    """The one direction that must never move: a merge the rule source refuses."""
+
+    merge = payload["rotation_merge_table"]
+    assert merge["merged_without_a_proof_count"] == 0
+    for row in merge["rows"]:
+        assert row["merged"] == row["commutes"], row
+        if row["merged"]:
+            assert row["optimized_instruction_count"] == (
+                row["source_instruction_count"] - 1
+            ), row
+
+
+def test_the_rotation_merge_takes_the_whole_proven_reach_on_this_shape(
+    payload: dict,
+) -> None:
+    """`proven_but_unmerged_count` is reach this round does not yet take.
+
+    It is zero here, and pinning it at zero is the claim: on a three-instruction
+    shape with one gap, every placement the rule source proves is merged. A later
+    change that started declining one of these would move this count and fail here,
+    which is the point of reporting it at all.
+    """
+
+    merge = payload["rotation_merge_table"]
+    assert merge["proven_commuting_count"] == merge["merged_count"] == 24
+    assert merge["proven_but_unmerged_count"] == 0
+
+
+def test_the_merged_placements_are_the_commutation_proof_read_back(
+    payload: dict,
+) -> None:
+    """The rows restate `commute` position by position, entangler by entangler.
+
+    `_MERGED_PLACEMENTS` is `_GAP_POSITIONS` for the diagonal rotations, and the
+    two tables agree because they are the same proof. Where they would differ is a
+    row where the pass merged what the rule source declines, which is exactly what
+    the previous test is for; this one checks that the diagonal rows really do
+    cover the whole of the proven set rather than a chosen subset of it.
+    """
+
+    merge = payload["rotation_merge_table"]
+    assert _MERGED_PLACEMENTS == _GAP_POSITIONS
+    for row in merge["rows"]:
+        if row["rotation_opcode"] not in {"rz", "phase", "u1"}:
+            continue
+        expected = _MERGED_PLACEMENTS[row["entangler_opcode"]][
+            row["rotation_wire_index"]
+        ]
+        assert row["merged"] is expected, row
+        assert row["commutes"] is expected, row
+
+
+def test_every_merged_rotation_preserved_the_program(payload: dict) -> None:
+    """Each merge is checked against an execution, not against a second opinion."""
+
+    merge = payload["rotation_merge_table"]
+    assert merge["worst_merged_state_difference"] < 1.0e-12
+    merged_rows = [row for row in merge["rows"] if row["merged"]]
+    assert merged_rows
+    assert max(row["max_state_difference"] for row in merged_rows) == (
+        merge["worst_merged_state_difference"]
+    )
+    # A refusal must not report a movement at all: the columns mean different
+    # things and the table must not blur them.
+    for row in merge["rows"]:
+        if not row["merged"]:
+            assert row["max_state_difference"] == 0.0, row
+
+
+def test_the_pauli_family_boundary_is_where_the_table_says_it_is(payload: dict) -> None:
+    """`rx` and `ry` merge far less often, and the reason is stated rather than hidden.
+
+    Both are half turns in a Pauli algebra: `rx` commutes with `cx` on the target,
+    `ry` with `cy`. Neither commutes with the diagonal entanglers on any wire, and
+    the two diagonal-only entanglers `swap`/`cswap` commute with nothing here. So
+    the diagonal rotations reach seven placements each and these two reach two and
+    one. The totals are the finding; reporting only the sum would report the
+    diagonal case and hide the other two.
+    """
+
+    merge = payload["rotation_merge_table"]
+    by_opcode = merge["merged_by_opcode"]
+    for diagonal in ("rz", "phase", "u1"):
+        assert by_opcode[diagonal] == 7, diagonal
+    assert by_opcode["rx"] == 2
+    assert by_opcode["ry"] == 1
+    rows = {
+        (
+            row["rotation_opcode"],
+            row["entangler_opcode"],
+            row["rotation_wire_index"],
+        ): row
+        for row in merge["rows"]
+    }
+    assert rows[("rx", "cx", 1)]["merged"]
+    assert rows[("ry", "cy", 1)]["merged"]
+    assert not rows[("rx", "cz", 0)]["merged"]
+    assert not rows[("ry", "cx", 1)]["merged"]
+
+
+def test_the_rotation_merge_reach_is_attributed_by_substitution(payload: dict) -> None:
+    """`removed_by_commutation` sums both commuting rules, so it cannot attribute.
+
+    The reach table substitutes `merge_commuting_rotations` with the identity and
+    re-runs the whole fixed point, which is the only measurement here that separates
+    the newer rule from the older one. The substitution has to be real for the zeros
+    below to mean anything, so the two non-zero rows are part of this test rather
+    than a separate one: a patch that silently failed to apply would show up as six
+    zeros and this test would pass on four of them.
+    """
+
+    reach = {row["label"]: row for row in payload["rotation_merge_reach"]}
+    assert set(reach) == {
+        row["label"] for row in payload["pipeline_delta"]
+    }, "the two tables have to describe the same populations"
+    for label in ("gap_on_wire_0", "gap_on_wire_1", "gap_on_unrelated_qubit"):
+        assert reach[label]["removed_by_rotation_merge"] == 0, label
+    assert reach["chained_control_gaps"]["removed_by_rotation_merge"] == 0
+    assert reach["rotation_chain_on_controls"]["removed_by_rotation_merge"] == 74
+    assert reach["rotation_chain_mixed_placement"]["removed_by_rotation_merge"] == 95
+
+
+def test_the_rotation_merge_reach_is_invisible_on_the_older_populations(
+    payload: dict,
+) -> None:
+    """The finding, stated as a number rather than as prose.
+
+    None of the four populations this benchmark had before this round shows any
+    reach for the new rule, and that is not a defect in the rule: they carry one
+    rotation each, or two identical entanglers next to each other, so the adjacent
+    passes empty the gap before either commuting rule is asked. The two rotation
+    chains were added because the older populations cannot see the rule at all.
+    """
+
+    reach = {row["label"]: row for row in payload["rotation_merge_reach"]}
+    assert sum(row["removed_by_rotation_merge"] for row in reach.values()) == 169
+    assert reach["rotation_chain_on_controls"]["shipped_instruction_count"] < (
+        reach["rotation_chain_on_controls"]["without_rotation_merge_instruction_count"]
+    )
+    assert reach["rotation_chain_mixed_placement"]["shipped_instruction_count"] < (
+        reach["rotation_chain_mixed_placement"][
+            "without_rotation_merge_instruction_count"
+        ]
+    )
+    for row in payload["rotation_merge_reach"]:
+        assert row["max_state_difference"] < 1.0e-12, row
+
+
+def test_the_rotation_chain_populations_are_not_vacuous(payload: dict) -> None:
+    """The two new populations carry the shapes their names claim."""
+
+    delta = {row["label"]: row for row in payload["pipeline_delta"]}
+    for label in ("rotation_chain_on_controls", "rotation_chain_mixed_placement"):
+        row = delta[label]
+        assert row["circuit_count"] == 40, label
+        assert row["source_instruction_count"] == 680, label
+        assert row["removed_by_legacy"] == 0, label
+        assert row["changed_circuit_count"] == 40, label
+        assert row["rotation_group_count"] > 0, label
+        assert row["rotation_position_count"] > 0, label
+    # Measured, and deliberately not explained here: the mixed population merges
+    # more rotations (95 against 74) even though only half of its entanglers put the
+    # rotation wire in a proven-commuting position. A comment claiming the obvious
+    # ordering would be wrong, so the two counts are pinned instead.
+    assert delta["rotation_chain_on_controls"]["removed_by_commutation"] == 126
+    assert delta["rotation_chain_mixed_placement"]["removed_by_commutation"] == 119
+    assert delta["rotation_chain_on_controls"]["rotation_group_count"] == 83
+    assert delta["rotation_chain_mixed_placement"]["rotation_group_count"] == 97
+
+
+def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None:
+    """The second anchor shape is the one both implementations attempt.
+
+    `CommutativeCancellation` merges a run of z-rotations in the same call, so
+    ``rz(a) cx rz(b)`` on the control is a rewrite it tries as well. The port's own
+    column is pinned, because it is this pass's output and is checked everywhere
+    else in this file; Qiskit's column is reported and bounded rather than pinned to
+    a number, because the port cannot be executed on a machine without Qiskit and a
+    pinned number nobody can reproduce is exactly the kind of claim this repository
+    forbids. What is asserted about it is only what a merge can do: it never
+    lengthens the circuit and it never deletes it.
+    """
+
+    anchor = payload["reference_anchor"]
+    if not anchor["available"]:
+        pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    rows = anchor["rotation_rows"]
+    assert anchor["rotation_row_count"] == len(_QISKIT_SCOPE) * 2
+    assert {(row["opcode"], row["wire_index"]) for row in rows} == {
+        (opcode, wire_index) for opcode in _QISKIT_SCOPE for wire_index in (0, 1)
+    }
+    for row in rows:
+        assert row["source_gate_count"] == 3, row
+        merged = _MERGED_PLACEMENTS[row["opcode"]][row["wire_index"]]
+        assert row["port_optimized_gate_count"] == (2 if merged else 3), row
+        assert 0 < row["qiskit_optimized_gate_count"] <= row["source_gate_count"], row
+    assert anchor["rotation_source_gate_count"] == 3 * anchor["rotation_row_count"]
+    assert anchor["rotation_port_optimized_gate_count"] == sum(
+        row["port_optimized_gate_count"] for row in rows
+    )
+    # The port merges on three of the six placements, which is the whole of what the
+    # rule source proves about a `cx`, `cy` or `cz` on two wires.
+    assert anchor["rotation_port_optimized_gate_count"] == 15
