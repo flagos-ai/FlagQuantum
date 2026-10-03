@@ -783,6 +783,35 @@ not made here. What is changed here is only the record: the default's behaviour
 is named, its consequence is measured, and the frozen manifest is left alone
 rather than edited after the measurement.
 
+#### The tape budget is a capacity lever and the ladder does not freeze one
+
+Every rung in `measured_ladder` was measured with an unbounded rematerialization
+tape, so the rungs that exhaust a device measure the budget they ran under rather
+than the shape. Bounding the reverse tape at 4 GiB and holding shape, slicing,
+parameters and steps fixed changes the same rungs:
+
+| Shape | Sliced labels | Unbounded | Bounded at 4294967296 B |
+| --- | --- | --- | --- |
+| `[4, 6, 2]` | 2 | 80930380288 B OOM | completed, 17160570368 B |
+| `[4, 6, 2]` | 4 | 51191433216 B | `RuntimeError` (>25 dims) |
+| `[4, 6, 3]` | 4 | 82023653888 B OOM | completed, 30072620032 B |
+| `[4, 6, 3]` | 8 | 82478769152 B OOM | completed, 27926225920 B |
+
+The rung the ladder records as the one shape that exhausts a single device --
+two sliced labels at 80930380288 bytes -- completes in 17.16 GiB once the tape is
+bounded. So the capacity question for this family is what the tape budget is
+before it is what the sharding is, and a capacity premise that freezes a shape
+without freezing a budget has not frozen the thing it is about. This is a sixth
+falsified candidate, recorded in the manifest's `freeze_note` rather than in
+`measured_ladder`, because a frozen ladder is a record of what was run and this
+is a record of what the record omits.
+
+The `[4, 6, 2]` four-label rung appears in both tables and fails differently in
+each: unbounded it completes, bounded it raises. The budget therefore does not
+monotonically help, which is the strongest form of the finding -- neither the
+label choice nor the budget is a knob the manifest can leave implicit and still
+claim to have frozen a capacity premise.
+
 #### Reading the tensor-network gate's default output
 
 `benchmarks/internal/evidence/tensor_network_release_gate.py` takes repeatable
