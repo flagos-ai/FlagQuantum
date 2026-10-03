@@ -278,6 +278,10 @@ def _apply_matrix_gate(
         if instruction.name == "cx" and _triton_local_cx_enabled(
             device_type=shard_state.amplitudes.device.type,
             dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+            shape=(
+                int(shard_state.amplitudes.shape[0]),
+                int(shard_state.amplitudes.shape[1]),
+            ),
         ):
             state, scratch = _vectorized_local_cx_gate(
                 shard_state,

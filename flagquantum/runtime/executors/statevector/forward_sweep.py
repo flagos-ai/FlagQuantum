@@ -809,6 +809,10 @@ class _ShardedForwardSweep:
                 runtime_supported=instruction.name == "cx",
                 device_type=self.shard_state.amplitudes.device.type,
                 dtype=str(self.shard_state.amplitudes.dtype).removeprefix("torch."),
+                shape=(
+                    int(self.shard_state.amplitudes.shape[0]),
+                    int(self.shard_state.amplitudes.shape[1]),
+                ),
             )
             if instruction.name == "cx":
                 self.kernel_dispatch_evidence.record(cx_decision)

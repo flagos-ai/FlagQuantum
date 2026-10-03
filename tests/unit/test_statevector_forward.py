@@ -20,6 +20,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
     _triton_local_1q_requested,
+    _triton_local_cx_requested,
     _vectorized_cross_shard_cx,
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
@@ -96,6 +97,18 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     assert not _triton_local_cx_segment_enabled(scheduled)
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
     assert _triton_local_cx_segment_enabled(scheduled)
+
+
+def test_local_cx_default_window_and_override(monkeypatch):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", raising=False)
+    assert _triton_local_cx_requested((1, 1 << 24))
+    assert not _triton_local_cx_requested((1, 1 << 20))
+    assert not _triton_local_cx_requested((2, 1 << 24))
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    assert _triton_local_cx_requested((1, 1 << 20))
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "0")
+    assert not _triton_local_cx_requested((1, 1 << 24))
 
 
 def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
@@ -415,7 +428,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         for record in dispatch["decisions"]
     } == {
         ("local_1q", "disabled_by_policy", 2),
-        ("local_cx", "input_not_supported", 1),
+        ("local_cx", "disabled_by_policy", 1),
     }
     local_1q_dispatch = next(
         record for record in dispatch["decisions"] if record["feature"] == "local_1q"
@@ -440,7 +453,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         "semantic_id": "statevector.apply.cnot.local",
         "implementation": "pytorch_eager",
         "integration_path": "pytorch",
-        "fallback": True,
+        "fallback": False,
         "implementation_id": None,
         "catalog_mismatches": ("device",),
     }

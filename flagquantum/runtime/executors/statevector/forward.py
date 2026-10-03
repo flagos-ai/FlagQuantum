@@ -31,7 +31,7 @@ from ....simulation.statevector.operations import (
 )
 from ...distributed.identity import DistributedIdentity
 from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
-from .environment import get_bool, mode
+from .environment import mode
 from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
     KernelDecision,
@@ -49,6 +49,7 @@ _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
 _TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset(
     (1, 1 << exponent) for exponent in (10, 16, 20, 24)
 )
+_TRITON_LOCAL_CX_DEFAULT_SHAPES = frozenset({(1, 1 << 24)})
 
 
 def _is_diagonal_instruction(name: str) -> bool:
@@ -116,6 +117,7 @@ def _triton_local_cx_decision(
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    shape: tuple[int, int],
 ) -> KernelDecision:
     return select_cataloged_triton_kernel(
         "local_cx",
@@ -129,7 +131,7 @@ def _triton_local_cx_decision(
             providers=("triton",),
         ),
         implementation_id="FQKI-TRITON-SV-002-A",
-        requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
+        requested=_triton_local_cx_requested(shape),
         runtime_supported=runtime_supported,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
@@ -137,11 +139,23 @@ def _triton_local_cx_decision(
     )
 
 
-def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
+def _triton_local_cx_requested(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, while retaining an explicit override."""
+
+    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_CX")
+    if configured is None:
+        return shape in _TRITON_LOCAL_CX_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
+
+
+def _triton_local_cx_enabled(
+    *, device_type: str, dtype: str, shape: tuple[int, int]
+) -> bool:
     return bool(
         _triton_local_cx_decision(
             device_type=device_type,
             dtype=dtype,
+            shape=shape,
         ).accelerated
     )
 
